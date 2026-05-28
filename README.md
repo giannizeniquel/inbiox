@@ -2,7 +2,6 @@ Sí, tenía algunos detalles (consistencia, redacción, estructura y pequeños e
 
 ---
 
-```markdown
 # Inbiox
 
 **Inbiox** is a modern customer support platform that centralizes conversations, automates workflows, and enables teams to operate efficiently from a unified inbox.
