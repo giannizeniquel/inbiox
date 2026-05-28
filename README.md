@@ -1,7 +1,3 @@
-Sí, tenía algunos detalles (consistencia, redacción, estructura y pequeños errores de formato). Te dejo una versión corregida, más clara y más alineada a un README SaaS real.
-
----
-
 # Inbiox
 
 **Inbiox** is a modern customer support platform that centralizes conversations, automates workflows, and enables teams to operate efficiently from a unified inbox.
