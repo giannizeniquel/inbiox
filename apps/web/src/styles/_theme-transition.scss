@@ -1,0 +1,34 @@
+// =============================================================================
+// Inbiox CRM — Theme Transition
+// Source: openspec/changes/sprint-11A-frontend-ui/specs/theme-system/spec.md
+// Requirement: Theme Toggle Transition (200ms controlled)
+// =============================================================================
+
+// When theme changes, we want a controlled 200ms transition.
+// Implementation:
+//   1. Add "theme-transition" class to html element
+//   2. Toggle "dark" class on html element
+//   3. setTimeout(220ms) to remove "theme-transition" class
+// Properties that transition: background-color, color, border-color
+// Everything else is instant.
+
+.theme-transition {
+  * {
+    transition:
+      background-color 200ms ease,
+      color 200ms ease,
+      border-color 200ms ease,
+      box-shadow 200ms ease !important;
+  }
+}
+
+// Prevent transitions on page load (before theme is applied)
+.no-transition,
+.no-transition * {
+  transition: none !important;
+}
+
+// Apply to html element only (not all children) for cleaner performance
+html.theme-transition {
+  transition: background-color 200ms ease, color 200ms ease;
+}

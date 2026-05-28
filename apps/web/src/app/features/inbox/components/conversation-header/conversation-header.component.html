@@ -1,0 +1,44 @@
+<header class="conversation-header">
+  <!-- Left: avatar + name + assigned + connection -->
+  <div class="conversation-header__left">
+    <!-- Avatar 40px -->
+    <div class="conversation-header__avatar">
+      <span>{{ initials() }}</span>
+    </div>
+
+    <!-- Name + meta -->
+    <div class="conversation-header__info">
+      <div class="conversation-header__name-row">
+        <span class="conversation-header__name">{{ contactName() }}</span>
+      </div>
+
+      <div class="conversation-header__meta">
+        @if (ticket().owner) {
+          <span class="conversation-header__assigned">
+            Asignado: {{ ticket().owner!.name }}
+          </span>
+          <span class="conversation-header__dot">·</span>
+        }
+
+        <span class="conversation-header__fsm" [ngClass]="'status-' + ticket().status">
+          {{ statusLabel() }}
+        </span>
+
+        <span class="conversation-header__dot">·</span>
+
+        <span class="conversation-header__ticket-id">
+          #{{ ticket().ticket_id }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: resolve button -->
+  <button
+    class="conversation-header__resolve-btn"
+    [attr.aria-label]="'Resolver conversación con ' + contactName()"
+    (click)="onResolve()"
+  >
+    RESOLVER
+  </button>
+</header>

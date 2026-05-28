@@ -1,0 +1,14 @@
+// =============================================================================
+// Inbiox CRM — Main Styles Entry Point
+// Source: openspec/changes/sprint-11A-frontend-ui/design.md
+// =============================================================================
+
+// Load Google Font (Inter) — must be first
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+// CSS Design Tokens (global CSS custom properties)
+// @use syntax causes Angular build errors with current sass plugin
+@import './styles/variables';
+@import './styles/layout';
+@import './styles/dark-theme';
+@import './styles/theme-transition';

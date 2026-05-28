@@ -1,0 +1,118 @@
+app_message_inbound:
+    path: /messages/inbound
+    methods: [POST]
+    controller: App\Controller\MessageController::inbound
+
+app_ticket_assign:
+    path: /tickets/{id}/assign
+    methods: [POST]
+    controller: App\Controller\TicketController::assign
+
+app_ticket_assignment:
+    path: /tickets/{id}/assignment
+    methods: [GET]
+    controller: App\Controller\TicketController::assignment
+
+app_inbox_tickets:
+    path: /tickets
+    methods: [GET]
+    controller: App\Controller\InboxController::listTickets
+
+app_inbox_ticket_detail:
+    path: /tickets/{id}
+    methods: [GET]
+    controller: App\Controller\InboxController::getTicket
+
+app_inbox_ticket_messages:
+    path: /tickets/{id}/messages
+    methods: [GET]
+    controller: App\Controller\InboxController::getMessages
+
+app_ticket_auto_assign:
+    path: /tickets/{id}/auto-assign
+    methods: [POST]
+    controller: App\Controller\AutoAssignController::autoAssign
+app_ticket_transition:
+    path: /tickets/{id}/transition
+    methods: [POST]
+    controller: App\Controller\TicketWorkflowController::transition
+
+app_ticket_resolve:
+    path: /tickets/{id}/resolve
+    methods: [POST]
+    controller: App\Controller\TicketWorkflowController::resolve
+
+app_ticket_close:
+    path: /tickets/{id}/close
+    methods: [POST]
+    controller: App\Controller\TicketWorkflowController::close
+
+app_report_frt:
+    path: /reports/frt
+    methods: [GET]
+    controller: App\Controller\ReportingController::frt
+
+app_report_rt:
+    path: /reports/rt
+    methods: [GET]
+    controller: App\Controller\ReportingController::rt
+
+app_report_counts:
+    path: /reports/counts
+    methods: [GET]
+    controller: App\Controller\ReportingController::counts
+
+app_report_volume:
+    path: /reports/volume
+    methods: [GET]
+    controller: App\Controller\ReportingController::volume
+
+app_report_agents:
+    path: /reports/agents
+    methods: [GET]
+    controller: App\Controller\ReportingController::agents
+
+app_debug_inbound:
+    path: /debug/inbound/{ticketId}
+    methods: [POST]
+    controller: App\Controller\DebugController::inbound
+
+app_debug_outbound:
+    path: /debug/outbound/{ticketId}
+    methods: [POST]
+    controller: App\Controller\DebugController::outbound
+
+app_debug_status:
+    path: /debug/status/{ticketId}
+    methods: [POST]
+    controller: App\Controller\DebugController::status
+
+app_debug_assign:
+    path: /debug/assign/{ticketId}
+    methods: [POST]
+    controller: App\Controller\DebugController::assign
+
+app_contacts_list:
+    path: /contacts
+    methods: [GET]
+    controller: App\Controller\ContactController::list
+
+app_contacts_detail:
+    path: /contacts/{id}
+    methods: [GET]
+    controller: App\Controller\ContactController::get
+
+app_contacts_create:
+    path: /contacts
+    methods: [POST]
+    controller: App\Controller\ContactController::create
+
+app_contacts_update:
+    path: /contacts/{id}
+    methods: [PUT]
+    controller: App\Controller\ContactController::update
+
+app_contacts_delete:
+    path: /contacts/{id}
+    methods: [DELETE]
+    controller: App\Controller\ContactController::delete

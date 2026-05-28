@@ -1,0 +1,215 @@
+// =============================================================================
+// Inbiox CRM — App Shell Component Styles
+// Source: openspec/changes/sprint-11A-frontend-ui/specs/ui-layout-shell/spec.md
+// Three-column layout: 220px sidebar + 320px chat list + flex conversation
+// Responsive: ≥1200px (3 col), 768-1199px (collapsed sidebar), <768px (single panel)
+// =============================================================================
+
+:host {
+  display: block;
+  height: 100vh;
+  overflow: hidden;
+}
+
+// -----------------------------------------------------------------------------
+// App Shell Container
+// -----------------------------------------------------------------------------
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background-color: var(--bg-app);
+}
+
+// -----------------------------------------------------------------------------
+// Body — Three Columns
+// -----------------------------------------------------------------------------
+.app-shell__body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  height: calc(100vh - 48px);
+  overflow: hidden;
+}
+
+// -----------------------------------------------------------------------------
+// Sidebar (hosted by sidebar component, just host it)
+// -----------------------------------------------------------------------------
+.sidebar {
+  width: 220px;
+  min-width: 220px;
+  height: calc(100vh - 48px);
+  background-color: var(--bg-sidebar);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width 250ms ease, min-width 250ms ease;
+
+  // Collapsed state (768-1199px) — 48px icons
+  &--collapsed {
+    width: 48px;
+    min-width: 48px;
+  }
+
+  // Mobile drawer state (<768px) — hidden by default, slides in
+  &--drawer {
+    position: fixed;
+    top: 48px;
+    left: 0;
+    z-index: var(--z-drawer-mobile, 200);
+    transform: translateX(-100%);
+    transition: transform 250ms ease;
+    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.15);
+
+    &.is-open {
+      transform: translateX(0);
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Ticket List Panel (chat list)
+// -----------------------------------------------------------------------------
+.ticket-list-panel {
+  width: 320px;
+  min-width: 320px;
+  height: 100%;
+  background-color: var(--bg-panel-list);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+// -----------------------------------------------------------------------------
+// Chat List Panel (deprecated - use ticket-list-panel)
+// -----------------------------------------------------------------------------
+.chat-list-panel {
+  width: 320px;
+  min-width: 320px;
+  height: calc(100vh - 48px);
+  background-color: var(--bg-panel-list);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  // Hide when mobile and conversation is active
+  &--hidden {
+    display: none;
+  }
+}
+
+.chat-list-panel__placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-secondary);
+  font-size: var(--font-sm, 12px);
+}
+
+// -----------------------------------------------------------------------------
+// Conversation Panel
+// -----------------------------------------------------------------------------
+.conversation-panel {
+  flex: 1;
+  min-width: 0;
+  height: calc(100vh - 48px);
+  background-color: var(--bg-chat);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+
+  // Mobile: slides in from right
+  &--mobile {
+    position: fixed;
+    top: 48px;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: calc(var(--z-sticky-panels, 90) - 1);
+    transform: translateX(100%);
+    transition: transform 250ms ease;
+
+    &.is-active {
+      transform: translateX(0);
+    }
+  }
+}
+
+.conversation-panel__placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-secondary);
+  font-size: var(--font-sm, 12px);
+}
+
+// -----------------------------------------------------------------------------
+// Content Area (for routes other than inbox)
+// -----------------------------------------------------------------------------
+.content-area {
+  flex: 1;
+  min-width: 0;
+  height: calc(100vh - 48px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+// -----------------------------------------------------------------------------
+// Mobile Overlay
+// -----------------------------------------------------------------------------
+.mobile-overlay {
+  position: fixed;
+  inset: 0;
+  top: 48px;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: var(--z-overlay-mobile, 190);
+  display: none;
+
+  &.is-visible {
+    display: block;
+  }
+
+  @media (min-width: 768px) {
+    display: none !important;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Responsive Breakpoints
+// -----------------------------------------------------------------------------
+// ≥1200px: Full 3-column layout (default above)
+// 768-1199px: Collapsed sidebar (48px icons)
+@media (max-width: 1199px) and (min-width: 768px) {
+  .sidebar {
+    width: 48px;
+    min-width: 48px;
+  }
+}
+
+// <768px: Single panel, sidebar as drawer
+@media (max-width: 767px) {
+  .chat-list-panel,
+  .conversation-panel {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  .conversation-panel {
+    position: relative;
+    height: calc(100vh - 48px);
+    // Removed slide animation for now - always visible
+  }
+
+  .mobile-overlay {
+    display: block;
+  }
+}

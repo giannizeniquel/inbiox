@@ -1,0 +1,150 @@
+// =============================================================================
+// Inbiox CRM — Topbar Component Styles
+// Source: openspec/changes/sprint-11A-frontend-ui/specs/ui-layout-shell/spec.md
+// Height: 48px, Sticky at top, z-index: --z-topbar (100)
+// =============================================================================
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-topbar, 100);
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  height: 48px;
+  min-height: 48px;
+  padding: 0 16px;
+
+  background-color: var(--bg-topbar);
+  color: var(--text-on-accent);
+
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+
+  // Smooth transition when theme changes
+  transition: background-color 200ms ease, border-color 200ms ease;
+}
+
+// -----------------------------------------------------------------------------
+// Left Section
+// -----------------------------------------------------------------------------
+.topbar__left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+}
+
+// Hamburger — only visible on mobile (<768px)
+.topbar__hamburger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+
+  background: transparent;
+  color: var(--text-on-accent);
+  cursor: pointer;
+
+  transition: background-color 150ms ease;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.7);
+    outline-offset: 2px;
+  }
+
+  // Show on mobile via class (CSS-only visibility via display on .is-hidden)
+  &.is-hidden {
+    display: none;
+  }
+
+  @media (max-width: 767px) {
+    display: flex; // always show on mobile
+  }
+}
+
+// Brand / Logo + App Name
+.topbar__brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+}
+
+.topbar__logo {
+  color: var(--text-on-accent);
+  flex-shrink: 0;
+}
+
+.topbar__app-name {
+  font-size: var(--font-lg, 15px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text-on-accent);
+}
+
+// -----------------------------------------------------------------------------
+// Right Section
+// -----------------------------------------------------------------------------
+.topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+}
+
+// Icon buttons (help, notifications)
+.topbar__icon-btn {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+
+  background: transparent;
+  color: var(--text-on-accent);
+  cursor: pointer;
+
+  transition: background-color 150ms ease;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.7);
+    outline-offset: 2px;
+  }
+}
+
+// Notification badge (red dot)
+.topbar__badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+
+  background-color: #ef4444; // red — not a design token, intentional for alerts
+  border: 2px solid var(--bg-topbar);
+
+  // The border color should match topbar, but we use explicit to ensure contrast
+}

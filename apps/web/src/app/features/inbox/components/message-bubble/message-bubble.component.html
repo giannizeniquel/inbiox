@@ -1,0 +1,18 @@
+<div class="message-bubble" [ngClass]="bubbleClasses()">
+  @switch (messageType()) {
+    @case ('system') {
+      <span class="message-bubble__system-text">{{ message().content || message().body }}</span>
+    }
+    @default {
+      <p class="message-bubble__text">{{ message().content || message().body }}</p>
+      <span class="message-bubble__meta">
+        <span class="message-bubble__time">{{ timeDisplay() }}</span>
+        @if (messageType() === 'agent') {
+          <span class="message-bubble__status" [ngClass]="'status-' + message().deliveryStatus">
+            {{ statusIcon() }}
+          </span>
+        }
+      </span>
+    }
+  }
+</div>

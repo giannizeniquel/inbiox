@@ -1,0 +1,25 @@
+.inbox-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.inbox-header {
+  background: #1976d2;
+  color: white;
+  padding: 1rem 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  h1 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 500;
+  }
+}
+
+.inbox-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}

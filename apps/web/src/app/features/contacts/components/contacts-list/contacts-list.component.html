@@ -1,0 +1,44 @@
+<div class="contacts-list" role="listbox" tabindex="0" aria-label="Lista de contactos">
+  <!-- Loading state: show skeleton -->
+  @if (store.loading()) {
+    <app-contact-skeleton />
+  }
+  <!-- Error state: show error -->
+  @else if (store.error()) {
+    <app-contact-error [errorMessage]="store.error()!" (retry)="onRetry()" />
+  }
+  <!-- Empty state: no contacts at all -->
+  @else if (store.filteredContacts().length === 0) {
+    <app-contact-empty
+      [variant]="emptyVariant()"
+      (create)="onCreateContact()"
+      (clear)="onClearSearch()"
+    />
+  }
+  <!-- Data state: render contacts -->
+  @else {
+    @for (contact of store.filteredContacts(); track trackByContactId($index, contact)) {
+      <app-contact-card
+        [contact]="contact"
+        [selected]="store.selectedContactId() === contact.id"
+        (select)="onContactSelect($event)"
+        [class.focused]="isFocused(contact.id)"
+        (mouseenter)="onCardFocus($index)"
+      />
+    }
+    @if (hasMore()) {
+      <div class="load-more">
+        @if (loadingMore()) {
+          <button type="button" class="load-more__btn" disabled>
+            <span class="load-more__spinner"></span>
+            Cargando...
+          </button>
+        } @else {
+          <button type="button" class="load-more__btn" (click)="onLoadMore()">
+            Cargar más
+          </button>
+        }
+      </div>
+    }
+  }
+</div>

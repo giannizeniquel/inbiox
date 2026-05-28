@@ -1,0 +1,33 @@
+@if (variant() === 'global') {
+  <div class="empty-state empty-state--global">
+    <div class="empty-icon">
+      <!-- Users icon SVG -->
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+    </div>
+    <p class="empty-message">Todavía no hay contactos</p>
+    <button class="empty-cta" (click)="onCreateClick()">
+      Crear primer contacto
+    </button>
+  </div>
+} @else {
+  <div class="empty-state empty-state--search">
+    <div class="empty-icon">
+      <!-- Search X icon SVG -->
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        <line x1="8" y1="8" x2="14" y2="14"/>
+        <line x1="14" y1="8" x2="8" y2="14"/>
+      </svg>
+    </div>
+    <p class="empty-message">No se encontraron resultados</p>
+    <button class="empty-cta" (click)="onClearClick()">
+      Limpiar búsqueda
+    </button>
+  </div>
+}

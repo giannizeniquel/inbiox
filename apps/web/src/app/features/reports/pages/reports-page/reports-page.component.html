@@ -1,0 +1,85 @@
+<div class="reports-page">
+  <header class="reports-page__header">
+    <h1 class="reports-page__title">Informes</h1>
+
+    <div class="reports-page__filters">
+      <div class="time-filter-buttons">
+        <button
+          class="time-filter-btn"
+          [class.time-filter-btn--active]="timeFilter() === 'today'"
+          (click)="setTimeFilter('today')"
+        >
+          Hoy
+        </button>
+        <button
+          class="time-filter-btn"
+          [class.time-filter-btn--active]="timeFilter() === '7d'"
+          (click)="setTimeFilter('7d')"
+        >
+          7 días
+        </button>
+        <button
+          class="time-filter-btn"
+          [class.time-filter-btn--active]="timeFilter() === '30d'"
+          (click)="setTimeFilter('30d')"
+        >
+          30 días
+        </button>
+        <button
+          class="time-filter-btn"
+          [class.time-filter-btn--active]="timeFilter() === 'custom'"
+          (click)="setTimeFilter('custom')"
+        >
+          Personalizado
+        </button>
+      </div>
+
+      @if (timeFilter() === 'custom') {
+        <div class="custom-date-picker">
+          <input
+            type="date"
+            class="date-input"
+            [value]="fromDate()"
+            (change)="fromDate.set($any($event.target).value)"
+          />
+          <span class="date-separator">-</span>
+          <input
+            type="date"
+            class="date-input"
+            [value]="toDate()"
+            (change)="toDate.set($any($event.target).value)"
+          />
+          <button class="apply-btn" (click)="applyCustomFilter()">Aplicar</button>
+        </div>
+      }
+    </div>
+  </header>
+
+  <section class="kpi-grid">
+    <app-response-time-card
+      [value]="frtValue()"
+      [loading]="frtLoading()"
+    />
+    <app-resolution-time-card
+      [value]="rtValue()"
+      [loading]="rtLoading()"
+    />
+    <app-ticket-count-card
+      [open]="openCount()"
+      [closed]="closedCount()"
+      [loading]="countsLoading()"
+    />
+    <app-volume-trend-card
+      [data]="volumeData()"
+      [loading]="volumeLoading()"
+    />
+  </section>
+
+  <section class="agents-section">
+    <h2 class="agents-section__title">Rendimiento de agentes</h2>
+    <app-agent-leaderboard
+      [agents]="agentsData()"
+      [loading]="agentsLoading()"
+    />
+  </section>
+</div>

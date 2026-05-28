@@ -1,0 +1,111 @@
+// =============================================================================
+// Conversation Container
+// Per spec section 17:
+// - flex-grow, overflow-y: auto, min-height: 0
+// - Connects to stores, auto-scroll detection
+// =============================================================================
+
+.conversation-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: var(--bg-chat);
+  position: relative;
+  box-sizing: border-box;
+  padding-bottom: 60px; // Espacio para el composer (56px + padding)
+}
+
+// Wrapper for messages area + composer (pushes composer to bottom)
+.conversation-container__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+// Header with back button (mobile) and contact info
+.conversation-container__header {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: 64px;
+  min-height: 64px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-sidebar);
+  // Ensure visible in mobile
+  @media (max-width: 767px) {
+    display: flex;
+  }
+}
+
+.conversation-container__back-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 150ms ease;
+
+  &:hover {
+    background: var(--border-subtle);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 767px) {
+    display: flex;
+  }
+}
+
+// Scrollable message area - debe crecer para fills el espacio disponible
+.conversation-container__messages {
+  flex: 1 1 auto; // grow and shrink
+  overflow-y: auto;
+  min-height: 150px;
+  max-height: calc(100% - 56px); // Leave space for composer
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+// Custom scrollbar
+.conversation-container__messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.conversation-container__messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.conversation-container__messages::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.3);
+  }
+}
+
+// Dark theme scrollbar
+:host-context(.dark) .conversation-container__messages::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+}

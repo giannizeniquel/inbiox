@@ -1,0 +1,52 @@
+<div
+  class="ticket-card"
+  [ngClass]="{
+    'is-unread': (ticket().metrics?.unread_count ?? 0) > 0,
+    'is-active': isActive()
+  }"
+  tabIndex="0"
+  role="button"
+  [attr.aria-label]="ariaLabel()"
+  (click)="onSelect()"
+  (keydown.enter)="onSelect()"
+  (keydown.space)="onSelect()"
+>
+  <!-- Avatar -->
+  <div class="ticket-card__avatar">
+    <span>{{ initials() }}</span>
+  </div>
+
+  <!-- Main content -->
+  <div class="ticket-card__body">
+    <div class="ticket-card__row ticket-card__row--top">
+      <span class="ticket-card__name">{{ contactName() }}</span>
+      <span class="ticket-card__time">{{ relativeTime() }}</span>
+    </div>
+
+    <div class="ticket-card__row ticket-card__row--bottom">
+      <div class="ticket-card__meta">
+        <!-- Status chip -->
+        <span class="ticket-card__status-chip" [ngClass]="'status-' + ticket().status">
+          {{ statusLabel() }}
+        </span>
+
+        <!-- Priority -->
+        @if (ticket().priority) {
+          <span class="ticket-card__priority">{{ ticket().priority }}</span>
+        }
+      </div>
+
+      <!-- Unread badge -->
+      @if ((ticket().metrics?.unread_count ?? 0) > 0) {
+        <span class="ticket-card__unread">{{ ticket().metrics?.unread_count }}</span>
+      }
+    </div>
+
+    <!-- Last message preview -->
+    @if (ticket().last_message) {
+      <div class="ticket-card__preview">
+        {{ ticket().last_message }}
+      </div>
+    }
+  </div>
+</div>

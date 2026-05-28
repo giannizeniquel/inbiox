@@ -1,0 +1,84 @@
+:host {
+  display: block;
+}
+
+.contact-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-label {
+  font-size: var(--font-xs, 0.75rem);
+  font-weight: 500;
+  color: var(--text-tertiary, #6b7280);
+  min-width: 48px;
+}
+
+.filter-chips {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border: 1px solid var(--border-subtle, #e5e7eb);
+  border-radius: 16px;
+  background: transparent;
+  font-family: var(--font-family, inherit);
+  font-size: var(--font-xs, 0.75rem);
+  font-weight: 500;
+  color: var(--text-secondary, #6b7280);
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+
+  &.is-active {
+    background: var(--accent-primary, #3b82f6);
+    border-color: var(--accent-primary, #3b82f6);
+    color: var(--text-on-accent, #fff);
+  }
+
+  &:not(.is-active):hover {
+    background: var(--border-subtle, #e5e7eb);
+    color: var(--text-primary, #1f2937);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent-primary, #3b82f6);
+    outline-offset: 2px;
+  }
+}
+
+// Dark mode support
+@media (prefers-color-scheme: dark) {
+  .filter-label {
+    color: var(--text-tertiary, #9ca3af);
+  }
+
+  .filter-chip {
+    border-color: var(--border-default, #374151);
+    background: var(--bg-card, #1f2937);
+    color: var(--text-secondary, #9ca3af);
+
+    &.is-active {
+      background: var(--accent-primary, #60a5fa);
+      border-color: var(--accent-primary, #60a5fa);
+      color: var(--text-on-accent, #0f172a);
+    }
+
+    &:not(.is-active):hover {
+      background: var(--border-default, #374151);
+      color: var(--text-primary, #f9fafb);
+    }
+  }
+}

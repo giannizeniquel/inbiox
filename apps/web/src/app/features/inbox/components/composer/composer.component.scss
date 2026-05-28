@@ -1,0 +1,137 @@
+// =============================================================================
+// Composer Component
+// Per spec section 17: height 56px, sticky bottom, flex-shrink: 0
+// =============================================================================
+
+.composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  min-height: 56px;
+  padding: 8px 12px;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-sidebar);
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  box-sizing: border-box;
+}
+
+// Mobile: ensure composer is always visible
+@media (max-width: 767px) {
+  .composer {
+    position: relative;
+    flex-shrink: 0;
+  }
+}
+
+// Icon buttons (emoji, attach, voice)
+.composer__icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  font-size: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.06);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 1px;
+  }
+
+  &--voice {
+    font-size: 16px;
+  }
+}
+
+// Text input
+.composer__input {
+  flex: 1;
+  min-height: 36px;
+  max-height: 120px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 22px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-base);
+  line-height: 1.4;
+  resize: none;
+  overflow-y: auto;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  &::placeholder {
+    color: var(--text-secondary);
+  }
+
+  &:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(59, 91, 219, 0.12);
+  }
+}
+
+// Send button
+.composer__send-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  color: var(--text-on-accent);
+  font-size: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.15s, transform 0.15s;
+
+  &:hover {
+    opacity: 0.85;
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+  }
+}
+
+// Dark theme
+:host-context(.dark) {
+  .composer__icon-btn {
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+  }
+
+  .composer__input {
+    border-color: var(--border-subtle);
+
+    &:focus {
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px rgba(74, 110, 247, 0.15);
+    }
+  }
+}

@@ -1,0 +1,56 @@
+<div class="conversation-container" #containerEl>
+  @if (activeTicket()) {
+    <!-- Sticky header: 64px — with back button for mobile -->
+    <div class="conversation-container__header">
+      <button
+        class="conversation-container__back-btn"
+        type="button"
+        aria-label="Volver a la lista"
+        (click)="onBack()"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+      <app-conversation-header
+        [ticket]="activeTicket()!"
+        (resolve)="onResolve()"
+      />
+    </div>
+
+    <!-- Contextual warning banner (conditional) -->
+    @if (warningMessage()) {
+      <app-banner-warning>{{ warningMessage() }}</app-banner-warning>
+    }
+
+    <!-- Scrollable message area -->
+    <div
+      class="conversation-container__messages"
+      #messagesContainer
+      (scroll)="onScroll()"
+    >
+      @if (loading()) {
+        <app-conversation-skeleton />
+      } @else {
+        @for (message of messages(); track message.id) {
+          <app-message-bubble
+            [message]="message"
+            (retry)="onRetry($event)"
+          />
+        }
+      }
+    </div>
+
+    <!-- New messages indicator -->
+    <app-new-messages-indicator
+      [visible]="showNewMessagesIndicator()"
+      (click)="scrollToBottom()"
+    />
+
+    <!-- Sticky composer: 56px -->
+    <app-composer (sendMessage)="onSendMessage()" />
+  } @else {
+    <!-- No chat selected -->
+    <app-conversation-empty />
+  }
+</div>

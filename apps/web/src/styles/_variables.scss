@@ -1,0 +1,148 @@
+// =============================================================================
+// Inbiox CRM — CSS Design Tokens
+// Source: openspec/changes/sprint-11A-frontend-ui/specs/theme-system/spec.md
+// Section 12 — Light Theme Design Tokens
+// =============================================================================
+
+// Typography
+:root {
+  // Font sizes
+  --font-xs: 11px;
+  --font-sm: 12px;
+  --font-md: 13px;
+  --font-base: 14px;
+  --font-lg: 15px;
+
+  // Font family
+  --font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+// Z-Index Layers
+:root {
+  --z-fab: 80;
+  --z-new-msg-indicator: 85;
+  --z-sticky-panels: 90;
+  --z-topbar: 100;
+  --z-overlay-mobile: 190;
+  --z-drawer-mobile: 200;
+  --z-tooltips: 300;
+  --z-notifications: 400;
+}
+
+// =============================================================================
+// Light Theme Tokens
+// =============================================================================
+:root {
+  // Backgrounds
+  --bg-app: #ffffff;
+  --bg-sidebar: #ffffff;
+  --bg-panel-list: #ffffff;
+  --bg-chat: #ece5dd;
+  --bg-card: #ffffff;
+  --bg-card-active: #e8edf5;
+  --bg-topbar: #3b5bdb;
+  --bg-input: #ffffff;
+
+  // Message bubbles
+  --bg-bubble-agent: #dcf8c6;  // outgoing / agent
+  --bg-bubble-client: #ffffff; // incoming / client
+
+  // Text
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-on-accent: #ffffff;
+
+  // Borders
+  --border-subtle: rgba(0, 0, 0, 0.08);
+
+  // Accent / brand
+  --accent-primary: #3b5bdb;
+  --accent-green: #128c7e;
+  --badge-bg: #25d366;
+
+  // Navigation / tabs
+  --nav-active-bg: rgba(59, 91, 219, 0.08);
+  --tab-active-bg: rgba(59, 91, 219, 0.10);
+
+  // SLA status
+  --sla-ok: #22c55e;
+  --sla-warn: #f59e0b;
+  --sla-breach: #ef4444;
+
+  // FSM status
+  --status-new: #9ca3af;
+  --status-active: #3b5bdb;
+  --status-waiting: #f59e0b;
+  --status-resolved: #22c55e;
+  --status-closed: #4b5563;
+
+  // Connection status
+  --conn-online: #22c55e;
+  --conn-reconnect: #f59e0b;
+  --conn-offline: #ef4444;
+
+  // Message delivery status
+  --msg-sending: #9ca3af;
+  --msg-sent: #9ca3af;
+  --msg-read: #3b5bdb;
+  --msg-failed: #ef4444;
+}
+
+// =============================================================================
+// Dark Theme Tokens
+// =============================================================================
+:root.dark {
+  // Backgrounds
+  --bg-app: #1a1d23;
+  --bg-sidebar: #22262e;
+  --bg-panel-list: #1e2228;
+  --bg-chat: #181b21;
+  --bg-card: #252931;
+  --bg-card-active: #2a2f3a;
+  --bg-topbar: #1e2435;
+  --bg-input: #1e2228;
+
+  // Message bubbles
+  --bg-bubble-agent: #1f4035;
+  --bg-bubble-client: #2a2f3a;
+
+  // Text
+  --text-primary: #e5e7eb;
+  --text-secondary: #9ca3af;
+  --text-on-accent: #ffffff;
+
+  // Borders
+  --border-subtle: rgba(255, 255, 255, 0.06);
+
+  // Accent / brand — keep same hue, reduce lightness
+  --accent-primary: #4a6ef7;
+  --accent-green: #14977e;
+  --badge-bg: #2dd568;
+
+  // Navigation / tabs
+  --nav-active-bg: rgba(74, 110, 247, 0.12);
+  --tab-active-bg: rgba(74, 110, 247, 0.14);
+
+  // SLA status — keep same saturation, adjust lightness
+  --sla-ok: #16a34a;
+  --sla-warn: #d97706;
+  --sla-breach: #dc2626;
+
+  // FSM status
+  --status-new: #6b7280;
+  --status-active: #4a6ef7;
+  --status-waiting: #d97706;
+  --status-resolved: #16a34a;
+  --status-closed: #4b5563;
+
+  // Connection status
+  --conn-online: #16a34a;
+  --conn-reconnect: #d97706;
+  --conn-offline: #dc2626;
+
+  // Message delivery status
+  --msg-sending: #6b7280;
+  --msg-sent: #6b7280;
+  --msg-read: #4a6ef7;
+  --msg-failed: #dc2626;
+}

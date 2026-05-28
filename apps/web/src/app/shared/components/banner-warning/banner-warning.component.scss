@@ -1,0 +1,29 @@
+// =============================================================================
+// Banner Warning Component
+// Per spec section 17[D]: contextual notice banner
+// Light: #fef3c7 bg / #92400e text
+// Dark: rgba(251,191,36,0.10) bg / #fbbf24 text
+// =============================================================================
+
+.banner-warning {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  flex-shrink: 0;
+
+  background-color: #fef3c7;
+  color: #92400e;
+  font-size: var(--font-xs);
+  font-weight: 500;
+
+  .dark & {
+    background-color: rgba(251, 191, 36, 0.10);
+    color: #fbbf24;
+  }
+}
+
+.banner-warning__icon {
+  flex-shrink: 0;
+}

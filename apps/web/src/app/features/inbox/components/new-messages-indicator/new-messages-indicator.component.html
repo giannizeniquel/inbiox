@@ -1,0 +1,11 @@
+@if (visible()) {
+  <button
+    class="new-messages-indicator"
+    (click)="onClick()"
+    aria-label="Ir a mensajes más recientes"
+    title="Ir a mensajes más recientes"
+  >
+    <span class="new-messages-indicator__arrow">↓</span>
+    <span class="new-messages-indicator__text">Nuevos mensajes</span>
+  </button>
+}

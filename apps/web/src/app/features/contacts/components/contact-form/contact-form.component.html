@@ -1,0 +1,51 @@
+<form [formGroup]="form" (ngSubmit)="onSubmit()" class="contact-form">
+  <div class="form-field">
+    <label for="phone" class="form-label">Teléfono <span class="required">*</span></label>
+    <input
+      #phoneInput
+      id="phone"
+      type="tel"
+      formControlName="phone"
+      class="form-input"
+      [class.error]="showError('phone')"
+      placeholder="+5491155555555"
+    />
+    @if (showError('phone')) {
+      <span class="error-message">{{ getErrorMessage('phone') }}</span>
+    }
+  </div>
+
+  <div class="form-field">
+    <label for="name" class="form-label">Nombre</label>
+    <input
+      id="name"
+      type="text"
+      formControlName="name"
+      class="form-input"
+      [class.error]="showError('name')"
+      placeholder="Juan Pérez"
+    />
+    @if (showError('name')) {
+      <span class="error-message">{{ getErrorMessage('name') }}</span>
+    }
+  </div>
+
+  <div class="form-field">
+    <label for="email" class="form-label">Email</label>
+    <input
+      id="email"
+      type="email"
+      formControlName="email"
+      class="form-input"
+      [class.error]="showError('email')"
+      placeholder="juan@ejemplo.com"
+    />
+    @if (showError('email')) {
+      <span class="error-message">{{ getErrorMessage('email') }}</span>
+    }
+  </div>
+
+  <button type="submit" class="submit-btn" [style.display]="'none'">
+    Submit
+  </button>
+</form>

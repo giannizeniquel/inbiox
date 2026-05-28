@@ -1,0 +1,229 @@
+// =============================================================================
+// Inbiox CRM — Global Layout Styles
+// Source: openspec/changes/sprint-11A-frontend-ui/specs/ui-layout-shell/spec.md
+// Section 13 — Global Layout
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// Base Reset & Viewport Lock
+// -----------------------------------------------------------------------------
+html,
+body,
+app-root {
+  height: 100vh;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  font-size: var(--font-base);
+  color: var(--text-primary);
+  background-color: var(--bg-app);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// -----------------------------------------------------------------------------
+// App Shell — Three-Column Layout
+// -----------------------------------------------------------------------------
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app-shell__body {
+  display: flex;
+  flex: 1;
+  min-height: 0; // critical: allows flex children to scroll
+  overflow: hidden;
+}
+
+// -----------------------------------------------------------------------------
+// Sidebar
+// -----------------------------------------------------------------------------
+.sidebar {
+  width: 220px;
+  min-width: 220px;
+  height: calc(100vh - 48px);
+  background-color: var(--bg-sidebar);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  // Collapsed state (768-1199px)
+  &--collapsed {
+    width: 48px;
+    min-width: 48px;
+  }
+
+  // Mobile drawer state (<768px)
+  &--drawer {
+    position: fixed;
+    top: 48px;
+    left: 0;
+    z-index: var(--z-drawer-mobile);
+    width: 220px;
+    transform: translateX(-100%);
+    transition: transform 250ms ease;
+    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15);
+
+    &.is-open {
+      transform: translateX(0);
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Chat List Panel
+// -----------------------------------------------------------------------------
+.chat-list-panel {
+  width: 320px;
+  min-width: 320px;
+  height: calc(100vh - 48px);
+  background-color: var(--bg-panel-list);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  // Hidden on mobile when conversation is active
+  &--hidden {
+    display: none;
+
+    @media (min-width: 768px) {
+      display: flex;
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Conversation Panel
+// -----------------------------------------------------------------------------
+.conversation-panel {
+  flex: 1;
+  min-width: 0; // critical: prevents overflow in flex-grow column
+  height: calc(100vh - 48px);
+  background-color: var(--bg-chat);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  // Mobile: slides in from right
+  &--mobile {
+    position: fixed;
+    top: 48px;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: calc(var(--z-sticky-panels) - 1);
+    transform: translateX(100%);
+    transition: transform 250ms ease;
+    width: 100%;
+    height: calc(100vh - 48px);
+
+    &.is-active {
+      transform: translateX(0);
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Flex Scroll Zones
+// -----------------------------------------------------------------------------
+// Any flex-column container with internal scrolling MUST have min-height: 0
+// This is the #1 cause of layout overflow bugs in flexbox
+.flex-scroll {
+  display: flex;
+  flex-direction: column;
+  min-height: 0; // allow children to shrink and scroll
+  overflow: hidden;
+}
+
+// -----------------------------------------------------------------------------
+// Mobile Overlay
+// -----------------------------------------------------------------------------
+.mobile-overlay {
+  position: fixed;
+  inset: 0;
+  top: 48px;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: var(--z-overlay-mobile);
+  display: none;
+
+  &.is-visible {
+    display: block;
+  }
+
+  @media (min-width: 768px) {
+    display: none !important;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Scrollbar Styling
+// -----------------------------------------------------------------------------
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+
+  .dark & {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.25);
+
+  .dark & {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Selection & Focus
+// -----------------------------------------------------------------------------
+::selection {
+  background-color: rgba(59, 91, 219, 0.2);
+  color: var(--text-primary);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+// -----------------------------------------------------------------------------
+// Responsive Breakpoints
+// -----------------------------------------------------------------------------
+// ≥1200px: Full 3-column layout
+// 768-1199px: Collapsed sidebar (48px icons)
+// <768px: Single panel, sidebar as drawer
+
+@media (max-width: 1199px) and (min-width: 768px) {
+  .sidebar {
+    width: 48px;
+    min-width: 48px;
+  }
+}
+
+@media (max-width: 767px) {
+  .chat-list-panel,
+  .conversation-panel {
+    width: 100%;
+    min-width: 100%;
+  }
+}

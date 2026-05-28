@@ -1,0 +1,249 @@
+// =============================================================================
+// Inbiox CRM — Sidebar Nav Component Styles
+// Source: openspec/changes/sprint-11A-frontend-ui/specs/ui-layout-shell/spec.md
+// Nav items: Chats, Contactos, Informes, Configuración
+// Height: calc(100vh - 48px), responsive 220px / 48px / hidden
+// =============================================================================
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 8px;
+  gap: 2px;
+}
+
+// -----------------------------------------------------------------------------
+// SSE Connection Indicator (per spec section 15)
+// -----------------------------------------------------------------------------
+.sse-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.sse-indicator__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+
+  &--online {
+    background: var(--conn-online);
+  }
+
+  &--reconnecting {
+    background: var(--conn-reconnect);
+    animation: pulse 1.2s infinite;
+  }
+
+  &--offline {
+    background: var(--conn-offline);
+  }
+}
+
+.sse-indicator__label {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+// Show label only when expanded (not collapsed)
+:host-context(.sidebar--collapsed) .sse-indicator__label {
+  display: none;
+}
+
+// -----------------------------------------------------------------------------
+// Nav Item
+// -----------------------------------------------------------------------------
+.sidebar-nav__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  width: 100%;
+  padding: 10px 12px;
+
+  border: none;
+  border-radius: 8px;
+  border-left: 3px solid transparent;
+
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--font-base, 14px);
+  font-family: inherit;
+  text-decoration: none;
+  text-align: left;
+  cursor: pointer;
+
+  transition:
+    background-color 150ms ease,
+    color 150ms ease,
+    opacity 150ms ease;
+
+  position: relative;
+
+  &:hover:not(:disabled) {
+    background-color: rgba(0, 0, 0, 0.04);
+
+    .dark & {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+  }
+
+  // Active state: highlighted background + accent left border
+  &--active {
+    background-color: var(--nav-active-bg);
+    border-left-color: var(--accent-primary);
+    font-weight: 500;
+  }
+
+  // Future items: dimmed, not clickable
+  &--future {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Icon
+// -----------------------------------------------------------------------------
+.sidebar-nav__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+
+  color: var(--text-secondary);
+  transition: color 150ms ease;
+
+  .sidebar-nav__item--active & {
+    color: var(--accent-primary);
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Label
+// -----------------------------------------------------------------------------
+.sidebar-nav__label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// -----------------------------------------------------------------------------
+// Tooltip (shown when collapsed)
+// -----------------------------------------------------------------------------
+.sidebar-nav__tooltip {
+  display: none;
+
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+
+  padding: 6px 10px;
+  border-radius: 6px;
+
+  background-color: var(--text-primary);
+  color: var(--bg-app);
+
+  font-size: var(--font-sm, 12px);
+  white-space: nowrap;
+
+  z-index: var(--z-tooltips, 300);
+  pointer-events: none;
+  opacity: 0;
+
+  transition: opacity 150ms ease;
+
+  // Small arrow
+  &::before {
+    content: '';
+    position: absolute;
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+
+    border: 5px solid transparent;
+    border-right-color: var(--text-primary);
+  }
+}
+
+// Show tooltip on hover when sidebar is collapsed
+:host-context(.sidebar--collapsed) .sidebar-nav__item {
+  justify-content: center;
+  padding: 10px;
+
+  &:hover .sidebar-nav__tooltip {
+    display: block;
+    opacity: 1;
+  }
+}
+
+// Footer section inside sidebar (projected content)
+.sidebar-footer {
+  margin-top: auto;
+  padding: 12px 8px;
+  border-top: 1px solid var(--border-subtle);
+
+  :host-context(.sidebar--collapsed) & {
+    padding: 8px 4px;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Responsive
+// -----------------------------------------------------------------------------
+// 768-1199px: collapsed to 48px icons
+@media (max-width: 1199px) and (min-width: 768px) {
+  .sidebar-nav {
+    padding: 8px 4px;
+    gap: 4px;
+  }
+
+  .sidebar-nav__item {
+    justify-content: center;
+    padding: 10px;
+  }
+
+  .sidebar-nav__label {
+    display: none;
+  }
+
+  .sidebar-nav__tooltip {
+    display: block;
+    opacity: 0;
+
+    .sidebar-nav__item:hover & {
+      opacity: 1;
+    }
+  }
+}
+
+// <768px: sidebar is hidden (drawer), these styles apply to the drawer
+@media (max-width: 767px) {
+  .sidebar-nav {
+    padding-top: 8px;
+  }
+}

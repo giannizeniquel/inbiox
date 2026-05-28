@@ -1,0 +1,193 @@
+// =============================================================================
+// Inbiox CRM — Sidebar Footer Component Styles
+// Source: openspec/changes/sprint-11A-frontend-ui/specs/ui-layout-shell/spec.md
+// Avatar 32px + "Mi cuenta", theme toggle ☀️/🌙
+// Toggle pill: ON #25d366, OFF #d1d5db
+// =============================================================================
+
+.sidebar-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+
+  padding: 12px;
+  border-top: 1px solid var(--border-subtle);
+
+  // In collapsed mode
+  :host-context(.sidebar--collapsed) & {
+    flex-direction: column;
+    padding: 8px 4px;
+    gap: 8px;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Account Button
+// -----------------------------------------------------------------------------
+.sidebar-footer__account {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  flex: 1;
+  min-width: 0;
+  padding: 4px;
+
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--font-base, 14px);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  transition: background-color 150ms ease;
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+
+    .dark & {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+  }
+}
+
+// Avatar
+.sidebar-footer__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+
+  background-color: var(--accent-primary);
+  color: var(--text-on-accent);
+
+  :host-context(.sidebar--collapsed) & {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+// Account name
+.sidebar-footer__account-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  :host-context(.sidebar--collapsed) & {
+    display: none;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Theme Toggle
+// -----------------------------------------------------------------------------
+.sidebar-footer__theme-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+
+  &:hover {
+    background-color: var(--bg-card-active, #f0f0f0);
+
+    :host-context(.dark) & {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+  }
+}
+
+// Sun/Moon icons
+.theme-toggle__icon {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 200ms ease, transform 200ms ease;
+
+  svg {
+    display: block;
+  }
+}
+
+// Moon icon (shown in light mode): black icon, circular background
+.theme-toggle__icon--moon {
+  color: #333333;
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+// Sun icon (shown in dark mode): light icon
+.theme-toggle__icon--sun {
+  color: #fbbf24;
+  opacity: 0;
+  transform: scale(0.5) rotate(-30deg);
+}
+
+// Dark mode: show sun, hide moon
+:host-context(.dark) {
+  .theme-toggle__icon--moon {
+    opacity: 0;
+    transform: scale(0.5) rotate(30deg);
+  }
+
+  .theme-toggle__icon--sun {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+// Pill indicator: shows which mode is active
+.theme-toggle__pill {
+  width: 20px;
+  height: 12px;
+  border-radius: 6px;
+
+  background-color: #d1d5db; // off: gray
+
+  transition: background-color 200ms ease;
+
+  // When dark mode is ON
+  &--on {
+    background-color: #25d366; // on: green
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Responsive
+// -----------------------------------------------------------------------------
+// 768-1199px: collapsed
+@media (max-width: 1199px) and (min-width: 768px) {
+  .sidebar-footer__account-name {
+    display: none;
+  }
+}
+
+// <768px: drawer
+@media (max-width: 767px) {
+  // Footer is inside the drawer, same styles apply
+}

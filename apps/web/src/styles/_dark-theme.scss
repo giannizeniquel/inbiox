@@ -1,0 +1,67 @@
+// =============================================================================
+// Inbiox CRM — Dark Theme Overrides
+// Source: openspec/changes/sprint-11A-frontend-ui/specs/theme-system/spec.md
+//
+// NOTE: Dark theme tokens are defined in _variables.scss under :root.dark {}.
+// This file provides any additional dark-mode-specific rules that cannot be
+// expressed as CSS custom properties alone.
+// =============================================================================
+
+.dark {
+  // Ensure dark backgrounds are applied
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+
+  // Darker input backgrounds - fuerte especificidad
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="search"],
+  input[type="number"],
+  input[type="password"],
+  input[type="date"],
+  input[type="datetime-local"],
+  textarea,
+  select {
+    background-color: var(--bg-input, var(--bg-card));
+    color: var(--text-primary);
+    border-color: var(--border-subtle);
+
+    &::placeholder {
+      color: var(--text-secondary);
+    }
+
+    &:focus {
+      border-color: var(--color-primary, var(--accent-primary));
+      box-shadow: 0 0 0 3px rgba(74, 110, 247, 0.15);
+    }
+  }
+
+  // Buttons with inputs styling
+  button,
+  .btn {
+    background-color: var(--bg-card);
+    color: var(--text-primary);
+    border-color: var(--border-subtle);
+  }
+
+  // Darker card surfaces
+  .card {
+    background-color: var(--bg-card);
+    border-color: var(--border-subtle);
+  }
+
+  // Improve contrast for secondary text
+  .text-secondary {
+    color: var(--text-secondary);
+  }
+
+  // Scrollbar adjustments (supplemental to global scrollbar styles)
+  ::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.15);
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.25);
+    }
+  }
+}

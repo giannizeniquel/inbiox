@@ -1,0 +1,47 @@
+<div class="conversation-panel">
+  @if (currentTicket(); as ticket) {
+    <div class="panel-header">
+      <div class="ticket-info">
+        <h3>{{ ticket.contact?.phone || 'Sin contacto' }}</h3>
+        <span class="ticket-id">#{{ ticket.ticket_id }}</span>
+        <span class="ticket-status" [attr.data-status]="ticket.status">{{ ticket.status }}</span>
+      </div>
+      <app-status-actions [ticket]="ticket" />
+    </div>
+
+    <div class="messages-container">
+      @if (messages$ | async; as messages) {
+        @if (messages.length === 0) {
+          <div class="no-messages">
+            <p>No hay mensajes</p>
+          </div>
+        } @else {
+          @for (message of messages; track message.message_id || $index) {
+            <div class="message" [class.inbound]="message.direction === 'inbound'" [class.outbound]="message.direction === 'outbound'">
+              <div class="message-content">{{ message.content }}</div>
+              <div class="message-meta">
+                <span class="message-time">{{ message.created_at | date:'short' }}</span>
+                <span class="message-direction">{{ message.direction === 'inbound' ? 'Cliente' : 'Agente' }}</span>
+              </div>
+            </div>
+          }
+        }
+      }
+    </div>
+
+    <div class="message-input">
+      <textarea
+        [(ngModel)]="newMessage"
+        (keydown.enter)="onEnterKey($event)"
+        placeholder="Escribe un mensaje..."
+        rows="2"></textarea>
+      <button (click)="sendMessage()" [disabled]="!newMessage().trim()">
+        Enviar
+      </button>
+    </div>
+  } @else {
+    <div class="no-selection">
+      <p>Selecciona un ticket para ver la conversación</p>
+    </div>
+  }
+</div>

@@ -1,0 +1,34 @@
+<div
+  class="contact-card"
+  [class.contact-card--selected]="selected()"
+  role="button"
+  tabIndex="0"
+  [attr.aria-label]="contact().name ?? contact().phone"
+  (click)="onClick()"
+  (keydown.enter)="onClick()"
+>
+  <!-- Avatar -->
+  <div class="contact-card__avatar">
+    <span>{{ initials() }}</span>
+  </div>
+
+  <!-- Main content -->
+  <div class="contact-card__body">
+    <div class="contact-card__row contact-card__row--top">
+      <span class="contact-card__name">
+        {{ contact().name ?? contact().phone }}
+      </span>
+      <span class="contact-card__time">{{ relativeTime() }}</span>
+    </div>
+
+    <div class="contact-card__row contact-card__row--bottom">
+      <span class="contact-card__preview">{{ messagePreview() }}</span>
+      @if (contact().unreadCount > 0) {
+        <span class="contact-card__badge">{{ contact().unreadCount }}</span>
+      }
+    </div>
+  </div>
+
+  <!-- Status indicator -->
+  <div class="contact-card__status" [attr.data-status]="contact().status"></div>
+</div>

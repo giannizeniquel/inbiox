@@ -1,0 +1,132 @@
+.conversation-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-panel-list);
+}
+
+.panel-header {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-sidebar);
+}
+
+.ticket-info {
+  h3 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .ticket-id {
+    font-size: 0.75rem;
+    color: #666;
+  }
+}
+
+.messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.no-messages,
+.no-selection {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #999;
+  font-size: 0.9rem;
+}
+
+.message {
+  max-width: 70%;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  position: relative;
+
+  &.inbound {
+    align-self: flex-start;
+    background: #f0f0f0;
+    border-bottom-left-radius: 4px;
+
+    .message-direction {
+      color: #666;
+    }
+  }
+
+  &.outbound {
+    align-self: flex-end;
+    background: #e3f2fd;
+    border-bottom-right-radius: 4px;
+
+    .message-direction {
+      color: #1976d2;
+    }
+  }
+}
+
+.message-content {
+  font-size: 0.9rem;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.message-meta {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+  font-size: 0.7rem;
+  color: #999;
+}
+
+.message-input {
+  padding: 1rem;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  gap: 0.5rem;
+  background: #fafafa;
+
+  textarea {
+    flex: 1;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    resize: none;
+    font-family: inherit;
+    font-size: 0.9rem;
+
+    &:focus {
+      outline: none;
+      border-color: #2196f3;
+    }
+  }
+
+  button {
+    padding: 0.75rem 1.5rem;
+    background: #2196f3;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s ease;
+
+    &:hover:not(:disabled) {
+      background: #1976d2;
+    }
+
+    &:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+  }
+}

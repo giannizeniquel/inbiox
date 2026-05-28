@@ -1,0 +1,56 @@
+<div class="composer">
+  <!-- Emoji button -->
+  <button
+    class="composer__icon-btn"
+    type="button"
+    aria-label="Emoji"
+    title="Emoji"
+  >
+    😊
+  </button>
+
+  <!-- Attachment button -->
+  <button
+    class="composer__icon-btn"
+    type="button"
+    aria-label="Adjuntar archivo"
+    title="Adjuntar archivo"
+  >
+    ➕
+  </button>
+
+  <!-- Text input -->
+  <textarea
+    #inputEl
+    class="composer__input"
+    [(ngModel)]="text"
+    [placeholder]="placeholder()"
+    [attr.aria-label]="'Escribe un mensaje'"
+    rows="1"
+    (keydown.enter)="onKeyDown($any($event))"
+    (input)="autoResize()"
+  ></textarea>
+
+  <!-- Voice button -->
+  <button
+    class="composer__icon-btn composer__icon-btn--voice"
+    type="button"
+    aria-label="Mensaje de voz"
+    title="Mensaje de voz"
+  >
+    🎙
+  </button>
+
+  <!-- Send button (visible when there's text) -->
+  @if (text().trim()) {
+    <button
+      class="composer__send-btn"
+      type="button"
+      aria-label="Enviar mensaje"
+      title="Enviar mensaje"
+      (click)="send()"
+    >
+      ➤
+    </button>
+  }
+</div>

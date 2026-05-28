@@ -1,0 +1,71 @@
+.chat-search {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky-panels);
+  display: flex;
+  align-items: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 0 10px;
+  margin: 8px 8px 4px;
+  transition: box-shadow 150ms ease;
+
+  &.is-focused {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 1px;
+  }
+}
+
+.icon-search {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+.chat-search__input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  padding: 8px 8px;
+  font-family: var(--font-family);
+  font-size: var(--font-md);
+  color: var(--text-primary);
+  min-width: 0;
+
+  &::placeholder {
+    color: var(--text-secondary);
+  }
+}
+
+.chat-search__clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  padding: 0;
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  &:hover {
+    background: var(--border-subtle);
+    color: var(--text-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+  }
+}

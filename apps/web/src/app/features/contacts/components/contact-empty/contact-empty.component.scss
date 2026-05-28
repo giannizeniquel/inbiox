@@ -1,0 +1,64 @@
+/* ContactEmptyComponent styles — empty state, dark mode compatible */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  gap: 16px;
+}
+
+.empty-icon {
+  color: var(--color-text-muted, #9ca3af);
+  opacity: 0.6;
+}
+
+.empty-message {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.empty-cta {
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+  background: var(--color-primary, #3b82f6);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background: var(--color-primary-hover, #2563eb);
+  }
+
+  &:focus {
+    outline: 2px solid var(--color-primary, #3b82f6);
+    outline-offset: 2px;
+  }
+}
+
+// Dark mode — use CSS variable fallbacks
+@media (prefers-color-scheme: dark) {
+  .empty-icon {
+    color: #9ca3af;
+    opacity: 0.5;
+  }
+
+  .empty-message {
+    color: #9ca3af;
+  }
+
+  .empty-cta {
+    background: #3b82f6;
+
+    &:hover {
+      background: #2563eb;
+    }
+  }
+}

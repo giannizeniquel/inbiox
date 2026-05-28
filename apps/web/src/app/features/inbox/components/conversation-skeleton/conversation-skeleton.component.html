@@ -1,0 +1,12 @@
+<div class="conversation-skeleton">
+  @for (item of bubbles; track $index) {
+    <div
+      class="skeleton-bubble"
+      [class.skeleton-bubble--right]="item.align === 'right'"
+      [class.skeleton-bubble--left]="item.align === 'left'"
+    >
+      <div class="skeleton-bubble__tail shimmer"></div>
+      <div class="skeleton-bubble__body shimmer"></div>
+    </div>
+  }
+</div>

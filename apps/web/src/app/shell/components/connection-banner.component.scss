@@ -1,0 +1,42 @@
+.connection-banner {
+  position: fixed;
+  top: 48px; // Below topbar
+  left: 0;
+  right: 0;
+  z-index: var(--z-sticky-panels);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: var(--conn-offline);
+  color: var(--text-on-accent);
+  font-size: var(--font-sm);
+  font-weight: 500;
+
+  &--reconnecting {
+    background: var(--conn-reconnect);
+  }
+
+  &__icon {
+    display: flex;
+    align-items: center;
+
+    .spinner {
+      animation: spin 1s linear infinite;
+    }
+  }
+
+  &__text {
+    // Text is already set via interpolation in template
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

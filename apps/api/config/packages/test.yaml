@@ -1,0 +1,15 @@
+# Test environment configuration
+
+parameters:
+    MERCURE_JWT_SECRET: 40127d4eb35fc78be0315e2810d2f09f0cff9880f0a49fd5df0fc690e739ea9c
+    MERCURE_JWT_TTL: 3600
+
+imports:
+    - { resource: ../services.yaml }
+
+services:
+    # Make services public for tests to access via container
+    App\Application\Service\OutboxPublisherService:
+        public: true
+    App\Application\Service\MercureJwtService:
+        public: true

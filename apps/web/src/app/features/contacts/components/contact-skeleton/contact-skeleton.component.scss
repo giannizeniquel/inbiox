@@ -1,0 +1,82 @@
+/* ContactSkeletonComponent styles — loading skeleton matching ContactCard dimensions */
+
+.skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0;
+}
+
+.skeleton-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  height: 60px;
+  box-sizing: border-box;
+}
+
+/* Avatar circle — 40px matching ContactCard */
+.skeleton-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--color-skeleton-base, #e5e7eb);
+  animation: shimmer 1.5s infinite;
+}
+
+/* Content area */
+.skeleton-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Meta area for time */
+.skeleton-meta {
+  flex-shrink: 0;
+  width: 40px;
+}
+
+/* Skeleton line variants */
+.skeleton-line {
+  height: 14px;
+  border-radius: 4px;
+  background: var(--color-skeleton-base, #e5e7eb);
+  animation: shimmer 1.5s infinite;
+}
+
+.skeleton-line--name {
+  width: 60%;
+  height: 16px;
+}
+
+.skeleton-line--phone {
+  width: 40%;
+  height: 12px;
+}
+
+.skeleton-line--time {
+  width: 100%;
+  height: 12px;
+}
+
+/* Shimmer animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+// Dark mode — override CSS variables
+@media (prefers-color-scheme: dark) {
+  .skeleton-avatar,
+  .skeleton-line {
+    background: var(--color-skeleton-base, #374151);
+  }
+}

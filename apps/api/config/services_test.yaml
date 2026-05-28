@@ -1,0 +1,5 @@
+# Test-specific service configuration
+services:
+    # Make OutboxPublisherService public for tests
+    App\Application\Service\OutboxPublisherService:
+        public: true
