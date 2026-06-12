@@ -161,19 +161,6 @@ foreach ($events as $event) {
             $ticket->setPriority('medium');
             $this->em->persist($ticket);
             $isNewTicket = true;
-
-            // Collect TicketCreatedEvent when new ticket is created
-            // New ticket: seq starts at 0, first event is seq=1 (no lock needed)
-            // Use conversation ID as ticket ID reference (ticket will have ID after flush)
-            $this->eventCollector->collect(new TicketCreatedEvent(
-                eventId: new Ulid(),
-                ticketId: (int) $conversation->getId(), // Use conversation ID instead of unpersisted ticket
-                occurredAt: new \DateTimeImmutable(),
-                seq: $ticket->incrementLastEventSeq(),
-                version: 1,
-                status: TicketStatus::NEW,
-                priority: 1 // medium = 1
-            ));
         } else {
             // Existing ticket: lock to prevent seq duplicates under concurrency
             $this->em->lock($ticket, LockMode::PESSIMISTIC_WRITE);
@@ -202,6 +189,19 @@ foreach ($events as $event) {
 
         // 8. Flush everything
         $this->em->flush();
+
+        // Collect TicketCreatedEvent after flush (ticket now has a persisted ID)
+        if ($isNewTicket) {
+            $this->eventCollector->collect(new TicketCreatedEvent(
+                eventId: new Ulid(),
+                ticketId: $ticket->getId(), // CORRECT — now persisted
+                occurredAt: new \DateTimeImmutable(),
+                seq: $ticket->incrementLastEventSeq(),
+                version: 1,
+                status: TicketStatus::NEW,
+                priority: 1 // medium = 1
+            ));
+        }
 
         // Collect MessageCreatedEvent after message is persisted
         $this->eventCollector->collect(new MessageCreatedEvent(
