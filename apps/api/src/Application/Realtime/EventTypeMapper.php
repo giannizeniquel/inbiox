@@ -1,0 +1,41 @@
+<?php
+
+namespace App\Application\Realtime;
+
+/**
+ * Maps PHP domain event FQCNs to RealtimeEventType enum values.
+ * Single source of truth for the FQCN → enum string mapping.
+ */
+final readonly class EventTypeMapper
+{
+    private const MAP = [
+        \App\Domain\Event\TicketCreatedEvent::class        => RealtimeEventType::TicketCreated,
+        \App\Domain\Event\TicketUpdatedEvent::class        => RealtimeEventType::TicketStatusChanged,
+        \App\Domain\Event\MessageCreatedEvent::class       => RealtimeEventType::MessageAdded,
+        \App\Domain\Event\MessageUpdatedEvent::class       => RealtimeEventType::MessageUpdated,
+        \App\Domain\Event\ConversationUpdatedEvent::class  => RealtimeEventType::ConversationUpdated,
+    ];
+
+    /**
+     * Map a PHP FQCN to its corresponding RealtimeEventType string value.
+     *
+     * @throws \InvalidArgumentException if no mapping exists for the class name
+     */
+    public function toEnum(string $phpClassName): string
+    {
+        if (!isset(self::MAP[$phpClassName])) {
+            throw new \InvalidArgumentException("Unknown event class: $phpClassName");
+        }
+        return self::MAP[$phpClassName]->value;
+    }
+
+    /**
+     * Determine if a TicketUpdatedEvent represents a ticket.assigned event
+     * (has assignee_id in the payload).
+     */
+    public function isTicketAssigned(string $phpClassName, array $payload): bool
+    {
+        return $phpClassName === \App\Domain\Event\TicketUpdatedEvent::class
+            && isset($payload['assignee_id']);
+    }
+}
