@@ -5,7 +5,8 @@ import { RealtimeEvent, RealtimeEventType, assertNever,
   TicketAssignedPayload, MessageUpdatedPayload } from '../models/realtime-event.model';
 import { environment } from '../../../environments/environment';
 import { TicketStore } from '../stores/ticket.store';
-import { ConversationStore } from '../stores/conversation.store';
+import { ConversationStore, BridgeMessage } from '../stores/conversation.store';
+import { TicketStatus } from '../models/ticket.model';
 import { ConnectionStore } from '../stores/connection.store';
 import { UiStore } from '../stores/ui.store';
 import { MetricsService } from '../metrics/metrics.service';
@@ -165,7 +166,7 @@ export class MercureService {
     switch (event.eventType) {
       case RealtimeEventType.MessageAdded: {
         const p = event.payload as MessageAddedPayload;
-        this.conversationStore.addMessage({
+        const message: BridgeMessage = {
           id: String(p.messageId),
           tempId: undefined,
           ticketId: String(p.ticketId),
@@ -180,7 +181,8 @@ export class MercureService {
           chatId: String(p.ticketId),
           body: p.content,
           sentAt: p.createdAt,
-        } as any);
+        };
+        this.conversationStore.addMessage(message);
         this.uiStore.notifyNewMessages();
 
         // Increment unread if not active ticket
@@ -199,14 +201,14 @@ export class MercureService {
         this.ticketStore.addOrUpdateTicket({
           ticket_id: String(p.ticketId),
           id: String(p.ticketId),
-          status: p.status as any,
+          status: p.status as TicketStatus,
           priority: String(p.priority),
           contact: null,
           last_message: null,
           owner: null,
           metrics: { unread_count: 0 },
           timestamps: { opened_at: p.createdAt, updated_at: p.createdAt },
-        } as any);
+        });
         break;
       }
 
@@ -216,7 +218,7 @@ export class MercureService {
         if (existing) {
           this.ticketStore.addOrUpdateTicket({
             ...existing,
-            status: p.newStatus as any,
+            status: p.newStatus as TicketStatus,
             timestamps: { ...existing.timestamps, updated_at: p.changedAt },
           });
         }
@@ -238,7 +240,11 @@ export class MercureService {
 
       case RealtimeEventType.MessageUpdated: {
         const p = event.payload as MessageUpdatedPayload;
-        this.conversationStore.updateMessageStatus(String(p.messageId), p.status as any, p.messageId);
+        this.conversationStore.updateMessageStatus(
+          String(p.messageId),
+          (p.status ?? 'read') as BridgeMessage['deliveryStatus'],
+          p.messageId
+        );
         break;
       }
 
