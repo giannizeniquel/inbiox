@@ -2,6 +2,7 @@
 
 namespace App\Application\Service;
 
+use App\Application\Realtime\RealtimeEventFactory;
 use App\Domain\Outbox\OutboxEvent;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -19,6 +20,7 @@ class OutboxPublisherService
 
     public function __construct(
         private readonly EntityManagerInterface $em,
+        private readonly RealtimeEventFactory $factory,
         private readonly ?\App\Application\Service\MercureJwtService $jwtService = null,
         private readonly string $mercureUrl = 'http://mercure:80/.well-known/mercure'
     ) {}
@@ -138,11 +140,15 @@ class OutboxPublisherService
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_URL, $this->mercureUrl);
             curl_setopt($ch, CURLOPT_POST, true);
+
+            // Build RealtimeEventContract v1 JSON for the wire format
+            $contractData = $this->factory->build($event);
+
             curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
                 'topic' => $event->getTopic(),
-                'data' => json_encode($event->getPayload()),
+                'data' => json_encode($contractData),
                 'id' => $event->getId(),
-                'type' => $event->getEventType(),
+                'type' => $contractData['eventType'], // Use enum string, not PHP FQCN
             ]));
             curl_setopt($ch, CURLOPT_HTTPHEADER, [
                 'Content-Type: application/x-www-form-urlencoded',
