@@ -1,8 +1,9 @@
 import { Injectable, inject } from '@angular/core';
-import { Subject, Observable } from 'rxjs';
+import { Subject } from 'rxjs';
 import { SendMessageUseCase, RetryMessageUseCase } from '../../../core/application/messaging';
 import { ConversationStore, BridgeMessage } from '../../../core/stores/conversation.store';
 import { generateTempId } from '../../../core/utils/temp-id.util';
+import { retryWithBackoff, RetryConfig } from '../../../core/utils/retry.util';
 
 export interface SendResult {
   tempId: string;
@@ -12,14 +13,15 @@ export interface SendResult {
 }
 
 /**
- * MessageSenderService — handles optimistic send with retry logic.
+ * MessageSenderService — handles optimistic send with RxJS retry.
  * Routes ALL sending through the Application Layer (SendMessageUseCase / RetryMessageUseCase).
  * Stores never call MessageApiService directly.
  *
  * Per architecture spec:
- * - send(): Creates optimistic message + calls SendMessageUseCase
+ * - send(): Creates optimistic message + calls SendMessageUseCase via retryWithBackoff
  * - retry(): Calls RetryMessageUseCase with cached payload
  * - Optimistic UI: tempId → provider id reconciliation
+ * - No nested setTimeout — retry pipeline is fully reactive
  */
 @Injectable({ providedIn: 'root' })
 export class MessageSenderService {
@@ -27,37 +29,45 @@ export class MessageSenderService {
   private retryUseCase = inject(RetryMessageUseCase);
   private conversationStore = inject(ConversationStore);
 
-  // Subject for tracking send results
   private readonly sendResults = new Subject<SendResult>();
-  readonly onSendResult$: Observable<SendResult> = this.sendResults.asObservable();
+  readonly onSendResult$ = this.sendResults.asObservable();
+
+  /** Retry config: max 2 retries (3 total attempts), backoff 1s → 2s, capped at 5s */
+  private readonly retryConfig: RetryConfig = {
+    maxRetries: 2,
+    initialDelayMs: 1000,
+    maxDelayMs: 5000,
+  };
 
   /**
-   * Send a message with optimistic UI.
-   * Flow: tempId → optimistic → Application Layer → Provider → confirm/fail
+   * Send a message with optimistic UI and RxJS retry pipeline.
+   * Flow: tempId → optimistic → retryWithBackoff(SendMessageUseCase) → confirm/fail
    *
    * @param ticketId - The ticket/chat ID
    * @param content - Message content
-   * @param maxRetries - Number of retry attempts on failure (default: 2)
    * @returns tempId of the optimistic message
    */
-  send(ticketId: string, content: string, maxRetries = 2): string {
+  send(ticketId: string, content: string): string {
     const tempId = generateTempId();
 
     // Add optimistic message to store (optimistic UI)
     this.conversationStore.addOptimisticMessage(tempId, content, ticketId);
 
-    // Route through Application Layer → ProviderInterface
-    this.sendUseCase.execute({ ticketId, content }).subscribe({
+    // Route through Application Layer → ProviderInterface with RxJS retry
+    retryWithBackoff(
+      this.sendUseCase.execute({ ticketId, content, tempId }),
+      this.retryConfig
+    ).subscribe({
       next: (output) => {
         // Success: reconcile optimistic → confirmed
         this.conversationStore.confirmMessage(tempId, {
           id: output.message.id,
           tempId,
           ticketId,
-          content,
+          content: output.message.content || content,
           body: content,
           created_at: output.message.createdAt || new Date().toISOString(),
-          deliveryStatus: output.message.deliveryStatus,
+          deliveryStatus: 'sent',
           message_id: 0,
           direction: 'outbound',
           chatId: ticketId,
@@ -65,25 +75,14 @@ export class MessageSenderService {
 
         this.sendResults.next({ tempId, success: true });
       },
-      error: (err: unknown) => {
-        console.error('[MessageSender] Send failed:', err);
-
-        if (maxRetries > 0) {
-          // Register for retry and retry with backoff
-          this.retryUseCase.registerFailedMessage(tempId, content, ticketId);
-          const delay = (3 - maxRetries) * 1000;
-          setTimeout(() => {
-            this.retryByTempId(tempId, maxRetries - 1);
-          }, delay);
-        } else {
-          // All retries exhausted
-          this.conversationStore.updateMessageStatus(tempId, 'failed');
-          this.sendResults.next({
-            tempId,
-            success: false,
-            error: `Failed after ${maxRetries} retries`,
-          });
-        }
+      error: () => {
+        // All retries exhausted — update to failed
+        this.conversationStore.updateMessageStatus(tempId, 'failed');
+        this.sendResults.next({
+          tempId,
+          success: false,
+          error: 'Send failed after retries',
+        });
       },
     });
 
@@ -92,64 +91,48 @@ export class MessageSenderService {
 
   /**
    * Retry a failed message by tempId.
-   * Uses Application Layer (RetryMessageUseCase) for retry.
+   * Reads cached payload from ConversationStore and resubmits via RetryMessageUseCase.
    *
    * @param tempId - The temporary ID of the failed message
-   * @param maxRetries - Number of retry attempts (default: 2)
    */
-  retryByTempId(tempId: string, maxRetries = 2): void {
-    const messages = this.conversationStore.messages();
-    const message = messages.find(m => m.tempId === tempId);
-
-    if (!message) {
-      console.warn('[MessageSender] Cannot retry: message not found', tempId);
+  retry(tempId: string): void {
+    const cached = this.conversationStore.getCachedMessage(tempId);
+    if (!cached) {
+      console.warn('[MessageSender] Cannot retry: no cached payload', tempId);
       return;
     }
 
-    const ticketId = message.chatId || message.ticketId;
-    if (!ticketId) {
-      console.warn('[MessageSender] Cannot retry: no chatId/ticketId', tempId);
-      return;
-    }
-
-    // Reset to sending status (optimistic update)
     this.conversationStore.updateMessageStatus(tempId, 'sending');
 
-    // Route through Application Layer → RetryMessageUseCase
-    this.retryUseCase.execute({ tempId }).subscribe({
+    this.retryUseCase.execute({
+      tempId,
+      originalContent: cached.content,
+      ticketId: cached.ticketId,
+    }).subscribe({
       next: (output) => {
-        // Success
         this.conversationStore.confirmMessage(tempId, {
           id: output.message.id,
           tempId,
-          ticketId,
-          content: output.message.content,
-          body: output.message.content,
+          ticketId: cached.ticketId,
+          content: output.message.content || cached.content,
+          body: cached.content,
           created_at: output.message.createdAt || new Date().toISOString(),
           deliveryStatus: output.message.deliveryStatus,
           message_id: 0,
           direction: 'outbound',
-          chatId: ticketId,
+          chatId: cached.ticketId,
         } as BridgeMessage);
 
         this.sendResults.next({ tempId, success: true });
       },
       error: (err: unknown) => {
         console.error('[MessageSender] Retry failed:', err);
-
-        if (maxRetries > 0) {
-          const delay = (3 - maxRetries) * 1000;
-          setTimeout(() => {
-            this.retryByTempId(tempId, maxRetries - 1);
-          }, delay);
-        } else {
-          this.conversationStore.updateMessageStatus(tempId, 'failed');
-          this.sendResults.next({
-            tempId,
-            success: false,
-            error: `Retry failed after ${maxRetries} attempts`,
-          });
-        }
+        this.conversationStore.updateMessageStatus(tempId, 'failed');
+        this.sendResults.next({
+          tempId,
+          success: false,
+          error: 'Retry failed',
+        });
       },
     });
   }
