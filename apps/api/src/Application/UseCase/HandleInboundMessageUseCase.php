@@ -83,6 +83,8 @@ foreach ($events as $event) {
             if ($event instanceof MessageCreatedEvent) {
                 $payload['message_id'] = $event->messageId;
                 $payload['direction'] = $event->direction->value;
+                $payload['content'] = $event->content;
+                $payload['sender_name'] = $event->senderName;
             } elseif ($event instanceof TicketCreatedEvent) {
                 $payload['status'] = $event->status->value;
                 $payload['priority'] = $event->priority;
@@ -211,7 +213,9 @@ foreach ($events as $event) {
             seq: $ticket->incrementLastEventSeq(),
             version: 1,
             direction: \App\Domain\Message\MessageDirection::INBOUND,
-            messageId: $msg->getId()
+            messageId: $msg->getId(),
+            content: $message,
+            senderName: $contact->getName(),
         ));
 
         // 9. Execute automation rules (inbound trigger)
