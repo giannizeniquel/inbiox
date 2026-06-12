@@ -1,4 +1,5 @@
 import { Component, inject, OnDestroy, signal, ViewChild, ElementRef, ChangeDetectionStrategy, ChangeDetectorRef, input, output, effect } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { ConversationStore, BridgeMessage } from '../../../../core/stores/conversation.store';
 import { TicketStore } from '../../../../core/stores/ticket.store';
 import { UiStore } from '../../../../core/stores/ui.store';
@@ -9,7 +10,7 @@ import { ConversationEmptyComponent } from '../../components/conversation-empty/
 import { ConversationSkeletonComponent } from '../../components/conversation-skeleton/conversation-skeleton.component';
 import { NewMessagesIndicatorComponent } from '../../components/new-messages-indicator/new-messages-indicator.component';
 import { BannerWarningComponent } from '../../../../shared/components/banner-warning/banner-warning.component';
-import { Subscription } from 'rxjs';
+import { MessageSenderService } from '../../services/message-sender.service';
 
 /**
  * ConversationComponent — main conversation panel container.
@@ -44,6 +45,7 @@ export class ConversationComponent implements OnDestroy {
   protected readonly ticketStore = inject(TicketStore);
   protected readonly uiStore = inject(UiStore);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly messageSender = inject(MessageSenderService);
 
   /** Contextual warning message (e.g. SLA breach, internal note) */
   protected readonly warningMessage = input<string | null>(null);
@@ -88,7 +90,11 @@ export class ConversationComponent implements OnDestroy {
     }
   }
 
-  onSendMessage(): void {
+  onSendMessage(event: { content: string; tempId: string }): void {
+    const ticket = this.activeTicket();
+    if (!ticket) return;
+
+    this.messageSender.send(ticket.ticket_id, event.content, event.tempId);
     this.scrollToBottom();
   }
 

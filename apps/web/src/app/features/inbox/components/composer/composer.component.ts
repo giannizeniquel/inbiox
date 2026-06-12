@@ -1,7 +1,5 @@
-import { Component, ChangeDetectionStrategy, inject, output, signal, ElementRef, viewChild, input } from '@angular/core';
+import { Component, ChangeDetectionStrategy, output, signal, ElementRef, viewChild, input } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ConversationStore } from '../../../../core/stores/conversation.store';
-import { MessageApiService } from '../../../../core/api/message-api.service';
 import { generateTempId } from '../../../../core/utils/temp-id.util';
 
 /**
@@ -13,6 +11,9 @@ import { generateTempId } from '../../../../core/utils/temp-id.util';
  * - border-top: 1px solid var(--border-subtle)
  * - Submit on Enter, Shift+Enter for newline
  * - aria-label="Escribe un mensaje"
+ *
+ * Optimistic message creation is delegated to MessageSenderService (parent container).
+ * This component only emits sendMessage with content + tempId.
  */
 @Component({
   selector: 'app-composer',
@@ -23,13 +24,7 @@ import { generateTempId } from '../../../../core/utils/temp-id.util';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ComposerComponent {
-  private readonly conversationStore = inject(ConversationStore);
-  private readonly messageApi = inject(MessageApiService);
-
-  /** chatId of the active conversation, passed by container */
-  readonly chatId = input<string>('');
-
-  readonly sendMessage = output<void>();
+  readonly sendMessage = output<{ content: string; tempId: string }>();
 
   readonly inputEl = viewChild<ElementRef<HTMLTextAreaElement>>('inputEl');
   readonly text = signal('');
@@ -58,14 +53,7 @@ export class ComposerComponent {
 
     const tempId = generateTempId();
 
-    // Optimistic add
-    this.conversationStore.addOptimisticMessage(
-      tempId,
-      content,
-      this.chatId()
-    );
-
     this.text.set('');
-    this.sendMessage.emit();
+    this.sendMessage.emit({ content, tempId });
   }
 }

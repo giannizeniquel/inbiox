@@ -48,7 +48,7 @@
     />
 
     <!-- Sticky composer: 56px -->
-    <app-composer (sendMessage)="onSendMessage()" />
+    <app-composer (sendMessage)="onSendMessage($event)" />
   } @else {
     <!-- No chat selected -->
     <app-conversation-empty />
