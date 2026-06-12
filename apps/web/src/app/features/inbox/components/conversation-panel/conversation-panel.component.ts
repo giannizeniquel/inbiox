@@ -14,6 +14,9 @@ import { Subscription } from 'rxjs';
   templateUrl: './conversation-panel.component.html',
   styleUrl: './conversation-panel.component.scss'
 })
+/**
+ * @deprecated Use ConversationComponent instead. Will be removed in Sprint 13.5 or 14.
+ */
 export class ConversationPanelComponent implements OnInit, OnDestroy {
   private readonly state = inject(StateService);
   private readonly messageApi = inject(MessageApiService);
