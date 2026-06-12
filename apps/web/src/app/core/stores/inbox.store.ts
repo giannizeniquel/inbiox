@@ -1,6 +1,9 @@
 import { Injectable, signal, computed } from '@angular/core';
 
-// TODO: Migrate to Ticket model or remove if unused
+/**
+ * @deprecated Superseded by TicketStore. Will be removed in Sprint 13.5 or 14.
+ * TODO: Migrate to Ticket model or remove if unused
+ */
 interface Chat {
   id: string;
   assignedAgent?: string;
