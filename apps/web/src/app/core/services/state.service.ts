@@ -3,6 +3,9 @@ import { BehaviorSubject } from 'rxjs';
 import { Ticket } from '../models/ticket.model';
 import { Message } from '../models/message.model';
 
+/**
+ * @deprecated Use TicketStore and ConversationStore instead. Will be removed in Sprint 13.5 or 14.
+ */
 @Injectable({ providedIn: 'root' })
 export class StateService {
   // Tickets del inbox
