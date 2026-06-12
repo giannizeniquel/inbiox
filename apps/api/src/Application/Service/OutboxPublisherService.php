@@ -16,6 +16,7 @@ use Doctrine\ORM\EntityManagerInterface;
 class OutboxPublisherService
 {
     private const MAX_RETRIES = 5;
+    private const DEAD_LETTER_STATUS = 'dead_letter';
     private const BATCH_SIZE = 100;
 
     public function __construct(
@@ -226,20 +227,48 @@ class OutboxPublisherService
     }
 
     /**
-     * Handle publishing failure - increment retry count.
+     * Handle publishing failure - increment retry count or dead-letter if exhausted.
      */
     private function handleFailure(OutboxEvent $event): void
     {
-        $conn = $this->em->getConnection();
+        $currentRetryCount = $event->getRetryCount();
+        $newRetryCount = $currentRetryCount + 1;
 
-        $sql = '
-            UPDATE outbox_events
-            SET retry_count = retry_count + 1
-            WHERE id = :id
-        ';
+        if ($newRetryCount >= self::MAX_RETRIES) {
+            $conn = $this->em->getConnection();
 
-        $conn->executeStatement($sql, [
-            'id' => $event->getId(), // Already a string
-        ]);
+            $sql = '
+                UPDATE outbox_events
+                SET retry_count = :retry_count,
+                    status = :status
+                WHERE id = :id
+            ';
+
+            $conn->executeStatement($sql, [
+                'retry_count' => $newRetryCount,
+                'status' => self::DEAD_LETTER_STATUS,
+                'id' => $event->getId(),
+            ]);
+
+            error_log(sprintf(
+                'OutboxPublisher: Event %s dead-lettered after %d retries (type=%s, aggregate_id=%d)',
+                $event->getId(),
+                $newRetryCount,
+                $event->getEventType(),
+                $event->getAggregateId()
+            ));
+        } else {
+            $conn = $this->em->getConnection();
+
+            $sql = '
+                UPDATE outbox_events
+                SET retry_count = retry_count + 1
+                WHERE id = :id
+            ';
+
+            $conn->executeStatement($sql, [
+                'id' => $event->getId(),
+            ]);
+        }
     }
 }
