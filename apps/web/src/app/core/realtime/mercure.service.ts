@@ -1,5 +1,6 @@
 import { Injectable, signal, inject } from '@angular/core';
-import { BehaviorSubject, Subject, Observable } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, Subject, Observable, lastValueFrom } from 'rxjs';
 import { RealtimeEvent, RealtimeEventType, assertNever,
   MessageAddedPayload, TicketCreatedPayload, TicketStatusChangedPayload,
   TicketAssignedPayload, MessageUpdatedPayload } from '../models/realtime-event.model';
@@ -10,6 +11,13 @@ import { TicketStatus } from '../models/ticket.model';
 import { ConnectionStore } from '../stores/connection.store';
 import { UiStore } from '../stores/ui.store';
 import { MetricsService } from '../metrics/metrics.service';
+
+/** Response shape from the resync endpoint */
+interface ResyncResponse {
+  events: RealtimeEvent[];
+  lastSequence: number;
+  hasMore: boolean;
+}
 
 interface SeqState {
   lastSeq: number;
@@ -32,11 +40,15 @@ export class MercureService {
   private readonly seqState = new Map<string, SeqState>();
 
   // Inject stores for incremental updates
+  private http = inject(HttpClient);
   private ticketStore = inject(TicketStore);
   private conversationStore = inject(ConversationStore);
   private connectionStore = inject(ConnectionStore);
   private uiStore = inject(UiStore);
   private metrics = inject(MetricsService);
+
+  /** Mercure JWT token for authenticated HTTP calls (resync, etc.) */
+  private mercureToken: string | null = null;
 
   // Public observables
   private readonly connectionStatus = new BehaviorSubject<boolean>(false);
@@ -264,6 +276,105 @@ export class MercureService {
     const state = this.seqState.get(ticketId) || { lastSeq: 0 };
     state.lastSeq = seq;
     this.seqState.set(ticketId, state);
+  }
+
+  /**
+   * Set the Mercure JWT token for authenticated HTTP requests.
+   * Called by the auth system after login or token refresh.
+   */
+  setMercureToken(token: string): void {
+    this.mercureToken = token;
+  }
+
+  /**
+   * Resync missed events for a specific ticket via the backend resync endpoint.
+   * Fetches events after the last known sequence and applies them in order.
+   * Handles pagination if hasMore is true.
+   */
+  async resyncTicket(ticketId: string): Promise<void> {
+    const state = this.seqState.get(ticketId);
+    if (!state) {
+      console.log(`[Mercure] No seq state for ticket ${ticketId}, skipping resync`);
+      return;
+    }
+
+    const afterSequence = state.lastSeq;
+    console.log(`[Mercure] Resyncing ticket ${ticketId} after seq ${afterSequence}`);
+
+    try {
+      let hasMore = false;
+      let current = afterSequence;
+
+      do {
+        const headers: Record<string, string> = {};
+        if (this.mercureToken) {
+          headers['Authorization'] = `Bearer ${this.mercureToken}`;
+        }
+
+        const response = await lastValueFrom(
+          this.http.get<ResyncResponse>(
+            `${environment.apiUrl}/api/tickets/${ticketId}/events`,
+            {
+              params: { afterSequence: current },
+              headers,
+              withCredentials: true,
+            }
+          )
+        );
+
+        // Apply events in sequence order (server returns sorted ASC)
+        for (const event of response.events) {
+          // Skip already-processed events (idempotency)
+          if (event.eventId && this.processedEventIds.has(event.eventId)) {
+            continue;
+          }
+
+          // Track eventId
+          if (event.eventId) {
+            this.processedEventIds.add(event.eventId);
+            if (this.processedEventIds.size > 1000) {
+              const first = this.processedEventIds.values().next().value;
+              if (first) this.processedEventIds.delete(first);
+            }
+          }
+
+          // Apply via single dispatch path
+          this.handleEvent(event);
+
+          // Update seq state for this ticket
+          current = Math.max(current, event.sequence);
+          this.seqState.set(ticketId, { ...this.seqState.get(ticketId)!, lastSeq: current });
+        }
+
+        hasMore = response.hasMore;
+        current = response.lastSequence;
+      } while (hasMore);
+
+      console.log(`[Mercure] Resync complete for ticket ${ticketId}, lastSeq=${current}`);
+    } catch (err) {
+      console.error(`[Mercure] Resync failed for ticket ${ticketId}:`, err);
+      throw err; // Re-throw so callers can react (e.g., transition back to gap_detected)
+    }
+  }
+
+  /**
+   * Resync all tracked tickets.
+   * Called on SSE reconnect (onopen) to recover missed events.
+   * Each ticket resyncs independently — failure on one does not block others.
+   */
+  resyncAllTickets(): void {
+    const ticketIds = Array.from(this.seqState.keys());
+    if (ticketIds.length === 0) {
+      console.log('[Mercure] No tickets to resync');
+      return;
+    }
+
+    console.log(`[Mercure] Resyncing ${ticketIds.length} tickets`);
+    for (const ticketId of ticketIds) {
+      this.resyncTicket(ticketId).catch(err => {
+        console.warn(`[Mercure] Resync failed for ticket ${ticketId}, will retry on next gap:`, err);
+      });
+    }
   }
 
   private handleError(): void {
