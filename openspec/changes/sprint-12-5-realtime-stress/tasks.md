@@ -31,20 +31,20 @@ Chain strategy: stacked-to-main
 
 | ID | Checkpoint | Layer | Description | Depends On | Est. Lines |
 |----|-----------|-------|-------------|------------|------------|
-| T-01 | Alpha | backend | OutboxEvent migration: status + sequence columns | — | ~80 |
-| T-02 | Alpha | backend | RealtimeEventType enum + EventTypeMapper + RealtimeEventFactory | T-01 | ~150 |
-| T-03 | Alpha | backend | OutboxPublisherService wire format (RealtimeEventFactory adapter) | T-02 | ~60 |
-| T-04 | Alpha | backend | HandleInboundMessageUseCase: move TicketCreatedEvent post-flush | T-01 | ~30 |
-| T-05 | Alpha | backend | Enforce MAX_RETRIES + dead-letter in OutboxPublisherService | T-01 | ~40 |
-| T-06 | Alpha | frontend | RealtimeEventType enum + RealtimeEvent\<T\> interface | — | ~50 |
-| T-07 | Alpha | frontend | MercureService.handleMessage() single dispatch (remove applyStorePatch) | T-06 | ~60 |
-| T-08 | Alpha | frontend | MercureService.handleEvent() strict switch over RealtimeEventType | T-06, T-07 | ~80 |
-| T-09 | Alpha | test | Update test_event_payload_contract for content field | T-02, T-04 | ~20 |
-| T-10 | Bravo | backend | TicketEventsController: GET /api/tickets/{id}/events | T-02 | ~100 |
-| T-11 | Bravo | backend | OutboxPublishCommand status filter + OutboxDeadLetterCommand | T-05 | ~120 |
-| T-12 | Bravo | frontend | MercureService.resyncTicket() + resyncAllTickets() | T-08, T-10 | ~80 |
-| T-13 | Bravo | frontend | MercureService.onopen calls resyncAllTickets() | T-12 | ~15 |
-| T-14 | Bravo | frontend | Per-ticket gap state machine (TicketSeqState) | T-08 | ~70 |
+| T-01 | ✅ Alpha | backend | OutboxEvent migration: status + sequence columns | — | ~80 |
+| T-02 | ✅ Alpha | backend | RealtimeEventType enum + EventTypeMapper + RealtimeEventFactory | T-01 | ~150 |
+| T-03 | ✅ Alpha | backend | OutboxPublisherService wire format (RealtimeEventFactory adapter) | T-02 | ~60 |
+| T-04 | ✅ Alpha | backend | HandleInboundMessageUseCase: move TicketCreatedEvent post-flush | T-01 | ~30 |
+| T-05 | ✅ Alpha | backend | Enforce MAX_RETRIES + dead-letter in OutboxPublisherService | T-01 | ~40 |
+| T-06 | ✅ Alpha | frontend | RealtimeEventType enum + RealtimeEvent\<T\> interface | — | ~50 |
+| T-07 | ✅ Alpha | frontend | MercureService.handleMessage() single dispatch (remove applyStorePatch) | T-06 | ~60 |
+| T-08 | ✅ Alpha | frontend | MercureService.handleEvent() strict switch over RealtimeEventType | T-06, T-07 | ~80 |
+| T-09 | ✅ Alpha | test | Update test_event_payload_contract for content field | T-02, T-04 | ~20 |
+| T-10 | ✅ Bravo | backend | TicketEventsController: GET /api/tickets/{id}/events | T-02 | ~100 |
+| T-11 | ✅ Bravo | backend | OutboxPublishCommand status filter + OutboxDeadLetterCommand | T-05 | ~120 |
+| T-12 | ✅ Bravo | frontend | MercureService.resyncTicket() + resyncAllTickets() | T-08, T-10 | ~80 |
+| T-13 | ✅ Bravo | frontend | MercureService.onopen calls resyncAllTickets() | T-12 | ~15 |
+| T-14 | ✅ Bravo | frontend | Per-ticket gap state machine (TicketSeqState) | T-08 | ~70 |
 | T-15 | Bravo | frontend | InboxPageComponent.ngOnDestroy → mercure.disconnect() | — | ~10 |
 | T-16 | Bravo | frontend | InboxService: remove per-ticket HTTP subscriptions (N+1 fix) | T-08 | ~40 |
 | T-17 | Bravo | frontend | ConnectionStore: setPermanentFailure() + lastEventTime + circuit breaker | T-14 | ~40 |
@@ -69,7 +69,7 @@ Chain strategy: stacked-to-main
 > Must complete first. Blocks all other phases.
 > **Verification**: Real Mercure event published by OutboxPublisherService is parsed and applied by frontend without errors. Single mutation per event.
 
-### T-01 — OutboxEvent migration: status + sequence columns
+### T-01 — ✅ OutboxEvent migration: status + sequence columns
 
 - **Checkpoint**: Alpha
 - **Layer**: backend
@@ -83,7 +83,7 @@ Chain strategy: stacked-to-main
 - **Risk**: R1 — malformed payload rows get sequence=0; filtered by status index.
 - **Estimated lines**: ~80
 
-### T-02 — RealtimeEventType enum + EventTypeMapper + RealtimeEventFactory
+### T-02 — ✅ RealtimeEventType enum + EventTypeMapper + RealtimeEventFactory
 
 - **Checkpoint**: Alpha
 - **Layer**: backend
@@ -99,7 +99,7 @@ Chain strategy: stacked-to-main
 - **Risk**: R12 — `message.added` payload requires `content` field; ensure `HandleInboundMessageUseCase::persistEventsToOutbox()` includes it.
 - **Estimated lines**: ~150
 
-### T-03 — OutboxPublisherService wire format (RealtimeEventFactory adapter)
+### T-03 — ✅ OutboxPublisherService wire format (RealtimeEventFactory adapter)
 
 - **Checkpoint**: Alpha
 - **Layer**: backend
@@ -111,7 +111,7 @@ Chain strategy: stacked-to-main
 - **Risk**: R10 — stored payload format unchanged; Sprint 09B tests check stored values, not wire format.
 - **Estimated lines**: ~60
 
-### T-04 — HandleInboundMessageUseCase: move TicketCreatedEvent post-flush
+### T-04 — ✅ HandleInboundMessageUseCase: move TicketCreatedEvent post-flush
 
 - **Checkpoint**: Alpha
 - **Layer**: backend
@@ -123,7 +123,7 @@ Chain strategy: stacked-to-main
 - **Risk**: R2, R6 — test `test_sequence_increments_correctly` may need seq assertion update (TicketCreatedEvent now seq=1, MessageCreatedEvent seq=2).
 - **Estimated lines**: ~30
 
-### T-05 — Enforce MAX_RETRIES + dead-letter in OutboxPublisherService
+### T-05 — ✅ Enforce MAX_RETRIES + dead-letter in OutboxPublisherService
 
 - **Checkpoint**: Alpha
 - **Layer**: backend
@@ -191,7 +191,7 @@ Chain strategy: stacked-to-main
 > Builds on Alpha. All tasks below require the unified contract from Alpha.
 > **Verification**: Disconnect for 5s, reconnect. Ticket list + active conversation match server. No duplicates.
 
-### T-10 — TicketEventsController: GET /api/tickets/{id}/events
+### T-10 — ✅ TicketEventsController: GET /api/tickets/{id}/events
 
 - **Checkpoint**: Bravo
 - **Layer**: backend
@@ -203,7 +203,7 @@ Chain strategy: stacked-to-main
 - **Risk**: R5 — JWT topic validation critical for security.
 - **Estimated lines**: ~100
 
-### T-11 — OutboxPublishCommand status filter + OutboxDeadLetterCommand
+### T-11 — ✅ OutboxPublishCommand status filter + OutboxDeadLetterCommand
 
 - **Checkpoint**: Bravo
 - **Layer**: backend
@@ -216,7 +216,7 @@ Chain strategy: stacked-to-main
 - **Risk**: Low — new CLI commands, no production callers.
 - **Estimated lines**: ~120
 
-### T-12 — MercureService.resyncTicket() + resyncAllTickets()
+### T-12 — ✅ MercureService.resyncTicket() + resyncAllTickets()
 
 - **Checkpoint**: Bravo
 - **Layer**: frontend
@@ -228,7 +228,7 @@ Chain strategy: stacked-to-main
 - **Risk**: R8 — 100-event cap may miss events in high-throughput; `hasMore` pagination deferred.
 - **Estimated lines**: ~80
 
-### T-13 — MercureService.onopen calls resyncAllTickets()
+### T-13 — ✅ MercureService.onopen calls resyncAllTickets()
 
 - **Checkpoint**: Bravo
 - **Layer**: frontend
@@ -240,7 +240,7 @@ Chain strategy: stacked-to-main
 - **Risk**: Low — additive call in existing handler.
 - **Estimated lines**: ~15
 
-### T-14 — Per-ticket gap state machine (TicketSeqState)
+### T-14 — ✅ Per-ticket gap state machine (TicketSeqState) + Circuit Breaker
 
 - **Checkpoint**: Bravo
 - **Layer**: frontend
