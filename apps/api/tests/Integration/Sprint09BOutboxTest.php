@@ -204,7 +204,13 @@ class Sprint09BOutboxTest extends KernelTestCase
     // ============================================
 
     /**
-     * Test: Event payload follows contract (no extra fields)
+     * Test: Event payload follows RealtimeEventContract v1 field requirements.
+     *
+     * For a single inbound message, two events are persisted in order:
+     *   1. TicketCreatedEvent  (seq=1)
+     *   2. MessageCreatedEvent (seq=2)
+     *
+     * Each must carry the correct required fields in the stored payload.
      */
     public function test_event_payload_contract(): void
     {
@@ -218,18 +224,29 @@ class Sprint09BOutboxTest extends KernelTestCase
         $outboxRepo = $this->em->getRepository(OutboxEvent::class);
         $events = $outboxRepo->findAll();
         
-        $this->assertNotEmpty($events);
-        $payload = $events[0]->getPayload();
-        
-        // Required fields present
-        $this->assertArrayHasKey('event_id', $payload);
-        $this->assertArrayHasKey('type', $payload);
-        $this->assertArrayHasKey('ticket_id', $payload);
-        $this->assertArrayHasKey('seq', $payload);
-        $this->assertArrayHasKey('occurred_at', $payload);
-        
-        // No extra fields (message content should NOT be in payload)
-        $this->assertArrayNotHasKey('content', $payload, 'payload should NOT contain message content');
-        $this->assertArrayNotHasKey('message_body', $payload);
+        $this->assertCount(2, $events, 'Should have 2 events: TicketCreated + MessageCreated');
+
+        // Event #1: TicketCreatedEvent payload
+        $ticketCreatedPayload = $events[0]->getPayload();
+        $this->assertArrayHasKey('event_id', $ticketCreatedPayload);
+        $this->assertArrayHasKey('type', $ticketCreatedPayload);
+        $this->assertArrayHasKey('ticket_id', $ticketCreatedPayload);
+        $this->assertArrayHasKey('seq', $ticketCreatedPayload);
+        $this->assertArrayHasKey('occurred_at', $ticketCreatedPayload);
+        $this->assertArrayHasKey('status', $ticketCreatedPayload);
+        $this->assertArrayHasKey('priority', $ticketCreatedPayload);
+
+        // Event #2: MessageCreatedEvent payload — must include content for wire contract
+        $messageCreatedPayload = $events[1]->getPayload();
+        $this->assertArrayHasKey('event_id', $messageCreatedPayload);
+        $this->assertArrayHasKey('type', $messageCreatedPayload);
+        $this->assertArrayHasKey('ticket_id', $messageCreatedPayload);
+        $this->assertArrayHasKey('seq', $messageCreatedPayload);
+        $this->assertArrayHasKey('occurred_at', $messageCreatedPayload);
+        $this->assertArrayHasKey('message_id', $messageCreatedPayload);
+        $this->assertArrayHasKey('direction', $messageCreatedPayload);
+        $this->assertArrayHasKey('content', $messageCreatedPayload, 'MessageCreated payload MUST include content (R12 fix)');
+        $this->assertArrayHasKey('sender_name', $messageCreatedPayload, 'MessageCreated payload MUST include sender_name');
+        $this->assertSame('Test message', $messageCreatedPayload['content']);
     }
 }
