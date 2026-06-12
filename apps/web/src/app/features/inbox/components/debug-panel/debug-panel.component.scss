@@ -50,6 +50,11 @@
     &.connecting, &.reconnecting {
       color: #ff9800;
     }
+
+    &.permanent_failure {
+      color: #f44336;
+      font-weight: 700;
+    }
   }
 }
 
@@ -66,6 +71,27 @@
 
   &:hover {
     background: #444;
+  }
+}
+
+.retry-btn {
+  width: 100%;
+  padding: 0.5rem;
+  margin-top: 0.25rem;
+  background: #f44336;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+
+  &:hover {
+    background: #d32f2f;
+  }
+
+  &:active {
+    background: #b71c1c;
   }
 }
 

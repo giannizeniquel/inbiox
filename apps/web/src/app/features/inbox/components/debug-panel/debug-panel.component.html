@@ -42,6 +42,12 @@
     {{ connectionState() === 'connected' ? 'Disconnect' : 'Connect' }}
   </button>
 
+  @if (showRetryButton()) {
+    <button class="retry-btn" (click)="onRetryNow()">
+      Retry Now
+    </button>
+  }
+
   <div class="events-section">
     <h5>Recent Events</h5>
     @if (recentEvents.length === 0) {

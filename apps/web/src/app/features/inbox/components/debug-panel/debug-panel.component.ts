@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, OnDestroy, PLATFORM_ID, inject as inject$1 } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, computed, PLATFORM_ID, inject as inject$1 } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { MercureService } from '../../../../core/realtime/mercure.service';
 import { ConnectionStore } from '../../../../core/stores/connection.store';
@@ -33,6 +33,9 @@ export class DebugPanelComponent implements OnInit, OnDestroy {
   // Provider info
   readonly providerName = this.provider.constructor.name;
 
+  // Show "Retry Now" button only when circuit breaker tripped
+  readonly showRetryButton = computed(() => this.connectionStore.status() === 'permanent_failure');
+
   private readonly subscriptions: Subscription[] = [];
   readonly recentEvents: { time: string; ticketId: string; sequence: number }[] = [];
 
@@ -57,6 +60,15 @@ export class DebugPanelComponent implements OnInit, OnDestroy {
     } else {
       this.mercure.connect();
     }
+  }
+
+  /**
+   * Retry Mercure connection after permanent failure.
+   * Reuses the exact same connect() flow as automatic reconnect,
+   * with reconnectAttempts = 0 reset.
+   */
+  onRetryNow(): void {
+    this.mercure.forceReconnect();
   }
 
   ngOnDestroy(): void {
