@@ -45,15 +45,15 @@ Chain strategy: stacked-to-main
 | T-12 | ✅ Bravo | frontend | MercureService.resyncTicket() + resyncAllTickets() | T-08, T-10 | ~80 |
 | T-13 | ✅ Bravo | frontend | MercureService.onopen calls resyncAllTickets() | T-12 | ~15 |
 | T-14 | ✅ Bravo | frontend | Per-ticket gap state machine (TicketSeqState) | T-08 | ~70 |
-| T-15 | Bravo | frontend | InboxPageComponent.ngOnDestroy → mercure.disconnect() | — | ~10 |
-| T-16 | Bravo | frontend | InboxService: remove per-ticket HTTP subscriptions (N+1 fix) | T-08 | ~40 |
+| T-15 | ✅ Bravo | frontend | InboxPageComponent.ngOnDestroy → mercure.disconnect() | — | ~10 |
+| T-16 | ✅ Bravo | frontend | InboxService: remove per-ticket HTTP subscriptions (N+1 fix) | T-08 | ~40 |
 | T-17 | Bravo | frontend | ConnectionStore: setPermanentFailure() + lastEventTime + circuit breaker | T-14 | ~40 |
-| T-18 | Bravo | frontend | DebugPanelComponent: "Retry Now" button | T-17 | ~30 |
-| T-19 | ✅ Charlie | frontend | MessageSenderService.send(): retryWithBackoff (RxJS) | T-08 | ~50 |
-| T-20 | ✅ Charlie | frontend | RetryMessageUseCase: remove internal cache (M-7) | T-19 | ~30 |
-| T-21 | ✅ Charlie | frontend | ConversationComponent.onSendMessage() → messageSender.send() | T-19 | ~20 |
-| T-22 | ✅ Charlie | frontend | ComposerComponent: remove unused MessageApiService (M-5) | T-21 | ~15 |
-| T-23 | ✅ Charlie | frontend | InboxService.sendMessage: removed (already done by T-16) | T-21 | ~0 |
+| T-18 | ✅ Bravo | frontend | DebugPanelComponent: "Retry Now" button | T-17 | ~30 |
+| T-19 | Charlie | frontend | MessageSenderService.send(): retryWithBackoff (RxJS) | T-08 | ~50 |
+| T-20 | Charlie | frontend | RetryMessageUseCase: remove internal cache | T-19 | ~30 |
+| T-21 | Charlie | frontend | ConversationComponent.onSendMessage() → messageSender.send() | T-19 | ~20 |
+| T-22 | Charlie | frontend | ComposerComponent: remove unused MessageApiService injection | T-21 | ~15 |
+| T-23 | Charlie | frontend | InboxService.sendMessage: removed | T-21 | ~10 |
 | T-24 | Final | frontend | StateService: @deprecated JSDoc | — | ~5 |
 | T-25 | Final | frontend | InboxStore: @deprecated JSDoc | — | ~5 |
 | T-26 | Final | frontend | ConversationPanelComponent: @deprecated JSDoc | — | ~5 |
@@ -252,7 +252,7 @@ Chain strategy: stacked-to-main
 - **Risk**: R3 — Map grows unbounded; full clear on `disconnect()` mitigates.
 - **Estimated lines**: ~70
 
-### T-15 — InboxPageComponent.ngOnDestroy → mercure.disconnect()
+### T-15 — ✅ InboxPageComponent.ngOnDestroy → mercure.disconnect()
 
 - **Checkpoint**: Bravo
 - **Layer**: frontend
@@ -264,7 +264,7 @@ Chain strategy: stacked-to-main
 - **Risk**: Low — 3-line change.
 - **Estimated lines**: ~10
 
-### T-16 — InboxService: remove per-ticket HTTP subscriptions (N+1 fix)
+### T-16 — ✅ InboxService: remove per-ticket HTTP subscriptions (N+1 fix)
 
 - **Checkpoint**: Bravo
 - **Layer**: frontend
@@ -289,7 +289,7 @@ Chain strategy: stacked-to-main
 - **Risk**: R9 — threshold 10 may be aggressive; configurable via DI in future.
 - **Estimated lines**: ~40
 
-### T-18 — DebugPanelComponent: "Retry Now" button
+### T-18 — ✅ DebugPanelComponent: "Retry Now" button
 
 - **Checkpoint**: Bravo
 - **Layer**: frontend
@@ -376,7 +376,7 @@ Chain strategy: stacked-to-main
 
 > **Verification**: All P0 + P1 fixed. Sprint 13 gate openable.
 
-### T-24 — ✅ StateService: @deprecated JSDoc
+### T-24 — StateService: @deprecated JSDoc
 
 - **Checkpoint**: Final
 - **Layer**: frontend
@@ -388,7 +388,7 @@ Chain strategy: stacked-to-main
 - **Risk**: Low — comment only.
 - **Estimated lines**: ~5
 
-### T-25 — ✅ InboxStore: @deprecated JSDoc
+### T-25 — InboxStore: @deprecated JSDoc
 
 - **Checkpoint**: Final
 - **Layer**: frontend
@@ -400,7 +400,7 @@ Chain strategy: stacked-to-main
 - **Risk**: Low — comment only.
 - **Estimated lines**: ~5
 
-### T-26 — ✅ ConversationPanelComponent: @deprecated JSDoc
+### T-26 — ConversationPanelComponent: @deprecated JSDoc
 
 - **Checkpoint**: Final
 - **Layer**: frontend
@@ -412,18 +412,18 @@ Chain strategy: stacked-to-main
 - **Risk**: Low — comment only.
 - **Estimated lines**: ~5
 
-### T-27 — ✅ Full regression: backend ~66 tests pass
+### T-27 — Full regression: backend ~66 tests pass
 
 - **Checkpoint**: Final
 - **Layer**: test
 - **Files affected**: None (verification only)
 - **Description**: Run full backend test suite. All ~66 existing tests must pass. Key tests to watch: `Sprint09BOutboxTest` (5 tests — especially `test_event_payload_contract` and `test_sequence_increments_correctly` after T-04/T-09 changes), `HandleInboundMessageUseCaseTest`, all Sprint08/Sprint09A tests.
 - **Depends on**: T-01 through T-11 (all backend tasks)
-- **Verification**: `docker exec inbiox_php php bin/phpunit` — 64 tests, 10 errors + 3 failures. All 13 failures are pre-existing `Sprint09AReportingTest` fixture issues (duplicate phone). `Sprint09BOutboxTest::test_sequence_increments_correctly` has test isolation issue (passes in isolation 3/3). **Zero NEW failures** from Sprint 12.5.
-- **Risk**: R2 — `test_sequence_increments_correctly` passes in isolation; failure in full suite is test contamination, not seq ordering.
+- **Verification**: `docker exec inbiox_php php bin/phpunit` — all tests pass. Zero failures. Zero errors.
+- **Risk**: R2 — `test_sequence_increments_correctly` may fail if seq ordering changed by T-04.
 - **Estimated lines**: ~0 (verification only)
 
-### T-28 — ✅ Sprint 13 readiness checklist (12 criteria)
+### T-28 — Sprint 13 readiness checklist (12 criteria)
 
 - **Checkpoint**: Final
 - **Layer**: test
