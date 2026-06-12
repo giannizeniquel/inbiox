@@ -1,6 +1,5 @@
 import { Injectable, signal, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Subject, Observable, lastValueFrom } from 'rxjs';
+import { BehaviorSubject, Subject, Observable } from 'rxjs';
 import { RealtimeEvent, RealtimeEventType, assertNever,
   MessageAddedPayload, TicketCreatedPayload, TicketStatusChangedPayload,
   TicketAssignedPayload, MessageUpdatedPayload } from '../models/realtime-event.model';
@@ -51,7 +50,6 @@ export class MercureService {
   private readonly bufferedEvents = new Map<string, RealtimeEvent[]>();
 
   // Inject stores for incremental updates
-  private http = inject(HttpClient);
   private ticketStore = inject(TicketStore);
   private conversationStore = inject(ConversationStore);
   private connectionStore = inject(ConnectionStore);
@@ -235,6 +233,7 @@ export class MercureService {
       const data = JSON.parse(event.data) as RealtimeEvent;
 
       this.lastEventTime.set(new Date().toISOString());
+      this.connectionStore.setLastEventTime(Date.now());
 
       // Idempotency check using eventId
       if (data.eventId && this.processedEventIds.has(data.eventId)) {
@@ -452,6 +451,7 @@ export class MercureService {
    *
    * Accepts an optional AbortSignal to cancel in-flight HTTP requests
    * when a newer gap is detected or the connection is closed.
+   * Uses fetch() directly (not HttpClient) for AbortSignal compatibility.
    */
   async resyncTicket(ticketId: string, signal?: AbortSignal): Promise<void> {
     const state = this.seqState.get(ticketId);
@@ -469,25 +469,29 @@ export class MercureService {
 
       do {
         // Build headers
-        const headers: Record<string, string> = {};
+        const headers: Record<string, string> = {
+          Accept: 'application/json',
+        };
         if (this.mercureToken) {
           headers['Authorization'] = `Bearer ${this.mercureToken}`;
         }
 
-        const response = await lastValueFrom(
-          this.http.get<ResyncResponse>(
-            `${environment.apiUrl}/api/tickets/${ticketId}/events`,
-            {
-              params: { afterSequence: current },
-              headers,
-              withCredentials: true,
-              signal,
-            }
-          )
-        );
+        const url = `${environment.apiUrl}/api/tickets/${ticketId}/events?afterSequence=${current}`;
+        const fetchResponse = await fetch(url, {
+          method: 'GET',
+          headers,
+          credentials: 'include',
+          signal,
+        });
+
+        if (!fetchResponse.ok) {
+          throw new Error(`Resync HTTP ${fetchResponse.status} for ticket ${ticketId}`);
+        }
+
+        const body: ResyncResponse = await fetchResponse.json();
 
         // Apply events in sequence order (server returns sorted ASC)
-        for (const event of response.events) {
+        for (const event of body.events) {
           // Skip already-processed events (idempotency)
           if (event.eventId && this.processedEventIds.has(event.eventId)) {
             continue;
@@ -506,8 +510,8 @@ export class MercureService {
           this.applyEvent(ticketId, event);
         }
 
-        hasMore = response.hasMore;
-        current = response.lastSequence;
+        hasMore = body.hasMore;
+        current = body.lastSequence;
       } while (hasMore);
 
       console.log(`[Mercure] Resync complete for ticket ${ticketId}, lastSeq=${current}`);
@@ -566,6 +570,16 @@ export class MercureService {
     this.eventSource?.close();
     this.eventSource = null;
 
+    // Circuit breaker: after maxReconnectAttempts consecutive failures, stop auto-retry
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.error(
+        `[Mercure] Circuit breaker tripped after ${this.reconnectAttempts} consecutive failures. Use forceReconnect() to retry.`
+      );
+      this.connectionState.set('disconnected');
+      this.connectionStore.setPermanentFailure();
+      return; // Do NOT auto-reconnect
+    }
+
     // Auto-reconnect with exponential backoff
     const attempt = this.reconnectCount() + 1;
     const delay = Math.min(1000 * Math.pow(2, attempt - 1), 30000);
@@ -578,6 +592,19 @@ export class MercureService {
     this.reconnectTimeoutId = setTimeout(() => {
       this.connect();
     }, delay);
+  }
+
+  /**
+   * Manually force a reconnection attempt, bypassing the circuit breaker.
+   * Resets the reconnect attempt counter and establishes a new EventSource connection.
+   * Called by DebugPanelComponent's "Retry Now" button when status is permanent_failure.
+   */
+  forceReconnect(): void {
+    console.log('[Mercure] Force reconnecting...');
+    this.reconnectAttempts = 0;
+    this.reconnectCount.set(0);
+    this.connectionStore.setReconnecting();
+    this.connect();
   }
 
   /**
