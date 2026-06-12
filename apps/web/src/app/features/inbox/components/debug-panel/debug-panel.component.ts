@@ -34,14 +34,14 @@ export class DebugPanelComponent implements OnInit, OnDestroy {
   readonly providerName = this.provider.constructor.name;
 
   private readonly subscriptions: Subscription[] = [];
-  readonly recentEvents: { time: string; ticketId: string; seq: number }[] = [];
+  readonly recentEvents: { time: string; ticketId: string; sequence: number }[] = [];
 
   ngOnInit(): void {
     const sub = this.mercure.events$.subscribe((event) => {
       this.recentEvents.unshift({
         time: new Date().toLocaleTimeString(),
-        ticketId: event.ticketId,
-        seq: event.seq
+        ticketId: event.ticketId ?? 'unknown',
+        sequence: event.sequence
       });
       // Keep only last 20 events
       if (this.recentEvents.length > 20) {

@@ -1,6 +1,8 @@
 import { Injectable, signal, inject } from '@angular/core';
 import { BehaviorSubject, Subject, Observable } from 'rxjs';
-import { RealtimeEvent, TicketEvent, TicketEventType } from '../models/ticket-event.model';
+import { RealtimeEvent, RealtimeEventType, assertNever,
+  MessageAddedPayload, TicketCreatedPayload, TicketStatusChangedPayload,
+  TicketAssignedPayload, MessageUpdatedPayload } from '../models/realtime-event.model';
 import { environment } from '../../../environments/environment';
 import { TicketStore } from '../stores/ticket.store';
 import { ConversationStore } from '../stores/conversation.store';
@@ -17,7 +19,6 @@ type ConnectionState = 'connected' | 'disconnected' | 'connecting';
 @Injectable({ providedIn: 'root' })
 export class MercureService {
   private eventSource: EventSource | null = null;
-  private readonly subscriptions = new Map<string, (event: TicketEvent) => void>();
 
   // Connection state tracking
   private reconnectAttempts = 0;
@@ -86,18 +87,17 @@ export class MercureService {
     }
   }
 
-  subscribe(ticketId: string, callback: (event: TicketEvent) => void): () => void {
-    this.subscriptions.set(ticketId, callback);
-
+  /**
+   * @deprecated Subscribe is a no-op — superseded by events$. All realtime
+   * dispatch goes through handleEvent() (single path). Kept for binary
+   * compatibility until InboxService refactor (T-16).
+   */
+  subscribe(ticketId: string, _callback: (event: unknown) => void): () => void {
     // Initialize seq state for this ticket if not exists
     if (!this.seqState.has(ticketId)) {
       this.seqState.set(ticketId, { lastSeq: 0 });
     }
-
-    // Return unsubscribe function
-    return () => {
-      this.subscriptions.delete(ticketId);
-    };
+    return () => { /* no-op */ };
   }
 
   private handleMessage(event: MessageEvent): void {
@@ -106,55 +106,50 @@ export class MercureService {
 
       this.lastEventTime.set(new Date().toISOString());
 
-      // Idempotency check using eventId (if provided by backend)
-      const eventId = (data as any).eventId;
-      if (eventId && this.processedEventIds.has(eventId)) {
-        console.log('[Mercure] Duplicate eventId ignored:', eventId);
+      // Idempotency check using eventId
+      if (data.eventId && this.processedEventIds.has(data.eventId)) {
+        console.log('[Mercure] Duplicate eventId ignored:', data.eventId);
         return;
       }
 
+      // Track eventId for idempotency before applying
+      if (data.eventId) {
+        this.processedEventIds.add(data.eventId);
+        // Limit memory: keep only last 1000 IDs
+        if (this.processedEventIds.size > 1000) {
+          const first = this.processedEventIds.values().next().value;
+          if (first) this.processedEventIds.delete(first);
+        }
+      }
+
       // Seq validation
-      const ticketId = String(data.ticketId);
+      const ticketId = data.ticketId ?? '';
+      if (!ticketId) {
+        console.warn('[Mercure] Event without ticketId, dropping');
+        return;
+      }
+
       const currentSeq = this.seqState.get(ticketId)?.lastSeq ?? 0;
 
-      if (data.seq > currentSeq) {
+      if (data.sequence > currentSeq) {
         // Valid new event - apply
-        this.updateSeq(ticketId, data.seq);
+        this.updateSeq(ticketId, data.sequence);
 
         // Track metrics for valid events
         this.metrics.increment('messagesReceived');
 
-        // Track eventId for idempotency
-        if (eventId) {
-          this.processedEventIds.add(eventId);
-          // Limit memory: keep only last 1000 IDs
-          if (this.processedEventIds.size > 1000) {
-            const first = this.processedEventIds.values().next().value;
-            if (first) this.processedEventIds.delete(first);
-          }
-        }
-
-        // Apply incremental store patches
-        this.applyStorePatch(ticketId, data.event);
-
-        // Handle event dispatch to stores (T2.2)
+        // Single dispatch path — no applyStorePatch, no subscriber callbacks
         this.handleEvent(data);
 
-        // Emit to ticket-specific subscribers
-        const callback = this.subscriptions.get(ticketId);
-        if (callback) {
-          callback(data.event);
-        }
-
-        // Also emit to global events stream
+        // Emit to global events stream
         this.eventsSubject.next(data);
-        console.log('[Mercure] Applied event seq:', data.seq, 'for ticket:', ticketId);
-      } else if (data.seq === currentSeq) {
+        console.log('[Mercure] Applied event seq:', data.sequence, 'for ticket:', ticketId);
+      } else if (data.sequence === currentSeq) {
         // Duplicate - ignore
-        console.log('[Mercure] Duplicate seq ignored:', data.seq);
+        console.log('[Mercure] Duplicate seq ignored:', data.sequence);
       } else {
         // Old event - ignore
-        console.log('[Mercure] Old seq ignored:', data.seq, 'current:', currentSeq);
+        console.log('[Mercure] Old seq ignored:', data.sequence, 'current:', currentSeq);
       }
     } catch (err) {
       console.error('[Mercure] Failed to parse message:', err);
@@ -162,80 +157,97 @@ export class MercureService {
   }
 
   /**
-   * Apply incremental patches to stores based on incoming events.
-   * This enables real-time UI updates without full refetch.
+   * Handle incoming realtime events and dispatch to stores.
+   * Single dispatch path — strict switch over RealtimeEventType.
+   * No legacy TicketEventType, no nested `event.event` access.
    */
-  private applyStorePatch(ticketId: string, event: TicketEvent): void {
-    switch (event.type) {
-      case TicketEventType.MessageAdded:
-        // Handle new message event -> ConversationStore.appendMessage()
-        if (event.payload?.message) {
-          this.conversationStore.addMessage(event.payload.message as any);
-          // Notify UiStore for auto-scroll / new messages indicator
-          this.uiStore.notifyNewMessages();
-        }
+  private handleEvent(event: RealtimeEvent): void {
+    switch (event.eventType) {
+      case RealtimeEventType.MessageAdded: {
+        const p = event.payload as MessageAddedPayload;
+        this.conversationStore.addMessage({
+          id: String(p.messageId),
+          tempId: undefined,
+          ticketId: String(p.ticketId),
+          sender: p.direction === 'outbound' ? 'agent' : 'customer',
+          content: p.content,
+          createdAt: p.createdAt,
+          created_at: p.createdAt,
+          deliveryStatus: 'sent',
+          externalId: p.externalId ?? undefined,
+          message_id: p.messageId,
+          direction: p.direction,
+          chatId: String(p.ticketId),
+          body: p.content,
+          sentAt: p.createdAt,
+        } as any);
+        this.uiStore.notifyNewMessages();
+
         // Increment unread if not active ticket
         const activeTicket = this.ticketStore.activeTicket();
-        if (!activeTicket || activeTicket.ticket_id !== ticketId) {
-          const current = this.ticketStore.tickets().find(t => t.ticket_id === ticketId);
+        if (!activeTicket || activeTicket.ticket_id !== String(p.ticketId)) {
+          const current = this.ticketStore.tickets().find(t => t.ticket_id === String(p.ticketId));
           if (current) {
-            const currentUnread = current.metrics?.unread_count ?? 0;
-            this.ticketStore.updateUnreadCount(ticketId, currentUnread + 1);
+            this.ticketStore.updateUnreadCount(String(p.ticketId), (current.metrics?.unread_count ?? 0) + 1);
           }
         }
         break;
+      }
 
-      case TicketEventType.Assigned:
-        // Handle ticket assignment event -> TicketStore.addOrUpdateTicket()
-        if (event.payload?.ticket) {
-          this.ticketStore.addOrUpdateTicket(event.payload.ticket as any);
+      case RealtimeEventType.TicketCreated: {
+        const p = event.payload as TicketCreatedPayload;
+        this.ticketStore.addOrUpdateTicket({
+          ticket_id: String(p.ticketId),
+          id: String(p.ticketId),
+          status: p.status as any,
+          priority: String(p.priority),
+          contact: null,
+          last_message: null,
+          owner: null,
+          metrics: { unread_count: 0 },
+          timestamps: { opened_at: p.createdAt, updated_at: p.createdAt },
+        } as any);
+        break;
+      }
+
+      case RealtimeEventType.TicketStatusChanged: {
+        const p = event.payload as TicketStatusChangedPayload;
+        const existing = this.ticketStore.tickets().find(t => t.ticket_id === String(p.ticketId));
+        if (existing) {
+          this.ticketStore.addOrUpdateTicket({
+            ...existing,
+            status: p.newStatus as any,
+            timestamps: { ...existing.timestamps, updated_at: p.changedAt },
+          });
         }
         break;
+      }
 
-      case TicketEventType.StatusChanged:
-        // Handle status update -> update ticket
-        if (event.payload?.ticket) {
-          this.ticketStore.addOrUpdateTicket(event.payload.ticket as any);
+      case RealtimeEventType.TicketAssigned: {
+        const p = event.payload as TicketAssignedPayload;
+        const existing = this.ticketStore.tickets().find(t => t.ticket_id === String(p.ticketId));
+        if (existing) {
+          this.ticketStore.addOrUpdateTicket({
+            ...existing,
+            owner: { id: p.assigneeId, name: `Agent #${p.assigneeId}` },
+            timestamps: { ...existing.timestamps, updated_at: p.assignedAt },
+          });
         }
+        break;
+      }
+
+      case RealtimeEventType.MessageUpdated: {
+        const p = event.payload as MessageUpdatedPayload;
+        this.conversationStore.updateMessageStatus(String(p.messageId), p.status as any, p.messageId);
+        break;
+      }
+
+      case RealtimeEventType.ConversationUpdated:
+        // Metadata only; no-op for now
         break;
 
       default:
-        break;
-    }
-  }
-
-  /**
-   * Handle incoming realtime events and dispatch to stores.
-   * This is the main entry point for event-driven store updates.
-   */
-  private handleEvent(event: RealtimeEvent): void {
-    const ticketId = String(event.ticketId);
-
-    switch (event.event?.type) {
-      case TicketEventType.MessageAdded:
-        // New message event -> ConversationStore.addMessage()
-        if (event.event?.payload?.message) {
-          this.conversationStore.addMessage(event.event.payload.message as any);
-        }
-        break;
-
-      case TicketEventType.StatusChanged:
-        // Status update -> update ticket
-        if (event.event?.payload?.ticket) {
-          this.ticketStore.addOrUpdateTicket(event.event.payload.ticket as any);
-        }
-        break;
-
-      case TicketEventType.Assigned:
-        // Assignment event -> update ticket
-        if (event.event?.payload?.ticket) {
-          this.ticketStore.addOrUpdateTicket(event.event.payload.ticket as any);
-        }
-        break;
-
-      default:
-        console.log('[Mercure] Unknown event type:', event.event?.type);
-        break;
+        assertNever(event.eventType);
     }
 
     // Increment event counter
@@ -286,7 +298,6 @@ export class MercureService {
     }
     this.eventSource?.close();
     this.eventSource = null;
-    this.subscriptions.clear();
     this.seqState.clear();
     this.processedEventIds.clear();
     this.connectionStatus.next(false);
