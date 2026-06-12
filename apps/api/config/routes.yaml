@@ -116,3 +116,8 @@ app_contacts_delete:
     path: /contacts/{id}
     methods: [DELETE]
     controller: App\Controller\ContactController::delete
+
+app_ticket_events_resync:
+    path: /api/tickets/{id}/events
+    methods: [GET]
+    controller: App\Controller\TicketEventsController::listSince
