@@ -48,11 +48,11 @@
       <p class="no-events">No events received</p>
     } @else {
       <ul class="events-list">
-        @for (event of recentEvents; track event.time + event.seq) {
+        @for (event of recentEvents; track event.time + event.sequence) {
           <li>
             <span class="event-time">{{ event.time }}</span>
             <span class="event-ticket">#{{ event.ticketId.slice(0, 8) }}</span>
-            <span class="event-seq">seq: {{ event.seq }}</span>
+            <span class="event-seq">seq: {{ event.sequence }}</span>
           </li>
         }
       </ul>
