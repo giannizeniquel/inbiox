@@ -45,10 +45,11 @@ export class MessageSenderService {
    *
    * @param ticketId - The ticket/chat ID
    * @param content - Message content
+   * @param existingTempId - Optional pre-generated tempId (e.g., from ComposerComponent)
    * @returns tempId of the optimistic message
    */
-  send(ticketId: string, content: string): string {
-    const tempId = generateTempId();
+  send(ticketId: string, content: string, existingTempId?: string): string {
+    const tempId = existingTempId ?? generateTempId();
 
     // Add optimistic message to store (optimistic UI)
     this.conversationStore.addOptimisticMessage(tempId, content, ticketId);
