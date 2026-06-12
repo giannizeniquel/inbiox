@@ -39,12 +39,19 @@ class OutboxEvent
     #[ORM\Column(name: 'retry_count', type: 'integer', options: ['default' => 0])]
     private int $retryCount = 0;
 
+    #[ORM\Column(name: 'status', type: 'string', length: 20, options: ['default' => 'pending'])]
+    private string $status = 'pending';
+
+    #[ORM\Column(name: 'sequence', type: 'integer', options: ['default' => 0])]
+    private int $sequence = 0;
+
     public function __construct(
         string $aggregateType,
         int $aggregateId,
         string $topic,
         string $eventType,
-        array $payload
+        array $payload,
+        ?int $sequence = 0
     ) {
         $this->id = (string) Ulid::generate();
         $this->aggregateType = $aggregateType;
@@ -53,6 +60,7 @@ class OutboxEvent
         $this->eventType = $eventType;
         $this->payload = $payload;
         $this->createdAt = new \DateTimeImmutable();
+        $this->sequence = $sequence ?? 0;
     }
 
     public function getId(): string
@@ -115,5 +123,32 @@ class OutboxEvent
     public function isPublished(): bool
     {
         return $this->publishedAt !== null;
+    }
+
+    public function getStatus(): string
+    {
+        return $this->status;
+    }
+
+    public function setStatus(string $status): self
+    {
+        $this->status = $status;
+        return $this;
+    }
+
+    public function isDeadLetter(): bool
+    {
+        return $this->status === 'dead_letter';
+    }
+
+    public function getSequence(): int
+    {
+        return $this->sequence;
+    }
+
+    public function setSequence(int $sequence): self
+    {
+        $this->sequence = $sequence;
+        return $this;
     }
 }

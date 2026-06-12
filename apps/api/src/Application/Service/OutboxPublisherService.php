@@ -56,9 +56,9 @@ class OutboxPublisherService
 
         // Use query() directly instead of prepare() to avoid introspection issues
         $sql = '
-            SELECT id, aggregate_type, aggregate_id, topic, event_type, payload, created_at, published_at, retry_count
+            SELECT id, aggregate_type, aggregate_id, topic, event_type, payload, created_at, published_at, retry_count, status, sequence
             FROM outbox_events
-            WHERE published_at IS NULL
+            WHERE published_at IS NULL AND status = \'pending\'
             ORDER BY created_at ASC, id ASC
             LIMIT 100
         ';
@@ -107,6 +107,16 @@ class OutboxPublisherService
         $createdAtReflection = new \ReflectionProperty(OutboxEvent::class, 'createdAt');
         $createdAtReflection->setAccessible(true);
         $createdAtReflection->setValue($event, new \DateTimeImmutable($row['created_at']));
+
+        // Set status via reflection
+        $statusReflection = new \ReflectionProperty(OutboxEvent::class, 'status');
+        $statusReflection->setAccessible(true);
+        $statusReflection->setValue($event, $row['status'] ?? 'pending');
+
+        // Set sequence via reflection
+        $seqReflection = new \ReflectionProperty(OutboxEvent::class, 'sequence');
+        $seqReflection->setAccessible(true);
+        $seqReflection->setValue($event, (int) ($row['sequence'] ?? 0));
 
         return $event;
     }
@@ -198,7 +208,8 @@ class OutboxPublisherService
 
         $sql = '
             UPDATE outbox_events
-            SET published_at = :published_at
+            SET published_at = :published_at,
+                status = \'published\'
             WHERE id = :id
         ';
 

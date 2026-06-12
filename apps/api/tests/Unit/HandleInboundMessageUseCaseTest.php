@@ -5,6 +5,7 @@ namespace App\Tests\Unit;
 use App\Application\UseCase\HandleInboundMessageUseCase;
 use App\Application\UseCase\TransitionTicketStatusUseCase;
 use App\Application\Rule\RuleExecutorService;
+use App\Domain\Event\EventCollector;
 use App\Repository\ContactRepository;
 use App\Repository\ConversationRepository;
 use App\Repository\MessageRepository;
@@ -24,6 +25,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
     private EventDispatcherInterface|MockObject $eventDispatcher;
     private TransitionTicketStatusUseCase|MockObject $transitionUseCase;
     private RuleExecutorService|MockObject $ruleExecutor;
+    private EventCollector|MockObject $eventCollector;
     private HandleInboundMessageUseCase $useCase;
 
     protected function setUp(): void
@@ -36,6 +38,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
         $this->eventDispatcher = $this->createMock(EventDispatcherInterface::class);
         $this->transitionUseCase = $this->createMock(TransitionTicketStatusUseCase::class);
         $this->ruleExecutor = $this->createMock(RuleExecutorService::class);
+        $this->eventCollector = $this->createMock(EventCollector::class);
 
         $this->useCase = new HandleInboundMessageUseCase(
             $this->em,
@@ -45,7 +48,8 @@ class HandleInboundMessageUseCaseTest extends TestCase
             $this->ticketRepo,
             $this->eventDispatcher,
             $this->transitionUseCase,
-            $this->ruleExecutor
+            $this->ruleExecutor,
+            $this->eventCollector
         );
     }
 
