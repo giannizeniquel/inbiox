@@ -122,6 +122,16 @@ app_provider_send:
     methods: [POST]
     controller: App\Controller\ProviderProxyController::send
 
+app_provider_media_upload:
+    path: /api/provider/media/upload
+    methods: [POST]
+    controller: App\Controller\ProviderProxyController::uploadMedia
+
+app_provider_media_download:
+    path: /api/provider/media/{mediaId}
+    methods: [GET]
+    controller: App\Controller\ProviderProxyController::downloadMedia
+
 app_webhook:
     path: /webhook
     methods: [GET, POST]

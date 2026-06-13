@@ -15,6 +15,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 #[Route('/api/provider')]
 class ProviderProxyController extends AbstractController
@@ -42,6 +43,9 @@ class ProviderProxyController extends AbstractController
 
         $ticketId = (int) $payload['ticketId'];
         $content = $payload['content'];
+        $mediaId = $payload['mediaId'] ?? null;
+        $mimeType = $payload['mimeType'] ?? null;
+        $caption = $payload['caption'] ?? null;
 
         // --- Phone Resolution Chain ---
         $ticket = $this->ticketRepository->find($ticketId);
@@ -73,7 +77,11 @@ class ProviderProxyController extends AbstractController
 
         // --- Call Graph API ---
         try {
-            $graphResponse = $this->graphClient->sendMessage($phone, $content);
+            if ($mediaId !== null && $mimeType !== null) {
+                $graphResponse = $this->graphClient->sendMediaMessage($phone, $mediaId, $mimeType, $caption ?? $content);
+            } else {
+                $graphResponse = $this->graphClient->sendMessage($phone, $content);
+            }
         } catch (GraphApiException $e) {
             $httpStatus = $this->mapGraphErrorCode($e->getGraphCode());
             $errorType = $this->mapGraphErrorType($e->getGraphCode());
@@ -112,6 +120,60 @@ class ProviderProxyController extends AbstractController
             ],
             Response::HTTP_OK
         );
+    }
+
+    #[Route('/media/upload', methods: ['POST'])]
+    public function uploadMedia(Request $request): JsonResponse
+    {
+        /** @var UploadedFile|null $file */
+        $file = $request->files->get('file');
+
+        if (!$file instanceof UploadedFile || !$file->isValid()) {
+            return new JsonResponse(
+                ['error' => 'No valid file provided. Use multipart/form-data with a "file" field.'],
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        $filePath = $file->getPathname();
+        $mimeType = $file->getMimeType() ?? 'application/octet-stream';
+
+        try {
+            $result = $this->graphClient->uploadMedia($filePath, $mimeType);
+
+            return new JsonResponse(
+                ['mediaId' => $result['id'] ?? ''],
+                Response::HTTP_OK
+            );
+        } catch (GraphApiException $e) {
+            return new JsonResponse(
+                [
+                    'type' => 'GRAPH_API_ERROR',
+                    'code' => $e->getGraphCode(),
+                    'message' => $e->getMessage(),
+                ],
+                Response::HTTP_BAD_GATEWAY
+            );
+        }
+    }
+
+    #[Route('/media/{mediaId}', methods: ['GET'])]
+    public function downloadMedia(string $mediaId): Response
+    {
+        try {
+            $content = $this->graphClient->downloadMedia($mediaId);
+
+            return new Response($content, Response::HTTP_OK);
+        } catch (GraphApiException $e) {
+            return new JsonResponse(
+                [
+                    'type' => 'GRAPH_API_ERROR',
+                    'code' => $e->getGraphCode(),
+                    'message' => $e->getMessage(),
+                ],
+                $this->mapGraphErrorCode($e->getGraphCode())
+            );
+        }
     }
 
     /**
