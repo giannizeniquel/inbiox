@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError, timer, MonoTypeOperatorFunction } from 'rxjs';
-import { catchError, retry } from 'rxjs/operators';
+import { catchError, map, retry } from 'rxjs/operators';
 import { Message, SendMessageRequest } from '../models/message.model';
 import { environment } from '../../../environments/environment';
 
@@ -12,8 +12,9 @@ export class MessageApiService {
 
   getMessages(ticketId: string): Observable<Message[]> {
     return this.http
-      .get<Message[]>(`${this.baseUrl}/tickets/${ticketId}/messages`)
+      .get<{ data: Message[]; meta: { has_more: boolean } }>(`${this.baseUrl}/tickets/${ticketId}/messages`)
       .pipe(
+        map((response) => response.data),
         this.retryWithBackoff(),
         catchError(this.handleError)
       );
