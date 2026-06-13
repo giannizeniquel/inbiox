@@ -24,6 +24,21 @@ class GraphClient
     ) {}
 
     /**
+     * Infer WhatsApp media type category from a MIME type.
+     *
+     * @return string One of "image", "video", "audio", "document"
+     */
+    private function inferMediaType(string $mimeType): string
+    {
+        return match (true) {
+            str_starts_with($mimeType, 'image/') => 'image',
+            str_starts_with($mimeType, 'video/') => 'video',
+            str_starts_with($mimeType, 'audio/') => 'audio',
+            default => 'document',
+        };
+    }
+
+    /**
      * Send a text message via the WhatsApp Cloud API.
      *
      * @param string $to      Recipient phone number in E.164 format
@@ -49,6 +64,157 @@ class GraphClient
                 'type' => 'text',
                 'text' => ['body' => $content],
             ],
+        ]);
+
+        $statusCode = $response->getStatusCode();
+        $body = $response->toArray(false);
+
+        if ($statusCode >= 400) {
+            $error = $body['error'] ?? ['code' => 0, 'message' => 'Unknown Graph API error'];
+            throw new GraphApiException(
+                $error['message'] ?? 'Unknown Graph API error',
+                $error['code'] ?? 0,
+            );
+        }
+
+        return $body;
+    }
+
+    /**
+     * Upload media to WhatsApp Cloud API.
+     *
+     * POST /{phoneNumberId}/media with multipart form data.
+     *
+     * @param string $filePath Absolute path to the file on disk
+     * @param string $mimeType MIME type of the file (e.g. "image/jpeg")
+     *
+     * @return array Decoded JSON response, e.g. {id: "media-id-string"}
+     *
+     * @throws GraphApiException On Graph API error
+     */
+    public function uploadMedia(string $filePath, string $mimeType): array
+    {
+        $url = sprintf('%s/%s/media', self::BASE_URL, $this->phoneNumberId);
+
+        $response = $this->httpClient->request('POST', $url, [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $this->accessToken,
+            ],
+            'body' => [
+                'messaging_product' => 'whatsapp',
+                'file' => fopen($filePath, 'r'),
+                'type' => $mimeType,
+            ],
+        ]);
+
+        $statusCode = $response->getStatusCode();
+        $body = $response->toArray(false);
+
+        if ($statusCode >= 400) {
+            $error = $body['error'] ?? ['code' => 0, 'message' => 'Unknown Graph API error'];
+            throw new GraphApiException(
+                $error['message'] ?? 'Unknown Graph API error',
+                $error['code'] ?? 0,
+            );
+        }
+
+        return $body;
+    }
+
+    /**
+     * Download media from WhatsApp Cloud API.
+     *
+     * First resolves the media URL via GET /{mediaId}, then fetches the binary content.
+     *
+     * @param string $mediaId Media ID returned from uploadMedia
+     *
+     * @return string Binary content of the media file
+     *
+     * @throws GraphApiException On Graph API error
+     */
+    public function downloadMedia(string $mediaId): string
+    {
+        // Step 1: Get media metadata (contains the download URL)
+        $url = sprintf('%s/%s', self::BASE_URL, $mediaId);
+
+        $response = $this->httpClient->request('GET', $url, [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $this->accessToken,
+            ],
+        ]);
+
+        $statusCode = $response->getStatusCode();
+        $body = $response->toArray(false);
+
+        if ($statusCode >= 400) {
+            $error = $body['error'] ?? ['code' => 0, 'message' => 'Unknown Graph API error'];
+            throw new GraphApiException(
+                $error['message'] ?? 'Unknown Graph API error',
+                $error['code'] ?? 0,
+            );
+        }
+
+        $mediaUrl = $body['url'] ?? null;
+
+        if (!$mediaUrl) {
+            throw new GraphApiException('Media URL not found in response', 0);
+        }
+
+        // Step 2: Download the actual binary content
+        $downloadResponse = $this->httpClient->request('GET', $mediaUrl, [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $this->accessToken,
+            ],
+        ]);
+
+        if ($downloadResponse->getStatusCode() >= 400) {
+            throw new GraphApiException('Failed to download media binary', $downloadResponse->getStatusCode());
+        }
+
+        return $downloadResponse->getContent();
+    }
+
+    /**
+     * Send a message with media attachment via the WhatsApp Cloud API.
+     *
+     * POST /{phoneNumberId}/messages with type = image/video/audio/document.
+     *
+     * @param string      $to       Recipient phone number in E.164 format
+     * @param string      $mediaId  Media ID from uploadMedia
+     * @param string      $mimeType MIME type to infer media category
+     * @param string|null $caption  Optional caption for image/video/document
+     *
+     * @return array Decoded JSON response, e.g. {messages: [{id: "wamid.xxx"}]}
+     *
+     * @throws GraphApiException On Graph API error
+     */
+    public function sendMediaMessage(string $to, string $mediaId, string $mimeType, ?string $caption = null): array
+    {
+        $url = sprintf('%s/%s/messages', self::BASE_URL, $this->phoneNumberId);
+
+        $mediaType = $this->inferMediaType($mimeType);
+
+        $payload = [
+            'messaging_product' => 'whatsapp',
+            'recipient_type' => 'individual',
+            'to' => $to,
+            'type' => $mediaType,
+            $mediaType => [
+                'id' => $mediaId,
+            ],
+        ];
+
+        // Caption is supported for image, video, and document types
+        if ($caption !== null && \in_array($mediaType, ['image', 'video', 'document'], true)) {
+            $payload[$mediaType]['caption'] = $caption;
+        }
+
+        $response = $this->httpClient->request('POST', $url, [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $this->accessToken,
+                'Content-Type' => 'application/json',
+            ],
+            'json' => $payload,
         ]);
 
         $statusCode = $response->getStatusCode();
