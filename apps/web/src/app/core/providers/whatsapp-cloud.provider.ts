@@ -121,4 +121,47 @@ export class WhatsAppCloudProvider implements ProviderInterface {
   connect(): void {
     // No-op
   }
+
+  // ──────────────────────────────────────────────
+  //  Media Support (CAP-8 — Sprint 13.4)
+  // ──────────────────────────────────────────────
+
+  /**
+   * Upload a media file to WhatsApp via backend proxy.
+   *
+   * POST /api/provider/media/upload (multipart/form-data)
+   * Response: { mediaId: string }
+   */
+  uploadMedia(file: Blob, mimeType: string): Observable<{mediaId: string}> {
+    const form = new FormData();
+    // Infer file extension from MIME type for the filename
+    const ext = mimeType.split('/')[1] || 'bin';
+    form.append('file', file, `upload.${ext}`);
+    return this.http.post<{mediaId: string}>('/api/provider/media/upload', form);
+  }
+
+  /**
+   * Download a media file from WhatsApp via backend proxy.
+   *
+   * GET /api/provider/media/{mediaId}
+   * Response: binary Blob
+   */
+  downloadMedia(mediaId: string): Observable<Blob> {
+    return this.http.get(`/api/provider/media/${mediaId}`, { responseType: 'blob' });
+  }
+
+  /**
+   * Send a message with a media attachment via backend proxy.
+   *
+   * POST /api/provider/send { ticketId, content, mediaId, mimeType }
+   * Response: Message
+   */
+  sendMediaMessage(ticketId: string, mediaId: string, mimeType: string, caption?: string): Observable<Message> {
+    return this.http.post<Message>('/api/provider/send', {
+      ticketId,
+      content: caption || '',
+      mediaId,
+      mimeType,
+    });
+  }
 }
