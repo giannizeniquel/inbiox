@@ -635,6 +635,27 @@ export class FakeWhatsappProvider implements ProviderInterface {
   }
 
   // ──────────────────────────────────────────────
+  //  Template Stubs (CAP-8 — Sprint 13.4B)
+  // ──────────────────────────────────────────────
+
+  /**
+   * Stub: Send a template message returns a fake message with the template name.
+   */
+  sendTemplate(ticketId: string, templateName: string, _language: string, _parameters: string[]): Observable<Message> {
+    const message: Message = {
+      id: 'fake-template-' + Date.now(),
+      ticketId,
+      content: `Template: ${templateName}`,
+      deliveryStatus: 'sent',
+      createdAt: new Date().toISOString(),
+      sender: 'agent',
+    };
+    return of(message).pipe(
+      delay(this.config.responseDelay)
+    );
+  }
+
+  // ──────────────────────────────────────────────
   //  Media Stubs (CAP-8 — Sprint 13.4)
   // ──────────────────────────────────────────────
 
