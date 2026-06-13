@@ -10,6 +10,7 @@
 
 export * from './provider.interface';
 export { FakeWhatsappProvider, type FakeWhatsappProviderConfig, type SimulationMetrics } from './fake-whatsapp.provider';
+export { WhatsAppCloudProvider } from './whatsapp-cloud.provider';
 
 // Re-export Application Layer
 export { SendMessageUseCase, RetryMessageUseCase, MessageSendFailed, MessageNotFound } from '../application/messaging';
