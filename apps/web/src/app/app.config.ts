@@ -3,10 +3,10 @@ import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
 import { routes } from './app.routes';
-import { ProviderInterface, FakeWhatsappProviderConfig, PROVIDER_CONFIG, PROVIDER_INTERFACE, FakeWhatsappProvider } from './core/providers';
+import { ProviderInterface, PROVIDER_INTERFACE, WhatsAppCloudProvider } from './core/providers';
 import { MercureService } from './core/realtime/mercure.service';
 import { SendMessageUseCase, RetryMessageUseCase } from './core/application/messaging';
-import { providerRegistry } from './core/application/providers';
+import { HttpClient } from '@angular/common/http';
 
 // APP_INITIALIZER to connect SSE on app startup
 const initializeSSE = {
@@ -19,22 +19,6 @@ const initializeSSE = {
     };
   },
   multi: true
-};
-
-// Default provider configuration (enhanced for simulation)
-const defaultProviderConfig: FakeWhatsappProviderConfig = {
-  responseDelay: 500,
-  failureRate: 0.05,
-  deliveryDelayMs: 0,
-  readDelayMs: 0,
-  // Simulation defaults
-  failureTypes: ['network', 'server'],
-  timeoutMs: 30000,
-  duplicateRate: 0,
-  disconnectAfterMessages: 0,
-  reconnectDelayMs: 2000,
-  outOfOrderRate: 0,
-  deterministicMode: false,
 };
 
 // Factory for SendMessageUseCase
@@ -57,24 +41,13 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideHttpClient(withInterceptorsFromDi()),
     initializeSSE,
-    // Provider layer configuration
-    {
-      provide: PROVIDER_CONFIG,
-      useValue: defaultProviderConfig
-    },
-    // ProviderInterface injected as FakeWhatsappProvider
+    // ProviderInterface injected as WhatsAppCloudProvider
     {
       provide: PROVIDER_INTERFACE,
-      useFactory: (config: FakeWhatsappProviderConfig) => {
-        // Check if already registered
-        let active = providerRegistry.getActive();
-        if (active) return active;
-
-        // Create and register the FakeWhatsappProvider
-        const provider = new FakeWhatsappProvider(config);
-        return provider;
+      useFactory: () => {
+        const http = inject(HttpClient);
+        return new WhatsAppCloudProvider(http);
       },
-      deps: [PROVIDER_CONFIG],
     },
     // Application Layer use cases
     sendMessageUseCaseProvider,
