@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Application\Service\GraphClient;
+use App\Domain\Message\Message;
 use App\Exception\GraphApiException;
 use App\Repository\TicketRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,6 +24,7 @@ class ProviderProxyController extends AbstractController
     public function __construct(
         private readonly TicketRepository $ticketRepository,
         private readonly GraphClient $graphClient,
+        private readonly EntityManagerInterface $em,
     ) {}
 
     #[Route('/send', methods: ['POST'])]
@@ -85,6 +88,20 @@ class ProviderProxyController extends AbstractController
         }
 
         $wamid = $graphResponse['messages'][0]['id'] ?? null;
+
+        // Persist WAMID as externalId on a new outbound Message for webhook correlation
+        if ($wamid !== null) {
+            $message = new Message(
+                ticket: $ticket,
+                content: $content,
+                direction: \App\Domain\Message\MessageDirection::OUTBOUND,
+                externalId: $wamid,
+            );
+            $message->setDeliveryStatus('sent');
+            $message->setUpdatedAt(new \DateTimeImmutable());
+            $this->em->persist($message);
+            $this->em->flush();
+        }
 
         return new JsonResponse(
             [
