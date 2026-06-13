@@ -122,6 +122,11 @@ app_provider_send:
     methods: [POST]
     controller: App\Controller\ProviderProxyController::send
 
+app_provider_template_send:
+    path: /api/provider/template/send
+    methods: [POST]
+    controller: App\Controller\ProviderProxyController::sendTemplate
+
 app_provider_media_upload:
     path: /api/provider/media/upload
     methods: [POST]

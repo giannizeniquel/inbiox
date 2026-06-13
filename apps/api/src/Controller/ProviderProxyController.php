@@ -122,6 +122,90 @@ class ProviderProxyController extends AbstractController
         );
     }
 
+    #[Route('/template/send', methods: ['POST'])]
+    public function sendTemplate(Request $request): JsonResponse
+    {
+        $payload = json_decode($request->getContent(), true);
+
+        if (!is_array($payload)
+            || !isset($payload['ticketId'])
+            || !isset($payload['templateName'])
+            || !isset($payload['language'])
+        ) {
+            return new JsonResponse(
+                ['error' => 'Missing required fields: ticketId, templateName, language'],
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        $ticketId = (int) $payload['ticketId'];
+        $templateName = $payload['templateName'];
+        $language = $payload['language'];
+        $parameters = $payload['parameters'] ?? [];
+
+        if (!is_array($parameters)) {
+            return new JsonResponse(
+                ['error' => 'Parameters must be an array of strings'],
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        // --- Phone Resolution Chain ---
+        $ticket = $this->ticketRepository->find($ticketId);
+
+        if (!$ticket) {
+            return new JsonResponse(
+                ['error' => 'Ticket not found'],
+                Response::HTTP_NOT_FOUND
+            );
+        }
+
+        $contact = $ticket->getContact();
+
+        if (!$contact) {
+            return new JsonResponse(
+                ['type' => 'PHONE_NOT_FOUND', 'message' => 'Ticket has no associated contact'],
+                Response::HTTP_UNPROCESSABLE_ENTITY
+            );
+        }
+
+        $phone = $contact->getPhone();
+
+        if ($phone === null || $phone === '') {
+            return new JsonResponse(
+                ['type' => 'PHONE_NOT_FOUND', 'message' => 'Contact has no phone number'],
+                Response::HTTP_UNPROCESSABLE_ENTITY
+            );
+        }
+
+        // --- Call Graph API ---
+        try {
+            $graphResponse = $this->graphClient->sendTemplate($phone, $templateName, $language, $parameters);
+        } catch (GraphApiException $e) {
+            $httpStatus = $this->mapGraphErrorCode($e->getGraphCode());
+            $errorType = $this->mapGraphErrorType($e->getGraphCode());
+
+            return new JsonResponse(
+                [
+                    'type' => $errorType,
+                    'code' => $e->getGraphCode(),
+                    'message' => $e->getMessage(),
+                ],
+                $httpStatus
+            );
+        }
+
+        $wamid = $graphResponse['messages'][0]['id'] ?? null;
+
+        return new JsonResponse(
+            [
+                'messageId' => $wamid,
+                'status' => 'sent',
+            ],
+            Response::HTTP_OK
+        );
+    }
+
     #[Route('/media/upload', methods: ['POST'])]
     public function uploadMedia(Request $request): JsonResponse
     {
