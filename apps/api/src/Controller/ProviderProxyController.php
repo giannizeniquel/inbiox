@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Application\Service\GraphClient;
 use App\Domain\Message\Message;
+use App\Domain\Message\MessageDirection;
 use App\Exception\GraphApiException;
 use App\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -91,14 +92,15 @@ class ProviderProxyController extends AbstractController
 
         // Persist WAMID as externalId on a new outbound Message for webhook correlation
         if ($wamid !== null) {
-            $message = new Message(
-                ticket: $ticket,
-                content: $content,
-                direction: \App\Domain\Message\MessageDirection::OUTBOUND,
-                externalId: $wamid,
-            );
+            $message = new Message();
+            $message->setContent($content);
+            $message->setExternalId($wamid);
+            $message->setDirection(MessageDirection::OUTBOUND->value);
             $message->setDeliveryStatus('sent');
             $message->setUpdatedAt(new \DateTimeImmutable());
+            if ($ticket->getConversation()) {
+                $message->setConversation($ticket->getConversation());
+            }
             $this->em->persist($message);
             $this->em->flush();
         }
