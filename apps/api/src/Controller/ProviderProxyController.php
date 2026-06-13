@@ -75,12 +75,16 @@ class ProviderProxyController extends AbstractController
             );
         }
 
+        // --- Multi-number resolution (CAP-7 / META-018) ---
+        // Use ticket's phoneNumberId if set, fallback to env default in GraphClient
+        $phoneNumberId = $ticket->getPhoneNumberId();
+
         // --- Call Graph API ---
         try {
             if ($mediaId !== null && $mimeType !== null) {
-                $graphResponse = $this->graphClient->sendMediaMessage($phone, $mediaId, $mimeType, $caption ?? $content);
+                $graphResponse = $this->graphClient->sendMediaMessage($phone, $mediaId, $mimeType, $caption ?? $content, $phoneNumberId);
             } else {
-                $graphResponse = $this->graphClient->sendMessage($phone, $content);
+                $graphResponse = $this->graphClient->sendMessage($phone, $content, $phoneNumberId);
             }
         } catch (GraphApiException $e) {
             $httpStatus = $this->mapGraphErrorCode($e->getGraphCode());
@@ -178,9 +182,12 @@ class ProviderProxyController extends AbstractController
             );
         }
 
+        // --- Multi-number resolution (CAP-7 / META-018) ---
+        $phoneNumberId = $ticket->getPhoneNumberId();
+
         // --- Call Graph API ---
         try {
-            $graphResponse = $this->graphClient->sendTemplate($phone, $templateName, $language, $parameters);
+            $graphResponse = $this->graphClient->sendTemplate($phone, $templateName, $language, $parameters, $phoneNumberId);
         } catch (GraphApiException $e) {
             $httpStatus = $this->mapGraphErrorCode($e->getGraphCode());
             $errorType = $this->mapGraphErrorType($e->getGraphCode());

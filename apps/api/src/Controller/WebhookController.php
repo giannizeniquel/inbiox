@@ -167,12 +167,14 @@ class WebhookController extends AbstractController
      * Persist raw webhook payload to webhook_payloads table (T-02).
      *
      * This runs BEFORE dispatch so we have a record even if processing fails.
+     * Extracts phone_number_id from metadata for multi-number traceability (CAP-7).
      */
     private function logRawPayload(array $payload): void
     {
         $eventType = 'unknown';
+        $phoneNumberId = null;
 
-        // Determine event type from payload structure
+        // Determine event type and extract phoneNumberId from metadata
         foreach ($payload['entry'] ?? [] as $entry) {
             foreach ($entry['changes'] ?? [] as $change) {
                 $value = $change['value'] ?? [];
@@ -182,13 +184,18 @@ class WebhookController extends AbstractController
                 if (isset($value['statuses'])) {
                     $eventType = 'status';
                 }
+                // Extract phone_number_id from metadata (CAP-7 / META-017)
+                if ($phoneNumberId === null && isset($value['metadata']['phone_number_id'])) {
+                    $phoneNumberId = $value['metadata']['phone_number_id'];
+                }
             }
         }
 
         $webhookPayload = new WebhookPayload(
             eventType: $eventType,
             payload: $payload,
-            receivedAt: new \DateTimeImmutable()
+            receivedAt: new \DateTimeImmutable(),
+            phoneNumberId: $phoneNumberId
         );
 
         $this->em->persist($webhookPayload);
@@ -205,6 +212,11 @@ class WebhookController extends AbstractController
      *
      * Note: Meta sends both messages and statuses under field = "messages".
      * We route by checking value.messages[] vs value.statuses[] presence.
+     *
+     * Multi-number (CAP-7 / META-017): extracts phone_number_id from metadata
+     * and passes it to handlers. Status updates already accept the optional
+     * $phoneNumberId parameter. Inbound message dispatch (when implemented)
+     * will receive it as the 4th argument to processInboundMessage().
      */
     private function dispatch(array $payload): void
     {
@@ -221,20 +233,24 @@ class WebhookController extends AbstractController
                     continue;
                 }
 
+                // Extract phone_number_id from metadata (CAP-7 / META-017)
+                $phoneNumberId = $value['metadata']['phone_number_id'] ?? null;
+
                 // Handle inbound messages — log and skip (deferred to Sprint 13.2+)
                 if (isset($value['messages']) && is_array($value['messages'])) {
                     foreach ($value['messages'] as $msg) {
                         $this->logger->info('Inbound message received (not yet processed)', [
                             'wamid' => $msg['id'] ?? 'unknown',
                             'from' => $msg['from'] ?? 'unknown',
+                            'phoneNumberId' => $phoneNumberId,
                         ]);
                     }
                 }
 
-                // Handle status updates
+                // Handle status updates — pass phoneNumberId for multi-number (CAP-7)
                 if (isset($value['statuses']) && is_array($value['statuses'])) {
                     foreach ($value['statuses'] as $statusEntry) {
-                        $this->handleStatusUpdate->processStatusUpdate($statusEntry);
+                        $this->handleStatusUpdate->processStatusUpdate($statusEntry, $phoneNumberId);
                     }
                 }
             }

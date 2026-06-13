@@ -41,16 +41,18 @@ class GraphClient
     /**
      * Send a text message via the WhatsApp Cloud API.
      *
-     * @param string $to      Recipient phone number in E.164 format
-     * @param string $content Message body text (≤ 4096 chars)
+     * @param string      $to             Recipient phone number in E.164 format
+     * @param string      $content        Message body text (≤ 4096 chars)
+     * @param string|null $phoneNumberId  Override phone number ID (null = use default from env)
      *
      * @return array Decoded JSON response, e.g. {messages: [{id: "wamid.xxx"}]}
      *
      * @throws GraphApiException On Graph API error (non-2xx response)
      */
-    public function sendMessage(string $to, string $content): array
+    public function sendMessage(string $to, string $content, ?string $phoneNumberId = null): array
     {
-        $url = sprintf('%s/%s/messages', self::BASE_URL, $this->phoneNumberId);
+        $phoneNumberId ??= $this->phoneNumberId;
+        $url = sprintf('%s/%s/messages', self::BASE_URL, $phoneNumberId);
 
         $response = $this->httpClient->request('POST', $url, [
             'headers' => [
@@ -85,16 +87,18 @@ class GraphClient
      *
      * POST /{phoneNumberId}/media with multipart form data.
      *
-     * @param string $filePath Absolute path to the file on disk
-     * @param string $mimeType MIME type of the file (e.g. "image/jpeg")
+     * @param string      $filePath       Absolute path to the file on disk
+     * @param string      $mimeType       MIME type of the file (e.g. "image/jpeg")
+     * @param string|null $phoneNumberId  Override phone number ID (null = use default from env)
      *
      * @return array Decoded JSON response, e.g. {id: "media-id-string"}
      *
      * @throws GraphApiException On Graph API error
      */
-    public function uploadMedia(string $filePath, string $mimeType): array
+    public function uploadMedia(string $filePath, string $mimeType, ?string $phoneNumberId = null): array
     {
-        $url = sprintf('%s/%s/media', self::BASE_URL, $this->phoneNumberId);
+        $phoneNumberId ??= $this->phoneNumberId;
+        $url = sprintf('%s/%s/media', self::BASE_URL, $phoneNumberId);
 
         $response = $this->httpClient->request('POST', $url, [
             'headers' => [
@@ -180,18 +184,20 @@ class GraphClient
      * POST /{phoneNumberId}/messages with type = "template".
      * Used for out-of-window conversations (outside the 24h customer service window).
      *
-     * @param string   $to           Recipient phone number in E.164 format
-     * @param string   $templateName The template name (e.g. "hello_world")
-     * @param string   $languageCode Language code (e.g. "en_US", "es_AR")
-     * @param string[] $parameters   Optional body text parameters (plain strings)
+     * @param string      $to             Recipient phone number in E.164 format
+     * @param string      $templateName   The template name (e.g. "hello_world")
+     * @param string      $languageCode   Language code (e.g. "en_US", "es_AR")
+     * @param string[]    $parameters     Optional body text parameters (plain strings)
+     * @param string|null $phoneNumberId  Override phone number ID (null = use default from env)
      *
      * @return array Decoded JSON response, e.g. {messages: [{id: "wamid.xxx"}]}
      *
      * @throws GraphApiException On Graph API error (non-2xx response)
      */
-    public function sendTemplate(string $to, string $templateName, string $languageCode, array $parameters = []): array
+    public function sendTemplate(string $to, string $templateName, string $languageCode, array $parameters = [], ?string $phoneNumberId = null): array
     {
-        $url = sprintf('%s/%s/messages', self::BASE_URL, $this->phoneNumberId);
+        $phoneNumberId ??= $this->phoneNumberId;
+        $url = sprintf('%s/%s/messages', self::BASE_URL, $phoneNumberId);
 
         $payload = [
             'messaging_product' => 'whatsapp',
@@ -241,18 +247,20 @@ class GraphClient
      *
      * POST /{phoneNumberId}/messages with type = image/video/audio/document.
      *
-     * @param string      $to       Recipient phone number in E.164 format
-     * @param string      $mediaId  Media ID from uploadMedia
-     * @param string      $mimeType MIME type to infer media category
-     * @param string|null $caption  Optional caption for image/video/document
+     * @param string      $to             Recipient phone number in E.164 format
+     * @param string      $mediaId        Media ID from uploadMedia
+     * @param string      $mimeType       MIME type to infer media category
+     * @param string|null $caption        Optional caption for image/video/document
+     * @param string|null $phoneNumberId  Override phone number ID (null = use default from env)
      *
      * @return array Decoded JSON response, e.g. {messages: [{id: "wamid.xxx"}]}
      *
      * @throws GraphApiException On Graph API error
      */
-    public function sendMediaMessage(string $to, string $mediaId, string $mimeType, ?string $caption = null): array
+    public function sendMediaMessage(string $to, string $mediaId, string $mimeType, ?string $caption = null, ?string $phoneNumberId = null): array
     {
-        $url = sprintf('%s/%s/messages', self::BASE_URL, $this->phoneNumberId);
+        $phoneNumberId ??= $this->phoneNumberId;
+        $url = sprintf('%s/%s/messages', self::BASE_URL, $phoneNumberId);
 
         $mediaType = $this->inferMediaType($mimeType);
 

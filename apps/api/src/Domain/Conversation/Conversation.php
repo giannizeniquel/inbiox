@@ -37,6 +37,9 @@ class Conversation
     #[ORM\Column(name: 'updated_at', type: 'datetime_immutable')]
     private \DateTimeImmutable $updatedAt;
 
+    #[ORM\Column(name: 'phone_number_id', type: 'string', length: 36, nullable: true)]
+    private ?string $phoneNumberId = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -100,6 +103,17 @@ class Conversation
     public function setUpdatedAt(\DateTimeImmutable $updatedAt): self
     {
         $this->updatedAt = $updatedAt;
+        return $this;
+    }
+
+    public function getPhoneNumberId(): ?string
+    {
+        return $this->phoneNumberId;
+    }
+
+    public function setPhoneNumberId(?string $phoneNumberId): self
+    {
+        $this->phoneNumberId = $phoneNumberId;
         return $this;
     }
 }

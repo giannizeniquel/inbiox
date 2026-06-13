@@ -57,6 +57,9 @@ class Ticket
     #[ORM\Column(name: "last_event_seq", type: "integer", nullable: false, options: ["default" => 0])]
     private int $lastEventSeq = 0;
 
+    #[ORM\Column(name: "phone_number_id", type: "string", length: 36, nullable: true)]
+    private ?string $phoneNumberId = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -198,6 +201,17 @@ class Ticket
     {
         $this->lastEventSeq++;
         return $this->lastEventSeq;
+    }
+
+    public function getPhoneNumberId(): ?string
+    {
+        return $this->phoneNumberId;
+    }
+
+    public function setPhoneNumberId(?string $phoneNumberId): self
+    {
+        $this->phoneNumberId = $phoneNumberId;
+        return $this;
     }
 
     public function markUpdated(): self

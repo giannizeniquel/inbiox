@@ -32,14 +32,18 @@ class WebhookPayload
     #[ORM\Column(name: 'received_at', type: 'datetime_immutable')]
     private \DateTimeImmutable $receivedAt;
 
+    #[ORM\Column(name: 'phone_number_id', type: 'string', length: 36, nullable: true)]
+    private ?string $phoneNumberId = null;
+
     #[ORM\Column(type: 'boolean', options: ['default' => false])]
     private bool $processed = false;
 
-    public function __construct(string $eventType, array $payload, \DateTimeImmutable $receivedAt)
+    public function __construct(string $eventType, array $payload, \DateTimeImmutable $receivedAt, ?string $phoneNumberId = null)
     {
         $this->eventType = $eventType;
         $this->payload = $payload;
         $this->receivedAt = $receivedAt;
+        $this->phoneNumberId = $phoneNumberId;
     }
 
     public function getId(): ?int
@@ -60,6 +64,17 @@ class WebhookPayload
     public function getReceivedAt(): \DateTimeImmutable
     {
         return $this->receivedAt;
+    }
+
+    public function getPhoneNumberId(): ?string
+    {
+        return $this->phoneNumberId;
+    }
+
+    public function setPhoneNumberId(?string $phoneNumberId): self
+    {
+        $this->phoneNumberId = $phoneNumberId;
+        return $this;
     }
 
     public function isProcessed(): bool

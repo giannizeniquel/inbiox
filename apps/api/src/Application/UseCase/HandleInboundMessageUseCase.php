@@ -39,7 +39,17 @@ class HandleInboundMessageUseCase
         private EventCollector $eventCollector,
     ) {}
 
-    public function processInboundMessage(string $phone, string $message, ?string $externalId = null): array
+    /**
+     * Process an incoming message from a webhook or API call.
+     *
+     * @param string      $phone           Sender's phone number in E.164 format
+     * @param string      $message         Message content
+     * @param string|null $externalId      WAMID from Meta (for idempotency)
+     * @param string|null $phoneNumberId   WhatsApp phone number ID that received this message (CAP-7)
+     *
+     * @return array{contact_id: int, conversation_id: int, message_id: int, ticket_id: int|null, status: string}
+     */
+    public function processInboundMessage(string $phone, string $message, ?string $externalId = null, ?string $phoneNumberId = null): array
     {
         // 1. Normalize phone
         $normalizedPhone = preg_replace('/[^0-9]/', '', $phone);
@@ -49,8 +59,8 @@ class HandleInboundMessageUseCase
 
         $normalizedPhone = '+' . $normalizedPhone;
 
-        $result = $this->em->getConnection()->transactional(function() use ($normalizedPhone, $message, $externalId) {
-            return $this->executeInternal($normalizedPhone, $message, $externalId);
+        $result = $this->em->getConnection()->transactional(function() use ($normalizedPhone, $message, $externalId, $phoneNumberId) {
+            return $this->executeInternal($normalizedPhone, $message, $externalId, $phoneNumberId);
         });
 
         // After commit, persist collected events to outbox
@@ -104,7 +114,7 @@ foreach ($events as $event) {
         $this->eventCollector->clear();
     }
 
-    private function executeInternal(string $phone, string $message, ?string $externalId): array
+    private function executeInternal(string $phone, string $message, ?string $externalId, ?string $phoneNumberId = null): array
     {
         // 2. Find or create Contact
         $contact = $this->contactRepo->findOneByPhone($phone);
@@ -121,6 +131,9 @@ foreach ($events as $event) {
             $conversation = new Conversation();
             $conversation->setContact($contact);
             $conversation->setStatus(ConversationStatus::OPEN->value);
+            if ($phoneNumberId !== null) {
+                $conversation->setPhoneNumberId($phoneNumberId);
+            }
             $this->em->persist($conversation);
             $isNewConversation = true;
         }
@@ -161,6 +174,9 @@ foreach ($events as $event) {
             $ticket->setConversation($conversation);
             $ticket->setStatus(TicketStatus::NEW->value);
             $ticket->setPriority('medium');
+            if ($phoneNumberId !== null) {
+                $ticket->setPhoneNumberId($phoneNumberId);
+            }
             $this->em->persist($ticket);
             $isNewTicket = true;
         } else {

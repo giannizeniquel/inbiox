@@ -43,6 +43,9 @@ class HandleStatusUpdateUseCase
         'failed' => 'failed',
     ];
 
+    /** @var string|null Current phoneNumberId being processed (set during processStatusUpdate) */
+    private ?string $currentPhoneNumberId = null;
+
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly MessageRepository $messageRepo,
@@ -59,6 +62,9 @@ class HandleStatusUpdateUseCase
      */
     public function processStatusUpdate(array $statusEntry, ?string $phoneNumberId = null): void
     {
+        // Store for outbox event payload inclusion (CAP-7 / META-019)
+        $this->currentPhoneNumberId = $phoneNumberId;
+
         // 1. Extract fields
         $wamid = $statusEntry['id'] ?? null;
         $newStatusRaw = $statusEntry['status'] ?? null;
@@ -227,6 +233,7 @@ class HandleStatusUpdateUseCase
                 $payload['message_id'] = $event->messageId;
                 $payload['delivery_status'] = $event->deliveryStatus;
                 $payload['failed_reason'] = $event->failedReason;
+                $payload['phone_number_id'] = $this->currentPhoneNumberId;
             }
 
             $outboxEvent = new OutboxEvent(
