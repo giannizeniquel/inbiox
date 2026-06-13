@@ -65,6 +65,7 @@ export class ConversationComponent implements OnDestroy {
     if (this.uiStore.hasNewMessages()) {
       this.notifyNewMessages();
       this.uiStore.markViewed();
+      this.cdr.markForCheck();
     }
   });
 
