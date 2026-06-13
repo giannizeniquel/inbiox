@@ -83,10 +83,11 @@ final readonly class RealtimeEventFactory
                 'assignedAt' => $s['assigned_at'] ?? $s['occurred_at'] ?? '',
             ],
             RealtimeEventType::MessageUpdated => [
-                'messageId' => (int) ($s['message_id'] ?? 0),
-                'ticketId'  => $ticketId,
-                'status'    => $s['status'] ?? null,
-                'updatedAt' => $s['updated_at'] ?? $s['occurred_at'] ?? '',
+                'messageId'    => (int) ($s['message_id'] ?? 0),
+                'ticketId'     => $ticketId,
+                'status'       => $s['delivery_status'] ?? null,
+                'failedReason' => $s['failed_reason'] ?? null,
+                'updatedAt'    => $s['occurred_at'] ?? '',
             ],
             RealtimeEventType::ConversationUpdated => [
                 'conversationId' => (int) ($s['conversation_id'] ?? 0),

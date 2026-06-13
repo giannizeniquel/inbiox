@@ -55,6 +55,7 @@ export class MessageBubbleComponent {
     switch (this.message().deliveryStatus) {
       case 'sending': return '⏳';
       case 'sent': return '✓';
+      case 'delivered': return '✓✓';
       case 'read': return '✓✓';
       case 'failed': return '⚠';
       default: return '';

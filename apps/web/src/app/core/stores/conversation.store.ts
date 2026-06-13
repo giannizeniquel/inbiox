@@ -14,7 +14,7 @@ export interface BridgeMessage {
   content: string;
   createdAt?: string;
   created_at: string;
-  deliveryStatus: 'sending' | 'sent' | 'read' | 'failed';
+  deliveryStatus: 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
   externalId?: string;
   failedReason?: string;
 

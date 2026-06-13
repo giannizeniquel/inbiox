@@ -9,7 +9,7 @@ export type FsmStatus = 'new' | 'active' | 'waiting' | 'resolved' | 'closed';
 /**
  * Message delivery status.
  */
-export type DeliveryStatus = 'sending' | 'sent' | 'read' | 'failed';
+export type DeliveryStatus = 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
 
 /**
  * Message sender type.

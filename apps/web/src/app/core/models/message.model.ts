@@ -11,7 +11,7 @@ export interface Message {
   id: string;
   chatId: string;
   body: string;
-  deliveryStatus: 'sending' | 'sent' | 'read' | 'failed';
+  deliveryStatus: 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
   tempId?: string;      // optimistic / pending
   sentAt?: string;
   readAt?: string;

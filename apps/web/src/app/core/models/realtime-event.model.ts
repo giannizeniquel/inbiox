@@ -80,6 +80,7 @@ export interface MessageUpdatedPayload {
   messageId: number;
   ticketId: number;
   status: string | null;
+  failedReason: string | null;
   updatedAt: string;
 }
 
