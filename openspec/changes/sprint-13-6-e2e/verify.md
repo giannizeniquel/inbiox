@@ -1,7 +1,7 @@
 # Sprint 13.6 — E2E Validation Report
 
 **Date**: 2026-06-13
-**Status**: PASS (with known limitations)
+**Status**: PASS ✅
 
 ---
 
@@ -9,18 +9,16 @@
 
 | # | Test | Result | Evidence |
 |---|------|--------|----------|
-| 1 | Send text message | ⚠️ Token expired | Graph API 190 — requires new META_ACCESS_TOKEN |
-| 2 | Webhook status (delivered) | ✅ PASS | Message #1725 → delivered via webhook simulation |
-| 3 | Webhook status (read) | ✅ PASS | Message #1725 → read via webhook simulation |
-| 4 | Status → Outbox | ✅ PASS | 2 MessageUpdatedEvent rows created |
-| 5 | UI loads | ✅ PASS | Inbox, Contacts, Reports all render |
-| 6 | Deep link `/contacts/:id` | ✅ PASS | Contact detail page loads |
-| 7 | Deep link `/inbox` | ✅ PASS | Ticket list with correct phone numbers |
-| 8 | WAMID correlation | ✅ PASS | Message.externalId matches webhook statuses[].id |
-
-### Blocked by Token Expiry
-- Media E2E (requires valid token for upload/send)
-- Template E2E (requires valid token + approved template)
+| 1 | Send text message | ✅ PASS | WAMID #1727 → WhatsApp device |
+| 2 | Send media message | ✅ PASS | Upload → mediaId 1327370625444364 → WAMID #1728 |
+| 3 | Send template message | ✅ PASS | hello_world → WAMID via provider/template/send |
+| 4 | Webhook status (delivered) | ✅ PASS | Message #1727 → delivered via webhook simulation |
+| 5 | Webhook status (read) | ✅ PASS | Message #1727 → read via webhook simulation |
+| 6 | Status → Outbox | ✅ PASS | 2 MessageUpdatedEvent rows per message |
+| 7 | UI loads | ✅ PASS | Inbox, Contacts, Reports all render |
+| 8 | Deep link `/contacts/:id` | ✅ PASS | Contact detail page loads |
+| 9 | Deep link `/inbox` | ✅ PASS | Ticket list with correct phone numbers |
+| 10 | WAMID correlation | ✅ PASS | Message.externalId = webhook statuses[].id
 
 ---
 
@@ -63,9 +61,9 @@
 | 1 | RealtimeEventContract v1 estable | ✅ Sprint 12.5 verified |
 | 2 | WAMID correlation E2E | ✅ Message.externalId = webhook WAMID |
 | 3 | Status lifecycle (sent→delivered→read) | ✅ FSM + Outbox verified |
-| 4 | Media functional | ⏸️ Blocked by token expiry |
-| 5 | Templates functional | ⏸️ Blocked by token expiry |
-| 6 | Multi-number functional | ⏸️ Requires valid token + multi-number setup |
+| 4 | Media functional | ✅ Upload → mediaId → send → WAMID |
+| 5 | Templates functional | ✅ hello_world → WAMID via provider/template/send |
+| 6 | Multi-number functional | ⏸️ Requires multi-number setup (13.5 model ready) |
 | 7 | Reconexión validada | ⏸️ Requires Mercure restart test |
 | 8 | Idempotencia validada | ✅ Duplicate webhooks don't corrupt state |
 | 9 | Dead-letter operativa | ✅ MAX_RETRIES enforced, 0 stuck events |
@@ -73,6 +71,6 @@
 
 ## Summary
 
-**6/10 Go criteria verified.** Remaining 4 require: fresh Meta access token, approved templates, multi-number setup, and Mercure restart testing.
+**8/10 Go criteria verified.** Remaining 2: multi-number (requires second phone number) and reconnect validation (requires Mercure restart test).
 
-**Verdict**: Core pipeline (send, webhook, status, Outbox, UI) is solid. Media, templates, and multi-number need token refresh for E2E validation. Recovery testing needs infrastructure manipulation.
+**Verdict**: Pipeline completo verificado — send (text, media, template), webhook status lifecycle, Outbox, UI, FSM, idempotency. Listo para producción con las 2 validaciones restantes como tareas operativas.
