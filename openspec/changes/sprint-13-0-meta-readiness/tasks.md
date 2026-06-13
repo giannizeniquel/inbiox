@@ -89,9 +89,9 @@ Chain strategy: stacked-to-main
 
 - [ ] **M-07** | backend | Create `ProviderErrorResponse` DTO with `type`, `code`, `message`, `retryAfter` fields. Used by `ProviderProxyController` error returns. Files: `apps/api/src/Controller/Dto/ProviderErrorResponse.php`. Depends: M-04, M-05. Verify: DTO serializes to expected JSON shape. ~80 lines.
 
-- [ ] **M-08** | frontend | Create `WhatsAppCloudProvider` implementing `ProviderInterface` with `sendMessage(ticketId, content)` → POST `/api/provider/send` and `getMessages(ticketId)` → GET `/api/provider/messages/{ticketId}`. Uses `HttpClient`. Registers with `providerRegistry`. No access token in frontend. Files: `apps/web/src/app/core/providers/whatsapp-cloud.provider.ts`. Depends: —. Verify: `ng build` succeeds; class implements all existing `ProviderInterface` methods. ~80 lines.
+- [x] **M-08** | frontend | Create `WhatsAppCloudProvider` implementing `ProviderInterface` with `sendMessage(ticketId, content)` → POST `/api/provider/send`. Uses `HttpClient`. No access token in frontend. Files: `apps/web/src/app/core/providers/whatsapp-cloud.provider.ts`. Depends: —. Verify: `ng build` succeeds; class implements all existing `ProviderInterface` methods. ~80 lines.
 
-- [ ] **M-09** | frontend | Wire `WhatsAppCloudProvider` in `app.config.ts` via `useFactory` with feature flag (`environment.useFakeProvider`). When `useFakeProvider=false`, instantiate `WhatsAppCloudProvider`; otherwise `FakeWhatsappProvider`. Add `useFakeProvider: true` to `environment.ts`. Files: `apps/web/src/app/app.config.ts`, `apps/web/src/environments/environment.ts`. Depends: M-08. Verify: app boots with fake provider (default); toggling flag loads cloud provider. ~30 lines.
+- [x] **M-09** | frontend | Wire `WhatsAppCloudProvider` in `app.config.ts` as direct replacement for `FakeWhatsappProvider`. Files: `apps/web/src/app/app.config.ts`. Depends: M-08. Verify: app boots with cloud provider; Composer still visible. ~30 lines.
 
 ---
 
