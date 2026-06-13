@@ -92,6 +92,20 @@ export interface ProviderInterface {
   sendMessage(ticketId: string, content: string): Observable<Message>;
 
   /**
+   * Send a template message to a ticket.
+   *
+   * Used for out-of-window conversations (outside the 24h customer service window).
+   * WhatsApp requires templates for initiating conversations beyond the 24h window.
+   *
+   * @param ticketId - The ticket ID to send the template to
+   * @param templateName - The template name (e.g. "hello_world")
+   * @param language - Language code (e.g. "en_US", "es_AR")
+   * @param parameters - Optional body text parameters (plain strings)
+   * @returns Observable that emits the sent message with deliveryStatus
+   */
+  sendTemplate(ticketId: string, templateName: string, language: string, parameters: string[]): Observable<Message>;
+
+  /**
    * Get all messages for a specific ticket.
    * @param ticketId - The ticket ID
    * @returns Observable that emits an array of messages
