@@ -634,6 +634,45 @@ export class FakeWhatsappProvider implements ProviderInterface {
     return this.queue.length;
   }
 
+  // ──────────────────────────────────────────────
+  //  Media Stubs (CAP-8 — Sprint 13.4)
+  // ──────────────────────────────────────────────
+
+  /**
+   * Stub: Upload media returns a fake media ID.
+   */
+  uploadMedia(_file: Blob, _mimeType: string): Observable<{mediaId: string}> {
+    return of({mediaId: 'fake-media-' + Date.now()}).pipe(
+      delay(this.config.responseDelay)
+    );
+  }
+
+  /**
+   * Stub: Download media returns a fake blob.
+   */
+  downloadMedia(_mediaId: string): Observable<Blob> {
+    return of(new Blob(['fake media content'], { type: 'application/octet-stream' })).pipe(
+      delay(this.config.responseDelay / 2)
+    );
+  }
+
+  /**
+   * Stub: Send a media message creates a fake message with the media ID.
+   */
+  sendMediaMessage(ticketId: string, _mediaId: string, _mimeType: string, caption?: string): Observable<Message> {
+    const message: Message = {
+      id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      ticketId,
+      sender: 'agent',
+      content: caption || '',
+      createdAt: new Date().toISOString(),
+      deliveryStatus: 'sent',
+    };
+    return of(message).pipe(
+      delay(this.config.responseDelay)
+    );
+  }
+
   private getRandomFailureReason(): string {
     const types = this.config.failureTypes ?? ['network', 'server'];
     const reason = types[Math.floor(this.random() * types.length)];
