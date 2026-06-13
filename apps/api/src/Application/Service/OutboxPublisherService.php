@@ -23,7 +23,7 @@ class OutboxPublisherService
         private readonly EntityManagerInterface $em,
         private readonly RealtimeEventFactory $factory,
         private readonly ?\App\Application\Service\MercureJwtService $jwtService = null,
-        private readonly string $mercureUrl = 'http://172.19.0.1:3000/.well-known/mercure'
+        private readonly string $mercureUrl = 'http://mercure:80/.well-known/mercure'
     ) {}
 
     /**
