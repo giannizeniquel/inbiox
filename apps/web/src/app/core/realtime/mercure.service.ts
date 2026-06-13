@@ -77,18 +77,21 @@ export class MercureService {
 
   private reconnectTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
+  private abortController: AbortController | null = null;
+
   connect(): void {
-    if (this.eventSource) return;
+    if (this.abortController) return;
 
     this.connectionState.set('connecting');
-    // Subscribe to wildcard to receive all ticket events
     const hubUrl = `${environment.mercureUrl}/.well-known/mercure?topic=ticket/*`;
     console.log('[Mercure] Connecting to:', hubUrl);
 
-    try {
-      this.eventSource = new EventSource(hubUrl);
-
-      this.eventSource.onopen = () => {
+    this.abortController = new AbortController();
+    
+    fetch(hubUrl, { signal: this.abortController.signal })
+      .then(response => {
+        if (!response.ok || !response.body) throw new Error('SSE connection failed');
+        
         this.ngZone.run(() => {
           this.isConnected = true;
           this.reconnectAttempts = 0;
@@ -97,23 +100,41 @@ export class MercureService {
           this.connectionStore.setOnline();
           console.log('[Mercure] Connected to hub');
           this.reconnectCount.set(0);
-
-          // Resync all tracked tickets to recover events missed during disconnect
           this.resyncAllTickets();
         });
-      };
 
-      this.eventSource.onmessage = (event: MessageEvent) => {
-        this.ngZone.run(() => this.handleMessage(event));
-      };
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
 
-      this.eventSource.onerror = (err) => {
-        this.ngZone.run(() => this.onError(err));
-      };
-    } catch (err) {
-      console.error('[Mercure] Failed to connect:', err);
-      this.handleError();
-    }
+        const read = () => {
+          reader.read().then(({done, value}) => {
+            if (done) {
+              this.ngZone.run(() => this.onError(new Error('SSE stream ended')));
+              return;
+            }
+            buffer += decoder.decode(value, {stream: true});
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+            let data = '';
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                data += line.slice(6);
+              } else if (line === '' && data) {
+                this.ngZone.run(() => this.handleMessage({data} as MessageEvent));
+                data = '';
+              }
+            }
+            read();
+          }).catch(() => {
+            this.ngZone.run(() => this.onError(new Error('SSE read error')));
+          });
+        };
+        read();
+      })
+      .catch(() => {
+        this.ngZone.run(() => this.onError(new Error('SSE fetch failed')));
+      });
   }
 
   /**
@@ -569,8 +590,8 @@ export class MercureService {
     this.connectionStatus.next(false);
     this.connectionState.set('disconnected');
     this.connectionStore.setOffline();
-    this.eventSource?.close();
-    this.eventSource = null;
+    this.abortController?.abort();
+    this.abortController = null;
 
     // Circuit breaker: after maxReconnectAttempts consecutive failures, stop auto-retry
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
@@ -631,8 +652,8 @@ export class MercureService {
     if (this.reconnectTimeoutId) {
       clearTimeout(this.reconnectTimeoutId);
     }
-    this.eventSource?.close();
-    this.eventSource = null;
+    this.abortController?.abort();
+    this.abortController = null;
     this.seqState.clear();
     this.bufferedEvents.clear();
     this.processedEventIds.clear();
