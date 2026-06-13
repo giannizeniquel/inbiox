@@ -1,4 +1,4 @@
-import { Injectable, signal, inject } from '@angular/core';
+import { Injectable, signal, inject, NgZone } from '@angular/core';
 import { BehaviorSubject, Subject, Observable } from 'rxjs';
 import { RealtimeEvent, RealtimeEventType, assertNever,
   MessageAddedPayload, TicketCreatedPayload, TicketStatusChangedPayload,
@@ -55,6 +55,7 @@ export class MercureService {
   private connectionStore = inject(ConnectionStore);
   private uiStore = inject(UiStore);
   private metrics = inject(MetricsService);
+  private ngZone = inject(NgZone);
 
   /** Mercure JWT token for authenticated HTTP calls (resync, etc.) */
   private mercureToken: string | null = null;
@@ -88,24 +89,26 @@ export class MercureService {
       this.eventSource = new EventSource(hubUrl);
 
       this.eventSource.onopen = () => {
-        this.isConnected = true;
-        this.reconnectAttempts = 0;
-        this.connectionStatus.next(true);
-        this.connectionState.set('connected');
-        this.connectionStore.setOnline();
-        console.log('[Mercure] Connected to hub');
-        this.reconnectCount.set(0);
+        this.ngZone.run(() => {
+          this.isConnected = true;
+          this.reconnectAttempts = 0;
+          this.connectionStatus.next(true);
+          this.connectionState.set('connected');
+          this.connectionStore.setOnline();
+          console.log('[Mercure] Connected to hub');
+          this.reconnectCount.set(0);
 
-        // Resync all tracked tickets to recover events missed during disconnect
-        this.resyncAllTickets();
+          // Resync all tracked tickets to recover events missed during disconnect
+          this.resyncAllTickets();
+        });
       };
 
       this.eventSource.onmessage = (event: MessageEvent) => {
-        this.handleMessage(event);
+        this.ngZone.run(() => this.handleMessage(event));
       };
 
       this.eventSource.onerror = (err) => {
-        this.onError(err);
+        this.ngZone.run(() => this.onError(err));
       };
     } catch (err) {
       console.error('[Mercure] Failed to connect:', err);
