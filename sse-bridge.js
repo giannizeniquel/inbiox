@@ -1,32 +1,38 @@
-// SSE Bridge: Forwards Mercure SSE to avoid cross-origin issues
 const http = require('http');
-const https = require('http');
-
-const MERCURE_URL = 'http://localhost:3000';
 const PORT = 4201;
 
 http.createServer((req, res) => {
-  if (req.url?.startsWith('/.well-known/mercure')) {
-    const targetUrl = MERCURE_URL + req.url;
-    console.log('SSE Bridge:', req.method, targetUrl);
-    
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    
-    const proxyReq = http.get(targetUrl, (proxyRes) => {
-      proxyRes.pipe(res);
-    });
-    
-    proxyReq.on('error', (err) => {
-      console.error('SSE Bridge error:', err.message);
-      res.end();
-    });
-    
-    req.on('close', () => proxyReq.destroy());
-    return;
+  if (!req.url?.startsWith('/.well-known/mercure')) {
+    res.writeHead(404); res.end(); return;
   }
-  res.writeHead(404);
-  res.end();
-}).listen(PORT, () => console.log(`SSE Bridge: localhost:${PORT} -> ${MERCURE_URL}`));
+  
+  console.log('Bridge: connected');
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'Access-Control-Allow-Origin': '*',
+  });
+  res.write(':\n\n'); // heartbeat
+  res.flushHeaders();
+
+  const client = http.request('http://localhost:3000' + req.url, (mercureRes) => {
+    mercureRes.on('data', (chunk) => {
+      const text = chunk.toString();
+      if (text.trim()) {
+        res.write(text);
+        res.write('\n');
+      }
+    });
+    mercureRes.on('end', () => res.end());
+    mercureRes.on('error', () => res.end());
+  });
+  
+  client.on('error', () => res.end());
+  client.end();
+  
+  req.on('close', () => {
+    console.log('Bridge: disconnected');
+    client.destroy();
+  });
+}).listen(PORT, () => console.log('SSE Bridge on port', PORT));

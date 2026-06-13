@@ -77,8 +77,6 @@ export class MercureService {
 
   private reconnectTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
-  private abortController: AbortController | null = null;
-
   connect(): void {
     if (this.abortController) return;
 
@@ -86,55 +84,28 @@ export class MercureService {
     const hubUrl = `${environment.mercureUrl}/.well-known/mercure?topic=ticket/*`;
     console.log('[Mercure] Connecting to:', hubUrl);
 
-    this.abortController = new AbortController();
-    
-    fetch(hubUrl, { signal: this.abortController.signal })
-      .then(response => {
-        if (!response.ok || !response.body) throw new Error('SSE connection failed');
-        
-        this.ngZone.run(() => {
-          this.isConnected = true;
-          this.reconnectAttempts = 0;
-          this.connectionStatus.next(true);
-          this.connectionState.set('connected');
-          this.connectionStore.setOnline();
-          console.log('[Mercure] Connected to hub');
-          this.reconnectCount.set(0);
-          this.resyncAllTickets();
-        });
+    this.eventSource = new EventSource(hubUrl);
 
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-
-        const read = () => {
-          reader.read().then(({done, value}) => {
-            if (done) {
-              this.ngZone.run(() => this.onError(new Error('SSE stream ended')));
-              return;
-            }
-            buffer += decoder.decode(value, {stream: true});
-            const lines = buffer.split('\n');
-            buffer = lines.pop() || '';
-            let data = '';
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                data += line.slice(6);
-              } else if (line === '' && data) {
-                this.ngZone.run(() => this.handleMessage({data} as MessageEvent));
-                data = '';
-              }
-            }
-            read();
-          }).catch(() => {
-            this.ngZone.run(() => this.onError(new Error('SSE read error')));
-          });
-        };
-        read();
-      })
-      .catch(() => {
-        this.ngZone.run(() => this.onError(new Error('SSE fetch failed')));
+    this.eventSource.onopen = () => {
+      this.ngZone.run(() => {
+        this.isConnected = true;
+        this.reconnectAttempts = 0;
+        this.connectionStatus.next(true);
+        this.connectionState.set('connected');
+        this.connectionStore.setOnline();
+        console.log('[Mercure] Connected to hub');
+        this.reconnectCount.set(0);
+        this.resyncAllTickets();
       });
+    };
+
+    this.eventSource.onmessage = (event: MessageEvent) => {
+      this.ngZone.run(() => this.handleMessage(event));
+    };
+
+    this.eventSource.onerror = () => {
+      this.ngZone.run(() => this.onError(new Error('SSE error')));
+    };
   }
 
   /**
