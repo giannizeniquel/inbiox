@@ -175,6 +175,38 @@ export interface ProviderInterface {
    * - Emit reconnection status via callbacks
    */
   connect(): void;
+
+  // ──────────────────────────────────────────────
+  //  Media Support (CAP-8 — Sprint 13.4)
+  // ──────────────────────────────────────────────
+
+  /**
+   * Upload a media file to the messaging channel.
+   *
+   * @param file - The file blob to upload
+   * @param mimeType - MIME type of the file (e.g. "image/jpeg")
+   * @returns Observable emitting the uploaded media ID
+   */
+  uploadMedia(file: Blob, mimeType: string): Observable<{mediaId: string}>;
+
+  /**
+   * Download a media file by its media ID.
+   *
+   * @param mediaId - The media ID to download
+   * @returns Observable emitting the file as a Blob
+   */
+  downloadMedia(mediaId: string): Observable<Blob>;
+
+  /**
+   * Send a message with a media attachment.
+   *
+   * @param ticketId - The ticket ID to send the message to
+   * @param mediaId - The media ID from uploadMedia
+   * @param mimeType - MIME type of the media file
+   * @param caption - Optional caption text for the media
+   * @returns Observable emitting the sent message
+   */
+  sendMediaMessage(ticketId: string, mediaId: string, mimeType: string, caption?: string): Observable<Message>;
 }
 
 /**
