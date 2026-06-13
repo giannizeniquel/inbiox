@@ -85,44 +85,25 @@ export class MercureService {
     const hubUrl = `${environment.mercureUrl}/.well-known/mercure?topic=ticket/*`;
     console.log('[Mercure] Connecting to:', hubUrl);
 
-    // Use fetch() with ReadableStream instead of EventSource.
-    // EventSource has known issues with cross-origin SSE in Chrome.
-    fetch(hubUrl)
-      .then(response => {
-        if (!response.ok || !response.body) throw new Error(`SSE connection failed: ${response.status}`);
-        console.log('[Mercure] Connected via fetch');
-        
-        this.isConnected = true;
-        this.reconnectAttempts = 0;
-        this.connectionStatus.next(true);
-        this.connectionState.set('connected');
-        this.connectionStore.setOnline();
-        this.reconnectCount.set(0);
-        
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-        
-        const processChunk = ({done, value}: {done: boolean; value?: Uint8Array}) => {
-          if (done) { this.onError(new Error('SSE stream ended')); return; }
-          buffer += decoder.decode(value!, {stream: true});
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              try {
-                const data = JSON.parse(line.slice(6));
-                this.ngZone.run(() => this.handleMessage({data: line.slice(6)} as MessageEvent));
-              } catch(e) {}
-            }
-          }
-          reader.read().then(processChunk).catch(() => this.onError(new Error('SSE read error')));
-        };
-        reader.read().then(processChunk);
-      })
-      .catch(() => {
-        this.ngZone.run(() => this.onError(new Error('SSE fetch failed')));
-      });
+    this.eventSource = new EventSource(hubUrl);
+
+    this.eventSource.onopen = () => {
+      console.log('[Mercure] ✅ Connected to hub');
+      this.isConnected = true;
+      this.reconnectAttempts = 0;
+      this.connectionStatus.next(true);
+      this.connectionState.set('connected');
+      this.connectionStore.setOnline();
+      this.reconnectCount.set(0);
+    };
+
+    this.eventSource.onmessage = (event) => {
+      this.ngZone.run(() => this.handleMessage(event));
+    };
+
+    this.eventSource.onerror = () => {
+      this.ngZone.run(() => this.onError(new Error('SSE error')));
+    };
   }
 
   /**
