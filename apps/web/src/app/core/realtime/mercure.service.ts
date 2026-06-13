@@ -230,6 +230,7 @@ export class MercureService {
    *   - during resync: buffer all events for this ticket
    */
   private handleMessage(event: MessageEvent): void {
+    console.log('[Mercure] 📨 RAW SSE EVENT received:', event.data?.substring(0, 100));
     try {
       const data = JSON.parse(event.data) as RealtimeEvent;
 
