@@ -117,6 +117,11 @@ app_contacts_delete:
     methods: [DELETE]
     controller: App\Controller\ContactController::delete
 
+app_provider_send:
+    path: /api/provider/send
+    methods: [POST]
+    controller: App\Controller\ProviderProxyController::send
+
 app_ticket_events_resync:
     path: /api/tickets/{id}/events
     methods: [GET]
