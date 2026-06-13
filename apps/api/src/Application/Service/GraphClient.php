@@ -44,6 +44,7 @@ class GraphClient
             ],
             'json' => [
                 'messaging_product' => 'whatsapp',
+                'recipient_type' => 'individual',
                 'to' => $to,
                 'type' => 'text',
                 'text' => ['body' => $content],
