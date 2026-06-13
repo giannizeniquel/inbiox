@@ -268,6 +268,20 @@ class ProviderProxyController extends AbstractController
     }
 
     /**
+     * Normalize phone number for outbound WhatsApp API calls.
+     * DB stores numbers without the 9 prefix (54...), but Meta API requires 549... format.
+     */
+    private function normalizeOutboundPhone(string $phone): string
+    {
+        $digits = preg_replace('/[^0-9]/', '', $phone);
+        // Argentine mobile: if stored as 54..., add the 9
+        if (str_starts_with($digits, '54') && strlen($digits) >= 11) {
+            return '54' . '9' . substr($digits, 2);
+        }
+        return $digits;
+    }
+
+    /**
      * Map Graph API error code to HTTP status.
      */
     private function mapGraphErrorCode(int $code): int
