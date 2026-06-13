@@ -85,9 +85,7 @@ export class MercureService {
     console.log('[Mercure] Connecting to:', hubUrl);
 
     try {
-      this.eventSource = new EventSource(hubUrl, {
-        withCredentials: true
-      });
+      this.eventSource = new EventSource(hubUrl);
 
       this.eventSource.onopen = () => {
         this.isConnected = true;
