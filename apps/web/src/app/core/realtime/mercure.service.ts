@@ -35,6 +35,7 @@ type ConnectionState = 'connected' | 'disconnected' | 'connecting';
 @Injectable({ providedIn: 'root' })
 export class MercureService {
   private eventSource: EventSource | null = null;
+  private abortController: AbortController | null = null;
 
   // Connection state tracking
   private reconnectAttempts = 0;
@@ -78,7 +79,7 @@ export class MercureService {
   private reconnectTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   connect(): void {
-    if (this.abortController) return;
+    if (this.eventSource) return;
 
     this.connectionState.set('connecting');
     const hubUrl = `${environment.mercureUrl}/.well-known/mercure?topic=ticket/*`;
