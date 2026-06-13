@@ -30,6 +30,15 @@ class Message
     #[ORM\Column(type: 'text')]
     private string $content;
 
+    #[ORM\Column(name: 'delivery_status', type: 'string', length: 20, options: ['default' => 'sent'])]
+    private string $deliveryStatus = 'sent';
+
+    #[ORM\Column(name: 'failed_reason', type: 'string', length: 255, nullable: true)]
+    private ?string $failedReason = null;
+
+    #[ORM\Column(name: 'updated_at', type: 'datetime_immutable', nullable: true)]
+    private ?\DateTimeImmutable $updatedAt = null;
+
     #[ORM\Column(name: 'created_at', type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
 
@@ -84,6 +93,39 @@ class Message
     public function setContent(string $content): self
     {
         $this->content = $content;
+        return $this;
+    }
+
+    public function getDeliveryStatus(): string
+    {
+        return $this->deliveryStatus;
+    }
+
+    public function setDeliveryStatus(string $deliveryStatus): self
+    {
+        $this->deliveryStatus = $deliveryStatus;
+        return $this;
+    }
+
+    public function getFailedReason(): ?string
+    {
+        return $this->failedReason;
+    }
+
+    public function setFailedReason(?string $failedReason): self
+    {
+        $this->failedReason = $failedReason;
+        return $this;
+    }
+
+    public function getUpdatedAt(): ?\DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
+    public function setUpdatedAt(?\DateTimeImmutable $updatedAt): self
+    {
+        $this->updatedAt = $updatedAt;
         return $this;
     }
 
