@@ -122,6 +122,11 @@ app_provider_send:
     methods: [POST]
     controller: App\Controller\ProviderProxyController::send
 
+app_webhook:
+    path: /webhook
+    methods: [GET, POST]
+    controller: App\Controller\WebhookController::handle
+
 app_ticket_events_resync:
     path: /api/tickets/{id}/events
     methods: [GET]

@@ -26,3 +26,8 @@ services:
         arguments:
             $accessToken: '%env(META_ACCESS_TOKEN)%'
             $phoneNumberId: '%env(META_PHONE_NUMBER_ID)%'
+
+    App\Controller\WebhookController:
+        arguments:
+            $verifyToken: '%env(META_WEBHOOK_VERIFY_TOKEN)%'
+            $appSecret: '%env(META_APP_SECRET)%'
