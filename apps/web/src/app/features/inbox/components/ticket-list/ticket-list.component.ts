@@ -1,9 +1,12 @@
 import { Component, inject, OnInit, OnDestroy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TicketStore } from '../../../../core/stores/ticket.store';
+import { ConversationStore } from '../../../../core/stores/conversation.store';
 import { TicketApiService } from '../../../../core/api/ticket-api.service';
+import { MessageApiService } from '../../../../core/api/message-api.service';
 import { MercureService } from '../../../../core/realtime/mercure.service';
 import { Ticket } from '../../../../core/models/ticket.model';
+import { take } from 'rxjs';
 import { TicketCardComponent } from '../ticket-card/ticket-card.component';
 import { TicketSearchComponent } from '../chat-search/ticket-search.component';
 import { TicketFiltersComponent } from '../chat-filters/ticket-filters.component';
@@ -17,7 +20,9 @@ import { TicketFiltersComponent } from '../chat-filters/ticket-filters.component
 })
 export class TicketListComponent implements OnInit, OnDestroy {
   protected readonly ticketStore = inject(TicketStore);
+  protected readonly conversationStore = inject(ConversationStore);
   private readonly ticketApi = inject(TicketApiService);
+  private readonly messageApi = inject(MessageApiService);
   private readonly mercure = inject(MercureService);
 
   // Signals from store
@@ -78,6 +83,26 @@ export class TicketListComponent implements OnInit, OnDestroy {
 
   selectTicket(ticket: Ticket): void {
     this.ticketStore.setActiveTicket(ticket.ticket_id);
+    // Load messages for the selected ticket
+    this.messageApi.getMessages(ticket.ticket_id).pipe(take(1)).subscribe({
+      next: (messages) => {
+        this.conversationStore.loadMessages(
+          messages.map(m => ({
+            id: String(m.message_id),
+            message_id: m.message_id,
+            ticketId: ticket.ticket_id,
+            chatId: ticket.ticket_id,
+            content: m.content,
+            body: m.content,
+            direction: m.direction as 'inbound' | 'outbound' | 'system',
+            deliveryStatus: (m.deliveryStatus || 'sent') as 'sent',
+            created_at: m.created_at || new Date().toISOString(),
+            sender: (m.direction === 'inbound' ? 'customer' : 'agent') as 'agent' | 'customer',
+          }))
+        );
+      },
+      error: (err) => console.error('[TicketList] Failed to load messages:', err)
+    });
   }
 
   trackByTicketId(_index: number, ticket: Ticket): string {
