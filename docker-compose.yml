@@ -5,6 +5,8 @@ services:
     build:
       context: ./infra/docker/php
     container_name: inbiox_php
+    extra_hosts:
+      - "localhost:172.19.0.1"
     volumes:
       - ./apps/api:/var/www/html
     working_dir: /var/www/html
