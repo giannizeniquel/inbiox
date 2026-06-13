@@ -40,10 +40,18 @@ class OutboxPublisherService
         }
 
         $publishedCount = 0;
+        $total = count($events);
 
         foreach ($events as $event) {
             $this->publishEvent($event) ? $publishedCount++ : null;
         }
+
+        error_log(sprintf(
+            'OutboxPublisher: publishPending complete — %d/%d published, %d failed',
+            $publishedCount,
+            $total,
+            $total - $publishedCount
+        ));
 
         return $publishedCount;
     }
@@ -132,48 +140,70 @@ class OutboxPublisherService
     private function publishEvent(OutboxEvent $event): bool
     {
         try {
-            error_log('OutboxPublisher: Publishing event ' . $event->getId() . ' to topic ' . $event->getTopic());
-            
             // Generate JWT for publishing
             $token = $this->getJwtToken();
-            
+            $tokenPreview = substr($token, 0, 30) . '...';
+
+            error_log(sprintf(
+                'OutboxPublisher: Publishing event=%s topic=%s mercureUrl=%s jwt=%s',
+                $event->getId(),
+                $event->getTopic(),
+                $this->mercureUrl,
+                $tokenPreview
+            ));
+
+            // Build RealtimeEventContract v1 JSON for the wire format
+            $contractData = $this->factory->build($event);
+            $dataJson = json_encode($contractData);
+            $postFields = http_build_query([
+                'topic' => $event->getTopic(),
+                'data' => $dataJson,
+                'id' => $event->getId(),
+                'type' => $contractData['eventType'],
+            ]);
+
+            error_log('OutboxPublisher: POST data (first 200 chars): ' . substr($postFields, 0, 200));
+
             // Publish directly via curl
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_URL, $this->mercureUrl);
             curl_setopt($ch, CURLOPT_POST, true);
-
-            // Build RealtimeEventContract v1 JSON for the wire format
-            $contractData = $this->factory->build($event);
-
-            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
-                'topic' => $event->getTopic(),
-                'data' => json_encode($contractData),
-                'id' => $event->getId(),
-                'type' => $contractData['eventType'], // Use enum string, not PHP FQCN
-            ]));
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $postFields);
             curl_setopt($ch, CURLOPT_HTTPHEADER, [
                 'Content-Type: application/x-www-form-urlencoded',
                 'Authorization: Bearer ' . $token,
             ]);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-            
+
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $error = curl_error($ch);
             curl_close($ch);
-            
+
             if ($httpCode >= 200 && $httpCode < 400) {
-                error_log('OutboxPublisher: Published successfully to ' . $event->getTopic());
+                error_log(sprintf(
+                    'OutboxPublisher: SUCCESS event=%s topic=%s http=%d',
+                    $event->getId(),
+                    $event->getTopic(),
+                    $httpCode
+                ));
                 $this->markPublished($event);
                 return true;
             } else {
-                error_log('OutboxPublisher: HTTP ' . $httpCode . ' - ' . ($response ?: $error));
+                error_log(sprintf(
+                    'OutboxPublisher: FAILURE event=%s topic=%s http=%d response=%s error=%s',
+                    $event->getId(),
+                    $event->getTopic(),
+                    $httpCode,
+                    $response ?: '(empty)',
+                    $error ?: '(none)'
+                ));
                 $this->handleFailure($event);
                 return false;
             }
         } catch (\Throwable $e) {
-            error_log('OutboxPublisher: Error publishing: ' . $e->getMessage());
+            error_log('OutboxPublisher: Exception publishing event=' . $event->getId() . ' error=' . $e->getMessage());
             $this->handleFailure($event);
 
             return false;
