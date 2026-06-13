@@ -5,11 +5,10 @@ namespace App\Domain\Event;
 use Symfony\Component\Uid\Ulid;
 
 /**
- * Stub domain event for message updates (delivered, read, etc.).
+ * Domain event for message status updates (delivered, read, failed, etc.).
  *
- * Reserved for future use — currently no code emits this event.
- * The RealtimeEventType::MessageUpdated enum value exists so the
- * wire contract is stable before the event is actually published.
+ * Published via EventCollector + Outbox → Mercure when a message's
+ * deliveryStatus transitions to a new state via HandleStatusUpdateUseCase.
  */
 final readonly class MessageUpdatedEvent extends DomainEvent
 {
@@ -20,7 +19,8 @@ final readonly class MessageUpdatedEvent extends DomainEvent
         int $seq,
         int $version,
         public int $messageId,
-        public ?string $status = null,
+        public string $deliveryStatus,
+        public ?string $failedReason = null,
     ) {
         parent::__construct(
             $eventId,
