@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Application\UseCase\HandleInboundMessageUseCase;
 use App\Application\UseCase\HandleStatusUpdateUseCase;
 use App\Domain\Webhook\WebhookPayload;
 use Doctrine\ORM\EntityManagerInterface;
@@ -28,6 +29,7 @@ class WebhookController extends AbstractController
         private readonly string $verifyToken,
         private readonly string $appSecret,
         private readonly HandleStatusUpdateUseCase $handleStatusUpdate,
+        private readonly HandleInboundMessageUseCase $handleInboundMessage,
         private readonly EntityManagerInterface $em,
         private readonly LoggerInterface $logger,
     ) {}
@@ -236,14 +238,59 @@ class WebhookController extends AbstractController
                 // Extract phone_number_id from metadata (CAP-7 / META-017)
                 $phoneNumberId = $value['metadata']['phone_number_id'] ?? null;
 
-                // Handle inbound messages — log and skip (deferred to Sprint 13.2+)
+                // Handle inbound messages — process via HandleInboundMessageUseCase
                 if (isset($value['messages']) && is_array($value['messages'])) {
+                    // Build phone→name lookup from contacts[] (Meta sends wa_id + profile.name)
+                    $contactNames = [];
+                    if (isset($value['contacts']) && is_array($value['contacts'])) {
+                        foreach ($value['contacts'] as $contact) {
+                            if (isset($contact['wa_id'])) {
+                                $contactNames[$contact['wa_id']] = $contact['profile']['name'] ?? null;
+                            }
+                        }
+                    }
+
                     foreach ($value['messages'] as $msg) {
-                        $this->logger->info('Inbound message received (not yet processed)', [
-                            'wamid' => $msg['id'] ?? 'unknown',
-                            'from' => $msg['from'] ?? 'unknown',
-                            'phoneNumberId' => $phoneNumberId,
-                        ]);
+                        $from = $msg['from'] ?? null;
+                        $wamid = $msg['id'] ?? null;
+                        $msgType = $msg['type'] ?? null;
+
+                        // Only process text messages for now
+                        if ($msgType !== 'text' || $from === null) {
+                            $this->logger->debug('Skipping non-text inbound message', [
+                                'type' => $msgType,
+                                'from' => $from,
+                                'wamid' => $wamid,
+                            ]);
+                            continue;
+                        }
+
+                        $text = $msg['text']['body'] ?? '';
+                        $contactName = $contactNames[$from] ?? null;
+
+                        try {
+                            $result = $this->handleInboundMessage->processInboundMessage(
+                                $from,
+                                $text,
+                                $wamid,
+                                $phoneNumberId,
+                                $contactName,
+                            );
+
+                            $this->logger->info('Inbound message processed', [
+                                'wamid' => $wamid,
+                                'from' => $from,
+                                'message_id' => $result['message_id'],
+                                'ticket_id' => $result['ticket_id'],
+                                'ticket_status' => $result['ticket_status'] ?? 'ok',
+                            ]);
+                        } catch (\Throwable $e) {
+                            $this->logger->error('Failed to process inbound message', [
+                                'wamid' => $wamid,
+                                'from' => $from,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
                     }
                 }
 

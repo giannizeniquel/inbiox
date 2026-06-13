@@ -46,10 +46,11 @@ class HandleInboundMessageUseCase
      * @param string      $message         Message content
      * @param string|null $externalId      WAMID from Meta (for idempotency)
      * @param string|null $phoneNumberId   WhatsApp phone number ID that received this message (CAP-7)
+     * @param string|null $contactName     Optional contact name to set on new/existing contacts
      *
      * @return array{contact_id: int, conversation_id: int, message_id: int, ticket_id: int|null, status: string}
      */
-    public function processInboundMessage(string $phone, string $message, ?string $externalId = null, ?string $phoneNumberId = null): array
+    public function processInboundMessage(string $phone, string $message, ?string $externalId = null, ?string $phoneNumberId = null, ?string $contactName = null): array
     {
         // 1. Normalize phone
         $normalizedPhone = preg_replace('/[^0-9]/', '', $phone);
@@ -59,8 +60,8 @@ class HandleInboundMessageUseCase
 
         $normalizedPhone = '+' . $normalizedPhone;
 
-        $result = $this->em->getConnection()->transactional(function() use ($normalizedPhone, $message, $externalId, $phoneNumberId) {
-            return $this->executeInternal($normalizedPhone, $message, $externalId, $phoneNumberId);
+        $result = $this->em->getConnection()->transactional(function() use ($normalizedPhone, $message, $externalId, $phoneNumberId, $contactName) {
+            return $this->executeInternal($normalizedPhone, $message, $externalId, $phoneNumberId, $contactName);
         });
 
         // After commit, persist collected events to outbox
@@ -114,14 +115,20 @@ foreach ($events as $event) {
         $this->eventCollector->clear();
     }
 
-    private function executeInternal(string $phone, string $message, ?string $externalId, ?string $phoneNumberId = null): array
+    private function executeInternal(string $phone, string $message, ?string $externalId, ?string $phoneNumberId = null, ?string $contactName = null): array
     {
         // 2. Find or create Contact
         $contact = $this->contactRepo->findOneByPhone($phone);
         if (!$contact) {
             $contact = new Contact();
             $contact->setPhone($phone);
+            if ($contactName !== null) {
+                $contact->setName($contactName);
+            }
             $this->em->persist($contact);
+        } elseif ($contactName !== null && $contact->getName() === null) {
+            // Update name on existing contact if it was missing
+            $contact->setName($contactName);
         }
 
         // 3. Find or create Conversation
