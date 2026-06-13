@@ -175,6 +175,68 @@ class GraphClient
     }
 
     /**
+     * Send a template message via the WhatsApp Cloud API.
+     *
+     * POST /{phoneNumberId}/messages with type = "template".
+     * Used for out-of-window conversations (outside the 24h customer service window).
+     *
+     * @param string   $to           Recipient phone number in E.164 format
+     * @param string   $templateName The template name (e.g. "hello_world")
+     * @param string   $languageCode Language code (e.g. "en_US", "es_AR")
+     * @param string[] $parameters   Optional body text parameters (plain strings)
+     *
+     * @return array Decoded JSON response, e.g. {messages: [{id: "wamid.xxx"}]}
+     *
+     * @throws GraphApiException On Graph API error (non-2xx response)
+     */
+    public function sendTemplate(string $to, string $templateName, string $languageCode, array $parameters = []): array
+    {
+        $url = sprintf('%s/%s/messages', self::BASE_URL, $this->phoneNumberId);
+
+        $payload = [
+            'messaging_product' => 'whatsapp',
+            'recipient_type' => 'individual',
+            'to' => $to,
+            'type' => 'template',
+            'template' => [
+                'name' => $templateName,
+                'language' => ['code' => $languageCode],
+            ],
+        ];
+
+        if (\count($parameters) > 0) {
+            $bodyParams = [];
+            foreach ($parameters as $value) {
+                $bodyParams[] = ['type' => 'text', 'text' => $value];
+            }
+            $payload['template']['components'] = [
+                ['type' => 'body', 'parameters' => $bodyParams],
+            ];
+        }
+
+        $response = $this->httpClient->request('POST', $url, [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $this->accessToken,
+                'Content-Type' => 'application/json',
+            ],
+            'json' => $payload,
+        ]);
+
+        $statusCode = $response->getStatusCode();
+        $body = $response->toArray(false);
+
+        if ($statusCode >= 400) {
+            $error = $body['error'] ?? ['code' => 0, 'message' => 'Unknown Graph API error'];
+            throw new GraphApiException(
+                $error['message'] ?? 'Unknown Graph API error',
+                $error['code'] ?? 0,
+            );
+        }
+
+        return $body;
+    }
+
+    /**
      * Send a message with media attachment via the WhatsApp Cloud API.
      *
      * POST /{phoneNumberId}/messages with type = image/video/audio/document.
