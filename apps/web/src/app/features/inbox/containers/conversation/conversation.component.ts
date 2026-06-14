@@ -69,6 +69,17 @@ export class ConversationComponent implements OnDestroy {
     }
   });
 
+  // Auto-scroll to bottom when new messages arrive (if already at bottom)
+  private readonly messagesEffect = effect(() => {
+    const msgs = this.messages();
+    // Skip empty array (initial state)
+    if (msgs.length === 0) return;
+    // Scroll to bottom on first load or if already there
+    if (this.isAtBottom()) {
+      this.scrollToBottom();
+    }
+  });
+
   private scrollTimeout?: ReturnType<typeof setTimeout>;
   private subscription?: Subscription;
 
