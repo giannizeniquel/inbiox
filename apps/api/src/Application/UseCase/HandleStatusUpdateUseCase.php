@@ -239,7 +239,7 @@ class HandleStatusUpdateUseCase
             $outboxEvent = new OutboxEvent(
                 aggregateType: 'ticket',
                 aggregateId: (int) $event->ticketId,
-                topic: 'ticket/' . $event->ticketId,
+                topic: 'tickets',
                 eventType: $event->type,
                 payload: $payload,
                 sequence: $event->seq,

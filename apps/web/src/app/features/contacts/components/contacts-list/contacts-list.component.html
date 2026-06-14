@@ -17,28 +17,33 @@
   }
   <!-- Data state: render contacts -->
   @else {
-    @for (contact of store.filteredContacts(); track trackByContactId($index, contact)) {
-      <app-contact-card
-        [contact]="contact"
-        [selected]="store.selectedContactId() === contact.id"
-        (select)="onContactSelect($event)"
-        [class.focused]="isFocused(contact.id)"
-        (mouseenter)="onCardFocus($index)"
-      />
-    }
-    @if (hasMore()) {
-      <div class="load-more">
-        @if (loadingMore()) {
-          <button type="button" class="load-more__btn" disabled>
-            <span class="load-more__spinner"></span>
-            Cargando...
-          </button>
-        } @else {
-          <button type="button" class="load-more__btn" (click)="onLoadMore()">
-            Cargar más
-          </button>
-        }
-      </div>
-    }
+    <app-virtual-scroll-viewport
+      #vps
+      [items]="store.filteredContacts()"
+      [itemHeight]="72"
+      [bufferSize]="5"
+      (visibleRange)="onVisibleRangeChange($event)"
+      style="padding-bottom: 40px;"
+    >
+      @for (contact of visibleContacts(); track trackByContactId($index, contact)) {
+        <app-contact-card
+          [contact]="contact"
+          [selected]="store.selectedContactId() === contact.id"
+          (select)="onContactSelect($event)"
+          [class.focused]="isFocused(contact.id)"
+          (mouseenter)="onCardFocus($index)"
+        />
+      }
+      @if (hasMore()) {
+        <div class="load-more-sentinel">
+          @if (loadingMore()) {
+            <div class="load-more__indicator">
+              <span class="load-more__spinner"></span>
+              Cargando más...
+            </div>
+          }
+        </div>
+      }
+    </app-virtual-scroll-viewport>
   }
 </div>

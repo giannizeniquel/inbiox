@@ -1,4 +1,9 @@
-<div class="ticket-list">
+<div
+  class="ticket-list"
+  role="listbox"
+  tabindex="0"
+  aria-label="Lista de tickets"
+>
   <!-- Filters -->
   <app-ticket-filters (filterChange)="onFilterChange($event)" />
 
@@ -15,16 +20,23 @@
       <p>No hay tickets</p>
     </div>
   } @else {
-    <ul class="tickets">
-      @for (ticket of tickets(); track trackByTicketId($index, ticket)) {
-        <li>
-          <app-ticket-card
-            [ticket]="ticket"
-            [isActive]="selectedTicketId() === ticket.ticket_id"
-            (select)="selectTicket(ticket)"
-          />
-        </li>
+    <app-virtual-scroll-viewport
+      #vps
+      [items]="tickets()"
+      [itemHeight]="64"
+      [bufferSize]="5"
+      (visibleRange)="onVisibleRangeChange($event)"
+      style="padding-bottom: 20px;"
+    >
+      @for (ticket of visibleTickets(); track trackByTicketId($index, ticket)) {
+        <app-ticket-card
+          [ticket]="ticket"
+          [isActive]="selectedTicketId() === ticket.ticket_id"
+          [class.focused]="isFocused(ticket.ticket_id)"
+          (select)="selectTicket(ticket)"
+          (mouseenter)="onCardFocus($index)"
+        />
       }
-    </ul>
+    </app-virtual-scroll-viewport>
   }
 </div>

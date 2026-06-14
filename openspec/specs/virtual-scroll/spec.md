@@ -8,11 +8,11 @@ Custom virtual scrolling for fixed-height item lists using Intersection Observer
 
 ### Requirement: VirtualScrollViewport Component
 
-The system MUST provide a reusable standalone component that virtualizes rendering of homogeneous fixed-height item lists.
+The system MUST provide a reusable standalone component that virtualizes rendering of item lists, supporting both fixed-height and variable-height modes via a `mode` input.
 
 #### Scenario: Visible item rendering
 
-- GIVEN a list of N items and a viewport with `itemHeight=H` and `bufferSize=B`
+- GIVEN a list of N items and a viewport with `bufferSize=B`
 - WHEN the viewport is scrolled
 - THEN the component MUST render only items within the visible range plus B items above and below
 - AND MUST display top/bottom spacer elements whose heights equal the cumulative height of non-rendered items
@@ -24,7 +24,9 @@ The system MUST provide a reusable standalone component that virtualizes renderi
 - WHEN binding data to VirtualScrollViewport
 - THEN the component MUST accept:
   - `items: T[]` — the full item array
-  - `itemHeight: number` — fixed pixel height per item
+  - `mode: 'fixed' | 'variable'` — rendering mode (default `'fixed'`)
+  - `itemHeight: number` — fixed pixel height per item (fixed mode only)
+  - `estimatedItemHeight: number` — estimated height for unmeasured items (variable mode only)
   - `bufferSize: number` — extra items rendered above/below visible range
 - AND MUST project item content via `<ng-content>` compatible with Angular 19 `@for`
 
@@ -45,6 +47,21 @@ The system MUST provide a reusable standalone component that virtualizes renderi
 - GIVEN items array contains exactly one item
 - WHEN the viewport renders
 - THEN it MUST render that single item with no spacers
+
+#### Scenario: Fixed mode unchanged
+
+- GIVEN `mode='fixed'`
+- WHEN the viewport calculates visible range
+- THEN it MUST use `scrollTop / itemHeight` (integer division) as before
+- AND spacer heights MUST equal `startIndex * itemHeight` and `(totalItems - endIndex) * itemHeight`
+- AND behavior MUST be identical to the pre-existing fixed-height implementation
+
+#### Scenario: Variable mode uses height cache
+
+- GIVEN `mode='variable'`
+- WHEN the viewport calculates visible range
+- THEN it MUST use cumulative offsets with binary search instead of fixed division
+- AND spacer heights MUST be derived from cumulative offset values
 
 ### Requirement: Ticket List Virtualization
 
@@ -128,13 +145,13 @@ The system MUST maintain performance targets regardless of total item count.
 | Type | Count |
 |------|-------|
 | Requirements | 4 |
-| Total Scenarios | 14 |
+| Total Scenarios | 17 |
 
 ---
 
 ## Coverage
 
-- **Happy paths**: Rendering, scrolling, input/output contract, keyboard nav, polling, infinite scroll
+- **Happy paths**: Rendering, scrolling, input/output contract, keyboard nav, polling, infinite scroll, fixed-mode unchanged, variable-mode height cache
 - **Edge cases**: Empty list, single item, window resize, scroll restoration
 - **Error states**: N/A — virtual scroll is a rendering concern; data errors handled by stores
 

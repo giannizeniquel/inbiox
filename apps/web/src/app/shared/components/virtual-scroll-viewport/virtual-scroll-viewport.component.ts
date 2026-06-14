@@ -373,16 +373,10 @@ export class VirtualScrollViewportComponent<T> implements OnDestroy {
       end = Math.min(N - 1, start + visibleCount + buffer * 2);
     }
 
-    const oldStart = this.startIndex();
-    const oldEnd = this.endIndex();
-
     this.startIndex.set(start);
     this.endIndex.set(end);
 
-    // Emit only when indices actually change (avoids redundant parent chd)
-    if (start !== oldStart || end !== oldEnd) {
-      this.visibleRange.emit({ startIndex: start, endIndex: end });
-    }
+    this.visibleRange.emit({ startIndex: start, endIndex: end });
   }
 
   // ─── Public API ────────────────────────────────────────────────────────────

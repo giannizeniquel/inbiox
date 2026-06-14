@@ -141,11 +141,10 @@ class Sprint09BOutboxTest extends KernelTestCase
         $outboxEvent = new OutboxEvent(
             'ticket',
             1,
-            'ticket/1',
+            'tickets',
             'message.created',
             ['event_id' => (string)(new Ulid()), 'type' => 'message.created', 'ticket_id' => 1, 'seq' => 1]
         );
-        // Set published_at directly
         $outboxEvent->markPublished();
         
         $this->em->persist($outboxEvent);

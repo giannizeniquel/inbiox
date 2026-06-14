@@ -14,10 +14,11 @@ class GetTicketMessagesQuery
     public function execute(
         int $ticketId,
         ?string $cursor = null,
-        int $limit = 200,
-        string $direction = 'forward'
+        int $limit = 20,
+        string $direction = 'forward',
+        int $offset = 0,
     ): array {
-        $limit = min(100, max(1, $limit));
+        $limit = min(200, max(1, $limit));
         
         // Get ticket's conversation
         $ticketSql = 'SELECT conversation_id FROM tickets WHERE id = ?';
@@ -40,7 +41,7 @@ class GetTicketMessagesQuery
         }
         
         if ($direction === 'backward') {
-            return $this->getMessagesBackward($conversationId, $cursorData, $limit);
+            return $this->getMessagesBackward($conversationId, $cursorData, $limit, $offset);
         }
         
         return $this->getMessagesForward($conversationId, $cursorData, $limit);
@@ -91,7 +92,7 @@ class GetTicketMessagesQuery
         return ['items' => $items, 'has_more' => $hasMore, 'next_cursor' => $nextCursor];
     }
     
-    private function getMessagesBackward(int $conversationId, ?array $cursorData, int $limit): array
+    private function getMessagesBackward(int $conversationId, ?array $cursorData, int $limit, int $offset = 0): array
     {
         $params = [$conversationId];
         $where = 'conversation_id = ?';
@@ -108,6 +109,10 @@ class GetTicketMessagesQuery
                 WHERE $where
                 ORDER BY created_at DESC, id DESC
                 LIMIT " . ($limit + 1);
+        
+        if ($offset > 0) {
+            $sql .= " OFFSET " . $offset;
+        }
         
         $stmt = $this->entityManager->getConnection()->executeQuery($sql, $params);
         $results = $stmt->fetchAllAssociative();

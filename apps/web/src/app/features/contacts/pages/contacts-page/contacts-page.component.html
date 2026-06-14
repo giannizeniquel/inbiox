@@ -18,7 +18,7 @@
       (retryRequested)="onRetryRequested()"
       (loadMore)="onLoadMore()"
       [hasMore]="store.pagination().hasMore"
-      [loadingMore]="store.loading()"
+      [loadingMore]="loadingMore()"
     />
   </div>
   <div class="contacts-detail-panel" [class.visible]="store.selectedContact() !== null">

@@ -48,7 +48,6 @@ services:
     environment:
       SERVER_NAME: ":80"
       MERCURE_PUBLISHER_JWT_KEY: "40127d4eb35fc78be0315e2810d2f09f0cff9880f0a49fd5df0fc690e739ea9c"
-      MERCURE_SUBSCRIBER_JWT_KEY: "40127d4eb35fc78be0315e2810d2f09f0cff9880f0a49fd5df0fc690e739ea9c"
       MERCURE_EXTRA_DIRECTIVES: |
         cors_origins http://localhost:4200
         anonymous
@@ -66,6 +65,33 @@ services:
     container_name: inbiox_adminer
     ports:
       - "8080:8080"
+
+  web:
+    image: node:20-alpine
+    container_name: inbiox_web
+    working_dir: /app
+    volumes:
+      - ./apps/web:/app
+    ports:
+      - "4200:4200"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - nginx
+      - mercure
+    command: sh -c "npm install --quiet && npx ng serve --host 0.0.0.0 --port 4200 --proxy-config proxy.conf.docker.json --poll 2000"
+
+  publisher:
+    build:
+      context: ./infra/docker/php
+    container_name: inbiox_publisher
+    volumes:
+      - ./apps/api:/var/www/html
+    command: sh -c "while true; do php bin/console app:outbox:publish --status=pending; sleep 2; done"
+    depends_on:
+      - php
+      - mercure
+    restart: always
 
 volumes:
   db_data:

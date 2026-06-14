@@ -1,5 +1,6 @@
 :host {
   display: block;
+  margin-bottom: 9px;
 }
 
 // Message bubble wrapper
@@ -92,4 +93,18 @@
   color: var(--text-muted, #9ca3af);
   margin-top: 2px;
   text-align: right;
+}
+
+// Message metadata row (timestamp + status icon)
+.message-bubble__meta {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.message-bubble__time {
+  font-size: 0.75rem;
+  color: var(--text-muted, #9ca3af);
 }

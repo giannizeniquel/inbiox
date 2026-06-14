@@ -1,8 +1,10 @@
-import { Component, inject, OnDestroy, signal, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef, input, output, effect } from '@angular/core';
+import { Component, inject, OnDestroy, signal, viewChild, computed, ChangeDetectionStrategy, ChangeDetectorRef, input, output, effect } from '@angular/core';
 import { Subscription } from 'rxjs';
+import { take } from 'rxjs/operators';
 import { ConversationStore, BridgeMessage } from '../../../../core/stores/conversation.store';
 import { TicketStore } from '../../../../core/stores/ticket.store';
 import { UiStore } from '../../../../core/stores/ui.store';
+import { MessageApiService, GetMessagesResponse } from '../../../../core/api/message-api.service';
 import { VirtualScrollViewportComponent } from '../../../../shared/components/virtual-scroll-viewport/virtual-scroll-viewport.component';
 import { MessageBubbleComponent } from '../../components/message-bubble/message-bubble.component';
 import { ConversationHeaderComponent } from '../../components/conversation-header/conversation-header.component';
@@ -41,13 +43,25 @@ import { MessageSenderService } from '../../services/message-sender.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ConversationComponent implements OnDestroy {
-  @ViewChild('vps') viewport!: VirtualScrollViewportComponent<BridgeMessage>;
+  private readonly vps = viewChild<VirtualScrollViewportComponent<BridgeMessage>>('vps');
+
+  /** Scroll indices from the viewport */
+  private scrollIndices = signal<{ startIndex: number; endIndex: number }>({ startIndex: 0, endIndex: -1 });
+
+  /** Visible message slice — computed from own messages + scroll indices */
+  protected readonly visibleMessages = computed(() => {
+    const all = this.messages();
+    const { startIndex, endIndex } = this.scrollIndices();
+    if (all.length === 0 || startIndex > endIndex) return [];
+    return all.slice(startIndex, endIndex + 1);
+  });
 
   protected readonly conversationStore = inject(ConversationStore);
   protected readonly ticketStore = inject(TicketStore);
   protected readonly uiStore = inject(UiStore);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly messageSender = inject(MessageSenderService);
+  private readonly messageApi = inject(MessageApiService);
 
   /** Contextual warning message (e.g. SLA breach, internal note) */
   protected readonly warningMessage = input<string | null>(null);
@@ -73,6 +87,7 @@ export class ConversationComponent implements OnDestroy {
 
   private readonly messagesEffect = effect(() => {
     const msgs = this.messages();
+    const vps = this.vps(); // track vps for when viewport becomes available
     if (msgs.length === 0) return;
 
     if (this.isAtBottom()) {
@@ -84,6 +99,12 @@ export class ConversationComponent implements OnDestroy {
     }
   });
 
+  /** Reset pagination offset when switching to a different ticket */
+  private readonly ticketResetEffect = effect(() => {
+    void this.activeTicket();
+    this.oldestLoadedOffset.set(0);
+  });
+
   private scrollTimeout?: ReturnType<typeof setTimeout>;
   private subscription?: Subscription;
 
@@ -92,10 +113,24 @@ export class ConversationComponent implements OnDestroy {
     this.subscription?.unsubscribe();
   }
 
+  /**
+   * How many older messages have been loaded from the API (offset tracking).
+   * 0 = initial load returned the most recent messages.
+   */
+  private readonly oldestLoadedOffset = signal(0);
+
+  /** Guard flag to prevent concurrent older-message loads */
+  private loadingOlder = false;
+
+  /** Handle viewport visible range change */
+  protected onVisibleRangeChange(range: { startIndex: number; endIndex: number }): void {
+    this.scrollIndices.set(range);
+    this.cdr.markForCheck();
+  }
+
   onResolve(): void {
     const ticket = this.activeTicket();
     if (!ticket) return;
-    // Handled by parent or workflow service
   }
 
   onRetry(tempId: string): void {
@@ -115,7 +150,7 @@ export class ConversationComponent implements OnDestroy {
   }
 
   onScroll(): void {
-    const el = this.viewport?.scrollContainer;
+    const el = this.vps()?.scrollContainer;
     if (!el) return;
 
     const threshold = 50;
@@ -125,13 +160,63 @@ export class ConversationComponent implements OnDestroy {
     if (atBottom) {
       this.showNewMessagesIndicator.set(false);
     }
+
+    // Scroll-up pagination: when near top, load older messages
+    if (el.scrollTop < 200 && this.conversationStore.hasMore() && !this.loadingOlder) {
+      this.loadOlderMessages(el);
+    }
   }
 
   scrollToBottom(): void {
-    if (!this.viewport) return;
-    this.viewport.scrollToBottom();
+    const v = this.vps();
+    if (!v) return;
+    v.scrollToBottom();
     this.showNewMessagesIndicator.set(false);
     this.isAtBottom.set(true);
+  }
+
+  /**
+   * Load older messages from the API and prepend them to the store.
+   * Preserves scroll position by compensating for the added height.
+   */
+  private loadOlderMessages(el: HTMLElement): void {
+    const ticket = this.activeTicket();
+    if (!ticket) return;
+
+    this.loadingOlder = true;
+    const saveScrollTop = el.scrollTop;
+
+    this.messageApi.getMessages(ticket.ticket_id, 20, this.oldestLoadedOffset()).pipe(take(1)).subscribe({
+      next: (resp: GetMessagesResponse) => {
+        this.conversationStore.prependMessages(
+          resp.data.map(m => ({
+            id: String(m.message_id),
+            message_id: m.message_id,
+            ticketId: ticket.ticket_id,
+            chatId: ticket.ticket_id,
+            content: m.content,
+            body: m.content,
+            direction: m.direction as 'inbound' | 'outbound' | 'system',
+            deliveryStatus: (m.deliveryStatus || 'sent') as 'sent',
+            created_at: m.created_at || new Date().toISOString(),
+            sender: (m.direction === 'inbound' ? 'customer' : 'agent') as 'agent' | 'customer',
+          }))
+        );
+        this.conversationStore.setHasMore(resp.meta.has_more);
+        this.oldestLoadedOffset.set(this.oldestLoadedOffset() + resp.data.length);
+
+        // Preserve scroll position: after prepend, the same visual content
+        // is shifted down by the approximate height of the new items.
+        requestAnimationFrame(() => {
+          el.scrollTop = saveScrollTop + resp.data.length * 80;
+        });
+
+        this.loadingOlder = false;
+      },
+      error: () => {
+        this.loadingOlder = false;
+      },
+    });
   }
 
   /**

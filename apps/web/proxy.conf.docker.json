@@ -1,0 +1,12 @@
+{
+  "/api": {
+    "target": "http://host.docker.internal:8000",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/.well-known/mercure": {
+    "target": "http://host.docker.internal:3000",
+    "secure": false,
+    "changeOrigin": true
+  }
+}

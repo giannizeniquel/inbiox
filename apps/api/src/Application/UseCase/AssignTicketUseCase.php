@@ -162,7 +162,7 @@ class AssignTicketUseCase
             $outboxEvent = new OutboxEvent(
                 aggregateType: 'ticket',
                 aggregateId: $event->ticketId,
-                topic: 'ticket/' . $event->ticketId,
+                topic: 'tickets',
                 eventType: $event->type,
                 payload: $payload
             );

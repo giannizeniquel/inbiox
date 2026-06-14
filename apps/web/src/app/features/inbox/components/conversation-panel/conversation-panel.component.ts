@@ -41,8 +41,8 @@ export class ConversationPanelComponent implements OnInit, OnDestroy {
 
   private loadMessages(ticketId: string): void {
     this.messageApi.getMessages(ticketId).subscribe({
-      next: (messages) => {
-        this.state.setMessages(messages);
+      next: (resp) => {
+        this.state.setMessages(resp.data);
         this.scrollToBottom();
       },
       error: (err) => {

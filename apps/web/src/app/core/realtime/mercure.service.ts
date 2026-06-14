@@ -34,7 +34,6 @@ type ConnectionState = 'connected' | 'disconnected' | 'connecting';
 
 @Injectable({ providedIn: 'root' })
 export class MercureService {
-  private eventSource: EventSource | null = null;
   private abortController: AbortController | null = null;
 
   // Connection state tracking
@@ -78,32 +77,63 @@ export class MercureService {
 
   private reconnectTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
-  connect(): void {
-    if (this.eventSource) return;
+  async connect(): Promise<void> {
+    if (this.abortController) return;
+
+    await this.fetchMercureToken();
 
     this.connectionState.set('connecting');
-    const hubUrl = `${environment.mercureUrl}/.well-known/mercure?topic=ticket/*`;
+    const hubUrl = `${environment.mercureUrl}/.well-known/mercure?topic=tickets`;
     console.log('[Mercure] Connecting to:', hubUrl);
 
-    this.eventSource = new EventSource(hubUrl);
+    this.abortController = new AbortController();
 
-    this.eventSource.onopen = () => {
-      console.log('[Mercure] ✅ Connected to hub');
-      this.isConnected = true;
-      this.reconnectAttempts = 0;
-      this.connectionStatus.next(true);
-      this.connectionState.set('connected');
-      this.connectionStore.setOnline();
-      this.reconnectCount.set(0);
-    };
+    fetch(hubUrl, {
+      signal: this.abortController.signal,
+      headers: { 'Accept': 'text/event-stream' },
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        if (!response.body) throw new Error('No response body');
 
-    this.eventSource.onmessage = (event) => {
-      this.ngZone.run(() => this.handleMessage(event));
-    };
+        console.log('[Mercure] ✅ Connected to hub (fetch)');
+        this.isConnected = true;
+        this.reconnectAttempts = 0;
+        this.connectionStatus.next(true);
+        this.connectionState.set('connected');
+        this.connectionStore.setOnline();
+        this.reconnectCount.set(0);
 
-    this.eventSource.onerror = () => {
-      this.ngZone.run(() => this.onError(new Error('SSE error')));
-    };
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (line.startsWith('data:')) {
+              const eventData = line.slice(5).trim();
+              if (!eventData) continue;
+              this.ngZone.run(() => this.handleMessage({ data: eventData } as MessageEvent));
+            }
+          }
+        }
+      })
+      .catch((error) => {
+        if (error.name === 'AbortError') {
+          console.log('[Mercure] Connection aborted');
+          return;
+        }
+        console.error('[Mercure] Connection error:', error);
+        this.ngZone.run(() => this.onError(error));
+      });
   }
 
   /**
@@ -114,7 +144,7 @@ export class MercureService {
   subscribe(ticketId: string, _callback: (event: unknown) => void): () => void {
     // Initialize seq state for this ticket if not exists
     if (!this.seqState.has(ticketId)) {
-      this.seqState.set(ticketId, { lastSeq: 0, state: 'connected' });
+      this.seqState.set(ticketId, { lastSeq: -1, state: 'connected' });
     }
     return () => { /* no-op */ };
   }
@@ -124,7 +154,7 @@ export class MercureService {
    * Preserves all other fields in the seq entry.
    */
   private transitionTo(ticketId: string, nextState: TicketSeqState['state']): void {
-    const cur = this.seqState.get(ticketId) ?? { lastSeq: 0, state: 'connected' as const };
+    const cur = this.seqState.get(ticketId) ?? { lastSeq: -1, state: 'connected' as const };
     this.seqState.set(ticketId, { ...cur, state: nextState });
   }
 
@@ -134,7 +164,7 @@ export class MercureService {
    */
   private applyEvent(ticketId: string, data: RealtimeEvent): void {
     // Update seq state
-    const state = this.seqState.get(ticketId) ?? { lastSeq: 0, state: 'connected' as const };
+    const state = this.seqState.get(ticketId) ?? { lastSeq: -1, state: 'connected' as const };
     state.lastSeq = data.sequence;
     this.seqState.set(ticketId, state);
 
@@ -146,7 +176,6 @@ export class MercureService {
 
     // Emit to global events stream
     this.eventsSubject.next(data);
-    console.log('[Mercure] Applied event seq:', data.sequence, 'for ticket:', ticketId);
   }
 
   /**
@@ -204,7 +233,8 @@ export class MercureService {
         .catch((err) => {
           if (err instanceof DOMException && err.name === 'AbortError') return;
           console.warn(`[Mercure] Chained resync failed for ticket ${ticketId}:`, err);
-          this.transitionTo(ticketId, 'gap_detected');
+          const is4xx = typeof err?.message === 'string' && /Resync HTTP 4\d\d/.test(err.message);
+          this.transitionTo(ticketId, is4xx ? 'connected' : 'gap_detected');
         });
     } else {
       this.bufferedEvents.delete(ticketId);
@@ -220,7 +250,6 @@ export class MercureService {
    *   - during resync: buffer all events for this ticket
    */
   private handleMessage(event: MessageEvent): void {
-    console.log('[Mercure] 📨 RAW SSE EVENT received:', event.data?.substring(0, 100));
     try {
       const data = JSON.parse(event.data) as RealtimeEvent;
 
@@ -252,7 +281,7 @@ export class MercureService {
 
       // Initialize seq state if this is the first event for this ticket
       if (!this.seqState.has(ticketId)) {
-        this.seqState.set(ticketId, { lastSeq: 0, state: 'connected' });
+        this.seqState.set(ticketId, { lastSeq: -1, state: 'connected' });
       }
 
       const seqEntry = this.seqState.get(ticketId)!;
@@ -264,62 +293,14 @@ export class MercureService {
         const buf = this.bufferedEvents.get(ticketId) ?? [];
         buf.push(data);
         this.bufferedEvents.set(ticketId, buf);
-        console.log(`[Mercure] Buffered event seq=${data.sequence} for ticket ${ticketId} (resyncing)`);
         return;
       }
 
       // ── State: connected ──
-      // Expected next sequence = lastSeq + 1
-      const expectedSeq = seqEntry.lastSeq + 1;
-
-      if (data.sequence === expectedSeq) {
-        // Exact expected sequence — apply normally
-        this.applyEvent(ticketId, data);
-        return;
-      }
-
-      if (data.sequence > expectedSeq) {
-        // Gap detected! Transition to resyncing and trigger targeted resync.
-        console.log(
-          `[Mercure] Gap detected for ticket ${ticketId}: expected ${expectedSeq}, got ${data.sequence}`
-        );
-
-        // Cancel any existing in-flight resync
-        if (seqEntry.inFlightResync) {
-          seqEntry.inFlightResync.abort();
-        }
-
-        // Create new AbortController for this resync
-        const abortController = new AbortController();
-        seqEntry.inFlightResync = abortController;
-
-        // Transition to resyncing
-        this.transitionTo(ticketId, 'resyncing');
-
-        // Buffer the gap-triggering event (and any that arrive during resync)
-        this.bufferedEvents.set(ticketId, [data]);
-
-        // Trigger targeted resync
-        this.resyncTicket(ticketId, abortController.signal)
-          .then(() => {
-            // Resync completed: process buffered events, then transition to connected
-            this.processBufferedEvents(ticketId);
-            this.transitionTo(ticketId, 'connected');
-          })
-          .catch((err) => {
-            if (err instanceof DOMException && err.name === 'AbortError') {
-              // Resync was cancelled by a newer gap — ignore
-              return;
-            }
-            console.warn(`[Mercure] Resync failed for ticket ${ticketId}:`, err);
-            this.transitionTo(ticketId, 'gap_detected');
-          });
-
-        return;
-      }
-
-      // data.sequence < expectedSeq: already processed, drop
-      console.log(`[Mercure] Old seq ignored for ticket ${ticketId}: ${data.sequence} < expected ${expectedSeq}`);
+      // Apply events directly — sequences are global (not per-ticket), 
+      // so per-ticket gap detection with global sequences is unreliable.
+      // Idempotency is already handled via eventId dedup above.
+      this.applyEvent(ticketId, data);
     } catch (err) {
       console.error('[Mercure] Failed to parse message:', err);
     }
@@ -432,6 +413,18 @@ export class MercureService {
    * Set the Mercure JWT token for authenticated HTTP requests.
    * Called by the auth system after login or token refresh.
    */
+  private async fetchMercureToken(): Promise<void> {
+    try {
+      const response = await fetch(`${environment.apiUrl}/api/mercure/token`);
+      if (response.ok) {
+        const data = await response.json();
+        this.mercureToken = data.token;
+      }
+    } catch (err) {
+      console.warn('[Mercure] Failed to get subscriber token:', err);
+    }
+  }
+
   setMercureToken(token: string): void {
     this.mercureToken = token;
   }
@@ -446,70 +439,46 @@ export class MercureService {
    * Uses fetch() directly (not HttpClient) for AbortSignal compatibility.
    */
   async resyncTicket(ticketId: string, signal?: AbortSignal): Promise<void> {
-    const state = this.seqState.get(ticketId);
-    if (!state) {
-      console.log(`[Mercure] No seq state for ticket ${ticketId}, skipping resync`);
-      return;
+    const seqEntry = this.seqState.get(ticketId);
+    if (!seqEntry) return;
+
+    const afterSequence = seqEntry.lastSeq;
+
+    const headers: Record<string, string> = {
+      'Accept': 'application/json',
+    };
+    if (this.mercureToken) {
+      headers['Authorization'] = `Bearer ${this.mercureToken}`;
     }
 
-    const afterSequence = state.lastSeq;
-    console.log(`[Mercure] Resyncing ticket ${ticketId} after seq ${afterSequence}`);
+    const response = await fetch(
+      `${environment.apiUrl}/api/tickets/${ticketId}/events?afterSequence=${afterSequence}`,
+      { signal, headers }
+    );
 
-    try {
-      let hasMore = false;
-      let current = afterSequence;
+    if (!response.ok) {
+      throw new Error(`Resync HTTP ${response.status}`);
+    }
 
-      do {
-        // Build headers
-        const headers: Record<string, string> = {
-          Accept: 'application/json',
-        };
-        if (this.mercureToken) {
-          headers['Authorization'] = `Bearer ${this.mercureToken}`;
-        }
+    const data: ResyncResponse = await response.json();
 
-        const url = `${environment.apiUrl}/api/tickets/${ticketId}/events?afterSequence=${current}`;
-        const fetchResponse = await fetch(url, {
-          method: 'GET',
-          headers,
-          credentials: 'include',
-          signal,
-        });
+    for (const event of data.events) {
+      if (signal?.aborted) return;
 
-        if (!fetchResponse.ok) {
-          throw new Error(`Resync HTTP ${fetchResponse.status} for ticket ${ticketId}`);
-        }
+      if (event.eventId && this.processedEventIds.has(event.eventId)) continue;
+      if (event.eventId) this.processedEventIds.add(event.eventId);
 
-        const body: ResyncResponse = await fetchResponse.json();
+      this.applyEvent(ticketId, event);
+    }
 
-        // Apply events in sequence order (server returns sorted ASC)
-        for (const event of body.events) {
-          // Skip already-processed events (idempotency)
-          if (event.eventId && this.processedEventIds.has(event.eventId)) {
-            continue;
-          }
+    const state = this.seqState.get(ticketId);
+    if (state && data.lastSequence > state.lastSeq) {
+      state.lastSeq = data.lastSequence;
+      this.seqState.set(ticketId, state);
+    }
 
-          // Track eventId
-          if (event.eventId) {
-            this.processedEventIds.add(event.eventId);
-            if (this.processedEventIds.size > 1000) {
-              const first = this.processedEventIds.values().next().value;
-              if (first) this.processedEventIds.delete(first);
-            }
-          }
-
-          // Apply via single dispatch path and update seq
-          this.applyEvent(ticketId, event);
-        }
-
-        hasMore = body.hasMore;
-        current = body.lastSequence;
-      } while (hasMore);
-
-      console.log(`[Mercure] Resync complete for ticket ${ticketId}, lastSeq=${current}`);
-    } catch (err) {
-      console.error(`[Mercure] Resync failed for ticket ${ticketId}:`, err);
-      throw err; // Re-throw so callers can react (e.g., transition back to gap_detected)
+    if (data.hasMore && !signal?.aborted) {
+      await this.resyncTicket(ticketId, signal);
     }
   }
 
@@ -520,38 +489,24 @@ export class MercureService {
    * Sets each ticket to resyncing state and attaches AbortController.
    */
   resyncAllTickets(): void {
-    const ticketIds = Array.from(this.seqState.keys());
-    if (ticketIds.length === 0) {
-      console.log('[Mercure] No tickets to resync');
-      return;
-    }
+    for (const [ticketId, state] of this.seqState) {
+      if (state.state === 'connected' || state.state === 'gap_detected') {
+        const abortController = new AbortController();
+        state.inFlightResync = abortController;
+        this.transitionTo(ticketId, 'resyncing');
 
-    console.log(`[Mercure] Resyncing ${ticketIds.length} tickets`);
-    for (const ticketId of ticketIds) {
-      const state = this.seqState.get(ticketId);
-      if (!state) continue;
-
-      // Cancel any existing in-flight resync
-      if (state.inFlightResync) {
-        state.inFlightResync.abort();
+        this.resyncTicket(ticketId, abortController.signal)
+          .then(() => {
+            this.processBufferedEvents(ticketId);
+            this.transitionTo(ticketId, 'connected');
+          })
+          .catch((err) => {
+            if (err instanceof DOMException && err.name === 'AbortError') return;
+            console.warn(`[Mercure] Resync failed for ticket ${ticketId}:`, err);
+            const is4xx = typeof err?.message === 'string' && /Resync HTTP 4\d\d/.test(err.message);
+            this.transitionTo(ticketId, is4xx ? 'connected' : 'gap_detected');
+          });
       }
-
-      // Create new AbortController and transition to resyncing
-      const abortController = new AbortController();
-      state.inFlightResync = abortController;
-      this.transitionTo(ticketId, 'resyncing');
-
-      this.resyncTicket(ticketId, abortController.signal)
-        .then(() => {
-          // Process any events that were buffered during the resync
-          this.processBufferedEvents(ticketId);
-          this.transitionTo(ticketId, 'connected');
-        })
-        .catch((err) => {
-          if (err instanceof DOMException && err.name === 'AbortError') return;
-          console.warn(`[Mercure] onopen resync failed for ticket ${ticketId}:`, err);
-          this.transitionTo(ticketId, 'gap_detected');
-        });
     }
   }
 
@@ -588,7 +543,7 @@ export class MercureService {
 
   /**
    * Manually force a reconnection attempt, bypassing the circuit breaker.
-   * Resets the reconnect attempt counter and establishes a new EventSource connection.
+   * Resets the reconnect attempt counter and establishes a new fetch-based SSE connection.
    * Called by DebugPanelComponent's "Retry Now" button when status is permanent_failure.
    */
   forceReconnect(): void {
@@ -632,6 +587,6 @@ export class MercureService {
   }
 
   getSeqForTicket(ticketId: string): number {
-    return this.seqState.get(String(ticketId))?.lastSeq ?? 0;
+    return this.seqState.get(String(ticketId))?.lastSeq ?? -1;
   }
 }

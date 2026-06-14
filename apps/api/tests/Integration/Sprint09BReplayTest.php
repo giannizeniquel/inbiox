@@ -52,7 +52,7 @@ class Sprint09BReplayTest extends KernelTestCase
         $outboxEvent = new OutboxEvent(
             'ticket',
             1,
-            'ticket/1',
+            'tickets',
             'message.created',
             ['event_id' => '01HZREPLAY01', 'type' => 'message.created', 'ticket_id' => 1, 'seq' => 1]
         );
@@ -85,10 +85,10 @@ class Sprint09BReplayTest extends KernelTestCase
         ];
         
         foreach ($events as $e) {
-            $outboxEvent = new OutboxEvent(
-                'ticket',
-                1,
-                'ticket/1',
+        $outboxEvent = new OutboxEvent(
+            'ticket',
+            1,
+            'tickets',
                 $e['type'],
                 ['event_id' => $e['id'], 'type' => $e['type'], 'ticket_id' => 1, 'seq' => $e['seq']]
             );
@@ -119,7 +119,7 @@ class Sprint09BReplayTest extends KernelTestCase
         $event1 = new OutboxEvent(
             'ticket',
             1,
-            'ticket/1',
+            'tickets',
             'message.created',
             ['event_id' => '01REPO01', 'type' => 'message.created', 'ticket_id' => 1, 'seq' => 1]
         );
@@ -129,7 +129,7 @@ class Sprint09BReplayTest extends KernelTestCase
         $event2 = new OutboxEvent(
             'ticket',
             1,
-            'ticket/1',
+            'tickets',
             'message.created',
             ['event_id' => '01REPO02', 'type' => 'message.created', 'ticket_id' => 1, 'seq' => 2]
         );
@@ -184,7 +184,7 @@ class Sprint09BReplayTest extends KernelTestCase
         $outboxEvent = new OutboxEvent(
             'ticket',
             1,
-            'ticket/1',
+            'tickets',
             'message.created',
             ['event_id' => '01VER', 'type' => 'message.created', 'ticket_id' => 1, 'seq' => 1, 'version' => 1]
         );

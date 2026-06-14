@@ -11,14 +11,15 @@ use Lcobucci\JWT\Signer\Hmac\Sha256;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Token;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
-use Lcobucci\JWT\Validation\Constraint\ValidAt;
+use Lcobucci\JWT\Validation\Constraint\StrictValidAt;
 use Lcobucci\JWT\Validation\RequiredConstraintsViolated;
+use Psr\Clock\ClockInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 final class MercureJwtService
 {
     private const DEFAULT_TTL = 3600;
-    private const TOPIC_TICKET = 'ticket/%d';
+    private const TOPIC_TICKETS = 'tickets';
     private const TOPIC_AGENT_INBOX = 'agent/%d/inbox';
 
     public function __construct(
@@ -43,11 +44,8 @@ final class MercureJwtService
         $now = new DateTimeImmutable();
         $expiresAt = $now->modify("+{$ttl} seconds");
 
-        // Build topics array
-        $topics = [];
-        foreach ($assignedTicketIds as $ticketId) {
-            $topics[] = sprintf(self::TOPIC_TICKET, $ticketId);
-        }
+        // Build topics array — single topic for all ticket events, per-agent inbox
+        $topics = [self::TOPIC_TICKETS];
         $topics[] = sprintf(self::TOPIC_AGENT_INBOX, $agentId);
 
         // Create JWT using Lcobucci v4+ Configuration API
@@ -71,6 +69,29 @@ final class MercureJwtService
     /**
      * Generate a system publisher token with wildcard publish permission.
      */
+    public function createSubscriberToken(array $topics): Token
+    {
+        $secret = $this->getSecret();
+        $ttl = $this->getTtl();
+        $now = new DateTimeImmutable();
+        $expiresAt = $now->modify("+{$ttl} seconds");
+
+        $config = Configuration::forSymmetricSigner(
+            new Sha256(),
+            InMemory::plainText($secret)
+        );
+
+        $token = $config->builder()
+            ->identifiedBy('subscriber-' . bin2hex(random_bytes(8)), true)
+            ->issuedBy('inbiox-api')
+            ->issuedAt($now)
+            ->expiresAt($expiresAt)
+            ->withClaim('mercure', ['subscribe' => $topics])
+            ->getToken($config->signer(), $config->signingKey());
+
+        return $token;
+    }
+
     public function generateSystemPublisherToken(): string
     {
         $secret = $this->getSecret();
@@ -107,9 +128,6 @@ final class MercureJwtService
 
             $constraints = [
                 new SignedWith($config->signer(), $config->signingKey()),
-                new ValidAt(new class implements \Lcobucci\JWT\Clock\Clock {
-                    public function now(): DateTimeImmutable { return new DateTimeImmutable(); }
-                }),
             ];
 
             $config->validator()->assert($token, ...$constraints);

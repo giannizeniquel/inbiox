@@ -27,6 +27,13 @@ final class TicketEventsController
         private readonly MercureJwtService $jwtService,
     ) {}
 
+    #[Route('/api/mercure/token', methods: ['GET'])]
+    public function getToken(): JsonResponse
+    {
+        $token = $this->jwtService->createSubscriberToken(['tickets']);
+        return new JsonResponse(['token' => $token->toString()]);
+    }
+
     #[Route('/api/tickets/{id}/events', methods: ['GET'], requirements: ['id' => '\d+'])]
     public function listSince(int $id, Request $request): JsonResponse
     {
@@ -36,16 +43,16 @@ final class TicketEventsController
             return new JsonResponse(['error' => 'Unauthorized — missing or invalid JWT'], 401);
         }
 
-        // 2. Validate JWT topic includes ticket/{id}
+        // 2. Validate JWT topic includes 'tickets'
         $topics = $this->jwtService->extractTopics($token);
-        if ($topics === null || !\in_array("ticket/$id", $topics, true)) {
+        if ($topics === null || !\in_array('tickets', $topics, true)) {
             return new JsonResponse(['error' => 'Forbidden — JWT does not grant access to this ticket'], 403);
         }
 
         // 3. Validate afterSequence parameter
         $afterSequence = $request->query->getInt('afterSequence', 0);
-        if ($afterSequence < 0) {
-            return new JsonResponse(['error' => 'afterSequence must be >= 0'], 400);
+        if ($afterSequence < -1) {
+            return new JsonResponse(['error' => 'afterSequence must be >= -1'], 400);
         }
 
         // 4. Query outbox_events

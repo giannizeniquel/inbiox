@@ -146,3 +146,8 @@ app_ticket_events_resync:
     path: /api/tickets/{id}/events
     methods: [GET]
     controller: App\Controller\TicketEventsController::listSince
+
+app_mercure_token:
+    path: /api/mercure/token
+    methods: [GET]
+    controller: App\Controller\TicketEventsController::getToken

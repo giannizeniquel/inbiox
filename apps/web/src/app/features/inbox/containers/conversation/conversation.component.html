@@ -24,25 +24,27 @@
     }
 
     <!-- Virtual-scroll message area -->
-    <app-virtual-scroll-viewport
-      #vps
-      mode="variable"
-      [items]="messages()"
-      [estimatedItemHeight]="80"
-      [bufferSize]="8"
-      (scroll)="onScroll()"
-    >
-      @if (loading()) {
-        <app-conversation-loading />
-      } @else {
-        @for (message of vps.visibleItems(); track message.id) {
+    @if (loading()) {
+      <app-conversation-loading />
+    } @else {
+      <app-virtual-scroll-viewport
+        #vps
+        mode="variable"
+        [items]="messages()"
+        [estimatedItemHeight]="80"
+        [bufferSize]="8"
+        (scroll)="onScroll()"
+        (visibleRange)="onVisibleRangeChange($event)"
+        style="padding-bottom: 35px;"
+      >
+        @for (message of visibleMessages(); track message.id) {
           <app-message-bubble
             [message]="message"
             (retry)="onRetry($event)"
           />
         }
-      }
-    </app-virtual-scroll-viewport>
+      </app-virtual-scroll-viewport>
+    }
 
     <!-- New messages indicator -->
     <app-new-messages-indicator

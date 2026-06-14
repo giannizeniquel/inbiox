@@ -195,6 +195,18 @@ export class ConversationStore {
     this.messages.set(incoming.length > MAX_MESSAGES ? incoming.slice(-MAX_MESSAGES) : incoming);
   }
 
+  /**
+   * Prepend older messages at the start of the array.
+   * Used for scroll-up pagination — adds older entries before current ones.
+   * Caps at MAX_MESSAGES, trimming from the newest (end).
+   */
+  prependMessages(messages: BridgeMessage[]): void {
+    this.messages.update(msgs => {
+      const next = [...messages, ...msgs];
+      return next.length > MAX_MESSAGES ? next.slice(0, MAX_MESSAGES) : next;
+    });
+  }
+
   /** Set loading state */
   setLoading(loading: boolean): void {
     this.loading.set(loading);

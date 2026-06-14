@@ -1,0 +1,41 @@
+.conversation-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 200px;
+  gap: 16px;
+  color: var(--text-secondary, #6b7280);
+}
+
+.conversation-loading__icon {
+  animation: heartbeat 1.4s ease-in-out infinite;
+  opacity: 0.7;
+}
+
+.conversation-loading__text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text-secondary, #6b7280);
+}
+
+@keyframes heartbeat {
+  0% { transform: scale(1); }
+  25% { transform: scale(1.15); }
+  40% { transform: scale(1); }
+  60% { transform: scale(1.15); }
+  80% { transform: scale(1); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-color-scheme: dark) {
+  .conversation-loading {
+    color: var(--text-secondary, #9ca3af);
+  }
+
+  .conversation-loading__text {
+    color: var(--text-secondary, #9ca3af);
+  }
+}

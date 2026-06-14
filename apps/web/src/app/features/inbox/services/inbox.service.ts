@@ -67,7 +67,7 @@ export class InboxService {
    */
   loadMessages(ticketId: string): void {
     this.messageApi.getMessages(ticketId).subscribe({
-      next: (messages) => this.state.setMessages(messages),
+      next: (resp) => this.state.setMessages(resp.data),
       error: (err) => console.error('[InboxService] Failed to load messages:', err)
     });
   }

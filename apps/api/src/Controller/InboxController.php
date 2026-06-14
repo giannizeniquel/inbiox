@@ -95,14 +95,16 @@ class InboxController
     {
         try {
             $cursor = $request->query->get('cursor');
-            $limit = min(100, max(1, (int) $request->query->get('limit', 100)));
+            $limit = min(200, max(1, (int) $request->query->get('limit', 20)));
             $direction = $request->query->get('direction', 'backward');
+            $offset = max(0, (int) $request->query->get('offset', 0));
 
             $result = $this->getTicketMessagesQuery->execute(
                 ticketId: $id,
                 cursor: $cursor,
                 limit: $limit,
                 direction: $direction,
+                offset: $offset,
             );
 
             $items = array_map(fn($dto) => $dto->toArray(), $result['items']);

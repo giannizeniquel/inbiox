@@ -52,6 +52,9 @@ export class ContactsPageComponent implements OnInit, OnDestroy {
   showEditDialog = false;
   editingContact: UIContact | null = null;
 
+  /** Separate loading flag for load-more (does not trigger skeleton swap) */
+  readonly loadingMore = signal(false);
+
   ngOnInit(): void {
     this.loadContacts();
 
@@ -130,7 +133,7 @@ export class ContactsPageComponent implements OnInit, OnDestroy {
 
   onLoadMore(): void {
     const nextPage = this.store.pagination().page + 1;
-    this.store.setLoading(true);
+    this.loadingMore.set(true);
 
     this.getContacts.execute({ page: nextPage, limit: 20 }).subscribe({
       next: (output) => {
@@ -145,11 +148,11 @@ export class ContactsPageComponent implements OnInit, OnDestroy {
           total: output.total,
           hasMore: output.hasMore,
         });
-        this.store.setLoading(false);
+        this.loadingMore.set(false);
       },
       error: (err: Error) => {
         this.store.setError(err.message);
-        this.store.setLoading(false);
+        this.loadingMore.set(false);
       },
     });
   }

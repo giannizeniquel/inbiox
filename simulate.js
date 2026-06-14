@@ -74,7 +74,7 @@ async function generateToken(agentId) {
         agent_id: agentId,
         mercure: {
             subscribe: [
-                `ticket/*`,  // Wildcard for all tickets
+                `tickets`,
                 `agent/${agentId}/inbox`
             ]
         },
@@ -97,7 +97,7 @@ async function connectAgent(agent) {
     
     // Listen to ticket topics (what the backend publishes) + agent inbox as fallback
     // The backend publishes to ticket/{id}, we use wildcard to catch all
-    const url = `${CONFIG.MERCURE_URL}?topic=ticket/*`;
+    const url = `${CONFIG.MERCURE_URL}?topic=tickets`;
     
     log(`Connecting SSE for ${agent.name} to ${url}`);
     
