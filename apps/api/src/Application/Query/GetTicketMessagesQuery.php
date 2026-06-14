@@ -14,7 +14,7 @@ class GetTicketMessagesQuery
     public function execute(
         int $ticketId,
         ?string $cursor = null,
-        int $limit = 50,
+        int $limit = 200,
         string $direction = 'forward'
     ): array {
         $limit = min(100, max(1, $limit));
