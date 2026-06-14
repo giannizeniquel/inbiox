@@ -1,13 +1,14 @@
-import { Component, inject, OnDestroy, signal, ViewChild, ElementRef, ChangeDetectionStrategy, ChangeDetectorRef, input, output, effect } from '@angular/core';
+import { Component, inject, OnDestroy, signal, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef, input, output, effect } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { ConversationStore, BridgeMessage } from '../../../../core/stores/conversation.store';
 import { TicketStore } from '../../../../core/stores/ticket.store';
 import { UiStore } from '../../../../core/stores/ui.store';
+import { VirtualScrollViewportComponent } from '../../../../shared/components/virtual-scroll-viewport/virtual-scroll-viewport.component';
 import { MessageBubbleComponent } from '../../components/message-bubble/message-bubble.component';
 import { ConversationHeaderComponent } from '../../components/conversation-header/conversation-header.component';
 import { ComposerComponent } from '../../components/composer/composer.component';
 import { ConversationEmptyComponent } from '../../components/conversation-empty/conversation-empty.component';
-import { ConversationSkeletonComponent } from '../../components/conversation-skeleton/conversation-skeleton.component';
+import { ConversationLoadingComponent } from '../../components/conversation-loading/conversation-loading.component';
 import { NewMessagesIndicatorComponent } from '../../components/new-messages-indicator/new-messages-indicator.component';
 import { BannerWarningComponent } from '../../../../shared/components/banner-warning/banner-warning.component';
 import { MessageSenderService } from '../../services/message-sender.service';
@@ -26,11 +27,12 @@ import { MessageSenderService } from '../../services/message-sender.service';
   selector: 'app-conversation-container',
   standalone: true,
   imports: [
+    VirtualScrollViewportComponent,
     ConversationHeaderComponent,
     MessageBubbleComponent,
     ComposerComponent,
     ConversationEmptyComponent,
-    ConversationSkeletonComponent,
+    ConversationLoadingComponent,
     NewMessagesIndicatorComponent,
     BannerWarningComponent,
   ],
@@ -39,7 +41,7 @@ import { MessageSenderService } from '../../services/message-sender.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ConversationComponent implements OnDestroy {
-  @ViewChild('messagesContainer') messagesContainer!: ElementRef<HTMLElement>;
+  @ViewChild('vps') viewport!: VirtualScrollViewportComponent<BridgeMessage>;
 
   protected readonly conversationStore = inject(ConversationStore);
   protected readonly ticketStore = inject(TicketStore);
@@ -69,14 +71,16 @@ export class ConversationComponent implements OnDestroy {
     }
   });
 
-  // Auto-scroll to bottom when new messages arrive (if already at bottom)
   private readonly messagesEffect = effect(() => {
     const msgs = this.messages();
-    // Skip empty array (initial state)
     if (msgs.length === 0) return;
-    // Scroll to bottom on first load or if already there
+
     if (this.isAtBottom()) {
-      this.scrollToBottom();
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          this.scrollToBottom();
+        });
+      });
     }
   });
 
@@ -111,8 +115,8 @@ export class ConversationComponent implements OnDestroy {
   }
 
   onScroll(): void {
-    if (!this.messagesContainer?.nativeElement) return;
-    const el = this.messagesContainer.nativeElement;
+    const el = this.viewport?.scrollContainer;
+    if (!el) return;
 
     const threshold = 50;
     const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
@@ -124,14 +128,8 @@ export class ConversationComponent implements OnDestroy {
   }
 
   scrollToBottom(): void {
-    if (!this.messagesContainer?.nativeElement) return;
-    const el = this.messagesContainer.nativeElement;
-
-    el.scrollTo({
-      top: el.scrollHeight,
-      behavior: 'smooth',
-    });
-
+    if (!this.viewport) return;
+    this.viewport.scrollToBottom();
     this.showNewMessagesIndicator.set(false);
     this.isAtBottom.set(true);
   }

@@ -71,28 +71,20 @@
   }
 }
 
-// Scrollable message area - debe crecer para fills el espacio disponible
-.conversation-container__messages {
-  flex: 1 1 auto; // grow and shrink
-  overflow-y: auto;
-  min-height: 150px;
-  max-height: calc(100% - 56px); // Leave space for composer
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+// Custom scrollbar for the viewport
+app-virtual-scroll-viewport {
+  --virtual-scroll-padding: 12px;
 }
 
-// Custom scrollbar
-.conversation-container__messages::-webkit-scrollbar {
+app-virtual-scroll-viewport::-webkit-scrollbar {
   width: 6px;
 }
 
-.conversation-container__messages::-webkit-scrollbar-track {
+app-virtual-scroll-viewport::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.conversation-container__messages::-webkit-scrollbar-thumb {
+app-virtual-scroll-viewport::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.2);
   border-radius: 3px;
 
@@ -102,7 +94,7 @@
 }
 
 // Dark theme scrollbar
-:host-context(.dark) .conversation-container__messages::-webkit-scrollbar-thumb {
+:host-context(.dark) app-virtual-scroll-viewport::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.15);
 
   &:hover {

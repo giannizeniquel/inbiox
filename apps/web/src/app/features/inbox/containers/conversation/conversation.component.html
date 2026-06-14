@@ -23,23 +23,26 @@
       <app-banner-warning>{{ warningMessage() }}</app-banner-warning>
     }
 
-    <!-- Scrollable message area -->
-    <div
-      class="conversation-container__messages"
-      #messagesContainer
+    <!-- Virtual-scroll message area -->
+    <app-virtual-scroll-viewport
+      #vps
+      mode="variable"
+      [items]="messages()"
+      [estimatedItemHeight]="80"
+      [bufferSize]="8"
       (scroll)="onScroll()"
     >
       @if (loading()) {
-        <app-conversation-skeleton />
+        <app-conversation-loading />
       } @else {
-        @for (message of messages(); track message.id) {
+        @for (message of vps.visibleItems(); track message.id) {
           <app-message-bubble
             [message]="message"
             (retry)="onRetry($event)"
           />
         }
       }
-    </div>
+    </app-virtual-scroll-viewport>
 
     <!-- New messages indicator -->
     <app-new-messages-indicator
