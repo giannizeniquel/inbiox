@@ -1,8 +1,8 @@
 # 📋 Reporte de Estado del Proyecto — Inbiox
 
-**Fecha:** 12 de junio, 2026
+**Fecha:** 13 de junio, 2026
 **Stack:** Symfony 7.4 + PHP 8.2 (backend) · Angular 19 (frontend) · MySQL · Mercure SSE
-**Estado general:** MVP endurecido — pipeline realtime estabilizado, blueprint Meta completo, listo para integración con WhatsApp Cloud API
+**Estado general:** Integración Meta WhatsApp funcional — pipeline bidireccional completo. Sprint 13.1-13.7 completados.
 
 ---
 
@@ -140,6 +140,7 @@
 | Sprint 8 | Automatizaciones + Tags | ✅ |
 | Sprint 9A | Reporting & Metrics | ✅ |
 | Sprint 9B | Realtime con Mercure | ✅ |
+| **Sprint 13.7** | **Inbound Completion** | ✅ **Completado** — webhook→Contact→Conversation→Ticket→Message, phone normalization, polling, auto-scroll |
 | Sprint 10 | **Agent Management** | ❌ No iniciado |
 | Sprint 11A | Angular Realtime Inbox MVP | ✅ |
 | Sprint 11B | Realtime Integration & Provider | ✅ |
