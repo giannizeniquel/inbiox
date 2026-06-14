@@ -1,0 +1,16 @@
+:host {
+  display: block;
+  flex: 1;
+  min-height: 0;
+}
+
+.viewport {
+  overflow-y: auto;
+  height: 100%;
+  padding: var(--virtual-scroll-padding, 12px);
+  padding-bottom: 32px;
+}
+
+.spacer {
+  flex-shrink: 0;
+}

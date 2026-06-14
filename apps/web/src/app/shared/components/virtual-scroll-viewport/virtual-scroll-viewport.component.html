@@ -1,0 +1,17 @@
+<div
+  class="viewport"
+  #scroller
+  (scroll)="onScroll($event)"
+>
+  <div
+    class="spacer"
+    [style.height.px]="topSpacer()"
+    aria-hidden="true"
+  ></div>
+  <ng-content />
+  <div
+    class="spacer"
+    [style.height.px]="bottomSpacer()"
+    aria-hidden="true"
+  ></div>
+</div>
