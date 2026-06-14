@@ -32,9 +32,17 @@ export class TicketListComponent implements OnInit, OnDestroy {
 
   private readonly unsubscribers: (() => void)[] = [];
   private readonly activeSubscriptions = new Map<string, () => void>();
+  private pollInterval?: ReturnType<typeof setInterval>;
 
   ngOnInit(): void {
     this.loadTickets();
+    // Poll for new messages every 3 seconds when a ticket is selected
+    this.pollInterval = setInterval(() => {
+      const ticket = this.ticketStore.activeTicket();
+      if (ticket) {
+        this.refreshMessages(ticket.ticket_id);
+      }
+    }, 3000);
   }
 
   private loadTickets(): void {
@@ -114,7 +122,30 @@ export class TicketListComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    clearInterval(this.pollInterval);
     this.activeSubscriptions.forEach((unsub) => unsub());
     this.unsubscribers.forEach((unsub) => unsub());
+  }
+
+  private refreshMessages(ticketId: string): void {
+    this.messageApi.getMessages(ticketId).pipe(take(1)).subscribe({
+      next: (messages) => {
+        this.conversationStore.loadMessages(
+          messages.map(m => ({
+            id: String(m.message_id),
+            message_id: m.message_id,
+            ticketId: ticketId,
+            chatId: ticketId,
+            content: m.content,
+            body: m.content,
+            direction: m.direction as 'inbound' | 'outbound' | 'system',
+            deliveryStatus: (m.deliveryStatus || 'sent') as 'sent',
+            created_at: m.created_at || new Date().toISOString(),
+            sender: (m.direction === 'inbound' ? 'customer' : 'agent') as 'agent' | 'customer',
+          }))
+        );
+      },
+      error: (err) => console.error('[TicketList] Poll refresh failed:', err)
+    });
   }
 }
