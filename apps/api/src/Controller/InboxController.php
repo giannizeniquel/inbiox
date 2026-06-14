@@ -95,7 +95,7 @@ class InboxController
     {
         try {
             $cursor = $request->query->get('cursor');
-            $limit = min(100, max(1, (int) $request->query->get('limit', 50)));
+            $limit = min(100, max(1, (int) $request->query->get('limit', 100)));
             $direction = $request->query->get('direction', 'backward');
 
             $result = $this->getTicketMessagesQuery->execute(
