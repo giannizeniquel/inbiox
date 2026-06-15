@@ -18,25 +18,25 @@ Greenfield - no code yet. Documentation complete in `docs/`, implementation star
 
 | Agent | Model | Role |
 |-------|-------|------|
-| orchestrator | minimax-m2.5-free | Coordina workflow SDD, nunca implementa |
-| sdd-explore | hy3-preview-free | Investiga y analiza |
-| sdd-propose | big-pickle | Crea change proposals |
-| sdd-spec | hy3-preview-free | Especificaciones detalladas |
-| sdd-design | big-pickle | Diseño técnico |
-| sdd-tasks | hy3-preview-free | Breakdown en tareas |
-| sdd-apply | hy3-preview-free | Ejecuta tareas (delega a stack agents) |
-| sdd-verify | big-pickle | Valida contra specs |
-| sdd-archive | hy3-preview-free | Archive artifacts |
+| orchestrator | deepseek-v4-pro | Coordina workflow SDD, nunca implementa |
+| sdd-explore | minimax-m3 | Investiga y analiza |
+| sdd-propose | deepseek-v4-pro | Crea change proposals |
+| sdd-spec | qwen3.7-plus | Especificaciones detalladas |
+| sdd-design | minimax-m3 | Diseño técnico |
+| sdd-tasks | qwen3.7-plus | Breakdown en tareas |
+| sdd-apply | deepseek-v4-flash | Ejecuta tareas (delega a stack agents) |
+| sdd-verify | minimax-m3 | Valida contra specs |
+| sdd-archive | deepseek-v4-flash | Archive artifacts |
 
 ### Stack Specialists
 
 | Agent | Model | Role |
 |-------|-------|------|
-| backend-dev | big-pickle | Symfony 7.4 entities, controllers, UseCases |
-| frontend-dev | big-pickle | Angular components, services, signals |
-| tester | hy3-preview-free | PHPUnit tests, coverage |
-| documenter | hy3-preview-free | API contracts, architecture docs |
-| code-reviewer | big-pickle | Code review, security, best practices |
+| backend-dev | deepseek-v4-flash | Symfony 7.4 entities, controllers, UseCases |
+| frontend-dev | deepseek-v4-flash | Angular components, services, signals |
+| tester | deepseek-v4-flash | PHPUnit tests, coverage |
+| documenter | deepseek-v4-flash | API contracts, architecture docs |
+| code-reviewer | deepseek-v4-flash | Code review, security, best practices |
 
 ---
 
