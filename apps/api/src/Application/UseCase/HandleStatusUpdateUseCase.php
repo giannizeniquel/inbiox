@@ -26,7 +26,7 @@ use Symfony\Component\Uid\Ulid;
  */
 class HandleStatusUpdateUseCase
 {
-    private const array STATUS_ORDER = [
+    private const STATUS_ORDER = [
         'sending' => 0,
         'sent' => 1,
         'delivered' => 2,
@@ -34,9 +34,9 @@ class HandleStatusUpdateUseCase
         'failed' => 99,
     ];
 
-    private const array TERMINAL_STATUSES = ['read', 'failed'];
+    private const TERMINAL_STATUSES = ['read', 'failed'];
 
-    private const array META_TO_INBIOX = [
+    private const META_TO_INBIOX = [
         'sent' => 'sent',
         'delivered' => 'delivered',
         'read' => 'read',

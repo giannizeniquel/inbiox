@@ -354,7 +354,7 @@ class Sprint10ConcurrencyTest extends KernelTestCase
      */
     public function testOverrideFalseBlocksAssignment(): void
     {
-        $agent = new Agent('Override Blocked', 'blocked@example.com');
+        $agent = new Agent('Override Blocked');
         $agent->setMaxActiveTickets(5);
         $agent->setTimezone('UTC');
         $agent->setIsAvailableOverride(false); // explicitly blocked

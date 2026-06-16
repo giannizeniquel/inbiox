@@ -20,8 +20,8 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 #[Route('/api/provider')]
 class ProviderProxyController extends AbstractController
 {
-    private const int GRAPH_AUTH_ERROR = 401;   // Meta auth/oauth errors
-    private const int GRAPH_RATE_LIMIT = 429;    // Too many requests
+    private const GRAPH_AUTH_ERROR = 401;   // Meta auth/oauth errors
+    private const GRAPH_RATE_LIMIT = 429;    // Too many requests
 
     public function __construct(
         private readonly TicketRepository $ticketRepository,

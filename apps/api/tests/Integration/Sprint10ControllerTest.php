@@ -65,7 +65,7 @@ class Sprint10ControllerTest extends WebTestCase
         string $timezone = 'UTC',
         int $maxActiveTickets = 5,
     ): int {
-        $agent = new Agent($name, $name.'@example.com');
+        $agent = new Agent($name);
         $agent->setTimezone($timezone);
         $agent->setMaxActiveTickets($maxActiveTickets);
         $this->em->persist($agent);

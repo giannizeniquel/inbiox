@@ -1,0 +1,36 @@
+security:
+    role_hierarchy:
+        ROLE_ADMIN: [ROLE_SUPERVISOR, ROLE_AGENT]
+        ROLE_SUPERVISOR: [ROLE_AGENT]
+
+    password_hashers:
+        App\Domain\User\User: 'auto'
+
+    providers:
+        app_user_provider:
+            entity:
+                class: App\Domain\User\User
+                property: email
+
+    firewalls:
+        webhook:
+            pattern: ^/webhook
+            security: false
+
+        api:
+            pattern: ^/api
+            stateless: true
+            provider: app_user_provider
+            # JWT authenticator will be added in PR2
+            # For now, all routes under api firewall are accessible
+
+    access_control:
+        - { path: ^/webhook, roles: PUBLIC_ACCESS }
+        - { path: ^/api, roles: PUBLIC_ACCESS }  # Will be tightened in PR3
+
+when@dev:
+    security:
+        firewalls:
+            dev:
+                pattern: ^/_(profiler|wdt)
+                security: false

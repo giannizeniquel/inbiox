@@ -5,8 +5,12 @@ framework:
     # Note that the session will be started ONLY if you read or write from it.
     session: true
 
+    # API is stateless — disable CSRF protection
+    csrf_protection: ~
+
 when@test:
     framework:
         test: true
         session:
             storage_factory_id: session.storage.factory.mock_file
+        csrf_protection: ~

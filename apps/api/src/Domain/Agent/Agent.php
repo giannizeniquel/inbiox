@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Agent;
 
+use App\Domain\User\User;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -22,8 +23,9 @@ class Agent
     #[ORM\Column(name: 'name', type: Types::STRING, length: 255)]
     private string $name;
 
-    #[ORM\Column(name: 'email', type: Types::STRING, length: 255, unique: true)]
-    private string $email;
+    #[ORM\OneToOne(targetEntity: User::class, inversedBy: 'agent')]
+    #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: true, unique: true)]
+    private ?User $user = null;
 
     #[ORM\Column(name: 'active', type: Types::BOOLEAN, options: ['default' => true])]
     private bool $active = true;
@@ -52,10 +54,9 @@ class Agent
     #[ORM\OneToMany(targetEntity: AgentShift::class, mappedBy: 'agent', orphanRemoval: true)]
     private Collection $shifts;
 
-    public function __construct(string $name, string $email)
+    public function __construct(string $name)
     {
         $this->name = $name;
-        $this->email = $email;
         $this->shifts = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
@@ -71,9 +72,16 @@ class Agent
         return $this->name;
     }
 
-    public function getEmail(): string
+    public function getUser(): ?User
     {
-        return $this->email;
+        return $this->user;
+    }
+
+    public function setUser(?User $user): self
+    {
+        $this->user = $user;
+        $this->updatedAt = new \DateTimeImmutable();
+        return $this;
     }
 
     public function isActive(): bool

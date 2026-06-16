@@ -15,7 +15,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  */
 class GraphClient
 {
-    private const string BASE_URL = 'https://graph.facebook.com/v25.0';
+    private const BASE_URL = 'https://graph.facebook.com/v25.0';
 
     public function __construct(
         private readonly string $accessToken,
