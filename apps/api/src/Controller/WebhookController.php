@@ -255,9 +255,17 @@ class WebhookController extends AbstractController
                         $wamid = $msg['id'] ?? null;
                         $msgType = $msg['type'] ?? null;
 
-                        // Only process text messages for now
-                        if ($msgType !== 'text' || $from === null) {
-                            $this->logger->debug('Skipping non-text inbound message', [
+                        // Skip messages without a sender
+                        if ($from === null) {
+                            continue;
+                        }
+
+                        $contactName = $contactNames[$from] ?? null;
+
+                        // Supported message types: text, document, image, audio, video
+                        $supportedTypes = ['text', 'document', 'image', 'audio', 'video'];
+                        if (!in_array($msgType, $supportedTypes, true)) {
+                            $this->logger->debug('Skipping unsupported inbound message type', [
                                 'type' => $msgType,
                                 'from' => $from,
                                 'wamid' => $wamid,
@@ -265,8 +273,28 @@ class WebhookController extends AbstractController
                             continue;
                         }
 
-                        $text = $msg['text']['body'] ?? '';
-                        $contactName = $contactNames[$from] ?? null;
+                        // Extract message content based on type
+                        if ($msgType === 'text') {
+                            $text = $msg['text']['body'] ?? '';
+                        } else {
+                            // Media types: build descriptive content for inbox display
+                            $mediaId = $msg[$msgType]['id'] ?? null;
+                            $filename = $msg[$msgType]['filename'] ?? null;
+                            $mimeType = $msg[$msgType]['mime_type'] ?? null;
+                            $caption = $msg[$msgType]['caption'] ?? null;
+
+                            $typeLabels = [
+                                'document' => '📎 Documento',
+                                'image' => '🖼 Imagen',
+                                'audio' => '🎵 Audio',
+                                'video' => '🎬 Video',
+                            ];
+                            $typeLabel = $typeLabels[$msgType] ?? '📁 ' . ucfirst($msgType);
+
+                            $text = $caption
+                                ? "{$typeLabel}: {$filename} — \"{$caption}\""
+                                : "{$typeLabel}: {$filename}";
+                        }
 
                         try {
                             $result = $this->handleInboundMessage->processInboundMessage(

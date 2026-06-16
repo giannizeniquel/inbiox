@@ -204,6 +204,22 @@ class ProviderProxyController extends AbstractController
 
         $wamid = $graphResponse['messages'][0]['id'] ?? null;
 
+        // Persist WAMID as externalId on a new outbound Message for webhook correlation
+        if ($wamid !== null) {
+            $content = "Template: {$templateName}" . (!empty($parameters) ? ' (' . implode(', ', $parameters) . ')' : '');
+            $message = new Message();
+            $message->setContent($content);
+            $message->setExternalId($wamid);
+            $message->setDirection(MessageDirection::OUTBOUND->value);
+            $message->setDeliveryStatus('sent');
+            $message->setUpdatedAt(new \DateTimeImmutable());
+            if ($ticket->getConversation()) {
+                $message->setConversation($ticket->getConversation());
+            }
+            $this->em->persist($message);
+            $this->em->flush();
+        }
+
         return new JsonResponse(
             [
                 'messageId' => $wamid,
