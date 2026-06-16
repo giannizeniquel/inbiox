@@ -11,6 +11,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Table(name: "tickets")]
 #[ORM\Index(name: 'idx_tickets_status', columns: ['status'])]
 #[ORM\Index(name: 'idx_tickets_assigned_agent_id', columns: ['assigned_agent_id'])]
+#[ORM\Index(name: 'idx_tickets_owner_status', columns: ['assigned_agent_id', 'status'])]
 class Ticket
 {
     #[ORM\Id]

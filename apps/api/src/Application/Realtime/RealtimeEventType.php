@@ -12,7 +12,9 @@ enum RealtimeEventType: string
     case TicketCreated         = 'ticket.created';
     case TicketStatusChanged   = 'ticket.status_changed';
     case TicketAssigned        = 'ticket.assigned';
-    case MessageAdded          = 'message.added';
-    case MessageUpdated        = 'message.updated';
-    case ConversationUpdated   = 'conversation.updated';
+    case MessageAdded                = 'message.added';
+    case MessageUpdated              = 'message.updated';
+    case ConversationUpdated         = 'conversation.updated';
+    case AGENT_AVAILABILITY_CHANGED  = 'agent.availability_changed';
+    case AGENT_SHIFT_CHANGED         = 'agent.shift_changed';
 }

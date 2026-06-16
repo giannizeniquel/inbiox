@@ -1,14 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Assignment;
 
+use App\Domain\Agent\Agent;
 use App\Domain\Ticket\Ticket;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: "assignments")]
 #[ORM\Index(name: 'idx_assignments_ticket_id', columns: ['ticket_id'])]
 #[ORM\Index(name: 'idx_assignments_assigned_at', columns: ['assigned_at'])]
+#[ORM\Index(name: 'idx_assignments_agent_assigned_at', columns: ['agent_id', 'assigned_at'])]
 class Assignment
 {
     #[ORM\Id]
@@ -20,8 +25,16 @@ class Assignment
     #[ORM\JoinColumn(name: "ticket_id", referencedColumnName: "id", onDelete: "CASCADE")]
     private Ticket $ticket;
 
-    #[ORM\Column(name: "agent_id", type: "string", length: 100)]
-    private string $agentId;
+    #[ORM\ManyToOne(targetEntity: Agent::class)]
+    #[ORM\JoinColumn(name: "agent_id", referencedColumnName: "id", nullable: true)]
+    private ?Agent $agent = null;
+
+    #[ORM\Column(name: "type", type: Types::STRING, length: 20, options: ['default' => 'MANUAL_ASSIGN'])]
+    private string $type = 'MANUAL_ASSIGN';
+
+    #[ORM\ManyToOne(targetEntity: Agent::class)]
+    #[ORM\JoinColumn(name: "previous_agent_id", referencedColumnName: "id", nullable: true)]
+    private ?Agent $previousAgent = null;
 
     #[ORM\Column(name: "assigned_at", type: "datetime_immutable")]
     private \DateTimeImmutable $assignedAt;
@@ -34,13 +47,17 @@ class Assignment
 
     public function __construct(
         Ticket $ticket,
-        string $agentId,
-        string $assignedBy,
-        ?string $notes = null
+        ?Agent $agent = null,
+        string $assignedBy = '',
+        ?string $notes = null,
+        string $type = 'MANUAL_ASSIGN',
+        ?Agent $previousAgent = null
     ) {
         $this->ticket = $ticket;
-        $this->agentId = $agentId;
+        $this->agent = $agent;
         $this->assignedBy = $assignedBy;
+        $this->type = $type;
+        $this->previousAgent = $previousAgent;
         $this->assignedAt = new \DateTimeImmutable();
         $this->notes = $notes;
     }
@@ -55,14 +72,52 @@ class Assignment
         return $this->ticket;
     }
 
-    public function getAgentId(): string
+    public function getAgent(): ?Agent
     {
-        return $this->agentId;
+        return $this->agent;
     }
 
-    public function setAgentId(string $agentId): self
+    public function setAgent(?Agent $agent): self
     {
-        $this->agentId = $agentId;
+        $this->agent = $agent;
+        return $this;
+    }
+
+    /**
+     * Compatibility wrapper — returns the agent ID from the relationship.
+     */
+    public function getAgentId(): ?int
+    {
+        return $this->agent?->getId();
+    }
+
+    public function getPreviousAgent(): ?Agent
+    {
+        return $this->previousAgent;
+    }
+
+    public function setPreviousAgent(?Agent $previousAgent): self
+    {
+        $this->previousAgent = $previousAgent;
+        return $this;
+    }
+
+    /**
+     * Compatibility wrapper — returns the previous agent ID from the relationship.
+     */
+    public function getPreviousAgentId(): ?int
+    {
+        return $this->previousAgent?->getId();
+    }
+
+    public function getType(): string
+    {
+        return $this->type;
+    }
+
+    public function setType(string $type): self
+    {
+        $this->type = $type;
         return $this;
     }
 

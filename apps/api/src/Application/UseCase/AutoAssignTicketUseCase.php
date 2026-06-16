@@ -1,41 +1,73 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\UseCase;
 
-use App\Domain\Ticket\Ticket;
+use App\Application\Service\AgentAvailabilityService;
+use App\Application\Service\AssignmentService;
+use App\Domain\Agent\Agent;
+use App\Domain\Assignment\AssignmentType;
+use App\Domain\Event\EventCollector;
+use App\Domain\Outbox\OutboxEvent;
 use App\Domain\Ticket\TicketStatus;
+use App\Repository\AssignmentRepository;
 use App\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
-class AutoAssignTicketUseCase
+/**
+ * Deterministic auto-assignment of tickets to the least-loaded eligible agent.
+ *
+ * Pipeline (single transaction):
+ *   1. SELECT ticket FOR UPDATE (idempotent)
+ *   2. listAvailableAgents() via AgentAvailabilityService (SOLE eligibility check)
+ *   3. SELECT agents FOR UPDATE WHERE id IN (...)
+ *   4. Re-filter capacity inside lock (COUNT may have changed)
+ *   5. Tiebreaker: lowest active count → fewest AUTO_ASSIGN today → lowest id
+ *   6. AssignmentService.recordOwnershipChange()
+ *   7. Collect outbox events for PR4 Mercure
+ *
+ * The old hardcoded "WHERE active = 1 AND is_available = 1" filter is REMOVED.
+ * AgentAvailabilityService is the SOLE eligibility check.
+ */
+final class AutoAssignTicketUseCase
 {
-    // Active statuses for ticket counting
-    private const ACTIVE_STATUSES = ['new', 'active', 'waiting'];
+    /** Track the last assignment type for outbox payload enrichment. */
+    private ?string $lastAssignmentType = null;
 
     public function __construct(
         private EntityManagerInterface $em,
         private TicketRepository $ticketRepo,
+        private AssignmentRepository $assignmentRepo,
+        private AgentAvailabilityService $availabilityService,
+        private AssignmentService $assignmentService,
+        private EventCollector $eventCollector,
     ) {}
 
     /**
-     * Automatically assign a ticket to an eligible agent using least-loaded strategy
+     * Execute auto-assignment in its own transaction.
      *
      * @param int $ticketId
-     * @return array
+     * @return array{ticket_id: int, assigned: bool, agent_id: ?int, reason: string}
      */
     public function execute(int $ticketId): array
     {
-        return $this->em->getConnection()->transactional(function() use ($ticketId) {
+        $result = $this->em->getConnection()->transactional(function () use ($ticketId) {
             return $this->executeInternal($ticketId);
         });
+
+        // After commit, persist collected events to outbox (for PR4)
+        $this->persistEventsToOutbox();
+
+        return $result;
     }
 
     /**
-     * Execute auto-assignment WITHOUT starting a new transaction
-     * Use this when already inside a transaction
+     * Execute auto-assignment WITHOUT starting a new transaction.
+     * Use this when already inside a transaction (e.g., Rebalance).
      *
      * @param int $ticketId
-     * @return array
+     * @return array{ticket_id: int, assigned: bool, agent_id: ?int, reason: string}
      */
     public function executeInTransaction(int $ticketId): array
     {
@@ -43,20 +75,19 @@ class AutoAssignTicketUseCase
     }
 
     /**
-     * Internal execution logic
-     *
-     * @param int $ticketId
-     * @return array
+     * Internal execution logic — must be called inside a transaction.
      */
     private function executeInternal(int $ticketId): array
     {
-        // 1. Lock the ticket row for update
-        $ticket = $this->em->getConnection()->executeQuery(
-            "SELECT * FROM tickets WHERE id = ? FOR UPDATE",
-            [$ticketId]
+        $conn = $this->em->getConnection();
+
+        // 1. Lock the ticket row FOR UPDATE
+        $ticketRow = $conn->executeQuery(
+            'SELECT * FROM tickets WHERE id = ? FOR UPDATE',
+            [$ticketId],
         )->fetchAssociative();
 
-        if (!$ticket) {
+        if (!$ticketRow) {
             return [
                 'ticket_id' => $ticketId,
                 'assigned' => false,
@@ -65,25 +96,22 @@ class AutoAssignTicketUseCase
             ];
         }
 
-        // 2. If already assigned, exit (idempotent)
-        if ($ticket['assigned_agent_id'] !== null) {
+        // 2. If already assigned, return idempotent (no new Assignment row)
+        if ($ticketRow['assigned_agent_id'] !== null) {
             return [
                 'ticket_id' => $ticketId,
                 'assigned' => false,
-                'agent_id' => (int) $ticket['assigned_agent_id'],
+                'agent_id' => (int) $ticketRow['assigned_agent_id'],
                 'reason' => 'already_assigned',
             ];
         }
 
-        // 3. Fetch eligible agents FOR UPDATE
-        $agents = $this->em->getConnection()->executeQuery(
-            "SELECT * FROM agents 
-             WHERE active = 1 AND is_available = 1 
-             FOR UPDATE",
-            []
-        )->fetchAllAssociative();
+        // 3. Get available agents via AgentAvailabilityService (SOLE eligibility check)
+        //    This uses the full cascade: active → override → schedule → capacity.
+        $nowUtc = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $availableAgents = $this->availabilityService->listAvailableAgents($nowUtc);
 
-        if (empty($agents)) {
+        if (empty($availableAgents)) {
             return [
                 'ticket_id' => $ticketId,
                 'assigned' => false,
@@ -92,42 +120,37 @@ class AutoAssignTicketUseCase
             ];
         }
 
-        // 4. Get current active ticket counts per agent
-        $activeStatuses = self::ACTIVE_STATUSES;
-        $statusPlaceholders = implode(',', array_fill(0, count($activeStatuses), '?'));
-        
-        $countSql = "SELECT assigned_agent_id, COUNT(*) as cnt 
-                   FROM tickets 
-                   WHERE assigned_agent_id IS NOT NULL 
-                   AND status IN ($statusPlaceholders) 
-                   GROUP BY assigned_agent_id";
-        
-        $countStmt = $this->em->getConnection()->executeQuery($countSql, $activeStatuses);
-        $counts = $countStmt->fetchAllAssociativeIndexed();
-        
-        // Map counts by agent_id
-        $agentLoad = [];
-        foreach ($counts as $agentId => $row) {
-            $agentLoad[$agentId] = (int) $row['cnt'];
-        }
+        // 4. Lock candidate agent rows FOR UPDATE
+        $agentIds = array_map(fn (Agent $a): int => (int) $a->getId(), $availableAgents);
+        $placeholders = implode(',', array_fill(0, \count($agentIds), '?'));
+        $conn->executeQuery(
+            "SELECT id FROM agents WHERE id IN ($placeholders) FOR UPDATE",
+            $agentIds,
+        );
 
-        // 5. Filter agents by capacity and find least loaded
-        $eligibleAgents = [];
-        foreach ($agents as $agent) {
-            $agentId = (string) $agent['id'];
-            $currentLoad = $agentLoad[$agentId] ?? 0;
-            
-            if ($currentLoad < (int) $agent['max_active_tickets']) {
-                $eligibleAgents[] = [
-                    'id' => (int) $agent['id'],
-                    'name' => $agent['name'],
-                    'load' => $currentLoad,
-                ];
+        // 5. Re-filter capacity inside the lock + gather tiebreaker data
+        $todayStart = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->setTime(0, 0, 0);
+        $eligible = [];
+
+        foreach ($availableAgents as $agent) {
+            $activeCount = $this->ticketRepo->countActiveForAgent((int) $agent->getId());
+            if ($activeCount >= $agent->getMaxActiveTickets()) {
+                continue; // at capacity — skip
             }
+
+            $todayCount = $this->assignmentRepo->countAutoAssignedToday(
+                (int) $agent->getId(),
+                $todayStart,
+            );
+
+            $eligible[] = [
+                'agent' => $agent,
+                'activeCount' => $activeCount,
+                'todayCount' => $todayCount,
+            ];
         }
 
-        // 6. If no eligible agents after capacity filter, exit
-        if (empty($eligibleAgents)) {
+        if (empty($eligible)) {
             return [
                 'ticket_id' => $ticketId,
                 'assigned' => false,
@@ -136,37 +159,95 @@ class AutoAssignTicketUseCase
             ];
         }
 
-        // 7. Sort by load ASC, then by agent.id ASC (tie-breaker)
-        usort($eligibleAgents, function($a, $b) {
-            if ($a['load'] !== $b['load']) {
-                return $a['load'] <=> $b['load'];
+        // 6. DETERMINISTIC tiebreaker (no shuffle, no rand — same data = same result)
+        usort($eligible, function (array $a, array $b): int {
+            // First: lowest active ticket count
+            if ($a['activeCount'] !== $b['activeCount']) {
+                return $a['activeCount'] <=> $b['activeCount'];
             }
-            return $a['id'] <=> $b['id'];
+            // Second: fewest AUTO_ASSIGN today
+            if ($a['todayCount'] !== $b['todayCount']) {
+                return $a['todayCount'] <=> $b['todayCount'];
+            }
+            // Third: lowest agent.id
+            return $a['agent']->getId() <=> $b['agent']->getId();
         });
 
-        // 8. Select the least loaded agent
-        $selectedAgent = $eligibleAgents[0];
+        $selectedAgent = $eligible[0]['agent'];
 
-        // 9. Update ticket with assigned_agent_id and status in single query if new
-        if ($ticket['status'] === TicketStatus::NEW->value) {
-            // Status is NEW: update both assigned_agent_id AND status to active in one query
-            $this->em->getConnection()->executeStatement(
-                "UPDATE tickets SET assigned_agent_id = ?, status = ?, updated_at = NOW() WHERE id = ?",
-                [$selectedAgent['id'], TicketStatus::ACTIVE->value, $ticketId]
-            );
-        } else {
-            // Status is not NEW: only update assigned_agent_id
-            $this->em->getConnection()->executeStatement(
-                "UPDATE tickets SET assigned_agent_id = ?, updated_at = NOW() WHERE id = ?",
-                [$selectedAgent['id'], $ticketId]
-            );
+        // 7. Load the Ticket entity for AssignmentService
+        $ticket = $this->ticketRepo->findById($ticketId);
+        if ($ticket === null) {
+            // Should not happen — we already locked the row above
+            return [
+                'ticket_id' => $ticketId,
+                'assigned' => false,
+                'agent_id' => null,
+                'reason' => 'ticket_not_found',
+            ];
         }
+
+        // 8. Record ownership change via AssignmentService (single point of change)
+        //    This creates the Assignment audit row, updates ticket.assigned_agent_id,
+        //    and emits domain events.
+        $this->lastAssignmentType = AssignmentType::AUTO_ASSIGN->value;
+        $this->assignmentService->recordOwnershipChange(
+            ticket: $ticket,
+            agent: $selectedAgent,
+            previousAgent: null,
+            type: AssignmentType::AUTO_ASSIGN,
+            assignedBy: 'system',
+        );
+
+        // 9. Flush to persist all changes in the current transaction
+        $this->em->flush();
 
         return [
             'ticket_id' => $ticketId,
             'assigned' => true,
-            'agent_id' => $selectedAgent['id'],
+            'agent_id' => $selectedAgent->getId(),
             'reason' => 'success',
         ];
+    }
+
+    /**
+     * Persist collected domain events to outbox table (post-commit).
+     */
+    private function persistEventsToOutbox(): void
+    {
+        $events = $this->eventCollector->getEvents();
+        if (empty($events)) {
+            return;
+        }
+
+        foreach ($events as $event) {
+            $payload = [
+                'eventId' => $event->eventId->toRfc4122(),
+                'type' => $event->type,
+                'ticketId' => $event->ticketId,
+                'occurredAt' => $event->occurredAt->format(\DateTimeInterface::RFC3339),
+                'seq' => $event->seq,
+                'version' => $event->version,
+            ];
+
+            if ($event instanceof \App\Domain\Event\TicketUpdatedEvent) {
+                $payload['status'] = $event->status?->value;
+                $payload['ownerAgentId'] = $event->ownerAgentId;
+                $payload['assignee_id'] = $event->ownerAgentId;
+                $payload['assignment_type'] = $this->lastAssignmentType;
+            }
+
+            $outboxEvent = new OutboxEvent(
+                aggregateType: 'ticket',
+                aggregateId: $event->ticketId,
+                topic: 'tickets',
+                eventType: $event->type,
+                payload: $payload,
+            );
+            $this->em->persist($outboxEvent);
+        }
+
+        $this->em->flush();
+        $this->eventCollector->clear();
     }
 }

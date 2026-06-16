@@ -151,3 +151,28 @@ app_mercure_token:
     path: /api/mercure/token
     methods: [GET]
     controller: App\Controller\TicketEventsController::getToken
+
+app_agent_set_availability:
+    path: /agents/{id}/availability
+    methods: [POST]
+    controller: App\Controller\AgentAvailabilityController::setAvailability
+
+app_agent_clear_availability:
+    path: /agents/{id}/availability
+    methods: [DELETE]
+    controller: App\Controller\AgentAvailabilityController::clearAvailability
+
+app_agent_get_availability:
+    path: /agents/{id}/availability
+    methods: [GET]
+    controller: App\Controller\AgentAvailabilityController::getAvailability
+
+app_agent_create_shift:
+    path: /agents/{id}/shifts
+    methods: [POST]
+    controller: App\Controller\AgentAvailabilityController::createShift
+
+app_agent_delete_shift:
+    path: /agents/{id}/shifts/{shiftId}
+    methods: [DELETE]
+    controller: App\Controller\AgentAvailabilityController::deleteShift

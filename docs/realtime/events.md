@@ -4,33 +4,137 @@ This document defines all event types used in Inbiox's realtime communication la
 
 ## Ticket Events
 
-| Event | Description | Payload |
-|-------|-------------|---------|
-| `ticket.created` | Fired when a new ticket is created | `{ ticket: Ticket }` |
-| `ticket.updated` | Fired when ticket fields change | `{ ticket: Ticket }` |
-| `ticket.assigned` | Fired when an agent is assigned | `{ ticket: Ticket, assigneeId: number }` |
+| Event | Topic | Description | Payload |
+|-------|-------|-------------|---------|
+| `ticket.created` | `ticket/{id}` | Fired when a new ticket is created | `{ ticket: Ticket }` |
+| `ticket.updated` | `ticket/{id}` | Fired when ticket fields change | `{ ticket: Ticket }` |
+| `ticket.assigned` | `ticket/{id}/assigned` | Fired when ownership changes (assign, reassign, unassign) | `{ ticket_id, agent_id, assignment_type, timestamp }` |
+| `ticket.status_changed` | `ticket/{id}/status` | Fired when ticket FSM status changes | `{ ticket_id, previous_status, new_status, timestamp }` |
 
 ## Message Events
 
-| Event | Description | Payload |
-|-------|-------------|---------|
-| `message.received` | Inbound message from customer | `{ message: Message, ticketId: string }` |
-| `message.sent` | Outbound message from agent | `{ message: Message, ticketId: string }` |
-| `message.failed` | Message delivery failed | `{ ticketId: string, reason: string }` |
+| Event | Topic | Description | Payload |
+|-------|-------|-------------|---------|
+| `message.received` | `ticket/{ticketId}` | Inbound message from customer | `{ message: Message, ticketId: string }` |
+| `message.sent` | `ticket/{ticketId}` | Outbound message from agent | `{ message: Message, ticketId: string }` |
+| `message.failed` | `ticket/{ticketId}` | Message delivery failed | `{ ticketId: string, reason: string }` |
 
 ## Contact Events
 
-| Event | Description | Payload |
-|-------|-------------|---------|
-| `contact.created` | New contact added | `{ contact: Contact }` |
-| `contact.updated` | Contact details changed | `{ contactId: string, changes: Partial<Contact> }` |
+| Event | Topic | Description | Payload |
+|-------|-------|-------------|---------|
+| `contact.created` | `contacts` | New contact added | `{ contact: Contact }` |
+| `contact.updated` | `contacts/{id}` | Contact details changed | `{ contactId: string, changes: Partial<Contact> }` |
 
 ## Agent Events
 
-| Event | Description | Payload |
-|-------|-------------|---------|
-| `agent.assigned` | Agent assigned to ticket | `{ ticketId: string, agentId: number }` |
-| `agent.unassigned` | Agent unassigned from ticket | `{ ticketId: string, agentId: number }` |
+| Event | Topic | Description | Payload |
+|-------|-------|-------------|---------|
+| `agent.availability_changed` | `agent/{id}/availability` + `agents` (broadcast) | Agent availability override set or cleared | `{ agent_id, is_available, source, override_until, changed_at }` |
+| `agent.shift_changed` | `agent/{id}/shifts` + `agents` (broadcast) | Agent shift created or deleted | `{ agent_id, shift_id, action, day_of_week, start_time, end_time, timestamp }` |
+
+Broadcast topic `agents` is reserved for Sprint 10.5 capacity bar.
+
+### Agent Availability Changed Payload
+
+Emitted when:
+- `POST /agents/{id}/availability` — override set or updated
+- `DELETE /agents/{id}/availability` — override cleared
+- Override TTL expiry evaluated at assignment time (no explicit event — expiry is read-time)
+
+```json
+{
+  "agent_id": 5,
+  "is_available": true,
+  "source": "override",
+  "override_until": "2026-06-14T17:30:00Z",
+  "changed_at": "2026-06-14T15:30:00Z"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `agent_id` | int | Agent whose availability changed |
+| `is_available` | bool | Current computed availability |
+| `source` | string | `"override"` — always `override` for this event (schedule/capacity changes are not event-driven) |
+| `override_until` | string? | ISO 8601 UTC expiry timestamp; `null` when cleared or persistent |
+| `changed_at` | string | ISO 8601 UTC timestamp of the change |
+
+### Agent Shift Changed Payload
+
+Emitted when:
+- `POST /agents/{id}/shifts` — shift created
+- `DELETE /agents/{id}/shifts/{shiftId}` — shift deleted
+
+```json
+{
+  "agent_id": 5,
+  "shift_id": 10,
+  "action": "created",
+  "day_of_week": 1,
+  "start_time": "08:00",
+  "end_time": "16:00",
+  "timestamp": "2026-06-14T15:30:00Z"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `agent_id` | int | Agent whose shift changed |
+| `shift_id` | int | ID of the shift created or deleted |
+| `action` | string | `"created"` or `"deleted"` |
+| `day_of_week` | int | 1=Monday ... 7=Sunday (ISO-8601) |
+| `start_time` | string | Local time (HH:MM) in agent's timezone |
+| `end_time` | string | Local time (HH:MM) in agent's timezone |
+| `timestamp` | string | ISO 8601 UTC timestamp of the change |
+
+## Assignment / Ownership Events
+
+These events replace the legacy `agent.assigned` and `agent.unassigned` topics.
+All ownership changes now use the `ticket.assigned` event with the `assignment_type` field for disambiguation.
+
+| Event | Topic | Trigger | Payload |
+|-------|-------|---------|---------|
+| `ticket.assigned` | `ticket/{id}/assigned` | Any ownership change | `{ ticket_id, agent_id, assignment_type, timestamp }` |
+
+### Ticket Assigned Payload
+
+```json
+{
+  "ticket_id": 100,
+  "agent_id": 5,
+  "assignment_type": "AUTO_ASSIGN",
+  "timestamp": "2026-06-14T15:30:00Z"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `ticket_id` | int | The ticket whose ownership changed |
+| `agent_id` | int? | New owner ID, or `null` for UNASSIGN |
+| `assignment_type` | string | One of: `AUTO_ASSIGN`, `MANUAL_ASSIGN`, `REASSIGN`, `UNASSIGN` |
+| `timestamp` | string | ISO 8601 UTC timestamp |
+
+**`assignment_type` values**:
+
+| Type | Meaning |
+|------|---------|
+| `AUTO_ASSIGN` | System assigned via `AutoAssignTicketUseCase` |
+| `MANUAL_ASSIGN` | Supervisor assigned via `AssignTicketUseCase` |
+| `REASSIGN` | Transfer from one agent to another |
+| `UNASSIGN` | Ownership removed (e.g. ticket resolved/closed) |
+
+## Event Source Mapping
+
+| Domain Event | Realtime Event | Topic |
+|-------------|----------------|-------|
+| `TicketCreated` | `ticket.created` | `ticket/{id}` |
+| `TicketUpdatedEvent` | `ticket.updated` | `ticket/{id}` |
+| `InboxUpdatedEvent` | `ticket.updated` | `ticket/{id}` |
+| `TicketStatusChangedEvent` | `ticket.status_changed` | `ticket/{id}/status` |
+| `TicketOwnershipChangedEvent` | `ticket.assigned` | `ticket/{id}/assigned` |
+| `AgentAvailabilityChangedEvent` | `agent.availability_changed` | `agent/{id}/availability` + `agents` |
+| `AgentShiftChangedEvent` | `agent.shift_changed` | `agent/{id}/shifts` + `agents` |
 
 ## Payload Types
 

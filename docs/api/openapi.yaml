@@ -1,0 +1,347 @@
+openapi: "3.0.3"
+info:
+  title: Inbiox API — Agent Management
+  version: "1.0.0"
+  description: |
+    Agent Management endpoints for Sprint 10.
+    - Availability overrides (set, clear, read)
+    - Weekly shift management (create, delete)
+    - Agent performance reports (enriched leaderboard)
+    - Inbox enrichment (read-only availability fields)
+
+paths:
+  /agents/{agentId}/availability:
+    get:
+      summary: Read agent availability state
+      description: >
+        Returns the current availability state for an agent.
+        Read-only — uses AgentAvailabilityService for evaluation.
+        Does NOT modify state.
+      tags: [Agents, Availability]
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Agent ID
+      responses:
+        "200":
+          description: Current availability state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentAvailabilityResponse"
+        "404":
+          description: Agent not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    post:
+      summary: Set availability override
+      description: >
+        Sets an availability override for an agent with optional TTL.
+        Emits `agent.availability_changed` Mercure event.
+      tags: [Agents, Availability]
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetAvailabilityRequest"
+      responses:
+        "204":
+          description: Override set successfully
+        "404":
+          description: Agent not found
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Lock timeout
+
+    delete:
+      summary: Clear availability override
+      description: >
+        Clears the availability override, reverting to schedule-based
+        evaluation. Emits `agent.availability_changed` Mercure event.
+      tags: [Agents, Availability]
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Override cleared successfully
+        "404":
+          description: Agent not found
+
+  /agents/{agentId}/shifts:
+    post:
+      summary: Create agent shift
+      description: >
+        Creates a weekly shift for an agent.
+        Emits `agent.shift_changed` Mercure event.
+      tags: [Agents, Shifts]
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateShiftRequest"
+      responses:
+        "201":
+          description: Shift created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentShiftResponse"
+        "404":
+          description: Agent not found
+        "422":
+          description: Validation error (invalid day_of_week, start=end, etc.)
+
+  /agents/{agentId}/shifts/{shiftId}:
+    delete:
+      summary: Delete agent shift
+      description: >
+        Deletes a weekly shift. Validates the shift belongs to the agent.
+        Emits `agent.shift_changed` Mercure event.
+      tags: [Agents, Shifts]
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: shiftId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Shift deleted
+        "404":
+          description: Shift not found or does not belong to agent
+
+  /reports/agents:
+    get:
+      summary: Agent performance leaderboard
+      description: >
+        Returns agent performance metrics including real names, load,
+        and availability state. Enriched with current_active_tickets
+        and is_in_shift fields.
+      tags: [Reports]
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Start of date range (UTC, inclusive)
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: End of date range (UTC, exclusive)
+        - name: agent_id
+          in: query
+          schema:
+            type: integer
+          description: Filter by specific agent
+      responses:
+        "200":
+          description: Agent performance metrics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AgentPerformance"
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+        reference:
+          type: string
+          description: Error reference ID (for logging)
+      required: [error]
+
+    AgentAvailabilityResponse:
+      type: object
+      properties:
+        agent_id:
+          type: integer
+        is_available:
+          type: boolean
+          description: Current computed availability (full cascade)
+        is_in_shift:
+          type: boolean
+          description: Whether agent is in their scheduled shift window
+        timezone:
+          type: string
+          example: "America/Argentina/Buenos_Aires"
+        current_load:
+          type: integer
+          description: Current active ticket count (derived via COUNT)
+        max_capacity:
+          type: integer
+          description: Max active tickets the agent can handle
+        override:
+          type: object
+          nullable: true
+          properties:
+            active:
+              type: boolean
+            reason:
+              type: string
+              nullable: true
+            expires_at:
+              type: string
+              format: date-time
+              nullable: true
+      required:
+        - agent_id
+        - is_available
+        - is_in_shift
+        - timezone
+        - current_load
+        - max_capacity
+        - override
+
+    SetAvailabilityRequest:
+      type: object
+      required: [is_available]
+      properties:
+        is_available:
+          type: boolean
+          description: Override value (true = available, false = unavailable)
+        ttl_minutes:
+          type: integer
+          nullable: true
+          minimum: 1
+          description: >
+            Time-to-live in minutes. If omitted or null, the override is
+            persistent (until explicitly cleared via DELETE).
+      example:
+        is_available: false
+        ttl_minutes: 120
+
+    CreateShiftRequest:
+      type: object
+      required: [day_of_week, start_time, end_time]
+      properties:
+        day_of_week:
+          type: integer
+          minimum: 1
+          maximum: 7
+          description: 1=Monday ... 7=Sunday (ISO-8601)
+        start_time:
+          type: string
+          format: time
+          example: "08:00"
+          description: Local time (HH:MM) in agent's timezone
+        end_time:
+          type: string
+          format: time
+          example: "16:00"
+          description: >
+            Local time (HH:MM) in agent's timezone. Must differ from start_time.
+            If end_time < start_time, the shift crosses midnight.
+      example:
+        day_of_week: 1
+        start_time: "08:00"
+        end_time: "16:00"
+
+    AgentShiftResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        agent_id:
+          type: integer
+        day_of_week:
+          type: integer
+        start_time:
+          type: string
+        end_time:
+          type: string
+
+    AgentPerformance:
+      type: object
+      properties:
+        agent_id:
+          type: integer
+        agent_name:
+          type: string
+          nullable: true
+          description: Real agent name from agents table
+        tickets_assigned:
+          type: integer
+          description: Tickets created in date range
+        tickets_resolved:
+          type: integer
+          description: Tickets resolved in date range
+        current_active_tickets:
+          type: integer
+          description: Current active ticket count (derived via COUNT)
+        max_active_tickets:
+          type: integer
+        current_load:
+          type: number
+          format: float
+          description: Ratio current_active_tickets / max_active_tickets (0.0 to 1.0)
+        is_in_shift:
+          type: boolean
+          description: Whether agent is in their shift window (schedule-only, evaluated at request time)
+        avg_frt_seconds:
+          type: number
+          format: float
+          nullable: true
+        avg_frt_minutes:
+          type: number
+          format: float
+          nullable: true
+        avg_rt_seconds:
+          type: number
+          format: float
+          nullable: true
+        avg_rt_minutes:
+          type: number
+          format: float
+          nullable: true
+      required:
+        - agent_id
+        - agent_name
+        - tickets_assigned
+        - tickets_resolved
+        - current_active_tickets
+        - max_active_tickets
+        - current_load
+        - is_in_shift

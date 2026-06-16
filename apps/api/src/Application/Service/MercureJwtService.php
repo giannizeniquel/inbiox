@@ -22,6 +22,13 @@ final class MercureJwtService
     private const TOPIC_TICKETS = 'tickets';
     private const TOPIC_AGENT_INBOX = 'agent/%d/inbox';
 
+    /** Agent availability changes — e.g., agent/5/availability */
+    public const TOPIC_AGENT_AVAILABILITY = 'agent/%d/availability';
+    /** Agent shift create/delete — e.g., agent/5/shifts */
+    public const TOPIC_AGENT_SHIFTS = 'agent/%d/shifts';
+    /** Broadcast topic for capacity bar (Sprint 10.5) */
+    public const TOPIC_AGENTS_BROADCAST = 'agents';
+
     public function __construct(
         private readonly ParameterBagInterface $parameterBag,
     ) {}
@@ -44,9 +51,13 @@ final class MercureJwtService
         $now = new DateTimeImmutable();
         $expiresAt = $now->modify("+{$ttl} seconds");
 
-        // Build topics array — single topic for all ticket events, per-agent inbox
+        // Build topics array — single topic for all ticket events, per-agent inbox,
+        // per-agent availability, per-agent shifts, and agents broadcast
         $topics = [self::TOPIC_TICKETS];
         $topics[] = sprintf(self::TOPIC_AGENT_INBOX, $agentId);
+        $topics[] = sprintf(self::TOPIC_AGENT_AVAILABILITY, $agentId);
+        $topics[] = sprintf(self::TOPIC_AGENT_SHIFTS, $agentId);
+        $topics[] = self::TOPIC_AGENTS_BROADCAST;
 
         // Create JWT using Lcobucci v4+ Configuration API
         $config = Configuration::forSymmetricSigner(

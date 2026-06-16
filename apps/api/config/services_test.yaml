@@ -1,5 +1,15 @@
 # Test-specific service configuration
 services:
-    # Make OutboxPublisherService public for tests
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    # Make services public for tests (they get inlined in production)
     App\Application\Service\OutboxPublisherService:
+        public: true
+
+    App\Application\UseCase\RebalanceUnassignedTicketsUseCase:
+        public: true
+
+    App\Application\Service\AssignmentService:
         public: true

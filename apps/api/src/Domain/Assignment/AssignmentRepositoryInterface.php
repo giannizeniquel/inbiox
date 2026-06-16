@@ -14,7 +14,7 @@ interface AssignmentRepositoryInterface
     /**
      * Find assignments by agent ID
      */
-    public function findByAgent(string $agentId): array;
+    public function findByAgent(int $agentId): array;
 
     /**
      * Find assignment by ID

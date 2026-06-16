@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Domain\Ticket\Ticket;
 use App\Domain\Ticket\TicketRepositoryInterface;
+use App\Domain\Ticket\TicketStatus;
 use App\Domain\Contact\Contact;
 use App\Domain\Conversation\Conversation;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -34,5 +35,27 @@ class TicketRepository extends ServiceEntityRepository implements TicketReposito
     public function findByConversation(Conversation $conversation): ?Ticket
     {
         return $this->findOneBy(['conversation' => $conversation]);
+    }
+
+    /**
+     * Count active tickets currently assigned to an agent.
+     *
+     * Active tickets are those with status IN ('new', 'active', 'waiting').
+     * Uses index idx_tickets_owner_status (assigned_agent_id, status).
+     */
+    public function countActiveForAgent(int $agentId): int
+    {
+        return (int) $this->createQueryBuilder('t')
+            ->select('COUNT(t.id)')
+            ->where('t.assignedAgentId = :agentId')
+            ->andWhere('t.status IN (:statuses)')
+            ->setParameter('agentId', $agentId)
+            ->setParameter('statuses', [
+                TicketStatus::NEW->value,
+                TicketStatus::ACTIVE->value,
+                TicketStatus::WAITING->value,
+            ])
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 }

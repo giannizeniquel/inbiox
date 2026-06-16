@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Domain\Assignment\Assignment;
 use App\Domain\Assignment\AssignmentRepositoryInterface;
+use App\Domain\Assignment\AssignmentType;
 use App\Domain\Ticket\Ticket;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -20,9 +21,9 @@ class AssignmentRepository extends ServiceEntityRepository implements Assignment
         return $this->findBy(['ticket' => $ticket], ['assignedAt' => 'DESC']);
     }
 
-    public function findByAgent(string $agentId): array
+    public function findByAgent(int $agentId): array
     {
-        return $this->findBy(['agentId' => $agentId], ['assignedAt' => 'DESC']);
+        return $this->findBy(['agent' => $agentId], ['assignedAt' => 'DESC']);
     }
 
     public function findById(int $id): ?Assignment
@@ -49,5 +50,26 @@ class AssignmentRepository extends ServiceEntityRepository implements Assignment
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    /**
+     * Count AUTO_ASSIGN assignments for an agent since the start of today.
+     *
+     * Used as the second tiebreaker in the auto-assignment algorithm.
+     * Uses index idx_assignments_agent_assigned_at (agent_id, assigned_at).
+     */
+    public function countAutoAssignedToday(int $agentId, \DateTimeImmutable $todayStart): int
+    {
+        return (int) $this->createQueryBuilder('a')
+            ->select('COUNT(a.id)')
+            ->join('a.agent', 'ag')
+            ->where('ag.id = :agentId')
+            ->andWhere('a.type = :type')
+            ->andWhere('a.assignedAt >= :todayStart')
+            ->setParameter('agentId', $agentId)
+            ->setParameter('type', AssignmentType::AUTO_ASSIGN->value)
+            ->setParameter('todayStart', $todayStart)
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 }

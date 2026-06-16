@@ -33,6 +33,16 @@ class Sprint09BConcurrencyTest extends KernelTestCase
         $conn->executeStatement('DELETE FROM tickets');
         $conn->executeStatement('DELETE FROM conversations');
         $conn->executeStatement('DELETE FROM contacts');
+        
+        // Seed agents needed by AssignTicketUseCase (now requires ManyToOne)
+        // Using base columns only (test DB may not have PR1 migration columns yet)
+        $conn->executeStatement('DELETE FROM agents');
+        for ($i = 1; $i <= 10; $i++) {
+            $conn->executeStatement(
+                'INSERT INTO agents (id, name, email, active, is_available, max_active_tickets, created_at, updated_at) VALUES (?, ?, ?, 1, 1, 10, NOW(), NOW())',
+                [$i, "Agent $i", "agent$i@example.com"]
+            );
+        }
     }
 
     protected function tearDown(): void
@@ -73,10 +83,10 @@ class Sprint09BConcurrencyTest extends KernelTestCase
         $assignUseCase2 = static::getContainer()->get(AssignTicketUseCase::class);
         
         // First assignment → seq should increment
-        $assignUseCase1->assignTicket($ticketId, 'agent-001', 'admin', 'First assignment');
+        $assignUseCase1->assignTicket($ticketId, 1, 'admin', 'First assignment');
         
         // Second assignment → seq should be next
-        $assignUseCase2->assignTicket($ticketId, 'agent-002', 'admin', 'Second assignment');
+        $assignUseCase2->assignTicket($ticketId, 2, 'admin', 'Second assignment');
         
         // Get events
         $events = $this->em->getConnection()->fetchAllAssociative(
@@ -122,7 +132,7 @@ class Sprint09BConcurrencyTest extends KernelTestCase
         
         // Use AssignTicketUseCase (applies pessimistic lock)
         $assignUseCase = static::getContainer()->get(AssignTicketUseCase::class);
-        $assignUseCase->assignTicket(999, 'agent-001', 'admin', 'Test');
+        $assignUseCase->assignTicket(999, 1, 'admin', 'Test');
         
         // Verify seq incremented
         $em->clear();
@@ -154,7 +164,7 @@ class Sprint09BConcurrencyTest extends KernelTestCase
         
         // Do multiple assignments
         for ($i = 1; $i <= 4; $i++) {
-            $assignUseCase->assignTicket($ticketId, "agent-$i", 'admin', "Assign $i");
+            $assignUseCase->assignTicket($ticketId, $i, 'admin', "Assign $i");
         }
         
         // Verify final seq is higher than initial

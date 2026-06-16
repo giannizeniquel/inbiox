@@ -114,8 +114,8 @@ class DebugController extends AbstractController
     #[Route('/assign/{ticketId}', name: 'debug_assign', methods: ['POST'])]
     public function assign(int $ticketId): JsonResponse
     {
-        $agentIds = ['agent-001', 'agent-002', 'agent-003', 'agent-004', 'agent-005'];
-        
+        $agentIds = [1, 2, 3, 4, 5];
+
         try {
             $agentId = $agentIds[array_rand($agentIds)];
             $result = $this->assignTicket->assignTicket(
@@ -124,7 +124,7 @@ class DebugController extends AbstractController
                 'system',
                 'Auto-assigned for testing'
             );
-            
+
             return new JsonResponse([
                 'success' => true,
                 'ticket_id' => $ticketId,

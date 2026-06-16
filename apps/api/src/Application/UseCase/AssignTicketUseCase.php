@@ -1,119 +1,108 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\UseCase;
 
-use App\Domain\Assignment\Assignment;
+use App\Application\Service\AssignmentService;
+use App\Domain\Assignment\AssignmentType;
 use App\Domain\Event\EventCollector;
 use App\Domain\Event\InboxUpdatedEvent;
 use App\Domain\Event\TicketUpdatedEvent;
 use App\Domain\Outbox\OutboxEvent;
-use App\Domain\Ticket\Ticket;
 use App\Domain\Ticket\TicketStatus;
+use App\Repository\AgentRepository;
 use App\Repository\AssignmentRepository;
 use App\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\DBAL\LockMode;
-use Symfony\Component\Uid\Ulid;
 
+/**
+ * Manual ticket assignment by a supervisor.
+ *
+ * Routes through AssignmentService for the audit trail — the ONLY path
+ * that modifies ticket.assigned_agent_id.
+ *
+ * Assignment types detected:
+ *   - MANUAL_ASSIGN: ticket had no owner → initial assignment
+ *   - REASSIGN:      ticket already had an owner → transfer
+ */
 class AssignTicketUseCase
 {
+    /** Track the last assignment type for outbox payload enrichment. */
+    private ?string $lastAssignmentType = null;
+
     public function __construct(
         private EntityManagerInterface $em,
         private TicketRepository $ticketRepo,
         private AssignmentRepository $assignmentRepo,
+        private AgentRepository $agentRepo,
         private EventCollector $eventCollector,
+        private AssignmentService $assignmentService,
     ) {}
 
     /**
-     * Assign a ticket to an agent
+     * Assign a ticket to an agent (manual assignment).
      *
      * @param int $ticketId
-     * @param string $agentId
+     * @param int $agentId
      * @param string $assignedBy
      * @param string|null $notes
      * @return array
-     * @throws \InvalidArgumentException if ticket not found
+     * @throws \InvalidArgumentException if ticket or agent not found
      */
-    public function assignTicket(int $ticketId, string $agentId, string $assignedBy, ?string $notes = null): array
+    public function assignTicket(int $ticketId, int $agentId, string $assignedBy, ?string $notes = null): array
     {
         // Validate input
-        if (empty($agentId)) {
+        if ($agentId <= 0) {
             throw new \InvalidArgumentException('Agent ID is required');
         }
 
-        if (empty($assignedBy)) {
+        if ($assignedBy === '') {
             throw new \InvalidArgumentException('Assigned by is required');
         }
 
-        // Store old agent ID for InboxUpdatedEvent (to be used after commit)
-        $oldAgentId = null;
+        $this->lastAssignmentType = null;
 
-        $result = $this->em->getConnection()->transactional(function() use ($ticketId, $agentId, $assignedBy, $notes, &$oldAgentId) {
+        $result = $this->em->getConnection()->transactional(function () use ($ticketId, $agentId, $assignedBy, $notes) {
+            // Find the agent
+            $agent = $this->agentRepo->findById($agentId);
+            if (!$agent) {
+                throw new \InvalidArgumentException('Agent not found');
+            }
+
             // Find the ticket
             $ticket = $this->ticketRepo->findById($ticketId);
             if (!$ticket) {
                 throw new \InvalidArgumentException('Ticket not found');
             }
 
-            // Lock ticket to prevent seq duplicates under concurrency
+            // Lock ticket to prevent concurrent modifications
             $this->em->lock($ticket, LockMode::PESSIMISTIC_WRITE);
 
-            // Get current assignment to track old agent
-            $currentAssignment = $this->assignmentRepo->findCurrentByTicket($ticketId);
-            if ($currentAssignment) {
-                $oldAgentId = $currentAssignment->getAgentId();
+            // Detect assignment type from current ownership
+            $currentOwnerId = $ticket->getAssignedAgentId();
+            $previousAgent = null;
+
+            if ($currentOwnerId !== null && $currentOwnerId !== $agentId) {
+                // REASSIGN — ticket has a different owner
+                $previousAgent = $this->agentRepo->findById($currentOwnerId);
             }
 
-            // Create the assignment record
-            $assignment = new Assignment(
-                $ticket,
-                $agentId,
-                $assignedBy,
-                $notes
+            $type = $currentOwnerId !== null ? AssignmentType::REASSIGN : AssignmentType::MANUAL_ASSIGN;
+            $this->lastAssignmentType = $type->value;
+
+            // Route through AssignmentService (creates audit row, updates ticket, emits events)
+            $assignment = $this->assignmentService->recordOwnershipChange(
+                ticket: $ticket,
+                agent: $agent,
+                previousAgent: $previousAgent,
+                type: $type,
+                assignedBy: $assignedBy,
+                notes: $notes,
             );
 
-            $this->em->persist($assignment);
-
-            // Update ticket status to ACTIVE if it was NEW
-            $statusChanged = false;
-            if ($ticket->getStatus() === TicketStatus::NEW->value) {
-                $ticket->setStatus(TicketStatus::ACTIVE->value);
-                $statusChanged = true;
-            }
-
-            $ticket->setUpdatedAt(new \DateTimeImmutable());
             $this->em->flush();
-
-            // Collect TicketUpdatedEvent (owner changed, status may have changed)
-            $this->eventCollector->collect(new TicketUpdatedEvent(
-                eventId: new Ulid(),
-                ticketId: $ticket->getId(),
-                occurredAt: new \DateTimeImmutable(),
-                seq: $ticket->incrementLastEventSeq(),
-                version: 1,
-                status: $statusChanged ? TicketStatus::ACTIVE : null,
-                ownerAgentId: (int) $agentId
-            ));
-
-            // Collect InboxUpdatedEvent for old agent (if different)
-            if ($oldAgentId !== null && $oldAgentId !== $agentId) {
-                $this->eventCollector->collect(new InboxUpdatedEvent(
-                    eventId: new Ulid(),
-                    ticketId: $ticket->getId(),
-                    occurredAt: new \DateTimeImmutable(),
-                    seq: $ticket->incrementLastEventSeq(),
-                    version: 1
-                ));
-            }
-
-            // Collect InboxUpdatedEvent for new agent
-            $this->eventCollector->collect(new InboxUpdatedEvent(
-                eventId: new Ulid(),
-                ticketId: $ticket->getId(),
-                occurredAt: new \DateTimeImmutable(),
-                seq: $ticket->incrementLastEventSeq(),
-                version: 1
-            ));
 
             return [
                 'assignment_id' => $assignment->getId(),
@@ -123,7 +112,7 @@ class AssignTicketUseCase
                 'assigned_at' => $assignment->getAssignedAt()->format('Y-m-d H:i:s'),
                 'ticket_status' => $ticket->getStatus(),
                 'notes' => $assignment->getNotes(),
-                'status' => 'ok'
+                'status' => 'ok',
             ];
         });
 
@@ -134,7 +123,7 @@ class AssignTicketUseCase
     }
 
     /**
-     * Persist collected domain events to outbox table
+     * Persist collected domain events to outbox table.
      */
     private function persistEventsToOutbox(): void
     {
@@ -157,6 +146,8 @@ class AssignTicketUseCase
             if ($event instanceof TicketUpdatedEvent) {
                 $payload['status'] = $event->status?->value;
                 $payload['ownerAgentId'] = $event->ownerAgentId;
+                $payload['assignee_id'] = $event->ownerAgentId;
+                $payload['assignment_type'] = $this->lastAssignmentType;
             }
 
             $outboxEvent = new OutboxEvent(
@@ -164,7 +155,7 @@ class AssignTicketUseCase
                 aggregateId: $event->ticketId,
                 topic: 'tickets',
                 eventType: $event->type,
-                payload: $payload
+                payload: $payload,
             );
             $this->em->persist($outboxEvent);
         }
