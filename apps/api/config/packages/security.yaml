@@ -27,10 +27,3 @@ security:
     access_control:
         - { path: ^/webhook, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: PUBLIC_ACCESS }  # Will be tightened in PR3
-
-when@dev:
-    security:
-        firewalls:
-            dev:
-                pattern: ^/_(profiler|wdt)
-                security: false
