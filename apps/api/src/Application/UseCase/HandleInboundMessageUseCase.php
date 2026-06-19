@@ -52,12 +52,8 @@ class HandleInboundMessageUseCase
      */
     public function processInboundMessage(string $phone, string $message, ?string $externalId = null, ?string $phoneNumberId = null, ?string $contactName = null): array
     {
-        // 1. Normalize phone: strip non-digits, then strip mobile prefix 9 if present (Argentina format)
+        // 1. Normalize phone: strip non-digits, keep format as-is (WhatsApp sends correct prefix)
         $normalizedPhone = preg_replace('/[^0-9]/', '', $phone);
-        // Normalize Argentine mobile numbers: 549 → 54 (strip the 9)
-        if (str_starts_with($normalizedPhone, '549')) {
-            $normalizedPhone = '54' . substr($normalizedPhone, 3);
-        }
         if (strlen($normalizedPhone) < 10) {
             throw new \InvalidArgumentException('Invalid phone number');
         }

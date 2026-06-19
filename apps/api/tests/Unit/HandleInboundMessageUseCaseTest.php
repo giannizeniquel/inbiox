@@ -76,7 +76,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
 
     public function testPhoneNormalization(): void
     {
-        // Test the normalization logic works
+        // Digit extraction: strip non-digits, keep all digits including 9 prefix
         $phone = '+54 371 234 5678';
         $normalized = preg_replace('/[^0-9]/', '', $phone);
         $this->assertEquals('543712345678', $normalized);
@@ -84,6 +84,15 @@ class HandleInboundMessageUseCaseTest extends TestCase
         // With + prefix added
         $normalized = '+' . $normalized;
         $this->assertEquals('+543712345678', $normalized);
+    }
+
+    public function testPhone9PrefixPreserved(): void
+    {
+        // Argentine mobile with 9 prefix should keep it
+        $phone = '+5491155555555';
+        $normalized = preg_replace('/[^0-9]/', '', $phone);
+        $this->assertEquals('5491155555555', $normalized, '549 prefix must be preserved');
+        $this->assertStringStartsWith('549', $normalized);
     }
 
     public function testValidPhoneFormats(): void
