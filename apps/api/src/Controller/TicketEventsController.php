@@ -18,6 +18,9 @@ use Symfony\Component\Routing\Annotation\Route;
  * the JWT must include "ticket/{id}" in its subscribe topics.
  *
  * Response shape uses `events`/`lastSequence`/`hasMore` (NOT data/meta).
+ *
+ * NOTE: The `/api/mercure/token` endpoint has been moved to MercureTokenController.
+ * This controller only handles ticket event resync.
  */
 final class TicketEventsController
 {
@@ -26,13 +29,6 @@ final class TicketEventsController
         private readonly RealtimeEventFactory $factory,
         private readonly MercureJwtService $jwtService,
     ) {}
-
-    #[Route('/api/mercure/token', methods: ['GET'])]
-    public function getToken(): JsonResponse
-    {
-        $token = $this->jwtService->createSubscriberToken(['tickets']);
-        return new JsonResponse(['token' => $token->toString()]);
-    }
 
     #[Route('/api/tickets/{id}/events', methods: ['GET'], requirements: ['id' => '\d+'])]
     public function listSince(int $id, Request $request): JsonResponse

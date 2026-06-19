@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Application\DTO\CreateAgentShiftRequest;
 use App\Application\DTO\SetAgentAvailabilityRequest;
+use App\Application\Security\OwnershipScope;
 use App\Application\Service\AgentAvailabilityService;
 use App\Application\UseCase\ClearAgentAvailabilityUseCase;
 use App\Application\UseCase\CreateAgentShiftUseCase;
@@ -20,13 +21,20 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
  * Agent availability and shift management endpoints.
  *
  * Thin controllers — all business logic is delegated to UseCases or Services.
  * No direct entityManager->persist(), no direct Mercure publishing.
+ *
+ * Authorization:
+ * - All methods require ROLE_AGENT
+ * - Agent can only view/manage their own availability
+ * - Admin/Supervisor can view/manage any agent
  */
+#[IsGranted('ROLE_AGENT')]
 class AgentAvailabilityController
 {
     public function __construct(
@@ -38,6 +46,7 @@ class AgentAvailabilityController
         private AgentRepository $agentRepo,
         private AgentShiftRepository $agentShiftRepo,
         private TicketRepository $ticketRepo,
+        private OwnershipScope $ownershipScope,
         private LoggerInterface $logger,
     ) {}
 
@@ -52,6 +61,11 @@ class AgentAvailabilityController
         int $id,
         #[MapRequestPayload] SetAgentAvailabilityRequest $request,
     ): JsonResponse {
+        // Ownership check: AGENT can only modify their own availability
+        if (false === $this->isGrantedForAgent($id)) {
+            return new JsonResponse(['error' => 'Forbidden'], 403);
+        }
+
         $agent = $this->agentRepo->findById($id);
         if ($agent === null) {
             return new JsonResponse(['error' => 'Agent not found'], 404);
@@ -94,6 +108,11 @@ class AgentAvailabilityController
     #[Route('/agents/{id}/availability', methods: ['DELETE'])]
     public function clearAvailability(int $id): JsonResponse
     {
+        // Ownership check: AGENT can only modify their own availability
+        if (false === $this->isGrantedForAgent($id)) {
+            return new JsonResponse(['error' => 'Forbidden'], 403);
+        }
+
         $agent = $this->agentRepo->findById($id);
         if ($agent === null) {
             return new JsonResponse(['error' => 'Agent not found'], 404);
@@ -128,6 +147,11 @@ class AgentAvailabilityController
     #[Route('/agents/{id}/availability', methods: ['GET'])]
     public function getAvailability(int $id): JsonResponse
     {
+        // Ownership check: AGENT can only view their own availability
+        if (false === $this->isGrantedForAgent($id)) {
+            return new JsonResponse(['error' => 'Forbidden'], 403);
+        }
+
         $agent = $this->agentRepo->findById($id);
         if ($agent === null) {
             return new JsonResponse(['error' => 'Agent not found'], 404);
@@ -193,6 +217,11 @@ class AgentAvailabilityController
         int $id,
         #[MapRequestPayload] CreateAgentShiftRequest $request,
     ): JsonResponse {
+        // Ownership check: AGENT can only modify their own shifts
+        if (false === $this->isGrantedForAgent($id)) {
+            return new JsonResponse(['error' => 'Forbidden'], 403);
+        }
+
         $agent = $this->agentRepo->findById($id);
         if ($agent === null) {
             return new JsonResponse(['error' => 'Agent not found'], 404);
@@ -243,6 +272,11 @@ class AgentAvailabilityController
     #[Route('/agents/{id}/shifts/{shiftId}', methods: ['DELETE'])]
     public function deleteShift(int $id, int $shiftId): JsonResponse
     {
+        // Ownership check: AGENT can only modify their own shifts
+        if (false === $this->isGrantedForAgent($id)) {
+            return new JsonResponse(['error' => 'Forbidden'], 403);
+        }
+
         $agent = $this->agentRepo->findById($id);
         if ($agent === null) {
             return new JsonResponse(['error' => 'Agent not found'], 404);
@@ -276,6 +310,25 @@ class AgentAvailabilityController
 
             return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
         }
+    }
+
+    /**
+     * Check if the current user is allowed to act on the given agent.
+     *
+     * ADMIN/SUPERVISOR can act on any agent.
+     * AGENT can only act on their own agent.
+     */
+    private function isGrantedForAgent(int $agentId): bool
+    {
+        $scopeId = $this->ownershipScope->getAgentId();
+
+        // null scope means SUPERVISOR/ADMIN (no scope restriction)
+        if (null === $scopeId) {
+            return true;
+        }
+
+        // AGENT: only their own agent
+        return $scopeId === $agentId;
     }
 
     /**

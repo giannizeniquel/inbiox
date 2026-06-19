@@ -1,8 +1,3 @@
-app_message_inbound:
-    path: /messages/inbound
-    methods: [POST]
-    controller: App\Controller\MessageController::inbound
-
 app_ticket_assign:
     path: /tickets/{id}/assign
     methods: [POST]
@@ -11,7 +6,7 @@ app_ticket_assign:
 app_ticket_assignment:
     path: /tickets/{id}/assignment
     methods: [GET]
-    controller: App\Controller\TicketController::assignment
+    controller: App\Controller\TicketController::getAssignment
 
 app_inbox_tickets:
     path: /tickets
@@ -150,7 +145,7 @@ app_ticket_events_resync:
 app_mercure_token:
     path: /api/mercure/token
     methods: [GET]
-    controller: App\Controller\TicketEventsController::getToken
+    controller: App\Controller\MercureTokenController::getToken
 
 app_agent_set_availability:
     path: /agents/{id}/availability
@@ -176,6 +171,11 @@ app_agent_delete_shift:
     path: /agents/{id}/shifts/{shiftId}
     methods: [DELETE]
     controller: App\Controller\AgentAvailabilityController::deleteShift
+
+admin_outbox_publish:
+    path: /admin/outbox/publish
+    methods: [POST]
+    controller: App\Controller\OutboxController::publish
 
 api_auth_login:
     path: /api/auth/login

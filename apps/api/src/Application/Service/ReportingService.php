@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\Service;
 
 use App\Repository\ReportingRepository;
@@ -9,6 +11,11 @@ use App\Repository\ReportingRepository;
  *
  * Orchestrates reporting data retrieval and formats responses.
  * All dates must be in UTC.
+ *
+ * Ownership scoping:
+ * - All methods accept an optional ?int $agentId parameter for query-level filtering
+ * - When set, all results are scoped to the given agent
+ * - The controller (ReportingController) decides the scope based on user role
  */
 class ReportingService
 {
@@ -36,13 +43,14 @@ class ReportingService
      *
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
+     * @param int|null $agentId Optional filter by assigned agent
      * @return array{avg_rt: float|null, min_rt: int|null, max_rt: int|null}
      */
-    public function getRt(\DateTimeImmutable $from, \DateTimeImmutable $to): array
+    public function getRt(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null): array
     {
         $this->validateDateRange($from, $to);
 
-        return $this->reportingRepository->getRtMetrics($from, $to);
+        return $this->reportingRepository->getRtMetrics($from, $to, $agentId);
     }
 
     /**
@@ -50,13 +58,14 @@ class ReportingService
      *
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
+     * @param int|null $agentId Optional filter by assigned agent
      * @return array{new: int, active: int, waiting: int, resolved: int, closed: int}
      */
-    public function getCounts(\DateTimeImmutable $from, \DateTimeImmutable $to): array
+    public function getCounts(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null): array
     {
         $this->validateDateRange($from, $to);
 
-        return $this->reportingRepository->getCountsByStatus($from, $to);
+        return $this->reportingRepository->getCountsByStatus($from, $to, $agentId);
     }
 
     /**
@@ -64,13 +73,14 @@ class ReportingService
      *
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
+     * @param int|null $agentId Optional filter by assigned agent
      * @return array<int, array{date: string, tickets_created: int, tickets_resolved: int}>
      */
-    public function getVolume(\DateTimeImmutable $from, \DateTimeImmutable $to): array
+    public function getVolume(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null): array
     {
         $this->validateDateRange($from, $to);
 
-        return $this->reportingRepository->getVolumeOverTime($from, $to);
+        return $this->reportingRepository->getVolumeOverTime($from, $to, $agentId);
     }
 
     /**

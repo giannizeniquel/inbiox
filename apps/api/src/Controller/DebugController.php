@@ -6,21 +6,40 @@ use App\Application\UseCase\HandleInboundMessageUseCase;
 use App\Application\UseCase\AssignTicketUseCase;
 use App\Application\UseCase\TransitionTicketStatusUseCase;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
-#[Route('/debug')]
+/**
+ * Debug endpoints — only available in dev/test environment.
+ * Returns 404 in production.
+ */
 class DebugController extends AbstractController
 {
     public function __construct(
         private HandleInboundMessageUseCase $handleInbound,
         private AssignTicketUseCase $assignTicket,
         private TransitionTicketStatusUseCase $transitionStatus,
+        private KernelInterface $kernel,
     ) {}
 
-    #[Route('/inbound/{ticketId}', name: 'debug_inbound', methods: ['POST'])]
+    private function isDevOrTest(): bool
+    {
+        return \in_array($this->kernel->getEnvironment(), ['dev', 'test'], true);
+    }
+
+    private function notFound(): JsonResponse
+    {
+        return new JsonResponse(['error' => 'Not found'], 404);
+    }
+
+    #[Route('/debug/inbound/{ticketId}', name: 'debug_inbound', methods: ['POST'])]
     public function inbound(int $ticketId): JsonResponse
     {
+        if (!$this->isDevOrTest()) {
+            return $this->notFound();
+        }
+
         $messages = [
             'Customer says: "I need help with my order"',
             'Customer says: "Where is my package?"',
@@ -53,9 +72,13 @@ class DebugController extends AbstractController
         }
     }
 
-    #[Route('/outbound/{ticketId}', name: 'debug_outbound', methods: ['POST'])]
+    #[Route('/debug/outbound/{ticketId}', name: 'debug_outbound', methods: ['POST'])]
     public function outbound(int $ticketId): JsonResponse
     {
+        if (!$this->isDevOrTest()) {
+            return $this->notFound();
+        }
+
         $responses = [
             'We are looking into your request',
             'Your order has been located',
@@ -68,7 +91,6 @@ class DebugController extends AbstractController
         $message = $responses[array_rand($responses)];
         
         try {
-            // Simulate outbound on existing ticket
             $result = $this->handleInbound->processInboundMessage(
                 '+54911' . str_pad($ticketId, 8, '0', STR_PAD_LEFT),
                 $message
@@ -87,9 +109,13 @@ class DebugController extends AbstractController
         }
     }
 
-    #[Route('/status/{ticketId}', name: 'debug_status', methods: ['POST'])]
+    #[Route('/debug/status/{ticketId}', name: 'debug_status', methods: ['POST'])]
     public function status(int $ticketId): JsonResponse
     {
+        if (!$this->isDevOrTest()) {
+            return $this->notFound();
+        }
+
         // Valid transitions that work from any state: waiting or resolved
         // The FSM will reject invalid transitions
         $validStatuses = ['waiting', 'resolved'];
@@ -111,9 +137,13 @@ class DebugController extends AbstractController
         }
     }
 
-    #[Route('/assign/{ticketId}', name: 'debug_assign', methods: ['POST'])]
+    #[Route('/debug/assign/{ticketId}', name: 'debug_assign', methods: ['POST'])]
     public function assign(int $ticketId): JsonResponse
     {
+        if (!$this->isDevOrTest()) {
+            return $this->notFound();
+        }
+
         $agentIds = [1, 2, 3, 4, 5];
 
         try {

@@ -18,7 +18,7 @@ security:
             security: false
 
         api:
-            pattern: ^/api
+            pattern: ^/
             stateless: true
             provider: app_user_provider
             json_login:
@@ -34,8 +34,27 @@ security:
             user_checker: App\Security\UserChecker
 
     access_control:
+        # Public endpoints (no auth required)
         - { path: ^/webhook, roles: PUBLIC_ACCESS }
         - { path: ^/api/auth/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/auth/refresh, roles: PUBLIC_ACCESS }
+
+        # Authenticated user required
         - { path: ^/api/auth/logout, roles: IS_AUTHENTICATED_FULLY }
-        - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/api/auth/me, roles: IS_AUTHENTICATED_FULLY }
+
+        # Admin-only
+        - { path: ^/admin/outbox, roles: ROLE_ADMIN }
+
+        # Debug routes — dev-only (DebugController gates by kernel.environment)
+        - { path: ^/debug, roles: ROLE_ADMIN }
+
+        # Mercure token endpoint
+        - { path: ^/api/mercure, roles: IS_AUTHENTICATED_FULLY }
+
+        # Everything else requires at least ROLE_AGENT
+        - { path: ^/api, roles: ROLE_AGENT }
+        - { path: ^/tickets, roles: ROLE_AGENT }
+        - { path: ^/contacts, roles: ROLE_AGENT }
+        - { path: ^/agents, roles: ROLE_AGENT }
+        - { path: ^/reports, roles: ROLE_AGENT }

@@ -6,6 +6,7 @@ namespace App\Application\Service;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
+use App\Domain\Agent\Agent;
 use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer\Hmac\Sha256;
 use Lcobucci\JWT\Signer\Key\InMemory;
@@ -15,6 +16,7 @@ use Lcobucci\JWT\Validation\Constraint\StrictValidAt;
 use Lcobucci\JWT\Validation\RequiredConstraintsViolated;
 use Psr\Clock\ClockInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 final class MercureJwtService
 {

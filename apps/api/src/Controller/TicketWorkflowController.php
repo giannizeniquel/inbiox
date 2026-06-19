@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Application\UseCase\TransitionTicketStatusUseCase;
@@ -8,7 +10,9 @@ use App\Domain\Ticket\TicketStatus;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+#[IsGranted('ROLE_AGENT')]
 class TicketWorkflowController
 {
     public function __construct(

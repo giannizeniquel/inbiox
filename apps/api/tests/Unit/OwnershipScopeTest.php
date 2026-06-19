@@ -1,0 +1,99 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Unit;
+
+use App\Application\Security\OwnershipScope;
+use App\Domain\Agent\Agent;
+use App\Domain\User\User;
+use PHPUnit\Framework\TestCase;
+use Symfony\Bundle\SecurityBundle\Security;
+
+/**
+ * Unit tests for OwnershipScope.
+ *
+ * Covers:
+ * - ROLE_AGENT with linked Agent → returns agent ID
+ * - ROLE_SUPERVISOR → null (no scope)
+ * - ROLE_ADMIN → null (no scope)
+ * - ROLE_AGENT without linked Agent → null (R1)
+ * - No authenticated user → null
+ */
+class OwnershipScopeTest extends TestCase
+{
+    public function testAgentWithLinkedAgentReturnsId(): void
+    {
+        $agent = $this->createMock(Agent::class);
+        $agent->method('getId')->willReturn(42);
+
+        $user = new User();
+        $user->setRoles(['ROLE_AGENT']);
+        $user->setAgent($agent);
+
+        $security = $this->createMock(Security::class);
+        $security->method('getUser')->willReturn($user);
+        $security->method('isGranted')->willReturnCallback(function (string $role): bool {
+            return \in_array($role, ['ROLE_AGENT'], true);
+        });
+
+        $scope = new OwnershipScope($security);
+        self::assertSame(42, $scope->getAgentId());
+    }
+
+    public function testSupervisorReturnsNull(): void
+    {
+        $user = new User();
+        $user->setRoles(['ROLE_SUPERVISOR']);
+
+        $security = $this->createMock(Security::class);
+        $security->method('getUser')->willReturn($user);
+        $security->method('isGranted')->willReturnCallback(function (string $role): bool {
+            // ROLE_SUPERVISOR is granted to ROLE_SUPERVISOR itself
+            return 'ROLE_SUPERVISOR' === $role || 'ROLE_AGENT' === $role;
+        });
+
+        $scope = new OwnershipScope($security);
+        self::assertNull($scope->getAgentId());
+    }
+
+    public function testAdminReturnsNull(): void
+    {
+        $user = new User();
+        $user->setRoles(['ROLE_ADMIN']);
+
+        $security = $this->createMock(Security::class);
+        $security->method('getUser')->willReturn($user);
+        $security->method('isGranted')->willReturnCallback(function (string $role): bool {
+            return \in_array($role, ['ROLE_ADMIN', 'ROLE_SUPERVISOR', 'ROLE_AGENT'], true);
+        });
+
+        $scope = new OwnershipScope($security);
+        self::assertNull($scope->getAgentId());
+    }
+
+    public function testAgentWithoutLinkedAgentReturnsNull(): void
+    {
+        $user = new User();
+        $user->setRoles(['ROLE_AGENT']);
+        // No agent set (null)
+
+        $security = $this->createMock(Security::class);
+        $security->method('getUser')->willReturn($user);
+        $security->method('isGranted')->willReturnCallback(function (string $role): bool {
+            return \in_array($role, ['ROLE_AGENT'], true);
+        });
+
+        $scope = new OwnershipScope($security);
+        self::assertNull($scope->getAgentId());
+    }
+
+    public function testUnauthenticatedReturnsNull(): void
+    {
+        $security = $this->createMock(Security::class);
+        $security->method('getUser')->willReturn(null);
+
+        $scope = new OwnershipScope($security);
+        self::assertNull($scope->getAgentId());
+    }
+}

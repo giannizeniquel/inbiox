@@ -16,8 +16,10 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/api/provider')]
+#[IsGranted('ROLE_AGENT')]
 class ProviderProxyController extends AbstractController
 {
     private const GRAPH_AUTH_ERROR = 401;   // Meta auth/oauth errors

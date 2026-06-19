@@ -1,24 +1,33 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
+use App\Application\Security\OwnershipScope;
 use App\Application\Service\ReportingService;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
  * REST controller for reporting and metrics endpoints.
  *
  * All endpoints require `from` and `to` query parameters in UTC.
+ * Authorization:
+ * - AGENT: sees only their own metrics (via OwnershipScope)
+ * - SUPERVISOR/ADMIN: sees all metrics
  */
+#[IsGranted('ROLE_AGENT')]
 class ReportingController
 {
     private const DATETIME_FORMAT = 'Y-m-d\TH:i:sZ';
 
     public function __construct(
         private ReportingService $reportingService,
+        private OwnershipScope $ownershipScope,
         private LoggerInterface $logger
     ) {}
 
@@ -40,6 +49,15 @@ class ReportingController
     }
 
     /**
+     * Get the scoped agent ID for ownership filtering.
+     * AGENT sees only their metrics; SUPERVISOR/ADMIN see all.
+     */
+    private function getScopeAgentId(): ?int
+    {
+        return $this->ownershipScope->getAgentId();
+    }
+
+    /**
      * Get First Response Time metrics.
      *
      * GET /reports/frt?from=2026-01-01T00:00:00Z&to=2026-01-02T00:00:00Z[&agent_id=1]
@@ -51,6 +69,12 @@ class ReportingController
             $from = $this->parseDateTime($request->query->get('from'));
             $to = $this->parseDateTime($request->query->get('to'));
             $agentId = $request->query->get('agent_id') ? (int) $request->query->get('agent_id') : null;
+
+            // Ownership scoping: force agent_id for AGENT role
+            $scopeAgentId = $this->getScopeAgentId();
+            if (null !== $scopeAgentId) {
+                $agentId = $scopeAgentId;
+            }
 
             $metrics = $this->reportingService->getFrt($from, $to, $agentId);
             return new JsonResponse($metrics);
@@ -78,7 +102,9 @@ class ReportingController
             $from = $this->parseDateTime($request->query->get('from'));
             $to = $this->parseDateTime($request->query->get('to'));
 
-            $metrics = $this->reportingService->getRt($from, $to);
+            $scopeAgentId = $this->getScopeAgentId();
+            $metrics = $this->reportingService->getRt($from, $to, $scopeAgentId);
+
             return new JsonResponse($metrics);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
@@ -104,7 +130,9 @@ class ReportingController
             $from = $this->parseDateTime($request->query->get('from'));
             $to = $this->parseDateTime($request->query->get('to'));
 
-            $counts = $this->reportingService->getCounts($from, $to);
+            $scopeAgentId = $this->getScopeAgentId();
+            $counts = $this->reportingService->getCounts($from, $to, $scopeAgentId);
+
             return new JsonResponse($counts);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
@@ -130,7 +158,9 @@ class ReportingController
             $from = $this->parseDateTime($request->query->get('from'));
             $to = $this->parseDateTime($request->query->get('to'));
 
-            $volume = $this->reportingService->getVolume($from, $to);
+            $scopeAgentId = $this->getScopeAgentId();
+            $volume = $this->reportingService->getVolume($from, $to, $scopeAgentId);
+
             return new JsonResponse($volume);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
@@ -156,6 +186,12 @@ class ReportingController
             $from = $this->parseDateTime($request->query->get('from'));
             $to = $this->parseDateTime($request->query->get('to'));
             $agentId = $request->query->get('agent_id') ? (int) $request->query->get('agent_id') : null;
+
+            // Ownership scoping: force agent_id for AGENT role
+            $scopeAgentId = $this->getScopeAgentId();
+            if (null !== $scopeAgentId) {
+                $agentId = $scopeAgentId;
+            }
 
             $performance = $this->reportingService->getAgentPerformance($from, $to, $agentId);
             return new JsonResponse($performance);
