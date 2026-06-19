@@ -577,6 +577,7 @@ export class MercureService {
   }
 
   disconnect(): void {
+    console.warn('[Mercure] disconnect() called — SSE connection terminated. This should only happen during logout.');
     // Cancel all in-flight resyncs
     for (const [, state] of this.seqState) {
       if (state.inFlightResync) {

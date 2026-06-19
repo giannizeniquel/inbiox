@@ -3,12 +3,15 @@ import { TicketApiService } from '../../../core/api/ticket-api.service';
 import { MessageApiService } from '../../../core/api/message-api.service';
 import { WorkflowApiService } from '../../../core/api/workflow-api.service';
 import { StateService } from '../../../core/services/state.service';
-import { MercureService } from '../../../core/realtime/mercure.service';
 import { TicketStatus } from '../../../core/models/ticket.model';
 
 /**
  * InboxService - Facade que coordina las operaciones del inbox.
  * Provee una interfaz de alto nivel para las interacciones comunes.
+ *
+ * NOTE: Mercure connection lifecycle is NOT managed here.
+ * AuthStore owns connect/disconnect (login/logout).
+ * See AuthStore for the SSE lifecycle.
  */
 @Injectable({ providedIn: 'root' })
 export class InboxService {
@@ -16,21 +19,13 @@ export class InboxService {
   private readonly messageApi = inject(MessageApiService);
   private readonly workflowApi = inject(WorkflowApiService);
   private readonly state = inject(StateService);
-  private readonly mercure = inject(MercureService);
 
   /**
-   * Inicializa el inbox: carga tickets y conecta a Mercure.
+   * Inicializa el inbox: carga tickets.
+   * Mercure SSE connection is managed by AuthStore — do NOT connect here.
    */
   initialize(): void {
-    this.mercure.connect();
     this.loadTickets();
-  }
-
-  /**
-   * Limpia los recursos del inbox.
-   */
-  cleanup(): void {
-    this.mercure.disconnect();
   }
 
   /**
