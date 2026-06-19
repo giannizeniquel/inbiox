@@ -1,69 +1,69 @@
 app_ticket_assign:
-    path: /tickets/{id}/assign
+    path: /api/tickets/{id}/assign
     methods: [POST]
     controller: App\Controller\TicketController::assign
 
 app_ticket_assignment:
-    path: /tickets/{id}/assignment
+    path: /api/tickets/{id}/assignment
     methods: [GET]
     controller: App\Controller\TicketController::getAssignment
 
 app_inbox_tickets:
-    path: /tickets
+    path: /api/tickets
     methods: [GET]
     controller: App\Controller\InboxController::listTickets
 
 app_inbox_ticket_detail:
-    path: /tickets/{id}
+    path: /api/tickets/{id}
     methods: [GET]
     controller: App\Controller\InboxController::getTicket
 
 app_inbox_ticket_messages:
-    path: /tickets/{id}/messages
+    path: /api/tickets/{id}/messages
     methods: [GET]
     controller: App\Controller\InboxController::getMessages
 
 app_ticket_auto_assign:
-    path: /tickets/{id}/auto-assign
+    path: /api/tickets/{id}/auto-assign
     methods: [POST]
     controller: App\Controller\AutoAssignController::autoAssign
 app_ticket_transition:
-    path: /tickets/{id}/transition
+    path: /api/tickets/{id}/transition
     methods: [POST]
     controller: App\Controller\TicketWorkflowController::transition
 
 app_ticket_resolve:
-    path: /tickets/{id}/resolve
+    path: /api/tickets/{id}/resolve
     methods: [POST]
     controller: App\Controller\TicketWorkflowController::resolve
 
 app_ticket_close:
-    path: /tickets/{id}/close
+    path: /api/tickets/{id}/close
     methods: [POST]
     controller: App\Controller\TicketWorkflowController::close
 
 app_report_frt:
-    path: /reports/frt
+    path: /api/reports/frt
     methods: [GET]
     controller: App\Controller\ReportingController::frt
 
 app_report_rt:
-    path: /reports/rt
+    path: /api/reports/rt
     methods: [GET]
     controller: App\Controller\ReportingController::rt
 
 app_report_counts:
-    path: /reports/counts
+    path: /api/reports/counts
     methods: [GET]
     controller: App\Controller\ReportingController::counts
 
 app_report_volume:
-    path: /reports/volume
+    path: /api/reports/volume
     methods: [GET]
     controller: App\Controller\ReportingController::volume
 
 app_report_agents:
-    path: /reports/agents
+    path: /api/reports/agents
     methods: [GET]
     controller: App\Controller\ReportingController::agents
 
@@ -88,27 +88,27 @@ app_debug_assign:
     controller: App\Controller\DebugController::assign
 
 app_contacts_list:
-    path: /contacts
+    path: /api/contacts
     methods: [GET]
     controller: App\Controller\ContactController::list
 
 app_contacts_detail:
-    path: /contacts/{id}
+    path: /api/contacts/{id}
     methods: [GET]
     controller: App\Controller\ContactController::get
 
 app_contacts_create:
-    path: /contacts
+    path: /api/contacts
     methods: [POST]
     controller: App\Controller\ContactController::create
 
 app_contacts_update:
-    path: /contacts/{id}
+    path: /api/contacts/{id}
     methods: [PUT]
     controller: App\Controller\ContactController::update
 
 app_contacts_delete:
-    path: /contacts/{id}
+    path: /api/contacts/{id}
     methods: [DELETE]
     controller: App\Controller\ContactController::delete
 
@@ -148,27 +148,27 @@ app_mercure_token:
     controller: App\Controller\MercureTokenController::getToken
 
 app_agent_set_availability:
-    path: /agents/{id}/availability
+    path: /api/agents/{id}/availability
     methods: [POST]
     controller: App\Controller\AgentAvailabilityController::setAvailability
 
 app_agent_clear_availability:
-    path: /agents/{id}/availability
+    path: /api/agents/{id}/availability
     methods: [DELETE]
     controller: App\Controller\AgentAvailabilityController::clearAvailability
 
 app_agent_get_availability:
-    path: /agents/{id}/availability
+    path: /api/agents/{id}/availability
     methods: [GET]
     controller: App\Controller\AgentAvailabilityController::getAvailability
 
 app_agent_create_shift:
-    path: /agents/{id}/shifts
+    path: /api/agents/{id}/shifts
     methods: [POST]
     controller: App\Controller\AgentAvailabilityController::createShift
 
 app_agent_delete_shift:
-    path: /agents/{id}/shifts/{shiftId}
+    path: /api/agents/{id}/shifts/{shiftId}
     methods: [DELETE]
     controller: App\Controller\AgentAvailabilityController::deleteShift
 

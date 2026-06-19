@@ -60,7 +60,3 @@ security:
 
         # Everything else requires at least ROLE_AGENT
         - { path: ^/api, roles: ROLE_AGENT }
-        - { path: ^/tickets, roles: ROLE_AGENT }
-        - { path: ^/contacts, roles: ROLE_AGENT }
-        - { path: ^/agents, roles: ROLE_AGENT }
-        - { path: ^/reports, roles: ROLE_AGENT }
