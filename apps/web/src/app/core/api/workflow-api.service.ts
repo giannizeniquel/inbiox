@@ -12,7 +12,7 @@ export class WorkflowApiService {
 
   transition(ticketId: string, newStatus: TicketStatus): Observable<Ticket> {
     return this.http
-      .post<Ticket>(`${this.baseUrl}/tickets/${ticketId}/transition`, {
+      .post<Ticket>(`${this.baseUrl}/api/tickets/${ticketId}/transition`, {
         status: newStatus
       })
       .pipe(catchError(this.handleError));

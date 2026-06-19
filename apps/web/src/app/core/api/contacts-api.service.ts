@@ -15,11 +15,11 @@ import {
  * ContactsApiService — HTTP client for contacts endpoints.
  *
  * Calls Symfony backend at:
- * - GET /contacts (paginated list with filters)
- * - GET /contacts/{id} (contact detail)
- * - POST /contacts (create contact)
- * - PUT /contacts/{id} (update contact)
- * - DELETE /contacts/{id} (soft delete)
+ * - GET /api/contacts (paginated list with filters)
+ * - GET /api/contacts/{id} (contact detail)
+ * - POST /api/contacts (create contact)
+ * - PUT /api/contacts/{id} (update contact)
+ * - DELETE /api/contacts/{id} (soft delete)
  */
 @Injectable({ providedIn: 'root' })
 export class ContactsApiService {
@@ -76,10 +76,10 @@ export class ContactsApiService {
   }
 
   /**
-   * GET /contacts - Paginated list with optional filters
+   * GET /api/contacts - Paginated list with optional filters
    */
   getContacts(page = 1, limit = 20, search?: string): Observable<ContactsListResponse> {
-    return this.http.get<any>(`${this.baseUrl}/contacts`, {
+    return this.http.get<any>(`${this.baseUrl}/api/contacts`, {
       params: this.buildListParams(page, limit, search)
     }).pipe(
       // Map response to frontend format
@@ -95,10 +95,10 @@ export class ContactsApiService {
   }
 
   /**
-   * GET /contacts/{id} - Contact detail
+   * GET /api/contacts/{id} - Contact detail
    */
   getContact(id: string): Observable<ContactDetailDTO> {
-    return this.http.get<any>(`${this.baseUrl}/contacts/${id}`).pipe(
+    return this.http.get<any>(`${this.baseUrl}/api/contacts/${id}`).pipe(
       map((response: any) => ({
         ...this.mapToContactListItem(response),
         createdAt: response.timestamps?.created_at || new Date().toISOString(),
@@ -109,10 +109,10 @@ export class ContactsApiService {
   }
 
   /**
-   * POST /contacts - Create contact
+   * POST /api/contacts - Create contact
    */
   createContact(request: CreateContactRequest): Observable<ContactDetailDTO> {
-    return this.http.post<any>(`${this.baseUrl}/contacts`, request).pipe(
+    return this.http.post<any>(`${this.baseUrl}/api/contacts`, request).pipe(
       map((response: any) => ({
         ...this.mapToContactListItem(response),
         createdAt: response.timestamps?.created_at || new Date().toISOString(),
@@ -123,10 +123,10 @@ export class ContactsApiService {
   }
 
   /**
-   * PUT /contacts/{id} - Update contact
+   * PUT /api/contacts/{id} - Update contact
    */
   updateContact(id: string, request: UpdateContactRequest): Observable<ContactDetailDTO> {
-    return this.http.put<any>(`${this.baseUrl}/contacts/${id}`, request).pipe(
+    return this.http.put<any>(`${this.baseUrl}/api/contacts/${id}`, request).pipe(
       map((response: any) => ({
         ...this.mapToContactListItem(response),
         createdAt: response.timestamps?.created_at || new Date().toISOString(),
@@ -137,10 +137,10 @@ export class ContactsApiService {
   }
 
   /**
-   * DELETE /contacts/{id} - Soft delete (sets status to inactive)
+   * DELETE /api/contacts/{id} - Soft delete (sets status to inactive)
    */
   deleteContact(id: string): Observable<{ success: boolean }> {
-    return this.http.delete<{ success: boolean }>(`${this.baseUrl}/contacts/${id}`);
+    return this.http.delete<{ success: boolean }>(`${this.baseUrl}/api/contacts/${id}`);
   }
 
   /**

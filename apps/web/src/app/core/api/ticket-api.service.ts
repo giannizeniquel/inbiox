@@ -12,7 +12,7 @@ export class TicketApiService {
 
   getTickets(): Observable<Ticket[]> {
     return this.http
-      .get<{ data: Ticket[]; meta: { total: number; page: number } }>(`${this.baseUrl}/tickets`)
+      .get<{ data: Ticket[]; meta: { total: number; page: number } }>(`${this.baseUrl}/api/tickets`)
       .pipe(
         this.retryWithBackoff(),
         map((response) => response.data),
@@ -22,7 +22,7 @@ export class TicketApiService {
 
   getTicket(id: string): Observable<Ticket> {
     return this.http
-      .get<Ticket>(`${this.baseUrl}/tickets/${id}`)
+      .get<Ticket>(`${this.baseUrl}/api/tickets/${id}`)
       .pipe(
         this.retryWithBackoff(),
         catchError(this.handleError)

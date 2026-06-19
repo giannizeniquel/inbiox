@@ -21,7 +21,7 @@ export class MessageApiService {
       offset: offset.toString(),
     };
     return this.http
-      .get<GetMessagesResponse>(`${this.baseUrl}/tickets/${ticketId}/messages`, { params })
+      .get<GetMessagesResponse>(`${this.baseUrl}/api/tickets/${ticketId}/messages`, { params })
       .pipe(
         this.retryWithBackoff(),
         catchError(this.handleError)
@@ -30,7 +30,7 @@ export class MessageApiService {
 
   sendMessage(ticketId: string, request: SendMessageRequest): Observable<Message> {
     return this.http
-      .post<Message>(`${this.baseUrl}/tickets/${ticketId}/messages`, request)
+      .post<Message>(`${this.baseUrl}/api/tickets/${ticketId}/messages`, request)
       .pipe(
         this.retryWithBackoff(),
         catchError(this.handleError)
