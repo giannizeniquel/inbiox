@@ -77,14 +77,16 @@ import { AuthStore } from '../../core/stores/auth.store';
         <span class="sidebar-nav__tooltip">Informes</span>
       </a>
 
-      <!-- Admin-only links -->
-      @if (authStore.isAdmin()) {
+      <!-- Admin/Supervisor links -->
+      @if (authStore.isAdmin() || authStore.isSupervisor()) {
         <div class="sidebar-nav__separator" role="separator"></div>
+      }
 
+      @if (authStore.isAdmin()) {
         <a
-          routerLink="/users"
+          routerLink="/admin/users"
           routerLinkActive="sidebar-nav__item--active"
-          class="sidebar-nav__item sidebar-nav__item--future"
+          class="sidebar-nav__item"
           aria-label="Usuarios"
         >
           <span class="sidebar-nav__icon">
@@ -98,11 +100,13 @@ import { AuthStore } from '../../core/stores/auth.store';
           <span class="sidebar-nav__label">Usuarios</span>
           <span class="sidebar-nav__tooltip">Usuarios</span>
         </a>
+      }
 
+      @if (authStore.isAdmin() || authStore.isSupervisor()) {
         <a
-          routerLink="/agents"
+          routerLink="/admin/agents"
           routerLinkActive="sidebar-nav__item--active"
-          class="sidebar-nav__item sidebar-nav__item--future"
+          class="sidebar-nav__item"
           aria-label="Agentes"
         >
           <span class="sidebar-nav__icon">

@@ -25,9 +25,9 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
  */
 final class AgentVoter extends Voter
 {
-    public const string VIEW_AGENT = 'VIEW_AGENT';
-    public const string EDIT_AGENT = 'EDIT_AGENT';
-    public const string VIEW_AVAILABILITY = 'VIEW_AVAILABILITY';
+    public const VIEW_AGENT = 'VIEW_AGENT';
+    public const EDIT_AGENT = 'EDIT_AGENT';
+    public const VIEW_AVAILABILITY = 'VIEW_AVAILABILITY';
 
     public function __construct(
         private readonly Security $security,

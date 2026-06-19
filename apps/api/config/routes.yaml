@@ -196,3 +196,69 @@ api_auth_me:
     path: /api/auth/me
     methods: [GET]
     controller: App\Controller\AuthController::me
+
+# ─── Admin: User Management (ROLE_ADMIN) ────────────────────────────────
+
+admin_users_list:
+    path: /api/admin/users
+    methods: [GET]
+    controller: App\Controller\Admin\UserController::list
+
+admin_users_create:
+    path: /api/admin/users
+    methods: [POST]
+    controller: App\Controller\Admin\UserController::create
+
+admin_users_get:
+    path: /api/admin/users/{id}
+    methods: [GET]
+    controller: App\Controller\Admin\UserController::get
+
+admin_users_update:
+    path: /api/admin/users/{id}
+    methods: [PUT]
+    controller: App\Controller\Admin\UserController::update
+
+admin_users_delete:
+    path: /api/admin/users/{id}
+    methods: [DELETE]
+    controller: App\Controller\Admin\UserController::delete
+
+# ─── Admin: Agent Management (ROLE_SUPERVISOR) ──────────────────────────
+
+admin_agents_list:
+    path: /api/admin/agents
+    methods: [GET]
+    controller: App\Controller\Admin\AgentController::list
+
+admin_agents_create:
+    path: /api/admin/agents
+    methods: [POST]
+    controller: App\Controller\Admin\AgentController::create
+
+admin_agents_get:
+    path: /api/admin/agents/{id}
+    methods: [GET]
+    controller: App\Controller\Admin\AgentController::get
+
+admin_agents_update:
+    path: /api/admin/agents/{id}
+    methods: [PUT]
+    controller: App\Controller\Admin\AgentController::update
+
+admin_agents_delete:
+    path: /api/admin/agents/{id}
+    methods: [DELETE]
+    controller: App\Controller\Admin\AgentController::delete
+
+# ─── Admin: Agent-User Linking (ROLE_ADMIN) ────────────────────────────
+
+admin_agents_link_user:
+    path: /api/admin/agents/{id}/link-user
+    methods: [POST]
+    controller: App\Controller\Admin\AgentLinkController::linkUser
+
+admin_agents_unlink_user:
+    path: /api/admin/agents/{id}/link-user
+    methods: [DELETE]
+    controller: App\Controller\Admin\AgentLinkController::unlinkUser

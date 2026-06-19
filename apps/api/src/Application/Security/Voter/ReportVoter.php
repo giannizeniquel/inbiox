@@ -25,7 +25,7 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
  */
 final class ReportVoter extends Voter
 {
-    public const string VIEW_REPORT = 'VIEW_REPORT';
+    public const VIEW_REPORT = 'VIEW_REPORT';
 
     public function __construct(
         private readonly Security $security,

@@ -46,6 +46,12 @@ security:
         # Admin-only
         - { path: ^/admin/outbox, roles: ROLE_ADMIN }
 
+        # Admin API — User management
+        - { path: ^/api/admin/users, roles: ROLE_ADMIN }
+
+        # Admin API — Agent management (supervisor or higher)
+        - { path: ^/api/admin/agents, roles: ROLE_SUPERVISOR }
+
         # Debug routes — dev-only (DebugController gates by kernel.environment)
         - { path: ^/debug, roles: ROLE_ADMIN }
 

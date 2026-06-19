@@ -25,10 +25,10 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
  */
 final class TicketVoter extends Voter
 {
-    public const string VIEW = 'VIEW';
-    public const string EDIT = 'EDIT';
-    public const string ASSIGN = 'ASSIGN';
-    public const string CLOSE = 'CLOSE';
+    public const VIEW = 'VIEW';
+    public const EDIT = 'EDIT';
+    public const ASSIGN = 'ASSIGN';
+    public const CLOSE = 'CLOSE';
 
     public function __construct(
         private readonly Security $security,

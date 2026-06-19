@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './core/auth/auth.guard';
+import { authGuard, roleGuard } from './core/auth/auth.guard';
 import { InboxPageComponent } from './features/inbox/pages/inbox-page/inbox-page.component';
 import { ContactsPageComponent } from './features/contacts/pages/contacts-page/contacts-page.component';
 import { ReportsPageComponent } from './features/reports/pages/reports-page/reports-page.component';
@@ -46,6 +46,18 @@ export const routes: Routes = [
     path: 'agents/:agentId/shifts',
     component: ShiftsPageComponent,
     canActivate: [authGuard],
+  },
+  {
+    path: 'admin/users',
+    canActivate: [roleGuard('ROLE_ADMIN')],
+    loadComponent: () =>
+      import('./features/admin/users/users-page.component').then(m => m.UsersPageComponent),
+  },
+  {
+    path: 'admin/agents',
+    canActivate: [roleGuard('ROLE_SUPERVISOR')],
+    loadComponent: () =>
+      import('./features/admin/agents/agents-page.component').then(m => m.AgentsPageComponent),
   },
   {
     path: 'settings',
