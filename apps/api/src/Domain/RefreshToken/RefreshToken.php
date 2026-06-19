@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace App\Domain\RefreshToken;
 
 use Doctrine\DBAL\Types\Types;
+use App\Repository\RefreshTokenRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Gesdinet\JWTRefreshTokenBundle\Model\RefreshTokenInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: RefreshTokenRepository::class)]
 #[ORM\Table(name: 'refresh_tokens')]
 class RefreshToken implements RefreshTokenInterface
 {

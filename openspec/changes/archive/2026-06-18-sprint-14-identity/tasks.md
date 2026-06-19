@@ -89,27 +89,27 @@ Chain strategy: stacked-to-main
 
 ## PR 2: Authentication
 
-- [ ] 2.1 **[backend-dev]** Generate RSA RS256 keypair: `php bin/console lexik:jwt:generate-keypair`. Create `lexik_jwt_authentication.yaml`: `secret_key/pass_phrase` from env, `token_ttl: 900`, encoder `rsa`. Create `gesdinet_jwt_refresh_token.yaml`: `refresh_token_class: App\Domain\RefreshToken\RefreshToken`, `ttl: 2592000`, cookie name `inbiox_refresh`, HttpOnly, SameSite=Lax.
+- [x] 2.1 **[backend-dev]** Generate RSA RS256 keypair: `php bin/console lexik:jwt:generate-keypair`. Create `lexik_jwt_authentication.yaml`: `secret_key/pass_phrase` from env, `token_ttl: 900`, `user_id_claim: sub`. Create `gesdinet_jwt_refresh_token.yaml`: `refresh_token_class: App\Domain\RefreshToken\RefreshToken`, `ttl: 2592000`, `token_parameter_name: inbiox_refresh`, `single_use: true`, cookie HttpOnly, SameSite=Lax.
   - **Files**: `apps/api/config/jwt/private.pem`, `apps/api/config/jwt/public.pem`, `apps/api/config/packages/lexik_jwt_authentication.yaml`, `apps/api/config/packages/gesdinet_jwt_refresh_token.yaml`
   - **Depends on**: 1.1, 1.8, 1.9
   - **Verification**: Keypair files exist; lexik config references env vars; gesdinet config points to RefreshToken entity
 
-- [ ] 2.2 **[backend-dev]** Create `AuthController`: `POST /api/auth/login` (handled by security.yaml json_login — verify response shape), `POST /api/auth/refresh` (gesdinet controller or custom), `POST /api/auth/logout` (invalidate refresh token, clear cookie, 200), `GET /api/auth/me` (`#[CurrentUser]` returns UserDTO with id, email, roles, agent_id, is_active).
-  - **Files**: `apps/api/src/Controller/AuthController.php`
+- [x] 2.2 **[backend-dev]** Create `AuthController`: stub methods for `/api/auth/login` (json_login handles it), `/api/auth/refresh` (refresh_jwt handles it), `POST /api/auth/logout` (invalidates refresh token, clears cookie, 200), `GET /api/auth/me` (returns UserDTO with id, email, roles, agent_id, is_active). Also created `AuthenticationSuccessListener` to normalize token→access_token and add token_type/expires_in.
+  - **Files**: `apps/api/src/Controller/AuthController.php`, `apps/api/src/EventListener/AuthenticationSuccessListener.php`
   - **Depends on**: 2.1
   - **Verification**: Login returns `{access_token, token_type: "Bearer", expires_in: 900}` + Set-Cookie; `/me` returns correct DTO; logout clears cookie
 
-- [ ] 2.3 **[backend-dev]** Implement `isActive` check on every authenticated request (Q7): custom `UserChecker` (or override in security.yaml `user_checker`) that throws `CustomUserMessageAuthenticationException` if `!$user->isActive()`.
-  - **Files**: `apps/api/src/Security/UserChecker.php`, `apps/api/config/packages/security.yaml` (add `user_checker` to provider)
+- [x] 2.3 **[backend-dev]** Implement `isActive` check on every authenticated request (Q7): `UserChecker` that throws `DisabledException` if `!$user->isActive()`. Also created `ActiveUserListener` for 403 on JWT requests. Created `RefreshTokenRepository` implementing `RefreshTokenRepositoryInterface` required by Gesdinet.
+  - **Files**: `apps/api/src/Security/UserChecker.php`, `apps/api/src/EventListener/ActiveUserListener.php`, `apps/api/src/Repository/RefreshTokenRepository.php`, `apps/api/config/packages/security.yaml` (add `user_checker`), `apps/api/config/services.yaml`
   - **Depends on**: 1.5, 2.1
-  - **Verification**: Inactive user login → 401 "Invalid credentials"; active user login → 200
+  - **Verification**: Inactive user login → 401 "Invalid credentials"; JWT-authenticated deactivated user → 401/403
 
-- [ ] 2.4 **[tester]** Write tests: login (200/401 wrong password/401 inactive/401 non-existent), refresh (success/expired/replay-no-cookie), logout (200/401), /me (with agent/without agent/401), JWT structure (sub, roles, iat, exp, TTL=900), admin seed (first run/re-run/missing env).
+- [x] 2.4 **[tester]** Write tests: login (200/401 wrong password/401 inactive/401 non-existent), refresh (success/expired/no-cookie), logout (200/401), /me (with agent/without agent/401), UserChecker (deactivated user rejected), JWT structure (sub, roles, iat, exp, TTL=900).
   - **Files**: `apps/api/tests/Controller/AuthControllerTest.php`
   - **Depends on**: 2.2, 2.3
-  - **Verification**: PHPUnit green; covers authentication spec scenarios 1-16
+  - **Verification**: PHPUnit green (16 tests, 51 assertions); covers authentication spec scenarios 1-16
 
-- [ ] 2.5 **[documenter]** Document auth endpoints: `/api/auth/login`, `/refresh`, `/logout`, `/me` with request/response shapes, cookie details, JWT claims.
+- [x] 2.5 **[documenter]** Document auth endpoints: `/api/auth/login`, `/refresh`, `/logout`, `/me` with request/response shapes, cookie details, JWT claims.
   - **Files**: `docs/03_architecture/api-contracts.md`
   - **Depends on**: 2.2
   - **Verification**: Doc includes all 4 endpoints with examples

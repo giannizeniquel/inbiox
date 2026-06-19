@@ -176,3 +176,23 @@ app_agent_delete_shift:
     path: /agents/{id}/shifts/{shiftId}
     methods: [DELETE]
     controller: App\Controller\AgentAvailabilityController::deleteShift
+
+api_auth_login:
+    path: /api/auth/login
+    methods: [POST]
+    controller: App\Controller\AuthController::login
+
+api_auth_refresh_path:
+    path: /api/auth/refresh
+    methods: [POST]
+    controller: App\Controller\AuthController::refresh
+
+api_auth_logout:
+    path: /api/auth/logout
+    methods: [POST]
+    controller: App\Controller\AuthController::logout
+
+api_auth_me:
+    path: /api/auth/me
+    methods: [GET]
+    controller: App\Controller\AuthController::me

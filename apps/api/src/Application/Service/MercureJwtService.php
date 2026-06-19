@@ -167,6 +167,32 @@ final class MercureJwtService
         return $mercure['subscribe'];
     }
 
+    /**
+     * Issue a Mercure JWT for a specific user (foundation for PR3 authorization).
+     *
+     * Topics will be scoped by role:
+     * - ROLE_AGENT: agent-specific topics + tickets
+     * - ROLE_SUPERVISOR/ROLE_ADMIN: all + wildcard
+     */
+    public function issueForUser(UserInterface $user, ?Agent $agent = null): Token
+    {
+        $roles = $user->getRoles();
+        $topics = [self::TOPIC_TICKETS, self::TOPIC_AGENTS_BROADCAST];
+
+        if (null !== $agent) {
+            $topics[] = \sprintf(self::TOPIC_AGENT_INBOX, $agent->getId());
+            $topics[] = \sprintf(self::TOPIC_AGENT_AVAILABILITY, $agent->getId());
+            $topics[] = \sprintf(self::TOPIC_AGENT_SHIFTS, $agent->getId());
+        }
+
+        // Supervisors and admins get wildcard access
+        if (\in_array('ROLE_SUPERVISOR', $roles, true) || \in_array('ROLE_ADMIN', $roles, true)) {
+            $topics[] = '*';
+        }
+
+        return $this->createSubscriberToken($topics);
+    }
+
     private function getSecret(): string
     {
         return $this->parameterBag->get('MERCURE_JWT_SECRET') ?? 'default-secret';

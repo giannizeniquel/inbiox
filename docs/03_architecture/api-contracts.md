@@ -1,6 +1,6 @@
 # API Contracts — Sprint 14: Identity & Access Management
 
-> **Status**: PR1 Foundation complete. Auth/Authorization endpoints added in PR2+.
+> **Status**: PR2 Authentication complete. Authorization endpoints added in PR3+.
 
 ---
 
@@ -108,6 +108,114 @@ ROLE_SUPERVISOR → [ROLE_AGENT]
 ```
 
 **User Provider**: `App\Domain\User\User` via `email` property.
+
+**User Checker**: `App\Security\UserChecker` — rejects inactive users on every request.
+- Login with inactive user → 401 "Invalid credentials" (via `DisabledException`)
+- JWT-authenticated request with deactivated user → 401/403 (via `UserCheckerListener` or `ActiveUserListener`)
+
+**Entry Point**: `jwt` — JWT authenticator is the entry point for authentication challenges.
+
+---
+
+## Auth Endpoints (PR2)
+
+### POST /api/auth/login
+
+Handled by `security.yaml` `json_login` firewall authenticator. No controller method.
+
+| Request | Type |
+|---------|------|
+| email | string |
+| password | string |
+
+**Response (200)**:
+```json
+{
+    "access_token": "eyJ...",
+    "token_type": "Bearer",
+    "expires_in": 900
+}
+```
+Plus `Set-Cookie: inbiox_refresh=...; HttpOnly; SameSite=Lax; Path=/`
+
+**Errors**: 401 (invalid credentials, inactive user, non-existent email)
+
+### POST /api/auth/refresh
+
+Handled by `security.yaml` `refresh_jwt` firewall authenticator (Gesdinet). No controller method.
+
+The refresh token is read from the `inbiox_refresh` HttpOnly cookie.
+
+**Response (200)**: Same shape as login (new `access_token` + new cookie, old token invalidated via rotation).
+
+**Errors**: 401 (expired token, reused token, no cookie)
+
+### POST /api/auth/logout
+
+Handled by `App\Controller\AuthController::logout`.
+
+Requires valid JWT (`IS_AUTHENTICATED_FULLY`).
+
+**Response (200)**:
+```json
+{
+    "message": "Logged out successfully"
+}
+```
+Plus `Set-Cookie: inbiox_refresh=; Max-Age=0` (cleared).
+
+**Errors**: 401 (no valid JWT)
+
+### GET /api/auth/me
+
+Handled by `App\Controller\AuthController::me`.
+
+Requires valid JWT (`IS_AUTHENTICATED_FULLY`).
+
+**Response (200)**:
+| Field | Type |
+|-------|------|
+| id | int |
+| email | string |
+| roles | string[] |
+| is_active | bool |
+| agent_id | int or null |
+
+```json
+{
+    "id": 1,
+    "email": "admin@inbiox.local",
+    "roles": ["ROLE_ADMIN", "ROLE_USER"],
+    "is_active": true,
+    "agent_id": null
+}
+```
+
+**Errors**: 401 (no JWT, invalid JWT, expired JWT)
+
+---
+
+## JWT Configuration (PR2)
+
+| Parameter | Value |
+|-----------|-------|
+| Algorithm | RS256 (RSA keypair) |
+| Access token TTL | 900s (15 minutes) |
+| Refresh token TTL | 2592000s (30 days) |
+| Cookie name | `inbiox_refresh` |
+| Cookie HttpOnly | true |
+| Cookie SameSite | Lax |
+| user_id_claim | `sub` (JWT standard) |
+
+**JWT payload claims**:
+```json
+{
+    "sub": "user@example.com",
+    "roles": ["ROLE_AGENT", "ROLE_USER"],
+    "iat": 1700000000,
+    "exp": 1700000900
+}
+```
 
 ---
 
