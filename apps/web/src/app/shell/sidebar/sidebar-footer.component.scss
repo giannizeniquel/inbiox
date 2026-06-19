@@ -91,6 +91,40 @@
 }
 
 // -----------------------------------------------------------------------------
+// Logout Button
+// -----------------------------------------------------------------------------
+.sidebar-footer__logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+  flex-shrink: 0;
+
+  &:hover {
+    background-color: rgba(220, 38, 38, 0.08);
+    color: #dc2626;
+
+    .dark & {
+      background-color: rgba(220, 38, 38, 0.15);
+      color: #fca5a5;
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+  }
+}
+
+// -----------------------------------------------------------------------------
 // Theme Toggle
 // -----------------------------------------------------------------------------
 .sidebar-footer__theme-toggle {

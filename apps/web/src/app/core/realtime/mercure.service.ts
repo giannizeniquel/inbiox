@@ -80,7 +80,15 @@ export class MercureService {
   async connect(): Promise<void> {
     if (this.abortController) return;
 
-    await this.fetchMercureToken();
+    // Only fetch token if not already set (e.g., by AuthStore after login)
+    if (!this.mercureToken) {
+      await this.fetchMercureToken();
+    }
+
+    // If still no token, log warning but proceed (SSE connection may still work)
+    if (!this.mercureToken) {
+      console.warn('[Mercure] No subscriber token available — resync will be unavailable');
+    }
 
     this.connectionState.set('connecting');
     const hubUrl = `${environment.mercureUrl}/.well-known/mercure?topic=tickets`;
@@ -415,7 +423,10 @@ export class MercureService {
    */
   private async fetchMercureToken(): Promise<void> {
     try {
-      const response = await fetch(`${environment.apiUrl}/api/mercure/token`);
+      // Try to get the access token from the global window (set by AuthStore)
+      // This is a fallback for the legacy direct-connect path
+      const headers: Record<string, string> = { 'Accept': 'application/json' };
+      const response = await fetch(`${environment.apiUrl}/api/mercure/token`, { headers });
       if (response.ok) {
         const data = await response.json();
         this.mercureToken = data.token;

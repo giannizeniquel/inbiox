@@ -2,6 +2,7 @@ import { Component, ChangeDetectionStrategy, input, inject } from '@angular/core
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { ConnectionStore } from '../../core/stores/connection.store';
+import { AuthStore } from '../../core/stores/auth.store';
 
 @Component({
   selector: 'app-sidebar',
@@ -76,6 +77,45 @@ import { ConnectionStore } from '../../core/stores/connection.store';
         <span class="sidebar-nav__tooltip">Informes</span>
       </a>
 
+      <!-- Admin-only links -->
+      @if (authStore.isAdmin()) {
+        <div class="sidebar-nav__separator" role="separator"></div>
+
+        <a
+          routerLink="/users"
+          routerLinkActive="sidebar-nav__item--active"
+          class="sidebar-nav__item sidebar-nav__item--future"
+          aria-label="Usuarios"
+        >
+          <span class="sidebar-nav__icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3.87-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          </span>
+          <span class="sidebar-nav__label">Usuarios</span>
+          <span class="sidebar-nav__tooltip">Usuarios</span>
+        </a>
+
+        <a
+          routerLink="/agents"
+          routerLinkActive="sidebar-nav__item--active"
+          class="sidebar-nav__item sidebar-nav__item--future"
+          aria-label="Agentes"
+        >
+          <span class="sidebar-nav__icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          </span>
+          <span class="sidebar-nav__label">Agentes</span>
+          <span class="sidebar-nav__tooltip">Agentes</span>
+        </a>
+      }
+
       <a
         routerLink="/settings"
         routerLinkActive="sidebar-nav__item--active"
@@ -106,6 +146,7 @@ export class SidebarComponent {
   readonly isCollapsed = input(false);
 
   private readonly connectionStore = inject(ConnectionStore);
+  protected readonly authStore = inject(AuthStore);
 
   connectionStatus = this.connectionStore.status;
 

@@ -1,47 +1,59 @@
 import { Routes } from '@angular/router';
+import { authGuard } from './core/auth/auth.guard';
 import { InboxPageComponent } from './features/inbox/pages/inbox-page/inbox-page.component';
 import { ContactsPageComponent } from './features/contacts/pages/contacts-page/contacts-page.component';
 import { ReportsPageComponent } from './features/reports/pages/reports-page/reports-page.component';
 import { AvailabilityPageComponent } from './features/agents/availability/availability.page';
 import { ShiftsPageComponent } from './features/agents/shifts/shifts.page';
+import { LoginPageComponent } from './features/login/login-page.component';
 
 export const routes: Routes = [
   {
+    path: 'login',
+    component: LoginPageComponent,
+  },
+  {
     path: '',
     redirectTo: 'inbox',
-    pathMatch: 'full'
+    pathMatch: 'full',
   },
   {
     path: 'inbox',
-    component: InboxPageComponent
+    component: InboxPageComponent,
+    canActivate: [authGuard],
   },
   {
     path: 'contacts',
-    component: ContactsPageComponent
+    component: ContactsPageComponent,
+    canActivate: [authGuard],
   },
   {
     path: 'contacts/:contactId',
-    component: ContactsPageComponent
+    component: ContactsPageComponent,
+    canActivate: [authGuard],
   },
   {
     path: 'reports',
-    component: ReportsPageComponent
+    component: ReportsPageComponent,
+    canActivate: [authGuard],
   },
   {
     path: 'agents/:agentId/availability',
-    component: AvailabilityPageComponent
+    component: AvailabilityPageComponent,
+    canActivate: [authGuard],
   },
   {
     path: 'agents/:agentId/shifts',
-    component: ShiftsPageComponent
+    component: ShiftsPageComponent,
+    canActivate: [authGuard],
   },
   {
     path: 'settings',
     redirectTo: 'inbox',
-    pathMatch: 'full'
+    pathMatch: 'full',
   },
   {
     path: '**',
-    redirectTo: 'inbox'
-  }
+    redirectTo: 'inbox',
+  },
 ];
