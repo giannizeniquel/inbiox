@@ -17,30 +17,30 @@ import { AdminApiService, AdminUserDTO, UpdateUserPayload } from '../../../core/
     <div class="admin-page">
       <div class="admin-page__header">
         <h1>User Management</h1>
-        <button class="btn btn--primary" (click)="openCreateForm()">
+        <button class="btn btn--primary" (click)="openCreateForm()" aria-label="Create new user">
           + Create User
         </button>
       </div>
 
       <!-- Error banner -->
       @if (error(); as err) {
-        <div class="alert alert--error">
+        <div class="alert alert--error" role="alert">
           {{ err }}
-          <button class="alert__close" (click)="error.set(null)">&times;</button>
+          <button class="alert__close" (click)="error.set(null)" aria-label="Dismiss error">&times;</button>
         </div>
       }
 
       <!-- Success banner -->
       @if (success(); as msg) {
-        <div class="alert alert--success">
+        <div class="alert alert--success" role="status">
           {{ msg }}
-          <button class="alert__close" (click)="success.set(null)">&times;</button>
+          <button class="alert__close" (click)="success.set(null)" aria-label="Dismiss message">&times;</button>
         </div>
       }
 
       <!-- Loading state -->
       @if (loading()) {
-        <div class="loading">Loading users...</div>
+        <div class="loading" role="status" aria-live="polite">Loading users...</div>
       }
 
       <!-- Users table -->
@@ -83,11 +83,11 @@ import { AdminApiService, AdminUserDTO, UpdateUserPayload } from '../../../core/
                   </td>
                   <td>{{ user.agent_name ?? '—' }}</td>
                   <td class="actions-cell">
-                    <button class="btn btn--sm btn--outline" (click)="openEditForm(user)">Edit</button>
+                    <button class="btn btn--sm btn--outline" (click)="openEditForm(user)" [attr.aria-label]="'Edit ' + user.email">Edit</button>
                     @if (user.is_active) {
-                      <button class="btn btn--sm btn--danger" (click)="confirmDelete(user)">Deactivate</button>
+                      <button class="btn btn--sm btn--danger" (click)="confirmDelete(user)" [attr.aria-label]="'Deactivate ' + user.email">Deactivate</button>
                     } @else {
-                      <button class="btn btn--sm btn--outline" (click)="reactivateUser(user)">Reactivate</button>
+                      <button class="btn btn--sm btn--outline" (click)="reactivateUser(user)" [attr.aria-label]="'Reactivate ' + user.email">Reactivate</button>
                     }
                   </td>
                 </tr>
@@ -104,10 +104,10 @@ import { AdminApiService, AdminUserDTO, UpdateUserPayload } from '../../../core/
         @if (totalPages() > 1) {
           <div class="pagination">
             <button class="btn btn--sm btn--outline" [disabled]="currentPage() <= 1"
-                    (click)="goToPage(currentPage() - 1)">Previous</button>
+                    (click)="goToPage(currentPage() - 1)" aria-label="Previous page">Previous</button>
             <span class="pagination__info">Page {{ currentPage() }} of {{ totalPages() }}</span>
             <button class="btn btn--sm btn--outline" [disabled]="currentPage() >= totalPages()"
-                    (click)="goToPage(currentPage() + 1)">Next</button>
+                    (click)="goToPage(currentPage() + 1)" aria-label="Next page">Next</button>
           </div>
         }
       }
@@ -115,10 +115,10 @@ import { AdminApiService, AdminUserDTO, UpdateUserPayload } from '../../../core/
       <!-- Create/Edit Modal -->
       @if (showForm()) {
         <div class="modal-overlay" (click)="closeForm()">
-          <div class="modal" (click)="$event.stopPropagation()">
+          <div class="modal" role="dialog" aria-modal="true" [attr.aria-labelledby]="editingUser() ? 'modal-title-edit' : 'modal-title-create'" (click)="$event.stopPropagation()">
             <div class="modal__header">
-              <h2>{{ editingUser() ? 'Edit User' : 'Create User' }}</h2>
-              <button class="modal__close" (click)="closeForm()">&times;</button>
+              <h2 [id]="editingUser() ? 'modal-title-edit' : 'modal-title-create'">{{ editingUser() ? 'Edit User' : 'Create User' }}</h2>
+              <button class="modal__close" (click)="closeForm()" aria-label="Close dialog">&times;</button>
             </div>
             <div class="modal__body">
               <div class="form-group">
@@ -183,10 +183,10 @@ import { AdminApiService, AdminUserDTO, UpdateUserPayload } from '../../../core/
       <!-- Delete Confirmation Modal -->
       @if (showDeleteConfirm(); as userToDelete) {
         <div class="modal-overlay" (click)="cancelDelete()">
-          <div class="modal modal--sm" (click)="$event.stopPropagation()">
+          <div class="modal modal--sm" role="alertdialog" aria-modal="true" aria-labelledby="modal-title-delete" (click)="$event.stopPropagation()">
             <div class="modal__header">
-              <h2>Confirm Deactivation</h2>
-              <button class="modal__close" (click)="cancelDelete()">&times;</button>
+              <h2 id="modal-title-delete">Confirm Deactivation</h2>
+              <button class="modal__close" (click)="cancelDelete()" aria-label="Close dialog">&times;</button>
             </div>
             <div class="modal__body">
               <p>Are you sure you want to deactivate <strong>{{ userToDelete.email }}</strong>?</p>

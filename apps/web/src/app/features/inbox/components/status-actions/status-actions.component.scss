@@ -18,42 +18,42 @@
   }
 
   &[data-action='active'] {
-    background: #e8f5e9;
-    border-color: #a5d6a7;
-    color: #2e7d32;
+    background: color-mix(in srgb, var(--status-active) 15%, transparent);
+    border-color: var(--status-active);
+    color: var(--status-active);
 
     &:hover {
-      background: #c8e6c9;
+      background: color-mix(in srgb, var(--status-active) 25%, transparent);
     }
   }
 
   &[data-action='waiting'] {
-    background: #fff3e0;
-    border-color: #ffcc80;
-    color: #ef6c00;
+    background: color-mix(in srgb, var(--status-waiting) 15%, transparent);
+    border-color: var(--status-waiting);
+    color: var(--status-waiting);
 
     &:hover {
-      background: #ffe0b2;
+      background: color-mix(in srgb, var(--status-waiting) 25%, transparent);
     }
   }
 
   &[data-action='resolved'] {
-    background: #f3e5f5;
-    border-color: #ce93d8;
-    color: #7b1fa2;
+    background: color-mix(in srgb, var(--status-resolved) 15%, transparent);
+    border-color: var(--status-resolved);
+    color: var(--status-resolved);
 
     &:hover {
-      background: #e1bee7;
+      background: color-mix(in srgb, var(--status-resolved) 25%, transparent);
     }
   }
 
   &[data-action='closed'] {
-    background: #eceff1;
-    border-color: #b0bec5;
-    color: #546e7a;
+    background: color-mix(in srgb, var(--status-closed) 15%, transparent);
+    border-color: var(--status-closed);
+    color: var(--status-closed);
 
     &:hover {
-      background: #cfd8dc;
+      background: color-mix(in srgb, var(--status-closed) 25%, transparent);
     }
   }
 }

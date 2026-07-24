@@ -25,23 +25,23 @@ import { AdminApiService, AdminAgentDTO, AdminUserDTO } from '../../../core/api/
 
       <!-- Error banner -->
       @if (error(); as err) {
-        <div class="alert alert--error">
+        <div class="alert alert--error" role="alert">
           {{ err }}
-          <button class="alert__close" (click)="error.set(null)">&times;</button>
+          <button class="alert__close" (click)="error.set(null)" aria-label="Dismiss error">&times;</button>
         </div>
       }
 
       <!-- Success banner -->
       @if (success(); as msg) {
-        <div class="alert alert--success">
+        <div class="alert alert--success" role="status">
           {{ msg }}
-          <button class="alert__close" (click)="success.set(null)">&times;</button>
+          <button class="alert__close" (click)="success.set(null)" aria-label="Dismiss message">&times;</button>
         </div>
       }
 
       <!-- Loading state -->
       @if (loading()) {
-        <div class="loading">Loading agents...</div>
+        <div class="loading" role="status" aria-live="polite">Loading agents...</div>
       }
 
       <!-- Agents table -->
@@ -77,16 +77,16 @@ import { AdminApiService, AdminAgentDTO, AdminUserDTO } from '../../../core/api/
                   </td>
                   <td>{{ agent.user_email ?? '—' }}</td>
                   <td class="actions-cell">
-                    <button class="btn btn--sm btn--outline" (click)="openEditForm(agent)">Edit</button>
+                    <button class="btn btn--sm btn--outline" (click)="openEditForm(agent)" [attr.aria-label]="'Edit ' + agent.name">Edit</button>
                     @if (agent.user_id) {
-                      <button class="btn btn--sm btn--outline" (click)="confirmUnlinkAgent(agent)">Unlink</button>
+                      <button class="btn btn--sm btn--outline" (click)="confirmUnlinkAgent(agent)" [attr.aria-label]="'Unlink user from ' + agent.name">Unlink</button>
                     } @else {
-                      <button class="btn btn--sm btn--outline" (click)="openLinkForm(agent)">Link</button>
+                      <button class="btn btn--sm btn--outline" (click)="openLinkForm(agent)" [attr.aria-label]="'Link user to ' + agent.name">Link</button>
                     }
                     @if (agent.active) {
-                      <button class="btn btn--sm btn--danger" (click)="confirmDelete(agent)">Deactivate</button>
+                      <button class="btn btn--sm btn--danger" (click)="confirmDelete(agent)" [attr.aria-label]="'Deactivate ' + agent.name">Deactivate</button>
                     } @else {
-                      <button class="btn btn--sm btn--outline" (click)="reactivateAgent(agent)">Reactivate</button>
+                      <button class="btn btn--sm btn--outline" (click)="reactivateAgent(agent)" [attr.aria-label]="'Reactivate ' + agent.name">Reactivate</button>
                     }
                   </td>
                 </tr>
@@ -103,10 +103,10 @@ import { AdminApiService, AdminAgentDTO, AdminUserDTO } from '../../../core/api/
         @if (totalPages() > 1) {
           <div class="pagination">
             <button class="btn btn--sm btn--outline" [disabled]="currentPage() <= 1"
-                    (click)="goToPage(currentPage() - 1)">Previous</button>
+                    (click)="goToPage(currentPage() - 1)" aria-label="Previous page">Previous</button>
             <span class="pagination__info">Page {{ currentPage() }} of {{ totalPages() }}</span>
             <button class="btn btn--sm btn--outline" [disabled]="currentPage() >= totalPages()"
-                    (click)="goToPage(currentPage() + 1)">Next</button>
+                    (click)="goToPage(currentPage() + 1)" aria-label="Next page">Next</button>
           </div>
         }
       }
@@ -114,10 +114,10 @@ import { AdminApiService, AdminAgentDTO, AdminUserDTO } from '../../../core/api/
       <!-- Create/Edit Modal -->
       @if (showForm()) {
         <div class="modal-overlay" (click)="closeForm()">
-          <div class="modal" (click)="$event.stopPropagation()">
+          <div class="modal" role="dialog" aria-modal="true" [attr.aria-labelledby]="editingAgent() ? 'modal-title-edit' : 'modal-title-create'" (click)="$event.stopPropagation()">
             <div class="modal__header">
-              <h2>{{ editingAgent() ? 'Edit Agent' : 'Create Agent' }}</h2>
-              <button class="modal__close" (click)="closeForm()">&times;</button>
+              <h2 [id]="editingAgent() ? 'modal-title-edit' : 'modal-title-create'">{{ editingAgent() ? 'Edit Agent' : 'Create Agent' }}</h2>
+              <button class="modal__close" (click)="closeForm()" aria-label="Close dialog">&times;</button>
             </div>
             <div class="modal__body">
               <div class="form-group">
@@ -149,10 +149,10 @@ import { AdminApiService, AdminAgentDTO, AdminUserDTO } from '../../../core/api/
       <!-- Link User Modal -->
       @if (showLinkForm(); as linkingAgent) {
         <div class="modal-overlay" (click)="closeLinkForm()">
-          <div class="modal modal--sm" (click)="$event.stopPropagation()">
+          <div class="modal modal--sm" role="dialog" aria-modal="true" aria-labelledby="modal-title-link" (click)="$event.stopPropagation()">
             <div class="modal__header">
-              <h2>Link User to {{ linkingAgent.name }}</h2>
-              <button class="modal__close" (click)="closeLinkForm()">&times;</button>
+              <h2 id="modal-title-link">Link User to {{ linkingAgent.name }}</h2>
+              <button class="modal__close" (click)="closeLinkForm()" aria-label="Close dialog">&times;</button>
             </div>
             <div class="modal__body">
               <div class="form-group">
@@ -182,10 +182,10 @@ import { AdminApiService, AdminAgentDTO, AdminUserDTO } from '../../../core/api/
       <!-- Delete Confirmation Modal -->
       @if (showDeleteConfirm(); as agentToDelete) {
         <div class="modal-overlay" (click)="cancelDelete()">
-          <div class="modal modal--sm" (click)="$event.stopPropagation()">
+          <div class="modal modal--sm" role="alertdialog" aria-modal="true" aria-labelledby="modal-title-delete" (click)="$event.stopPropagation()">
             <div class="modal__header">
-              <h2>Confirm Deactivation</h2>
-              <button class="modal__close" (click)="cancelDelete()">&times;</button>
+              <h2 id="modal-title-delete">Confirm Deactivation</h2>
+              <button class="modal__close" (click)="cancelDelete()" aria-label="Close dialog">&times;</button>
             </div>
             <div class="modal__body">
               <p>Are you sure you want to deactivate <strong>{{ agentToDelete.name }}</strong>?</p>
@@ -204,10 +204,10 @@ import { AdminApiService, AdminAgentDTO, AdminUserDTO } from '../../../core/api/
       <!-- Unlink Confirmation Modal -->
       @if (showUnlinkConfirm(); as agentToUnlink) {
         <div class="modal-overlay" (click)="cancelUnlink()">
-          <div class="modal modal--sm" (click)="$event.stopPropagation()">
+          <div class="modal modal--sm" role="alertdialog" aria-modal="true" aria-labelledby="modal-title-unlink" (click)="$event.stopPropagation()">
             <div class="modal__header">
-              <h2>Confirm Unlink</h2>
-              <button class="modal__close" (click)="cancelUnlink()">&times;</button>
+              <h2 id="modal-title-unlink">Confirm Unlink</h2>
+              <button class="modal__close" (click)="cancelUnlink()" aria-label="Close dialog">&times;</button>
             </div>
             <div class="modal__body">
               <p>Unlink user <strong>{{ agentToUnlink.user_email }}</strong> from agent <strong>{{ agentToUnlink.name }}</strong>?</p>

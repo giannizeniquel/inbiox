@@ -16,7 +16,7 @@
     margin: 0;
     font-size: 1.25rem;
     font-weight: 600;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid var(--border-subtle, #e0e0e0);
   }
 }
 
@@ -29,13 +29,13 @@
 
 .ticket-item {
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-subtle, #eee);
   cursor: pointer;
   transition: background 0.15s ease;
   outline: none;
 
   &:hover {
-    background: #f0f0f0;
+    background: var(--bg-hover, #f0f0f0);
   }
 
   &:focus-visible {
@@ -44,13 +44,13 @@
   }
 
   &.selected {
-    background: #e3f2fd;
-    border-left: 3px solid #2196f3;
+    background: var(--nav-active-bg, #e3f2fd);
+    border-left: 3px solid var(--accent-primary);
   }
 
   &.unread {
     font-weight: 600;
-    background: #fff;
+    background: var(--bg-card, #fff);
   }
 }
 
@@ -63,7 +63,7 @@
 
 .ticket-id {
   font-size: 0.75rem;
-  color: #666;
+  color: var(--text-secondary, #666);
 }
 
 .ticket-status {
@@ -74,28 +74,28 @@
   font-weight: 500;
 
   &[data-status='new'] {
-    background: #e3f2fd;
-    color: #1976d2;
+    background: color-mix(in srgb, var(--status-new) 15%, transparent);
+    color: var(--status-new);
   }
 
   &[data-status='active'] {
-    background: #e8f5e9;
-    color: #388e3c;
+    background: color-mix(in srgb, var(--status-active) 15%, transparent);
+    color: var(--status-active);
   }
 
   &[data-status='waiting'] {
-    background: #fff3e0;
-    color: #f57c00;
+    background: color-mix(in srgb, var(--status-waiting) 15%, transparent);
+    color: var(--status-waiting);
   }
 
   &[data-status='resolved'] {
-    background: #f3e5f5;
-    color: #7b1fa2;
+    background: color-mix(in srgb, var(--status-resolved) 15%, transparent);
+    color: var(--status-resolved);
   }
 
   &[data-status='closed'] {
-    background: #eceff1;
-    color: #546e7a;
+    background: color-mix(in srgb, var(--status-closed) 15%, transparent);
+    color: var(--status-closed);
   }
 }
 
@@ -109,12 +109,12 @@
 
 .ticket-meta {
   font-size: 0.75rem;
-  color: #999;
+  color: var(--text-muted, #999);
 }
 
 .empty-state,
 .loading {
   padding: 2rem;
   text-align: center;
-  color: #999;
+  color: var(--text-muted, #999);
 }

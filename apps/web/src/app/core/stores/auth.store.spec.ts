@@ -230,7 +230,7 @@ describe('AuthStore', () => {
     const meReq = httpMock.expectOne(`${environment.apiUrl}/api/auth/me`);
     meReq.flush(mockUser);
 
-    expect(user).toEqual(mockUser);
+    expect(user!).toEqual(mockUser);
     expect(store.currentUser()).toEqual(mockUser);
   });
 
