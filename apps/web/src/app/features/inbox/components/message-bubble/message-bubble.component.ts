@@ -47,7 +47,7 @@ export class MessageBubbleComponent {
   }));
 
   timeDisplay(): string {
-    const date = new Date(this.message().sentAt ?? this.message().created_at);
+    const date = new Date(this.message().createdAt);
     return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
   }
 

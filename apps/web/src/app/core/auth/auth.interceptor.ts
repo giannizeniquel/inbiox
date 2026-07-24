@@ -1,8 +1,8 @@
 import { HttpInterceptorFn, HttpRequest, HttpHandlerFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { throwError } from 'rxjs';
-import { catchError, switchMap } from 'rxjs/operators';
+import { Observable, throwError, Subject } from 'rxjs';
+import { catchError, switchMap, take, filter } from 'rxjs/operators';
 import { AuthStore } from '../stores/auth.store';
 import { environment } from '../../../environments/environment';
 
@@ -28,11 +28,54 @@ function isApiRequest(url: string): boolean {
 }
 
 /**
+ * Shared refresh-in-flight tracker. When multiple requests get 401
+ * simultaneously, only ONE refresh call is made. All waiting requests
+ * receive the result via this subject.
+ */
+let refreshInFlight$: Subject<boolean> | null = null;
+
+/**
+ * Attempt a token refresh, deduplicating concurrent attempts.
+ * Returns an Observable that emits `true` if refresh succeeded, `false` if it failed.
+ */
+function refreshToken(authStore: AuthStore): Observable<boolean> {
+  // If a refresh is already in flight, wait for it
+  if (refreshInFlight$) {
+    return refreshInFlight$.pipe(
+      filter((done) => done),
+      take(1)
+    );
+  }
+
+  // Start a new refresh
+  refreshInFlight$ = new Subject<boolean>();
+
+  authStore.refresh().subscribe({
+    next: (refreshed: boolean) => {
+      refreshInFlight$!.next(refreshed);
+      refreshInFlight$!.complete();
+      refreshInFlight$ = null;
+    },
+    error: () => {
+      refreshInFlight$!.next(false);
+      refreshInFlight$!.complete();
+      refreshInFlight$ = null;
+    },
+  });
+
+  return refreshInFlight$.pipe(
+    filter((done) => done),
+    take(1)
+  );
+}
+
+/**
  * AuthInterceptor — functional HTTP interceptor.
  *
  * - Attaches Bearer token to all /api/* requests (except login/refresh)
- * - On 401: attempts token refresh via AuthStore, then retries the request
- * - On double 401 (refresh fails): logs out and redirects to /login
+ * - On 401: attempts a single shared token refresh, then retries the request
+ * - On refresh failure: logs out and redirects to /login
+ * - Concurrent 401s: only one refresh is triggered; all requests wait for it
  */
 export const authInterceptor: HttpInterceptorFn = (
   req: HttpRequest<unknown>,
@@ -62,8 +105,8 @@ export const authInterceptor: HttpInterceptorFn = (
         return throwError(() => error);
       }
 
-      // Attempt token refresh
-      return authStore.refresh().pipe(
+      // Attempt shared token refresh (deduplicates concurrent 401s)
+      return refreshToken(authStore).pipe(
         switchMap((refreshed: boolean) => {
           if (!refreshed) {
             // Refresh failed — log out and redirect

@@ -5,7 +5,8 @@ import { RealtimeEvent, RealtimeEventType, assertNever,
   TicketAssignedPayload, MessageUpdatedPayload } from '../models/realtime-event.model';
 import { environment } from '../../../environments/environment';
 import { TicketStore } from '../stores/ticket.store';
-import { ConversationStore, BridgeMessage } from '../stores/conversation.store';
+import { ConversationStore } from '../stores/conversation.store';
+import { Message } from '../models/message.model';
 import { TicketStatus } from '../models/ticket.model';
 import { ConnectionStore } from '../stores/connection.store';
 import { UiStore } from '../stores/ui.store';
@@ -323,21 +324,15 @@ export class MercureService {
     switch (event.eventType) {
       case RealtimeEventType.MessageAdded: {
         const p = event.payload as MessageAddedPayload;
-        const message: BridgeMessage = {
+        const message: Message = {
           id: String(p.messageId),
-          tempId: undefined,
           ticketId: String(p.ticketId),
-          sender: p.direction === 'outbound' ? 'agent' : 'customer',
           content: p.content,
-          createdAt: p.createdAt,
-          created_at: p.createdAt,
-          deliveryStatus: 'sent',
-          externalId: p.externalId ?? undefined,
-          message_id: p.messageId,
           direction: p.direction,
-          chatId: String(p.ticketId),
-          body: p.content,
-          sentAt: p.createdAt,
+          sender: p.direction === 'outbound' ? 'agent' : 'customer',
+          deliveryStatus: 'sent',
+          createdAt: p.createdAt,
+          externalId: p.externalId ?? undefined,
         };
         this.conversationStore.addMessage(message);
         this.uiStore.notifyNewMessages();
@@ -399,8 +394,7 @@ export class MercureService {
         const p = event.payload as MessageUpdatedPayload;
         this.conversationStore.updateMessageStatus(
           String(p.messageId),
-          (p.status ?? 'read') as BridgeMessage['deliveryStatus'],
-          p.messageId
+          (p.status ?? 'read') as Message['deliveryStatus'],
         );
         break;
       }

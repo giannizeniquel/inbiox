@@ -1,37 +1,34 @@
-import { BridgeMessage } from '../stores/conversation.store';
+import { Message, MessageDto } from '../models/message.model';
 import { GetMessagesResponse } from '../api/message-api.service';
-import { Message } from '../models/message.model';
 
 /**
- * Maps a backend Message DTO to the BridgeMessage format used by ConversationStore.
+ * Maps a backend MessageDto to the canonical Message format used by ConversationStore.
  *
  * Used by both TicketListComponent (initial load) and ConversationComponent (pagination).
  * Centralized here to avoid duplicated inline mapping.
  */
-export function mapApiMessageToBridge(
-  m: Message,
+export function mapApiMessageToCanonical(
+  m: MessageDto,
   ticketId: string
-): BridgeMessage {
+): Message {
+  const direction = m.direction as 'inbound' | 'outbound' | 'system';
   return {
     id: String(m.message_id),
-    message_id: m.message_id,
     ticketId,
-    chatId: ticketId,
     content: m.content,
-    body: m.content,
-    direction: m.direction as 'inbound' | 'outbound' | 'system',
-    deliveryStatus: (m.deliveryStatus || 'sent') as 'sent',
-    created_at: m.created_at || new Date().toISOString(),
-    sender: (m.direction === 'inbound' ? 'customer' : 'agent') as 'agent' | 'customer',
+    direction,
+    sender: direction === 'inbound' ? 'customer' : 'agent',
+    deliveryStatus: (m.deliveryStatus || 'sent') as Message['deliveryStatus'],
+    createdAt: m.created_at || new Date().toISOString(),
   };
 }
 
 /**
- * Extracts messages from a GetMessagesResponse and maps them.
+ * Extracts messages from a GetMessagesResponse and maps them to canonical Message.
  */
-export function mapApiMessagesToBridge(
+export function mapApiMessagesToCanonical(
   resp: GetMessagesResponse,
   ticketId: string
-): BridgeMessage[] {
-  return resp.data.map((m) => mapApiMessageToBridge(m, ticketId));
+): Message[] {
+  return resp.data.map((m) => mapApiMessageToCanonical(m, ticketId));
 }

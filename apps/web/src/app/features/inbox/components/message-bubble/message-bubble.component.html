@@ -1,10 +1,10 @@
 <div class="message-bubble" [ngClass]="bubbleClasses()">
   @switch (messageType()) {
     @case ('system') {
-      <span class="message-bubble__system-text">{{ message().content || message().body }}</span>
+      <span class="message-bubble__system-text">{{ message().content }}</span>
     }
     @default {
-      <p class="message-bubble__text">{{ message().content || message().body }}</p>
+      <p class="message-bubble__text">{{ message().content }}</p>
       <span class="message-bubble__meta">
         <span class="message-bubble__time">{{ timeDisplay() }}</span>
         @if (messageType() === 'agent') {

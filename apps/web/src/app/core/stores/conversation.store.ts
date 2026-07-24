@@ -1,32 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { Message } from '../models/message.model';
 
-/**
- * Extended message type that supports both legacy and provider message shapes.
- * This bridge type is used internally to handle the transition.
- */
-export interface BridgeMessage {
-  // ProviderInterface Message fields
-  id: string;
-  tempId?: string;
-  ticketId: string;
-  sender?: 'agent' | 'customer' | 'system';
-  content: string;
-  createdAt?: string;
-  created_at: string;
-  deliveryStatus: 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
-  externalId?: string;
-  failedReason?: string;
-
-  // Legacy Message fields
-  message_id: number;
-  direction: 'inbound' | 'outbound' | 'system';
-  chatId: string;
-  body: string;
-  sentAt?: string;
-  readAt?: string;
-}
-
 const MAX_MESSAGES = 200;
 
 /**
@@ -38,13 +12,12 @@ const MAX_MESSAGES = 200;
  * - hasMore: signal<boolean> (pagination)
  * - Max 200 messages cap enforced (slice oldest)
  *
- * Supports both legacy Message model and ProviderInterface Message through BridgeMessage.
  * Optimistic UI via tempId tracking.
  */
 @Injectable({ providedIn: 'root' })
 export class ConversationStore {
   /** Messages in the active conversation */
-  readonly messages = signal<BridgeMessage[]>([]);
+  readonly messages = signal<Message[]>([]);
 
   /** Loading state (for initial load / pagination) */
   readonly loading = signal<boolean>(false);
@@ -59,7 +32,7 @@ export class ConversationStore {
   private messageCache = new Map<string, { content: string; ticketId: string }>();
 
   /** Add a message (optimistic or from server), enforcing 200 cap */
-  addMessage(message: BridgeMessage): void {
+  addMessage(message: Message): void {
     this.messages.update(msgs => {
       const next = [...msgs, message];
       return next.length > MAX_MESSAGES ? next.slice(next.length - MAX_MESSAGES) : next;
@@ -72,45 +45,40 @@ export class ConversationStore {
    *
    * @param tempId - Temporary ID for the optimistic message
    * @param content - Message content
-   * @param chatId - Ticket/chat ID
+   * @param ticketId - Ticket ID
    * @returns The created optimistic message
    */
-  addOptimisticMessage(tempId: string, content: string, chatId: string): BridgeMessage {
-    const optimistic: BridgeMessage = {
-      message_id: 0,
+  addOptimisticMessage(tempId: string, content: string, ticketId: string): Message {
+    const optimistic: Message = {
       id: tempId,
-      chatId,
-      direction: 'outbound',
-      content,
-      body: content,
-      created_at: new Date().toISOString(),
-      deliveryStatus: 'sending',
       tempId,
-      sentAt: new Date().toISOString(),
-      ticketId: chatId,
+      ticketId,
+      content,
+      direction: 'outbound',
+      sender: 'agent',
+      deliveryStatus: 'sending',
+      createdAt: new Date().toISOString(),
     };
     this.addMessage(optimistic);
 
     // Cache for retry
-    this.messageCache.set(tempId, { content, ticketId: chatId });
+    this.messageCache.set(tempId, { content, ticketId });
 
     return optimistic;
   }
 
   /**
    * Update delivery status of a message (by id or tempId).
-   * Supports both legacy and provider message identification.
    */
   updateMessageStatus(
     idOrTempId: string,
-    status: BridgeMessage['deliveryStatus'],
-    messageId?: number
+    status: Message['deliveryStatus'],
   ): void {
     this.messages.update(msgs =>
       msgs.map(m => {
         const matchId = m.id === idOrTempId || (m.tempId ?? m.id) === idOrTempId;
         if (matchId) {
-          return { ...m, deliveryStatus: status, message_id: messageId ?? m.message_id };
+          return { ...m, deliveryStatus: status };
         }
         return m;
       })
@@ -121,7 +89,7 @@ export class ConversationStore {
    * Replace an optimistic message with the server-confirmed one.
    * Reconciles tempId to provider-assigned id.
    */
-  confirmMessage(tempId: string, confirmed: BridgeMessage): void {
+  confirmMessage(tempId: string, confirmed: Message): void {
     this.messages.update(msgs =>
       msgs.map(m => {
         if (m.tempId === tempId) {
@@ -129,7 +97,6 @@ export class ConversationStore {
           return {
             ...confirmed,
             tempId, // Keep tempId for tracking
-            message_id: confirmed.message_id || m.message_id,
             deliveryStatus: confirmed.deliveryStatus || m.deliveryStatus,
           };
         }
@@ -186,9 +153,8 @@ export class ConversationStore {
 
   /**
    * Load messages for a chat (initial load or pagination).
-   * Merges legacy and provider message formats.
    */
-  loadMessages(messages: BridgeMessage[], append = false): void {
+  loadMessages(messages: Message[], append = false): void {
     const incoming = append
       ? [...this.messages(), ...messages]
       : messages;
@@ -200,7 +166,7 @@ export class ConversationStore {
    * Used for scroll-up pagination — adds older entries before current ones.
    * Caps at MAX_MESSAGES, trimming from the newest (end).
    */
-  prependMessages(messages: BridgeMessage[]): void {
+  prependMessages(messages: Message[]): void {
     this.messages.update(msgs => {
       const next = [...messages, ...msgs];
       return next.length > MAX_MESSAGES ? next.slice(0, MAX_MESSAGES) : next;
@@ -220,7 +186,7 @@ export class ConversationStore {
   /**
    * Find message by tempId or id.
    */
-  findById(idOrTempId: string): BridgeMessage | undefined {
+  findById(idOrTempId: string): Message | undefined {
     return this.messages().find(m => m.id === idOrTempId || (m.tempId ?? m.id) === idOrTempId);
   }
 

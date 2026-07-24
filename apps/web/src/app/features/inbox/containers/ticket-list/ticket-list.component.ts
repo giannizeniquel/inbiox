@@ -17,7 +17,7 @@ import { TicketApiService } from '../../../../core/api/ticket-api.service';
 import { MessageApiService, GetMessagesResponse } from '../../../../core/api/message-api.service';
 import { MercureService } from '../../../../core/realtime/mercure.service';
 import { Ticket } from '../../../../core/models/ticket.model';
-import { mapApiMessagesToBridge } from '../../../../core/utils/message-mapper.util';
+import { mapApiMessagesToCanonical } from '../../../../core/utils/message-mapper.util';
 import { TicketCardComponent } from '../../components/ticket-card/ticket-card.component';
 import { TicketSearchComponent } from '../../components/chat-search/ticket-search.component';
 import { TicketFiltersComponent } from '../../components/chat-filters/ticket-filters.component';
@@ -134,7 +134,7 @@ export class TicketListComponent implements OnInit, OnDestroy {
 
     this.messageApi.getMessages(ticket.ticket_id, 20, 0).pipe(take(1)).subscribe({
       next: (resp: GetMessagesResponse) => {
-        this.conversationStore.loadMessages(mapApiMessagesToBridge(resp, ticket.ticket_id));
+        this.conversationStore.loadMessages(mapApiMessagesToCanonical(resp, ticket.ticket_id));
         this.conversationStore.setHasMore(resp.meta.has_more);
         this.conversationStore.setLoading(false);
       },
