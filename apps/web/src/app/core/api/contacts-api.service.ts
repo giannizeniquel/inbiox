@@ -9,7 +9,7 @@ import {
   ContactsListResponse,
   CreateContactRequest,
   UpdateContactRequest
-} from '../../features/contacts/models';
+} from '../dto/contact-transport.dto';
 
 /**
  * ContactsApiService — HTTP client for contacts endpoints.

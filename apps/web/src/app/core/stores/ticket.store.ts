@@ -7,7 +7,6 @@ export type TicketFilter = 'mine' | 'waiting' | 'internal';
 
 /**
  * TicketStore — manages ticket list state via Angular signals.
- * Replaces InboxStore with the correct Ticket model from backend API.
  */
 @Injectable({ providedIn: 'root' })
 export class TicketStore {

@@ -1,9 +1,11 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, throwError, timer, MonoTypeOperatorFunction } from 'rxjs';
-import { catchError, retry } from 'rxjs/operators';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { Message, SendMessageRequest } from '../models/message.model';
 import { environment } from '../../../environments/environment';
+import { retryWithBackoff } from '../utils/retry.util';
+import { createHttpErrorHandler } from '../utils/http-error.util';
 
 export interface GetMessagesResponse {
   data: Message[];
@@ -20,41 +22,22 @@ export class MessageApiService {
       limit: limit.toString(),
       offset: offset.toString(),
     };
-    return this.http
-      .get<GetMessagesResponse>(`${this.baseUrl}/api/tickets/${ticketId}/messages`, { params })
-      .pipe(
-        this.retryWithBackoff(),
-        catchError(this.handleError)
-      );
+    const call = this.http.get<GetMessagesResponse>(
+      `${this.baseUrl}/api/tickets/${ticketId}/messages`,
+      { params }
+    );
+    return retryWithBackoff(call).pipe(
+      catchError(createHttpErrorHandler('MessageApi'))
+    );
   }
 
   sendMessage(ticketId: string, request: SendMessageRequest): Observable<Message> {
-    return this.http
-      .post<Message>(`${this.baseUrl}/api/tickets/${ticketId}/messages`, request)
-      .pipe(
-        this.retryWithBackoff(),
-        catchError(this.handleError)
-      );
-  }
-
-  /**
-   * Retry with exponential backoff (max 3 retries).
-   */
-  private retryWithBackoff<T>(): MonoTypeOperatorFunction<T> {
-    return retry({
-      count: 3,
-      delay: (err, retryCount) => {
-        const delay = Math.pow(2, retryCount) * 1000;
-        console.warn(`[MessageApiService] Retry attempt ${retryCount}/3 after ${delay}ms`);
-        return timer(delay);
-      },
-    }) as MonoTypeOperatorFunction<T>;
-  }
-
-  private handleError(error: HttpErrorResponse): Observable<never> {
-    console.error('[MessageApiService] HTTP Error:', error);
-    return throwError(
-      () => new Error(`Message API error: ${error.status} - ${error.message}`)
+    const call = this.http.post<Message>(
+      `${this.baseUrl}/api/tickets/${ticketId}/messages`,
+      request
+    );
+    return retryWithBackoff(call).pipe(
+      catchError(createHttpErrorHandler('MessageApi'))
     );
   }
 }

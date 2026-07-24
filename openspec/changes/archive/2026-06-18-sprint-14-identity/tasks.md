@@ -118,47 +118,47 @@ Chain strategy: stacked-to-main
 
 ## PR 3: Authorization
 
-- [ ] 3.1 **[backend-dev]** Create `TicketVoter`: supports `VIEW`, `TRANSITION`, `ASSIGN` on `Ticket`. ADMIN/SUPERVISOR → grant. AGENT → grant iff `ticket.assignedAgentId === user.agent.id`.
+- [x] 3.1 **[backend-dev]** Create `TicketVoter`: supports `VIEW`, `TRANSITION`, `ASSIGN` on `Ticket`. ADMIN/SUPERVISOR → grant. AGENT → grant iff `ticket.assignedAgentId === user.agent.id`.
   - **Files**: `apps/api/src/Application/Security/Voter/TicketVoter.php`
   - **Depends on**: 2.1
   - **Verification**: Unit test matrix: ADMIN grants all, AGENT grants own, AGENT denies other's
 
-- [ ] 3.2 **[backend-dev]** Create `AgentVoter`: supports `VIEW`, `EDIT`, `LINK` on `Agent`. ADMIN → all. SUPERVISOR → VIEW/EDIT, not LINK. AGENT → VIEW own only.
+- [x] 3.2 **[backend-dev]** Create `AgentVoter`: supports `VIEW`, `EDIT`, `LINK` on `Agent`. ADMIN → all. SUPERVISOR → VIEW/EDIT, not LINK. AGENT → VIEW own only.
   - **Files**: `apps/api/src/Application/Security/Voter/AgentVoter.php`
   - **Depends on**: 2.1
   - **Verification**: Unit test matrix: all roles × all attributes
 
-- [ ] 3.3 **[backend-dev]** Create `ReportVoter`: supports `VIEW` on report subjects. AGENT → deny. SUPERVISOR/ADMIN → grant.
+- [x] 3.3 **[backend-dev]** Create `ReportVoter`: supports `VIEW` on report subjects. AGENT → deny. SUPERVISOR/ADMIN → grant.
   - **Files**: `apps/api/src/Application/Security/Voter/ReportVoter.php`
   - **Depends on**: 2.1
   - **Verification**: Unit test: AGENT denied, SUPERVISOR/ADMIN granted
 
-- [ ] 3.4 **[backend-dev]** Create `OwnershipScope::fromSecurity(Security, UserRepository): ?int` — returns `agent.id` for ROLE_AGENT with linked agent, null otherwise.
+- [x] 3.4 **[backend-dev]** Create `OwnershipScope::fromSecurity(Security, UserRepository): ?int` — returns `agent.id` for ROLE_AGENT with linked agent, null otherwise.
   - **Files**: `apps/api/src/Application/Security/OwnershipScope.php`
   - **Depends on**: 1.5
   - **Verification**: Unit test: ROLE_AGENT+agent → returns id, ROLE_SUPERVISOR → null, ROLE_AGENT without agent → null
 
-- [ ] 3.5 **[backend-dev]** Add `#[IsGranted]` to all controllers: `InboxController`/`TicketController`/`TicketWorkflowController`/`ContactController`/`TagController`/`AutoAssignController`/`AutoCloseController`/`AgentAvailabilityController`/`ProviderProxyController` → `ROLE_AGENT`. `OutboxController` → `ROLE_ADMIN`. `ReportingController` → `ROLE_AGENT` (voter scopes data). `MercureTokenController` → `ROLE_AGENT`.
+- [x] 3.5 **[backend-dev]** Add `#[IsGranted]` to all controllers: `InboxController`/`TicketController`/`TicketWorkflowController`/`ContactController`/`TagController`/`AutoAssignController`/`AutoCloseController`/`AgentAvailabilityController`/`ProviderProxyController` → `ROLE_AGENT`. `OutboxController` → `ROLE_ADMIN`. `ReportingController` → `ROLE_AGENT` (voter scopes data). `MercureTokenController` → `ROLE_AGENT`.
   - **Files**: All controllers listed above
   - **Depends on**: 3.1, 3.3
   - **Verification**: Unauthenticated request → 401; ROLE_AGENT on `/admin/outbox/publish` → 403
 
-- [ ] 3.6 **[backend-dev]** Implement ownership query filter: `ListTicketsQuery` accepts `?int $agentScope`; adds `AND t.assigned_agent_id = :scope` when non-null. `InboxController` injects `Security` + `OwnershipScope` to pass scope. Same for `ReportingService` (all 5 methods).
+- [x] 3.6 **[backend-dev]** Implement ownership query filter: `ListTicketsQuery` accepts `?int $agentScope`; adds `AND t.assigned_agent_id = :scope` when non-null. `InboxController` injects `Security` + `OwnershipScope` to pass scope. Same for `ReportingService` (all 5 methods).
   - **Files**: `apps/api/src/Application/Query/ListTicketsQuery.php`, `apps/api/src/Application/Service/ReportingService.php`, `apps/api/src/Controller/InboxController.php`, `apps/api/src/Controller/ReportingController.php`
   - **Depends on**: 3.4
   - **Verification**: ROLE_AGENT sees only own tickets; ROLE_SUPERVISOR sees all; reports scoped correctly
 
-- [ ] 3.7 **[backend-dev]** Update `MercureTokenController`: require `#[IsGranted('ROLE_AGENT')]` + `#[CurrentUser]`. Replace hardcoded topics with `MercureJwtService::issueForUser($user, $agent)` — topics scoped by role (AGENT: agent-specific + tickets; SUPERVISOR/ADMIN: all + wildcard `*`).
+- [x] 3.7 **[backend-dev]** Update `MercureTokenController`: require `#[IsGranted('ROLE_AGENT')]` + `#[CurrentUser]`. Replace hardcoded topics with `MercureJwtService::issueForUser($user, $agent)` — topics scoped by role (AGENT: agent-specific + tickets; SUPERVISOR/ADMIN: all + wildcard `*`).
   - **Files**: `apps/api/src/Controller/MercureTokenController.php`, `apps/api/src/Application/Service/MercureJwtService.php`
   - **Depends on**: 3.1
   - **Verification**: Unauth → 401; AGENT token has `agent/{id}/inbox`; SUPERVISOR token has `*`
 
-- [ ] 3.8 **[backend-dev]** Delete `DebugJwtController.php`. Delete `MessageController.php` (Q2). Remove duplicate `TicketEventsController::getToken` (Q5). Gate `DebugController` by `kernel.environment === 'dev'` (return 404 in prod).
+- [x] 3.8 **[backend-dev]** Delete `DebugJwtController.php`. Delete `MessageController.php` (Q2). Remove duplicate `TicketEventsController::getToken` (Q5). Gate `DebugController` by `kernel.environment === 'dev'` (return 404 in prod).
   - **Files**: Delete `apps/api/src/Controller/DebugJwtController.php`, `apps/api/src/Controller/MessageController.php`. Modify `apps/api/src/Controller/TicketEventsController.php`, `apps/api/src/Controller/DebugController.php`
   - **Depends on**: 3.5
   - **Verification**: `GET /debug/jwt/{id}` → 404; `POST /messages/inbound` → 404; Debug routes 404 in prod
 
-- [ ] 3.9 **[tester]** Write tests: RBAC matrix (admin/supervisor/agent × each endpoint), ticket ownership (agent sees own, supervisor sees all), webhook HMAC still works without JWT, Mercure token auth-gating (401 unauth, scoped topics), debug endpoints 404 in prod, deleted controllers return 404.
+- [x] 3.9 **[tester]** Write tests: RBAC matrix (admin/supervisor/agent × each endpoint), ticket ownership (agent sees own, supervisor sees all), webhook HMAC still works without JWT, Mercure token auth-gating (401 unauth, scoped topics), debug endpoints 404 in prod, deleted controllers return 404.
   - **Files**: `apps/api/tests/Security/VoterTest.php`, `apps/api/tests/Controller/AuthorizationTest.php`, `apps/api/tests/Controller/WebhookAuthTest.php`
   - **Depends on**: 3.5, 3.6, 3.7, 3.8
   - **Verification**: PHPUnit green; covers authorization spec scenarios 1-20

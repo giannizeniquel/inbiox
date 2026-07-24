@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { TicketListComponent } from '../../components/ticket-list/ticket-list.component';
+import { TicketListComponent } from '../../containers/ticket-list/ticket-list.component';
 import { ConversationComponent } from '../../containers/conversation/conversation.component';
 import { DebugPanelComponent } from '../../components/debug-panel/debug-panel.component';
 

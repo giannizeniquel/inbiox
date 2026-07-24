@@ -1,6 +1,5 @@
-import { Component, ChangeDetectionStrategy, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Subscription } from 'rxjs';
 import { ConnectionStore } from '../../core/stores/connection.store';
 
 @Component({
@@ -46,18 +45,8 @@ import { ConnectionStore } from '../../core/stores/connection.store';
   styleUrl: './connection-banner.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ConnectionBannerComponent implements OnInit, OnDestroy {
+export class ConnectionBannerComponent {
   private connectionStore = inject(ConnectionStore);
-  private subscription?: Subscription;
 
   status = this.connectionStore.status;
-
-  ngOnInit(): void {
-    // Auto-reconnect is handled by MercureService
-    // This component just displays the current status
-  }
-
-  ngOnDestroy(): void {
-    this.subscription?.unsubscribe();
-  }
 }

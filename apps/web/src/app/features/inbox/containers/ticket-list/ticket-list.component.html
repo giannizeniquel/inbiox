@@ -8,7 +8,7 @@
   <app-ticket-filters (filterChange)="onFilterChange($event)" />
 
   <!-- Search -->
-  <app-ticket-search placeholder="Buscar tickets..." />
+  <app-ticket-search (search)="onSearch($event)" />
 
   <!-- Ticket list -->
   @if (loading()) {

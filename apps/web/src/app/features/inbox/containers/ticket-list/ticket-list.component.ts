@@ -10,18 +10,18 @@ import {
   HostListener,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { take } from 'rxjs';
 import { TicketStore } from '../../../../core/stores/ticket.store';
 import { ConversationStore } from '../../../../core/stores/conversation.store';
 import { TicketApiService } from '../../../../core/api/ticket-api.service';
-import { MessageApiService } from '../../../../core/api/message-api.service';
+import { MessageApiService, GetMessagesResponse } from '../../../../core/api/message-api.service';
 import { MercureService } from '../../../../core/realtime/mercure.service';
 import { Ticket } from '../../../../core/models/ticket.model';
-import { take } from 'rxjs';
-import { TicketCardComponent } from '../ticket-card/ticket-card.component';
-import { TicketSearchComponent } from '../chat-search/ticket-search.component';
-import { TicketFiltersComponent } from '../chat-filters/ticket-filters.component';
+import { mapApiMessagesToBridge } from '../../../../core/utils/message-mapper.util';
+import { TicketCardComponent } from '../../components/ticket-card/ticket-card.component';
+import { TicketSearchComponent } from '../../components/chat-search/ticket-search.component';
+import { TicketFiltersComponent } from '../../components/chat-filters/ticket-filters.component';
 import { VirtualScrollViewportComponent } from '../../../../shared/components/virtual-scroll-viewport/virtual-scroll-viewport.component';
-import { GetMessagesResponse } from '../../../../core/api/message-api.service';
 
 @Component({
   selector: 'app-ticket-list',
@@ -54,7 +54,7 @@ export class TicketListComponent implements OnInit, OnDestroy {
   /** Scroll indices from the viewport */
   private scrollIndices = signal<{ startIndex: number; endIndex: number }>({ startIndex: 0, endIndex: -1 });
 
-  /** Visible ticket slice — computed from own items + scroll indices */
+  /** Visible ticket slice */
   protected readonly visibleTickets = computed(() => {
     const all = this.tickets();
     const { startIndex, endIndex } = this.scrollIndices();
@@ -99,16 +99,14 @@ export class TicketListComponent implements OnInit, OnDestroy {
       error: (err) => {
         console.error('[TicketList] Failed to load tickets:', err);
         this.ticketStore.setLoading(false);
-      }
+      },
     });
   }
 
   private subscribeToTickets(tickets: Ticket[]): void {
-    // Clean up old subscriptions
     this.activeSubscriptions.forEach((unsub) => unsub());
     this.activeSubscriptions.clear();
 
-    // Subscribe to realtime updates for each ticket
     tickets.forEach((ticket) => {
       const unsub = this.mercure.subscribe(ticket.ticket_id, (event) => {
         this.handleRealtimeEvent(ticket.ticket_id, event);
@@ -119,47 +117,31 @@ export class TicketListComponent implements OnInit, OnDestroy {
   }
 
   private handleRealtimeEvent(ticketId: string, event: unknown): void {
-    console.log('[TicketList] Realtime event:', ticketId, event);
-    // Refresh ticket data on any event
     this.ticketApi.getTicket(ticketId).subscribe({
       next: (ticket) => {
         this.ticketStore.addOrUpdateTicket(ticket);
       },
       error: (err) => {
         console.error('[TicketList] Failed to refresh ticket:', ticketId, err);
-      }
+      },
     });
   }
 
   selectTicket(ticket: Ticket): void {
     this.ticketStore.setActiveTicket(ticket.ticket_id);
-    // Reset conversation state for the new ticket
     this.conversationStore.reset();
     this.conversationStore.setLoading(true);
 
     this.messageApi.getMessages(ticket.ticket_id, 20, 0).pipe(take(1)).subscribe({
       next: (resp: GetMessagesResponse) => {
-        this.conversationStore.loadMessages(
-          resp.data.map(m => ({
-            id: String(m.message_id),
-            message_id: m.message_id,
-            ticketId: ticket.ticket_id,
-            chatId: ticket.ticket_id,
-            content: m.content,
-            body: m.content,
-            direction: m.direction as 'inbound' | 'outbound' | 'system',
-            deliveryStatus: (m.deliveryStatus || 'sent') as 'sent',
-            created_at: m.created_at || new Date().toISOString(),
-            sender: (m.direction === 'inbound' ? 'customer' : 'agent') as 'agent' | 'customer',
-          }))
-        );
+        this.conversationStore.loadMessages(mapApiMessagesToBridge(resp, ticket.ticket_id));
         this.conversationStore.setHasMore(resp.meta.has_more);
         this.conversationStore.setLoading(false);
       },
       error: (err) => {
         console.error('[TicketList] Failed to load messages:', err);
         this.conversationStore.setLoading(false);
-      }
+      },
     });
   }
 
@@ -171,13 +153,18 @@ export class TicketListComponent implements OnInit, OnDestroy {
     this.ticketStore.setFilter(filter);
   }
 
+  /** Handle ticket search query from TicketSearchComponent */
+  onSearch(query: string): void {
+    // TODO: implement server-side search via TicketApiService
+    console.log('[TicketList] Search:', query);
+  }
+
   /** Handle viewport visible range change */
   protected onVisibleRangeChange(range: { startIndex: number; endIndex: number }): void {
     this.scrollIndices.set(range);
   }
 
   ngOnDestroy(): void {
-    // Save scroll position before destroying
     const vps = this.vps();
     if (vps) {
       this.savedScrollTop = vps.scrollTop;
@@ -186,7 +173,6 @@ export class TicketListComponent implements OnInit, OnDestroy {
     this.unsubscribers.forEach((unsub) => unsub());
   }
 
-  /** Handle keyboard navigation */
   @HostListener('keydown', ['$event'])
   onKeyDown(event: KeyboardEvent): void {
     const items = this.tickets();
@@ -213,15 +199,12 @@ export class TicketListComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** Called when a ticket card receives click/focus */
   onCardFocus(index: number): void {
     this.focusedIndex.set(index);
   }
 
-  /** Check if a ticket is currently focused */
   isFocused(ticketId: string): boolean {
-    const idx = this.tickets().findIndex(t => t.ticket_id === ticketId);
+    const idx = this.tickets().findIndex((t) => t.ticket_id === ticketId);
     return idx === this.focusedIndex();
   }
-
 }

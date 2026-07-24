@@ -6,7 +6,7 @@ import { TopbarComponent } from './topbar/topbar.component';
 import { SidebarComponent } from './sidebar/sidebar.component';
 import { SidebarFooterComponent } from './sidebar/sidebar-footer.component';
 import { ConnectionBannerComponent } from './components/connection-banner.component';
-import { TicketListComponent } from '../features/inbox/components/ticket-list/ticket-list.component';
+import { TicketListComponent } from '../features/inbox/containers/ticket-list/ticket-list.component';
 import { ConversationComponent } from '../features/inbox/containers/conversation/conversation.component';
 
 @Component({

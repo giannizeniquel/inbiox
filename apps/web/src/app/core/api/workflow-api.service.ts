@@ -1,9 +1,10 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { Ticket, TicketStatus } from '../models/ticket.model';
 import { environment } from '../../../environments/environment';
+import { createHttpErrorHandler } from '../utils/http-error.util';
 
 @Injectable({ providedIn: 'root' })
 export class WorkflowApiService {
@@ -15,13 +16,6 @@ export class WorkflowApiService {
       .post<Ticket>(`${this.baseUrl}/api/tickets/${ticketId}/transition`, {
         status: newStatus
       })
-      .pipe(catchError(this.handleError));
-  }
-
-  private handleError(error: HttpErrorResponse): Observable<never> {
-    console.error('[WorkflowApiService] HTTP Error:', error);
-    return throwError(
-      () => new Error(`Workflow API error: ${error.status} - ${error.message}`)
-    );
+      .pipe(catchError(createHttpErrorHandler('WorkflowApi')));
   }
 }

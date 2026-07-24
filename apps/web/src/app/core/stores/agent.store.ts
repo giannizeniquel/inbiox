@@ -1,4 +1,5 @@
 import { Injectable, signal } from '@angular/core';
+import { take } from 'rxjs';
 import { AgentService, AgentAvailabilityResponse, AgentShiftResponse } from '../services/agent.service';
 
 export interface AgentState {
@@ -60,7 +61,7 @@ export class AgentStore {
    */
   loadAvailability(agentId: number): void {
     this.loading.set(true);
-    this.agentService.getAvailability(agentId).subscribe({
+    this.agentService.getAvailability(agentId).pipe(take(1)).subscribe({
       next: (result) => {
         this.availability.set(result);
         this.loading.set(false);
@@ -80,7 +81,7 @@ export class AgentStore {
     if (agent === null) return;
 
     this.loading.set(true);
-    this.agentService.setAvailability(agent.id, isAvailable, ttlMinutes).subscribe({
+    this.agentService.setAvailability(agent.id, isAvailable, ttlMinutes).pipe(take(1)).subscribe({
       next: () => {
         this.loadAvailability(agent.id);
       },
@@ -98,7 +99,7 @@ export class AgentStore {
     if (agent === null) return;
 
     this.loading.set(true);
-    this.agentService.clearAvailability(agent.id).subscribe({
+    this.agentService.clearAvailability(agent.id).pipe(take(1)).subscribe({
       next: () => {
         this.loadAvailability(agent.id);
       },
@@ -110,13 +111,13 @@ export class AgentStore {
 
   /**
    * Load shifts for a specific agent.
+   *
+   * TODO: Backend needs a GET /agents/{id}/shifts endpoint.
+   * Currently shifts can be created/deleted but not listed on page load.
+   * When the endpoint is available, wire it up here.
    */
-  loadShifts(agentId: number): void {
-    this.loading.set(true);
-    // Note: Shifts are loaded as part of availability endpoint or via a dedicated endpoint.
-    // For now we reload availability which includes shift info,
-    // and manage shifts through the service directly.
-    this.loading.set(false);
+  loadShifts(_agentId: number): void {
+    // No-op — backend lacks GET /agents/{id}/shifts endpoint
   }
 
   /**
@@ -127,7 +128,7 @@ export class AgentStore {
     if (agent === null) return;
 
     this.loading.set(true);
-    this.agentService.createShift(agent.id, dayOfWeek, startTime, endTime).subscribe({
+    this.agentService.createShift(agent.id, dayOfWeek, startTime, endTime).pipe(take(1)).subscribe({
       next: (shift) => {
         this.shifts.update((current) => [...current, shift]);
         this.loading.set(false);
@@ -146,7 +147,7 @@ export class AgentStore {
     if (agent === null) return;
 
     this.loading.set(true);
-    this.agentService.deleteShift(agent.id, shiftId).subscribe({
+    this.agentService.deleteShift(agent.id, shiftId).pipe(take(1)).subscribe({
       next: () => {
         this.shifts.update((current) =>
           current.filter((s) => s.id !== shiftId)
