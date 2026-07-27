@@ -77,9 +77,6 @@ class ProviderProxyController extends AbstractController
             );
         }
 
-        // DEBUG: Strip "9" mobile prefix from Argentine numbers for Meta API
-        $phone = $this->stripMobilePrefix($phone);
-
         // --- Multi-number resolution (CAP-7 / META-018) ---
         // Use ticket's phoneNumberId if set, fallback to env default in GraphClient
         $phoneNumberId = $ticket->getPhoneNumberId();
@@ -187,9 +184,6 @@ class ProviderProxyController extends AbstractController
             );
         }
 
-        // DEBUG: Strip "9" mobile prefix from Argentine numbers for Meta API
-        $phone = $this->stripMobilePrefix($phone);
-
         // --- Multi-number resolution (CAP-7 / META-018) ---
         $phoneNumberId = $ticket->getPhoneNumberId();
 
@@ -289,22 +283,6 @@ class ProviderProxyController extends AbstractController
                 $this->mapGraphErrorCode($e->getGraphCode())
             );
         }
-    }
-
-    /**
-     * DEBUG ONLY: Strip the "9" mobile prefix from Argentine phone numbers.
-     *
-     * Meta's API expects "+543624065708" for Argentine numbers, but Contact
-     * stores the traditional format "+5493624065708" (where "9" is the mobile
-     * prefix after country code 54). This is a TEMPORARY workaround for testing
-     * until the contact import pipeline normalises the format upstream.
-     *
-     * @param string $phone Phone number in E.164 format (e.g. "+5493624065708")
-     * @return string Normalised phone number (e.g. "+543624065708")
-     */
-    private function stripMobilePrefix(string $phone): string
-    {
-        return str_replace('+549', '+54', $phone);
     }
 
     /**

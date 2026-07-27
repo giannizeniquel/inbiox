@@ -1,10 +1,11 @@
 import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { DurationPipe } from '../../../../shared/pipes/duration.pipe';
 
 @Component({
   selector: 'app-resolution-time-card',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, DurationPipe],
   template: `
     <div class="kpi-card">
       <div class="kpi-card__header">
@@ -20,8 +21,10 @@ import { CommonModule } from '@angular/common';
         @if (loading) {
           <div class="kpi-card__skeleton"></div>
         } @else {
-          <span class="kpi-card__number">{{ formattedValue }}</span>
-          <span class="kpi-card__unit">{{ unit }}</span>
+          <span class="kpi-card__number">{{ value | duration }}</span>
+          @if (value < 60) {
+            <span class="kpi-card__unit">min</span>
+          }
         }
       </div>
     </div>
@@ -32,17 +35,4 @@ import { CommonModule } from '@angular/common';
 export class ResolutionTimeCardComponent {
   @Input({ required: true }) value: number = 0;
   @Input() loading: boolean = false;
-
-  get formattedValue(): string {
-    if (this.value < 60) {
-      return this.value.toFixed(0);
-    }
-    const hours = Math.floor(this.value / 60);
-    const minutes = this.value % 60;
-    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
-  }
-
-  get unit(): string {
-    return this.value < 60 ? 'min' : '';
-  }
 }

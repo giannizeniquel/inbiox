@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
@@ -83,8 +83,12 @@ export class AdminApiService {
 
   /** GET /api/admin/users — paginated list */
   listUsers(page = 1, limit = 20): Observable<PaginatedResponse<AdminUserDTO>> {
+    const params = new HttpParams()
+      .set('page', page)
+      .set('limit', limit);
     return this.http.get<PaginatedResponse<AdminUserDTO>>(
-      `${this.baseUrl}/api/admin/users?page=${page}&limit=${limit}`
+      `${this.baseUrl}/api/admin/users`,
+      { params }
     );
   }
 
@@ -112,8 +116,12 @@ export class AdminApiService {
 
   /** GET /api/admin/agents — paginated list */
   listAgents(page = 1, limit = 20): Observable<PaginatedResponse<AdminAgentDTO>> {
+    const params = new HttpParams()
+      .set('page', page)
+      .set('limit', limit);
     return this.http.get<PaginatedResponse<AdminAgentDTO>>(
-      `${this.baseUrl}/api/admin/agents?page=${page}&limit=${limit}`
+      `${this.baseUrl}/api/admin/agents`,
+      { params }
     );
   }
 

@@ -39,9 +39,20 @@ class GraphClient
     }
 
     /**
+     * Normalize a phone number for the WhatsApp Cloud API.
+     *
+     * Strips the '+' prefix if present. WhatsApp expects plain digits:
+     * country code + phone number (e.g. "5493625362904").
+     */
+    private function normalizePhone(string $phone): string
+    {
+        return ltrim($phone, '+');
+    }
+
+    /**
      * Send a text message via the WhatsApp Cloud API.
      *
-     * @param string      $to             Recipient phone number in E.164 format
+     * @param string      $to             Recipient phone number (E.164 or WhatsApp format; '+' prefix stripped automatically)
      * @param string      $content        Message body text (≤ 4096 chars)
      * @param string|null $phoneNumberId  Override phone number ID (null = use default from env)
      *
@@ -51,6 +62,7 @@ class GraphClient
      */
     public function sendMessage(string $to, string $content, ?string $phoneNumberId = null): array
     {
+        $to = $this->normalizePhone($to);
         $phoneNumberId ??= $this->phoneNumberId;
         $url = sprintf('%s/%s/messages', self::BASE_URL, $phoneNumberId);
 
@@ -184,7 +196,7 @@ class GraphClient
      * POST /{phoneNumberId}/messages with type = "template".
      * Used for out-of-window conversations (outside the 24h customer service window).
      *
-     * @param string      $to             Recipient phone number in E.164 format
+     * @param string      $to             Recipient phone number (E.164 or WhatsApp format; '+' prefix stripped automatically)
      * @param string      $templateName   The template name (e.g. "hello_world")
      * @param string      $languageCode   Language code (e.g. "en_US", "es_AR")
      * @param string[]    $parameters     Optional body text parameters (plain strings)
@@ -196,6 +208,7 @@ class GraphClient
      */
     public function sendTemplate(string $to, string $templateName, string $languageCode, array $parameters = [], ?string $phoneNumberId = null): array
     {
+        $to = $this->normalizePhone($to);
         $phoneNumberId ??= $this->phoneNumberId;
         $url = sprintf('%s/%s/messages', self::BASE_URL, $phoneNumberId);
 
@@ -247,7 +260,7 @@ class GraphClient
      *
      * POST /{phoneNumberId}/messages with type = image/video/audio/document.
      *
-     * @param string      $to             Recipient phone number in E.164 format
+     * @param string      $to             Recipient phone number (E.164 or WhatsApp format; '+' prefix stripped automatically)
      * @param string      $mediaId        Media ID from uploadMedia
      * @param string      $mimeType       MIME type to infer media category
      * @param string|null $caption        Optional caption for image/video/document
