@@ -1,4 +1,7 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, inject, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { RealtimeEvent } from '../models/realtime-event.model';
+import { EventBusService } from '../realtime/event-bus.service';
 
 /**
  * ConnectionStore — manages realtime connection status.
@@ -21,6 +24,32 @@ export class ConnectionStore {
    * Set by MercureService.handleMessage(). null if no event received yet.
    */
   readonly lastEventTime = signal<number | null>(null);
+
+  constructor() {
+    this.initEventBus();
+  }
+
+  /**
+   * Set up EventBus subscription for all realtime events.
+   * Handles: ALL event types → incrementEventCount + setLastEventTime.
+   * Lifecycle setters (setOnline, setOffline, etc.) remain direct calls
+   * from MercureService (design decision D4).
+   */
+  private initEventBus(): void {
+    try {
+      const eventBus = inject(EventBusService);
+      const destroyRef = inject(DestroyRef);
+
+      eventBus.events$.pipe(
+        takeUntilDestroyed(destroyRef),
+      ).subscribe((event: RealtimeEvent) => {
+        this.incrementEventCount();
+        this.setLastEventTime(Date.now());
+      });
+    } catch {
+      // Running outside DI context (e.g., unit tests)
+    }
+  }
 
   setOnline(): void {
     this.status.set('online');

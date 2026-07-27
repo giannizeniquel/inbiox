@@ -1,4 +1,5 @@
 // Karma configuration for Angular testing
+process.env.CHROME_BIN ||= require('node:path').join('/', 'usr', 'bin', 'chromium-browser');
 module.exports = function (config) {
   config.set({
     basePath: '',

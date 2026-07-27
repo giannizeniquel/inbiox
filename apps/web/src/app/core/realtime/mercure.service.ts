@@ -1,16 +1,10 @@
 import { Injectable, signal, inject, NgZone } from '@angular/core';
-import { BehaviorSubject, Subject, Observable } from 'rxjs';
-import { RealtimeEvent, RealtimeEventType, assertNever,
-  MessageAddedPayload, TicketCreatedPayload, TicketStatusChangedPayload,
-  TicketAssignedPayload, MessageUpdatedPayload } from '../models/realtime-event.model';
+import { BehaviorSubject, Observable } from 'rxjs';
+import { RealtimeEvent } from '../models/realtime-event.model';
 import { environment } from '../../../environments/environment';
-import { TicketStore } from '../stores/ticket.store';
-import { ConversationStore } from '../stores/conversation.store';
-import { Message } from '../models/message.model';
-import { TicketStatus } from '../models/ticket.model';
 import { ConnectionStore } from '../stores/connection.store';
-import { UiStore } from '../stores/ui.store';
 import { MetricsService } from '../metrics/metrics.service';
+import { EventBusService } from './event-bus.service';
 
 /** Response shape from the resync endpoint */
 interface ResyncResponse {
@@ -51,10 +45,8 @@ export class MercureService {
   private readonly bufferedEvents = new Map<string, RealtimeEvent[]>();
 
   // Inject stores for incremental updates
-  private ticketStore = inject(TicketStore);
-  private conversationStore = inject(ConversationStore);
   private connectionStore = inject(ConnectionStore);
-  private uiStore = inject(UiStore);
+  private eventBus = inject(EventBusService);
   private metrics = inject(MetricsService);
   private ngZone = inject(NgZone);
 
@@ -66,10 +58,8 @@ export class MercureService {
 
   // Public observables
   private readonly connectionStatus = new BehaviorSubject<boolean>(false);
-  private readonly eventsSubject = new Subject<RealtimeEvent>();
 
   readonly isConnected$: Observable<boolean> = this.connectionStatus.asObservable();
-  readonly events$: Observable<RealtimeEvent> = this.eventsSubject.asObservable();
 
   // Signals for debug panel
   readonly reconnectCount = signal(0);
@@ -146,19 +136,6 @@ export class MercureService {
   }
 
   /**
-   * @deprecated Subscribe is a no-op — superseded by events$. All realtime
-   * dispatch goes through handleEvent() (single path). Kept for binary
-   * compatibility until InboxService refactor (T-16).
-   */
-  subscribe(ticketId: string, _callback: (event: unknown) => void): () => void {
-    // Initialize seq state for this ticket if not exists
-    if (!this.seqState.has(ticketId)) {
-      this.seqState.set(ticketId, { lastSeq: -1, state: 'connected' });
-    }
-    return () => { /* no-op */ };
-  }
-
-  /**
    * Transition a ticket's state to a new state.
    * Preserves all other fields in the seq entry.
    */
@@ -180,11 +157,8 @@ export class MercureService {
     // Track metrics
     this.metrics.increment('messagesReceived');
 
-    // Single dispatch path
-    this.handleEvent(data);
-
-    // Emit to global events stream
-    this.eventsSubject.next(data);
+    // Single dispatch path via EventBus
+    this.eventBus.emit(data);
   }
 
   /**
@@ -313,102 +287,6 @@ export class MercureService {
     } catch (err) {
       console.error('[Mercure] Failed to parse message:', err);
     }
-  }
-
-  /**
-   * Handle incoming realtime events and dispatch to stores.
-   * Single dispatch path — strict switch over RealtimeEventType.
-   * No legacy TicketEventType, no nested `event.event` access.
-   */
-  private handleEvent(event: RealtimeEvent): void {
-    switch (event.eventType) {
-      case RealtimeEventType.MessageAdded: {
-        const p = event.payload as MessageAddedPayload;
-        const message: Message = {
-          id: String(p.messageId),
-          ticketId: String(p.ticketId),
-          content: p.content,
-          direction: p.direction,
-          sender: p.direction === 'outbound' ? 'agent' : 'customer',
-          deliveryStatus: 'sent',
-          createdAt: p.createdAt,
-          externalId: p.externalId ?? undefined,
-        };
-        this.conversationStore.addMessage(message);
-        this.uiStore.notifyNewMessages();
-
-        // Increment unread if not active ticket
-        const activeTicket = this.ticketStore.activeTicket();
-        if (!activeTicket || activeTicket.ticket_id !== String(p.ticketId)) {
-          const current = this.ticketStore.tickets().find(t => t.ticket_id === String(p.ticketId));
-          if (current) {
-            this.ticketStore.updateUnreadCount(String(p.ticketId), (current.metrics?.unread_count ?? 0) + 1);
-          }
-        }
-        break;
-      }
-
-      case RealtimeEventType.TicketCreated: {
-        const p = event.payload as TicketCreatedPayload;
-        this.ticketStore.addOrUpdateTicket({
-          ticket_id: String(p.ticketId),
-          id: String(p.ticketId),
-          status: p.status as TicketStatus,
-          priority: String(p.priority),
-          contact: null,
-          last_message: null,
-          owner: null,
-          metrics: { unread_count: 0 },
-          timestamps: { opened_at: p.createdAt, updated_at: p.createdAt },
-        });
-        break;
-      }
-
-      case RealtimeEventType.TicketStatusChanged: {
-        const p = event.payload as TicketStatusChangedPayload;
-        const existing = this.ticketStore.tickets().find(t => t.ticket_id === String(p.ticketId));
-        if (existing) {
-          this.ticketStore.addOrUpdateTicket({
-            ...existing,
-            status: p.newStatus as TicketStatus,
-            timestamps: { ...existing.timestamps, updated_at: p.changedAt },
-          });
-        }
-        break;
-      }
-
-      case RealtimeEventType.TicketAssigned: {
-        const p = event.payload as TicketAssignedPayload;
-        const existing = this.ticketStore.tickets().find(t => t.ticket_id === String(p.ticketId));
-        if (existing) {
-          this.ticketStore.addOrUpdateTicket({
-            ...existing,
-            owner: { id: p.assigneeId, name: `Agent #${p.assigneeId}` },
-            timestamps: { ...existing.timestamps, updated_at: p.assignedAt },
-          });
-        }
-        break;
-      }
-
-      case RealtimeEventType.MessageUpdated: {
-        const p = event.payload as MessageUpdatedPayload;
-        this.conversationStore.updateMessageStatus(
-          String(p.messageId),
-          (p.status ?? 'read') as Message['deliveryStatus'],
-        );
-        break;
-      }
-
-      case RealtimeEventType.ConversationUpdated:
-        // Metadata only; no-op for now
-        break;
-
-      default:
-        assertNever(event.eventType);
-    }
-
-    // Increment event counter
-    this.connectionStore.incrementEventCount();
   }
 
   /**

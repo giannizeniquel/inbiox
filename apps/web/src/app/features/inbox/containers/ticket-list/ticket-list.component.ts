@@ -1,6 +1,7 @@
 import {
   Component,
   inject,
+  DestroyRef,
   OnInit,
   OnDestroy,
   signal,
@@ -10,12 +11,13 @@ import {
   HostListener,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { take } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { take, Subscription, filter } from 'rxjs';
 import { TicketStore } from '../../../../core/stores/ticket.store';
 import { ConversationStore } from '../../../../core/stores/conversation.store';
 import { TicketApiService } from '../../../../core/api/ticket-api.service';
 import { MessageApiService, GetMessagesResponse } from '../../../../core/api/message-api.service';
-import { MercureService } from '../../../../core/realtime/mercure.service';
+import { EventBusService } from '../../../../core/realtime/event-bus.service';
 import { Ticket } from '../../../../core/models/ticket.model';
 import { mapApiMessagesToCanonical } from '../../../../core/utils/message-mapper.util';
 import { TicketCardComponent } from '../../components/ticket-card/ticket-card.component';
@@ -41,7 +43,8 @@ export class TicketListComponent implements OnInit, OnDestroy {
   protected readonly conversationStore = inject(ConversationStore);
   private readonly ticketApi = inject(TicketApiService);
   private readonly messageApi = inject(MessageApiService);
-  private readonly mercure = inject(MercureService);
+  private readonly eventBus = inject(EventBusService);
+  private readonly destroyRef = inject(DestroyRef);
 
   // Signals from store
   readonly tickets = computed(() => this.ticketStore.filteredTickets());
@@ -68,8 +71,7 @@ export class TicketListComponent implements OnInit, OnDestroy {
   /** Focused index for keyboard navigation */
   private focusedIndex = signal<number>(-1);
 
-  private readonly unsubscribers: (() => void)[] = [];
-  private readonly activeSubscriptions = new Map<string, () => void>();
+  private readonly activeSubscriptions = new Map<string, Subscription>();
 
   // Restore scroll position once tickets and viewport are ready
   private readonly scrollRestoreEffect = effect(() => {
@@ -104,15 +106,16 @@ export class TicketListComponent implements OnInit, OnDestroy {
   }
 
   private subscribeToTickets(tickets: Ticket[]): void {
-    this.activeSubscriptions.forEach((unsub) => unsub());
+    // Clean up previous subscriptions before re-subscribing
+    this.activeSubscriptions.forEach((sub) => sub.unsubscribe());
     this.activeSubscriptions.clear();
 
     tickets.forEach((ticket) => {
-      const unsub = this.mercure.subscribe(ticket.ticket_id, (event) => {
-        this.handleRealtimeEvent(ticket.ticket_id, event);
-      });
-      this.activeSubscriptions.set(ticket.ticket_id, unsub);
-      this.unsubscribers.push(unsub);
+      const sub = this.eventBus.events$.pipe(
+        filter(e => e.ticketId === ticket.ticket_id),
+        takeUntilDestroyed(this.destroyRef),
+      ).subscribe(e => this.handleRealtimeEvent(ticket.ticket_id, e));
+      this.activeSubscriptions.set(ticket.ticket_id, sub);
     });
   }
 
@@ -169,8 +172,7 @@ export class TicketListComponent implements OnInit, OnDestroy {
     if (vps) {
       this.savedScrollTop = vps.scrollTop;
     }
-    this.activeSubscriptions.forEach((unsub) => unsub());
-    this.unsubscribers.forEach((unsub) => unsub());
+    this.activeSubscriptions.forEach((sub) => sub.unsubscribe());
   }
 
   @HostListener('keydown', ['$event'])

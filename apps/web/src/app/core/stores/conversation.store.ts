@@ -1,5 +1,10 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, inject, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { filter } from 'rxjs';
 import { Message } from '../models/message.model';
+import { RealtimeEvent, RealtimeEventType,
+  MessageAddedPayload, MessageUpdatedPayload } from '../models/realtime-event.model';
+import { EventBusService } from '../realtime/event-bus.service';
 
 const MAX_MESSAGES = 200;
 
@@ -24,6 +29,64 @@ export class ConversationStore {
 
   /** Whether there are more older messages to load (pagination) */
   readonly hasMore = signal<boolean>(true);
+
+  constructor() {
+    this.initEventBus();
+  }
+
+  /**
+   * Set up EventBus subscription for realtime events.
+   * Handles: MessageAdded, MessageUpdated.
+   */
+  private initEventBus(): void {
+    try {
+      const eventBus = inject(EventBusService);
+      const destroyRef = inject(DestroyRef);
+
+      eventBus.events$.pipe(
+        filter(e =>
+          e.eventType === RealtimeEventType.MessageAdded
+          || e.eventType === RealtimeEventType.MessageUpdated
+        ),
+        takeUntilDestroyed(destroyRef),
+      ).subscribe(e => this.onRealtimeEvent(e));
+    } catch {
+      // Running outside DI context (e.g., unit tests)
+    }
+  }
+
+  /**
+   * Handle realtime events dispatched via EventBus.
+   * Logic mirrors MercureService.handleEvent() for conversation-related types.
+   */
+  private onRealtimeEvent(event: RealtimeEvent): void {
+    switch (event.eventType) {
+      case RealtimeEventType.MessageAdded: {
+        const p = event.payload as MessageAddedPayload;
+        const message: Message = {
+          id: String(p.messageId),
+          ticketId: String(p.ticketId),
+          content: p.content,
+          direction: p.direction,
+          sender: p.direction === 'outbound' ? 'agent' : 'customer',
+          deliveryStatus: 'sent',
+          createdAt: p.createdAt,
+          externalId: p.externalId ?? undefined,
+        };
+        this.addMessage(message);
+        break;
+      }
+
+      case RealtimeEventType.MessageUpdated: {
+        const p = event.payload as MessageUpdatedPayload;
+        this.updateMessageStatus(
+          String(p.messageId),
+          (p.status ?? 'read') as Message['deliveryStatus'],
+        );
+        break;
+      }
+    }
+  }
 
   /**
    * Message cache for retry operations.
