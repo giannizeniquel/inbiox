@@ -1,7 +1,14 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AdminApiService, AdminAgentDTO, AdminUserDTO } from '../../../core/api/admin-api.service';
+import { AdminAgentDTO, AdminUserDTO } from '../../../core/api/admin-api.service';
+import { ListAgentsUseCase } from '../../../core/application/admin/agents/list-agents.use-case';
+import { GetAvailableUsersForLinkingUseCase } from '../../../core/application/admin/agents/get-available-users-for-linking.use-case';
+import { CreateAgentUseCase } from '../../../core/application/admin/agents/create-agent.use-case';
+import { UpdateAgentUseCase } from '../../../core/application/admin/agents/update-agent.use-case';
+import { DeactivateAgentUseCase } from '../../../core/application/admin/agents/deactivate-agent.use-case';
+import { ReactivateAgentUseCase } from '../../../core/application/admin/agents/reactivate-agent.use-case';
+import { ManageAgentUserLinkingUseCase } from '../../../core/application/admin/linking/manage-agent-user-linking.use-case';
 
 /**
  * AgentsPage — Supervisor agent management.
@@ -9,6 +16,9 @@ import { AdminApiService, AdminAgentDTO, AdminUserDTO } from '../../../core/api/
  * Allows ROLE_SUPERVISOR to view, create, edit, and soft-delete agents.
  * ROLE_ADMIN can also link/unlink users to agents.
  * Features: paginated table, create form, edit modal, link/unlink user, soft-delete.
+ *
+ * Business logic is delegated to granular use cases; this component is a thin
+ * orchestrator holding only signals, modal state, and template logic.
  */
 @Component({
   selector: 'app-agents-page',
@@ -229,7 +239,13 @@ import { AdminApiService, AdminAgentDTO, AdminUserDTO } from '../../../core/api/
   ],
 })
 export class AgentsPageComponent implements OnInit {
-  private readonly adminApi = inject(AdminApiService);
+  private readonly listAgentsUseCase = inject(ListAgentsUseCase);
+  private readonly getAvailableUsersForLinkingUseCase = inject(GetAvailableUsersForLinkingUseCase);
+  private readonly createAgentUseCase = inject(CreateAgentUseCase);
+  private readonly updateAgentUseCase = inject(UpdateAgentUseCase);
+  private readonly deactivateAgentUseCase = inject(DeactivateAgentUseCase);
+  private readonly reactivateAgentUseCase = inject(ReactivateAgentUseCase);
+  private readonly manageLinkingUseCase = inject(ManageAgentUserLinkingUseCase);
 
   // State
   readonly agents = signal<AdminAgentDTO[]>([]);
@@ -261,27 +277,26 @@ export class AgentsPageComponent implements OnInit {
   loadAgents(): void {
     this.loading.set(true);
     this.error.set(null);
-    this.adminApi.listAgents(this.currentPage()).subscribe({
+    this.listAgentsUseCase.execute({ page: this.currentPage() }).subscribe({
       next: (res) => {
-        this.agents.set(res.data);
-        this.totalPages.set(Math.max(1, Math.ceil(res.meta.total / res.meta.limit)));
+        this.agents.set(res.agents);
+        this.totalPages.set(res.totalPages);
         this.loading.set(false);
       },
       error: (err) => {
-        this.error.set(err.error?.error || 'Failed to load agents');
+        this.error.set(err.message ?? 'Failed to load agents');
         this.loading.set(false);
       },
     });
   }
 
   loadUnlinkedUsers(): void {
-    this.adminApi.listUsers(1, 200).subscribe({
+    this.getAvailableUsersForLinkingUseCase.execute({}).subscribe({
       next: (res) => {
-        // Only users that are active and not already linked to an agent
-        this.unlinkedUsers.set(res.data.filter(u => u.is_active && !u.agent_id));
+        this.unlinkedUsers.set(res.users);
       },
-      error: () => {
-        this.error.set('Failed to load users for linking');
+      error: (err) => {
+        this.error.set(err.message ?? 'Failed to load users for linking');
       },
     });
   }
@@ -328,7 +343,7 @@ export class AgentsPageComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
 
-    this.adminApi.createAgent({ name: this.formData.name.trim() }).subscribe({
+    this.createAgentUseCase.execute({ name: this.formData.name.trim() }).subscribe({
       next: () => {
         this.saving.set(false);
         this.success.set('Agent created successfully');
@@ -337,7 +352,7 @@ export class AgentsPageComponent implements OnInit {
       },
       error: (err) => {
         this.saving.set(false);
-        this.error.set(err.error?.error || 'Failed to create agent');
+        this.error.set(err.message ?? 'Failed to create agent');
       },
     });
   }
@@ -346,7 +361,8 @@ export class AgentsPageComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
 
-    this.adminApi.updateAgent(agent.id, {
+    this.updateAgentUseCase.execute({
+      id: agent.id,
       name: this.formData.name.trim(),
       active: this.formData.active,
     }).subscribe({
@@ -358,7 +374,7 @@ export class AgentsPageComponent implements OnInit {
       },
       error: (err) => {
         this.saving.set(false);
-        this.error.set(err.error?.error || 'Failed to update agent');
+        this.error.set(err.message ?? 'Failed to update agent');
       },
     });
   }
@@ -382,7 +398,7 @@ export class AgentsPageComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
 
-    this.adminApi.linkAgentToUser(agent.id, { user_id: userId }).subscribe({
+    this.manageLinkingUseCase.link({ agentId: agent.id, userId }).subscribe({
       next: () => {
         this.saving.set(false);
         this.success.set(`User linked to "${agent.name}" successfully`);
@@ -391,7 +407,7 @@ export class AgentsPageComponent implements OnInit {
       },
       error: (err) => {
         this.saving.set(false);
-        this.error.set(err.error?.error || 'Failed to link user');
+        this.error.set(err.message ?? 'Failed to link user');
       },
     });
   }
@@ -411,7 +427,7 @@ export class AgentsPageComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
 
-    this.adminApi.unlinkAgentFromUser(agent.id).subscribe({
+    this.manageLinkingUseCase.unlink({ agentId: agent.id }).subscribe({
       next: () => {
         this.saving.set(false);
         this.success.set(`User unlinked from "${agent.name}" successfully`);
@@ -420,7 +436,7 @@ export class AgentsPageComponent implements OnInit {
       },
       error: (err) => {
         this.saving.set(false);
-        this.error.set(err.error?.error || 'Failed to unlink user');
+        this.error.set(err.message ?? 'Failed to unlink user');
       },
     });
   }
@@ -440,7 +456,7 @@ export class AgentsPageComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
 
-    this.adminApi.deleteAgent(agent.id).subscribe({
+    this.deactivateAgentUseCase.execute({ id: agent.id }).subscribe({
       next: () => {
         this.saving.set(false);
         this.success.set(`Agent "${agent.name}" deactivated successfully`);
@@ -449,7 +465,7 @@ export class AgentsPageComponent implements OnInit {
       },
       error: (err) => {
         this.saving.set(false);
-        this.error.set(err.error?.error || 'Failed to deactivate agent');
+        this.error.set(err.message ?? 'Failed to deactivate agent');
       },
     });
   }
@@ -458,7 +474,7 @@ export class AgentsPageComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
 
-    this.adminApi.updateAgent(agent.id, { active: true }).subscribe({
+    this.reactivateAgentUseCase.execute({ id: agent.id }).subscribe({
       next: () => {
         this.saving.set(false);
         this.success.set(`Agent "${agent.name}" reactivated successfully`);
@@ -466,7 +482,7 @@ export class AgentsPageComponent implements OnInit {
       },
       error: (err) => {
         this.saving.set(false);
-        this.error.set(err.error?.error || 'Failed to reactivate agent');
+        this.error.set(err.message ?? 'Failed to reactivate agent');
       },
     });
   }

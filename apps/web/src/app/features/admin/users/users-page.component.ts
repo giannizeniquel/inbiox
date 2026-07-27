@@ -1,13 +1,21 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AdminApiService, AdminUserDTO, UpdateUserPayload } from '../../../core/api/admin-api.service';
+import { AdminUserDTO, AdminAgentDTO } from '../../../core/api/admin-api.service';
+import { ListUsersUseCase } from '../../../core/application/admin/users/list-users.use-case';
+import { CreateUserUseCase } from '../../../core/application/admin/users/create-user.use-case';
+import { UpdateUserUseCase } from '../../../core/application/admin/users/update-user.use-case';
+import { DeactivateUserUseCase } from '../../../core/application/admin/users/deactivate-user.use-case';
+import { ReactivateUserUseCase } from '../../../core/application/admin/users/reactivate-user.use-case';
 
 /**
  * UsersPage — Admin user management.
  *
  * Allows ROLE_ADMIN to view, create, edit, and soft-delete users.
  * Features: paginated table, create form, edit modal, soft-delete with confirmation.
+ *
+ * Business logic is delegated to granular use cases; this component is a thin
+ * orchestrator holding only signals, form state, modal state, and template logic.
  */
 @Component({
   selector: 'app-users-page',
@@ -209,11 +217,15 @@ import { AdminApiService, AdminUserDTO, UpdateUserPayload } from '../../../core/
   ],
 })
 export class UsersPageComponent implements OnInit {
-  private readonly adminApi = inject(AdminApiService);
+  private readonly listUsersUseCase = inject(ListUsersUseCase);
+  private readonly createUserUseCase = inject(CreateUserUseCase);
+  private readonly updateUserUseCase = inject(UpdateUserUseCase);
+  private readonly deactivateUserUseCase = inject(DeactivateUserUseCase);
+  private readonly reactivateUserUseCase = inject(ReactivateUserUseCase);
 
   // State
   readonly users = signal<AdminUserDTO[]>([]);
-  readonly availableAgents = signal<any[]>([]);
+  readonly availableAgents = signal<AdminAgentDTO[]>([]);
   readonly loading = signal(true);
   readonly saving = signal(false);
   readonly error = signal<string | null>(null);
@@ -239,27 +251,25 @@ export class UsersPageComponent implements OnInit {
   loadUsers(): void {
     this.loading.set(true);
     this.error.set(null);
-    this.adminApi.listUsers(this.currentPage()).subscribe({
+    this.listUsersUseCase.execute({ page: this.currentPage() }).subscribe({
       next: (res) => {
-        this.users.set(res.data);
-        this.totalPages.set(Math.max(1, Math.ceil(res.meta.total / res.meta.limit)));
+        this.users.set(res.users);
+        this.totalPages.set(res.totalPages);
         this.loading.set(false);
       },
       error: (err) => {
-        this.error.set(err.error?.error || 'Failed to load users');
+        this.error.set(err.message ?? 'Failed to load users');
         this.loading.set(false);
       },
     });
   }
 
   loadAvailableAgents(): void {
-    this.adminApi.listAgents(1, 100).subscribe({
-      next: (res) => {
-        this.availableAgents.set(res.data.filter(a => a.active && !a.user_id));
+    this.createUserUseCase.loadAvailableAgents().subscribe({
+      next: (agents) => {
+        this.availableAgents.set(agents);
       },
-      error: () => {
-        // Silently fail — agents list is optional for user creation
-      },
+      // Silently fail — agents list is optional for user creation
     });
   }
 
@@ -318,11 +328,11 @@ export class UsersPageComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
 
-    this.adminApi.createUser({
+    this.createUserUseCase.execute({
       email: this.formData.email,
       password: this.formData.password,
-      roles: this.formData.roles.length > 0 ? this.formData.roles : ['ROLE_AGENT'],
-      agent_id: this.formData.agent_id,
+      roles: this.formData.roles,
+      agentId: this.formData.agent_id,
     }).subscribe({
       next: () => {
         this.saving.set(false);
@@ -332,7 +342,7 @@ export class UsersPageComponent implements OnInit {
       },
       error: (err) => {
         this.saving.set(false);
-        this.error.set(err.error?.error || 'Failed to create user');
+        this.error.set(err.message ?? 'Failed to create user');
       },
     });
   }
@@ -341,12 +351,12 @@ export class UsersPageComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
 
-    const payload: UpdateUserPayload = {};
-    if (this.formData.email !== user.email) { payload.email = this.formData.email; }
-    if (this.formData.password) { payload.password = this.formData.password; }
-    payload.roles = this.formData.roles.length > 0 ? this.formData.roles : ['ROLE_AGENT'];
-
-    this.adminApi.updateUser(user.id, payload).subscribe({
+    this.updateUserUseCase.execute({
+      id: user.id,
+      email: this.formData.email,
+      password: this.formData.password,
+      roles: this.formData.roles,
+    }).subscribe({
       next: () => {
         this.saving.set(false);
         this.success.set('User updated successfully');
@@ -355,7 +365,7 @@ export class UsersPageComponent implements OnInit {
       },
       error: (err) => {
         this.saving.set(false);
-        this.error.set(err.error?.error || 'Failed to update user');
+        this.error.set(err.message ?? 'Failed to update user');
       },
     });
   }
@@ -375,7 +385,7 @@ export class UsersPageComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
 
-    this.adminApi.deleteUser(user.id).subscribe({
+    this.deactivateUserUseCase.execute({ id: user.id }).subscribe({
       next: () => {
         this.saving.set(false);
         this.success.set(`User "${user.email}" deactivated successfully`);
@@ -384,7 +394,7 @@ export class UsersPageComponent implements OnInit {
       },
       error: (err) => {
         this.saving.set(false);
-        this.error.set(err.error?.error || 'Failed to deactivate user');
+        this.error.set(err.message ?? 'Failed to deactivate user');
       },
     });
   }
@@ -393,7 +403,7 @@ export class UsersPageComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
 
-    this.adminApi.updateUser(user.id, { is_active: true }).subscribe({
+    this.reactivateUserUseCase.execute({ id: user.id }).subscribe({
       next: () => {
         this.saving.set(false);
         this.success.set(`User "${user.email}" reactivated successfully`);
@@ -401,7 +411,7 @@ export class UsersPageComponent implements OnInit {
       },
       error: (err) => {
         this.saving.set(false);
-        this.error.set(err.error?.error || 'Failed to reactivate user');
+        this.error.set(err.message ?? 'Failed to reactivate user');
       },
     });
   }
