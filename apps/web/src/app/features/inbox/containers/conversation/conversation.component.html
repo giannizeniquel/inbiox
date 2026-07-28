@@ -34,7 +34,6 @@
       (scroll)="onScroll()"
       (visibleRange)="onVisibleRangeChange($event)"
       [class.hidden]="loading()"
-      style="padding-bottom: 70px;"
     >
         @for (message of visibleMessages(); track message.id) {
           <app-message-bubble

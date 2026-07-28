@@ -19,9 +19,7 @@
   width: 100%;
   overflow: hidden;
   background: var(--bg-chat);
-  position: relative;
   box-sizing: border-box;
-  padding-bottom: 60px; // Espacio para el composer (56px + padding)
 }
 
 // Wrapper for messages area + composer (pushes composer to bottom)
