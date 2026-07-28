@@ -292,12 +292,18 @@ final class WorkspaceController
      */
     private function serializeWorkspace(Workspace $workspace): array
     {
+        $agentIds = [];
+        foreach ($workspace->getAgents() as $agent) {
+            $agentIds[] = (int) $agent->getId();
+        }
+
         return [
             'id' => (int) $workspace->getId(),
             'phone_number_id' => $workspace->getPhoneNumberId(),
             'display_name' => $workspace->getDisplayName(),
             'is_active' => $workspace->isActive(),
-            'agent_count' => $workspace->getAgents()->count(),
+            'agent_count' => count($agentIds),
+            'agent_ids' => $agentIds,
             'created_at' => $workspace->getCreatedAt()->format('Y-m-d\TH:i:sP'),
             'updated_at' => $workspace->getUpdatedAt()->format('Y-m-d\TH:i:sP'),
         ];

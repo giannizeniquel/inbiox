@@ -4,6 +4,7 @@ export interface WorkspaceDTO {
   display_name: string;
   is_active: boolean;
   agent_count?: number;
+  agent_ids?: number[];
   created_at: string;
   updated_at: string;
 }

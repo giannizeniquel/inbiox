@@ -55,11 +55,12 @@
                     {{ ws.is_active ? 'Active' : 'Inactive' }}
                   </td>
                   <td>{{ ws.agent_count ?? '—' }}</td>
-                  <td class="actions-cell">
-                    <button class="btn btn--sm btn--outline" (click)="openEditForm(ws)" [attr.aria-label]="'Edit ' + ws.display_name">Edit</button>
-                    @if (ws.is_active) {
-                      <button class="btn btn--sm btn--danger" (click)="confirmDelete(ws)" [attr.aria-label]="'Deactivate ' + ws.display_name">Deactivate</button>
-                    }
+                   <td class="actions-cell">
+                     <button class="btn btn--sm btn--outline" (click)="openEditForm(ws)" [attr.aria-label]="'Edit ' + ws.display_name">Edit</button>
+                     <button class="btn btn--sm btn--outline" (click)="openAgentModal(ws)" [attr.aria-label]="'Manage agents for ' + ws.display_name">Agents</button>
+                     @if (ws.is_active) {
+                       <button class="btn btn--sm btn--danger" (click)="confirmDelete(ws)" [attr.aria-label]="'Deactivate ' + ws.display_name">Deactivate</button>
+                     }
                   </td>
                 </tr>
               } @empty {
@@ -159,6 +160,43 @@
               <button class="btn btn--outline" (click)="cancelDelete()">Cancel</button>
               <button class="btn btn--danger" (click)="executeDelete()" [disabled]="saving()">
                 {{ saving() ? 'Deactivating...' : 'Deactivate' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Agent Assignment Modal -->
+      @if (showAgentModal() && assigningWorkspace(); as ws) {
+        <div class="modal-overlay" (click)="closeAgentModal()">
+          <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title-agents" (click)="$event.stopPropagation()">
+            <div class="modal__header">
+              <h2 id="modal-title-agents">Assign Agents — {{ ws.display_name }}</h2>
+              <button class="modal__close" (click)="closeAgentModal()" aria-label="Close dialog">&times;</button>
+            </div>
+            <div class="modal__body">
+              <div class="form-group" style="display:flex;gap:8px;margin-bottom:12px;">
+                <input #agentIdInput type="number" class="form-input" placeholder="Agent ID" style="flex:1;" />
+                <button type="button" class="btn btn--sm btn--primary" (click)="addAgentById(agentIdInput)">Add</button>
+              </div>
+              @if (agentOptions().length === 0) {
+                <p style="color:var(--text-secondary);">No agents assigned. Enter an agent ID above.</p>
+              } @else {
+                @for (agent of agentOptions(); track agent.id) {
+                  <div class="form-group" style="display:flex;align-items:center;gap:8px;padding:4px 0;">
+                    <input type="checkbox" 
+                           [id]="'agent-' + agent.id"
+                           [checked]="agent.assigned"
+                           (change)="agent.assigned = !agent.assigned" />
+                    <label [for]="'agent-' + agent.id">{{ agent.name }}</label>
+                  </div>
+                }
+              }
+            </div>
+            <div class="modal__footer">
+              <button type="button" class="btn btn--outline" (click)="closeAgentModal()">Cancel</button>
+              <button type="button" class="btn btn--primary" (click)="saveAgents()" [disabled]="savingAgents()">
+                {{ savingAgents() ? 'Saving...' : 'Save' }}
               </button>
             </div>
           </div>

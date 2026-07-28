@@ -6,6 +6,13 @@ import { ListWorkspacesUseCase } from '../../../core/application/admin/workspace
 import { CreateWorkspaceUseCase } from '../../../core/application/admin/workspaces/create-workspace.use-case';
 import { UpdateWorkspaceUseCase } from '../../../core/application/admin/workspaces/update-workspace.use-case';
 import { DeactivateWorkspaceUseCase } from '../../../core/application/admin/workspaces/deactivate-workspace.use-case';
+import { WorkspaceApiService } from '../../../core/api/workspace-api.service';
+
+interface AgentOption {
+  id: number;
+  name: string;
+  assigned: boolean;
+}
 
 /**
  * WorkspacesPage — Admin workspace management.
@@ -29,6 +36,7 @@ export class WorkspacesPageComponent implements OnInit {
   private readonly createUseCase = inject(CreateWorkspaceUseCase);
   private readonly updateUseCase = inject(UpdateWorkspaceUseCase);
   private readonly deactivateUseCase = inject(DeactivateWorkspaceUseCase);
+  private readonly workspaceApi = inject(WorkspaceApiService);
 
   // State
   readonly workspaces = signal<WorkspaceDTO[]>([]);
@@ -43,6 +51,12 @@ export class WorkspacesPageComponent implements OnInit {
   readonly showForm = signal(false);
   readonly editingWorkspace = signal<WorkspaceDTO | null>(null);
   readonly showDeleteConfirm = signal<WorkspaceDTO | null>(null);
+
+  // Agent assignment state
+  readonly showAgentModal = signal(false);
+  readonly assigningWorkspace = signal<WorkspaceDTO | null>(null);
+  readonly agentOptions = signal<AgentOption[]>([]);
+  readonly savingAgents = signal(false);
 
   // Forms
   readonly workspaceForm = this.fb.nonNullable.group({
@@ -190,6 +204,59 @@ export class WorkspacesPageComponent implements OnInit {
       error: (err) => {
         this.saving.set(false);
         this.error.set(err.message ?? 'Failed to deactivate workspace');
+      },
+    });
+  }
+
+  // ── Agent Assignment ──────────────────────────────────
+
+  openAgentModal(ws: WorkspaceDTO): void {
+    this.assigningWorkspace.set(ws);
+    const assignedIds = (ws as any).agent_ids as number[] ?? [];
+    
+    // Build simple agent list from assigned IDs (we don't fetch all agents
+    // because AgentController requires ROLE_SUPERVISOR which admin may not have)
+    this.agentOptions.set(assignedIds.map(id => ({
+      id,
+      name: `Agent ${id}`,
+      assigned: true,
+    })));
+    this.showAgentModal.set(true);
+  }
+
+  addAgentById(input: HTMLInputElement): void {
+    const id = parseInt(input.value, 10);
+    if (isNaN(id) || id <= 0) return;
+    if (this.agentOptions().some(a => a.id === id)) return;
+    
+    this.agentOptions.update(opts => [...opts, { id, name: `Agent ${id}`, assigned: true }]);
+    input.value = '';
+  }
+
+  closeAgentModal(): void {
+    this.showAgentModal.set(false);
+    this.assigningWorkspace.set(null);
+  }
+
+  saveAgents(): void {
+    const ws = this.assigningWorkspace();
+    if (!ws) return;
+
+    const selectedIds = this.agentOptions()
+      .filter(a => a.assigned)
+      .map(a => a.id);
+
+    this.savingAgents.set(true);
+    this.workspaceApi.assignAgents(ws.id, selectedIds).subscribe({
+      next: () => {
+        this.savingAgents.set(false);
+        this.success.set('Agents assigned successfully');
+        this.closeAgentModal();
+        this.loadWorkspaces();
+      },
+      error: (err) => {
+        this.savingAgents.set(false);
+        this.error.set(err?.error?.error ?? 'Failed to assign agents');
       },
     });
   }
