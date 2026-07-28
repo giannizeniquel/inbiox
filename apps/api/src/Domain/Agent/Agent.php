@@ -46,6 +46,21 @@ class Agent
     #[ORM\Column(name: 'override_until', type: Types::DATETIME_IMMUTABLE, nullable: true, options: ['comment' => '(DC2Type:datetime_immutable)'])]
     private ?\DateTimeImmutable $overrideUntil = null;
 
+    #[ORM\Column(name: 'signature', type: Types::TEXT, nullable: true)]
+    private ?string $signature = null;
+
+    #[ORM\Column(name: 'notification_sound', type: Types::BOOLEAN, options: ['default' => true])]
+    private bool $notificationSound = true;
+
+    #[ORM\Column(name: 'desktop_notifications', type: Types::BOOLEAN, options: ['default' => true])]
+    private bool $desktopNotifications = true;
+
+    #[ORM\Column(name: 'auto_reply_enabled', type: Types::BOOLEAN, options: ['default' => false])]
+    private bool $autoReplyEnabled = false;
+
+    #[ORM\Column(name: 'auto_reply_message', type: Types::TEXT, nullable: true)]
+    private ?string $autoReplyMessage = null;
+
     #[ORM\Column(name: 'created_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $createdAt;
 
@@ -218,6 +233,66 @@ class Agent
     public function removeWorkspace(Workspace $workspace): self
     {
         $this->workspaces->removeElement($workspace);
+        return $this;
+    }
+
+    public function getSignature(): ?string
+    {
+        return $this->signature;
+    }
+
+    public function setSignature(?string $signature): self
+    {
+        $this->signature = $signature;
+        $this->updatedAt = new \DateTimeImmutable();
+        return $this;
+    }
+
+    public function hasNotificationSound(): bool
+    {
+        return $this->notificationSound;
+    }
+
+    public function setNotificationSound(bool $notificationSound): self
+    {
+        $this->notificationSound = $notificationSound;
+        $this->updatedAt = new \DateTimeImmutable();
+        return $this;
+    }
+
+    public function hasDesktopNotifications(): bool
+    {
+        return $this->desktopNotifications;
+    }
+
+    public function setDesktopNotifications(bool $desktopNotifications): self
+    {
+        $this->desktopNotifications = $desktopNotifications;
+        $this->updatedAt = new \DateTimeImmutable();
+        return $this;
+    }
+
+    public function isAutoReplyEnabled(): bool
+    {
+        return $this->autoReplyEnabled;
+    }
+
+    public function setAutoReplyEnabled(bool $autoReplyEnabled): self
+    {
+        $this->autoReplyEnabled = $autoReplyEnabled;
+        $this->updatedAt = new \DateTimeImmutable();
+        return $this;
+    }
+
+    public function getAutoReplyMessage(): ?string
+    {
+        return $this->autoReplyMessage;
+    }
+
+    public function setAutoReplyMessage(?string $autoReplyMessage): self
+    {
+        $this->autoReplyMessage = $autoReplyMessage;
+        $this->updatedAt = new \DateTimeImmutable();
         return $this;
     }
 

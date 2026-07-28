@@ -19,8 +19,10 @@ use App\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\DBAL\LockMode;
 use App\Application\Rule\RuleExecutorService;
+use App\Application\Service\AutoReplyService;
 use App\Domain\Rule\RuleContext;
 use App\Application\UseCase\TransitionTicketStatusUseCase;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use App\Application\Event\TicketNeedsAutoAssignmentEvent;
 use Symfony\Component\Uid\Ulid;
@@ -37,6 +39,8 @@ class HandleInboundMessageUseCase
         private TransitionTicketStatusUseCase $transitionUseCase,
         private RuleExecutorService $ruleExecutor,
         private EventCollector $eventCollector,
+        private AutoReplyService $autoReplyService,
+        private LoggerInterface $logger,
     ) {}
 
     /**
@@ -63,6 +67,23 @@ class HandleInboundMessageUseCase
         $result = $this->em->getConnection()->transactional(function() use ($normalizedPhone, $message, $externalId, $phoneNumberId, $contactName) {
             return $this->executeInternal($normalizedPhone, $message, $externalId, $phoneNumberId, $contactName);
         });
+
+        // After commit, attempt auto-reply (fire-and-forget)
+        // This runs BEFORE persistEventsToOutbox to keep ordering deterministic
+        try {
+            $ticketId = $result['ticket_id'] ?? null;
+            if ($ticketId !== null) {
+                $ticket = $this->ticketRepo->find($ticketId);
+                if ($ticket !== null) {
+                    $this->autoReplyService->maybeSend($ticket);
+                }
+            }
+        } catch (\Throwable $e) {
+            $this->logger->warning('AutoReply skipped due to error: {message}', [
+                'message' => $e->getMessage(),
+                'exception' => $e,
+            ]);
+        }
 
         // After commit, persist collected events to outbox
         $this->persistEventsToOutbox();

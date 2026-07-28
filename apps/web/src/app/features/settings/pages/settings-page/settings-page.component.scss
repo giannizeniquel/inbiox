@@ -1,0 +1,91 @@
+/* Settings page — most shared styles come from _admin-common.scss */
+
+.settings-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border-color, #e0e0e0);
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+
+  &__btn {
+    padding: 0.75rem 1.25rem;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--text-muted, #666);
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+
+    &:hover {
+      color: var(--text-color, #333);
+    }
+
+    &--active {
+      color: var(--primary-color, #0066cc);
+      border-bottom-color: var(--primary-color, #0066cc);
+      font-weight: 600;
+    }
+  }
+}
+
+.settings-content {
+  max-width: 640px;
+}
+
+.settings-section {
+  h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.1rem;
+  }
+}
+
+.form-help-text {
+  font-size: 0.85rem;
+  color: var(--text-muted, #666);
+  margin: 0.25rem 0 1rem;
+}
+
+.form-label--checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.95rem;
+
+  input[type="checkbox"] {
+    width: auto;
+    cursor: pointer;
+  }
+}
+
+.form-inline {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color, #e0e0e0);
+
+  .form-group {
+    flex: 0 0 auto;
+    min-width: 120px;
+  }
+}
+
+.link {
+  color: var(--primary-color, #0066cc);
+  text-decoration: underline;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--primary-hover, #004999);
+  }
+}
+
+:host {
+  display: block;
+  padding-bottom: 2rem;
+}

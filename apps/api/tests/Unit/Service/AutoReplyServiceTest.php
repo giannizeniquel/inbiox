@@ -1,0 +1,378 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Unit\Service;
+
+use App\Application\Service\AgentAvailabilityService;
+use App\Application\Service\AutoReplyService;
+use App\Application\Service\GraphClient;
+use App\Domain\Agent\Agent;
+use App\Domain\Agent\AgentShift;
+use App\Domain\Agent\AgentShiftRepository;
+use App\Domain\Contact\Contact;
+use App\Domain\Ticket\ProcessedEvent;
+use App\Domain\Ticket\Ticket;
+use App\Exception\GraphApiException;
+use App\Repository\AgentRepository;
+use App\Repository\ProcessedEventRepository;
+use Doctrine\ORM\AbstractQuery;
+use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Query;
+use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
+
+/**
+ * Unit tests for AutoReplyService::maybeSend.
+ *
+ * Coverage:
+ * 1. Does NOT send when auto_reply_enabled = false
+ * 2. Does NOT send when auto_reply_message is null/empty
+ * 3. Does NOT send when agent is available
+ * 4. Does NOT send when rate limited
+ * 5. Sends when all conditions met
+ * 6. GraphClient exception is caught silently
+ *
+ * Uses a real AgentAvailabilityService with mocked repository dependencies
+ * to avoid PHPUnit's restriction on mocking final classes.
+ */
+class AutoReplyServiceTest extends TestCase
+{
+    private AgentRepository&MockObject $agentRepo;
+    private AgentShiftRepository&MockObject $agentShiftRepo;
+    private EntityManagerInterface&MockObject $em;
+    private AgentAvailabilityService $availabilityService;
+    private GraphClient&MockObject $graphClient;
+    private ProcessedEventRepository&MockObject $processedEventRepo;
+    private LoggerInterface&MockObject $logger;
+    private AutoReplyService $service;
+
+    protected function setUp(): void
+    {
+        $this->agentRepo = $this->createMock(AgentRepository::class);
+        $this->agentShiftRepo = $this->createMock(AgentShiftRepository::class);
+        $this->em = $this->createMock(EntityManagerInterface::class);
+        $this->graphClient = $this->createMock(GraphClient::class);
+        $this->processedEventRepo = $this->createMock(ProcessedEventRepository::class);
+        $this->logger = $this->createMock(LoggerInterface::class);
+
+        // Create REAL AgentAvailabilityService with mocked deps
+        $this->availabilityService = new AgentAvailabilityService(
+            $this->agentRepo,
+            $this->agentShiftRepo,
+            $this->em,
+        );
+
+        $this->service = new AutoReplyService(
+            $this->agentRepo,
+            $this->availabilityService,
+            $this->graphClient,
+            $this->processedEventRepo,
+            $this->logger,
+            $this->em,
+        );
+    }
+
+    // ── Helpers ──
+
+    private function createAgent(
+        int $id = 1,
+        bool $active = true,
+        bool $autoReplyEnabled = true,
+        ?string $autoReplyMessage = 'We are away right now.',
+    ): Agent {
+        $agent = new Agent('Agent-'.$id);
+        $agent->setActive($active);
+        $agent->setAutoReplyEnabled($autoReplyEnabled);
+        $agent->setAutoReplyMessage($autoReplyMessage);
+
+        // Set id via reflection
+        $prop = new \ReflectionProperty($agent, 'id');
+        $prop->setAccessible(true);
+        $prop->setValue($agent, $id);
+
+        return $agent;
+    }
+
+    private function createContact(int $id = 1, string $phone = '+5493625123456'): Contact
+    {
+        $contact = new Contact();
+        $contact->setPhone($phone);
+
+        $prop = new \ReflectionProperty($contact, 'id');
+        $prop->setAccessible(true);
+        $prop->setValue($contact, $id);
+
+        return $contact;
+    }
+
+    private function createTicket(
+        ?Agent $agent = null,
+        ?Contact $contact = null,
+        ?string $phoneNumberId = '123456789',
+    ): Ticket {
+        $ticket = new Ticket();
+        if ($agent !== null) {
+            $ticket->setAssignedAgentId((int) $agent->getId());
+        }
+        if ($contact !== null) {
+            $ticket->setContact($contact);
+        }
+        if ($phoneNumberId !== null) {
+            $ticket->setPhoneNumberId($phoneNumberId);
+        }
+
+        return $ticket;
+    }
+
+    /**
+     * Make the agent "available" by giving it a shift at the current hour
+     * AND ensuring capacity is below max.
+     *
+     * The agent's local time is UTC. A shift on the current DOW that covers
+     * the current time will make isAvailable() pass step 3 (schedule).
+     */
+    private function makeAgentAvailable(Agent $agent): void
+    {
+        $now = new \DateTimeImmutable('now');
+        $dow = (int) $now->format('N');
+        $hour = (int) $now->format('H');
+
+        // Create a shift that covers this hour
+        $startTime = \DateTimeImmutable::createFromFormat('H:i', \sprintf('%02d:00', \max(0, $hour - 1)));
+        $endTime = \DateTimeImmutable::createFromFormat('H:i', \sprintf('%02d:00', \min(23, $hour + 2)));
+        \assert($startTime !== false && $endTime !== false);
+
+        $shift = new AgentShift($agent, $dow, $startTime, $endTime);
+        $agent->addShift($shift);
+    }
+
+    /**
+     * Return a query mock that returns a ticket count.
+     */
+    private function mockTicketCountQuery(int $count): Query&MockObject
+    {
+        $query = $this->createMock(Query::class);
+        $query->expects(self::once())
+            ->method('getSingleScalarResult')
+            ->willReturn((string) $count);
+        $query->expects(self::exactly(2))
+            ->method('setParameter')
+            ->willReturnSelf();
+
+        return $query;
+    }
+
+    // ────────────────────────────────────────────────────────────
+    //  Test 1: Auto-reply disabled
+    // ────────────────────────────────────────────────────────────
+
+    public function testDoesNotSendWhenAutoReplyDisabled(): void
+    {
+        $agent = $this->createAgent(autoReplyEnabled: false);
+        $contact = $this->createContact();
+        $ticket = $this->createTicket(agent: $agent, contact: $contact);
+
+        $this->agentRepo->expects(self::once())
+            ->method('findById')
+            ->with(1)
+            ->willReturn($agent);
+
+        $this->graphClient->expects(self::never())->method('sendMessage');
+
+        $this->service->maybeSend($ticket);
+    }
+
+    // ────────────────────────────────────────────────────────────
+    //  Test 2: No message
+    // ────────────────────────────────────────────────────────────
+
+    public function testDoesNotSendWhenMessageIsNull(): void
+    {
+        $agent = $this->createAgent(autoReplyMessage: null);
+        $contact = $this->createContact();
+        $ticket = $this->createTicket(agent: $agent, contact: $contact);
+
+        $this->agentRepo->expects(self::once())
+            ->method('findById')
+            ->with(1)
+            ->willReturn($agent);
+
+        $this->graphClient->expects(self::never())->method('sendMessage');
+
+        $this->service->maybeSend($ticket);
+    }
+
+    public function testDoesNotSendWhenMessageIsEmpty(): void
+    {
+        $agent = $this->createAgent(autoReplyMessage: '');
+        $contact = $this->createContact();
+        $ticket = $this->createTicket(agent: $agent, contact: $contact);
+
+        $this->agentRepo->expects(self::once())
+            ->method('findById')
+            ->with(1)
+            ->willReturn($agent);
+
+        $this->graphClient->expects(self::never())->method('sendMessage');
+
+        $this->service->maybeSend($ticket);
+    }
+
+    // ────────────────────────────────────────────────────────────
+    //  Test 3: Agent is available → no send
+    // ────────────────────────────────────────────────────────────
+
+    public function testDoesNotSendWhenAgentIsAvailable(): void
+    {
+        $agent = $this->createAgent();
+        $this->makeAgentAvailable($agent);
+        $contact = $this->createContact();
+        $ticket = $this->createTicket(agent: $agent, contact: $contact);
+
+        $this->agentRepo->expects(self::once())
+            ->method('findById')
+            ->with(1)
+            ->willReturn($agent);
+
+        // Make the COUNT query return a value below max (capacity check)
+        $query = $this->createMock(Query::class);
+        $query->expects(self::once())
+            ->method('getSingleScalarResult')
+            ->willReturn('2'); // max = 5, count = 2 → available
+        $query->expects(self::exactly(2))
+            ->method('setParameter')
+            ->willReturnSelf();
+
+        $this->em->expects(self::once())
+            ->method('createQuery')
+            ->with(self::stringContains('COUNT(t.id)'))
+            ->willReturn($query);
+
+        $this->graphClient->expects(self::never())->method('sendMessage');
+
+        $this->service->maybeSend($ticket);
+    }
+
+    // ────────────────────────────────────────────────────────────
+    //  Test 4: Rate limited
+    // ────────────────────────────────────────────────────────────
+
+    public function testDoesNotSendWhenRateLimited(): void
+    {
+        $agent = $this->createAgent();
+        $contact = $this->createContact();
+        $ticket = $this->createTicket(agent: $agent, contact: $contact);
+
+        $this->agentRepo->expects(self::once())
+            ->method('findById')
+            ->with(1)
+            ->willReturn($agent);
+
+        // Simulate existing ProcessedEvent (recent — within 4h window)
+        $recentEvent = new ProcessedEvent('auto-reply:1');
+        $recentProp = new \ReflectionProperty($recentEvent, 'processedAt');
+        $recentProp->setAccessible(true);
+        $recentProp->setValue($recentEvent, new \DateTimeImmutable('-1 hour')); // 1 hour ago
+
+        $this->processedEventRepo->expects(self::once())
+            ->method('findByEventId')
+            ->with('auto-reply:1')
+            ->willReturn($recentEvent);
+
+        $this->graphClient->expects(self::never())->method('sendMessage');
+
+        $this->service->maybeSend($ticket);
+    }
+
+    // ────────────────────────────────────────────────────────────
+    //  Test 5: All conditions met → sends
+    // ────────────────────────────────────────────────────────────
+
+    public function testSendsWhenAllConditionsMet(): void
+    {
+        $agent = $this->createAgent();
+        $contact = $this->createContact(phone: '+5493625123456');
+        $ticket = $this->createTicket(agent: $agent, contact: $contact, phoneNumberId: '123456789');
+
+        $this->agentRepo->expects(self::once())
+            ->method('findById')
+            ->with(1)
+            ->willReturn($agent);
+
+        // No recent processed event
+        $this->processedEventRepo->expects(self::once())
+            ->method('findByEventId')
+            ->with('auto-reply:1')
+            ->willReturn(null);
+
+        // GraphClient called once (any args — we check the call happens)
+        $this->graphClient->expects(self::once())
+            ->method('sendMessage')
+            ->willReturn(['messages' => [['id' => 'wamid.test']]]);
+
+        // ProcessedEvent should be persisted
+        $this->em->expects(self::once())
+            ->method('persist')
+            ->with(self::isInstanceOf(ProcessedEvent::class));
+
+        $this->em->expects(self::once())
+            ->method('flush');
+
+        $this->service->maybeSend($ticket);
+    }
+
+    // ────────────────────────────────────────────────────────────
+    //  Test 6: GraphClient exception is caught
+    // ────────────────────────────────────────────────────────────
+
+    public function testGraphClientExceptionIsCaughtSilently(): void
+    {
+        $agent = $this->createAgent();
+        $contact = $this->createContact(phone: '+5493625123456');
+        $ticket = $this->createTicket(agent: $agent, contact: $contact);
+
+        $this->agentRepo->expects(self::once())
+            ->method('findById')
+            ->with(1)
+            ->willReturn($agent);
+
+        $this->processedEventRepo->expects(self::once())
+            ->method('findByEventId')
+            ->willReturn(null);
+
+        // GraphClient throws
+        $this->graphClient->expects(self::once())
+            ->method('sendMessage')
+            ->willThrowException(new GraphApiException('API error', 400));
+
+        // Logger should get the error
+        $this->logger->expects(self::atLeastOnce())
+            ->method('error')
+            ->with(self::stringContains('AutoReply Graph API error'));
+
+        // ProcessedEvent should NOT be persisted (send failed)
+        $this->em->expects(self::never())->method('persist');
+
+        // This should not throw
+        $this->service->maybeSend($ticket);
+
+        // Assertion: we reached here without exception
+        $this->assertTrue(true);
+    }
+
+    // ────────────────────────────────────────────────────────────
+    //  Test 7: No assigned agent → no send
+    // ────────────────────────────────────────────────────────────
+
+    public function testDoesNotSendWhenNoAssignedAgent(): void
+    {
+        $ticket = $this->createTicket(agent: null, contact: $this->createContact());
+
+        $this->agentRepo->expects(self::never())->method('findById');
+        $this->graphClient->expects(self::never())->method('sendMessage');
+
+        $this->service->maybeSend($ticket);
+    }
+}

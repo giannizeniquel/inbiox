@@ -71,8 +71,8 @@ export const routes: Routes = [
       },
       {
         path: 'settings',
-        redirectTo: 'inbox',
-        pathMatch: 'full',
+        loadComponent: () =>
+          import('./features/settings/pages/settings-page/settings-page.component').then(m => m.SettingsPageComponent),
       },
       {
         path: '**',

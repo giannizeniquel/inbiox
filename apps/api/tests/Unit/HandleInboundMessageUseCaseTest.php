@@ -2,17 +2,24 @@
 
 namespace App\Tests\Unit;
 
+use App\Application\Service\AgentAvailabilityService;
+use App\Application\Service\AutoReplyService;
+use App\Application\Service\GraphClient;
 use App\Application\UseCase\HandleInboundMessageUseCase;
 use App\Application\UseCase\TransitionTicketStatusUseCase;
 use App\Application\Rule\RuleExecutorService;
+use App\Domain\Agent\AgentShiftRepository;
 use App\Domain\Event\EventCollector;
+use App\Repository\AgentRepository;
 use App\Repository\ContactRepository;
 use App\Repository\ConversationRepository;
 use App\Repository\MessageRepository;
+use App\Repository\ProcessedEventRepository;
 use App\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 class HandleInboundMessageUseCaseTest extends TestCase
@@ -26,6 +33,8 @@ class HandleInboundMessageUseCaseTest extends TestCase
     private TransitionTicketStatusUseCase|MockObject $transitionUseCase;
     private RuleExecutorService|MockObject $ruleExecutor;
     private EventCollector|MockObject $eventCollector;
+    private AutoReplyService $autoReplyService;
+    private LoggerInterface|MockObject $logger;
     private HandleInboundMessageUseCase $useCase;
 
     protected function setUp(): void
@@ -39,6 +48,22 @@ class HandleInboundMessageUseCaseTest extends TestCase
         $this->transitionUseCase = $this->createMock(TransitionTicketStatusUseCase::class);
         $this->ruleExecutor = $this->createMock(RuleExecutorService::class);
         $this->eventCollector = $this->createMock(EventCollector::class);
+        $this->logger = $this->createMock(LoggerInterface::class);
+
+        // Create a real AutoReplyService with mocked deps (can't mock final class)
+        $agentRepo = $this->createMock(AgentRepository::class);
+        $agentShiftRepo = $this->createMock(AgentShiftRepository::class);
+        $availabilityService = new AgentAvailabilityService($agentRepo, $agentShiftRepo, $this->em);
+        $graphClient = $this->createMock(GraphClient::class);
+        $processedEventRepo = $this->createMock(ProcessedEventRepository::class);
+        $this->autoReplyService = new AutoReplyService(
+            $agentRepo,
+            $availabilityService,
+            $graphClient,
+            $processedEventRepo,
+            $this->logger,
+            $this->em,
+        );
 
         $this->useCase = new HandleInboundMessageUseCase(
             $this->em,
@@ -49,7 +74,9 @@ class HandleInboundMessageUseCaseTest extends TestCase
             $this->eventDispatcher,
             $this->transitionUseCase,
             $this->ruleExecutor,
-            $this->eventCollector
+            $this->eventCollector,
+            $this->autoReplyService,
+            $this->logger,
         );
     }
 

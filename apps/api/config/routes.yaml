@@ -152,6 +152,53 @@ app_mercure_token:
     methods: [GET]
     controller: App\Controller\MercureTokenController::getToken
 
+# ─── Agent self-service settings (ROLE_AGENT) ─────────────────────────
+
+app_me_settings:
+    path: /api/me/settings
+    methods: [GET]
+    controller: App\Controller\MeController::getSettings
+
+app_me_profile:
+    path: /api/me/profile
+    methods: [PUT]
+    controller: App\Controller\MeController::updateProfile
+
+app_me_notifications:
+    path: /api/me/notifications
+    methods: [PUT]
+    controller: App\Controller\MeController::updateNotifications
+
+app_me_auto_reply:
+    path: /api/me/auto-reply
+    methods: [PUT]
+    controller: App\Controller\MeController::updateAutoReply
+
+app_me_shifts_list:
+    path: /api/me/shifts
+    methods: [GET]
+    controller: App\Controller\MeController::getShifts
+
+app_me_shifts_replace:
+    path: /api/me/shifts
+    methods: [PUT]
+    controller: App\Controller\MeController::replaceShifts
+
+app_me_workspace:
+    path: /api/me/workspace
+    methods: [GET]
+    controller: App\Controller\MeController::getActiveWorkspace
+
+app_me_workspace_set:
+    path: /api/me/workspace
+    methods: [PUT]
+    controller: App\Controller\MeController::setActiveWorkspace
+
+app_me_workspaces:
+    path: /api/me/workspaces
+    methods: [GET]
+    controller: App\Controller\MeController::listMyWorkspaces
+
 app_agent_set_availability:
     path: /api/agents/{id}/availability
     methods: [POST]

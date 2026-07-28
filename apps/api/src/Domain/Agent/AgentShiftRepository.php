@@ -37,4 +37,19 @@ class AgentShiftRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * Delete all shifts for a given agent.
+     *
+     * @return int Number of deleted rows
+     */
+    public function deleteAllForAgent(int $agentId): int
+    {
+        return (int) $this->createQueryBuilder('s')
+            ->delete()
+            ->where('s.agent = :agentId')
+            ->setParameter('agentId', $agentId)
+            ->getQuery()
+            ->execute();
+    }
 }

@@ -5,8 +5,14 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Application\DTO\ActiveWorkspaceDTO;
+use App\Application\DTO\UpdateAutoReplyRequest;
+use App\Application\DTO\UpdateNotificationsRequest;
+use App\Application\DTO\UpdateProfileRequest;
+use App\Application\DTO\ReplaceShiftsRequest;
 use App\Application\DTO\WorkspaceDTO;
+use App\Application\UseCase\ReplaceAgentShiftsUseCase;
 use App\Domain\Agent\Agent;
+use App\Domain\Agent\AgentShift;
 use App\Domain\User\User;
 use App\Domain\Workspace\Workspace;
 use Doctrine\ORM\EntityManagerInterface;
@@ -15,15 +21,22 @@ use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * Controller for current user's workspace preference.
+ * Controller for current user's settings and preferences.
  *
- * GET  /api/me/workspace   — returns the active workspace or 404 if none set
- * PUT  /api/me/workspace   — sets the active workspace
- * GET  /api/me/workspaces  — returns the agent's assigned workspaces
+ * GET  /api/me/settings        — returns all settings sections
+ * PUT  /api/me/profile         — update signature
+ * PUT  /api/me/notifications   — update notification preferences
+ * PUT  /api/me/auto-reply      — update auto-reply settings
+ * GET  /api/me/shifts          — list current agent's shifts
+ * PUT  /api/me/shifts          — replace all shifts
+ * GET  /api/me/workspace       — returns the active workspace or 404 if none set
+ * PUT  /api/me/workspace       — sets the active workspace
+ * GET  /api/me/workspaces      — returns the agent's assigned workspaces
  */
 #[IsGranted('IS_AUTHENTICATED_FULLY')]
 #[Route('/api/me')]
@@ -33,7 +46,237 @@ final class MeController
         private readonly EntityManagerInterface $entityManager,
         private readonly Security $security,
         private readonly LoggerInterface $logger,
+        private readonly ReplaceAgentShiftsUseCase $replaceAgentShiftsUseCase,
     ) {}
+
+    #[Route('/settings', methods: ['GET'])]
+    #[IsGranted('ROLE_AGENT')]
+    public function getSettings(): JsonResponse
+    {
+        try {
+            $agent = $this->getAgent();
+            if (null === $agent) {
+                return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
+            }
+
+            $user = $agent->getUser();
+
+            // Profile
+            $profile = [
+                'name' => $agent->getName(),
+                'email' => $user?->getEmail() ?? '',
+                'signature' => $agent->getSignature(),
+            ];
+
+            // Notifications
+            $notifications = [
+                'sound' => $agent->hasNotificationSound(),
+                'desktop' => $agent->hasDesktopNotifications(),
+            ];
+
+            // AutoReply
+            $autoReply = [
+                'enabled' => $agent->isAutoReplyEnabled(),
+                'message' => $agent->getAutoReplyMessage(),
+            ];
+
+            // Workspace
+            $activeWorkspace = $agent->getActiveWorkspace();
+            $workspaceData = null;
+            if ($activeWorkspace !== null) {
+                $workspaceData = [
+                    'id' => (int) $activeWorkspace->getId(),
+                    'displayName' => $activeWorkspace->getDisplayName(),
+                    'phoneNumberId' => $activeWorkspace->getPhoneNumberId(),
+                ];
+            }
+
+            // Business hours (shifts)
+            $businessHours = [];
+            foreach ($agent->getShifts() as $shift) {
+                $businessHours[] = [
+                    'dayOfWeek' => $shift->getDayOfWeek(),
+                    'start' => $shift->getStartTime()->format('H:i'),
+                    'end' => $shift->getEndTime()->format('H:i'),
+                ];
+            }
+
+            // Sort shifts by dayOfWeek then start
+            \usort($businessHours, function (array $a, array $b) {
+                return [$a['dayOfWeek'], $a['start']] <=> [$b['dayOfWeek'], $b['start']];
+            });
+
+            return new JsonResponse([
+                'profile' => $profile,
+                'notifications' => $notifications,
+                'autoReply' => $autoReply,
+                'workspace' => $workspaceData,
+                'businessHours' => $businessHours,
+            ]);
+        } catch (\Exception $e) {
+            $referenceId = bin2hex(random_bytes(8));
+            $this->logger->error('Error fetching settings: {message}', [
+                'reference' => $referenceId,
+                'exception' => $e->getMessage(),
+            ]);
+            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
+        }
+    }
+
+    #[Route('/profile', methods: ['PUT'])]
+    #[IsGranted('ROLE_AGENT')]
+    public function updateProfile(#[MapRequestPayload] UpdateProfileRequest $request): JsonResponse
+    {
+        try {
+            $agent = $this->getAgent();
+            if (null === $agent) {
+                return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
+            }
+
+            $agent->setSignature($request->signature);
+
+            $this->entityManager->flush();
+
+            return new JsonResponse([
+                'name' => $agent->getName(),
+                'email' => $agent->getUser()?->getEmail() ?? '',
+                'signature' => $agent->getSignature(),
+            ]);
+        } catch (\Exception $e) {
+            $referenceId = bin2hex(random_bytes(8));
+            $this->logger->error('Error updating profile: {message}', [
+                'reference' => $referenceId,
+                'exception' => $e->getMessage(),
+            ]);
+            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
+        }
+    }
+
+    #[Route('/notifications', methods: ['PUT'])]
+    #[IsGranted('ROLE_AGENT')]
+    public function updateNotifications(#[MapRequestPayload] UpdateNotificationsRequest $request): JsonResponse
+    {
+        try {
+            $agent = $this->getAgent();
+            if (null === $agent) {
+                return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
+            }
+
+            if ($request->sound !== null) {
+                $agent->setNotificationSound($request->sound);
+            }
+            if ($request->desktop !== null) {
+                $agent->setDesktopNotifications($request->desktop);
+            }
+
+            $this->entityManager->flush();
+
+            return new JsonResponse([
+                'sound' => $agent->hasNotificationSound(),
+                'desktop' => $agent->hasDesktopNotifications(),
+            ]);
+        } catch (\Exception $e) {
+            $referenceId = bin2hex(random_bytes(8));
+            $this->logger->error('Error updating notifications: {message}', [
+                'reference' => $referenceId,
+                'exception' => $e->getMessage(),
+            ]);
+            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
+        }
+    }
+
+    #[Route('/auto-reply', methods: ['PUT'])]
+    #[IsGranted('ROLE_AGENT')]
+    public function updateAutoReply(#[MapRequestPayload] UpdateAutoReplyRequest $request): JsonResponse
+    {
+        try {
+            $agent = $this->getAgent();
+            if (null === $agent) {
+                return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
+            }
+
+            if ($request->enabled !== null) {
+                $agent->setAutoReplyEnabled($request->enabled);
+            }
+            // Always set message (may be null to clear it)
+            $agent->setAutoReplyMessage($request->message);
+
+            $this->entityManager->flush();
+
+            return new JsonResponse([
+                'enabled' => $agent->isAutoReplyEnabled(),
+                'message' => $agent->getAutoReplyMessage(),
+            ]);
+        } catch (\Exception $e) {
+            $referenceId = bin2hex(random_bytes(8));
+            $this->logger->error('Error updating auto-reply: {message}', [
+                'reference' => $referenceId,
+                'exception' => $e->getMessage(),
+            ]);
+            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
+        }
+    }
+
+    #[Route('/shifts', methods: ['GET'])]
+    #[IsGranted('ROLE_AGENT')]
+    public function getShifts(): JsonResponse
+    {
+        try {
+            $agent = $this->getAgent();
+            if (null === $agent) {
+                return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
+            }
+
+            $shifts = [];
+            foreach ($agent->getShifts() as $shift) {
+                $shifts[] = [
+                    'dayOfWeek' => $shift->getDayOfWeek(),
+                    'start' => $shift->getStartTime()->format('H:i'),
+                    'end' => $shift->getEndTime()->format('H:i'),
+                ];
+            }
+
+            // Sort by dayOfWeek then start
+            \usort($shifts, function (array $a, array $b) {
+                return [$a['dayOfWeek'], $a['start']] <=> [$b['dayOfWeek'], $b['start']];
+            });
+
+            return new JsonResponse($shifts);
+        } catch (\Exception $e) {
+            $referenceId = bin2hex(random_bytes(8));
+            $this->logger->error('Error fetching shifts: {message}', [
+                'reference' => $referenceId,
+                'exception' => $e->getMessage(),
+            ]);
+            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
+        }
+    }
+
+    #[Route('/shifts', methods: ['PUT'])]
+    #[IsGranted('ROLE_AGENT')]
+    public function replaceShifts(#[MapRequestPayload] ReplaceShiftsRequest $request): JsonResponse
+    {
+        try {
+            $agent = $this->getAgent();
+            if (null === $agent) {
+                return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
+            }
+
+            $agentId = (int) $agent->getId();
+            $created = $this->replaceAgentShiftsUseCase->execute($agentId, $request->shifts);
+
+            return new JsonResponse($created);
+        } catch (\InvalidArgumentException $e) {
+            return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
+        } catch (\Exception $e) {
+            $referenceId = bin2hex(random_bytes(8));
+            $this->logger->error('Error replacing shifts: {message}', [
+                'reference' => $referenceId,
+                'exception' => $e->getMessage(),
+            ]);
+            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
+        }
+    }
 
     #[Route('/workspace', methods: ['GET'])]
     public function getActiveWorkspace(): JsonResponse
