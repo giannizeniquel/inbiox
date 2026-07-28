@@ -1,8 +1,8 @@
 import { HttpInterceptorFn, HttpRequest, HttpHandlerFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, throwError, Subject } from 'rxjs';
-import { catchError, switchMap, take, filter } from 'rxjs/operators';
+import { Observable, throwError, Subject, ReplaySubject } from 'rxjs';
+import { catchError, switchMap, take } from 'rxjs/operators';
 import { AuthStore } from '../stores/auth.store';
 import { environment } from '../../../environments/environment';
 
@@ -41,32 +41,33 @@ let refreshInFlight$: Subject<boolean> | null = null;
 function refreshToken(authStore: AuthStore): Observable<boolean> {
   // If a refresh is already in flight, wait for it
   if (refreshInFlight$) {
-    return refreshInFlight$.pipe(
-      filter((done) => done),
-      take(1)
-    );
+    return refreshInFlight$.pipe(take(1));
   }
 
-  // Start a new refresh
-  refreshInFlight$ = new Subject<boolean>();
+  // Start a new refresh — capture in local ref so synchronous emissions
+  // (e.g., of(false) from tests or cached observables) don't null it
+  // before the return statement evaluates refreshInFlight$.
+  const subject = new ReplaySubject<boolean>(1);
+  refreshInFlight$ = subject;
 
   authStore.refresh().subscribe({
     next: (refreshed: boolean) => {
-      refreshInFlight$!.next(refreshed);
-      refreshInFlight$!.complete();
-      refreshInFlight$ = null;
+      subject.next(refreshed);
+      subject.complete();
+      if (refreshInFlight$ === subject) {
+        refreshInFlight$ = null;
+      }
     },
     error: () => {
-      refreshInFlight$!.next(false);
-      refreshInFlight$!.complete();
-      refreshInFlight$ = null;
+      subject.next(false);
+      subject.complete();
+      if (refreshInFlight$ === subject) {
+        refreshInFlight$ = null;
+      }
     },
   });
 
-  return refreshInFlight$.pipe(
-    filter((done) => done),
-    take(1)
-  );
+  return subject.pipe(take(1));
 }
 
 /**
