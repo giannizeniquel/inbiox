@@ -1,7 +1,7 @@
 import { Component, signal, OnDestroy, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
-import { filter } from 'rxjs';
+import { RouterOutlet, Router, NavigationEnd, ActivatedRoute } from '@angular/router';
+import { filter, take } from 'rxjs';
 import { TopbarComponent } from './topbar/topbar.component';
 import { SidebarComponent } from './sidebar/sidebar.component';
 import { SidebarFooterComponent } from './sidebar/sidebar-footer.component';
@@ -10,7 +10,11 @@ import { TicketListComponent } from '../features/inbox/containers/ticket-list/ti
 import { ConversationComponent } from '../features/inbox/containers/conversation/conversation.component';
 import { WorkspaceStore } from '../core/stores/workspace.store';
 import { TicketStore } from '../core/stores/ticket.store';
+import { ConversationStore } from '../core/stores/conversation.store';
 import { ContactsStore } from '../features/contacts/stores/contacts.store';
+import { TicketApiService } from '../core/api/ticket-api.service';
+import { MessageApiService, GetMessagesResponse } from '../core/api/message-api.service';
+import { mapApiMessagesToCanonical } from '../core/utils/message-mapper.util';
 
 @Component({
   selector: 'app-shell',
@@ -51,7 +55,11 @@ export class AppShellComponent implements OnDestroy {
 
   private readonly workspaceStore = inject(WorkspaceStore);
   private readonly ticketStore = inject(TicketStore);
+  private readonly conversationStore = inject(ConversationStore);
   private readonly contactsStore = inject(ContactsStore);
+  private readonly ticketApi = inject(TicketApiService);
+  private readonly messageApi = inject(MessageApiService);
+  private readonly route = inject(ActivatedRoute);
 
   constructor() {
     // Subscribe to router events to track current route
@@ -81,6 +89,26 @@ export class AppShellComponent implements OnDestroy {
     // Auto-select first workspace if agent has assignments but no active workspace
     // Uses setTimeout to wait for both loadMyWorkspaces and loadActiveWorkspace to complete
     setTimeout(() => this.workspaceStore.autoSelectFirstIfNeeded(), 500);
+
+    // Handle ?ticketId=X deep-link from contacts/timeline
+    this.route.queryParams.pipe(
+      filter((params: any) => params['ticketId'] != null),
+      take(1),
+    ).subscribe((params: any) => {
+      const ticketId = String(params['ticketId']);
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          this.ticketApi.getTicket(ticketId).subscribe({
+            next: (ticket) => {
+              this.ticketStore.addOrUpdateTicket(ticket);
+              this.ticketStore.setActiveTicket(ticket.ticket_id);
+              this.loadMessages(ticket.ticket_id);
+            },
+            error: () => {},
+          });
+        });
+      });
+    });
   }
 
   ngOnDestroy(): void {
@@ -107,5 +135,20 @@ export class AppShellComponent implements OnDestroy {
     const width = window.innerWidth;
     this.isMobile.set(width < this._mobileBreakpoint);
     this.isSidebarCollapsed.set(width >= this._mobileBreakpoint && width < 1200);
+  }
+
+  private loadMessages(ticketId: string): void {
+    this.conversationStore.reset();
+    this.conversationStore.setLoading(true);
+    this.messageApi.getMessages(ticketId, 20, 0).pipe(take(1)).subscribe({
+      next: (resp: GetMessagesResponse) => {
+        this.conversationStore.loadMessages(mapApiMessagesToCanonical(resp, ticketId));
+        this.conversationStore.setHasMore(resp.meta.has_more);
+        this.conversationStore.setLoading(false);
+      },
+      error: () => {
+        this.conversationStore.setLoading(false);
+      },
+    });
   }
 }
