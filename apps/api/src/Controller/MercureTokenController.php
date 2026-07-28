@@ -7,7 +7,6 @@ namespace App\Controller;
 use App\Application\Service\MercureJwtService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use App\Domain\User\User;
@@ -19,7 +18,7 @@ final class MercureTokenController extends AbstractController
         private readonly MercureJwtService $jwtService,
     ) {}
 
-    #[Route('/api/mercure/token', methods: ['GET'])]
+    // Route registered in config/routes.yaml (app_mercure_token)
     public function getToken(#[CurrentUser] ?User $user): JsonResponse
     {
         if (null === $user) {
