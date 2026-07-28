@@ -5,11 +5,7 @@ import { CommonModule } from '@angular/common';
   selector: 'app-loading-spinner',
   standalone: true,
   imports: [CommonModule],
-  template: `
-    <div class="spinner-container">
-      <div class="spinner"></div>
-    </div>
-  `,
+  templateUrl: './loading-spinner.component.html',
   styles: [`
     .spinner-container {
       display: flex;

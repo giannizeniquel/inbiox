@@ -7,68 +7,7 @@ import { AgentStore } from '../../../core/stores/agent.store';
   selector: 'app-availability-page',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  template: `
-    <div class="availability-page">
-      <h2>Agent Availability</h2>
-
-      @if (store.loading()) {
-        <div class="loading">Loading...</div>
-      }
-
-      @if (store.availability(); as av) {
-        <div class="current-state">
-          <h3>Current State</h3>
-          <table>
-            <tr><td>In Shift</td><td>{{ av.isInShift ? 'Yes' : 'No' }}</td></tr>
-            <tr><td>Available</td><td>{{ av.isAvailable ? 'Yes' : 'No' }}</td></tr>
-            <tr><td>Current Load</td><td>{{ av.currentLoad }} / {{ av.maxCapacity }}</td></tr>
-            <tr><td>Timezone</td><td>{{ av.timezone }}</td></tr>
-            @if (av.override) {
-              <tr>
-                <td>Override Active</td>
-                <td>
-                  {{ av.override.active ? 'Yes' : 'No' }}
-                  @if (av.override.expiresAt) {
-                    <span>(expires {{ av.override.expiresAt | date:'short' }})</span>
-                  }
-                </td>
-              </tr>
-            }
-          </table>
-        </div>
-      }
-
-      <div class="override-form">
-        <h3>Set Override</h3>
-        <label>
-          Available:
-          <select #availableSelect>
-            <option value="true">Available</option>
-            <option value="false">Unavailable</option>
-          </select>
-        </label>
-
-        <label>
-          TTL (minutes, optional — leave empty for persistent):
-          <input type="number" #ttlInput min="1" placeholder="e.g. 120" />
-        </label>
-
-        <button (click)="onSetOverride(availableSelect.value === 'true', ttlInput.value)">
-          Apply Override
-        </button>
-      </div>
-
-      <div class="actions">
-        <button
-          class="btn-danger"
-          (click)="onClearOverride()"
-          [disabled]="!store.availability()?.override?.active"
-        >
-          Clear Override
-        </button>
-      </div>
-    </div>
-  `,
+  templateUrl: './availability.page.html',
   styles: [`
     .availability-page {
       padding: 1rem;

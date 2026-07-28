@@ -10,42 +10,7 @@ export interface VolumeDataPoint {
   selector: 'app-volume-trend-card',
   standalone: true,
   imports: [CommonModule],
-  template: `
-    <div class="kpi-card">
-      <div class="kpi-card__header">
-        <span class="kpi-card__icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="20" x2="18" y2="10"></line>
-            <line x1="12" y1="20" x2="12" y2="4"></line>
-            <line x1="6" y1="20" x2="6" y2="14"></line>
-          </svg>
-        </span>
-        <span class="kpi-card__label">Volumen diario</span>
-      </div>
-      <div class="kpi-card__value">
-        @if (loading) {
-          <div class="kpi-card__skeleton"></div>
-        } @else {
-          <span class="kpi-card__number">{{ totalCount }}</span>
-          <span class="kpi-card__unit">total</span>
-        }
-      </div>
-      @if (!loading && data.length > 0) {
-        <div class="kpi-card__chart">
-          @for (item of chartData; track item.date) {
-            <div class="kpi-card__bar-container">
-              <div
-                class="kpi-card__bar"
-                [style.height.%]="item.percentage"
-                [title]="item.date + ': ' + item.count"
-              ></div>
-              <span class="kpi-card__bar-label">{{ item.label }}</span>
-            </div>
-          }
-        </div>
-      }
-    </div>
-  `,
+  templateUrl: './volume-trend-card.component.html',
   styleUrl: './volume-trend-card.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
