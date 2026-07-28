@@ -34,15 +34,18 @@ export class InboxPageComponent implements OnInit {
       takeUntilDestroyed(this.destroyRef),
     ).subscribe(params => {
       const ticketId = String(params['ticketId']);
-      // Defer to next tick so child components are fully rendered
-      setTimeout(() => {
-        this.ticketApi.getTicket(ticketId).subscribe({
-          next: (ticket) => {
-            this.ticketStore.addOrUpdateTicket(ticket);
-            this.ticketStore.setActiveTicket(ticket.ticket_id);
-            this.loadMessages(ticket.ticket_id);
-          },
-          error: () => {},
+      // Wait for initial render to complete so ConversationComponent
+      // DOM is fully laid out before we insert the conversation.
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          this.ticketApi.getTicket(ticketId).subscribe({
+            next: (ticket) => {
+              this.ticketStore.addOrUpdateTicket(ticket);
+              this.ticketStore.setActiveTicket(ticket.ticket_id);
+              this.loadMessages(ticket.ticket_id);
+            },
+            error: () => {},
+          });
         });
       });
     });

@@ -23,18 +23,19 @@
       <app-banner-warning>{{ warningMessage() }}</app-banner-warning>
     }
 
-    <!-- Virtual-scroll message area — always rendered to avoid layout recalculation issues -->
-    <app-conversation-loading [class.hidden]="!loading()" />
-    <app-virtual-scroll-viewport
-      #vps
-      mode="variable"
-      [items]="messages()"
-      [estimatedItemHeight]="80"
-      [bufferSize]="8"
-      (scroll)="onScroll()"
-      (visibleRange)="onVisibleRangeChange($event)"
-      [class.hidden]="loading()"
-    >
+    <!-- Virtual-scroll message area -->
+    @if (loading()) {
+      <app-conversation-loading />
+    } @else {
+      <app-virtual-scroll-viewport
+        #vps
+        mode="variable"
+        [items]="messages()"
+        [estimatedItemHeight]="80"
+        [bufferSize]="8"
+        (scroll)="onScroll()"
+        (visibleRange)="onVisibleRangeChange($event)"
+      >
         @for (message of visibleMessages(); track message.id) {
           <app-message-bubble
             [message]="message"
@@ -42,6 +43,7 @@
           />
         }
       </app-virtual-scroll-viewport>
+    }
 
     <!-- New messages indicator -->
     <app-new-messages-indicator
