@@ -13,6 +13,7 @@ class ContactListItemDTO
         public ?int $ownerId,
         public ?string $email,
         public array $timestamps,
+        public ?int $activeTicketId = null,
     ) {}
 
     public function toArray(): array
@@ -26,6 +27,7 @@ class ContactListItemDTO
             'owner_id' => $this->ownerId,
             'email' => $this->email,
             'timestamps' => $this->timestamps,
+            'activeTicketId' => $this->activeTicketId,
         ];
     }
 }

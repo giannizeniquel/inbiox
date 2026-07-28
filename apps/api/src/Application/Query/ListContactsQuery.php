@@ -72,7 +72,11 @@ class ListContactsQuery
 
         $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
-        $sql = "SELECT c.id, c.phone, c.name, c.status, c.channel, c.owner_id, c.email, c.created_at, c.updated_at
+        $sql = "SELECT c.id, c.phone, c.name, c.status, c.channel, c.owner_id, c.email, c.created_at, c.updated_at,
+                       (SELECT t.id FROM tickets t 
+                        WHERE t.contact_id = c.id 
+                        AND t.status NOT IN ('closed', 'resolved') 
+                        ORDER BY t.created_at DESC LIMIT 1) as active_ticket_id
                 FROM contacts c
                 $whereClause
                 ORDER BY c.updated_at DESC, c.id DESC
@@ -98,6 +102,7 @@ class ListContactsQuery
                     'created_at' => $row['created_at'],
                     'updated_at' => $row['updated_at'],
                 ],
+                activeTicketId: $row['active_ticket_id'] ? (int) $row['active_ticket_id'] : null,
             );
         }, $results);
 

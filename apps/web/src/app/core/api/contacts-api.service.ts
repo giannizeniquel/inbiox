@@ -65,7 +65,7 @@ export class ContactsApiService {
       name: item.name || null,
       lastInteraction: item.timestamps?.updated_at || null,
       unreadCount: 0, // Not available in backend yet
-      activeTicketId: null, // Not available in backend yet
+      activeTicketId: item.activeTicketId ? String(item.activeTicketId) : null,
       tags: item.tags || [], // Not available in backend yet
       ownerId: item.owner_id,
       email: item.email || null,
