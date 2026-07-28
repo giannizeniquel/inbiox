@@ -66,12 +66,13 @@ export class AppShellComponent implements OnDestroy {
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
     ).subscribe((event: any) => {
-      const url = event.urlAfterRedirects || event.url;
+      const url = (event.urlAfterRedirects || event.url).split('?')[0];
       this.currentRoute.set(url.split('/')[1] || 'inbox');
     });
 
     // Initial route
-    this.currentRoute.set(this.router.url.split('/')[1] || 'inbox');
+    const initialUrl = this.router.url.split('?')[0];
+    this.currentRoute.set(initialUrl.split('/')[1] || 'inbox');
 
     this.syncResponsiveState();
     if (typeof window !== 'undefined') {
@@ -119,7 +120,8 @@ export class AppShellComponent implements OnDestroy {
 
   /** Check if current route is inbox */
   isInboxRoute(): boolean {
-    return this.currentRoute() === 'inbox';
+    const route = this.currentRoute();
+    return route === 'inbox' || route.startsWith('inbox?');
   }
 
   toggleSidebar(): void {
