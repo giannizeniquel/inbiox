@@ -249,40 +249,37 @@ class Sprint15ContactTimelineTest extends WebTestCase
         $this->assertArrayHasKey('hasMore', $data);
         $this->assertIsArray($data['events']);
 
-        // Should have 4 events: message.received, ticket.created, ticket.status_changed, ticket.assigned
-        $this->assertCount(4, $data['events']);
+        // Should have 3 events: ticket.created, ticket.status_changed, ticket.assigned (no individual messages)
+        $this->assertCount(3, $data['events']);
 
-        // Verify DESC order (newest first)
+        // Verify DESC order (newest first): ticket.created(-2h), ticket.status_changed(-3h), ticket.assigned(-4h)
         $types = array_column($data['events'], 'type');
         $this->assertSame([
-            'message.received',
             'ticket.created',
             'ticket.status_changed',
             'ticket.assigned',
         ], $types);
 
-        // Verify event structure
+        // Verify event structure — first event is ticket.created (newest)
         $first = $data['events'][0];
         $this->assertArrayHasKey('type', $first);
         $this->assertArrayHasKey('occurred_at', $first);
-        $this->assertSame('message.received', $first['type']);
+        $this->assertSame('ticket.created', $first['type']);
         $this->assertNotNull($first['occurred_at']);
-        $this->assertStringContainsString('Hello', $first['content'] ?? '');
-        $this->assertSame('inbound', $first['direction']);
         $this->assertNotNull($first['ticket_id']);
 
         // Verify ticket.created event structure
-        $ticketCreated = $data['events'][1];
+        $ticketCreated = $data['events'][0];
         $this->assertSame('ticket.created', $ticketCreated['type']);
         $this->assertSame($fixtures['ticketId'], $ticketCreated['ticket_id']);
         $this->assertNotNull($ticketCreated['ticket_status']);
 
         // Verify ticket.status_changed event
-        $statusChanged = $data['events'][2];
+        $statusChanged = $data['events'][1];
         $this->assertSame('ticket.status_changed', $statusChanged['type']);
 
-        // Verify ticket.assigned event
-        $assigned = $data['events'][3];
+        // Verify ticket.assigned event (oldest)
+        $assigned = $data['events'][2];
         $this->assertSame('ticket.assigned', $assigned['type']);
         $this->assertSame($fixtures['ticketId'], $assigned['ticket_id']);
 
@@ -303,17 +300,18 @@ class Sprint15ContactTimelineTest extends WebTestCase
         $this->assertNotNull($first['cursor']);
 
         $firstTypes = array_column($first['events'], 'type');
-        $this->assertSame(['message.received', 'ticket.created'], $firstTypes);
+        $this->assertSame(['ticket.created', 'ticket.status_changed'], $firstTypes);
 
         // Second request: use cursor to get older events
         $cursor = $first['cursor'];
         $second = $this->getJson('/api/contacts/' . $fixtures['contactId'] . '/timeline?before=' . urlencode($cursor) . '&limit=2');
 
         $this->assertResponseStatusCodeSame(200);
-        $this->assertCount(2, $second['events']);
+        // Only 1 remaining event (ticket.assigned, oldest at -4h)
+        $this->assertCount(1, $second['events']);
 
         $secondTypes = array_column($second['events'], 'type');
-        $this->assertSame(['ticket.status_changed', 'ticket.assigned'], $secondTypes);
+        $this->assertSame(['ticket.assigned'], $secondTypes);
 
         // Third request: should return no more events (cursor is oldest)
         $cursor = $second['cursor'];

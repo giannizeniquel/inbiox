@@ -179,6 +179,10 @@ export class ContactsPageComponent implements OnInit, OnDestroy {
     }
   }
 
+  onOpenTicketFromTimeline(ticketId: string): void {
+    this.router.navigate(['/inbox'], { queryParams: { ticketId } });
+  }
+
   /** Handle create dialog close */
   onCreateDialogClose(contact: UIContact | null): void {
     this.showCreateDialog = false;

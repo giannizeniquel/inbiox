@@ -47,16 +47,16 @@ export class ContactTimelineComponent {
     });
   }
 
-  /** Handle scroll event — trigger load more when near the bottom */
-  onScroll(event: Event): void {
-    const target = event.target as HTMLElement;
-    if (!target) return;
+  /** Handle visibleRange change — trigger load more when near the end */
+  onVisibleRange(range: { startIndex: number; endIndex: number }): void {
+    if (!range || range.endIndex < 0) return;
 
-    // Load more when user scrolls near the bottom
-    const threshold = 200;
-    const atBottom = target.scrollHeight - target.scrollTop - target.clientHeight < threshold;
+    const eventCount = this.store.events().length;
+    if (eventCount === 0) return;
 
-    if (atBottom && this.store.hasMore() && !this.store.loading()) {
+    // Load older events when user scrolls near the bottom (oldest items are at the end)
+    const threshold = 5;
+    if (range.endIndex >= eventCount - threshold && this.store.hasMore() && !this.store.loading()) {
       const id = Number(this.contactId());
       if (!isNaN(id)) {
         this.store.loadOlder(id);

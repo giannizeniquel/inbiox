@@ -31,7 +31,7 @@
       mode="variable"
       [estimatedItemHeight]="72"
       [bufferSize]="5"
-      (scroll)="onScroll($event)"
+      (visibleRange)="onVisibleRange($event)"
     >
       @for (event of vps.visibleItems(); track $index) {
         <button

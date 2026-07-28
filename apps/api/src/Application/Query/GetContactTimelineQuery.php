@@ -64,12 +64,10 @@ class GetContactTimelineQuery
 
     private function buildSql(?string $before): string
     {
-        $messageWhere = 'c.contact_id = :contact_id';
         $outboxWhere = "t.contact_id = :contact_id\n              AND oe.aggregate_type = 'Ticket'\n              AND (oe.event_type LIKE '%TicketCreated%' OR oe.event_type LIKE '%TicketUpdated%')";
         $assignmentWhere = 't.contact_id = :contact_id';
 
         if ($before !== null) {
-            $messageWhere .= "\n            AND m.created_at < :before_date";
             $outboxWhere .= "\n            AND oe.created_at < :before_date";
             $assignmentWhere .= "\n            AND a.assigned_at < :before_date";
         }
@@ -77,23 +75,7 @@ class GetContactTimelineQuery
         return <<<SQL
         SELECT type, occurred_at, content, ticket_id, ticket_status, assigned_to, direction
         FROM (
-            -- Messages
-            SELECT
-                CASE WHEN m.direction = 'outbound' THEN 'message.sent' ELSE 'message.received' END AS type,
-                m.created_at AS occurred_at,
-                SUBSTRING(m.content, 1, 100) AS content,
-                t.id AS ticket_id,
-                NULL AS ticket_status,
-                NULL AS assigned_to,
-                m.direction
-            FROM messages m
-            JOIN conversations c ON m.conversation_id = c.id
-            LEFT JOIN tickets t ON t.conversation_id = c.id
-            WHERE {$messageWhere}
-
-            UNION ALL
-
-            -- Outbox events (ticket.created, ticket.status_changed)
+            -- Ticket lifecycle events (created, status_changed)
             SELECT
                 CASE
                     WHEN oe.event_type LIKE '%TicketCreated%' THEN 'ticket.created'
@@ -111,7 +93,7 @@ class GetContactTimelineQuery
 
             UNION ALL
 
-            -- Assignments
+            -- Agent assignments
             SELECT
                 'ticket.assigned' AS type,
                 a.assigned_at AS occurred_at,
