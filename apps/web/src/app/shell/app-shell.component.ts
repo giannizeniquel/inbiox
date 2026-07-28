@@ -92,11 +92,11 @@ export class AppShellComponent implements OnDestroy {
     setTimeout(() => this.workspaceStore.autoSelectFirstIfNeeded(), 500);
 
     // Handle ?ticketId=X deep-link from contacts/timeline
-    this.route.queryParams.pipe(
-      filter((params: any) => params['ticketId'] != null),
-      take(1),
-    ).subscribe((params: any) => {
-      const ticketId = String(params['ticketId']);
+    // Don't use take(1) — need to respond to every navigation
+    this.route.queryParams.subscribe((params: any) => {
+      const ticketId = params['ticketId'] ? String(params['ticketId']) : null;
+      if (!ticketId) return;
+      
       requestAnimationFrame(() => {
         setTimeout(() => {
           this.ticketApi.getTicket(ticketId).subscribe({
