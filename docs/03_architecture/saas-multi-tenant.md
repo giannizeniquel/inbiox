@@ -36,21 +36,39 @@ GraphClient: construido con token global → override phoneNumberId por ticket
 
 ## Modelo B — Futuro (SaaS Multi-Client)
 
+Cada cliente tiene su propia Meta App + credenciales. Un cliente puede tener **múltiples workspaces** bajo la misma app (atención al cliente, ventas, soporte), exactamente como funciona el Modelo A pero con segregación por cliente.
+
 ```
 Inbiox Platform
 │
 ├── Cliente A: Supermercado "El Bueno"
 │   ├── Meta App A → Token A, Secret A
-│   ├── Workspace: +54 362 111-1111
-│   └── Agentes del cliente A solo ven datos del cliente A
+│   ├── Workspace A1: +54 362 111-1111 (Atención al cliente)
+│   ├── Workspace A2: +54 362 222-2222 (Ventas online)
+│   └── Agentes del cliente A: ven workspaces A1 + A2 según asignación
 │
-├── Cliente B: Ferretería "El Clavo"  
+├── Cliente B: Ferretería "El Clavo"
 │   ├── Meta App B → Token B, Secret B
-│   ├── Workspace: +54 11 222-2222
-│   └── Agentes del cliente B solo ven datos del cliente B
+│   ├── Workspace B1: +54 11 333-3333 (Soporte)
+│   └── Agentes del cliente B: solo ven workspace B1
 │
-└── Webhook: POST /webhook → identifica cliente por phone_number_id
+└── Cliente C: Agencia de viajes "ViajaConmigo"
+    ├── Meta App C → Token C, Secret C
+    ├── Workspace C1: +54 351 444-4444 (Consultas generales)
+    ├── Workspace C2: +54 351 555-5555 (VIP / Post-venta)
+    ├── Workspace C3: +54 351 666-6666 (Reclamos)
+    └── Agentes del cliente C: asignados a workspaces específicos
 ```
+
+**Regla**: un cliente tiene UNA Meta App (un token/secret), y bajo esa app puede tener N workspaces (N números de WhatsApp). La segregación es:
+
+| Nivel | Segregado por |
+|-------|---------------|
+| Cliente ↔ Cliente | `client_id` en todas las tablas |
+| Workspace ↔ Workspace (mismo cliente) | `phone_number_id` (ya funciona en Modelo A) |
+| Agente ↔ Workspace | `agent_workspace` join table (ya implementado) |
+
+Esto significa que **el Modelo B es el Modelo A + una capa de cliente arriba**. El workspace switcher actual no cambia — solo se agrega el scope de cliente para que un agente del cliente A jamás vea datos del cliente B.
 
 ---
 
@@ -65,7 +83,7 @@ Inbiox Platform
 | `webhook_verify_token` | VARCHAR(255) | Token de verificación al suscribir webhook |
 | `graph_api_version` | VARCHAR(10) | Versión de Graph API (default: v25.0) |
 | `webhook_url` | VARCHAR(255) | URL del webhook para este workspace |
-| `client_id` | INT (FK → clients) | Dueño del workspace (tabla `clients` nueva) |
+| `client_id` | INT (FK → clients) | Dueño del workspace — **N workspaces → 1 cliente** |
 
 ### Tabla `clients` (nueva)
 
