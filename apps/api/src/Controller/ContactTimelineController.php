@@ -1,0 +1,56 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Controller;
+
+use App\Application\DTO\TimelineEventDTO;
+use App\Application\Query\GetContactTimelineQuery;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
+
+#[IsGranted('ROLE_AGENT')]
+class ContactTimelineController
+{
+    public function __construct(
+        private GetContactTimelineQuery $getContactTimelineQuery,
+        private LoggerInterface $logger,
+    ) {}
+
+    #[Route('/api/contacts/{id}/timeline', methods: ['GET'])]
+    public function getTimeline(int $id, Request $request): JsonResponse
+    {
+        try {
+            $before = $request->query->get('before');
+            $limit = min(50, max(1, (int) $request->query->get('limit', 20)));
+
+            $result = $this->getContactTimelineQuery->execute(
+                contactId: $id,
+                before: $before,
+                limit: $limit,
+            );
+
+            $events = array_map(
+                fn (TimelineEventDTO $dto) => $dto->toArray(),
+                $result['events'],
+            );
+
+            return new JsonResponse([
+                'events' => $events,
+                'cursor' => $result['cursor'],
+                'hasMore' => $result['hasMore'],
+            ]);
+        } catch (\Exception $e) {
+            $referenceId = bin2hex(random_bytes(8));
+            $this->logger->error('Error fetching contact timeline: {message}', [
+                'reference' => $referenceId,
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
+        }
+    }
+}

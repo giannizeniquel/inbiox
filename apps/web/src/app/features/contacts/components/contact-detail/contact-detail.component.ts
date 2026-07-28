@@ -1,5 +1,6 @@
 import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
 import { UIContact } from '../../models';
+import { ContactTimelineComponent } from '../contact-timeline/contact-timeline.component';
 
 /**
  * ContactDetailPanelComponent — presentational component showing full contact details.
@@ -15,7 +16,7 @@ import { UIContact } from '../../models';
 @Component({
   selector: 'app-contact-detail',
   standalone: true,
-  imports: [],
+  imports: [ContactTimelineComponent],
   templateUrl: './contact-detail.component.html',
   styleUrl: './contact-detail.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -32,6 +33,9 @@ export class ContactDetailComponent {
 
   /** Emitted when user clicks "Editar" */
   readonly editContact = output<string>();
+
+  /** Emitted when user clicks a timeline event that references a ticket */
+  readonly openTicket = output<string>();
 
   /** Compute initials from name */
   initials(): string {
@@ -73,6 +77,10 @@ export class ContactDetailComponent {
   onOpenConversation(): void {
     const id = this.contact()?.id;
     if (id) this.openConversation.emit(id);
+  }
+
+  onOpenTicket(ticketId: string): void {
+    this.openTicket.emit(ticketId);
   }
 
   onEditContact(): void {

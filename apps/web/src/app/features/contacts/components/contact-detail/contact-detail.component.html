@@ -77,17 +77,9 @@
       </button>
     </div>
 
-    <div class="contact-detail__related">
-      <h3 class="related-title">Conversaciones recientes</h3>
-      @if (contact()!.activeTicketId) {
-        <div class="related-item">
-          <span class="related-item__status" data-status="active"></span>
-          <span class="related-item__text">Conversación activa</span>
-          <span class="related-item__id">{{ contact()!.activeTicketId }}</span>
-        </div>
-      } @else {
-        <p class="related-empty">Sin conversaciones activas</p>
-      }
-    </div>
+    <app-contact-timeline
+      [contactId]="contact()!.id"
+      (openTicket)="onOpenTicket($event)"
+    />
   }
 </div>

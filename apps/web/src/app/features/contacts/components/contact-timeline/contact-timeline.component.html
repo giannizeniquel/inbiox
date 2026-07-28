@@ -1,0 +1,70 @@
+<div class="timeline">
+  <h3 class="timeline__title">Actividad</h3>
+
+  <!-- Loading skeleton for initial load -->
+  @if (store.loading() && store.events().length === 0) {
+    <div class="timeline__skeleton">
+      @for (_ of [1,2,3]; track $index) {
+        <div class="timeline__skeleton-item">
+          <div class="skeleton-icon"></div>
+          <div class="skeleton-content">
+            <div class="skeleton-line skeleton-line--title"></div>
+            <div class="skeleton-line skeleton-line--time"></div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Empty state -->
+  @else if (store.events().length === 0 && !store.loading()) {
+    <div class="timeline__empty">
+      <p>No hay actividad registrada para este contacto</p>
+    </div>
+  }
+
+  <!-- Event list via virtual scroll -->
+  @else {
+    <app-virtual-scroll-viewport
+      #vps
+      [items]="store.events()"
+      mode="variable"
+      [estimatedItemHeight]="72"
+      [bufferSize]="5"
+      (scroll)="onScroll($event)"
+    >
+      @for (event of vps.visibleItems(); track $index) {
+        <button
+          class="timeline__event"
+          [class.timeline__event--clickable]="event.ticketId != null"
+          [attr.data-type]="event.type"
+          (click)="onEventClick(event)"
+          type="button"
+        >
+          <span class="timeline__event-icon" [attr.data-type]="event.type">
+            {{ eventIcon(event.type) }}
+          </span>
+          <div class="timeline__event-body">
+            <span class="timeline__event-label">{{ eventLabel(event) }}</span>
+            @if (event.content) {
+              <span class="timeline__event-content">{{ event.content }}</span>
+            }
+            <span class="timeline__event-time">{{ event.occurredAt | date:'short' }}</span>
+          </div>
+        </button>
+      }
+    </app-virtual-scroll-viewport>
+
+    <!-- Loading more indicator -->
+    @if (store.loading() && store.events().length > 0) {
+      <div class="timeline__loading-more">Cargando más actividad…</div>
+    }
+  }
+
+  <!-- Error state -->
+  @if (store.error(); as error) {
+    <div class="timeline__error">
+      <p>{{ error }}</p>
+    </div>
+  }
+</div>

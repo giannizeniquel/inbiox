@@ -10,6 +10,7 @@ import {
   CreateContactRequest,
   UpdateContactRequest
 } from '../dto/contact-transport.dto';
+import { TimelineEventResponse } from '../dto/timeline-transport.dto';
 
 /**
  * ContactsApiService — HTTP client for contacts endpoints.
@@ -133,6 +134,20 @@ export class ContactsApiService {
         recentTickets: [],
         email: response.email || null,
       }))
+    );
+  }
+
+  /**
+   * GET /api/contacts/{id}/timeline - Contact timeline events
+   */
+  getTimeline(contactId: number, before?: string, limit = 20): Observable<TimelineEventResponse> {
+    let params = new HttpParams().set('limit', limit.toString());
+    if (before) {
+      params = params.set('before', before);
+    }
+    return this.http.get<TimelineEventResponse>(
+      `${this.baseUrl}/api/contacts/${contactId}/timeline`,
+      { params }
     );
   }
 
