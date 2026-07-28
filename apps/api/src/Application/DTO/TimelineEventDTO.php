@@ -18,11 +18,11 @@ class TimelineEventDTO
     {
         return [
             'type' => $this->type,
-            'occurred_at' => $this->occurredAt,
+            'occurredAt' => $this->occurredAt,
             'content' => $this->content,
-            'ticket_id' => $this->ticketId,
-            'ticket_status' => $this->ticketStatus,
-            'assigned_to' => $this->assignedTo,
+            'ticketId' => $this->ticketId,
+            'ticketStatus' => $this->ticketStatus,
+            'assignedTo' => $this->assignedTo,
             'direction' => $this->direction,
         ];
     }

@@ -263,16 +263,16 @@ class Sprint15ContactTimelineTest extends WebTestCase
         // Verify event structure — first event is ticket.created (newest)
         $first = $data['events'][0];
         $this->assertArrayHasKey('type', $first);
-        $this->assertArrayHasKey('occurred_at', $first);
+        $this->assertArrayHasKey('occurredAt', $first);
         $this->assertSame('ticket.created', $first['type']);
-        $this->assertNotNull($first['occurred_at']);
-        $this->assertNotNull($first['ticket_id']);
+        $this->assertNotNull($first['occurredAt']);
+        $this->assertNotNull($first['ticketId']);
 
         // Verify ticket.created event structure
         $ticketCreated = $data['events'][0];
         $this->assertSame('ticket.created', $ticketCreated['type']);
-        $this->assertSame($fixtures['ticketId'], $ticketCreated['ticket_id']);
-        $this->assertNotNull($ticketCreated['ticket_status']);
+        $this->assertSame($fixtures['ticketId'], $ticketCreated['ticketId']);
+        $this->assertNotNull($ticketCreated['ticketStatus']);
 
         // Verify ticket.status_changed event
         $statusChanged = $data['events'][1];
@@ -281,7 +281,7 @@ class Sprint15ContactTimelineTest extends WebTestCase
         // Verify ticket.assigned event (oldest)
         $assigned = $data['events'][2];
         $this->assertSame('ticket.assigned', $assigned['type']);
-        $this->assertSame($fixtures['ticketId'], $assigned['ticket_id']);
+        $this->assertSame($fixtures['ticketId'], $assigned['ticketId']);
 
         // Cursor should be set (ISO 8601 of oldest event)
         $this->assertNotNull($data['cursor']);
