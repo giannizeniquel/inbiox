@@ -14,12 +14,14 @@
 .conversation-container {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  height: 100%;
   min-height: 0;
   width: 100%;
   overflow: hidden;
   background: var(--bg-chat);
+  position: relative;
   box-sizing: border-box;
+  padding-bottom: 60px;
 }
 
 // Wrapper for messages area + composer (pushes composer to bottom)

@@ -12,6 +12,10 @@
   flex-shrink: 0;
   border-top: 1px solid var(--border-subtle);
   background: var(--bg-sidebar);
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
   z-index: 100;
   box-sizing: border-box;
 }
