@@ -175,12 +175,8 @@
               <button class="modal__close" (click)="closeAgentModal()" aria-label="Close dialog">&times;</button>
             </div>
             <div class="modal__body">
-              <div class="form-group" style="display:flex;gap:8px;margin-bottom:12px;">
-                <input #agentIdInput type="number" class="form-input" placeholder="Agent ID" style="flex:1;" />
-                <button type="button" class="btn btn--sm btn--primary" (click)="addAgentById(agentIdInput)">Add</button>
-              </div>
               @if (agentOptions().length === 0) {
-                <p style="color:var(--text-secondary);">No agents assigned. Enter an agent ID above.</p>
+                <p>Loading agents...</p>
               } @else {
                 @for (agent of agentOptions(); track agent.id) {
                   <div class="form-group" style="display:flex;align-items:center;gap:8px;padding:4px 0;">

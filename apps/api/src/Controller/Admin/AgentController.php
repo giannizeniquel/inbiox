@@ -18,7 +18,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  *
  * All endpoints require ROLE_SUPERVISOR.
  */
-#[IsGranted('ROLE_SUPERVISOR')]
+#[IsGranted('ROLE_ADMIN')]
 #[Route('/api/admin/agents')]
 final class AgentController
 {

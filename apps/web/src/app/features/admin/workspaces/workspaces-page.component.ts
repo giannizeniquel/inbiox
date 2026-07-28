@@ -1,6 +1,8 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../environments/environment';
 import { WorkspaceDTO } from '../../../core/dto/workspace.dto';
 import { ListWorkspacesUseCase } from '../../../core/application/admin/workspaces/list-workspaces.use-case';
 import { CreateWorkspaceUseCase } from '../../../core/application/admin/workspaces/create-workspace.use-case';
@@ -37,6 +39,7 @@ export class WorkspacesPageComponent implements OnInit {
   private readonly updateUseCase = inject(UpdateWorkspaceUseCase);
   private readonly deactivateUseCase = inject(DeactivateWorkspaceUseCase);
   private readonly workspaceApi = inject(WorkspaceApiService);
+  private readonly http = inject(HttpClient);
 
   // State
   readonly workspaces = signal<WorkspaceDTO[]>([]);
@@ -212,25 +215,22 @@ export class WorkspacesPageComponent implements OnInit {
 
   openAgentModal(ws: WorkspaceDTO): void {
     this.assigningWorkspace.set(ws);
-    const assignedIds = (ws as any).agent_ids as number[] ?? [];
+    const assignedIds: number[] = (ws as any).agent_ids ?? [];
     
-    // Build simple agent list from assigned IDs (we don't fetch all agents
-    // because AgentController requires ROLE_SUPERVISOR which admin may not have)
-    this.agentOptions.set(assignedIds.map(id => ({
-      id,
-      name: `Agent ${id}`,
-      assigned: true,
-    })));
+    this.http.get<any>(`${environment.apiUrl}/api/admin/agents?limit=100`).subscribe({
+      next: (res) => {
+        const agents = res.data ?? [];
+        this.agentOptions.set(agents.map((a: any) => ({
+          id: a.id,
+          name: a.name ?? `Agent ${a.id}`,
+          assigned: assignedIds.includes(a.id),
+        })));
+      },
+      error: () => {
+        this.error.set('Failed to load agents');
+      },
+    });
     this.showAgentModal.set(true);
-  }
-
-  addAgentById(input: HTMLInputElement): void {
-    const id = parseInt(input.value, 10);
-    if (isNaN(id) || id <= 0) return;
-    if (this.agentOptions().some(a => a.id === id)) return;
-    
-    this.agentOptions.update(opts => [...opts, { id, name: `Agent ${id}`, assigned: true }]);
-    input.value = '';
   }
 
   closeAgentModal(): void {
