@@ -19,6 +19,7 @@ class ListContactsQuery
         ?string $channel = null,
         ?int $ownerId = null,
         ?string $email = null,
+        ?string $phoneNumberId = null,
     ): array {
         $page = max(1, $page);
         $limit = min(100, max(1, $limit));
@@ -59,6 +60,14 @@ class ListContactsQuery
         if ($email) {
             $where[] = 'c.email = ?';
             $params[] = $email;
+        }
+
+        // Workspace scope: filter contacts by conversations phone_number_id
+        // Uses EXISTS subquery to avoid JOIN duplicates when a contact has
+        // conversations on multiple phone numbers.
+        if (null !== $phoneNumberId) {
+            $where[] = 'EXISTS (SELECT 1 FROM conversations conv WHERE conv.contact_id = c.id AND conv.phone_number_id = ?)';
+            $params[] = $phoneNumberId;
         }
 
         $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';

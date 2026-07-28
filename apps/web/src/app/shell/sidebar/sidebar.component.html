@@ -15,6 +15,9 @@
       <span class="sse-indicator__label">{{ connectionLabel() }}</span>
     </div>
 
+    <!-- Workspace Switcher -->
+    <app-workspace-switcher [isCollapsed]="isCollapsed()" />
+
     <!-- Nav section -->
     <nav class="sidebar-nav" role="navigation" aria-label="Navegación principal">
       <a
@@ -107,6 +110,24 @@
           </span>
           <span class="sidebar-nav__label">Agentes</span>
           <span class="sidebar-nav__tooltip">Agentes</span>
+        </a>
+      }
+
+      @if (authStore.isAdmin()) {
+        <a
+          routerLink="/admin/workspaces"
+          routerLinkActive="sidebar-nav__item--active"
+          class="sidebar-nav__item"
+          aria-label="Workspaces"
+        >
+          <span class="sidebar-nav__icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="2" width="20" height="20" rx="4"></rect>
+              <line x1="2" y1="10" x2="22" y2="10"></line>
+            </svg>
+          </span>
+          <span class="sidebar-nav__label">Workspaces</span>
+          <span class="sidebar-nav__tooltip">Workspaces</span>
         </a>
       }
 

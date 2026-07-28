@@ -1,4 +1,4 @@
-import { Component, signal, HostListener, OnDestroy, ChangeDetectionStrategy, inject } from '@angular/core';
+import { Component, signal, OnDestroy, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs';
@@ -8,6 +8,9 @@ import { SidebarFooterComponent } from './sidebar/sidebar-footer.component';
 import { ConnectionBannerComponent } from './components/connection-banner.component';
 import { TicketListComponent } from '../features/inbox/containers/ticket-list/ticket-list.component';
 import { ConversationComponent } from '../features/inbox/containers/conversation/conversation.component';
+import { WorkspaceStore } from '../core/stores/workspace.store';
+import { TicketStore } from '../core/stores/ticket.store';
+import { ContactsStore } from '../features/contacts/stores/contacts.store';
 
 @Component({
   selector: 'app-shell',
@@ -46,6 +49,10 @@ export class AppShellComponent implements OnDestroy {
 
   private readonly _resizeHandler = this.syncResponsiveState.bind(this);
 
+  private readonly workspaceStore = inject(WorkspaceStore);
+  private readonly ticketStore = inject(TicketStore);
+  private readonly contactsStore = inject(ContactsStore);
+
   constructor() {
     // Subscribe to router events to track current route
     this.router.events.pipe(
@@ -62,6 +69,18 @@ export class AppShellComponent implements OnDestroy {
     if (typeof window !== 'undefined') {
       window.addEventListener('resize', this._resizeHandler);
     }
+
+    // Wire workspace change → store reloads
+    this.workspaceStore.onWorkspaceChange(() => this.ticketStore.reload());
+    this.workspaceStore.onWorkspaceChange(() => this.contactsStore.reload());
+
+    // Initialize workspace state
+    this.workspaceStore.loadMyWorkspaces();
+    this.workspaceStore.loadActiveWorkspace();
+
+    // Auto-select first workspace if agent has assignments but no active workspace
+    // Uses setTimeout to wait for both loadMyWorkspaces and loadActiveWorkspace to complete
+    setTimeout(() => this.workspaceStore.autoSelectFirstIfNeeded(), 500);
   }
 
   ngOnDestroy(): void {

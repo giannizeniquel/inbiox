@@ -63,7 +63,7 @@ class ReportingRepository extends ServiceEntityRepository
         return "TIMESTAMPDIFF(SECOND, {$startColumn}, {$endColumn})";
     }
 
-/**
+    /**
      * Get First Response Time metrics.
      *
      * All values are in SECONDS (UTC-based).
@@ -72,9 +72,10 @@ class ReportingRepository extends ServiceEntityRepository
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
      * @param int|null $agentId Optional filter by assigned agent
+     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
      * @return array{avg_frt_seconds: float|null, min_frt_seconds: int|null, max_frt_seconds: int|null, avg_frt_minutes: float|null, min_frt_minutes: int|null, max_frt_minutes: int|null}
      */
-    public function getFrtMetrics(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null): array
+    public function getFrtMetrics(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null): array
     {
         $conn = $this->entityManager->getConnection();
         
@@ -93,6 +94,11 @@ class ReportingRepository extends ServiceEntityRepository
         if ($agentId !== null) {
             $sql .= ' AND t.assigned_agent_id = :agentId';
             $params['agentId'] = $agentId;
+        }
+
+        if ($phoneNumberId !== null) {
+            $sql .= ' AND t.phone_number_id = :phoneNumberId';
+            $params['phoneNumberId'] = $phoneNumberId;
         }
         
         $result = $conn->fetchAssociative($sql, $params);
@@ -120,9 +126,10 @@ class ReportingRepository extends ServiceEntityRepository
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
      * @param int|null $agentId Optional filter by assigned agent
+     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
      * @return array{avg_rt_seconds: float|null, min_rt_seconds: int|null, max_rt_seconds: int|null, avg_rt_minutes: float|null, min_rt_minutes: int|null, max_rt_minutes: int|null}
      */
-    public function getRtMetrics(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null): array
+    public function getRtMetrics(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null): array
     {
         $conn = $this->entityManager->getConnection();
         
@@ -141,6 +148,11 @@ class ReportingRepository extends ServiceEntityRepository
         if ($agentId !== null) {
             $sql .= ' AND t.assigned_agent_id = :agentId';
             $params['agentId'] = $agentId;
+        }
+
+        if ($phoneNumberId !== null) {
+            $sql .= ' AND t.phone_number_id = :phoneNumberId';
+            $params['phoneNumberId'] = $phoneNumberId;
         }
         
         $result = $conn->fetchAssociative($sql, $params);
@@ -165,9 +177,10 @@ class ReportingRepository extends ServiceEntityRepository
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
      * @param int|null $agentId Optional filter by assigned agent
+     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
      * @return array{new: int, active: int, waiting: int, resolved: int, closed: int}
      */
-    public function getCountsByStatus(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null): array
+    public function getCountsByStatus(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null): array
     {
         $qb = $this->createQueryBuilder('t');
 
@@ -180,6 +193,11 @@ class ReportingRepository extends ServiceEntityRepository
         if ($agentId !== null) {
             $qb->andWhere('t.assignedAgentId = :agentId')
                ->setParameter('agentId', $agentId);
+        }
+
+        if ($phoneNumberId !== null) {
+            $qb->andWhere('t.phoneNumberId = :phoneNumberId')
+               ->setParameter('phoneNumberId', $phoneNumberId);
         }
 
         $results = $qb->getQuery()->getResult();
@@ -208,9 +226,10 @@ class ReportingRepository extends ServiceEntityRepository
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
      * @param int|null $agentId Optional filter by assigned agent
+     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
      * @return array<int, array{date: string, tickets_created: int, tickets_resolved: int}>
      */
-    public function getVolumeOverTime(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null): array
+    public function getVolumeOverTime(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null): array
     {
         $conn = $this->entityManager->getConnection();
         $params = ['from' => $from->format('Y-m-d H:i:s'), 'to' => $to->format('Y-m-d H:i:s')];
@@ -220,11 +239,17 @@ class ReportingRepository extends ServiceEntityRepository
             $agentClause = ' AND t.assigned_agent_id = :agentId';
             $params['agentId'] = $agentId;
         }
+
+        $workspaceClause = '';
+        if ($phoneNumberId !== null) {
+            $workspaceClause = ' AND t.phone_number_id = :phoneNumberId';
+            $params['phoneNumberId'] = $phoneNumberId;
+        }
         
         // Created tickets grouped by date
         $sqlCreated = 'SELECT DATE(t.created_at) as date, COUNT(t.id) as tickets_created
         FROM tickets t
-        WHERE t.created_at >= :from AND t.created_at < :to' . $agentClause . '
+        WHERE t.created_at >= :from AND t.created_at < :to' . $agentClause . $workspaceClause . '
         GROUP BY DATE(t.created_at)';
         
         $createdResults = $conn->fetchAllAssociative($sqlCreated, $params);
@@ -232,7 +257,7 @@ class ReportingRepository extends ServiceEntityRepository
         // Resolved tickets grouped by date
         $sqlResolved = 'SELECT DATE(t.resolved_at) as date, COUNT(t.id) as tickets_resolved
         FROM tickets t
-        WHERE t.resolved_at IS NOT NULL AND t.resolved_at >= :from AND t.resolved_at < :to' . $agentClause . '
+        WHERE t.resolved_at IS NOT NULL AND t.resolved_at >= :from AND t.resolved_at < :to' . $agentClause . $workspaceClause . '
         GROUP BY DATE(t.resolved_at)';
         
         $resolvedResults = $conn->fetchAllAssociative($sqlResolved, $params);

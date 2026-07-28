@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Application\DTO\PaginationMetaDTO;
 use App\Application\Query\GetContactDetailQuery;
 use App\Application\Query\ListContactsQuery;
+use App\Application\Security\WorkspaceScope;
 use App\Application\UseCase\CreateContactUseCase;
 use App\Application\UseCase\DeleteContactUseCase;
 use App\Application\UseCase\UpdateContactUseCase;
@@ -25,6 +26,7 @@ class ContactController
         private CreateContactUseCase $createContactUseCase,
         private UpdateContactUseCase $updateContactUseCase,
         private DeleteContactUseCase $deleteContactUseCase,
+        private WorkspaceScope $workspaceScope,
         private LoggerInterface $logger,
     ) {}
 
@@ -40,6 +42,9 @@ class ContactController
             $ownerId = $request->query->get('ownerId');
             $email = $request->query->get('email');
 
+            // Workspace scope: AGENT sees only contacts with conversations in active workspace
+            $phoneNumberId = $this->workspaceScope->getActivePhoneNumberId();
+
             $result = $this->listContactsQuery->execute(
                 page: $page,
                 limit: $limit,
@@ -48,6 +53,7 @@ class ContactController
                 channel: $channel,
                 ownerId: $ownerId ? (int) $ownerId : null,
                 email: $email,
+                phoneNumberId: $phoneNumberId,
             );
 
             $items = array_map(fn($dto) => $dto->toArray(), $result['items']);

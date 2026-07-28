@@ -64,6 +64,12 @@ export const routes: Routes = [
           import('./features/admin/agents/agents-page.component').then(m => m.AgentsPageComponent),
       },
       {
+        path: 'admin/workspaces',
+        canActivate: [roleGuard('ROLE_ADMIN')],
+        loadComponent: () =>
+          import('./features/admin/workspaces/workspaces-page.component').then(m => m.WorkspacesPageComponent),
+      },
+      {
         path: 'settings',
         redirectTo: 'inbox',
         pathMatch: 'full',

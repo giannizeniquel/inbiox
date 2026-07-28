@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Agent;
 
 use App\Domain\User\User;
+use App\Domain\Workspace\Workspace;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -54,10 +55,21 @@ class Agent
     #[ORM\OneToMany(targetEntity: AgentShift::class, mappedBy: 'agent', orphanRemoval: true)]
     private Collection $shifts;
 
+    #[ORM\ManyToMany(targetEntity: Workspace::class, inversedBy: 'agents')]
+    #[ORM\JoinTable(name: 'agent_workspace')]
+    #[ORM\JoinColumn(name: 'agent_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
+    #[ORM\InverseJoinColumn(name: 'workspace_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
+    private Collection $workspaces;
+
+    #[ORM\ManyToOne(targetEntity: Workspace::class)]
+    #[ORM\JoinColumn(name: 'active_workspace_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+    private ?Workspace $activeWorkspace = null;
+
     public function __construct(string $name)
     {
         $this->name = $name;
         $this->shifts = new ArrayCollection();
+        $this->workspaces = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
     }
@@ -186,6 +198,38 @@ class Agent
                 $shift->setAgent(null);
             }
         }
+        return $this;
+    }
+
+    /** @return Collection<int, Workspace> */
+    public function getWorkspaces(): Collection
+    {
+        return $this->workspaces;
+    }
+
+    public function addWorkspace(Workspace $workspace): self
+    {
+        if (!$this->workspaces->contains($workspace)) {
+            $this->workspaces->add($workspace);
+        }
+        return $this;
+    }
+
+    public function removeWorkspace(Workspace $workspace): self
+    {
+        $this->workspaces->removeElement($workspace);
+        return $this;
+    }
+
+    public function getActiveWorkspace(): ?Workspace
+    {
+        return $this->activeWorkspace;
+    }
+
+    public function setActiveWorkspace(?Workspace $activeWorkspace): self
+    {
+        $this->activeWorkspace = $activeWorkspace;
+        $this->updatedAt = new \DateTimeImmutable();
         return $this;
     }
 

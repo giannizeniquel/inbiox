@@ -9,6 +9,7 @@ use App\Application\Query\GetTicketDetailQuery;
 use App\Application\Query\GetTicketMessagesQuery;
 use App\Application\Query\ListTicketsQuery;
 use App\Application\Security\OwnershipScope;
+use App\Application\Security\WorkspaceScope;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -23,6 +24,7 @@ class InboxController
         private GetTicketDetailQuery $getTicketDetailQuery,
         private GetTicketMessagesQuery $getTicketMessagesQuery,
         private OwnershipScope $ownershipScope,
+        private WorkspaceScope $workspaceScope,
         private LoggerInterface $logger,
     ) {}
 
@@ -41,6 +43,9 @@ class InboxController
             // Ownership scope: AGENT sees only own tickets; SUPERVISOR/ADMIN see all
             $scopeAgentId = $this->ownershipScope->getAgentId();
 
+            // Workspace scope: AGENT sees only active workspace's tickets
+            $phoneNumberId = $this->workspaceScope->getActivePhoneNumberId();
+
             $result = $this->listTicketsQuery->execute(
                 page: $page,
                 limit: $limit,
@@ -50,6 +55,7 @@ class InboxController
                 search: $search,
                 sort: $sort,
                 scopeAgentId: $scopeAgentId,
+                phoneNumberId: $phoneNumberId,
             );
 
             $items = array_map(fn($dto) => $dto->toArray(), $result['items']);

@@ -28,6 +28,9 @@ class ListTicketsQuery
      * @param int|null $scopeAgentId Ownership scope: forces WHERE assigned_agent_id = scopeAgentId
      *                                Used by InboxController to restrict AGENT to own tickets.
      *                                null = no scope restriction (SUPERVISOR/ADMIN).
+     * @param string|null $phoneNumberId Workspace scope: filters by ticket phone_number_id.
+     *                                   Used by InboxController via WorkspaceScope.
+     *                                   null = no workspace filter (SUPERVISOR/ADMIN).
      */
     public function execute(
         int $page = 1,
@@ -38,6 +41,7 @@ class ListTicketsQuery
         ?string $search = null,
         string $sort = 'last_message_desc',
         ?int $scopeAgentId = null,
+        ?string $phoneNumberId = null,
     ): array {
         $page = max(1, $page);
         $limit = min(100, max(1, $limit));
@@ -63,6 +67,12 @@ class ListTicketsQuery
         if (null !== $scopeAgentId) {
             $where[] = 't.assigned_agent_id = ?';
             $params[] = (string) $scopeAgentId;
+        }
+
+        // Workspace scope: filter by phone_number_id for AGENT with active workspace
+        if (null !== $phoneNumberId) {
+            $where[] = 't.phone_number_id = ?';
+            $params[] = $phoneNumberId;
         }
         
         if ($status) {

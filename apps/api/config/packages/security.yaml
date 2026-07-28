@@ -42,12 +42,17 @@ security:
         # Authenticated user required
         - { path: ^/api/auth/logout, roles: IS_AUTHENTICATED_FULLY }
         - { path: ^/api/auth/me, roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/api/me/workspace, roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/api/me/workspaces, roles: IS_AUTHENTICATED_FULLY }
 
         # Admin-only
         - { path: ^/admin/outbox, roles: ROLE_ADMIN }
 
         # Admin API — User management
         - { path: ^/api/admin/users, roles: ROLE_ADMIN }
+
+        # Admin API — Workspace management (admin only)
+        - { path: ^/api/admin/workspaces, roles: ROLE_ADMIN }
 
         # Admin API — Agent management (supervisor or higher)
         - { path: ^/api/admin/agents, roles: ROLE_SUPERVISOR }

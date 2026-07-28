@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Domain\Agent\Agent;
+use App\Domain\Workspace\Workspace;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -27,5 +28,17 @@ class AgentRepository extends ServiceEntityRepository
     public function findAllActive(): array
     {
         return $this->findBy(['active' => true]);
+    }
+
+    /** @return Agent[] */
+    public function findByWorkspace(Workspace $workspace): array
+    {
+        return $this->createQueryBuilder('a')
+            ->innerJoin('a.workspaces', 'w')
+            ->where('w.id = :workspaceId')
+            ->setParameter('workspaceId', $workspace->getId())
+            ->orderBy('a.id', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
 }

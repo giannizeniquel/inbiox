@@ -1,4 +1,5 @@
 import { Injectable, signal, computed } from '@angular/core';
+import { Subject } from 'rxjs';
 import { UIContact, ContactFilters, ContactPagination } from '../models';
 
 const MAX_CONTACTS = 500;
@@ -46,6 +47,26 @@ export class ContactsStore {
 
   /** Error state */
   readonly error = signal<string | null>(null);
+
+  /** Reload trigger Subject — emitted when workspace changes */
+  readonly reload$ = new Subject<void>();
+
+  /** Reload callback registered by the ContactsPageComponent */
+  private reloadCallback: (() => void) | null = null;
+
+  /**
+   * Register a reload callback that is called when workspace changes.
+   * The ContactsPageComponent should register its API fetch function here.
+   */
+  onReload(callback: () => void): void {
+    this.reloadCallback = callback;
+  }
+
+  /** Trigger reload of contacts from the API */
+  reload(): void {
+    this.reloadCallback?.();
+    this.reload$.next();
+  }
 
   /** Filtered contacts based on current filters + search term */
   readonly filteredContacts = computed<UIContact[]>(() => {

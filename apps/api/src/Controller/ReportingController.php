@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Application\Security\OwnershipScope;
+use App\Application\Security\WorkspaceScope;
 use App\Application\Service\ReportingService;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -28,6 +29,7 @@ class ReportingController
     public function __construct(
         private ReportingService $reportingService,
         private OwnershipScope $ownershipScope,
+        private WorkspaceScope $workspaceScope,
         private LoggerInterface $logger
     ) {}
 
@@ -58,6 +60,15 @@ class ReportingController
     }
 
     /**
+     * Get the scoped phoneNumberId for workspace filtering.
+     * AGENT sees only their active workspace; SUPERVISOR/ADMIN see all.
+     */
+    private function getScopePhoneNumberId(): ?string
+    {
+        return $this->workspaceScope->getActivePhoneNumberId();
+    }
+
+    /**
      * Get First Response Time metrics.
      *
      * GET /reports/frt?from=2026-01-01T00:00:00Z&to=2026-01-02T00:00:00Z[&agent_id=1]
@@ -76,7 +87,9 @@ class ReportingController
                 $agentId = $scopeAgentId;
             }
 
-            $metrics = $this->reportingService->getFrt($from, $to, $agentId);
+            $phoneNumberId = $this->getScopePhoneNumberId();
+
+            $metrics = $this->reportingService->getFrt($from, $to, $agentId, $phoneNumberId);
             return new JsonResponse($metrics);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
@@ -103,7 +116,8 @@ class ReportingController
             $to = $this->parseDateTime($request->query->get('to'));
 
             $scopeAgentId = $this->getScopeAgentId();
-            $metrics = $this->reportingService->getRt($from, $to, $scopeAgentId);
+            $phoneNumberId = $this->getScopePhoneNumberId();
+            $metrics = $this->reportingService->getRt($from, $to, $scopeAgentId, $phoneNumberId);
 
             return new JsonResponse($metrics);
         } catch (\InvalidArgumentException $e) {
@@ -131,7 +145,8 @@ class ReportingController
             $to = $this->parseDateTime($request->query->get('to'));
 
             $scopeAgentId = $this->getScopeAgentId();
-            $counts = $this->reportingService->getCounts($from, $to, $scopeAgentId);
+            $phoneNumberId = $this->getScopePhoneNumberId();
+            $counts = $this->reportingService->getCounts($from, $to, $scopeAgentId, $phoneNumberId);
 
             return new JsonResponse($counts);
         } catch (\InvalidArgumentException $e) {
@@ -159,7 +174,8 @@ class ReportingController
             $to = $this->parseDateTime($request->query->get('to'));
 
             $scopeAgentId = $this->getScopeAgentId();
-            $volume = $this->reportingService->getVolume($from, $to, $scopeAgentId);
+            $phoneNumberId = $this->getScopePhoneNumberId();
+            $volume = $this->reportingService->getVolume($from, $to, $scopeAgentId, $phoneNumberId);
 
             return new JsonResponse($volume);
         } catch (\InvalidArgumentException $e) {

@@ -29,13 +29,14 @@ class ReportingService
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
      * @param int|null $agentId Optional filter by assigned agent
+     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
      * @return array{avg_frt: float|null, min_frt: int|null, max_frt: int|null}
      */
-    public function getFrt(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null): array
+    public function getFrt(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null): array
     {
         $this->validateDateRange($from, $to);
 
-        return $this->reportingRepository->getFrtMetrics($from, $to, $agentId);
+        return $this->reportingRepository->getFrtMetrics($from, $to, $agentId, $phoneNumberId);
     }
 
     /**
@@ -44,13 +45,14 @@ class ReportingService
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
      * @param int|null $agentId Optional filter by assigned agent
+     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
      * @return array{avg_rt: float|null, min_rt: int|null, max_rt: int|null}
      */
-    public function getRt(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null): array
+    public function getRt(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null): array
     {
         $this->validateDateRange($from, $to);
 
-        return $this->reportingRepository->getRtMetrics($from, $to, $agentId);
+        return $this->reportingRepository->getRtMetrics($from, $to, $agentId, $phoneNumberId);
     }
 
     /**
@@ -59,13 +61,14 @@ class ReportingService
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
      * @param int|null $agentId Optional filter by assigned agent
+     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
      * @return array{new: int, active: int, waiting: int, resolved: int, closed: int}
      */
-    public function getCounts(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null): array
+    public function getCounts(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null): array
     {
         $this->validateDateRange($from, $to);
 
-        return $this->reportingRepository->getCountsByStatus($from, $to, $agentId);
+        return $this->reportingRepository->getCountsByStatus($from, $to, $agentId, $phoneNumberId);
     }
 
     /**
@@ -74,13 +77,14 @@ class ReportingService
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
      * @param int|null $agentId Optional filter by assigned agent
+     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
      * @return array<int, array{date: string, tickets_created: int, tickets_resolved: int}>
      */
-    public function getVolume(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null): array
+    public function getVolume(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null): array
     {
         $this->validateDateRange($from, $to);
 
-        return $this->reportingRepository->getVolumeOverTime($from, $to, $agentId);
+        return $this->reportingRepository->getVolumeOverTime($from, $to, $agentId, $phoneNumberId);
     }
 
     /**
