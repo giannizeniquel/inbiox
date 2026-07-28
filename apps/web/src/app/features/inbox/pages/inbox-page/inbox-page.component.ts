@@ -34,13 +34,16 @@ export class InboxPageComponent implements OnInit {
       takeUntilDestroyed(this.destroyRef),
     ).subscribe(params => {
       const ticketId = String(params['ticketId']);
-      this.ticketApi.getTicket(ticketId).subscribe({
-        next: (ticket) => {
-          this.ticketStore.addOrUpdateTicket(ticket);
-          this.ticketStore.setActiveTicket(ticket.ticket_id);
-          this.loadMessages(ticket.ticket_id);
-        },
-        error: () => {},
+      // Defer to next tick so child components are fully rendered
+      setTimeout(() => {
+        this.ticketApi.getTicket(ticketId).subscribe({
+          next: (ticket) => {
+            this.ticketStore.addOrUpdateTicket(ticket);
+            this.ticketStore.setActiveTicket(ticket.ticket_id);
+            this.loadMessages(ticket.ticket_id);
+          },
+          error: () => {},
+        });
       });
     });
   }
