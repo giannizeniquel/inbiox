@@ -3,12 +3,9 @@ import {
   inject,
   DestroyRef,
   OnInit,
-  OnDestroy,
   signal,
   computed,
   viewChild,
-  effect,
-  HostListener,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -24,6 +21,7 @@ import { TicketCardComponent } from '../../components/ticket-card/ticket-card.co
 import { TicketSearchComponent } from '../../components/chat-search/ticket-search.component';
 import { TicketFiltersComponent } from '../../components/chat-filters/ticket-filters.component';
 import { VirtualScrollViewportComponent } from '../../../../shared/components/virtual-scroll-viewport/virtual-scroll-viewport.component';
+import { VirtualListCoordinatorDirective } from '../../../../shared/directives/virtual-list-coordinator.directive';
 
 @Component({
   selector: 'app-ticket-list',
@@ -34,11 +32,12 @@ import { VirtualScrollViewportComponent } from '../../../../shared/components/vi
     TicketSearchComponent,
     TicketFiltersComponent,
     VirtualScrollViewportComponent,
+    VirtualListCoordinatorDirective,
   ],
   templateUrl: './ticket-list.component.html',
   styleUrl: './ticket-list.component.scss',
 })
-export class TicketListComponent implements OnInit, OnDestroy {
+export class TicketListComponent implements OnInit {
   protected readonly ticketStore = inject(TicketStore);
   protected readonly conversationStore = inject(ConversationStore);
   private readonly ticketApi = inject(TicketApiService);
@@ -46,44 +45,18 @@ export class TicketListComponent implements OnInit, OnDestroy {
   private readonly eventBus = inject(EventBusService);
   private readonly destroyRef = inject(DestroyRef);
 
+  /** Reference to the coordinator directive on the viewport */
+  protected readonly coordinator = viewChild.required(VirtualListCoordinatorDirective<Ticket>);
+
+  /** Resolver that maps a ticket to its unique id string */
+  protected readonly idOfTicket = (ticket: Ticket): string => ticket.ticket_id;
+
   // Signals from store
   readonly tickets = computed(() => this.ticketStore.filteredTickets());
   readonly loading = this.ticketStore.loading;
   readonly selectedTicketId = computed(() => this.ticketStore.activeTicket()?.ticket_id ?? null);
 
-  // Virtual scroll viewport reference
-  private readonly vps = viewChild<VirtualScrollViewportComponent<Ticket>>('vps');
-
-  /** Scroll indices from the viewport */
-  private scrollIndices = signal<{ startIndex: number; endIndex: number }>({ startIndex: 0, endIndex: -1 });
-
-  /** Visible ticket slice */
-  protected readonly visibleTickets = computed(() => {
-    const all = this.tickets();
-    const { startIndex, endIndex } = this.scrollIndices();
-    if (all.length === 0 || startIndex > endIndex) return [];
-    return all.slice(startIndex, endIndex + 1);
-  });
-
-  /** Saved scroll position for restoration on return */
-  private savedScrollTop: number | null = null;
-
-  /** Focused index for keyboard navigation */
-  private focusedIndex = signal<number>(-1);
-
   private readonly activeSubscriptions = new Map<string, Subscription>();
-
-  // Restore scroll position once tickets and viewport are ready
-  private readonly scrollRestoreEffect = effect(() => {
-    const items = this.tickets();
-    const vps = this.vps();
-    if (vps && this.savedScrollTop !== null && items.length > 0) {
-      queueMicrotask(() => {
-        vps.scrollTop = this.savedScrollTop!;
-        this.savedScrollTop = null;
-      });
-    }
-  });
 
   ngOnInit(): void {
     this.loadTickets();
@@ -148,10 +121,6 @@ export class TicketListComponent implements OnInit, OnDestroy {
     });
   }
 
-  trackByTicketId(_index: number, ticket: Ticket): string {
-    return ticket.ticket_id;
-  }
-
   onFilterChange(filter: 'mine' | 'waiting' | 'internal'): void {
     this.ticketStore.setFilter(filter);
   }
@@ -160,53 +129,5 @@ export class TicketListComponent implements OnInit, OnDestroy {
   onSearch(query: string): void {
     // TODO: implement server-side search via TicketApiService
     console.log('[TicketList] Search:', query);
-  }
-
-  /** Handle viewport visible range change */
-  protected onVisibleRangeChange(range: { startIndex: number; endIndex: number }): void {
-    this.scrollIndices.set(range);
-  }
-
-  ngOnDestroy(): void {
-    const vps = this.vps();
-    if (vps) {
-      this.savedScrollTop = vps.scrollTop;
-    }
-    this.activeSubscriptions.forEach((sub) => sub.unsubscribe());
-  }
-
-  @HostListener('keydown', ['$event'])
-  onKeyDown(event: KeyboardEvent): void {
-    const items = this.tickets();
-    if (items.length === 0) return;
-
-    const currentIndex = this.focusedIndex();
-
-    switch (event.key) {
-      case 'ArrowDown':
-        event.preventDefault();
-        this.focusedIndex.set(Math.min(currentIndex + 1, items.length - 1));
-        this.vps()?.scrollToIndex(this.focusedIndex());
-        break;
-      case 'ArrowUp':
-        event.preventDefault();
-        this.focusedIndex.set(Math.max(currentIndex - 1, 0));
-        this.vps()?.scrollToIndex(this.focusedIndex());
-        break;
-      case 'Enter':
-        if (currentIndex >= 0 && currentIndex < items.length) {
-          this.selectTicket(items[currentIndex]);
-        }
-        break;
-    }
-  }
-
-  onCardFocus(index: number): void {
-    this.focusedIndex.set(index);
-  }
-
-  isFocused(ticketId: string): boolean {
-    const idx = this.tickets().findIndex((t) => t.ticket_id === ticketId);
-    return idx === this.focusedIndex();
   }
 }

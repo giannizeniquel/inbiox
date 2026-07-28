@@ -18,20 +18,24 @@
   <!-- Data state: render contacts -->
   @else {
     <app-virtual-scroll-viewport
-      #vps
+      appVirtualListCoordinator
       [items]="store.filteredContacts()"
+      [idOf]="idOfContact"
+      [infiniteScrollThreshold]="200"
       [itemHeight]="72"
       [bufferSize]="5"
-      (visibleRange)="onVisibleRangeChange($event)"
+      (itemActivated)="onContactSelect($event.id)"
+      (loadMore)="onLoadMore()"
       style="padding-bottom: 40px;"
+      #vps
     >
-      @for (contact of visibleContacts(); track trackByContactId($index, contact)) {
+      @for (contact of coordinator().visibleItems(); track contact.id) {
         <app-contact-card
           [contact]="contact"
           [selected]="store.selectedContactId() === contact.id"
           (select)="onContactSelect($event)"
-          [class.focused]="isFocused(contact.id)"
-          (mouseenter)="onCardFocus($index)"
+          [class.focused]="coordinator().isFocused(contact.id)"
+          (mouseenter)="coordinator().onCardFocus($index)"
         />
       }
       @if (hasMore()) {

@@ -21,20 +21,22 @@
     </div>
   } @else {
     <app-virtual-scroll-viewport
-      #vps
+      appVirtualListCoordinator
       [items]="tickets()"
+      [idOf]="idOfTicket"
       [itemHeight]="64"
       [bufferSize]="5"
-      (visibleRange)="onVisibleRangeChange($event)"
+      (itemActivated)="selectTicket($event)"
       style="padding-bottom: 20px;"
+      #vps
     >
-      @for (ticket of visibleTickets(); track trackByTicketId($index, ticket)) {
+      @for (ticket of coordinator().visibleItems(); track ticket.ticket_id) {
         <app-ticket-card
           [ticket]="ticket"
           [isActive]="selectedTicketId() === ticket.ticket_id"
-          [class.focused]="isFocused(ticket.ticket_id)"
+          [class.focused]="coordinator().isFocused(ticket.ticket_id)"
           (select)="selectTicket(ticket)"
-          (mouseenter)="onCardFocus($index)"
+          (mouseenter)="coordinator().onCardFocus($index)"
         />
       }
     </app-virtual-scroll-viewport>
