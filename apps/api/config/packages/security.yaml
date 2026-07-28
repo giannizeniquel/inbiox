@@ -1,0 +1,62 @@
+security:
+    role_hierarchy:
+        ROLE_ADMIN: [ROLE_SUPERVISOR, ROLE_AGENT]
+        ROLE_SUPERVISOR: [ROLE_AGENT]
+
+    password_hashers:
+        App\Domain\User\User: 'auto'
+
+    providers:
+        app_user_provider:
+            entity:
+                class: App\Domain\User\User
+                property: email
+
+    firewalls:
+        webhook:
+            pattern: ^/webhook
+            security: false
+
+        api:
+            pattern: ^/
+            stateless: true
+            provider: app_user_provider
+            json_login:
+                check_path: /api/auth/login
+                username_path: email
+                password_path: password
+                success_handler: lexik_jwt_authentication.handler.authentication_success
+                failure_handler: lexik_jwt_authentication.handler.authentication_failure
+            jwt: ~
+            refresh_jwt:
+                check_path: /api/auth/refresh
+            entry_point: jwt
+            user_checker: App\Security\UserChecker
+
+    access_control:
+        # Public endpoints (no auth required)
+        - { path: ^/webhook, roles: PUBLIC_ACCESS }
+        - { path: ^/api/auth/login, roles: PUBLIC_ACCESS }
+        - { path: ^/api/auth/refresh, roles: PUBLIC_ACCESS }
+
+        # Authenticated user required
+        - { path: ^/api/auth/logout, roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/api/auth/me, roles: IS_AUTHENTICATED_FULLY }
+
+        # Admin-only
+        - { path: ^/admin/outbox, roles: ROLE_ADMIN }
+
+        # Admin API — User management
+        - { path: ^/api/admin/users, roles: ROLE_ADMIN }
+
+        # Admin API — Agent management (supervisor or higher)
+        - { path: ^/api/admin/agents, roles: ROLE_SUPERVISOR }
+
+        # Debug routes — dev-only (DebugController gates by kernel.environment)
+        - { path: ^/debug, roles: ROLE_ADMIN }
+
+        # Mercure token endpoint
+        - { path: ^/api/mercure, roles: IS_AUTHENTICATED_FULLY }
+
+        # Everything else requires at least ROLE_AGENT
+        - { path: ^/api, roles: ROLE_AGENT }

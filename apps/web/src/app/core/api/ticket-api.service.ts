@@ -1,9 +1,11 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, throwError, map, timer, MonoTypeOperatorFunction } from 'rxjs';
-import { catchError, retry } from 'rxjs/operators';
-import { Ticket, TicketListResponse } from '../models/ticket.model';
+import { HttpClient } from '@angular/common/http';
+import { Observable, map } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+import { Ticket } from '../models/ticket.model';
 import { environment } from '../../../environments/environment';
+import { retryWithBackoff } from '../utils/retry.util';
+import { createHttpErrorHandler } from '../utils/http-error.util';
 
 @Injectable({ providedIn: 'root' })
 export class TicketApiService {
@@ -11,42 +13,19 @@ export class TicketApiService {
   private readonly baseUrl = environment.apiUrl;
 
   getTickets(): Observable<Ticket[]> {
-    return this.http
-      .get<{ data: Ticket[]; meta: { total: number; page: number } }>(`${this.baseUrl}/tickets`)
-      .pipe(
-        this.retryWithBackoff(),
-        map((response) => response.data),
-        catchError(this.handleError)
-      );
+    const call = this.http.get<{ data: Ticket[]; meta: { total: number; page: number } }>(
+      `${this.baseUrl}/api/tickets`
+    );
+    return retryWithBackoff(call).pipe(
+      map((response) => response.data),
+      catchError(createHttpErrorHandler('TicketApi'))
+    );
   }
 
   getTicket(id: string): Observable<Ticket> {
-    return this.http
-      .get<Ticket>(`${this.baseUrl}/tickets/${id}`)
-      .pipe(
-        this.retryWithBackoff(),
-        catchError(this.handleError)
-      );
-  }
-
-  /**
-   * Retry with exponential backoff (max 3 retries).
-   */
-  private retryWithBackoff<T>(): MonoTypeOperatorFunction<T> {
-    return retry({
-      count: 3,
-      delay: (err, retryCount) => {
-        const delay = Math.pow(2, retryCount) * 1000;
-        console.warn(`[TicketApiService] Retry attempt ${retryCount}/3 after ${delay}ms`);
-        return timer(delay);
-      },
-    }) as MonoTypeOperatorFunction<T>;
-  }
-
-  private handleError(error: HttpErrorResponse): Observable<never> {
-    console.error('[TicketApiService] HTTP Error:', error);
-    return throwError(
-      () => new Error(`Ticket API error: ${error.status} - ${error.message}`)
+    const call = this.http.get<Ticket>(`${this.baseUrl}/api/tickets/${id}`);
+    return retryWithBackoff(call).pipe(
+      catchError(createHttpErrorHandler('TicketApi'))
     );
   }
 }

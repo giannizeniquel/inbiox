@@ -6,7 +6,7 @@ import { TopbarComponent } from './topbar/topbar.component';
 import { SidebarComponent } from './sidebar/sidebar.component';
 import { SidebarFooterComponent } from './sidebar/sidebar-footer.component';
 import { ConnectionBannerComponent } from './components/connection-banner.component';
-import { TicketListComponent } from '../features/inbox/components/ticket-list/ticket-list.component';
+import { TicketListComponent } from '../features/inbox/containers/ticket-list/ticket-list.component';
 import { ConversationComponent } from '../features/inbox/containers/conversation/conversation.component';
 
 @Component({
@@ -22,46 +22,7 @@ import { ConversationComponent } from '../features/inbox/containers/conversation
     TicketListComponent,
     ConversationComponent,
   ],
-  template: `
-    <!-- Connection status banner -->
-    <app-connection-banner />
-
-    <!-- App Shell -->
-    <div class="app-shell">
-      <!-- Topbar (48px, sticky) -->
-      <app-topbar (menuToggle)="toggleSidebar()" />
-
-      <!-- Body -->
-      <div class="app-shell__body">
-        <!-- Sidebar -->
-        <app-sidebar
-          class="sidebar"
-          [class.sidebar--collapsed]="isSidebarCollapsed()"
-          [class.sidebar--drawer]="isMobile()"
-          [class.is-open]="isSidebarOpen()"
-          [isCollapsed]="isSidebarCollapsed()"
-        >
-          <app-sidebar-footer />
-        </app-sidebar>
-
-        <!-- Main Content Area -->
-        @if (isInboxRoute()) {
-          <!-- Inbox Layout: 3-column -->
-          <section class="ticket-list-panel" role="region" aria-label="Lista de tickets">
-            <app-ticket-list />
-          </section>
-          <section class="conversation-panel" role="region" aria-label="Conversación" style="height: calc(100vh - 48px);">
-            <app-conversation-container (back)="onConversationBack()" style="height: 100%;" />
-          </section>
-        } @else {
-          <!-- Other Routes: Full width router-outlet -->
-          <main class="content-area">
-            <router-outlet />
-          </main>
-        }
-      </div>
-    </div>
-  `,
+  templateUrl: './app-shell.component.html',
   styleUrl: './app-shell.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

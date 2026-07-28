@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, OnDestroy, computed, PLATFORM_ID, inject as inject$1 } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { MercureService } from '../../../../core/realtime/mercure.service';
+import { EventBusService } from '../../../../core/realtime/event-bus.service';
 import { ConnectionStore } from '../../../../core/stores/connection.store';
 import { ProviderInterface, PROVIDER_INTERFACE } from '../../../../core/providers';
 import { Subscription } from 'rxjs';
@@ -14,6 +15,7 @@ import { Subscription } from 'rxjs';
 })
 export class DebugPanelComponent implements OnInit, OnDestroy {
   private readonly mercure = inject(MercureService);
+  private readonly eventBus = inject(EventBusService);
   private readonly connectionStore = inject(ConnectionStore);
   private readonly provider = inject(PROVIDER_INTERFACE);
   private readonly platformId = inject(PLATFORM_ID);
@@ -40,7 +42,7 @@ export class DebugPanelComponent implements OnInit, OnDestroy {
   readonly recentEvents: { time: string; ticketId: string; sequence: number }[] = [];
 
   ngOnInit(): void {
-    const sub = this.mercure.events$.subscribe((event) => {
+    const sub = this.eventBus.events$.subscribe((event) => {
       this.recentEvents.unshift({
         time: new Date().toLocaleTimeString(),
         ticketId: event.ticketId ?? 'unknown',

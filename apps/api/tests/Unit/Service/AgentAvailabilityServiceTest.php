@@ -65,7 +65,7 @@ class AgentAvailabilityServiceTest extends TestCase
         ?\DateTimeImmutable $overrideUntil = null,
         int $maxActiveTickets = 5,
     ): Agent {
-        $agent = new Agent('Agent-'.$id, 'agent'.$id.'@example.com');
+        $agent = new Agent('Agent-'.$id);
         $agent->setActive($active);
         $agent->setTimezone($timezone);
         $agent->setMaxActiveTickets($maxActiveTickets);
@@ -159,20 +159,20 @@ class AgentAvailabilityServiceTest extends TestCase
 
     public function testDefaultTimezoneIsUtc(): void
     {
-        $agent = new Agent('Test', 'test@example.com');
+        $agent = new Agent('Test');
         self::assertSame('UTC', $agent->getTimezone());
     }
 
     public function testValidTimezoneAccepted(): void
     {
-        $agent = new Agent('Test', 'test@example.com');
+        $agent = new Agent('Test');
         $agent->setTimezone('America/Argentina/Buenos_Aires');
         self::assertSame('America/Argentina/Buenos_Aires', $agent->getTimezone());
     }
 
     public function testInvalidTimezoneThrows(): void
     {
-        $agent = new Agent('Test', 'test@example.com');
+        $agent = new Agent('Test');
         $this->expectException(\InvalidArgumentException::class);
         $agent->setTimezone('Invalid/Timezone');
     }

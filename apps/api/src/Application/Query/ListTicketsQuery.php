@@ -17,6 +17,18 @@ class ListTicketsQuery
         private TicketRepository $ticketRepository,
     ) {}
 
+    /**
+     * @param int $page Page number (1-indexed)
+     * @param int $limit Items per page (max 100)
+     * @param string $filter 'all', 'unassigned', 'assigned', or 'mine'
+     * @param string|null $agentId Agent ID for 'mine' filter (DEPRECATED: use scopeAgentId instead)
+     * @param string|null $status Comma-separated status filter
+     * @param string|null $search Search query (not implemented)
+     * @param string $sort Sort order
+     * @param int|null $scopeAgentId Ownership scope: forces WHERE assigned_agent_id = scopeAgentId
+     *                                Used by InboxController to restrict AGENT to own tickets.
+     *                                null = no scope restriction (SUPERVISOR/ADMIN).
+     */
     public function execute(
         int $page = 1,
         int $limit = 20,
@@ -24,7 +36,8 @@ class ListTicketsQuery
         ?string $agentId = null,
         ?string $status = null,
         ?string $search = null,
-        string $sort = 'last_message_desc'
+        string $sort = 'last_message_desc',
+        ?int $scopeAgentId = null,
     ): array {
         $page = max(1, $page);
         $limit = min(100, max(1, $limit));
@@ -42,6 +55,14 @@ class ListTicketsQuery
         } elseif ($filter === 'mine' && $agentId) {
             $where[] = 't.assigned_agent_id = ?';
             $params[] = $agentId;
+        }
+        
+        // Ownership scope: force filter to own tickets for AGENT role
+        // This is applied BEFORE the 'mine' filter check to prevent AGENT from
+        // bypassing the scope via the 'all' filter.
+        if (null !== $scopeAgentId) {
+            $where[] = 't.assigned_agent_id = ?';
+            $params[] = (string) $scopeAgentId;
         }
         
         if ($status) {

@@ -1,6 +1,35 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { VirtualScrollViewportComponent } from './virtual-scroll-viewport.component';
 
+/**
+ * Install fake scroll geometry on an element using get/set accessors.
+ * Avoids Chrome's read-only property restriction on HTMLDivElement.scrollTop.
+ */
+function installFakeScrollerGeometry(
+  el: HTMLElement,
+  initial: { scrollTop?: number; scrollHeight?: number } = {},
+): { setScrollTop: (v: number) => void; setScrollHeight: (v: number) => void } {
+  let _scrollTop = initial.scrollTop ?? 0;
+  let _scrollHeight = initial.scrollHeight ?? 0;
+
+  Object.defineProperty(el, 'scrollTop', {
+    get: () => _scrollTop,
+    set: (v: number) => { _scrollTop = v; },
+    configurable: true,
+  });
+
+  Object.defineProperty(el, 'scrollHeight', {
+    get: () => _scrollHeight,
+    set: (v: number) => { _scrollHeight = v; },
+    configurable: true,
+  });
+
+  return {
+    setScrollTop: (v: number) => { _scrollTop = v; },
+    setScrollHeight: (v: number) => { _scrollHeight = v; },
+  };
+}
+
 describe('VirtualScrollViewportComponent', () => {
   let component: VirtualScrollViewportComponent<{ id: string }>;
   let fixture: ComponentFixture<VirtualScrollViewportComponent<{ id: string }>>;
@@ -31,7 +60,7 @@ describe('VirtualScrollViewportComponent', () => {
     const scrollerEl = (component as any).scroller()?.nativeElement;
     if (scrollerEl) {
       Object.defineProperty(scrollerEl, 'clientHeight', { value: 480, configurable: true });
-      Object.defineProperty(scrollerEl, 'scrollTop', { value: 0, configurable: true });
+      installFakeScrollerGeometry(scrollerEl, { scrollTop: 0 });
     }
     (component as any).recalcRange();
     fixture.detectChanges();
@@ -182,7 +211,7 @@ describe('VirtualScrollViewportComponent', () => {
     it('getter returns current scrollTop', async () => {
       await createComponent([], 64);
       const scrollerEl = (component as any).scroller()!.nativeElement;
-      Object.defineProperty(scrollerEl, 'scrollTop', { value: 123, configurable: true });
+      scrollerEl.scrollTop = 123; // uses get/set accessor from createComponent
       expect(component.scrollTop).toBe(123);
     });
 
@@ -224,7 +253,7 @@ describe('VirtualScrollViewportComponent', () => {
       expect(offsets[4]).toBe(500);
       expect(offsets[5]).toBe(700);
       expect(offsets[6]).toBe(800);
-      expect(offsets[99]).toBe(500 + 200 + 93 * 100); // = 10000
+      expect(offsets[99]).toBe(500 + 200 + 94 * 100); // Items 6-99 = 94 items
     });
   });
 
@@ -234,9 +263,9 @@ describe('VirtualScrollViewportComponent', () => {
 
       // Offsets: 100, 200, 300, ..., 10000
       expect((component as any).lowerBound(0)).toBe(0);
-      expect((component as any).lowerBound(100)).toBe(1); // past item 0
+      expect((component as any).lowerBound(100)).toBe(0); // a[0] = 100 is first >= 100
       expect((component as any).lowerBound(150)).toBe(1); // first with >= 150 is item 1 (200)
-      expect((component as any).lowerBound(300)).toBe(3); // past item 2 (300)
+      expect((component as any).lowerBound(300)).toBe(2); // a[2] = 300 is first >= 300
       expect((component as any).lowerBound(10000)).toBe(99); // past item 98 (9900)
       expect((component as any).lowerBound(10001)).toBe(100); // past the last item
     });
@@ -253,9 +282,9 @@ describe('VirtualScrollViewportComponent', () => {
       // Offsets: 50, 250, 325, 425, ...
       expect((component as any).lowerBound(0)).toBe(0);
       expect((component as any).lowerBound(51)).toBe(1); // first >= 51
-      expect((component as any).lowerBound(250)).toBe(2); // first >= 250
+      expect((component as any).lowerBound(250)).toBe(1); // a[1] = 250 is first >= 250
       expect((component as any).lowerBound(251)).toBe(2); // first >= 251
-      expect((component as any).lowerBound(325)).toBe(3); // past item 2
+      expect((component as any).lowerBound(325)).toBe(2); // a[2] = 325 is first >= 325
     });
   });
 
@@ -415,11 +444,7 @@ describe('VirtualScrollViewportComponent', () => {
       await createComponent(mockItems, undefined, 5, 'variable', 100);
 
       const scrollerEl = (component as any).scroller()!.nativeElement;
-      scrollerEl.scrollTop = 0;
-      Object.defineProperty(scrollerEl, 'scrollHeight', {
-        value: 10000,
-        configurable: true,
-      });
+      installFakeScrollerGeometry(scrollerEl, { scrollTop: 0, scrollHeight: 10000 });
 
       component.scrollToBottom();
       expect(scrollerEl.scrollTop).toBe(10000);

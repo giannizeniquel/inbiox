@@ -1,7 +1,7 @@
 import { Component, inject, OnDestroy, signal, viewChild, computed, ChangeDetectionStrategy, ChangeDetectorRef, input, output, effect } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { take } from 'rxjs/operators';
-import { ConversationStore, BridgeMessage } from '../../../../core/stores/conversation.store';
+import { ConversationStore } from '../../../../core/stores/conversation.store';
 import { TicketStore } from '../../../../core/stores/ticket.store';
 import { UiStore } from '../../../../core/stores/ui.store';
 import { MessageApiService, GetMessagesResponse } from '../../../../core/api/message-api.service';
@@ -14,6 +14,8 @@ import { ConversationLoadingComponent } from '../../components/conversation-load
 import { NewMessagesIndicatorComponent } from '../../components/new-messages-indicator/new-messages-indicator.component';
 import { BannerWarningComponent } from '../../../../shared/components/banner-warning/banner-warning.component';
 import { MessageSenderService } from '../../services/message-sender.service';
+import { Message } from '../../../../core/models/message.model';
+import { mapApiMessagesToCanonical } from '../../../../core/utils/message-mapper.util';
 
 /**
  * ConversationComponent — main conversation panel container.
@@ -43,7 +45,7 @@ import { MessageSenderService } from '../../services/message-sender.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ConversationComponent implements OnDestroy {
-  private readonly vps = viewChild<VirtualScrollViewportComponent<BridgeMessage>>('vps');
+  private readonly vps = viewChild<VirtualScrollViewportComponent<Message>>('vps');
 
   /** Scroll indices from the viewport */
   private scrollIndices = signal<{ startIndex: number; endIndex: number }>({ startIndex: 0, endIndex: -1 });
@@ -134,7 +136,7 @@ export class ConversationComponent implements OnDestroy {
   }
 
   onRetry(tempId: string): void {
-    const message = this.messages().find((m: BridgeMessage) => m.tempId === tempId);
+    const message = this.messages().find((m: Message) => m.tempId === tempId);
     if (message) {
       this.conversationStore.retryMessage(tempId);
       this.cdr.markForCheck();
@@ -188,20 +190,7 @@ export class ConversationComponent implements OnDestroy {
 
     this.messageApi.getMessages(ticket.ticket_id, 20, this.oldestLoadedOffset()).pipe(take(1)).subscribe({
       next: (resp: GetMessagesResponse) => {
-        this.conversationStore.prependMessages(
-          resp.data.map(m => ({
-            id: String(m.message_id),
-            message_id: m.message_id,
-            ticketId: ticket.ticket_id,
-            chatId: ticket.ticket_id,
-            content: m.content,
-            body: m.content,
-            direction: m.direction as 'inbound' | 'outbound' | 'system',
-            deliveryStatus: (m.deliveryStatus || 'sent') as 'sent',
-            created_at: m.created_at || new Date().toISOString(),
-            sender: (m.direction === 'inbound' ? 'customer' : 'agent') as 'agent' | 'customer',
-          }))
-        );
+        this.conversationStore.prependMessages(mapApiMessagesToCanonical(resp, ticket.ticket_id));
         this.conversationStore.setHasMore(resp.meta.has_more);
         this.oldestLoadedOffset.set(this.oldestLoadedOffset() + resp.data.length);
 

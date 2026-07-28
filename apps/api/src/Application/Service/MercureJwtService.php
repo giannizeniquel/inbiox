@@ -6,6 +6,7 @@ namespace App\Application\Service;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
+use App\Domain\Agent\Agent;
 use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer\Hmac\Sha256;
 use Lcobucci\JWT\Signer\Key\InMemory;
@@ -15,6 +16,7 @@ use Lcobucci\JWT\Validation\Constraint\StrictValidAt;
 use Lcobucci\JWT\Validation\RequiredConstraintsViolated;
 use Psr\Clock\ClockInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 final class MercureJwtService
 {
@@ -165,6 +167,32 @@ final class MercureJwtService
         $mercure = $claims->get('mercure');
         if (!is_array($mercure) || !isset($mercure['subscribe'])) return null;
         return $mercure['subscribe'];
+    }
+
+    /**
+     * Issue a Mercure JWT for a specific user (foundation for PR3 authorization).
+     *
+     * Topics will be scoped by role:
+     * - ROLE_AGENT: agent-specific topics + tickets
+     * - ROLE_SUPERVISOR/ROLE_ADMIN: all + wildcard
+     */
+    public function issueForUser(UserInterface $user, ?Agent $agent = null): Token
+    {
+        $roles = $user->getRoles();
+        $topics = [self::TOPIC_TICKETS, self::TOPIC_AGENTS_BROADCAST];
+
+        if (null !== $agent) {
+            $topics[] = \sprintf(self::TOPIC_AGENT_INBOX, $agent->getId());
+            $topics[] = \sprintf(self::TOPIC_AGENT_AVAILABILITY, $agent->getId());
+            $topics[] = \sprintf(self::TOPIC_AGENT_SHIFTS, $agent->getId());
+        }
+
+        // Supervisors and admins get wildcard access
+        if (\in_array('ROLE_SUPERVISOR', $roles, true) || \in_array('ROLE_ADMIN', $roles, true)) {
+            $topics[] = '*';
+        }
+
+        return $this->createSubscriberToken($topics);
     }
 
     private function getSecret(): string

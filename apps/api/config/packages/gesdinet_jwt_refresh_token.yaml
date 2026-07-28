@@ -1,0 +1,12 @@
+gesdinet_jwt_refresh_token:
+    refresh_token_class: App\Domain\RefreshToken\RefreshToken
+    ttl: 2592000
+    token_parameter_name: inbiox_refresh
+    single_use: true
+    cookie:
+        enabled: true
+        same_site: lax
+        path: /
+        http_only: true
+        secure: false
+        remove_token_from_body: true

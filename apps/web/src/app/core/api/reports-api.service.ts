@@ -2,130 +2,105 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { TimeFilterParams } from '../../features/reports/models/reports.models';
+import { TimeFilterParams } from '../dto/reports.params';
 
+/** Backend response for GET /api/reports/frt */
 export interface FirstResponseTimeResponse {
-  avgMinutes: number;
-  trend: number;
+  avg_frt_minutes: number;
 }
 
+/** Backend response for GET /api/reports/rt */
 export interface ResolutionTimeResponse {
-  avgMinutes: number;
-  trend: number;
+  avg_rt_minutes: number;
 }
 
+/** Backend response for GET /api/reports/counts */
 export interface TicketCountsResponse {
-  open: number;
+  new: number;
+  active: number;
+  waiting: number;
+  resolved: number;
   closed: number;
-  pending: number;
 }
 
-export interface VolumeData {
+/** Backend response for GET /api/reports/volume — array of daily data */
+export interface VolumeDataPoint {
   date: string;
-  count: number;
+  tickets_created: number;
 }
 
 export interface VolumeTrendResponse {
-  data: VolumeData[];
+  data: VolumeDataPoint[];
   total: number;
   trend: number;
 }
 
-export interface AgentMetrics {
-  agentId: string;
-  agentName: string;
-  assigned: number;
-  avgResponseMinutes: number;
-  resolved: number;
-  loadPercentage: number;
+/** Backend response for GET /api/reports/agents */
+export interface AgentMetricsData {
+  agent_id: number;
+  tickets_assigned: number;
+  avg_frt_minutes: number;
+  tickets_resolved: number;
 }
 
 export interface AgentMetricsResponse {
-  agents: AgentMetrics[];
+  agents: AgentMetricsData[];
 }
 
 /**
  * ReportsApiService — HTTP client for reports endpoints.
- *
- * Calls Symfony backend at:
- * - GET /reports/frt (First Response Time)
- * - GET /reports/rt (Resolution Time)
- * - GET /reports/counts (Ticket Counts)
- * - GET /reports/volume (Volume Trend)
- * - GET /reports/agents (Agent Metrics)
  */
 @Injectable({ providedIn: 'root' })
 export class ReportsApiService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiUrl;
 
-  /**
-   * Build HTTP params in the format the backend expects.
-   * Backend expects 'from' and 'to' in ISO datetime format: Y-m-d\TH:i:sZ
-   */
   private buildParams(params?: TimeFilterParams): HttpParams {
     let httpParams = new HttpParams();
-    
+
     if (params?.fromDate) {
-      // Convert YYYY-MM-DD to YYYY-MM-DDTHH:MM:SSZ
-      const from = params.fromDate.length === 10 
+      const from = params.fromDate.length === 10
         ? `${params.fromDate}T00:00:00Z`
         : params.fromDate;
       httpParams = httpParams.set('from', from);
     }
-    
+
     if (params?.toDate) {
-      // Convert YYYY-MM-DD to YYYY-MM-DDTHH:MM:SSZ (end of day)
-      const to = params.toDate.length === 10 
+      const to = params.toDate.length === 10
         ? `${params.toDate}T23:59:59Z`
         : params.toDate;
       httpParams = httpParams.set('to', to);
     }
-    
+
     return httpParams;
   }
 
-  /**
-   * GET /reports/frt - First Response Time
-   */
   getFirstResponseTime(params?: TimeFilterParams): Observable<FirstResponseTimeResponse> {
-    return this.http.get<FirstResponseTimeResponse>(`${this.baseUrl}/reports/frt`, {
+    return this.http.get<FirstResponseTimeResponse>(`${this.baseUrl}/api/reports/frt`, {
       params: this.buildParams(params),
     });
   }
 
-  /**
-   * GET /reports/rt - Resolution Time
-   */
   getResolutionTime(params?: TimeFilterParams): Observable<ResolutionTimeResponse> {
-    return this.http.get<ResolutionTimeResponse>(`${this.baseUrl}/reports/rt`, {
+    return this.http.get<ResolutionTimeResponse>(`${this.baseUrl}/api/reports/rt`, {
       params: this.buildParams(params),
     });
   }
 
-  /**
-   * GET /reports/counts - Ticket Counts
-   */
   getTicketCounts(params?: TimeFilterParams): Observable<TicketCountsResponse> {
-    return this.http.get<TicketCountsResponse>(`${this.baseUrl}/reports/counts`, {
+    return this.http.get<TicketCountsResponse>(`${this.baseUrl}/api/reports/counts`, {
       params: this.buildParams(params),
     });
   }
 
-  /**
-   * GET /reports/volume - Volume Trend
-   */
   getVolumeTrend(params?: TimeFilterParams): Observable<VolumeTrendResponse> {
-    return this.http.get<VolumeTrendResponse>(`${this.baseUrl}/reports/volume`, {
+    return this.http.get<VolumeTrendResponse>(`${this.baseUrl}/api/reports/volume`, {
       params: this.buildParams(params),
     });
   }
 
-  /**
-   * GET /reports/agents - Agent Metrics
-   */
   getAgentMetrics(params?: TimeFilterParams): Observable<AgentMetricsResponse> {
-    return this.http.get<AgentMetricsResponse>(`${this.baseUrl}/reports/agents`, {
+    return this.http.get<AgentMetricsResponse>(`${this.baseUrl}/api/reports/agents`, {
       params: this.buildParams(params),
     });
   }

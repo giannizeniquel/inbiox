@@ -11,3 +11,6 @@
 
 export * from './messaging';
 export * from './providers';
+export * from './admin';
+export * from './reports';
+export * from './shared';

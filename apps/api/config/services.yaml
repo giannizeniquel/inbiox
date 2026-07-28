@@ -32,3 +32,13 @@ services:
         arguments:
             $verifyToken: '%env(META_WEBHOOK_VERIFY_TOKEN)%'
             $appSecret: '%env(META_APP_SECRET)%'
+
+    App\EventListener\ActiveUserListener:
+        tags:
+            - { name: kernel.event_listener, event: kernel.request, priority: 50 }
+
+    App\EventListener\AuthenticationSuccessListener:
+        arguments:
+            $tokenTtl: '%lexik_jwt_authentication.token_ttl%'
+        tags:
+            - { name: kernel.event_listener, event: lexik_jwt_authentication.on_authentication_success, method: onAuthenticationSuccess, priority: -10 }

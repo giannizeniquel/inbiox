@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Domain\Rule\RuleContext;
@@ -9,7 +11,9 @@ use App\Repository\TicketRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+#[IsGranted('ROLE_AGENT')]
 class AutoCloseController extends AbstractController
 {
     public function __construct(
@@ -19,7 +23,7 @@ class AutoCloseController extends AbstractController
 
     /**
      * Trigger auto-close rule manually
-     * POST /tickets/{id}/auto-close
+     * POST /api/tickets/{ticketId}/auto-close
      */
     #[Route('/api/tickets/{ticketId}/auto-close', methods: ['POST'])]
     public function triggerAutoClose(int $ticketId): JsonResponse

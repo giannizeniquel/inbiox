@@ -1,0 +1,377 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Controller\Admin;
+
+use App\Domain\Agent\Agent;
+use App\Domain\User\User;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+
+/**
+ * Integration tests for UserController (admin user management).
+ *
+ * Covers:
+ * - CRUD operations for users
+ * - Role-based access control (ROLE_ADMIN required)
+ * - Soft delete (is_active = false)
+ * - Email uniqueness
+ * - Optional agent link on creation
+ */
+class UserControllerTest extends WebTestCase
+{
+    private const TEST_PASSWORD = 'test-password';
+
+    private ?KernelBrowser $client = null;
+    private ?EntityManagerInterface $em = null;
+
+    protected function setUp(): void
+    {
+        $this->client = static::createClient();
+        $this->em = static::getContainer()->get(EntityManagerInterface::class);
+
+        $conn = $this->em->getConnection();
+        $conn->executeStatement('DELETE FROM agent_shifts');
+        $conn->executeStatement('DELETE FROM refresh_tokens');
+        $conn->executeStatement('DELETE FROM agents');
+        $conn->executeStatement('DELETE FROM `user`');
+    }
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+        $this->client = null;
+        $this->em = null;
+    }
+
+    // ────────────────────────────────────────────────────────
+    //  Helpers
+    // ────────────────────────────────────────────────────────
+
+    private function createUser(
+        string $email,
+        array $roles = ['ROLE_AGENT'],
+        bool $isActive = true,
+    ): User {
+        $user = new User();
+        $user->setEmail($email);
+        $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
+        $user->setRoles($roles);
+        $user->setIsActive($isActive);
+
+        $this->em->persist($user);
+        $this->em->flush();
+
+        return $user;
+    }
+
+    private function createAgent(string $name = 'Test Agent'): Agent
+    {
+        $agent = new Agent($name);
+        $this->em->persist($agent);
+        $this->em->flush();
+
+        return $agent;
+    }
+
+    private function login(string $email): string
+    {
+        $this->client->request('POST', '/api/auth/login', [], [], [
+            'CONTENT_TYPE' => 'application/json',
+        ], \json_encode([
+            'email' => $email,
+            'password' => self::TEST_PASSWORD,
+        ]));
+
+        $response = $this->client->getResponse();
+        self::assertSame(200, $response->getStatusCode());
+
+        $data = \json_decode($response->getContent(), true);
+        return $data['access_token'];
+    }
+
+    private function authHeaders(string $token): array
+    {
+        return ['HTTP_AUTHORIZATION' => 'Bearer ' . $token];
+    }
+
+    // ────────────────────────────────────────────────────────
+    //  Access Control
+    // ────────────────────────────────────────────────────────
+
+    public function testListUsersRequiresAdmin(): void
+    {
+        $agent = $this->createAgent('Agent');
+        $this->createUser('agent@test.local', ['ROLE_AGENT']);
+        $user = $this->em->getRepository(User::class)->findOneBy(['email' => 'agent@test.local']);
+        $agent->setUser($user);
+        $this->em->flush();
+
+        $token = $this->login('agent@test.local');
+
+        $this->client->request('GET', '/api/admin/users', [], [], $this->authHeaders($token));
+        self::assertSame(403, $this->client->getResponse()->getStatusCode());
+    }
+
+    public function testListUsersRequiresAuth(): void
+    {
+        $this->client->request('GET', '/api/admin/users');
+        self::assertSame(401, $this->client->getResponse()->getStatusCode());
+    }
+
+    // ────────────────────────────────────────────────────────
+    //  List Users
+    // ────────────────────────────────────────────────────────
+
+    public function testListUsersReturnsPaginatedResults(): void
+    {
+        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $token = $this->login('admin@test.local');
+
+        // Create some users
+        for ($i = 1; $i <= 5; $i++) {
+            $this->createUser("user{$i}@test.local");
+        }
+
+        $this->client->request('GET', '/api/admin/users?page=1&limit=3', [], [], $this->authHeaders($token));
+        $response = $this->client->getResponse();
+        self::assertSame(200, $response->getStatusCode());
+
+        $data = \json_decode($response->getContent(), true);
+        self::assertArrayHasKey('data', $data);
+        self::assertArrayHasKey('meta', $data);
+        self::assertCount(3, $data['data']);
+        self::assertTrue($data['meta']['has_next']);
+        self::assertSame(6, $data['meta']['total']); // 5 users + admin
+    }
+
+    public function testListUsersReturnsSerializedData(): void
+    {
+        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $token = $this->login('admin@test.local');
+
+        $this->createUser('jane@test.local', ['ROLE_AGENT']);
+
+        $this->client->request('GET', '/api/admin/users', [], [], $this->authHeaders($token));
+        $data = \json_decode($this->client->getResponse()->getContent(), true);
+
+        $user = $data['data'][0]; // Most recent first
+        self::assertArrayHasKey('id', $user);
+        self::assertArrayHasKey('email', $user);
+        self::assertArrayHasKey('roles', $user);
+        self::assertArrayHasKey('is_active', $user);
+        self::assertArrayHasKey('agent_id', $user);
+        self::assertArrayHasKey('agent_name', $user);
+        self::assertArrayHasKey('created_at', $user);
+        self::assertArrayHasKey('updated_at', $user);
+        self::assertIsInt($user['id']);
+    }
+
+    // ────────────────────────────────────────────────────────
+    //  Get Single User
+    // ────────────────────────────────────────────────────────
+
+    public function testGetUserReturnsUser(): void
+    {
+        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $token = $this->login('admin@test.local');
+
+        $user = $this->createUser('target@test.local', ['ROLE_AGENT']);
+
+        $this->client->request('GET', "/api/admin/users/{$user->getId()}", [], [], $this->authHeaders($token));
+        $response = $this->client->getResponse();
+        self::assertSame(200, $response->getStatusCode());
+
+        $data = \json_decode($response->getContent(), true);
+        self::assertSame('target@test.local', $data['email']);
+    }
+
+    public function testGetUserReturns404ForNonExistent(): void
+    {
+        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $token = $this->login('admin@test.local');
+
+        $this->client->request('GET', '/api/admin/users/99999', [], [], $this->authHeaders($token));
+        self::assertSame(404, $this->client->getResponse()->getStatusCode());
+    }
+
+    // ────────────────────────────────────────────────────────
+    //  Create User
+    // ────────────────────────────────────────────────────────
+
+    public function testCreateUser(): void
+    {
+        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $token = $this->login('admin@test.local');
+
+        $this->client->request('POST', '/api/admin/users', [], [], $this->authHeaders($token) + [
+            'CONTENT_TYPE' => 'application/json',
+        ], \json_encode([
+            'email' => 'newuser@test.local',
+            'password' => 'secure-pass',
+            'roles' => ['ROLE_AGENT'],
+        ]));
+
+        $response = $this->client->getResponse();
+        self::assertSame(201, $response->getStatusCode());
+
+        $data = \json_decode($response->getContent(), true);
+        self::assertSame('newuser@test.local', $data['email']);
+        self::assertContains('ROLE_AGENT', $data['roles']);
+        self::assertTrue($data['is_active']);
+    }
+
+    public function testCreateUserWithOptionalAgentLink(): void
+    {
+        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $token = $this->login('admin@test.local');
+
+        $agent = $this->createAgent('Support Agent');
+
+        $this->client->request('POST', '/api/admin/users', [], [], $this->authHeaders($token) + [
+            'CONTENT_TYPE' => 'application/json',
+        ], \json_encode([
+            'email' => 'linked@test.local',
+            'password' => 'secure-pass',
+            'roles' => ['ROLE_AGENT'],
+            'agent_id' => $agent->getId(),
+        ]));
+
+        $response = $this->client->getResponse();
+        self::assertSame(201, $response->getStatusCode());
+
+        $data = \json_decode($response->getContent(), true);
+        self::assertSame('linked@test.local', $data['email']);
+        self::assertSame($agent->getId(), $data['agent_id']);
+        self::assertSame('Support Agent', $data['agent_name']);
+    }
+
+    public function testCreateUserReturns409OnDuplicateEmail(): void
+    {
+        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $token = $this->login('admin@test.local');
+
+        $this->createUser('existing@test.local');
+
+        $this->client->request('POST', '/api/admin/users', [], [], $this->authHeaders($token) + [
+            'CONTENT_TYPE' => 'application/json',
+        ], \json_encode([
+            'email' => 'existing@test.local',
+            'password' => 'secure-pass',
+        ]));
+
+        self::assertSame(409, $this->client->getResponse()->getStatusCode());
+    }
+
+    public function testCreateUserRequiresEmailAndPassword(): void
+    {
+        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $token = $this->login('admin@test.local');
+
+        $this->client->request('POST', '/api/admin/users', [], [], $this->authHeaders($token) + [
+            'CONTENT_TYPE' => 'application/json',
+        ], \json_encode([
+            'roles' => ['ROLE_AGENT'],
+        ]));
+
+        $response = $this->client->getResponse();
+        self::assertSame(400, $response->getStatusCode());
+    }
+
+    // ────────────────────────────────────────────────────────
+    //  Update User
+    // ────────────────────────────────────────────────────────
+
+    public function testUpdateUserEmail(): void
+    {
+        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $token = $this->login('admin@test.local');
+
+        $user = $this->createUser('old@test.local');
+
+        $this->client->request('PUT', "/api/admin/users/{$user->getId()}", [], [], $this->authHeaders($token) + [
+            'CONTENT_TYPE' => 'application/json',
+        ], \json_encode([
+            'email' => 'new@test.local',
+        ]));
+
+        $response = $this->client->getResponse();
+        self::assertSame(200, $response->getStatusCode());
+
+        $data = \json_decode($response->getContent(), true);
+        self::assertSame('new@test.local', $data['email']);
+    }
+
+    public function testUpdateUserRoles(): void
+    {
+        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $token = $this->login('admin@test.local');
+
+        $user = $this->createUser('roles@test.local', ['ROLE_AGENT']);
+
+        $this->client->request('PUT', "/api/admin/users/{$user->getId()}", [], [], $this->authHeaders($token) + [
+            'CONTENT_TYPE' => 'application/json',
+        ], \json_encode([
+            'roles' => ['ROLE_ADMIN', 'ROLE_SUPERVISOR'],
+        ]));
+
+        $response = $this->client->getResponse();
+        self::assertSame(200, $response->getStatusCode());
+
+        $data = \json_decode($response->getContent(), true);
+        self::assertContains('ROLE_ADMIN', $data['roles']);
+    }
+
+    public function testUpdateUserActiveStatus(): void
+    {
+        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $token = $this->login('admin@test.local');
+
+        $user = $this->createUser('active@test.local');
+
+        $this->client->request('PUT', "/api/admin/users/{$user->getId()}", [], [], $this->authHeaders($token) + [
+            'CONTENT_TYPE' => 'application/json',
+        ], \json_encode([
+            'is_active' => false,
+        ]));
+
+        $response = $this->client->getResponse();
+        self::assertSame(200, $response->getStatusCode());
+
+        $data = \json_decode($response->getContent(), true);
+        self::assertFalse($data['is_active']);
+    }
+
+    // ────────────────────────────────────────────────────────
+    //  Delete User (Soft Delete)
+    // ────────────────────────────────────────────────────────
+
+    public function testDeleteUserIsSoftDelete(): void
+    {
+        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $token = $this->login('admin@test.local');
+
+        $user = $this->createUser('delete@test.local');
+
+        $this->client->request('DELETE', "/api/admin/users/{$user->getId()}", [], [], $this->authHeaders($token));
+        $response = $this->client->getResponse();
+        self::assertSame(204, $response->getStatusCode());
+
+        // Verify the user still exists but is deactivated
+        $this->em->clear();
+        $deletedUser = $this->em->getRepository(User::class)->find($user->getId());
+        self::assertNotNull($deletedUser, 'User must still exist (soft delete)');
+        self::assertFalse($deletedUser->isActive(), 'User must be deactivated');
+    }
+
+    public function testDeleteNonExistentUserReturns404(): void
+    {
+        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $token = $this->login('admin@test.local');
+
+        $this->client->request('DELETE', '/api/admin/users/99999', [], [], $this->authHeaders($token));
+        self::assertSame(404, $this->client->getResponse()->getStatusCode());
+    }
+}

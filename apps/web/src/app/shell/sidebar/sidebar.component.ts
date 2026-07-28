@@ -2,102 +2,13 @@ import { Component, ChangeDetectionStrategy, input, inject } from '@angular/core
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { ConnectionStore } from '../../core/stores/connection.store';
+import { AuthStore } from '../../core/stores/auth.store';
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
   imports: [CommonModule, RouterLink, RouterLinkActive],
-  template: `
-    <!-- SSE Connection indicator (per spec section 15) -->
-    <div
-      class="sse-indicator"
-      role="status"
-      aria-live="polite"
-      [attr.aria-label]="'Estado de conexión: ' + connectionLabel()"
-    >
-      <span
-        class="sse-indicator__dot"
-        [class.sse-indicator__dot--online]="connectionStatus() === 'online'"
-        [class.sse-indicator__dot--reconnecting]="connectionStatus() === 'reconnecting'"
-        [class.sse-indicator__dot--offline]="connectionStatus() === 'offline'"
-      ></span>
-      <span class="sse-indicator__label">{{ connectionLabel() }}</span>
-    </div>
-
-    <!-- Nav section -->
-    <nav class="sidebar-nav" role="navigation" aria-label="Navegación principal">
-      <a
-        routerLink="/inbox"
-        routerLinkActive="sidebar-nav__item--active"
-        class="sidebar-nav__item"
-        aria-label="Chats"
-      >
-        <span class="sidebar-nav__icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-          </svg>
-        </span>
-        <span class="sidebar-nav__label">Chats</span>
-        <span class="sidebar-nav__tooltip">Chats</span>
-      </a>
-
-      <a
-        routerLink="/contacts"
-        routerLinkActive="sidebar-nav__item--active"
-        class="sidebar-nav__item"
-        aria-label="Contactos"
-      >
-        <span class="sidebar-nav__icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-            <circle cx="9" cy="7" r="4"></circle>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-          </svg>
-        </span>
-        <span class="sidebar-nav__label">Contactos</span>
-        <span class="sidebar-nav__tooltip">Contactos</span>
-      </a>
-
-      <a
-        routerLink="/reports"
-        routerLinkActive="sidebar-nav__item--active"
-        class="sidebar-nav__item"
-        aria-label="Informes"
-      >
-        <span class="sidebar-nav__icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="20" x2="18" y2="10"></line>
-            <line x1="12" y1="20" x2="12" y2="4"></line>
-            <line x1="6" y1="20" x2="6" y2="14"></line>
-          </svg>
-        </span>
-        <span class="sidebar-nav__label">Informes</span>
-        <span class="sidebar-nav__tooltip">Informes</span>
-      </a>
-
-      <a
-        routerLink="/settings"
-        routerLinkActive="sidebar-nav__item--active"
-        class="sidebar-nav__item"
-        aria-label="Configuración"
-      >
-        <span class="sidebar-nav__icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-          </svg>
-        </span>
-        <span class="sidebar-nav__label">Configuración</span>
-        <span class="sidebar-nav__tooltip">Configuración</span>
-      </a>
-    </nav>
-
-    <!-- Footer section -->
-    <div class="sidebar-footer">
-      <ng-content></ng-content>
-    </div>
-  `,
+  templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -106,6 +17,7 @@ export class SidebarComponent {
   readonly isCollapsed = input(false);
 
   private readonly connectionStore = inject(ConnectionStore);
+  protected readonly authStore = inject(AuthStore);
 
   connectionStatus = this.connectionStore.status;
 
@@ -118,57 +30,4 @@ export class SidebarComponent {
     }
   }
 
-  /** Navigation items */
-  readonly navItems = input<NavItem[]>([
-    {
-      id: 'chats',
-      label: 'Chats',
-      icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-      </svg>`,
-      isActive: true,
-      isFuture: false,
-    },
-    {
-      id: 'contactos',
-      label: 'Contactos',
-      icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-        <circle cx="9" cy="7" r="4"></circle>
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-      </svg>`,
-      isActive: false,
-      isFuture: true,
-    },
-    {
-      id: 'informes',
-      label: 'Informes',
-      icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="18" y1="20" x2="18" y2="10"></line>
-        <line x1="12" y1="20" x2="12" y2="4"></line>
-        <line x1="6" y1="20" x2="6" y2="14"></line>
-      </svg>`,
-      isActive: false,
-      isFuture: false,
-    },
-    {
-      id: 'configuracion',
-      label: 'Configuración',
-      icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="3"></circle>
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-      </svg>`,
-      isActive: false,
-      isFuture: false,
-    },
-  ]);
-}
-
-interface NavItem {
-  id: string;
-  label: string;
-  icon: string;
-  isActive: boolean;
-  isFuture: boolean;
 }

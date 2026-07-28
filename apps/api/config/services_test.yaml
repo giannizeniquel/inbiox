@@ -13,3 +13,5 @@ services:
 
     App\Application\Service\AssignmentService:
         public: true
+
+    # Password hasher is accessed via PHP's native password_hash in test fixtures

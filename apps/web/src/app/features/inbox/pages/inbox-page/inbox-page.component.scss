@@ -6,7 +6,7 @@
 }
 
 .inbox-header {
-  background: #1976d2;
+  background: var(--bg-topbar, #1976d2);
   color: white;
   padding: 1rem 1.5rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);

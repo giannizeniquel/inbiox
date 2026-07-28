@@ -1,14 +1,16 @@
 import { Injectable, inject } from '@angular/core';
 import { Subject } from 'rxjs';
 import { SendMessageUseCase, RetryMessageUseCase } from '../../../core/application/messaging';
-import { ConversationStore, BridgeMessage } from '../../../core/stores/conversation.store';
+import { ConversationStore } from '../../../core/stores/conversation.store';
+import { Message } from '../../../core/models/message.model';
 import { generateTempId } from '../../../core/utils/temp-id.util';
 import { retryWithBackoff, RetryConfig } from '../../../core/utils/retry.util';
+import { Message as ProviderMessage } from '../../../core/providers/provider.interface';
 
 export interface SendResult {
   tempId: string;
   success: boolean;
-  message?: BridgeMessage;
+  message?: Message;
   error?: string;
 }
 
@@ -61,19 +63,7 @@ export class MessageSenderService {
     ).subscribe({
       next: (output) => {
         // Success: reconcile optimistic → confirmed
-        this.conversationStore.confirmMessage(tempId, {
-          id: output.message.id,
-          tempId,
-          ticketId,
-          content: output.message.content || content,
-          body: content,
-          created_at: output.message.createdAt || new Date().toISOString(),
-          deliveryStatus: 'sent',
-          message_id: 0,
-          direction: 'outbound',
-          chatId: ticketId,
-        } as BridgeMessage);
-
+        this.conversationStore.confirmMessage(tempId, toCanonical(output.message, ticketId, tempId, content));
         this.sendResults.next({ tempId, success: true });
       },
       error: () => {
@@ -111,19 +101,7 @@ export class MessageSenderService {
       ticketId: cached.ticketId,
     }).subscribe({
       next: (output) => {
-        this.conversationStore.confirmMessage(tempId, {
-          id: output.message.id,
-          tempId,
-          ticketId: cached.ticketId,
-          content: output.message.content || cached.content,
-          body: cached.content,
-          created_at: output.message.createdAt || new Date().toISOString(),
-          deliveryStatus: output.message.deliveryStatus,
-          message_id: 0,
-          direction: 'outbound',
-          chatId: cached.ticketId,
-        } as BridgeMessage);
-
+        this.conversationStore.confirmMessage(tempId, toCanonical(output.message, cached.ticketId, tempId, cached.content));
         this.sendResults.next({ tempId, success: true });
       },
       error: (err: unknown) => {
@@ -145,4 +123,27 @@ export class MessageSenderService {
   removeFailed(tempId: string): void {
     this.conversationStore.removeMessage(tempId);
   }
+}
+
+/**
+ * Map a provider-layer Message to the canonical Message used by the store.
+ */
+function toCanonical(
+  pm: ProviderMessage,
+  ticketId: string,
+  tempId: string,
+  content: string,
+): Message {
+  return {
+    id: pm.id || tempId,
+    tempId,
+    ticketId,
+    content: pm.content || content,
+    direction: 'outbound',
+    sender: pm.sender ?? 'agent',
+    deliveryStatus: pm.deliveryStatus,
+    createdAt: pm.createdAt || new Date().toISOString(),
+    externalId: pm.externalId,
+    failedReason: pm.failedReason,
+  };
 }

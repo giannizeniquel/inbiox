@@ -16,12 +16,14 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/api/provider')]
+#[IsGranted('ROLE_AGENT')]
 class ProviderProxyController extends AbstractController
 {
-    private const int GRAPH_AUTH_ERROR = 401;   // Meta auth/oauth errors
-    private const int GRAPH_RATE_LIMIT = 429;    // Too many requests
+    private const GRAPH_AUTH_ERROR = 401;   // Meta auth/oauth errors
+    private const GRAPH_RATE_LIMIT = 429;    // Too many requests
 
     public function __construct(
         private readonly TicketRepository $ticketRepository,
@@ -281,20 +283,6 @@ class ProviderProxyController extends AbstractController
                 $this->mapGraphErrorCode($e->getGraphCode())
             );
         }
-    }
-
-    /**
-     * Normalize phone number for outbound WhatsApp API calls.
-     * DB stores numbers without the 9 prefix (54...), but Meta API requires 549... format.
-     */
-    private function normalizeOutboundPhone(string $phone): string
-    {
-        $digits = preg_replace('/[^0-9]/', '', $phone);
-        // Argentine mobile: if stored as 54..., add the 9
-        if (str_starts_with($digits, '54') && strlen($digits) >= 11) {
-            return '54' . '9' . substr($digits, 2);
-        }
-        return $digits;
     }
 
     /**

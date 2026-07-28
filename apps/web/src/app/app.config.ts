@@ -1,24 +1,25 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners, APP_INITIALIZER, inject } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi, withInterceptors } from '@angular/common/http';
 
 import { routes } from './app.routes';
 import { ProviderInterface, PROVIDER_INTERFACE, WhatsAppCloudProvider } from './core/providers';
-import { MercureService } from './core/realtime/mercure.service';
 import { SendMessageUseCase, RetryMessageUseCase } from './core/application/messaging';
 import { HttpClient } from '@angular/common/http';
+import { authInterceptor } from './core/auth/auth.interceptor';
+import { AuthStore } from './core/stores/auth.store';
 
-// APP_INITIALIZER to connect SSE on app startup
-const initializeSSE = {
+// APP_INITIALIZER to resolve authentication state on startup.
+// 1. Tries to refresh the access token using the httpOnly cookie
+// 2. If successful: hydrates user, gets mercure token, connects SSE
+// 3. If failed: stays unauthenticated (user sees /login)
+const initializeAuth = {
   provide: APP_INITIALIZER,
   useFactory: () => {
-    const mercure = inject(MercureService);
-    return () => {
-      mercure.connect();
-      return Promise.resolve();
-    };
+    const authStore = inject(AuthStore);
+    return () => authStore.initialize();
   },
-  multi: true
+  multi: true,
 };
 
 // Factory for SendMessageUseCase
@@ -39,8 +40,11 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
-    provideHttpClient(withInterceptorsFromDi()),
-    initializeSSE,
+    provideHttpClient(
+      withInterceptorsFromDi(),
+      withInterceptors([authInterceptor]),
+    ),
+    initializeAuth,
     // ProviderInterface injected as WhatsAppCloudProvider
     {
       provide: PROVIDER_INTERFACE,

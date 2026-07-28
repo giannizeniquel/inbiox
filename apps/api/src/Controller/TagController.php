@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Application\UseCase\AddTagToTicketUseCase;
@@ -8,7 +10,9 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+#[IsGranted('ROLE_AGENT')]
 class TagController extends AbstractController
 {
     public function __construct(
@@ -18,7 +22,7 @@ class TagController extends AbstractController
 
     /**
      * Add a tag to a ticket
-     * POST /tickets/{id}/tags
+     * POST /api/tickets/{ticketId}/tags
      */
     #[Route('/api/tickets/{ticketId}/tags', methods: ['POST'])]
     public function addTag(int $ticketId, Request $request): JsonResponse
@@ -40,7 +44,7 @@ class TagController extends AbstractController
 
     /**
      * Remove a tag from a ticket
-     * DELETE /tickets/{id}/tags/{tagName}
+     * DELETE /api/tickets/{ticketId}/tags/{tagName}
      */
     #[Route('/api/tickets/{ticketId}/tags/{tagName}', methods: ['DELETE'])]
     public function removeTag(int $ticketId, string $tagName): JsonResponse

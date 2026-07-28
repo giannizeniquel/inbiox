@@ -62,7 +62,7 @@ class Sprint10AgentManagementTest extends KernelTestCase
     public function testFullAutoAssignmentFlow(): void
     {
         // 1. Create an agent
-        $agent = new Agent('Test Agent', 'test@example.com');
+        $agent = new Agent('Test Agent');
         $agent->setMaxActiveTickets(5);
         $agent->setTimezone('UTC');
         $this->em->persist($agent);
@@ -144,7 +144,7 @@ class Sprint10AgentManagementTest extends KernelTestCase
     {
         $agents = [];
         for ($i = 1; $i <= 3; $i++) {
-            $agent = new Agent("Agent $i", "agent$i@example.com");
+            $agent = new Agent("Agent $i");
             $agent->setMaxActiveTickets(10);
             $agent->setTimezone('UTC');
             $this->em->persist($agent);
@@ -205,12 +205,12 @@ class Sprint10AgentManagementTest extends KernelTestCase
     public function testLoadBasedTiebreaker(): void
     {
         // Create 2 agents
-        $agentLow = new Agent('Low Load', 'low@example.com');
+        $agentLow = new Agent('Low Load');
         $agentLow->setMaxActiveTickets(10);
         $agentLow->setTimezone('UTC');
         $this->em->persist($agentLow);
 
-        $agentHigh = new Agent('High Load', 'high@example.com');
+        $agentHigh = new Agent('High Load');
         $agentHigh->setMaxActiveTickets(10);
         $agentHigh->setTimezone('UTC');
         $this->em->persist($agentHigh);
@@ -261,7 +261,7 @@ class Sprint10AgentManagementTest extends KernelTestCase
     public function testNoEligibleAgents(): void
     {
         // Create an agent but with max_active_tickets = 0 (impossible via setter, so...)
-        $agent = new Agent('Full Agent', 'full@example.com');
+        $agent = new Agent('Full Agent');
         $agent->setMaxActiveTickets(1);
         $agent->setTimezone('UTC');
         $this->em->persist($agent);
@@ -312,7 +312,7 @@ class Sprint10AgentManagementTest extends KernelTestCase
      */
     public function testAlreadyAssignedTicketIsIdempotent(): void
     {
-        $agent = new Agent('Owner', 'owner@example.com');
+        $agent = new Agent('Owner');
         $agent->setMaxActiveTickets(5);
         $agent->setTimezone('UTC');
         $this->em->persist($agent);

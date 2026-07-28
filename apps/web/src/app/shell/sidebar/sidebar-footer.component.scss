@@ -91,6 +91,40 @@
 }
 
 // -----------------------------------------------------------------------------
+// Logout Button
+// -----------------------------------------------------------------------------
+.sidebar-footer__logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+  flex-shrink: 0;
+
+  &:hover {
+    background-color: rgba(220, 38, 38, 0.08);
+    color: var(--color-error, #dc2626);
+
+    .dark & {
+      background-color: rgba(220, 38, 38, 0.15);
+      color: var(--color-error-light, #fca5a5);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+  }
+}
+
+// -----------------------------------------------------------------------------
 // Theme Toggle
 // -----------------------------------------------------------------------------
 .sidebar-footer__theme-toggle {
@@ -134,16 +168,16 @@
   }
 }
 
-// Moon icon (shown in light mode): black icon, circular background
+// Moon icon (shown in light mode): dark icon
 .theme-toggle__icon--moon {
-  color: #333333;
+  color: var(--text-primary, #333333);
   opacity: 1;
   transform: scale(1) rotate(0deg);
 }
 
 // Sun icon (shown in dark mode): light icon
 .theme-toggle__icon--sun {
-  color: #fbbf24;
+  color: var(--accent-warning, #fbbf24);
   opacity: 0;
   transform: scale(0.5) rotate(-30deg);
 }
@@ -167,13 +201,13 @@
   height: 12px;
   border-radius: 6px;
 
-  background-color: #d1d5db; // off: gray
+  background-color: var(--border-subtle, #d1d5db); // off: gray
 
   transition: background-color 200ms ease;
 
   // When dark mode is ON
   &--on {
-    background-color: #25d366; // on: green
+    background-color: var(--conn-online, #25d366); // on: green
   }
 }
 

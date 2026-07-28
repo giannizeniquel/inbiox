@@ -6,6 +6,7 @@ namespace App\Tests\Integration;
 
 use App\Domain\Agent\Agent;
 use App\Domain\Agent\AgentShift;
+use App\Domain\User\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -21,11 +22,15 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
  *   DELETE /agents/{id}/shifts/{shiftId}
  *
  * Tests run against the real test database via Symfony's test client.
+ * All tests authenticate as SUPERVISOR to bypass ownership scoping.
  */
 class Sprint10ControllerTest extends WebTestCase
 {
+    private const TEST_PASSWORD = 'test-password';
+
     private ?KernelBrowser $client = null;
     private ?EntityManagerInterface $em = null;
+    private string $authToken = '';
 
     protected function setUp(): void
     {
@@ -34,6 +39,7 @@ class Sprint10ControllerTest extends WebTestCase
 
         // Clean all relevant tables (order respects FK constraints)
         $conn = $this->em->getConnection();
+        $conn->executeStatement('DELETE FROM refresh_tokens');
         $conn->executeStatement('DELETE FROM outbox_events');
         $conn->executeStatement('DELETE FROM assignments');
         $conn->executeStatement('DELETE FROM ticket_tags');
@@ -44,6 +50,10 @@ class Sprint10ControllerTest extends WebTestCase
         $conn->executeStatement('DELETE FROM conversations');
         $conn->executeStatement('DELETE FROM contacts');
         $conn->executeStatement('DELETE FROM agents');
+        $conn->executeStatement('DELETE FROM `user`');
+
+        // Create an admin user and authenticate
+        $this->authToken = $this->createAuthenticatedUser();
     }
 
     protected function tearDown(): void
@@ -54,8 +64,34 @@ class Sprint10ControllerTest extends WebTestCase
     }
 
     // ────────────────────────────────────────────────────────
-    //  Helpers
+    //  Auth Helpers
     // ────────────────────────────────────────────────────────
+
+    /**
+     * Create an admin user (for bypassing ownership checks) and return JWT.
+     */
+    private function createAuthenticatedUser(): string
+    {
+        $user = new User();
+        $user->setEmail('sprint10-admin@inbiox.local');
+        $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
+        $user->setRoles(['ROLE_SUPERVISOR']);
+        $this->em->persist($user);
+        $this->em->flush();
+
+        $this->client->request('POST', '/api/auth/login', [], [], [
+            'CONTENT_TYPE' => 'application/json',
+        ], \json_encode([
+            'email' => 'sprint10-admin@inbiox.local',
+            'password' => self::TEST_PASSWORD,
+        ]));
+
+        $response = $this->client->getResponse();
+        self::assertSame(200, $response->getStatusCode());
+
+        $data = \json_decode($response->getContent(), true);
+        return $data['access_token'];
+    }
 
     /**
      * Create a basic test agent and return its ID.
@@ -65,7 +101,7 @@ class Sprint10ControllerTest extends WebTestCase
         string $timezone = 'UTC',
         int $maxActiveTickets = 5,
     ): int {
-        $agent = new Agent($name, $name.'@example.com');
+        $agent = new Agent($name);
         $agent->setTimezone($timezone);
         $agent->setMaxActiveTickets($maxActiveTickets);
         $this->em->persist($agent);
@@ -87,7 +123,11 @@ class Sprint10ControllerTest extends WebTestCase
             $uri,
             [],
             [],
-            ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
+            [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_ACCEPT' => 'application/json',
+                'HTTP_AUTHORIZATION' => 'Bearer ' . $this->authToken,
+            ],
             json_encode($data, JSON_THROW_ON_ERROR),
         );
 
@@ -101,7 +141,9 @@ class Sprint10ControllerTest extends WebTestCase
      */
     private function deleteRequest(string $uri): array
     {
-        $this->client->request('DELETE', $uri);
+        $this->client->request('DELETE', $uri, [], [], [
+            'HTTP_AUTHORIZATION' => 'Bearer ' . $this->authToken,
+        ]);
 
         $content = $this->client->getResponse()->getContent();
 
@@ -113,7 +155,10 @@ class Sprint10ControllerTest extends WebTestCase
      */
     private function getJson(string $uri): array
     {
-        $this->client->request('GET', $uri, [], [], ['HTTP_ACCEPT' => 'application/json']);
+        $this->client->request('GET', $uri, [], [], [
+            'HTTP_ACCEPT' => 'application/json',
+            'HTTP_AUTHORIZATION' => 'Bearer ' . $this->authToken,
+        ]);
 
         $content = $this->client->getResponse()->getContent();
 

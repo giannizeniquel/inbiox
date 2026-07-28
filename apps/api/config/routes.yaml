@@ -1,74 +1,69 @@
-app_message_inbound:
-    path: /messages/inbound
-    methods: [POST]
-    controller: App\Controller\MessageController::inbound
-
 app_ticket_assign:
-    path: /tickets/{id}/assign
+    path: /api/tickets/{id}/assign
     methods: [POST]
     controller: App\Controller\TicketController::assign
 
 app_ticket_assignment:
-    path: /tickets/{id}/assignment
+    path: /api/tickets/{id}/assignment
     methods: [GET]
-    controller: App\Controller\TicketController::assignment
+    controller: App\Controller\TicketController::getAssignment
 
 app_inbox_tickets:
-    path: /tickets
+    path: /api/tickets
     methods: [GET]
     controller: App\Controller\InboxController::listTickets
 
 app_inbox_ticket_detail:
-    path: /tickets/{id}
+    path: /api/tickets/{id}
     methods: [GET]
     controller: App\Controller\InboxController::getTicket
 
 app_inbox_ticket_messages:
-    path: /tickets/{id}/messages
+    path: /api/tickets/{id}/messages
     methods: [GET]
     controller: App\Controller\InboxController::getMessages
 
 app_ticket_auto_assign:
-    path: /tickets/{id}/auto-assign
+    path: /api/tickets/{id}/auto-assign
     methods: [POST]
     controller: App\Controller\AutoAssignController::autoAssign
 app_ticket_transition:
-    path: /tickets/{id}/transition
+    path: /api/tickets/{id}/transition
     methods: [POST]
     controller: App\Controller\TicketWorkflowController::transition
 
 app_ticket_resolve:
-    path: /tickets/{id}/resolve
+    path: /api/tickets/{id}/resolve
     methods: [POST]
     controller: App\Controller\TicketWorkflowController::resolve
 
 app_ticket_close:
-    path: /tickets/{id}/close
+    path: /api/tickets/{id}/close
     methods: [POST]
     controller: App\Controller\TicketWorkflowController::close
 
 app_report_frt:
-    path: /reports/frt
+    path: /api/reports/frt
     methods: [GET]
     controller: App\Controller\ReportingController::frt
 
 app_report_rt:
-    path: /reports/rt
+    path: /api/reports/rt
     methods: [GET]
     controller: App\Controller\ReportingController::rt
 
 app_report_counts:
-    path: /reports/counts
+    path: /api/reports/counts
     methods: [GET]
     controller: App\Controller\ReportingController::counts
 
 app_report_volume:
-    path: /reports/volume
+    path: /api/reports/volume
     methods: [GET]
     controller: App\Controller\ReportingController::volume
 
 app_report_agents:
-    path: /reports/agents
+    path: /api/reports/agents
     methods: [GET]
     controller: App\Controller\ReportingController::agents
 
@@ -93,27 +88,27 @@ app_debug_assign:
     controller: App\Controller\DebugController::assign
 
 app_contacts_list:
-    path: /contacts
+    path: /api/contacts
     methods: [GET]
     controller: App\Controller\ContactController::list
 
 app_contacts_detail:
-    path: /contacts/{id}
+    path: /api/contacts/{id}
     methods: [GET]
     controller: App\Controller\ContactController::get
 
 app_contacts_create:
-    path: /contacts
+    path: /api/contacts
     methods: [POST]
     controller: App\Controller\ContactController::create
 
 app_contacts_update:
-    path: /contacts/{id}
+    path: /api/contacts/{id}
     methods: [PUT]
     controller: App\Controller\ContactController::update
 
 app_contacts_delete:
-    path: /contacts/{id}
+    path: /api/contacts/{id}
     methods: [DELETE]
     controller: App\Controller\ContactController::delete
 
@@ -150,29 +145,120 @@ app_ticket_events_resync:
 app_mercure_token:
     path: /api/mercure/token
     methods: [GET]
-    controller: App\Controller\TicketEventsController::getToken
+    controller: App\Controller\MercureTokenController::getToken
 
 app_agent_set_availability:
-    path: /agents/{id}/availability
+    path: /api/agents/{id}/availability
     methods: [POST]
     controller: App\Controller\AgentAvailabilityController::setAvailability
 
 app_agent_clear_availability:
-    path: /agents/{id}/availability
+    path: /api/agents/{id}/availability
     methods: [DELETE]
     controller: App\Controller\AgentAvailabilityController::clearAvailability
 
 app_agent_get_availability:
-    path: /agents/{id}/availability
+    path: /api/agents/{id}/availability
     methods: [GET]
     controller: App\Controller\AgentAvailabilityController::getAvailability
 
 app_agent_create_shift:
-    path: /agents/{id}/shifts
+    path: /api/agents/{id}/shifts
     methods: [POST]
     controller: App\Controller\AgentAvailabilityController::createShift
 
 app_agent_delete_shift:
-    path: /agents/{id}/shifts/{shiftId}
+    path: /api/agents/{id}/shifts/{shiftId}
     methods: [DELETE]
     controller: App\Controller\AgentAvailabilityController::deleteShift
+
+admin_outbox_publish:
+    path: /admin/outbox/publish
+    methods: [POST]
+    controller: App\Controller\OutboxController::publish
+
+api_auth_login:
+    path: /api/auth/login
+    methods: [POST]
+    controller: App\Controller\AuthController::login
+
+api_auth_refresh_path:
+    path: /api/auth/refresh
+    methods: [POST]
+    controller: App\Controller\AuthController::refresh
+
+api_auth_logout:
+    path: /api/auth/logout
+    methods: [POST]
+    controller: App\Controller\AuthController::logout
+
+api_auth_me:
+    path: /api/auth/me
+    methods: [GET]
+    controller: App\Controller\AuthController::me
+
+# ─── Admin: User Management (ROLE_ADMIN) ────────────────────────────────
+
+admin_users_list:
+    path: /api/admin/users
+    methods: [GET]
+    controller: App\Controller\Admin\UserController::list
+
+admin_users_create:
+    path: /api/admin/users
+    methods: [POST]
+    controller: App\Controller\Admin\UserController::create
+
+admin_users_get:
+    path: /api/admin/users/{id}
+    methods: [GET]
+    controller: App\Controller\Admin\UserController::get
+
+admin_users_update:
+    path: /api/admin/users/{id}
+    methods: [PUT]
+    controller: App\Controller\Admin\UserController::update
+
+admin_users_delete:
+    path: /api/admin/users/{id}
+    methods: [DELETE]
+    controller: App\Controller\Admin\UserController::delete
+
+# ─── Admin: Agent Management (ROLE_SUPERVISOR) ──────────────────────────
+
+admin_agents_list:
+    path: /api/admin/agents
+    methods: [GET]
+    controller: App\Controller\Admin\AgentController::list
+
+admin_agents_create:
+    path: /api/admin/agents
+    methods: [POST]
+    controller: App\Controller\Admin\AgentController::create
+
+admin_agents_get:
+    path: /api/admin/agents/{id}
+    methods: [GET]
+    controller: App\Controller\Admin\AgentController::get
+
+admin_agents_update:
+    path: /api/admin/agents/{id}
+    methods: [PUT]
+    controller: App\Controller\Admin\AgentController::update
+
+admin_agents_delete:
+    path: /api/admin/agents/{id}
+    methods: [DELETE]
+    controller: App\Controller\Admin\AgentController::delete
+
+# ─── Admin: Agent-User Linking (ROLE_ADMIN) ────────────────────────────
+
+admin_agents_link_user:
+    path: /api/admin/agents/{id}/link-user
+    methods: [POST]
+    controller: App\Controller\Admin\AgentLinkController::linkUser
+
+admin_agents_unlink_user:
+    path: /api/admin/agents/{id}/link-user
+    methods: [DELETE]
+    controller: App\Controller\Admin\AgentLinkController::unlinkUser

@@ -14,29 +14,40 @@ Greenfield - no code yet. Documentation complete in `docs/`, implementation star
 
 ---
 
-## Team Agents (SDD + Implementation)
+## Team Agents (SDD Phases)
 
-| Agent | Model | Role |
-|-------|-------|------|
-| orchestrator | deepseek-v4-pro | Coordina workflow SDD, nunca implementa |
-| sdd-explore | minimax-m3 | Investiga y analiza |
-| sdd-propose | deepseek-v4-pro | Crea change proposals |
-| sdd-spec | qwen3.7-plus | Especificaciones detalladas |
-| sdd-design | minimax-m3 | Diseño técnico |
-| sdd-tasks | qwen3.7-plus | Breakdown en tareas |
-| sdd-apply | deepseek-v4-flash | Ejecuta tareas (delega a stack agents) |
-| sdd-verify | minimax-m3 | Valida contra specs |
-| sdd-archive | deepseek-v4-flash | Archive artifacts |
+| Fase | Primario | Backup / Soporte | Límite / 5h | Rol |
+|------|----------|------------------|-------------|-----|
+| orchestrator | DeepSeek V4 Pro | MiniMax M3 | 3.450 / 3.200 | Control e iteración continua |
+| sdd-explore | MiniMax M2.7 | MiMo-V2.5-Pro | 3.400 / 3.250 | Lectura del código base |
+| sdd-propose | DeepSeek V4 Pro | Qwen3.7 Max (refinador) | 3.450 / 950 | Propuesta + veredicto final |
+| sdd-spec | Qwen3.7 Plus | Hy3 | 4.300 / 4.300 | Escritura estructurada de requerimientos |
+| sdd-design | MiniMax M3 | MiMo-V2.5-Pro | 3.200 / 3.250 | Diseño arquitectónico profundo |
+| sdd-tasks | Qwen3.7 Plus | Qwen3.6 Plus | 4.300 / 3.300 | Breakdown mecánico de tareas |
+| sdd-apply | DeepSeek V4 Flash | MiMo-V2.5 | 31.650 / 30.100 | Codificación masiva — 61k+ peticiones |
+| sdd-verify | MiniMax M2.7 | Hy3 | 3.400 / 4.300 | Validación vs. spec |
+| sdd-archive | DeepSeek V4 Flash | — | 31.650 | Cierre y limpieza administrativa |
 
 ### Stack Specialists
 
-| Agent | Model | Role |
-|-------|-------|------|
-| backend-dev | deepseek-v4-flash | Symfony 7.4 entities, controllers, UseCases |
-| frontend-dev | deepseek-v4-flash | Angular components, services, signals |
-| tester | deepseek-v4-flash | PHPUnit tests, coverage |
-| documenter | deepseek-v4-flash | API contracts, architecture docs |
-| code-reviewer | deepseek-v4-flash | Code review, security, best practices |
+| Agente | Primario | Backup | Límite / 5h | Rol |
+|--------|----------|--------|-------------|-----|
+| backend-dev | DeepSeek V4 Pro | DeepSeek V4 Flash | 3.450 / 31.650 | Symfony — diseño + escritura |
+| frontend-dev | Qwen3.7 Plus | Hy3 | 4.300 / 4.300 | Angular — jerarquías y maquetación |
+| code-reviewer | Kimi K2.7 Code | GLM-5.2 | 1.350 / 880 | Revisión enfocada y síntesis de fallos |
+| tester | MiniMax M2.7 | Hy3 | 3.400 / 4.300 | Iteraciones de tests unitarios |
+| documenter | MiMo-V2.5-Pro | — | 3.250 | Contratos API y manuales |
+| auditor | Grok 4.5 / Kimi K3 | — | 120 / 110 (220 2x) | Tercera opinión — solo bloqueos críticos |
+| general | DeepSeek V4 Flash | MiMo-V2.5 | 31.650 / 30.100 | Consultas generales |
+
+### Reserva
+
+| Modelo | Límite / 5h | Uso |
+|--------|-------------|-----|
+| GLM-5.1 | 880 | Formato de docs y auditorías puntuales |
+| GLM-5.2 | 880 | Formato de docs y auditorías puntuales |
+| Kimi K2.6 | 1.150 | Backup de último recurso |
+| Qwen3.7 Max | 950 | Solo como refinador en sdd-propose |
 
 ---
 

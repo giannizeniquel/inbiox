@@ -19,6 +19,8 @@ use Doctrine\Persistence\ManagerRegistry;
  * - Ticket counts by status
  * - Volume over time
  * - Agent performance
+ *
+ * All methods support optional ?int $agentId parameter for ownership scoping.
  */
 class ReportingRepository extends ServiceEntityRepository
 {
@@ -117,9 +119,10 @@ class ReportingRepository extends ServiceEntityRepository
      *
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
+     * @param int|null $agentId Optional filter by assigned agent
      * @return array{avg_rt_seconds: float|null, min_rt_seconds: int|null, max_rt_seconds: int|null, avg_rt_minutes: float|null, min_rt_minutes: int|null, max_rt_minutes: int|null}
      */
-    public function getRtMetrics(\DateTimeImmutable $from, \DateTimeImmutable $to): array
+    public function getRtMetrics(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null): array
     {
         $conn = $this->entityManager->getConnection();
         
@@ -134,6 +137,11 @@ class ReportingRepository extends ServiceEntityRepository
         AND t.created_at >= :from AND t.created_at < :to";
         
         $params = ['from' => $from->format('Y-m-d H:i:s'), 'to' => $to->format('Y-m-d H:i:s')];
+        
+        if ($agentId !== null) {
+            $sql .= ' AND t.assigned_agent_id = :agentId';
+            $params['agentId'] = $agentId;
+        }
         
         $result = $conn->fetchAssociative($sql, $params);
         
@@ -156,9 +164,10 @@ class ReportingRepository extends ServiceEntityRepository
      *
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
+     * @param int|null $agentId Optional filter by assigned agent
      * @return array{new: int, active: int, waiting: int, resolved: int, closed: int}
      */
-    public function getCountsByStatus(\DateTimeImmutable $from, \DateTimeImmutable $to): array
+    public function getCountsByStatus(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null): array
     {
         $qb = $this->createQueryBuilder('t');
 
@@ -167,6 +176,11 @@ class ReportingRepository extends ServiceEntityRepository
             ->groupBy('t.status')
             ->setParameter('from', $from)
             ->setParameter('to', $to);
+
+        if ($agentId !== null) {
+            $qb->andWhere('t.assignedAgentId = :agentId')
+               ->setParameter('agentId', $agentId);
+        }
 
         $results = $qb->getQuery()->getResult();
 
@@ -193,17 +207,24 @@ class ReportingRepository extends ServiceEntityRepository
      *
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
+     * @param int|null $agentId Optional filter by assigned agent
      * @return array<int, array{date: string, tickets_created: int, tickets_resolved: int}>
      */
-    public function getVolumeOverTime(\DateTimeImmutable $from, \DateTimeImmutable $to): array
+    public function getVolumeOverTime(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null): array
     {
         $conn = $this->entityManager->getConnection();
         $params = ['from' => $from->format('Y-m-d H:i:s'), 'to' => $to->format('Y-m-d H:i:s')];
+
+        $agentClause = '';
+        if ($agentId !== null) {
+            $agentClause = ' AND t.assigned_agent_id = :agentId';
+            $params['agentId'] = $agentId;
+        }
         
         // Created tickets grouped by date
         $sqlCreated = 'SELECT DATE(t.created_at) as date, COUNT(t.id) as tickets_created
         FROM tickets t
-        WHERE t.created_at >= :from AND t.created_at < :to
+        WHERE t.created_at >= :from AND t.created_at < :to' . $agentClause . '
         GROUP BY DATE(t.created_at)';
         
         $createdResults = $conn->fetchAllAssociative($sqlCreated, $params);
@@ -211,7 +232,7 @@ class ReportingRepository extends ServiceEntityRepository
         // Resolved tickets grouped by date
         $sqlResolved = 'SELECT DATE(t.resolved_at) as date, COUNT(t.id) as tickets_resolved
         FROM tickets t
-        WHERE t.resolved_at IS NOT NULL AND t.resolved_at >= :from AND t.resolved_at < :to
+        WHERE t.resolved_at IS NOT NULL AND t.resolved_at >= :from AND t.resolved_at < :to' . $agentClause . '
         GROUP BY DATE(t.resolved_at)';
         
         $resolvedResults = $conn->fetchAllAssociative($sqlResolved, $params);

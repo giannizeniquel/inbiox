@@ -143,7 +143,7 @@
   height: 8px;
   border-radius: 50%;
 
-  background-color: #ef4444; // red — not a design token, intentional for alerts
+  background-color: var(--color-error, #ef4444);
   border: 2px solid var(--bg-topbar);
 
   // The border color should match topbar, but we use explicit to ensure contrast

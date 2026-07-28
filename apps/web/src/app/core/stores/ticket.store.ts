@@ -1,5 +1,11 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, inject, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { filter } from 'rxjs';
 import { Ticket, TicketStatus } from '../models/ticket.model';
+import { RealtimeEvent, RealtimeEventType,
+  MessageAddedPayload, TicketCreatedPayload, TicketStatusChangedPayload,
+  TicketAssignedPayload } from '../models/realtime-event.model';
+import { EventBusService } from '../realtime/event-bus.service';
 
 const MAX_TICKETS = 1000;
 
@@ -7,7 +13,6 @@ export type TicketFilter = 'mine' | 'waiting' | 'internal';
 
 /**
  * TicketStore — manages ticket list state via Angular signals.
- * Replaces InboxStore with the correct Ticket model from backend API.
  */
 @Injectable({ providedIn: 'root' })
 export class TicketStore {
@@ -22,6 +27,96 @@ export class TicketStore {
 
   /** Loading state */
   readonly loading = signal<boolean>(false);
+
+  constructor() {
+    this.initEventBus();
+  }
+
+  /**
+   * Set up EventBus subscription for realtime events.
+   * Handles: TicketCreated, TicketStatusChanged, TicketAssigned, MessageAdded.
+   */
+  private initEventBus(): void {
+    try {
+      const eventBus = inject(EventBusService);
+      const destroyRef = inject(DestroyRef);
+
+      eventBus.events$.pipe(
+        filter(e =>
+          e.eventType === RealtimeEventType.TicketCreated
+          || e.eventType === RealtimeEventType.TicketStatusChanged
+          || e.eventType === RealtimeEventType.TicketAssigned
+          || e.eventType === RealtimeEventType.MessageAdded
+        ),
+        takeUntilDestroyed(destroyRef),
+      ).subscribe(e => this.onRealtimeEvent(e));
+    } catch {
+      // Running outside DI context (e.g., unit tests)
+    }
+  }
+
+  /**
+   * Handle realtime events dispatched via EventBus.
+   * Logic mirrors MercureService.handleEvent() for ticket-related types.
+   */
+  private onRealtimeEvent(event: RealtimeEvent): void {
+    switch (event.eventType) {
+      case RealtimeEventType.MessageAdded: {
+        const p = event.payload as MessageAddedPayload;
+        // Increment unread if not active ticket
+        const activeTicket = this.activeTicket();
+        if (!activeTicket || activeTicket.ticket_id !== String(p.ticketId)) {
+          const current = this.tickets().find(t => t.ticket_id === String(p.ticketId));
+          if (current) {
+            this.updateUnreadCount(String(p.ticketId), (current.metrics?.unread_count ?? 0) + 1);
+          }
+        }
+        break;
+      }
+
+      case RealtimeEventType.TicketCreated: {
+        const p = event.payload as TicketCreatedPayload;
+        this.addOrUpdateTicket({
+          ticket_id: String(p.ticketId),
+          id: String(p.ticketId),
+          status: p.status as TicketStatus,
+          priority: String(p.priority),
+          contact: null,
+          last_message: null,
+          owner: null,
+          metrics: { unread_count: 0 },
+          timestamps: { opened_at: p.createdAt, updated_at: p.createdAt },
+        });
+        break;
+      }
+
+      case RealtimeEventType.TicketStatusChanged: {
+        const p = event.payload as TicketStatusChangedPayload;
+        const existing = this.tickets().find(t => t.ticket_id === String(p.ticketId));
+        if (existing) {
+          this.addOrUpdateTicket({
+            ...existing,
+            status: p.newStatus as TicketStatus,
+            timestamps: { ...existing.timestamps, updated_at: p.changedAt },
+          });
+        }
+        break;
+      }
+
+      case RealtimeEventType.TicketAssigned: {
+        const p = event.payload as TicketAssignedPayload;
+        const existing = this.tickets().find(t => t.ticket_id === String(p.ticketId));
+        if (existing) {
+          this.addOrUpdateTicket({
+            ...existing,
+            owner: { id: p.assigneeId, name: `Agent #${p.assigneeId}` },
+            timestamps: { ...existing.timestamps, updated_at: p.assignedAt },
+          });
+        }
+        break;
+      }
+    }
+  }
 
   /** Filtered tickets based on current filter */
   readonly filteredTickets = computed<Ticket[]>(() => {

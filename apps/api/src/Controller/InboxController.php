@@ -1,22 +1,28 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Application\DTO\PaginationMetaDTO;
 use App\Application\Query\GetTicketDetailQuery;
 use App\Application\Query\GetTicketMessagesQuery;
 use App\Application\Query\ListTicketsQuery;
+use App\Application\Security\OwnershipScope;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+#[IsGranted('ROLE_AGENT')]
 class InboxController
 {
     public function __construct(
         private ListTicketsQuery $listTicketsQuery,
         private GetTicketDetailQuery $getTicketDetailQuery,
         private GetTicketMessagesQuery $getTicketMessagesQuery,
+        private OwnershipScope $ownershipScope,
         private LoggerInterface $logger,
     ) {}
 
@@ -32,6 +38,9 @@ class InboxController
             $search = $request->query->get('search');
             $sort = $request->query->get('sort', 'last_message_desc');
 
+            // Ownership scope: AGENT sees only own tickets; SUPERVISOR/ADMIN see all
+            $scopeAgentId = $this->ownershipScope->getAgentId();
+
             $result = $this->listTicketsQuery->execute(
                 page: $page,
                 limit: $limit,
@@ -40,6 +49,7 @@ class InboxController
                 status: $status,
                 search: $search,
                 sort: $sort,
+                scopeAgentId: $scopeAgentId,
             );
 
             $items = array_map(fn($dto) => $dto->toArray(), $result['items']);
