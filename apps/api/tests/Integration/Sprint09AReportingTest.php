@@ -44,6 +44,11 @@ class Sprint09AReportingTest extends KernelTestCase
         $this->em->getConnection()->executeStatement('DELETE FROM tickets');
         $this->em->getConnection()->executeStatement('DELETE FROM conversations');
         $this->em->getConnection()->executeStatement('DELETE FROM contacts');
+        $this->em->getConnection()->executeStatement('DELETE FROM agent_shifts');
+        $this->em->getConnection()->executeStatement('DELETE FROM agents');
+
+        // Clear identity map — direct SQL bypasses ORM cache
+        $this->em->clear();
     }
 
     protected function tearDown(): void
@@ -83,9 +88,9 @@ class Sprint09AReportingTest extends KernelTestCase
         $result = $this->reportingRepo->getFrtMetrics($from, $to);
 
         // Assert - average should be 45 minutes (2700 seconds)
-        $this->assertEquals(2700, (int)$result['avg_frt']);
-        $this->assertEquals(1800, $result['min_frt']);
-        $this->assertEquals(3600, $result['max_frt']);
+        $this->assertEquals(2700, (int)$result['avg_frt_seconds']);
+        $this->assertEquals(1800, $result['min_frt_seconds']);
+        $this->assertEquals(3600, $result['max_frt_seconds']);
     }
 
     /**
@@ -115,7 +120,7 @@ class Sprint09AReportingTest extends KernelTestCase
         $result = $this->reportingRepo->getFrtMetrics($from, $to);
 
         // Assert - only 1 ticket counted, avg is 30 min
-        $this->assertEquals(1800, (int)$result['avg_frt']);
+        $this->assertEquals(1800, (int)$result['avg_frt_seconds']);
     }
 
     // ============================================
@@ -149,9 +154,9 @@ class Sprint09AReportingTest extends KernelTestCase
         $result = $this->reportingRepo->getRtMetrics($from, $to);
 
         // Assert - average should be 3 hours (10800 seconds)
-        $this->assertEquals(10800, (int)$result['avg_rt']);
-        $this->assertEquals(7200, $result['min_rt']);
-        $this->assertEquals(14400, $result['max_rt']);
+        $this->assertEquals(10800, (int)$result['avg_rt_seconds']);
+        $this->assertEquals(7200, $result['min_rt_seconds']);
+        $this->assertEquals(14400, $result['max_rt_seconds']);
     }
 
     /**
@@ -181,7 +186,7 @@ class Sprint09AReportingTest extends KernelTestCase
         $result = $this->reportingRepo->getRtMetrics($from, $to);
 
         // Assert - only 1 ticket counted
-        $this->assertEquals(7200, (int)$result['avg_rt']);
+        $this->assertEquals(7200, (int)$result['avg_rt_seconds']);
     }
 
     // ============================================
@@ -215,7 +220,7 @@ class Sprint09AReportingTest extends KernelTestCase
         $result = $this->reportingRepo->getFrtMetrics($from, $to);
 
         // Assert - only 1 ticket counted
-        $this->assertNotNull($result['avg_frt']);
+        $this->assertNotNull($result['avg_frt_seconds']);
     }
 
     /**
@@ -231,7 +236,7 @@ class Sprint09AReportingTest extends KernelTestCase
         $result = $this->reportingRepo->getFrtMetrics($from, $to);
 
         // Assert
-        $this->assertNull($result['avg_frt']);
+        $this->assertNull($result['avg_frt_seconds']);
     }
 
     // ============================================
@@ -268,7 +273,7 @@ class Sprint09AReportingTest extends KernelTestCase
         $result = $this->reportingRepo->getFrtMetrics($from, $to, $agentId);
 
         // Assert - only 1 ticket counted
-        $this->assertEquals(1800, (int)$result['avg_frt']);
+        $this->assertEquals(1800, (int)$result['avg_frt_seconds']);
     }
 
     // ============================================
@@ -365,25 +370,27 @@ class Sprint09AReportingTest extends KernelTestCase
         $to = new \DateTimeImmutable('2026-01-31 23:59:59');
 
         // Agent 1 - 2 tickets, 1 resolved
+        $agent1Id = $this->createTestAgent('Agent 1');
         $this->createTestTicketWithSla(
             '2026-01-15 10:00:00',
             '2026-01-15 10:30:00',
             '2026-01-15 12:00:00',
-            1
+            $agent1Id
         );
         $this->createTestTicketWithSla(
             '2026-01-16 10:00:00',
             '2026-01-16 10:30:00',
             null,
-            1
+            $agent1Id
         );
 
         // Agent 2 - 1 ticket, resolved
+        $agent2Id = $this->createTestAgent('Agent 2');
         $this->createTestTicketWithSla(
             '2026-01-17 10:00:00',
             '2026-01-17 10:30:00',
             '2026-01-17 14:00:00',
-            2
+            $agent2Id
         );
 
         // Act
@@ -394,7 +401,7 @@ class Sprint09AReportingTest extends KernelTestCase
         $this->assertCount(2, $result); // 2 agents
 
         // Find agent 1
-        $agent1 = array_filter($result, fn($r) => $r['agent_id'] === 1);
+        $agent1 = array_filter($result, fn($r) => $r['agent_id'] === $agent1Id);
         $agent1 = array_values($agent1)[0] ?? null;
         $this->assertNotNull($agent1);
         $this->assertEquals(2, $agent1['tickets_assigned']);
@@ -410,26 +417,29 @@ class Sprint09AReportingTest extends KernelTestCase
         $from = new \DateTimeImmutable('2026-01-01 00:00:00');
         $to = new \DateTimeImmutable('2026-01-31 23:59:59');
 
+        $agent42Id = $this->createTestAgent('Agent 42');
+        $agent99Id = $this->createTestAgent('Agent 99');
+
         $this->createTestTicketWithSla(
             '2026-01-15 10:00:00',
             '2026-01-15 10:30:00',
             '2026-01-15 12:00:00',
-            42
+            $agent42Id
         );
 
         $this->createTestTicketWithSla(
             '2026-01-16 10:00:00',
             '2026-01-16 10:30:00',
             '2026-01-16 12:00:00',
-            99
+            $agent99Id
         );
 
         // Act - filter by agent 42
-        $result = $this->reportingRepo->getAgentPerformance($from, $to, 42);
+        $result = $this->reportingRepo->getAgentPerformance($from, $to, $agent42Id);
 
         // Assert - only agent 42
         $this->assertCount(1, $result);
-        $this->assertEquals(42, $result[0]['agent_id']);
+        $this->assertEquals($agent42Id, $result[0]['agent_id']);
     }
 
     // ============================================
@@ -455,7 +465,7 @@ class Sprint09AReportingTest extends KernelTestCase
         $result = $this->reportingRepo->getFrtMetrics($from, $to);
 
         // Assert - 30 minutes = 1800 seconds
-        $this->assertEquals(1800, (int)$result['avg_frt']);
+        $this->assertEquals(1800, (int)$result['avg_frt_seconds']);
     }
 
     // ============================================
@@ -481,7 +491,7 @@ class Sprint09AReportingTest extends KernelTestCase
         $result = $this->reportingRepo->getFrtMetrics($from, $to);
 
         // Assert - 5 days = 432000 seconds
-        $this->assertEquals(432000, (int)$result['avg_frt']);
+        $this->assertEquals(432000, (int)$result['avg_frt_seconds']);
     }
 
     /**
@@ -503,7 +513,7 @@ class Sprint09AReportingTest extends KernelTestCase
         $result = $this->reportingRepo->getFrtMetrics($from, $to);
 
         // Assert - 0 seconds
-        $this->assertEquals(0, (int)$result['avg_frt']);
+        $this->assertEquals(0, (int)$result['avg_frt_seconds']);
     }
 
     /**
@@ -525,7 +535,7 @@ class Sprint09AReportingTest extends KernelTestCase
         $result = $this->reportingService->getFrt($from, $to);
 
         // Assert - service should return same format
-        $this->assertArrayHasKey('avg_frt', $result);
+        $this->assertArrayHasKey('avg_frt_seconds', $result);
     }
 
     /**
@@ -555,7 +565,7 @@ class Sprint09AReportingTest extends KernelTestCase
         ?int $assignedAgentId = null
     ): Ticket {
         $contact = new Contact();
-        $contact->setPhone('+543711234567');
+        $contact->setPhone('+54' . random_int(3710000000, 3719999999));
         $this->em->persist($contact);
 
         $conversation = new Conversation();
@@ -585,10 +595,18 @@ class Sprint09AReportingTest extends KernelTestCase
         return $ticket;
     }
 
+    private function createTestAgent(string $name = 'Test Agent'): int
+    {
+        $agent = new \App\Domain\Agent\Agent($name);
+        $this->em->persist($agent);
+        $this->em->flush();
+        return $agent->getId();
+    }
+
     private function createTestTicketWithStatus(string $status): Ticket
     {
         $contact = new Contact();
-        $contact->setPhone('+543711234567');
+        $contact->setPhone('+54' . random_int(3710000000, 3719999999));
         $this->em->persist($contact);
 
         $conversation = new Conversation();
@@ -600,8 +618,8 @@ class Sprint09AReportingTest extends KernelTestCase
         $ticket->setContact($contact);
         $ticket->setConversation($conversation);
         $ticket->setStatus($status);
-        $ticket->setCreatedAt(new \DateTimeImmutable());
-        $ticket->setUpdatedAt(new \DateTimeImmutable());
+        $ticket->setCreatedAt(new \DateTimeImmutable('2026-01-15 12:00:00'));
+        $ticket->setUpdatedAt(new \DateTimeImmutable('2026-01-15 12:00:00'));
 
         $this->em->persist($ticket);
         $this->em->flush();
