@@ -1,12 +1,13 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminUserDTO, AdminAgentDTO } from '../../../core/api/admin-api.service';
 import { ListUsersUseCase } from '../../../core/application/admin/users/list-users.use-case';
 import { CreateUserUseCase } from '../../../core/application/admin/users/create-user.use-case';
 import { UpdateUserUseCase } from '../../../core/application/admin/users/update-user.use-case';
 import { DeactivateUserUseCase } from '../../../core/application/admin/users/deactivate-user.use-case';
 import { ReactivateUserUseCase } from '../../../core/application/admin/users/reactivate-user.use-case';
+import { atLeastOneRoleValidator } from '../../../shared/validators';
 
 /**
  * UsersPage — Admin user management.
@@ -20,7 +21,7 @@ import { ReactivateUserUseCase } from '../../../core/application/admin/users/rea
 @Component({
   selector: 'app-users-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule],
   template: `
     <div class="admin-page">
       <div class="admin-page__header">
@@ -128,62 +129,84 @@ import { ReactivateUserUseCase } from '../../../core/application/admin/users/rea
               <h2 [id]="editingUser() ? 'modal-title-edit' : 'modal-title-create'">{{ editingUser() ? 'Edit User' : 'Create User' }}</h2>
               <button class="modal__close" (click)="closeForm()" aria-label="Close dialog">&times;</button>
             </div>
-            <div class="modal__body">
-              <div class="form-group">
-                <label class="form-label" for="user-email">Email</label>
-                <input id="user-email" type="email" class="form-input"
-                       [(ngModel)]="formData.email" placeholder="user@example.com" />
-              </div>
-
-              <div class="form-group">
-                <label class="form-label" for="user-password">
-                  {{ editingUser() ? 'New Password (leave empty to keep)' : 'Password' }}
-                </label>
-                <input id="user-password" type="password" class="form-input"
-                       [(ngModel)]="formData.password"
-                       [placeholder]="editingUser() ? 'Leave empty to keep current' : 'Enter password'" />
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Roles</label>
-                <div class="checkbox-group">
-                  <label class="checkbox-label">
-                    <input type="checkbox" [checked]="formData.roles.includes('ROLE_ADMIN')"
-                           (change)="toggleRole('ROLE_ADMIN')" />
-                    Admin
-                  </label>
-                  <label class="checkbox-label">
-                    <input type="checkbox" [checked]="formData.roles.includes('ROLE_SUPERVISOR')"
-                           (change)="toggleRole('ROLE_SUPERVISOR')" />
-                    Supervisor
-                  </label>
-                  <label class="checkbox-label">
-                    <input type="checkbox" [checked]="formData.roles.includes('ROLE_AGENT')"
-                           (change)="toggleRole('ROLE_AGENT')" />
-                    Agent
-                  </label>
-                </div>
-              </div>
-
-              @if (!editingUser()) {
+            <form [formGroup]="userForm" (ngSubmit)="onUserSubmit()">
+              <div class="modal__body">
                 <div class="form-group">
-                  <label class="form-label" for="user-agent">Link Agent (optional)</label>
-                  <select id="user-agent" class="form-input"
-                          [(ngModel)]="formData.agent_id">
-                    <option [ngValue]="null">— No agent —</option>
-                    @for (agent of availableAgents(); track agent.id) {
-                      <option [ngValue]="agent.id">{{ agent.name }}</option>
+                  <label class="form-label" for="user-email">Email</label>
+                  <input id="user-email" type="email" class="form-input"
+                         formControlName="email" placeholder="user@example.com"
+                         [class.form-input--error]="hasUserError('email')" />
+                  @if (hasUserError('email')) {
+                    @if (userForm.controls.email.errors?.['required']) {
+                      <p class="form-error">Email is required</p>
                     }
-                  </select>
+                    @if (userForm.controls.email.errors?.['email']) {
+                      <p class="form-error">Enter a valid email address</p>
+                    }
+                  }
                 </div>
-              }
-            </div>
-            <div class="modal__footer">
-              <button class="btn btn--outline" (click)="closeForm()">Cancel</button>
-              <button class="btn btn--primary" (click)="saveUser()" [disabled]="saving()">
-                {{ saving() ? 'Saving...' : (editingUser() ? 'Save Changes' : 'Create User') }}
-              </button>
-            </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="user-password">
+                    {{ editingUser() ? 'New Password (leave empty to keep)' : 'Password' }}
+                  </label>
+                  <input id="user-password" type="password" class="form-input"
+                         formControlName="password"
+                         [placeholder]="editingUser() ? 'Leave empty to keep current' : 'Enter password'"
+                         [class.form-input--error]="hasUserError('password')" />
+                  @if (hasUserError('password')) {
+                    @if (userForm.controls.password.errors?.['required']) {
+                      <p class="form-error">Password is required</p>
+                    }
+                    @if (userForm.controls.password.errors?.['minlength']) {
+                      <p class="form-error">Password must be at least 8 characters</p>
+                    }
+                  }
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Roles</label>
+                  <div class="checkbox-group">
+                    <label class="checkbox-label">
+                      <input type="checkbox" [checked]="userForm.controls.roles.value.includes('ROLE_ADMIN')"
+                             (change)="toggleRole('ROLE_ADMIN')" />
+                      Admin
+                    </label>
+                    <label class="checkbox-label">
+                      <input type="checkbox" [checked]="userForm.controls.roles.value.includes('ROLE_SUPERVISOR')"
+                             (change)="toggleRole('ROLE_SUPERVISOR')" />
+                      Supervisor
+                    </label>
+                    <label class="checkbox-label">
+                      <input type="checkbox" [checked]="userForm.controls.roles.value.includes('ROLE_AGENT')"
+                             (change)="toggleRole('ROLE_AGENT')" />
+                      Agent
+                    </label>
+                  </div>
+                  @if (hasUserRolesError()) {
+                    <p class="form-error">At least one role must be selected</p>
+                  }
+                </div>
+
+                @if (!editingUser()) {
+                  <div class="form-group">
+                    <label class="form-label" for="user-agent">Link Agent (optional)</label>
+                    <select id="user-agent" class="form-input" formControlName="agent_id">
+                      <option [ngValue]="null">— No agent —</option>
+                      @for (agent of availableAgents(); track agent.id) {
+                        <option [ngValue]="agent.id">{{ agent.name }}</option>
+                      }
+                    </select>
+                  </div>
+                }
+              </div>
+              <div class="modal__footer">
+                <button type="button" class="btn btn--outline" (click)="closeForm()">Cancel</button>
+                <button type="submit" class="btn btn--primary" [disabled]="userForm.invalid || saving()">
+                  {{ saving() ? 'Saving...' : (editingUser() ? 'Save Changes' : 'Create User') }}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       }
@@ -217,6 +240,7 @@ import { ReactivateUserUseCase } from '../../../core/application/admin/users/rea
   ],
 })
 export class UsersPageComponent implements OnInit {
+  private readonly fb = inject(FormBuilder);
   private readonly listUsersUseCase = inject(ListUsersUseCase);
   private readonly createUserUseCase = inject(CreateUserUseCase);
   private readonly updateUserUseCase = inject(UpdateUserUseCase);
@@ -236,12 +260,13 @@ export class UsersPageComponent implements OnInit {
   readonly editingUser = signal<AdminUserDTO | null>(null);
   readonly showDeleteConfirm = signal<AdminUserDTO | null>(null);
 
-  readonly formData = {
-    email: '',
-    password: '',
-    roles: ['ROLE_AGENT'] as string[],
-    agent_id: null as number | null,
-  };
+  // Forms
+  readonly userForm = this.fb.nonNullable.group({
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required, Validators.minLength(8)]],
+    roles: [['ROLE_AGENT'] as string[], [atLeastOneRoleValidator()]],
+    agent_id: [null as number | null],
+  });
 
   ngOnInit(): void {
     this.loadUsers();
@@ -280,19 +305,22 @@ export class UsersPageComponent implements OnInit {
 
   openCreateForm(): void {
     this.editingUser.set(null);
-    this.formData.email = '';
-    this.formData.password = '';
-    this.formData.roles = ['ROLE_AGENT'];
-    this.formData.agent_id = null;
+    this.userForm.reset({ email: '', password: '', roles: ['ROLE_AGENT'], agent_id: null });
+    this.userForm.controls.password.setValidators([Validators.required, Validators.minLength(8)]);
+    this.userForm.controls.password.updateValueAndValidity();
     this.showForm.set(true);
   }
 
   openEditForm(user: AdminUserDTO): void {
     this.editingUser.set(user);
-    this.formData.email = user.email;
-    this.formData.password = '';
-    this.formData.roles = [...user.roles.filter(r => r !== 'ROLE_USER')];
-    this.formData.agent_id = null;
+    this.userForm.reset({
+      email: user.email,
+      password: '',
+      roles: [...user.roles.filter(r => r !== 'ROLE_USER')],
+      agent_id: null,
+    });
+    this.userForm.controls.password.setValidators([Validators.minLength(8)]);
+    this.userForm.controls.password.updateValueAndValidity();
     this.showForm.set(true);
   }
 
@@ -302,15 +330,30 @@ export class UsersPageComponent implements OnInit {
   }
 
   toggleRole(role: string): void {
-    const idx = this.formData.roles.indexOf(role);
-    if (idx >= 0) {
-      this.formData.roles.splice(idx, 1);
-    } else {
-      this.formData.roles.push(role);
-    }
+    const current = this.userForm.controls.roles.value;
+    const idx = current.indexOf(role);
+    const next = idx >= 0
+      ? current.filter(r => r !== role)
+      : [...current, role];
+    this.userForm.controls.roles.setValue(next);
   }
 
-  saveUser(): void {
+  hasUserError(field: 'email' | 'password' | 'agent_id'): boolean {
+    const control = this.userForm.get(field);
+    return !!control && control.touched && control.invalid;
+  }
+
+  hasUserRolesError(): boolean {
+    const control = this.userForm.controls.roles;
+    return control.touched && !!control.errors?.['atLeastOneRole'];
+  }
+
+  onUserSubmit(): void {
+    if (this.userForm.invalid) {
+      this.userForm.markAllAsTouched();
+      return;
+    }
+
     const editing = this.editingUser();
     if (editing) {
       this.updateUser(editing);
@@ -320,19 +363,16 @@ export class UsersPageComponent implements OnInit {
   }
 
   private createUser(): void {
-    if (!this.formData.email || !this.formData.password) {
-      this.error.set('Email and password are required');
-      return;
-    }
+    const { email, password, roles, agent_id } = this.userForm.getRawValue();
 
     this.saving.set(true);
     this.error.set(null);
 
     this.createUserUseCase.execute({
-      email: this.formData.email,
-      password: this.formData.password,
-      roles: this.formData.roles,
-      agentId: this.formData.agent_id,
+      email,
+      password,
+      roles,
+      agentId: agent_id,
     }).subscribe({
       next: () => {
         this.saving.set(false);
@@ -348,14 +388,16 @@ export class UsersPageComponent implements OnInit {
   }
 
   private updateUser(user: AdminUserDTO): void {
+    const { email, password, roles } = this.userForm.getRawValue();
+
     this.saving.set(true);
     this.error.set(null);
 
     this.updateUserUseCase.execute({
       id: user.id,
-      email: this.formData.email,
-      password: this.formData.password,
-      roles: this.formData.roles,
+      email,
+      password,
+      roles,
     }).subscribe({
       next: () => {
         this.saving.set(false);

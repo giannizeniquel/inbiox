@@ -232,6 +232,22 @@
   }
 }
 
+.form-input--error {
+  border-color: var(--color-error, #dc2626);
+
+  &:focus {
+    border-color: var(--color-error, #dc2626);
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2);
+  }
+}
+
+.form-error {
+  font-size: 0.8125rem;
+  color: var(--color-error, #dc2626);
+  margin-top: 4px;
+  margin-bottom: 0;
+}
+
 /* ── Typography utilities ── */
 .text-warning {
   font-size: 0.875rem;

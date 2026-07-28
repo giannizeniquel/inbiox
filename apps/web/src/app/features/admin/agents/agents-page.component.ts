@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminAgentDTO, AdminUserDTO } from '../../../core/api/admin-api.service';
 import { ListAgentsUseCase } from '../../../core/application/admin/agents/list-agents.use-case';
 import { GetAvailableUsersForLinkingUseCase } from '../../../core/application/admin/agents/get-available-users-for-linking.use-case';
@@ -23,7 +23,7 @@ import { ManageAgentUserLinkingUseCase } from '../../../core/application/admin/l
 @Component({
   selector: 'app-agents-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule],
   template: `
     <div class="admin-page">
       <div class="admin-page__header">
@@ -129,29 +129,39 @@ import { ManageAgentUserLinkingUseCase } from '../../../core/application/admin/l
               <h2 [id]="editingAgent() ? 'modal-title-edit' : 'modal-title-create'">{{ editingAgent() ? 'Edit Agent' : 'Create Agent' }}</h2>
               <button class="modal__close" (click)="closeForm()" aria-label="Close dialog">&times;</button>
             </div>
-            <div class="modal__body">
-              <div class="form-group">
-                <label class="form-label" for="agent-name">Name</label>
-                <input id="agent-name" type="text" class="form-input"
-                       [(ngModel)]="formData.name" placeholder="Agent name" />
-              </div>
-
-              @if (editingAgent()) {
+            <form [formGroup]="agentForm" (ngSubmit)="onAgentSubmit()">
+              <div class="modal__body">
                 <div class="form-group">
-                  <label class="form-label">
-                    <input type="checkbox" [checked]="formData.active"
-                           (change)="formData.active = !formData.active" />
-                    Active
-                  </label>
+                  <label class="form-label" for="agent-name">Name</label>
+                  <input id="agent-name" type="text" class="form-input"
+                         formControlName="name" placeholder="Agent name"
+                         [class.form-input--error]="hasAgentError('name')" />
+                  @if (hasAgentError('name')) {
+                    @if (agentForm.controls.name.errors?.['required']) {
+                      <p class="form-error">Name is required</p>
+                    }
+                    @if (agentForm.controls.name.errors?.['minlength']) {
+                      <p class="form-error">Name must be at least 2 characters</p>
+                    }
+                  }
                 </div>
-              }
-            </div>
-            <div class="modal__footer">
-              <button class="btn btn--outline" (click)="closeForm()">Cancel</button>
-              <button class="btn btn--primary" (click)="saveAgent()" [disabled]="saving()">
-                {{ saving() ? 'Saving...' : (editingAgent() ? 'Save Changes' : 'Create Agent') }}
-              </button>
-            </div>
+
+                @if (editingAgent()) {
+                  <div class="form-group">
+                    <label class="form-label">
+                      <input type="checkbox" formControlName="active" />
+                      Active
+                    </label>
+                  </div>
+                }
+              </div>
+              <div class="modal__footer">
+                <button type="button" class="btn btn--outline" (click)="closeForm()">Cancel</button>
+                <button type="submit" class="btn btn--primary" [disabled]="agentForm.invalid || saving()">
+                  {{ saving() ? 'Saving...' : (editingAgent() ? 'Save Changes' : 'Create Agent') }}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       }
@@ -164,27 +174,32 @@ import { ManageAgentUserLinkingUseCase } from '../../../core/application/admin/l
               <h2 id="modal-title-link">Link User to {{ linkingAgent.name }}</h2>
               <button class="modal__close" (click)="closeLinkForm()" aria-label="Close dialog">&times;</button>
             </div>
-            <div class="modal__body">
-              <div class="form-group">
-                <label class="form-label" for="link-user">Select User</label>
-                <select id="link-user" class="form-input" [(ngModel)]="linkUserId">
-                  <option [ngValue]="null">— Select a user —</option>
-                  @for (user of unlinkedUsers(); track user.id) {
-                    <option [ngValue]="user.id">{{ user.email }}</option>
+            <form [formGroup]="linkForm" (ngSubmit)="onLinkSubmit()">
+              <div class="modal__body">
+                <div class="form-group">
+                  <label class="form-label" for="link-user">Select User</label>
+                  <select id="link-user" class="form-input" formControlName="userId"
+                          [class.form-input--error]="hasLinkError('userId')">
+                    <option [ngValue]="null">— Select a user —</option>
+                    @for (user of unlinkedUsers(); track user.id) {
+                      <option [ngValue]="user.id">{{ user.email }}</option>
+                    }
+                  </select>
+                  @if (hasLinkError('userId')) {
+                    <p class="form-error">Please select a user</p>
                   }
-                </select>
-                @if (unlinkedUsers().length === 0) {
-                  <p class="text-muted">No available users to link. All users are already linked.</p>
-                }
+                  @if (unlinkedUsers().length === 0) {
+                    <p class="text-muted">No available users to link. All users are already linked.</p>
+                  }
+                </div>
               </div>
-            </div>
-            <div class="modal__footer">
-              <button class="btn btn--outline" (click)="closeLinkForm()">Cancel</button>
-              <button class="btn btn--primary" (click)="executeLink()"
-                      [disabled]="saving() || !linkUserId()">
-                {{ saving() ? 'Linking...' : 'Link User' }}
-              </button>
-            </div>
+              <div class="modal__footer">
+                <button type="button" class="btn btn--outline" (click)="closeLinkForm()">Cancel</button>
+                <button type="submit" class="btn btn--primary" [disabled]="linkForm.invalid || saving()">
+                  {{ saving() ? 'Linking...' : 'Link User' }}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       }
@@ -239,6 +254,7 @@ import { ManageAgentUserLinkingUseCase } from '../../../core/application/admin/l
   ],
 })
 export class AgentsPageComponent implements OnInit {
+  private readonly fb = inject(FormBuilder);
   private readonly listAgentsUseCase = inject(ListAgentsUseCase);
   private readonly getAvailableUsersForLinkingUseCase = inject(GetAvailableUsersForLinkingUseCase);
   private readonly createAgentUseCase = inject(CreateAgentUseCase);
@@ -263,12 +279,16 @@ export class AgentsPageComponent implements OnInit {
   readonly showLinkForm = signal<AdminAgentDTO | null>(null);
   readonly showDeleteConfirm = signal<AdminAgentDTO | null>(null);
   readonly showUnlinkConfirm = signal<AdminAgentDTO | null>(null);
-  readonly linkUserId = signal<number | null>(null);
 
-  readonly formData = {
-    name: '',
-    active: true,
-  };
+  // Forms
+  readonly agentForm = this.fb.nonNullable.group({
+    name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+    active: [true],
+  });
+
+  readonly linkForm = this.fb.group({
+    userId: [null as number | null, [Validators.required]],
+  });
 
   ngOnInit(): void {
     this.loadAgents();
@@ -308,15 +328,13 @@ export class AgentsPageComponent implements OnInit {
 
   openCreateForm(): void {
     this.editingAgent.set(null);
-    this.formData.name = '';
-    this.formData.active = true;
+    this.agentForm.reset({ name: '', active: true });
     this.showForm.set(true);
   }
 
   openEditForm(agent: AdminAgentDTO): void {
     this.editingAgent.set(agent);
-    this.formData.name = agent.name;
-    this.formData.active = agent.active;
+    this.agentForm.reset({ name: agent.name, active: agent.active });
     this.showForm.set(true);
   }
 
@@ -325,7 +343,32 @@ export class AgentsPageComponent implements OnInit {
     this.editingAgent.set(null);
   }
 
-  saveAgent(): void {
+  openLinkForm(agent: AdminAgentDTO): void {
+    this.linkForm.reset({ userId: null });
+    this.showLinkForm.set(agent);
+    this.loadUnlinkedUsers();
+  }
+
+  closeLinkForm(): void {
+    this.showLinkForm.set(null);
+  }
+
+  hasAgentError(field: 'name' | 'active'): boolean {
+    const control = this.agentForm.get(field);
+    return !!control && control.touched && control.invalid;
+  }
+
+  hasLinkError(field: 'userId'): boolean {
+    const control = this.linkForm.get(field);
+    return !!control && control.touched && control.invalid;
+  }
+
+  onAgentSubmit(): void {
+    if (this.agentForm.invalid) {
+      this.agentForm.markAllAsTouched();
+      return;
+    }
+
     const editing = this.editingAgent();
     if (editing) {
       this.updateAgent(editing);
@@ -334,16 +377,25 @@ export class AgentsPageComponent implements OnInit {
     }
   }
 
-  private createAgent(): void {
-    if (!this.formData.name?.trim()) {
-      this.error.set('Agent name is required');
+  onLinkSubmit(): void {
+    if (this.linkForm.invalid) {
+      this.linkForm.markAllAsTouched();
       return;
     }
+
+    const agent = this.showLinkForm();
+    if (!agent) return;
+
+    this.executeLink(agent);
+  }
+
+  private createAgent(): void {
+    const { name } = this.agentForm.getRawValue();
 
     this.saving.set(true);
     this.error.set(null);
 
-    this.createAgentUseCase.execute({ name: this.formData.name.trim() }).subscribe({
+    this.createAgentUseCase.execute({ name: name.trim() }).subscribe({
       next: () => {
         this.saving.set(false);
         this.success.set('Agent created successfully');
@@ -358,13 +410,15 @@ export class AgentsPageComponent implements OnInit {
   }
 
   private updateAgent(agent: AdminAgentDTO): void {
+    const { name, active } = this.agentForm.getRawValue();
+
     this.saving.set(true);
     this.error.set(null);
 
     this.updateAgentUseCase.execute({
       id: agent.id,
-      name: this.formData.name.trim(),
-      active: this.formData.active,
+      name: name.trim(),
+      active,
     }).subscribe({
       next: () => {
         this.saving.set(false);
@@ -379,26 +433,13 @@ export class AgentsPageComponent implements OnInit {
     });
   }
 
-  openLinkForm(agent: AdminAgentDTO): void {
-    this.linkUserId.set(null);
-    this.showLinkForm.set(agent);
-    this.loadUnlinkedUsers();
-  }
-
-  closeLinkForm(): void {
-    this.showLinkForm.set(null);
-    this.linkUserId.set(null);
-  }
-
-  executeLink(): void {
-    const agent = this.showLinkForm();
-    const userId = this.linkUserId();
-    if (!agent || !userId) return;
+  private executeLink(agent: AdminAgentDTO): void {
+    const { userId } = this.linkForm.getRawValue();
 
     this.saving.set(true);
     this.error.set(null);
 
-    this.manageLinkingUseCase.link({ agentId: agent.id, userId }).subscribe({
+    this.manageLinkingUseCase.link({ agentId: agent.id, userId: userId! }).subscribe({
       next: () => {
         this.saving.set(false);
         this.success.set(`User linked to "${agent.name}" successfully`);
