@@ -218,10 +218,13 @@ export class ConversationStore {
    * Load messages for a chat (initial load or pagination).
    */
   loadMessages(messages: Message[], append = false): void {
-    const incoming = append
-      ? [...this.messages(), ...messages]
-      : messages;
-    this.messages.set(incoming.length > MAX_MESSAGES ? incoming.slice(-MAX_MESSAGES) : incoming);
+    if (append) {
+      const existingIds = new Set(this.messages().map(m => m.id));
+      const newMessages = messages.filter(m => !existingIds.has(m.id));
+      this.messages.update(msgs => [...msgs, ...newMessages]);
+    } else {
+      this.messages.set(messages.length > MAX_MESSAGES ? messages.slice(-MAX_MESSAGES) : messages);
+    }
   }
 
   /**
@@ -231,7 +234,9 @@ export class ConversationStore {
    */
   prependMessages(messages: Message[]): void {
     this.messages.update(msgs => {
-      const next = [...messages, ...msgs];
+      const existingIds = new Set(msgs.map(m => m.id));
+      const newMessages = messages.filter(m => !existingIds.has(m.id));
+      const next = [...newMessages, ...msgs];
       return next.length > MAX_MESSAGES ? next.slice(0, MAX_MESSAGES) : next;
     });
   }
