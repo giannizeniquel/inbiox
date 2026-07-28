@@ -199,6 +199,38 @@ app_me_workspaces:
     methods: [GET]
     controller: App\Controller\MeController::listMyWorkspaces
 
+# ── Admin Workspace Management ──
+
+app_admin_workspaces_list:
+    path: /api/admin/workspaces
+    methods: [GET]
+    controller: App\Controller\Admin\WorkspaceController::list
+
+app_admin_workspaces_create:
+    path: /api/admin/workspaces
+    methods: [POST]
+    controller: App\Controller\Admin\WorkspaceController::create
+
+app_admin_workspaces_get:
+    path: /api/admin/workspaces/{id}
+    methods: [GET]
+    controller: App\Controller\Admin\WorkspaceController::get
+
+app_admin_workspaces_update:
+    path: /api/admin/workspaces/{id}
+    methods: [PUT]
+    controller: App\Controller\Admin\WorkspaceController::update
+
+app_admin_workspaces_delete:
+    path: /api/admin/workspaces/{id}
+    methods: [DELETE]
+    controller: App\Controller\Admin\WorkspaceController::delete
+
+app_admin_workspaces_assign_agents:
+    path: /api/admin/workspaces/{id}/agents
+    methods: [PUT]
+    controller: App\Controller\Admin\WorkspaceController::assignAgents
+
 app_agent_set_availability:
     path: /api/agents/{id}/availability
     methods: [POST]
