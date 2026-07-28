@@ -89,10 +89,14 @@ export class ConversationComponent implements OnDestroy {
 
   private readonly messagesEffect = effect(() => {
     const msgs = this.messages();
-    const vps = this.vps(); // track vps for when viewport becomes available
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    void this.vps(); // track vps for when viewport becomes available
     if (msgs.length === 0) return;
 
-    if (this.isAtBottom()) {
+    // Only auto-scroll when user is already at the bottom AND a new message
+    // was appended (not when loading older messages via pagination).
+    // loadingOlder is set true during scroll-up pagination.
+    if (this.isAtBottom() && !this.loadingOlder) {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           this.scrollToBottom();
