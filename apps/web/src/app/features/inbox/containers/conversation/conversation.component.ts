@@ -87,10 +87,13 @@ export class ConversationComponent implements OnDestroy {
     }
   });
 
-  /** Auto-scroll to bottom after initial message load completes */
+  /** Auto-scroll to bottom after initial message load completes (tracked once) */
+  private initialLoadDone = false;
+
   private readonly initialLoadEffect = effect(() => {
     const isLoading = this.loading();
-    if (!isLoading && this.messages().length > 0) {
+    if (!isLoading && !this.initialLoadDone && this.messages().length > 0) {
+      this.initialLoadDone = true;
       requestAnimationFrame(() => {
         this.scrollToBottom();
       });
@@ -101,6 +104,7 @@ export class ConversationComponent implements OnDestroy {
   private readonly ticketResetEffect = effect(() => {
     void this.activeTicket();
     this.oldestLoadedOffset.set(0);
+    this.initialLoadDone = false;
   });
 
   private scrollTimeout?: ReturnType<typeof setTimeout>;
