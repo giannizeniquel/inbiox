@@ -87,20 +87,12 @@ export class ConversationComponent implements OnDestroy {
     }
   });
 
-  private readonly messagesEffect = effect(() => {
-    const msgs = this.messages();
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    void this.vps(); // track vps for when viewport becomes available
-    if (msgs.length === 0) return;
-
-    // Only auto-scroll when user is already at the bottom AND a new message
-    // was appended (not when loading older messages via pagination).
-    // loadingOlder is set true during scroll-up pagination.
-    if (this.isAtBottom() && !this.loadingOlder) {
+  /** Auto-scroll to bottom after initial message load completes */
+  private readonly initialLoadEffect = effect(() => {
+    const isLoading = this.loading();
+    if (!isLoading && this.messages().length > 0) {
       requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          this.scrollToBottom();
-        });
+        this.scrollToBottom();
       });
     }
   });
