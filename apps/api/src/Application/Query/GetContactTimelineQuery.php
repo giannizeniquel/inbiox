@@ -16,16 +16,16 @@ class GetContactTimelineQuery
      *
      * @return array{events: TimelineEventDTO[], cursor: string|null, hasMore: bool}
      */
-    public function execute(int $contactId, ?string $before, int $limit): array
+    public function execute(int $contactId, ?string $before, int $limit, ?string $phoneNumberId = null): array
     {
         $conn = $this->entityManager->getConnection();
 
         // Fetch limit+1 to determine hasMore
         $limitPlusOne = $limit + 1;
 
-        $sql = $this->buildSql($before);
-        $params = $this->buildParams($contactId, $before, $limitPlusOne);
-        $types = $this->buildTypes($before);
+        $sql = $this->buildSql($before, $phoneNumberId);
+        $params = $this->buildParams($contactId, $before, $limitPlusOne, $phoneNumberId);
+        $types = $this->buildTypes($before, $phoneNumberId);
 
         $stmt = $conn->executeQuery($sql, $params, $types);
         $rows = $stmt->fetchAllAssociative();
@@ -63,7 +63,7 @@ class GetContactTimelineQuery
         ];
     }
 
-    private function buildSql(?string $before): string
+    private function buildSql(?string $before, ?string $phoneNumberId): string
     {
         $outboxWhere = "t.contact_id = :contact_id\n              AND oe.aggregate_type = 'Ticket'\n              AND (oe.event_type LIKE '%TicketCreated%' OR oe.event_type LIKE '%TicketUpdated%')";
         $assignmentWhere = 't.contact_id = :contact_id';
@@ -71,6 +71,11 @@ class GetContactTimelineQuery
         if ($before !== null) {
             $outboxWhere .= "\n            AND oe.created_at < :before_date";
             $assignmentWhere .= "\n            AND a.assigned_at < :before_date";
+        }
+
+        if ($phoneNumberId !== null) {
+            $outboxWhere .= "\n            AND t.phone_number_id = :phone_number_id";
+            $assignmentWhere .= "\n            AND t.phone_number_id = :phone_number_id";
         }
 
         return <<<SQL
@@ -118,7 +123,7 @@ class GetContactTimelineQuery
         SQL;
     }
 
-    private function buildParams(int $contactId, ?string $before, int $limit): array
+    private function buildParams(int $contactId, ?string $before, int $limit, ?string $phoneNumberId): array
     {
         $params = [
             'contact_id' => $contactId,
@@ -129,10 +134,14 @@ class GetContactTimelineQuery
             $params['before_date'] = $before;
         }
 
+        if ($phoneNumberId !== null) {
+            $params['phone_number_id'] = $phoneNumberId;
+        }
+
         return $params;
     }
 
-    private function buildTypes(?string $before): array
+    private function buildTypes(?string $before, ?string $phoneNumberId): array
     {
         $types = [
             'contact_id' => \Doctrine\DBAL\Types\Types::INTEGER,
@@ -141,6 +150,10 @@ class GetContactTimelineQuery
 
         if ($before !== null) {
             $types['before_date'] = \Doctrine\DBAL\Types\Types::STRING;
+        }
+
+        if ($phoneNumberId !== null) {
+            $types['phone_number_id'] = \Doctrine\DBAL\Types\Types::STRING;
         }
 
         return $types;

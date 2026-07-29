@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Application\DTO\TimelineEventDTO;
 use App\Application\Query\GetContactTimelineQuery;
+use App\Application\Security\WorkspaceScope;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -17,6 +18,7 @@ class ContactTimelineController
 {
     public function __construct(
         private GetContactTimelineQuery $getContactTimelineQuery,
+        private WorkspaceScope $workspaceScope,
         private LoggerInterface $logger,
     ) {}
 
@@ -26,11 +28,13 @@ class ContactTimelineController
         try {
             $before = $request->query->get('before');
             $limit = min(50, max(1, (int) $request->query->get('limit', 20)));
+            $phoneNumberId = $this->workspaceScope->getActivePhoneNumberId();
 
             $result = $this->getContactTimelineQuery->execute(
                 contactId: $id,
                 before: $before,
                 limit: $limit,
+                phoneNumberId: $phoneNumberId,
             );
 
             $events = array_map(

@@ -6,6 +6,7 @@ import { RealtimeEvent, RealtimeEventType,
   MessageAddedPayload, TicketCreatedPayload, TicketStatusChangedPayload,
   TicketAssignedPayload } from '../models/realtime-event.model';
 import { EventBusService } from '../realtime/event-bus.service';
+import { AuthStore } from './auth.store';
 
 const MAX_TICKETS = 1000;
 
@@ -33,6 +34,11 @@ export class TicketStore {
 
   /** Reload callback registered by the InboxPageComponent */
   private reloadCallback: (() => void) | null = null;
+
+  private readonly authStore = inject(AuthStore);
+
+  /** Current logged-in agent's ID (null if admin without agent) */
+  private readonly currentAgentId = computed(() => this.authStore.currentUser()?.agent_id ?? null);
 
   constructor() {
     this.initEventBus();
@@ -145,7 +151,7 @@ export class TicketStore {
 
     switch (f) {
       case 'mine':
-        return all.filter(t => t.owner !== null);
+        return all.filter(t => t.owner?.id === this.currentAgentId());
       case 'waiting':
         return all.filter(t => t.owner === null); // unassigned tickets
       case 'internal':
@@ -157,8 +163,8 @@ export class TicketStore {
 
   /** Count for each filter tab */
   readonly filterCounts = computed(() => ({
-    mine: this.tickets().filter(t => t.owner !== null).length,
-    waiting: this.tickets().filter(t => t.owner === null).length, // unassigned count
+    mine: this.tickets().filter(t => t.owner?.id === this.currentAgentId()).length,
+    waiting: this.tickets().filter(t => t.owner === null).length,
     internal: this.tickets().length,
   }));
 
