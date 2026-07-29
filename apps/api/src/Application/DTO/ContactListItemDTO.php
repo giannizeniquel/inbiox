@@ -4,6 +4,8 @@ namespace App\Application\DTO;
 
 class ContactListItemDTO
 {
+    public ?int $activeTicketId = null;
+
     public function __construct(
         public int $id,
         public string $phone,
@@ -13,7 +15,6 @@ class ContactListItemDTO
         public ?int $ownerId,
         public ?string $email,
         public array $timestamps,
-        public ?int $activeTicketId = null,
     ) {}
 
     public function toArray(): array

@@ -67,18 +67,12 @@ class ListContactsQuery
         // conversations on multiple phone numbers.
         if (null !== $phoneNumberId) {
             $where[] = 'EXISTS (SELECT 1 FROM conversations conv WHERE conv.contact_id = c.id AND conv.phone_number_id = ?)';
-            // Prepend to params: first for active_ticket_id subquery, second for EXISTS
-            array_unshift($params, $phoneNumberId, $phoneNumberId);
+            $params[] = $phoneNumberId;
         }
 
         $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
-        $sql = "SELECT c.id, c.phone, c.name, c.status, c.channel, c.owner_id, c.email, c.created_at, c.updated_at,
-                       (SELECT t.id FROM tickets t 
-                        WHERE t.contact_id = c.id 
-                        AND t.status NOT IN ('closed', 'resolved') " .
-                        ($phoneNumberId ? "AND t.phone_number_id = ? " : "") .
-                       "ORDER BY t.created_at DESC LIMIT 1) as active_ticket_id
+        $sql = "SELECT c.id, c.phone, c.name, c.status, c.channel, c.owner_id, c.email, c.created_at, c.updated_at
                 FROM contacts c
                 $whereClause
                 ORDER BY c.updated_at DESC, c.id DESC
@@ -104,9 +98,14 @@ class ListContactsQuery
                     'created_at' => $row['created_at'],
                     'updated_at' => $row['updated_at'],
                 ],
-                activeTicketId: $row['active_ticket_id'] ? (int) $row['active_ticket_id'] : null,
             );
         }, $results);
+
+        // Resolve activeTicketId in a second pass to avoid SQL parameter ordering issues
+        if (!empty($items)) {
+            $contactIds = array_map(fn($dto) => $dto->id, $items);
+            $this->resolveActiveTicketIds($items, $contactIds, $phoneNumberId);
+        }
 
         return [
             'items' => $items,
@@ -114,5 +113,48 @@ class ListContactsQuery
             'page' => $page,
             'limit' => $limit,
         ];
+    }
+
+    /**
+     * Resolve the active (non-closed) ticket ID for each contact.
+     * Done in a separate query to avoid SQL positional-parameter ordering issues
+     * with the main query's dynamic WHERE clause.
+     */
+    private function resolveActiveTicketIds(array $items, array $contactIds, ?string $phoneNumberId): void
+    {
+        if (empty($contactIds)) return;
+
+        $conn = $this->entityManager->getConnection();
+        $placeholders = implode(',', array_fill(0, count($contactIds), '?'));
+
+        $params = $contactIds;
+        $types = array_fill(0, count($contactIds), \Doctrine\DBAL\Types\Types::INTEGER);
+
+        $phoneFilter = '';
+        if ($phoneNumberId !== null) {
+            $phoneFilter = 'AND t.phone_number_id = ?';
+            $params[] = $phoneNumberId;
+            $types[] = \Doctrine\DBAL\Types\Types::STRING;
+        }
+
+        $sql = "SELECT t.contact_id, MAX(t.id) as ticket_id
+                FROM tickets t
+                WHERE t.contact_id IN ($placeholders)
+                  AND t.status NOT IN ('closed', 'resolved')
+                  $phoneFilter
+                GROUP BY t.contact_id";
+
+        $rows = $conn->executeQuery($sql, $params, $types)->fetchAllAssociative();
+
+        // Build lookup: contact_id → ticket_id
+        $ticketMap = [];
+        foreach ($rows as $row) {
+            $ticketMap[(int) $row['contact_id']] = (int) $row['ticket_id'];
+        }
+
+        // Patch DTOs
+        foreach ($items as $dto) {
+            $dto->activeTicketId = $ticketMap[$dto->id] ?? null;
+        }
     }
 }
