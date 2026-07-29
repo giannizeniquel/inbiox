@@ -53,8 +53,22 @@ class ProviderProxyController extends AbstractController
         $mimeType = $payload['mimeType'] ?? null;
         $caption = $payload['caption'] ?? null;
 
-        // Resolve agent ID from authenticated user
-        $agentId = $user?->getAgent()?->getId() ?? 0;
+        // Resolve agent ID from authenticated user.
+        // If the user doesn't have a linked Agent record (e.g. admin),
+        // create or find one so they can be assigned to tickets.
+        $agent = $user?->getAgent();
+        if ($user && !$agent) {
+            $agent = $this->em->getRepository(\App\Domain\Agent\Agent::class)
+                ->findOneBy(['user' => $user]);
+            if (!$agent) {
+                $agent = new \App\Domain\Agent\Agent();
+                $agent->setName($user->getEmail() ?? 'Admin');
+                $agent->setUser($user);
+                $this->em->persist($agent);
+                $this->em->flush();
+            }
+        }
+        $agentId = $agent?->getId() ?? 0;
 
         // --- Process outbound message (creates Message, handles assignment + status) ---
         $result = $this->outboundUseCase->processOutboundMessage(

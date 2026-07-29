@@ -21,7 +21,7 @@ export class TicketFiltersComponent {
   readonly tabs: Tab[] = [
     { id: 'mine', label: 'Míos' },
     { id: 'waiting', label: 'En espera' },
-    { id: 'internal', label: 'Interno' },
+    { id: 'internal', label: 'Todos' },
   ];
 
   constructor(private readonly ticketStore: TicketStore) {}
