@@ -75,8 +75,9 @@ class ListContactsQuery
         $sql = "SELECT c.id, c.phone, c.name, c.status, c.channel, c.owner_id, c.email, c.created_at, c.updated_at,
                        (SELECT t.id FROM tickets t 
                         WHERE t.contact_id = c.id 
-                        AND t.status NOT IN ('closed', 'resolved') 
-                        ORDER BY t.created_at DESC LIMIT 1) as active_ticket_id
+                        AND t.status NOT IN ('closed', 'resolved') " .
+                        ($phoneNumberId ? "AND t.phone_number_id = :phone_number_id " : "") .
+                       "ORDER BY t.created_at DESC LIMIT 1) as active_ticket_id
                 FROM contacts c
                 $whereClause
                 ORDER BY c.updated_at DESC, c.id DESC
