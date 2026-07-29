@@ -322,11 +322,6 @@ final class MeController
                 return new JsonResponse(['error' => 'workspaceId is required and must be an integer'], Response::HTTP_BAD_REQUEST);
             }
 
-            $agent = $this->getAgent();
-            if (null === $agent) {
-                return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
-            }
-
             $workspace = $this->entityManager->getRepository(Workspace::class)->find($workspaceId);
 
             if (null === $workspace) {
@@ -337,7 +332,25 @@ final class MeController
                 return new JsonResponse(['error' => 'Workspace is not active'], Response::HTTP_BAD_REQUEST);
             }
 
-            // Verify the agent is assigned to this workspace
+            $user = $this->security->getUser();
+            if (!$user instanceof User) {
+                return new JsonResponse(['error' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
+            }
+
+            // Admin/Supervisor: can switch to any workspace
+            if ($this->security->isGranted('ROLE_ADMIN') || $this->security->isGranted('ROLE_SUPERVISOR')) {
+                $agent = $this->ensureAgent($user);
+                $agent->setActiveWorkspace($workspace);
+                $this->entityManager->flush();
+                return new JsonResponse(ActiveWorkspaceDTO::fromEntity($workspace)->toArray());
+            }
+
+            // Agent: must be assigned to the workspace
+            $agent = $user->getAgent();
+            if (null === $agent) {
+                return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
+            }
+
             if (!$agent->getWorkspaces()->contains($workspace)) {
                 return new JsonResponse(['error' => 'Agent is not assigned to this workspace'], Response::HTTP_FORBIDDEN);
             }
@@ -358,13 +371,42 @@ final class MeController
         }
     }
 
+    private function ensureAgent(User $user): Agent
+    {
+        $agent = $user->getAgent();
+        if ($agent === null) {
+            $agent = $this->entityManager->getRepository(Agent::class)
+                ->findOneBy(['user' => $user]);
+            if ($agent === null) {
+                $agent = new Agent($user->getEmail() ?? 'Admin');
+                $agent->setUser($user);
+                $this->entityManager->persist($agent);
+                $this->entityManager->flush();
+            }
+        }
+        return $agent;
+    }
+
     #[Route('/workspaces', methods: ['GET'])]
     public function listMyWorkspaces(): JsonResponse
     {
         try {
-            $agent = $this->getAgent();
+            $user = $this->security->getUser();
+            if (!$user instanceof User) {
+                return new JsonResponse(['error' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
+            }
+
+            // Admin/Supervisor: see ALL workspaces
+            if ($this->security->isGranted('ROLE_ADMIN') || $this->security->isGranted('ROLE_SUPERVISOR')) {
+                $workspaces = $this->entityManager->getRepository(Workspace::class)->findBy(['isActive' => true]);
+                $items = array_map(fn(Workspace $w) => WorkspaceDTO::fromEntity($w)->toArray(), $workspaces);
+                return new JsonResponse($items);
+            }
+
+            // Agent: only assigned workspaces
+            $agent = $user->getAgent();
             if (null === $agent) {
-                return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
+                return new JsonResponse([], Response::HTTP_OK);
             }
 
             $workspaces = $agent->getWorkspaces()->toArray();
@@ -373,7 +415,7 @@ final class MeController
             return new JsonResponse($items);
         } catch (\Exception $e) {
             $referenceId = bin2hex(random_bytes(8));
-            $this->logger->error('Error listing agent workspaces: {message}', [
+            $this->logger->error('Error listing workspaces: {message}', [
                 'reference' => $referenceId,
                 'exception' => $e->getMessage(),
             ]);
