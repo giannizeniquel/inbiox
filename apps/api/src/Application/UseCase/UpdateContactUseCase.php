@@ -27,7 +27,7 @@ class UpdateContactUseCase
         }
 
         if (isset($data['phone'])) {
-            $phone = preg_replace('/[^0-9]/', '', $data['phone']);
+            $phone = '+' . preg_replace('/[^0-9]/', '', $data['phone']);
             if (strlen($phone) < 10) {
                 throw new \InvalidArgumentException('Invalid phone number');
             }

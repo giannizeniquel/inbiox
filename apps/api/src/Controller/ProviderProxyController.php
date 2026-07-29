@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Application\Service\GraphClient;
+use App\Application\UseCase\HandleOutboundMessageUseCase;
 use App\Domain\Message\Message;
 use App\Domain\Message\MessageDirection;
+use App\Domain\User\User;
 use App\Exception\GraphApiException;
 use App\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -16,6 +18,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/api/provider')]
@@ -29,10 +32,11 @@ class ProviderProxyController extends AbstractController
         private readonly TicketRepository $ticketRepository,
         private readonly GraphClient $graphClient,
         private readonly EntityManagerInterface $em,
+        private readonly HandleOutboundMessageUseCase $outboundUseCase,
     ) {}
 
     #[Route('/send', methods: ['POST'])]
-    public function send(Request $request): JsonResponse
+    public function send(Request $request, #[CurrentUser] ?User $user): JsonResponse
     {
         $payload = json_decode($request->getContent(), true);
 
@@ -48,6 +52,16 @@ class ProviderProxyController extends AbstractController
         $mediaId = $payload['mediaId'] ?? null;
         $mimeType = $payload['mimeType'] ?? null;
         $caption = $payload['caption'] ?? null;
+
+        // Resolve agent ID from authenticated user
+        $agentId = $user?->getAgent()?->getId() ?? 0;
+
+        // --- Process outbound message (creates Message, handles assignment + status) ---
+        $result = $this->outboundUseCase->processOutboundMessage(
+            ticketId: $ticketId,
+            content: $content,
+            agentId: $agentId,
+        );
 
         // --- Phone Resolution Chain ---
         $ticket = $this->ticketRepository->find($ticketId);
@@ -78,7 +92,6 @@ class ProviderProxyController extends AbstractController
         }
 
         // --- Multi-number resolution (CAP-7 / META-018) ---
-        // Use ticket's phoneNumberId if set, fallback to env default in GraphClient
         $phoneNumberId = $ticket->getPhoneNumberId();
 
         // --- Call Graph API ---
@@ -104,19 +117,14 @@ class ProviderProxyController extends AbstractController
 
         $wamid = $graphResponse['messages'][0]['id'] ?? null;
 
-        // Persist WAMID as externalId on a new outbound Message for webhook correlation
-        if ($wamid !== null) {
-            $message = new Message();
-            $message->setContent($content);
-            $message->setExternalId($wamid);
-            $message->setDirection(MessageDirection::OUTBOUND->value);
-            $message->setDeliveryStatus('sent');
-            $message->setUpdatedAt(new \DateTimeImmutable());
-            if ($ticket->getConversation()) {
-                $message->setConversation($ticket->getConversation());
+        // Set WAMID on the message created by HandleOutboundMessageUseCase
+        if ($wamid !== null && !empty($result['message_id'])) {
+            $message = $this->em->getRepository(Message::class)->find($result['message_id']);
+            if ($message) {
+                $message->setExternalId($wamid);
+                $message->setDeliveryStatus('sent');
+                $this->em->flush();
             }
-            $this->em->persist($message);
-            $this->em->flush();
         }
 
         return new JsonResponse(
