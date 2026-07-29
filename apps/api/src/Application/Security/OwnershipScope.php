@@ -26,8 +26,8 @@ final class OwnershipScope
      * Get the scoped agent ID for the current user.
      *
      * - ROLE_ADMIN / ROLE_SUPERVISOR: null (no scope — see everything)
-     * - ROLE_AGENT with linked Agent: the Agent's ID
-     * - ROLE_AGENT without linked Agent: null (R1 safety; voter handles 403)
+     * - ROLE_AGENT: null (agents see all tickets in their workspace;
+     *   segregation is handled by WorkspaceScope.phone_number_id)
      * - No authenticated user: null
      */
     public function getAgentId(): ?int
@@ -38,22 +38,10 @@ final class OwnershipScope
             return null;
         }
 
-        // ADMIN/SUPERVISOR see everything — no scope
-        if ($this->security->isGranted('ROLE_SUPERVISOR')) {
-            return null;
-        }
-
-        // Only AGENT-level users get scoped
-        if (!$this->security->isGranted('ROLE_AGENT')) {
-            return null;
-        }
-
-        $agent = $user->getAgent();
-
-        if (null === $agent) {
-            return null; // R1: no linked agent → no scope, voter will deny
-        }
-
-        return $agent->getId();
+        // Workspace-based model: all authenticated users see all tickets
+        // in their active workspace. Segregation by workspace is handled
+        // at the query level via WorkspaceScope (phone_number_id filter).
+        // Agent-level ownership is no longer enforced at the query level.
+        return null;
     }
 }
