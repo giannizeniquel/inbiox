@@ -67,7 +67,8 @@ class ListContactsQuery
         // conversations on multiple phone numbers.
         if (null !== $phoneNumberId) {
             $where[] = 'EXISTS (SELECT 1 FROM conversations conv WHERE conv.contact_id = c.id AND conv.phone_number_id = ?)';
-            $params[] = $phoneNumberId;
+            // Prepend to params: first for active_ticket_id subquery, second for EXISTS
+            array_unshift($params, $phoneNumberId, $phoneNumberId);
         }
 
         $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
@@ -76,7 +77,7 @@ class ListContactsQuery
                        (SELECT t.id FROM tickets t 
                         WHERE t.contact_id = c.id 
                         AND t.status NOT IN ('closed', 'resolved') " .
-                        ($phoneNumberId ? "AND t.phone_number_id = :phone_number_id " : "") .
+                        ($phoneNumberId ? "AND t.phone_number_id = ? " : "") .
                        "ORDER BY t.created_at DESC LIMIT 1) as active_ticket_id
                 FROM contacts c
                 $whereClause
