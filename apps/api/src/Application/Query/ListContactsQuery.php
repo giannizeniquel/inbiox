@@ -62,13 +62,8 @@ class ListContactsQuery
             $params[] = $email;
         }
 
-        // Workspace scope: filter contacts by conversations phone_number_id
-        // Uses EXISTS subquery to avoid JOIN duplicates when a contact has
-        // conversations on multiple phone numbers.
-        if (null !== $phoneNumberId) {
-            $where[] = 'EXISTS (SELECT 1 FROM conversations conv WHERE conv.contact_id = c.id AND conv.phone_number_id = ?)';
-            $params[] = $phoneNumberId;
-        }
+        // Contacts are shared across workspaces — only conversations/tickets
+        // are segregated. No phone_number_id filter on the contact list.
 
         $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
