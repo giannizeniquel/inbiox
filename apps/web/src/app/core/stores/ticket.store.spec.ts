@@ -129,28 +129,23 @@ describe('TicketStore', () => {
     expect(store.filteredTickets()[0].ticket_id).toBe('t1');
   });
 
-  it('should filter "waiting" — tickets with status === Waiting', () => {
-    const waiting = makeTicket({ ticket_id: 't1', id: 't1', status: TicketStatus.Waiting });
-    const active = makeTicket({ ticket_id: 't2', id: 't2', status: TicketStatus.Active });
-    store.loadTickets([waiting, active]);
+  it('should filter "waiting" — tickets with no owner (unassigned)', () => {
+    const unassigned = makeTicket({ ticket_id: 't1', id: 't1', owner: null });
+    const assigned = makeTicket({ ticket_id: 't2', id: 't2', owner: { id: 1, name: 'Agent' } });
+    store.loadTickets([unassigned, assigned]);
     store.setFilter('waiting');
 
     expect(store.filteredTickets().length).toBe(1);
     expect(store.filteredTickets()[0].ticket_id).toBe('t1');
   });
 
-  it('should filter "internal" — tickets with status New or Active', () => {
+  it('should filter "internal" — all tickets', () => {
     const newT = makeTicket({ ticket_id: 't1', id: 't1', status: TicketStatus.New });
-    const activeT = makeTicket({ ticket_id: 't2', id: 't2', status: TicketStatus.Active });
-    const waitingT = makeTicket({ ticket_id: 't3', id: 't3', status: TicketStatus.Waiting });
-    const resolvedT = makeTicket({ ticket_id: 't4', id: 't4', status: TicketStatus.Resolved });
-    store.loadTickets([newT, activeT, waitingT, resolvedT]);
+    const resolvedT = makeTicket({ ticket_id: 't2', id: 't2', status: TicketStatus.Resolved });
+    store.loadTickets([newT, resolvedT]);
     store.setFilter('internal');
 
     expect(store.filteredTickets().length).toBe(2);
-    const ids = store.filteredTickets().map(t => t.ticket_id);
-    expect(ids).toContain('t1');
-    expect(ids).toContain('t2');
   });
 
   // ── filterCounts computed ──
@@ -166,8 +161,8 @@ describe('TicketStore', () => {
 
     const counts = store.filterCounts();
     expect(counts.mine).toBe(2);      // t1, t4 have owner
-    expect(counts.waiting).toBe(1);   // t2
-    expect(counts.internal).toBe(2);  // t1 (Active), t3 (New)
+    expect(counts.waiting).toBe(2);   // t2, t3 have no owner (unassigned)
+    expect(counts.internal).toBe(4);  // all tickets
   });
 
   // ── totalUnread computed ──

@@ -147,9 +147,9 @@ export class TicketStore {
       case 'mine':
         return all.filter(t => t.owner !== null);
       case 'waiting':
-        return all.filter(t => t.status === TicketStatus.Waiting);
+        return all.filter(t => t.owner === null); // unassigned tickets
       case 'internal':
-        return all.filter(t => t.status === TicketStatus.New || t.status === TicketStatus.Active);
+        return all; // all tickets in workspace
       default:
         return all;
     }
@@ -158,8 +158,8 @@ export class TicketStore {
   /** Count for each filter tab */
   readonly filterCounts = computed(() => ({
     mine: this.tickets().filter(t => t.owner !== null).length,
-    waiting: this.tickets().filter(t => t.status === TicketStatus.Waiting).length,
-    internal: this.tickets().filter(t => t.status === TicketStatus.New || t.status === TicketStatus.Active).length,
+    waiting: this.tickets().filter(t => t.owner === null).length, // unassigned count
+    internal: this.tickets().length,
   }));
 
   /** Total unread count across all tickets */
