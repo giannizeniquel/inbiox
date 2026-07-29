@@ -43,6 +43,7 @@ class GetContactTimelineQuery
                 ticketId: $row['ticket_id'] !== null ? (int) $row['ticket_id'] : null,
                 ticketStatus: $row['ticket_status'],
                 assignedTo: $row['assigned_to'],
+                agentId: $row['agent_id'] !== null ? (int) $row['agent_id'] : null,
                 direction: $row['direction'],
             ),
             $rows,
@@ -73,7 +74,7 @@ class GetContactTimelineQuery
         }
 
         return <<<SQL
-        SELECT type, occurred_at, content, ticket_id, ticket_status, assigned_to, direction
+        SELECT type, occurred_at, content, ticket_id, ticket_status, assigned_to, agent_id, direction
         FROM (
             -- Ticket lifecycle events (created, status_changed)
             SELECT
@@ -86,6 +87,7 @@ class GetContactTimelineQuery
                 t.id AS ticket_id,
                 t.status AS ticket_status,
                 NULL AS assigned_to,
+                NULL AS agent_id,
                 NULL AS direction
             FROM outbox_events oe
             JOIN tickets t ON oe.aggregate_id = t.id
@@ -95,12 +97,16 @@ class GetContactTimelineQuery
 
             -- Agent assignments
             SELECT
-                'ticket.assigned' AS type,
+                CASE
+                    WHEN a.type = 'REASSIGN' THEN 'ticket.reassigned'
+                    ELSE 'ticket.assigned'
+                END AS type,
                 a.assigned_at AS occurred_at,
                 NULL AS content,
                 t.id AS ticket_id,
                 NULL AS ticket_status,
                 ag.name AS assigned_to,
+                ag.id AS agent_id,
                 NULL AS direction
             FROM assignments a
             JOIN tickets t ON a.ticket_id = t.id

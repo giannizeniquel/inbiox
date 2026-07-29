@@ -2,6 +2,8 @@
 
 namespace App\Application\UseCase;
 
+use App\Application\Service\AssignmentService;
+use App\Domain\Assignment\AssignmentType;
 use App\Domain\Conversation\Conversation;
 use App\Domain\Conversation\ConversationStatus;
 use App\Domain\Message\Message;
@@ -11,6 +13,7 @@ use App\Domain\Ticket\TicketStatus;
 use App\Application\Rule\RuleExecutorService;
 use App\Domain\Rule\RuleContext;
 use App\Exception\ConcurrencyException;
+use App\Repository\AgentRepository;
 use App\Repository\ConversationRepository;
 use App\Repository\MessageRepository;
 use App\Repository\ProcessedEventRepository;
@@ -34,6 +37,8 @@ class HandleOutboundMessageUseCase
         private TransitionTicketStatusUseCase $transitionUseCase,
         private ProcessedEventRepository $processedEventRepo,
         private RuleExecutorService $ruleExecutor,
+        private AssignmentService $assignmentService,
+        private AgentRepository $agentRepo,
     ) {}
 
     /**
@@ -43,13 +48,13 @@ class HandleOutboundMessageUseCase
      *
      * @param int $ticketId
      * @param string $content
-     * @param string $agentId
+     * @param int $agentId
      * @return array
      */
     public function processOutboundMessage(
         int $ticketId,
         string $content,
-        string $agentId
+        int $agentId
     ): array {
         // Generate deterministic event key: outbound:{ticketId}:{contentHash}
         $contentHash = md5($content);
@@ -78,7 +83,7 @@ class HandleOutboundMessageUseCase
 
         while ($attempt < $maxRetries) {
             try {
-                return $this->executeTransactionWithRetry($ticketId, $content, $eventKey, $ticket);
+                return $this->executeTransactionWithRetry($ticketId, $content, $eventKey, $agentId, $ticket);
             } catch (OptimisticLockException $e) {
                 $attempt++;
                 if ($attempt >= $maxRetries) {
@@ -113,9 +118,10 @@ class HandleOutboundMessageUseCase
         int $ticketId,
         string $content,
         string $eventKey,
+        int $agentId,
         ?Ticket &$ticket
     ): array {
-        return $this->em->getConnection()->transactional(function() use ($ticketId, $content, $eventKey, &$ticket) {
+        return $this->em->getConnection()->transactional(function() use ($ticketId, $content, $eventKey, $agentId, &$ticket) {
             // Get ticket
             $ticket = $this->ticketRepo->findById($ticketId);
             if (!$ticket) {
@@ -126,6 +132,31 @@ class HandleOutboundMessageUseCase
             $conversation = $ticket->getConversation();
             if (!$conversation) {
                 throw new \InvalidArgumentException('Ticket has no conversation');
+            }
+
+            // Auto-assign agent to ticket if not already assigned to this agent
+            $currentAssigneeId = $ticket->getAssignedAgentId();
+            if ($agentId > 0 && $currentAssigneeId !== $agentId) {
+                $agent = $this->agentRepo->findById($agentId);
+                if ($agent !== null) {
+                    $previousAgent = null;
+                    if ($currentAssigneeId !== null) {
+                        $previousAgent = $this->agentRepo->findById($currentAssigneeId);
+                    }
+
+                    $type = $currentAssigneeId !== null
+                        ? AssignmentType::REASSIGN
+                        : AssignmentType::AUTO_ASSIGN;
+
+                    $this->assignmentService->recordOwnershipChange(
+                        ticket: $ticket,
+                        agent: $agent,
+                        previousAgent: $previousAgent,
+                        type: $type,
+                        assignedBy: 'system',
+                        notes: 'Auto-assigned on agent reply',
+                    );
+                }
             }
 
             // Create outbound message

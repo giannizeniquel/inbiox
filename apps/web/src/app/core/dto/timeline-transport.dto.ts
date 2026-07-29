@@ -3,12 +3,13 @@
  */
 
 export interface TimelineEventDTO {
-  type: 'message.received' | 'message.sent' | 'ticket.created' | 'ticket.status_changed' | 'ticket.assigned';
+  type: 'message.received' | 'message.sent' | 'ticket.created' | 'ticket.status_changed' | 'ticket.assigned' | 'ticket.reassigned';
   occurredAt: string;
   content?: string;
   ticketId?: number;
   ticketStatus?: string;
   assignedTo?: string;
+  agentId?: number;
   direction?: 'inbound' | 'outbound';
 }
 

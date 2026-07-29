@@ -79,6 +79,7 @@ export class ContactTimelineComponent {
       case 'ticket.created': return '+';
       case 'ticket.status_changed': return '●';
       case 'ticket.assigned': return '◎';
+      case 'ticket.reassigned': return '◎';
       default: return '•';
     }
   }
@@ -91,11 +92,24 @@ export class ContactTimelineComponent {
       case 'message.sent':
         return 'Mensaje enviado';
       case 'ticket.created':
-        return 'Ticket creado';
+        return event.ticketId ? `Ticket #${event.ticketId} creado` : 'Ticket creado';
       case 'ticket.status_changed':
-        return event.ticketStatus ? `Estado cambiado a ${event.ticketStatus}` : 'Estado cambiado';
+        if (event.ticketId) {
+          return event.ticketStatus === 'closed'
+            ? `Ticket #${event.ticketId} cerrado`
+            : `Ticket #${event.ticketId} cambiado a ${event.ticketStatus}`;
+        }
+        return event.ticketStatus
+          ? `Estado cambiado a ${event.ticketStatus}`
+          : 'Estado cambiado';
       case 'ticket.assigned':
-        return event.assignedTo ? `Asignado a ${event.assignedTo}` : 'Ticket asignado';
+        return event.assignedTo
+          ? `Asignado a ${event.assignedTo}${event.agentId ? ` (ID: ${event.agentId})` : ''}`
+          : 'Ticket asignado';
+      case 'ticket.reassigned':
+        return event.assignedTo
+          ? `Reasignado a ${event.assignedTo}${event.agentId ? ` (ID: ${event.agentId})` : ''}`
+          : 'Ticket reasignado';
       default:
         return event.type;
     }
