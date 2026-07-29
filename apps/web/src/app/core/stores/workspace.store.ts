@@ -88,17 +88,18 @@ export class WorkspaceStore {
 
   /**
    * Switch active workspace.
-   * Persists preference via API, updates signal, fires reload callbacks.
+   * Persists preference via API, then reloads the page so all data
+   * (inbox, contacts, reports, timeline) refreshes with the new workspace scope.
    */
   setActiveWorkspace(workspaceId: number): void {
     this.loading.set(true);
     this.error.set(null);
 
     this.api.setActiveWorkspace(workspaceId).subscribe({
-      next: (pref) => {
-        this.activeWorkspace.set(pref);
-        this.loading.set(false);
-        this.fireReloadCallbacks();
+      next: () => {
+        // Full reload ensures everything (tickets, contacts, reports,
+        // timeline, SSE subscription) reflects the new workspace.
+        window.location.reload();
       },
       error: (err) => {
         this.error.set(err.message ?? 'Failed to switch workspace');
