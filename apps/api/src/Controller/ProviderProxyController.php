@@ -61,7 +61,7 @@ class ProviderProxyController extends AbstractController
             $agent = $this->em->getRepository(\App\Domain\Agent\Agent::class)
                 ->findOneBy(['user' => $user]);
             if (!$agent) {
-                $agent = new \App\Domain\Agent\Agent();
+                $agent = new \App\Domain\Agent\Agent($user->getEmail() ?? 'Admin');
                 $agent->setName($user->getEmail() ?? 'Admin');
                 $agent->setUser($user);
                 $this->em->persist($agent);
