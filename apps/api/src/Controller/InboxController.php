@@ -12,8 +12,10 @@ use App\Application\Realtime\RealtimeEventType;
 use App\Application\Security\OwnershipScope;
 use App\Application\Security\WorkspaceScope;
 use App\Domain\Ticket\Ticket;
+use App\Domain\User\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
+use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -30,6 +32,7 @@ class InboxController
         private GetTicketMessagesQuery $getTicketMessagesQuery,
         private OwnershipScope $ownershipScope,
         private WorkspaceScope $workspaceScope,
+        private Security $security,
         private EntityManagerInterface $em,
         private LoggerInterface $logger,
     ) {}
@@ -163,6 +166,16 @@ class InboxController
             $ticket = $this->em->getRepository(Ticket::class)->find($id);
             if (!$ticket) {
                 return new JsonResponse(['error' => 'Ticket not found'], Response::HTTP_NOT_FOUND);
+            }
+
+            // Only the assigned agent marks the ticket as read.
+            // Other users can view but don't affect the read state.
+            $user = $this->security->getUser();
+            $currentAgentId = $user instanceof User ? $user->getAgent()?->getId() : null;
+            $ownerAgentId = $ticket->getAssignedAgentId();
+
+            if ($currentAgentId === null || $ownerAgentId === null || $currentAgentId !== $ownerAgentId) {
+                return new JsonResponse(null, Response::HTTP_NO_CONTENT);
             }
 
             $ticket->setLastReadAt(new \DateTimeImmutable());
