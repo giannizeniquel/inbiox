@@ -162,6 +162,10 @@ class HandleOutboundMessageUseCase
                     // FSM transition below.
                     $this->em->flush();
                     $this->em->refresh($ticket);
+
+                    // When an agent replies and becomes the owner, mark as read
+                    $ticket->setLastReadAt(new \DateTimeImmutable());
+                    $this->em->flush();
                 }
             }
 

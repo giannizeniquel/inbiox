@@ -120,8 +120,8 @@ export class ConversationComponent implements OnDestroy {
           .subscribe({
             error: () => { /* fire-and-forget */ },
           });
-        // Also update local state immediately
-        this.ticketStore.markAsRead(ticket.ticket_id);
+        // Note: no local markAsRead — badge clears via Mercure ticket.read event
+        // which only fires when the assigned agent reads the conversation.
       }
     }
   });
