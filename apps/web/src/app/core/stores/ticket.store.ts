@@ -150,6 +150,10 @@ export class TicketStore {
             owner: { id: p.assigneeId, name: `Agent #${p.assigneeId}` },
           });
         }
+        // When a ticket is reassigned, clear the unread badge for the new owner
+        if (String(event.ticketId)) {
+          this.markAsRead(String(event.ticketId));
+        }
         break;
       }
 
@@ -220,6 +224,12 @@ export class TicketStore {
       this.tickets.set(updated);
     } else {
       this.tickets.set([ticket, ...current]);
+    }
+
+    // Sync activeTicket if this is the currently active ticket
+    const active = this.activeTicket();
+    if (active && String(active.ticket_id) === String(ticket.ticket_id)) {
+      this.activeTicket.set(ticket);
     }
   }
 
