@@ -148,3 +148,84 @@
 
   // The border color should match topbar, but we use explicit to ensure contrast
 }
+
+// -----------------------------------------------------------------------------
+// User Menu
+// -----------------------------------------------------------------------------
+.topbar__user-menu {
+  position: relative;
+}
+
+.topbar__user-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-on-accent);
+  font-family: var(--font-family);
+  font-size: var(--font-sm, 12px);
+  cursor: pointer;
+  transition: background-color 150ms ease;
+  white-space: nowrap;
+  max-width: 180px;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.18);
+  }
+}
+
+.topbar__user-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar__chevron {
+  flex-shrink: 0;
+  transition: transform 150ms ease;
+
+  &--open {
+    transform: rotate(180deg);
+  }
+}
+
+.topbar__dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 180px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  z-index: 200;
+  padding: 4px 0;
+  overflow: hidden;
+}
+
+.topbar__dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-sm, 13px);
+  cursor: pointer;
+  transition: background-color 100ms ease;
+
+  &:hover {
+    background: var(--border-subtle);
+  }
+}
+
+.topbar__dropdown-divider {
+  height: 1px;
+  margin: 4px 12px;
+  background: var(--border-subtle);
+}

@@ -27,20 +27,36 @@
 
   <!-- Right side icons -->
   <div class="topbar__right">
-    <button class="topbar__icon-btn" aria-label="Mi cuenta" title="Mi cuenta">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-        <circle cx="12" cy="7" r="4"></circle>
-      </svg>
-    </button>
+    <!-- User menu with dropdown -->
+    <div class="topbar__user-menu" (click)="toggleDropdown()" (clickOutside)="closeDropdown()">
+      <button class="topbar__user-btn" [attr.aria-expanded]="dropdownOpen()">
+        <span class="topbar__user-name">{{ displayName() }}</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="topbar__chevron" [class.topbar__chevron--open]="dropdownOpen()">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
 
-    <button class="topbar__icon-btn" (click)="logout()" aria-label="Cerrar sesión" title="Cerrar sesión">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-        <polyline points="16 17 21 12 16 7"></polyline>
-        <line x1="21" y1="12" x2="9" y2="12"></line>
-      </svg>
-    </button>
+      @if (dropdownOpen()) {
+        <div class="topbar__dropdown">
+          <button class="topbar__dropdown-item" (click)="onProfile()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span>Mi Perfil</span>
+          </button>
+          <div class="topbar__dropdown-divider"></div>
+          <button class="topbar__dropdown-item" (click)="logout()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            <span>Cerrar sesión</span>
+          </button>
+        </div>
+      }
+    </div>
 
     <button class="topbar__icon-btn topbar__icon-btn--notifications" aria-label="Notificaciones">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
