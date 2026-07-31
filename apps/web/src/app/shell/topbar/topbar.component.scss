@@ -159,18 +159,19 @@
 .topbar__user-btn {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
+  gap: 6px;
+  padding: 6px 14px;
   border: none;
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.1);
   color: var(--text-on-accent);
   font-family: var(--font-family);
-  font-size: var(--font-sm, 12px);
+  font-size: var(--font-base, 14px);
+  font-weight: 500;
   cursor: pointer;
   transition: background-color 150ms ease;
   white-space: nowrap;
-  max-width: 180px;
+  max-width: 200px;
 
   &:hover {
     background: rgba(255, 255, 255, 0.18);
