@@ -21,3 +21,5 @@ dist/
 tmp/
 *.log
 apps/api/bin/.phpunit.result.cache
+# Local AI runtime state
+.atl/

@@ -11,11 +11,8 @@ use App\Application\Query\ListTicketsQuery;
 use App\Application\Security\OwnershipScope;
 use App\Application\Security\WorkspaceScope;
 use App\Domain\Ticket\Ticket;
-use App\Domain\User\User;
-use App\Repository\AgentTicketReadRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
-use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -31,8 +28,6 @@ class InboxController
         private GetTicketMessagesQuery $getTicketMessagesQuery,
         private OwnershipScope $ownershipScope,
         private WorkspaceScope $workspaceScope,
-        private AgentTicketReadRepository $agentTicketReadRepo,
-        private Security $security,
         private EntityManagerInterface $em,
         private LoggerInterface $logger,
     ) {}
@@ -163,23 +158,13 @@ class InboxController
     public function markRead(int $id): JsonResponse
     {
         try {
-            $user = $this->security->getUser();
-            if (!$user instanceof User) {
-                return new JsonResponse(['error' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
-            }
-
-            $agent = $user->getAgent();
-            if (!$agent) {
-                return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
-            }
-
-            // Verify ticket exists
             $ticket = $this->em->getRepository(Ticket::class)->find($id);
             if (!$ticket) {
                 return new JsonResponse(['error' => 'Ticket not found'], Response::HTTP_NOT_FOUND);
             }
 
-            $this->agentTicketReadRepo->upsert((int) $agent->getId(), $id);
+            $ticket->setLastReadAt(new \DateTimeImmutable());
+            $this->em->flush();
 
             return new JsonResponse(null, Response::HTTP_NO_CONTENT);
         } catch (\Exception $e) {

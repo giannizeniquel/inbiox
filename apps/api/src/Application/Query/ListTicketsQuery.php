@@ -107,29 +107,22 @@ class ListTicketsQuery
         $countStmt = $conn->executeQuery($countSql, $params);
         $total = (int) $countStmt->fetchOne();
 
-        // Compute unread counts post-query (avoids subquery param ordering issues)
+        // Compute unread counts post-query: count inbound messages after ticket.last_read_at
         $unreadCounts = [];
-        $readAgentId = $scopeAgentId ?? 0;
-        if ($readAgentId > 0 && !empty($results)) {
-            $ticketIds = array_column($results, 'id');
+        if (!empty($results)) {
             $convIds = array_unique(array_column($results, 'conv_id'));
-            if (!empty($ticketIds) && !empty($convIds)) {
-                $placeholders = implode(',', array_fill(0, count($ticketIds), '?'));
+            if (!empty($convIds)) {
                 $convPlaceholders = implode(',', array_fill(0, count($convIds), '?'));
 
                 $unreadSql = "SELECT m2.conversation_id, COUNT(*) as cnt
                     FROM messages m2
-                    LEFT JOIN agent_ticket_reads atr ON atr.ticket_id IN ($placeholders) AND atr.agent_id = ?
+                    JOIN tickets t2 ON t2.conversation_id = m2.conversation_id
                     WHERE m2.conversation_id IN ($convPlaceholders)
                     AND m2.direction = 'inbound'
-                    AND m2.created_at > COALESCE(atr.last_read_at, '1970-01-01 00:00:00')
+                    AND m2.created_at > COALESCE(t2.last_read_at, '1970-01-01 00:00:00')
                     GROUP BY m2.conversation_id";
 
-                $unreadParams = array_merge(
-                    array_map(fn($id) => (int) $id, $ticketIds),
-                    [$readAgentId],
-                    array_map(fn($id) => (int) $id, $convIds),
-                );
+                $unreadParams = array_map(fn($id) => (int) $id, array_values($convIds));
 
                 $unreadRows = $conn->executeQuery($unreadSql, $unreadParams)->fetchAllAssociative();
                 foreach ($unreadRows as $row) {

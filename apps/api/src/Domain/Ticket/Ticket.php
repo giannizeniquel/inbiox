@@ -61,6 +61,9 @@ class Ticket
     #[ORM\Column(name: "phone_number_id", type: "string", length: 36, nullable: true)]
     private ?string $phoneNumberId = null;
 
+    #[ORM\Column(name: "last_read_at", type: "datetime_immutable", nullable: true)]
+    private ?\DateTimeImmutable $lastReadAt = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -212,6 +215,17 @@ class Ticket
     public function setPhoneNumberId(?string $phoneNumberId): self
     {
         $this->phoneNumberId = $phoneNumberId;
+        return $this;
+    }
+
+    public function getLastReadAt(): ?\DateTimeImmutable
+    {
+        return $this->lastReadAt;
+    }
+
+    public function setLastReadAt(?\DateTimeImmutable $lastReadAt): self
+    {
+        $this->lastReadAt = $lastReadAt;
         return $this;
     }
 
