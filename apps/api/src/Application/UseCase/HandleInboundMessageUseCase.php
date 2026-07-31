@@ -117,6 +117,14 @@ foreach ($events as $event) {
                 $payload['direction'] = $event->direction->value;
                 $payload['content'] = $event->content;
                 $payload['sender_name'] = $event->senderName;
+                // Include phone_number_id for workspace-pending indicator
+                $ticketRow = $this->em->getConnection()->executeQuery(
+                    'SELECT phone_number_id FROM tickets WHERE id = ?',
+                    [$event->ticketId]
+                )->fetchAssociative();
+                if ($ticketRow && !empty($ticketRow['phone_number_id'])) {
+                    $payload['phone_number_id'] = $ticketRow['phone_number_id'];
+                }
             } elseif ($event instanceof TicketCreatedEvent) {
                 $payload['status'] = $event->status->value;
                 $payload['priority'] = $event->priority;

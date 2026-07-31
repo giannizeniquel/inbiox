@@ -286,9 +286,9 @@ export class WorkspaceSwitcherComponent {
     return 'Workspace';
   });
 
-  /** Whether this workspace has pending messages (placeholder: false) */
-  hasPending(_workspaceId: number): boolean {
-    return false; // TODO: implement with real data
+  /** Whether this workspace has pending messages */
+  hasPending(workspaceId: number): boolean {
+    return this.workspaceStore.hasPending(workspaceId);
   }
 
   @HostListener('document:click', ['$event'])

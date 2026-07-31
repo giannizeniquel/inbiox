@@ -19,6 +19,7 @@ class WorkspaceDTO
         public readonly string $createdAt,
         public readonly string $updatedAt,
         public readonly int $agentCount = 0,
+        public readonly bool $hasPending = false,
     ) {}
 
     public static function fromEntity(Workspace $workspace, int $agentCount = 0): self
@@ -47,6 +48,7 @@ class WorkspaceDTO
             'created_at' => $this->createdAt,
             'updated_at' => $this->updatedAt,
             'agent_count' => $this->agentCount,
+            'has_pending' => $this->hasPending,
         ];
     }
 }

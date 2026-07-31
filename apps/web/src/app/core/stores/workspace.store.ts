@@ -34,6 +34,9 @@ export class WorkspaceStore {
     this.activeWorkspace()?.phone_number_id ?? null
   );
 
+  /** Workspace IDs that have pending (unread) messages */
+  readonly pendingWorkspaceIds = signal<Set<number>>(new Set());
+
   /** Computed: whether there are multiple workspaces to switch between */
   readonly hasMultipleWorkspaces = computed(() => this.workspaces().length > 1);
 
@@ -58,6 +61,14 @@ export class WorkspaceStore {
     this.api.listMyWorkspaces().subscribe({
       next: (workspaces) => {
         this.workspaces.set(workspaces);
+        // Seed pending state from API
+        const pending = new Set<number>();
+        for (const ws of workspaces) {
+          if (ws.has_pending) {
+            pending.add(ws.id);
+          }
+        }
+        this.pendingWorkspaceIds.set(pending);
         this.loading.set(false);
       },
       error: (err) => {
@@ -127,7 +138,26 @@ export class WorkspaceStore {
     this.activeWorkspace.set(null);
     this.loading.set(false);
     this.error.set(null);
+    this.pendingWorkspaceIds.set(new Set());
     this.reloadCallbacks = [];
+  }
+
+  /** Set pending state for a workspace */
+  setPending(workspaceId: number, pending: boolean): void {
+    this.pendingWorkspaceIds.update(set => {
+      const next = new Set(set);
+      if (pending) {
+        next.add(workspaceId);
+      } else {
+        next.delete(workspaceId);
+      }
+      return next;
+    });
+  }
+
+  /** Check if a workspace has pending messages */
+  hasPending(workspaceId: number): boolean {
+    return this.pendingWorkspaceIds().has(workspaceId);
   }
 
   /** Fire all registered reload callbacks */

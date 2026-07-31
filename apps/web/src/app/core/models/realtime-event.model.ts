@@ -49,6 +49,7 @@ export interface MessageAddedPayload {
   senderName: string | null;
   createdAt: string;
   externalId: string | null;
+  phoneNumberId?: string | null;
 }
 
 /** Payload for `ticket.created` events */

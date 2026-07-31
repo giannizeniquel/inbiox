@@ -5,6 +5,7 @@ export interface WorkspaceDTO {
   is_active: boolean;
   agent_count?: number;
   agent_ids?: number[];
+  has_pending?: boolean;
   created_at: string;
   updated_at: string;
 }

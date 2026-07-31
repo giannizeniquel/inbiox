@@ -410,7 +410,44 @@ final class MeController
             }
 
             $workspaces = $agent->getWorkspaces()->toArray();
-            $items = array_map(fn(Workspace $w) => WorkspaceDTO::fromEntity($w)->toArray(), $workspaces);
+            $agentId = (int) $agent->getId();
+
+            // Compute has_pending per workspace
+            $conn = $this->entityManager->getConnection();
+            $items = [];
+            foreach ($workspaces as $w) {
+                $phoneNumberId = $w->getPhoneNumberId();
+                $hasPending = (bool) $conn->executeQuery(
+                    'SELECT EXISTS(
+                        SELECT 1 FROM tickets t
+                        JOIN conversations conv ON t.conversation_id = conv.id
+                        WHERE t.phone_number_id = :phone
+                        AND t.assigned_agent_id = :agentId
+                        AND t.status IN (:statuses)
+                        AND (
+                            t.last_read_at IS NULL
+                            OR EXISTS(
+                                SELECT 1 FROM messages m
+                                WHERE m.conversation_id = conv.id
+                                AND m.direction = :inbound
+                                AND m.created_at > t.last_read_at
+                            )
+                        )
+                    ) as has_pending',
+                    [
+                        'phone' => $phoneNumberId,
+                        'agentId' => $agentId,
+                        'statuses' => ['new', 'active', 'waiting'],
+                        'inbound' => 'inbound',
+                    ],
+                    [
+                        'statuses' => \Doctrine\DBAL\ArrayParameterType::STRING,
+                    ],
+                )->fetchOne();
+
+                $dto = WorkspaceDTO::fromEntity($w);
+                $items[] = array_merge($dto->toArray(), ['has_pending' => $hasPending]);
+            }
 
             return new JsonResponse($items);
         } catch (\Exception $e) {

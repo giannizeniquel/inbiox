@@ -7,6 +7,7 @@ import { RealtimeEvent, RealtimeEventType,
   TicketAssignedPayload } from '../models/realtime-event.model';
 import { EventBusService } from '../realtime/event-bus.service';
 import { AuthStore } from './auth.store';
+import { WorkspaceStore } from './workspace.store';
 
 const MAX_TICKETS = 1000;
 
@@ -36,6 +37,7 @@ export class TicketStore {
   private reloadCallback: (() => void) | null = null;
 
   private readonly authStore = inject(AuthStore);
+  private readonly workspaceStore = inject(WorkspaceStore);
 
   /** Current logged-in agent's ID (null if admin without agent) */
   private readonly currentAgentId = computed(() => this.authStore.currentUser()?.agent_id ?? null);
@@ -92,6 +94,19 @@ export class TicketStore {
           const current = this.tickets().find(t => String(t.ticket_id) === String(p.ticketId));
           if (current) {
             this.updateUnreadCount(String(p.ticketId), (current.metrics?.unread_count ?? 0) + 1);
+          }
+        }
+        // Workspace pending indicator: if inbound message from a different workspace
+        if (p.direction === 'inbound' && p.phoneNumberId) {
+          const activePhone = this.workspaceStore.activePhoneNumberId();
+          if (activePhone && activePhone !== p.phoneNumberId) {
+            // Find workspace by phone_number_id
+            const ws = this.workspaceStore.workspaces().find(
+              w => w.phone_number_id === p.phoneNumberId
+            );
+            if (ws) {
+              this.workspaceStore.setPending(ws.id, true);
+            }
           }
         }
         break;
