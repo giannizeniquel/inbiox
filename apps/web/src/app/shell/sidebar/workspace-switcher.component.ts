@@ -2,7 +2,6 @@ import { Component, ChangeDetectionStrategy, input, inject, computed, signal, Ho
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { WorkspaceStore } from '../../core/stores/workspace.store';
-import { TicketStore } from '../../core/stores/ticket.store';
 
 @Component({
   selector: 'app-workspace-switcher',
@@ -27,6 +26,7 @@ import { TicketStore } from '../../core/stores/ticket.store';
         } @else {
           <!-- Expanded: button + dropdown (same style as user menu) -->
           <div class="workspace-switcher__menu">
+            <label class="workspace-switcher__label">Espacio de trabajo</label>
             <button
               class="workspace-switcher__btn"
               (click)="toggleDropdown()"
@@ -48,8 +48,11 @@ import { TicketStore } from '../../core/stores/ticket.store';
                   >
                     <span class="workspace-switcher__dropdown-name">{{ ws.display_name }}</span>
                     <span class="workspace-switcher__dropdown-phone">{{ ws.phone_number_id }}</span>
-                    @if (pendingCount(ws.id) > 0) {
-                      <span class="workspace-switcher__badge">{{ pendingCount(ws.id) }}</span>
+                    @if (hasPending(ws.id)) {
+                      <svg class="workspace-switcher__envelope" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" title="Nuevos mensajes">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                        <polyline points="22,6 12,13 2,6"></polyline>
+                      </svg>
                     }
                   </button>
                 }
@@ -106,6 +109,17 @@ import { TicketStore } from '../../core/stores/ticket.store';
     /* Menu wrapper (expanded mode) */
     .workspace-switcher__menu {
       position: relative;
+    }
+
+    /* Label */
+    .workspace-switcher__label {
+      display: block;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
     }
 
     /* Button (expanded mode) */
@@ -222,6 +236,11 @@ import { TicketStore } from '../../core/stores/ticket.store';
       flex-shrink: 0;
     }
 
+    .workspace-switcher__envelope {
+      color: var(--accent-green, #128c7e);
+      flex-shrink: 0;
+    }
+
     .workspace-switcher__dropdown-divider {
       height: 1px;
       margin: 4px 12px;
@@ -252,7 +271,6 @@ export class WorkspaceSwitcherComponent {
   readonly isCollapsed = input(false);
 
   private readonly workspaceStore = inject(WorkspaceStore);
-  private readonly ticketStore = inject(TicketStore);
 
   protected readonly workspaces = this.workspaceStore.workspaces;
   protected readonly activeWorkspace = this.workspaceStore.activeWorkspace;
@@ -268,12 +286,9 @@ export class WorkspaceSwitcherComponent {
     return 'Workspace';
   });
 
-  /** Pending tickets count per workspace (from local ticket store) */
-  pendingCount(workspaceId: number): number {
-    return this.ticketStore.tickets().filter(t => {
-      // Match by owner's workspace? For now, placeholder 0
-      return false;
-    }).length;
+  /** Whether this workspace has pending messages (placeholder: false) */
+  hasPending(_workspaceId: number): boolean {
+    return false; // TODO: implement with real data
   }
 
   @HostListener('document:click', ['$event'])
