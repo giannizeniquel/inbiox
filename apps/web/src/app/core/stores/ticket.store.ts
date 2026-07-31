@@ -147,7 +147,7 @@ export class TicketStore {
         if (existing) {
           this.addOrUpdateTicket({
             ...existing,
-            owner: { id: p.assigneeId, name: `Agent #${p.assigneeId}` },
+            owner: { id: p.assigneeId, name: p.assigneeName ?? `Agent #${p.assigneeId}` },
           });
         }
         // When a ticket is reassigned, clear the unread badge for the new owner

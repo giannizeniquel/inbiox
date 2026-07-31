@@ -283,6 +283,11 @@ class HandleOutboundMessageUseCase
                 $payload['status'] = $event->status;
                 if ($event->ownerAgentId !== null) {
                     $payload['assignee_id'] = $event->ownerAgentId;
+                    // Fetch agent name for the frontend
+                    $agent = $this->agentRepo->findById($event->ownerAgentId);
+                    if ($agent !== null) {
+                        $payload['assignee_name'] = $agent->getName();
+                    }
                 }
             } elseif ($event instanceof InboxUpdatedEvent) {
                 // Skip inbox events for now (they don't have a wire format yet)

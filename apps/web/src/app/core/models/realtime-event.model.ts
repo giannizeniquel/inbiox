@@ -74,6 +74,7 @@ export interface TicketStatusChangedPayload {
 export interface TicketAssignedPayload {
   ticketId: number;
   assigneeId: number;
+  assigneeName?: string | null;
   assignedAt: string;
 }
 

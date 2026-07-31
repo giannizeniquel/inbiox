@@ -85,6 +85,7 @@ final readonly class RealtimeEventFactory
             RealtimeEventType::TicketAssigned => [
                 'ticketId'        => $ticketId,
                 'assigneeId'      => (int) ($s['assignee_id'] ?? 0),
+                'assigneeName'    => $s['assignee_name'] ?? null,
                 'assignmentType'  => $s['assignment_type'] ?? 'MANUAL_ASSIGN',
                 'assignedAt'      => $s['assigned_at'] ?? $s['occurred_at'] ?? '',
             ],
