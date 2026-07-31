@@ -442,6 +442,85 @@ class Sprint09AReportingTest extends KernelTestCase
         $this->assertEquals($agent42Id, $result[0]['agent_id']);
     }
 
+    /**
+     * Test agent performance filtered by workspace (phone_number_id).
+     * SC-1: agent with active workspace sees stats scoped to that workspace,
+     *       other agents appear but with zeroed stats (LEFT JOIN semantics).
+     */
+    public function testAgentPerformanceWithWorkspaceFilter(): void
+    {
+        // Arrange — 2 workspaces
+        $from = new \DateTimeImmutable('2026-01-01 00:00:00');
+        $to = new \DateTimeImmutable('2026-01-31 23:59:59');
+
+        $wsA = 'phone-ws-a';
+        $wsB = 'phone-ws-b';
+
+        // Agent in workspace A — 2 tickets
+        $agent1Id = $this->createTestAgent('Agent WS-A');
+        $this->createTestTicketWithSla(
+            '2026-01-15 10:00:00', '2026-01-15 10:30:00', null, $agent1Id, $wsA
+        );
+        $this->createTestTicketWithSla(
+            '2026-01-16 10:00:00', '2026-01-16 10:30:00', '2026-01-16 12:00:00', $agent1Id, $wsA
+        );
+
+        // Agent in workspace B — 1 ticket
+        $agent2Id = $this->createTestAgent('Agent WS-B');
+        $this->createTestTicketWithSla(
+            '2026-01-17 10:00:00', '2026-01-17 10:30:00', null, $agent2Id, $wsB
+        );
+
+        // Act — filter by workspace A
+        $result = $this->reportingRepo->getAgentPerformance($from, $to, null, $wsA);
+
+        // Assert
+        $this->assertIsArray($result);
+        $this->assertCount(2, $result, 'Both agents appear (LEFT JOIN keeps all active agents)');
+
+        // Agent from WS-A — has stats
+        $agent1Row = array_values(array_filter($result, fn($r) => $r['agent_id'] === $agent1Id))[0];
+        $this->assertEquals(2, $agent1Row['tickets_assigned'], 'Agent WS-A should have 2 tickets');
+        $this->assertEquals(1, $agent1Row['tickets_resolved']);
+
+        // Agent from WS-B — appears but with zeroed stats (filtered by JOIN ON clause)
+        $agent2Row = array_values(array_filter($result, fn($r) => $r['agent_id'] === $agent2Id))[0];
+        $this->assertEquals(0, $agent2Row['tickets_assigned'], 'Agent WS-B should have 0 tickets (workspace filter)');
+        $this->assertEquals(0, $agent2Row['tickets_resolved']);
+    }
+
+    /**
+     * Test agent performance with null workspace returns all agents.
+     * SC-5: null phoneNumberId → unfiltered query (backward compat).
+     */
+    public function testAgentPerformanceNullWorkspaceReturnsAll(): void
+    {
+        // Arrange — 2 workspaces
+        $from = new \DateTimeImmutable('2026-01-01 00:00:00');
+        $to = new \DateTimeImmutable('2026-01-31 23:59:59');
+
+        $wsA = 'phone-ws-null-a';
+        $wsB = 'phone-ws-null-b';
+
+        $agent1Id = $this->createTestAgent('Agent Null-A');
+        $this->createTestTicketWithSla(
+            '2026-01-15 10:00:00', '2026-01-15 10:30:00', null, $agent1Id, $wsA
+        );
+
+        $agent2Id = $this->createTestAgent('Agent Null-B');
+        $this->createTestTicketWithSla(
+            '2026-01-16 10:00:00', '2026-01-16 10:30:00', null, $agent2Id, $wsB
+        );
+
+        // Act — null workspace = no filter (backward compatible)
+        $result = $this->reportingRepo->getAgentPerformance($from, $to);
+
+        // Assert — both agents appear
+        $agentIds = array_column($result, 'agent_id');
+        $this->assertContains($agent1Id, $agentIds);
+        $this->assertContains($agent2Id, $agentIds);
+    }
+
     // ============================================
     // UTC TIMEZONE TESTS
     // ============================================
@@ -562,7 +641,8 @@ class Sprint09AReportingTest extends KernelTestCase
         string $createdAt,
         ?string $firstResponseAt,
         ?string $resolvedAt,
-        ?int $assignedAgentId = null
+        ?int $assignedAgentId = null,
+        ?string $phoneNumberId = null
     ): Ticket {
         $contact = new Contact();
         $contact->setPhone('+54' . random_int(3710000000, 3719999999));
@@ -571,6 +651,9 @@ class Sprint09AReportingTest extends KernelTestCase
         $conversation = new Conversation();
         $conversation->setContact($contact);
         $conversation->setStatus('open');
+        if ($phoneNumberId !== null) {
+            $conversation->setPhoneNumberId($phoneNumberId);
+        }
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
@@ -580,6 +663,9 @@ class Sprint09AReportingTest extends KernelTestCase
         $ticket->setCreatedAt(new \DateTimeImmutable($createdAt));
         $ticket->setUpdatedAt(new \DateTimeImmutable($createdAt));
         $ticket->setAssignedAgentId($assignedAgentId);
+        if ($phoneNumberId !== null) {
+            $ticket->setPhoneNumberId($phoneNumberId);
+        }
 
         if ($firstResponseAt) {
             $ticket->setFirstResponseAt(new \DateTimeImmutable($firstResponseAt));

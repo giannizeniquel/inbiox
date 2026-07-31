@@ -17,6 +17,9 @@ class GraphClient
 {
     private const BASE_URL = 'https://graph.facebook.com/v25.0';
 
+    /** Temporary: WS2 test workspace phone_number_id for AR normalization. */
+    private const WS2_TEST_PHONE_NUMBER_ID = '1034664019738593';
+
     public function __construct(
         private readonly string $accessToken,
         private readonly string $phoneNumberId,
@@ -39,14 +42,37 @@ class GraphClient
     }
 
     /**
-     * Normalize a phone number for the WhatsApp Cloud API.
+     * ─────────────────────────────────────────────────────────────────
+     * ⚠️  TEMPORARY WORKAROUND — REMOVE WHEN WS2 HAS A REAL NUMBER
+     * ─────────────────────────────────────────────────────────────────
+     * WS2 uses a Meta test number whose allowed list stores Argentina
+     * mobiles WITHOUT the '9' prefix (54XXXXXXXXXX), while inbound
+     * messages arrive WITH it (549XXXXXXXXXX). This normalizes only
+     * for WS2 to avoid RECIPIENT_NOT_ALLOWED errors.
      *
-     * Strips the '+' prefix if present. WhatsApp expects plain digits:
-     * country code + phone number (e.g. "5493625362904").
+     * To revert: delete WS2_TEST_PHONE_NUMBER_ID constant, remove the
+     * `$phoneNumberId` parameter from normalizePhone(), and restore
+     * the original `private function normalizePhone(string $phone): string`
+     * that only does `ltrim($phone, '+')`.
+     *
+     * Files to check on revert:
+     *   - src/Application/Service/GraphClient.php (this file)
+     *   - All callers: sendMessage(), sendTemplate(), sendMediaMessage()
+     * ─────────────────────────────────────────────────────────────────
      */
-    private function normalizePhone(string $phone): string
+    private function normalizePhone(string $phone, ?string $phoneNumberId = null): string
     {
-        return ltrim($phone, '+');
+        $phone = ltrim($phone, '+');
+
+        // Temporary: Argentina mobile prefix normalization for test workspace only
+        if ($phoneNumberId === self::WS2_TEST_PHONE_NUMBER_ID
+            && str_starts_with($phone, '549')
+            && strlen($phone) >= 12
+        ) {
+            $phone = '54' . substr($phone, 3);
+        }
+
+        return $phone;
     }
 
     /**
@@ -62,8 +88,8 @@ class GraphClient
      */
     public function sendMessage(string $to, string $content, ?string $phoneNumberId = null): array
     {
-        $to = $this->normalizePhone($to);
         $phoneNumberId ??= $this->phoneNumberId;
+        $to = $this->normalizePhone($to, $phoneNumberId);
         $url = sprintf('%s/%s/messages', self::BASE_URL, $phoneNumberId);
 
         $response = $this->httpClient->request('POST', $url, [
@@ -208,8 +234,8 @@ class GraphClient
      */
     public function sendTemplate(string $to, string $templateName, string $languageCode, array $parameters = [], ?string $phoneNumberId = null): array
     {
-        $to = $this->normalizePhone($to);
         $phoneNumberId ??= $this->phoneNumberId;
+        $to = $this->normalizePhone($to, $phoneNumberId);
         $url = sprintf('%s/%s/messages', self::BASE_URL, $phoneNumberId);
 
         $payload = [
@@ -273,6 +299,7 @@ class GraphClient
     public function sendMediaMessage(string $to, string $mediaId, string $mimeType, ?string $caption = null, ?string $phoneNumberId = null): array
     {
         $phoneNumberId ??= $this->phoneNumberId;
+        $to = $this->normalizePhone($to, $phoneNumberId);
         $url = sprintf('%s/%s/messages', self::BASE_URL, $phoneNumberId);
 
         $mediaType = $this->inferMediaType($mimeType);

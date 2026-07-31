@@ -209,7 +209,8 @@ class ReportingController
                 $agentId = $scopeAgentId;
             }
 
-            $performance = $this->reportingService->getAgentPerformance($from, $to, $agentId);
+            $phoneNumberId = $this->getScopePhoneNumberId();
+            $performance = $this->reportingService->getAgentPerformance($from, $to, $agentId, $phoneNumberId);
             return new JsonResponse($performance);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);

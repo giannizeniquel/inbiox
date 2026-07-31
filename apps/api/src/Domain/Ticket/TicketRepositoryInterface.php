@@ -7,8 +7,8 @@ use App\Domain\Conversation\Conversation;
 
 interface TicketRepositoryInterface
 {
-    public function findOpenByContact(Contact $contact): ?Ticket;
-    public function findNotClosedByContact(Contact $contact): ?Ticket;
+    public function findOpenByContact(Contact $contact, ?string $phoneNumberId = null): ?Ticket;
+    public function findNotClosedByContact(Contact $contact, ?string $phoneNumberId = null): ?Ticket;
     public function findById(int $id): ?Ticket;
     public function findByConversation(Conversation $conversation): ?Ticket;
 }

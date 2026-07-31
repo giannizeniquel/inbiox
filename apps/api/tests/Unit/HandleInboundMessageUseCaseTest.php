@@ -135,4 +135,185 @@ class HandleInboundMessageUseCaseTest extends TestCase
             $this->assertGreaterThanOrEqual(10, strlen($normalized), "Phone $phone should have at least 10 digits");
         }
     }
+
+    /**
+     * Configure the EM mock to auto-generate IDs on persisted entities when flushed.
+     * Without this, real entities created inside executeInternal (Message, Conversation, Ticket)
+     * would have null IDs after a mock flush, causing TypeError in event constructors.
+     */
+    private function enableEntityIdAutoGeneration(): void
+    {
+        $persisted = [];
+
+        $this->em->method('persist')->willReturnCallback(function(object $entity) use (&$persisted): void {
+            $persisted[] = $entity;
+        });
+
+        $this->em->method('flush')->willReturnCallback(function() use (&$persisted): void {
+            $nextId = 10000;
+            foreach ($persisted as $entity) {
+                $ref = new \ReflectionClass($entity);
+                if ($ref->hasProperty('id')) {
+                    $prop = $ref->getProperty('id');
+                    $prop->setAccessible(true);
+                    if ($prop->getValue($entity) === null) {
+                        $prop->setValue($entity, $nextId++);
+                    }
+                }
+            }
+            $persisted = [];
+        });
+    }
+
+    public function testDifferentWorkspaceCreatesNewConversationAndTicket(): void
+    {
+        $phone = '+543712345678';
+        $message = 'Hello';
+        $phoneNumberId = 'B';
+
+        $contact = $this->createMock(\App\Domain\Contact\Contact::class);
+        $contact->method('getId')->willReturn(1);
+        $contact->method('getName')->willReturn(null);
+        $contact->method('getUpdatedAt')->willReturn(new \DateTimeImmutable());
+
+        // Make the EM transaction execute the closure
+        $connection = $this->createMock(\Doctrine\DBAL\Connection::class);
+        $connection->method('transactional')->willReturnCallback(fn(callable $cb) => $cb());
+        $this->em->method('getConnection')->willReturn($connection);
+
+        $this->enableEntityIdAutoGeneration();
+
+        $this->contactRepo->method('findOneByPhone')->willReturn($contact);
+
+        // No open conversation in workspace B -> must create new
+        $this->conversationRepo
+            ->expects($this->once())
+            ->method('findOpenByContact')
+            ->with($contact, 'B')
+            ->willReturn(null);
+
+        // No not-closed ticket in workspace B -> must create new
+        $this->ticketRepo
+            ->expects($this->once())
+            ->method('findNotClosedByContact')
+            ->with($contact, 'B')
+            ->willReturn(null);
+
+        // Stub required interactions
+        $this->ruleExecutor->method('execute');
+        $this->eventDispatcher->method('dispatch');
+        $this->eventCollector->method('collect');
+
+        $result = $this->useCase->processInboundMessage($phone, $message, null, $phoneNumberId);
+
+        $this->assertArrayHasKey('status', $result);
+        $this->assertEquals('ok', $result['status']);
+    }
+
+    public function testSameWorkspaceReusesExistingConversationAndTicket(): void
+    {
+        $phone = '+543712345678';
+        $message = 'Hello again';
+        $phoneNumberId = 'A';
+
+        $contact = $this->createMock(\App\Domain\Contact\Contact::class);
+        $contact->method('getId')->willReturn(1);
+        $contact->method('getName')->willReturn(null);
+        $contact->method('getUpdatedAt')->willReturn(new \DateTimeImmutable());
+
+        $connection = $this->createMock(\Doctrine\DBAL\Connection::class);
+        $connection->method('transactional')->willReturnCallback(fn(callable $cb) => $cb());
+        $this->em->method('getConnection')->willReturn($connection);
+
+        $this->enableEntityIdAutoGeneration();
+
+        $this->contactRepo->method('findOneByPhone')->willReturn($contact);
+
+        $existingConversation = $this->createMock(\App\Domain\Conversation\Conversation::class);
+        $existingConversation->method('getId')->willReturn(10);
+        $existingConversation->method('getUpdatedAt')->willReturn(new \DateTimeImmutable());
+
+        $existingTicket = $this->createMock(\App\Domain\Ticket\Ticket::class);
+        $existingTicket->method('getId')->willReturn(20);
+        $existingTicket->method('getStatus')->willReturn(\App\Domain\Ticket\TicketStatus::ACTIVE->value);
+        $existingTicket->method('getUpdatedAt')->willReturn(new \DateTimeImmutable());
+        $existingTicket->method('incrementLastEventSeq')->willReturn(1);
+
+        // Existing conversation + ticket in workspace A -> reused
+        $this->conversationRepo
+            ->expects($this->once())
+            ->method('findOpenByContact')
+            ->with($contact, 'A')
+            ->willReturn($existingConversation);
+
+        $this->ticketRepo
+            ->expects($this->once())
+            ->method('findNotClosedByContact')
+            ->with($contact, 'A')
+            ->willReturn($existingTicket);
+
+        // Stub required interactions
+        $this->em->method('lock');
+        $this->ruleExecutor->method('execute');
+        $this->eventDispatcher->method('dispatch');
+        $this->eventCollector->method('collect');
+
+        $result = $this->useCase->processInboundMessage($phone, $message, null, $phoneNumberId);
+
+        $this->assertArrayHasKey('status', $result);
+        $this->assertEquals('ok', $result['status']);
+    }
+
+    public function testNullPhoneNumberIdPreservesLegacyBehavior(): void
+    {
+        $phone = '+543712345678';
+        $message = 'Hello with null workspace';
+
+        $contact = $this->createMock(\App\Domain\Contact\Contact::class);
+        $contact->method('getId')->willReturn(1);
+        $contact->method('getName')->willReturn(null);
+        $contact->method('getUpdatedAt')->willReturn(new \DateTimeImmutable());
+
+        $connection = $this->createMock(\Doctrine\DBAL\Connection::class);
+        $connection->method('transactional')->willReturnCallback(fn(callable $cb) => $cb());
+        $this->em->method('getConnection')->willReturn($connection);
+
+        $this->enableEntityIdAutoGeneration();
+
+        $this->contactRepo->method('findOneByPhone')->willReturn($contact);
+
+        $existingConversation = $this->createMock(\App\Domain\Conversation\Conversation::class);
+        $existingConversation->method('getId')->willReturn(10);
+        $existingConversation->method('getUpdatedAt')->willReturn(new \DateTimeImmutable());
+
+        $existingTicket = $this->createMock(\App\Domain\Ticket\Ticket::class);
+        $existingTicket->method('getId')->willReturn(20);
+        $existingTicket->method('getStatus')->willReturn(\App\Domain\Ticket\TicketStatus::ACTIVE->value);
+        $existingTicket->method('getUpdatedAt')->willReturn(new \DateTimeImmutable());
+        $existingTicket->method('incrementLastEventSeq')->willReturn(1);
+
+        // Legacy: findOpenByContact called with null -> finds regardless of workspace
+        $this->conversationRepo
+            ->expects($this->once())
+            ->method('findOpenByContact')
+            ->with($contact, null)
+            ->willReturn($existingConversation);
+
+        $this->ticketRepo
+            ->expects($this->once())
+            ->method('findNotClosedByContact')
+            ->with($contact, null)
+            ->willReturn($existingTicket);
+
+        // Stub required interactions
+        $this->em->method('lock');
+        $this->ruleExecutor->method('execute');
+        $this->eventDispatcher->method('dispatch');
+        $this->eventCollector->method('collect');
+
+        $result = $this->useCase->processInboundMessage($phone, $message);
+
+        $this->assertArrayHasKey('status', $result);
+        $this->assertEquals('ok', $result['status']);
+    }
 }

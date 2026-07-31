@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -74,6 +74,36 @@ export class SettingsPageComponent implements OnInit {
   ngOnInit(): void {
     this.store.loadSettings();
   }
+
+  /**
+   * Patch all reactive forms from the store signals whenever settings are loaded.
+   * Uses Angular effect() to reactively sync store → forms.
+   */
+  private readonly _formSync = effect(() => {
+    // Profile
+    const p = this.store.profile();
+    if (p) {
+      this.profileForm.patchValue({ signature: p.signature ?? '' }, { emitEvent: false });
+    }
+
+    // Notifications
+    const n = this.store.notifications();
+    if (n) {
+      this.notificationsForm.patchValue(
+        { sound: n.sound, desktop: n.desktop },
+        { emitEvent: false },
+      );
+    }
+
+    // Auto-Reply
+    const a = this.store.autoReply();
+    if (a) {
+      this.autoReplyForm.patchValue(
+        { enabled: a.enabled, message: a.message ?? '' },
+        { emitEvent: false },
+      );
+    }
+  });
 
   getDayName(dow: number): string {
     return DAY_NAMES[dow] ?? `Día ${dow}`;

@@ -153,7 +153,7 @@ foreach ($events as $event) {
         }
 
         // 3. Find or create Conversation
-        $conversation = $this->conversationRepo->findOpenByContact($contact);
+        $conversation = $this->conversationRepo->findOpenByContact($contact, $phoneNumberId);
         $isNewConversation = false;
         if (!$conversation) {
             $conversation = new Conversation();
@@ -193,7 +193,7 @@ foreach ($events as $event) {
 
         // 6. Handle Ticket - create if new conversation or no open ticket
         // Use findNotClosedByContact to include resolved tickets (for auto-reopen)
-        $ticket = $this->ticketRepo->findNotClosedByContact($contact);
+        $ticket = $this->ticketRepo->findNotClosedByContact($contact, $phoneNumberId);
         $isNewTicket = false;
         
         if (!$ticket) {

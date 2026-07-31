@@ -26,26 +26,25 @@ final class WorkspaceScope
     /**
      * Get the scoped phoneNumberId for the current user.
      *
-     * - ROLE_ADMIN / ROLE_SUPERVISOR: null (no scope — see everything)
-     * - ROLE_AGENT with linked Agent and active workspace: the workspace's phoneNumberId
-     * - ROLE_AGENT without active workspace: null (voter handles 403)
+     * ALL roles (ADMIN, SUPERVISOR, AGENT) go through the same path:
+     * user → agent → activeWorkspace → phoneNumberId.
+     *
+     * - User with linked Agent that has an active workspace: the workspace's phoneNumberId
+     * - User without Agent or without active workspace: null (no scope)
      * - No authenticated user: null
+     *
+     * The workspace switcher is responsible for setting the active workspace
+     * via PUT /api/me/workspace. Admin/Supervisor can switch to any workspace;
+     * Agent can only switch to assigned workspaces.
+     *
+     * @see MeController::setActiveWorkspace()
+     * @see MeController::ensureAgent() — auto-creates Agent for admin/supervisor
      */
     public function getActivePhoneNumberId(): ?string
     {
         $user = $this->security->getUser();
 
         if (!$user instanceof User) {
-            return null;
-        }
-
-        // ADMIN/SUPERVISOR see everything — no scope
-        if ($this->security->isGranted('ROLE_SUPERVISOR')) {
-            return null;
-        }
-
-        // Only AGENT-level users get scoped
-        if (!$this->security->isGranted('ROLE_AGENT')) {
             return null;
         }
 

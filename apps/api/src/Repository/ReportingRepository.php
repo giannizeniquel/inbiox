@@ -300,14 +300,22 @@ class ReportingRepository extends ServiceEntityRepository
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
      * @param int|null $agentId Optional filter by specific agent
+     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
      * @return array<int, array{agent_id: int, agent_name: string|null, tickets_assigned: int, tickets_resolved: int, current_active_tickets: int, max_active_tickets: int, current_load: float, is_in_shift: bool, avg_frt_seconds: float|null, avg_frt_minutes: float|null, avg_rt_seconds: float|null, avg_rt_minutes: float|null}>
      */
-    public function getAgentPerformance(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null): array
+    public function getAgentPerformance(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null): array
     {
         $conn = $this->entityManager->getConnection();
         
         $frtTimeDiff = $this->getTimeDiffExpression('t.created_at', 't.first_response_at');
         $rtTimeDiff = $this->getTimeDiffExpression('t.created_at', 't.resolved_at');
+
+        $workspaceSubClause = '';
+        $workspaceJoinClause = '';
+        if ($phoneNumberId !== null) {
+            $workspaceSubClause = ' AND t2.phone_number_id = :phoneNumberId';
+            $workspaceJoinClause = ' AND t.phone_number_id = :phoneNumberId';
+        }
         
         $sql = "SELECT 
             a.id as agent_id,
@@ -319,10 +327,10 @@ class ReportingRepository extends ServiceEntityRepository
             AVG(CASE WHEN t.resolved_at IS NOT NULL THEN {$rtTimeDiff} ELSE NULL END) as avg_rt,
             (SELECT COUNT(*) FROM tickets t2
              WHERE t2.assigned_agent_id = a.id
-             AND t2.status IN ('new', 'active', 'waiting')) as current_active_tickets
+             AND t2.status IN ('new', 'active', 'waiting'){$workspaceSubClause}) as current_active_tickets
         FROM agents a
         LEFT JOIN tickets t ON t.assigned_agent_id = a.id
-            AND t.created_at >= :from AND t.created_at < :to
+            AND t.created_at >= :from AND t.created_at < :to{$workspaceJoinClause}
         WHERE a.active = 1";
         
         $params = ['from' => $from->format('Y-m-d H:i:s'), 'to' => $to->format('Y-m-d H:i:s')];
@@ -330,6 +338,10 @@ class ReportingRepository extends ServiceEntityRepository
         if ($agentId !== null) {
             $sql .= ' AND a.id = :agentId';
             $params['agentId'] = $agentId;
+        }
+
+        if ($phoneNumberId !== null) {
+            $params['phoneNumberId'] = $phoneNumberId;
         }
         
         $sql .= " GROUP BY a.id, a.name, a.max_active_tickets ORDER BY a.id ASC";

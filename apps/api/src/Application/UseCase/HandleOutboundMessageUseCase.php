@@ -156,6 +156,12 @@ class HandleOutboundMessageUseCase
                         assignedBy: 'system',
                         notes: 'Auto-assigned on agent reply',
                     );
+
+                    // Flush the assignment + any status change made by AssignmentService
+                    // (e.g. new → active) so the DB is consistent before we decide the
+                    // FSM transition below.
+                    $this->em->flush();
+                    $this->em->refresh($ticket);
                 }
             }
 

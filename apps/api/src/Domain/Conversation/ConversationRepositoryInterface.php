@@ -6,6 +6,6 @@ use App\Domain\Contact\Contact;
 
 interface ConversationRepositoryInterface
 {
-    public function findOpenByContact(Contact $contact): ?Conversation;
+    public function findOpenByContact(Contact $contact, ?string $phoneNumberId = null): ?Conversation;
     public function findById(int $id): ?Conversation;
 }

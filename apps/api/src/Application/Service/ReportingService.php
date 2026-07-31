@@ -93,13 +93,14 @@ class ReportingService
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
      * @param int|null $agentId Optional filter by specific agent
+     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
      * @return array<int, array{agent_id: int, tickets_assigned: int, tickets_resolved: int, avg_frt: float|null, avg_rt: float|null}>
      */
-    public function getAgentPerformance(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null): array
+    public function getAgentPerformance(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null): array
     {
         $this->validateDateRange($from, $to);
 
-        return $this->reportingRepository->getAgentPerformance($from, $to, $agentId);
+        return $this->reportingRepository->getAgentPerformance($from, $to, $agentId, $phoneNumberId);
     }
 
     /**

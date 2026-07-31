@@ -17,14 +17,45 @@ class TicketRepository extends ServiceEntityRepository implements TicketReposito
         parent::__construct($registry, Ticket::class);
     }
 
-    public function findOpenByContact(Contact $contact): ?Ticket
+    public function findOpenByContact(Contact $contact, ?string $phoneNumberId = null): ?Ticket
     {
-        return $this->findOneBy(['contact' => $contact, 'status' => ['new', 'active', 'waiting']]);
+        $qb = $this->createQueryBuilder('t')
+            ->where('t.contact = :contact')
+            ->andWhere('t.status IN (:statuses)')
+            ->setParameter('contact', $contact->getId() ?? 0)
+            ->setParameter('statuses', [
+                TicketStatus::NEW->value,
+                TicketStatus::ACTIVE->value,
+                TicketStatus::WAITING->value,
+            ]);
+
+        if ($phoneNumberId !== null) {
+            $qb->andWhere('t.phoneNumberId = :phoneNumberId')
+               ->setParameter('phoneNumberId', $phoneNumberId);
+        }
+
+        return $qb->getQuery()->getOneOrNullResult();
     }
 
-    public function findNotClosedByContact(Contact $contact): ?Ticket
+    public function findNotClosedByContact(Contact $contact, ?string $phoneNumberId = null): ?Ticket
     {
-        return $this->findOneBy(['contact' => $contact, 'status' => ['new', 'active', 'waiting', 'resolved']]);
+        $qb = $this->createQueryBuilder('t')
+            ->where('t.contact = :contact')
+            ->andWhere('t.status IN (:statuses)')
+            ->setParameter('contact', $contact->getId() ?? 0)
+            ->setParameter('statuses', [
+                TicketStatus::NEW->value,
+                TicketStatus::ACTIVE->value,
+                TicketStatus::WAITING->value,
+                TicketStatus::RESOLVED->value,
+            ]);
+
+        if ($phoneNumberId !== null) {
+            $qb->andWhere('t.phoneNumberId = :phoneNumberId')
+               ->setParameter('phoneNumberId', $phoneNumberId);
+        }
+
+        return $qb->getQuery()->getOneOrNullResult();
     }
 
     public function findById(int $id): ?Ticket
