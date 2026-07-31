@@ -20,7 +20,7 @@ export class TicketFiltersComponent {
 
   readonly tabs: Tab[] = [
     { id: 'mine', label: 'Míos' },
-    { id: 'waiting', label: 'En espera' },
+    { id: 'waiting', label: 'Sin asignar' },
     { id: 'internal', label: 'Todos' },
   ];
 
