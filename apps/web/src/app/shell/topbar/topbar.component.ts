@@ -1,11 +1,12 @@
 import { Component, ChangeDetectionStrategy, output, signal, HostListener, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { AuthStore } from '../../core/stores/auth.store';
 
 @Component({
   selector: 'app-topbar',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './topbar.component.html',
   styleUrl: './topbar.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -57,11 +58,6 @@ export class TopbarComponent {
 
   closeDropdown(): void {
     this.dropdownOpen.set(false);
-  }
-
-  onProfile(): void {
-    this.dropdownOpen.set(false);
-    // TODO: navigate to profile/settings
   }
 
   logout(): void {
