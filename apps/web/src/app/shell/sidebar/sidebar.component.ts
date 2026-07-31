@@ -1,8 +1,9 @@
-import { Component, ChangeDetectionStrategy, input, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { ConnectionStore } from '../../core/stores/connection.store';
 import { AuthStore } from '../../core/stores/auth.store';
+import { TicketStore } from '../../core/stores/ticket.store';
 import { WorkspaceSwitcherComponent } from './workspace-switcher.component';
 
 @Component({
@@ -19,8 +20,12 @@ export class SidebarComponent {
 
   private readonly connectionStore = inject(ConnectionStore);
   protected readonly authStore = inject(AuthStore);
+  private readonly ticketStore = inject(TicketStore);
 
   connectionStatus = this.connectionStore.status;
+
+  /** Whether there are any unread messages in the inbox */
+  protected readonly hasUnread = computed(() => this.ticketStore.totalUnread() > 0);
 
   connectionLabel(): string {
     switch (this.connectionStore.status()) {
