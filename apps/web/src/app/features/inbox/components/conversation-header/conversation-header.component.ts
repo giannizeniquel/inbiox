@@ -1,5 +1,6 @@
 import { Component, ChangeDetectionStrategy, input, output, computed } from '@angular/core';
 import { NgClass } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { Ticket, TicketStatus } from '../../../../core/models/ticket.model';
 
 const STATUS_LABELS: Record<TicketStatus, string> = {
@@ -13,7 +14,7 @@ const STATUS_LABELS: Record<TicketStatus, string> = {
 @Component({
   selector: 'app-conversation-header',
   standalone: true,
-  imports: [NgClass],
+  imports: [NgClass, RouterModule],
   templateUrl: './conversation-header.component.html',
   styleUrl: './conversation-header.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -39,6 +40,10 @@ export class ConversationHeaderComponent {
 
   contactName(): string {
     return this.ticket().contact?.name ?? this.ticket().contact?.phone ?? 'Unknown';
+  }
+
+  contactId(): number | null {
+    return this.ticket().contact?.id ?? null;
   }
 
   // Placeholder: real connection status comes from channel service

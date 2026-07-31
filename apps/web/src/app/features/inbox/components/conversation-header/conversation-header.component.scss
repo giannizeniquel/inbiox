@@ -3,6 +3,11 @@
 // Per spec section 17: height 64px, sticky, flex-shrink: 0
 // =============================================================================
 
+:host {
+  flex: 1;
+  min-width: 0;
+}
+
 .conversation-header {
   display: flex;
   align-items: center;
@@ -10,8 +15,8 @@
   height: 64px;
   padding: 0 12px;
   flex-shrink: 0;
-  border-bottom: 1px solid var(--border-subtle);
-  background: var(--bg-sidebar);
+  border-bottom: none;
+  background: transparent;
 }
 
 // Left side
@@ -21,6 +26,7 @@
   gap: 12px;
   min-width: 0;
   flex: 1;
+  overflow: hidden;
 }
 
 // Avatar 40px
@@ -61,15 +67,6 @@
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-.conversation-header__name {
-  font-size: var(--font-lg);
-  font-weight: 600;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .conversation-header__bot-chip {
@@ -158,7 +155,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 6px 14px;
+  padding: 8px 16px;
   border: none;
   border-radius: 6px;
   background: var(--accent-primary);
@@ -168,6 +165,8 @@
   letter-spacing: 0.5px;
   cursor: pointer;
   flex-shrink: 0;
+  white-space: nowrap;
+  align-self: center;
   transition: opacity 0.15s;
 
   &:hover {
@@ -178,6 +177,29 @@
     outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
   }
+}
+
+// Contact name as link
+.conversation-header__name {
+  font-size: var(--font-lg);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+a.conversation-header__name {
+  color: var(--text-on-accent);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+    opacity: 0.9;
+  }
+}
+
+span.conversation-header__name {
+  color: var(--text-primary);
 }
 
 // Dark theme — resolve button

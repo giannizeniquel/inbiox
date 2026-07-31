@@ -44,6 +44,12 @@ class ProcessedEvent
         return $this->processedAt;
     }
 
+    public function setProcessedAt(\DateTimeImmutable $processedAt): self
+    {
+        $this->processedAt = $processedAt;
+        return $this;
+    }
+
     public function getResultData(): ?array
     {
         return $this->resultData;

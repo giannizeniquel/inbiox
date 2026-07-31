@@ -9,7 +9,15 @@
     <!-- Name + meta -->
     <div class="conversation-header__info">
       <div class="conversation-header__name-row">
-        <span class="conversation-header__name">{{ contactName() }}</span>
+        @if (contactId(); as cid) {
+          <a
+            class="conversation-header__name"
+            [routerLink]="['/contacts', cid]"
+            [attr.aria-label]="'Ver ficha de ' + contactName()"
+          >{{ contactName() }}</a>
+        } @else {
+          <span class="conversation-header__name">{{ contactName() }}</span>
+        }
       </div>
 
       <div class="conversation-header__meta">

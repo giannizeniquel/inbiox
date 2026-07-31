@@ -1,6 +1,7 @@
 import { Component, ChangeDetectionStrategy, inject, OnInit, OnDestroy, signal } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
+import { ContactsApiService } from '../../../../core/api/contacts-api.service';
 import { ContactsStore } from '../../stores/contacts.store';
 import { GetContactsUseCase } from '../../application/contacts';
 import { ContactFilters, UIContact } from '../../models';
@@ -43,6 +44,7 @@ let updatingFromUrl = false;
 export class ContactsPageComponent implements OnInit, OnDestroy {
   protected readonly store = inject(ContactsStore);
   private readonly getContacts = inject(GetContactsUseCase);
+  private readonly contactsApi = inject(ContactsApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private routeSubscription?: Subscription;
@@ -62,7 +64,37 @@ export class ContactsPageComponent implements OnInit, OnDestroy {
     this.routeSubscription = this.route.paramMap.subscribe(params => {
       const contactId = params.get('contactId');
       if (contactId) {
-        this.store.selectContact(contactId);
+        // Check if contact is already in the cached list
+        const cached = this.store.contactById(contactId);
+        if (cached) {
+          this.store.selectContact(contactId);
+        } else {
+          // Fetch from API if not cached
+          this.contactsApi.getContact(contactId).subscribe({
+            next: (dto) => {
+              const uiContact: UIContact = {
+                id: dto.id.toString(),
+                phone: dto.phone,
+                name: dto.name,
+                email: dto.email,
+                status: dto.status,
+                channel: dto.channel,
+                lastInteraction: dto.lastInteraction,
+                unreadCount: dto.unreadCount,
+                activeTicketId: dto.activeTicketId,
+                tags: dto.tags,
+                owner: dto.ownerId != null
+                  ? { id: dto.ownerId, name: dto.ownerName ?? '' }
+                  : null,
+              };
+              this.store.addContact(uiContact);
+              this.store.selectContact(contactId);
+            },
+            error: () => {
+              this.store.clearSelection();
+            },
+          });
+        }
       } else {
         this.store.clearSelection();
       }

@@ -61,6 +61,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
             $availabilityService,
             $graphClient,
             $processedEventRepo,
+            $this->eventCollector,
             $this->logger,
             $this->em,
         );

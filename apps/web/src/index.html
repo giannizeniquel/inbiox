@@ -6,6 +6,16 @@
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <script>
+    // Apply dark theme before Angular renders to avoid FOUC (flash of unstyled content).
+    // Default is dark; only switch to light if explicitly saved.
+    (function() {
+      var theme = localStorage.getItem('crm-theme');
+      if (theme !== 'light') {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
 </head>
 <body>
   <app-root></app-root>

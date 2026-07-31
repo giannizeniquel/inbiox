@@ -5,6 +5,11 @@ declare(strict_types=1);
 namespace App\Application\Service;
 
 use App\Domain\Agent\Agent;
+use App\Domain\Conversation\Conversation;
+use App\Domain\Event\EventCollector;
+use App\Domain\Event\MessageCreatedEvent;
+use App\Domain\Message\Message;
+use App\Domain\Message\MessageDirection;
 use App\Domain\Ticket\ProcessedEvent;
 use App\Domain\Ticket\Ticket;
 use App\Exception\GraphApiException;
@@ -12,6 +17,7 @@ use App\Repository\AgentRepository;
 use App\Repository\ProcessedEventRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\Uid\Ulid;
 
 /**
  * Fire-and-forget service to send auto-reply messages when conditions are met.
@@ -34,6 +40,7 @@ final class AutoReplyService
         private readonly AgentAvailabilityService $availabilityService,
         private readonly GraphClient $graphClient,
         private readonly ProcessedEventRepository $processedEventRepo,
+        private readonly EventCollector $eventCollector,
         private readonly LoggerInterface $logger,
         private readonly EntityManagerInterface $em,
     ) {}
@@ -111,7 +118,7 @@ final class AutoReplyService
         }
 
         try {
-            $this->graphClient->sendMessage($to, $autoReplyMessage, $phoneNumberId);
+            $graphResponse = $this->graphClient->sendMessage($to, $autoReplyMessage, $phoneNumberId);
         } catch (GraphApiException $e) {
             $this->logger->error('AutoReply Graph API error: {message}', [
                 'message' => $e->getMessage(),
@@ -122,10 +129,50 @@ final class AutoReplyService
             return; // Fire-and-forget: swallow the exception
         }
 
-        // 6. Persist rate-limit key
-        $processedEvent = new ProcessedEvent($rateLimitKey);
-        $this->em->persist($processedEvent);
+        // 6. Create local Message entity so the auto-reply appears in the conversation
+        $wamid = $graphResponse['messages'][0]['id'] ?? null;
+        $conversation = $ticket->getConversation();
+        $msg = null;
+        if ($conversation !== null) {
+            $msg = new Message();
+            $msg->setConversation($conversation);
+            $msg->setDirection('outbound');
+            $msg->setContent($autoReplyMessage);
+            if ($wamid !== null) {
+                $msg->setExternalId($wamid);
+            }
+            $msg->setDeliveryStatus('sent');
+            $this->em->persist($msg);
+
+            // Update conversation timestamp
+            $conversation->setLastMessageAt($msg->getCreatedAt());
+            $conversation->setUpdatedAt(new \DateTimeImmutable());
+        }
+
+        // 7. Upsert rate-limit key (update timestamp or insert new)
+        $existingEvent = $this->processedEventRepo->findByEventId($rateLimitKey);
+        if ($existingEvent !== null) {
+            $existingEvent->setProcessedAt(new \DateTimeImmutable('now'));
+        } else {
+            $processedEvent = new ProcessedEvent($rateLimitKey);
+            $this->em->persist($processedEvent);
+        }
         $this->em->flush();
+
+        // 8. Emit outbox event so the message appears in real-time via Mercure
+        if ($msg !== null) {
+            $this->eventCollector->collect(new MessageCreatedEvent(
+                eventId: new Ulid(),
+                ticketId: $ticket->getId(),
+                occurredAt: new \DateTimeImmutable(),
+                seq: $ticket->incrementLastEventSeq(),
+                version: 1,
+                direction: MessageDirection::OUTBOUND,
+                messageId: (int) $msg->getId(),
+                content: $autoReplyMessage,
+                senderName: $agent->getName(),
+            ));
+        }
 
         $this->logger->info('AutoReply sent to contact {contactId}', [
             'contactId' => $contactId,

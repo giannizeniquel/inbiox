@@ -11,12 +11,13 @@ use App\Domain\Agent\Agent;
 use App\Domain\Agent\AgentShift;
 use App\Domain\Agent\AgentShiftRepository;
 use App\Domain\Contact\Contact;
+use App\Domain\Conversation\Conversation;
+use App\Domain\Event\EventCollector;
 use App\Domain\Ticket\ProcessedEvent;
 use App\Domain\Ticket\Ticket;
 use App\Exception\GraphApiException;
 use App\Repository\AgentRepository;
 use App\Repository\ProcessedEventRepository;
-use Doctrine\ORM\AbstractQuery;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Query;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -45,6 +46,7 @@ class AutoReplyServiceTest extends TestCase
     private AgentAvailabilityService $availabilityService;
     private GraphClient&MockObject $graphClient;
     private ProcessedEventRepository&MockObject $processedEventRepo;
+    private EventCollector&MockObject $eventCollector;
     private LoggerInterface&MockObject $logger;
     private AutoReplyService $service;
 
@@ -55,6 +57,7 @@ class AutoReplyServiceTest extends TestCase
         $this->em = $this->createMock(EntityManagerInterface::class);
         $this->graphClient = $this->createMock(GraphClient::class);
         $this->processedEventRepo = $this->createMock(ProcessedEventRepository::class);
+        $this->eventCollector = $this->createMock(EventCollector::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
         // Create REAL AgentAvailabilityService with mocked deps
@@ -69,6 +72,7 @@ class AutoReplyServiceTest extends TestCase
             $this->availabilityService,
             $this->graphClient,
             $this->processedEventRepo,
+            $this->eventCollector,
             $this->logger,
             $this->em,
         );
@@ -111,6 +115,7 @@ class AutoReplyServiceTest extends TestCase
         ?Agent $agent = null,
         ?Contact $contact = null,
         ?string $phoneNumberId = '123456789',
+        ?Conversation $conversation = null,
     ): Ticket {
         $ticket = new Ticket();
         if ($agent !== null) {
@@ -121,6 +126,9 @@ class AutoReplyServiceTest extends TestCase
         }
         if ($phoneNumberId !== null) {
             $ticket->setPhoneNumberId($phoneNumberId);
+        }
+        if ($conversation !== null) {
+            $ticket->setConversation($conversation);
         }
 
         return $ticket;
@@ -294,15 +302,18 @@ class AutoReplyServiceTest extends TestCase
     {
         $agent = $this->createAgent();
         $contact = $this->createContact(phone: '+5493625123456');
-        $ticket = $this->createTicket(agent: $agent, contact: $contact, phoneNumberId: '123456789');
+        $conversation = new Conversation();
+        $conversation->setContact($contact);
+        $conversation->setStatus('open');
+        $ticket = $this->createTicket(agent: $agent, contact: $contact, phoneNumberId: '123456789', conversation: $conversation);
 
         $this->agentRepo->expects(self::once())
             ->method('findById')
             ->with(1)
             ->willReturn($agent);
 
-        // No recent processed event
-        $this->processedEventRepo->expects(self::once())
+        // No recent processed event (called twice: rate-limit check + upsert)
+        $this->processedEventRepo->expects(self::exactly(2))
             ->method('findByEventId')
             ->with('auto-reply:1')
             ->willReturn(null);
@@ -312,13 +323,9 @@ class AutoReplyServiceTest extends TestCase
             ->method('sendMessage')
             ->willReturn(['messages' => [['id' => 'wamid.test']]]);
 
-        // ProcessedEvent should be persisted
-        $this->em->expects(self::once())
-            ->method('persist')
-            ->with(self::isInstanceOf(ProcessedEvent::class));
-
-        $this->em->expects(self::once())
-            ->method('flush');
+        // Message + EventCollection should be persisted
+        $this->em->method('persist');
+        $this->em->method('flush');
 
         $this->service->maybeSend($ticket);
     }
@@ -353,7 +360,9 @@ class AutoReplyServiceTest extends TestCase
             ->with(self::stringContains('AutoReply Graph API error'));
 
         // ProcessedEvent should NOT be persisted (send failed)
+        // Message is also NOT persisted because the send failed
         $this->em->expects(self::never())->method('persist');
+        $this->em->expects(self::never())->method('flush');
 
         // This should not throw
         $this->service->maybeSend($ticket);

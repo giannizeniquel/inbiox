@@ -18,7 +18,7 @@ export class ThemeStore {
   readonly theme = signal<Theme>(this.getInitialTheme());
 
   constructor() {
-    // Apply theme on init (read from localStorage or default to light)
+    // Apply theme on init (read from localStorage or default to dark)
     this.applyTheme(this.theme());
 
     // Auto-apply theme changes to the DOM
@@ -44,11 +44,11 @@ export class ThemeStore {
     return this.theme() === 'dark';
   }
 
-  /** Read initial theme from localStorage or default to light */
+  /** Read initial theme from localStorage or default to dark */
   private getInitialTheme(): Theme {
-    if (typeof window === 'undefined') return 'light';
+    if (typeof window === 'undefined') return 'dark';
     const saved = localStorage.getItem(STORAGE_KEY) as Theme | null;
-    return saved === 'dark' ? 'dark' : 'light';
+    return saved === 'light' ? 'light' : 'dark';
   }
 
   /** Apply theme to the DOM: add .dark class to <html>, with transition */
