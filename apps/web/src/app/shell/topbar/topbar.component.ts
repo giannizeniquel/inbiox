@@ -1,5 +1,6 @@
-import { Component, ChangeDetectionStrategy, output, signal, HostListener } from '@angular/core';
+import { Component, ChangeDetectionStrategy, output, signal, HostListener, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { AuthStore } from '../../core/stores/auth.store';
 
 @Component({
   selector: 'app-topbar',
@@ -10,6 +11,8 @@ import { CommonModule } from '@angular/common';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TopbarComponent {
+  private readonly authStore = inject(AuthStore);
+
   /** Emitted when the hamburger menu button is clicked (mobile only) */
   readonly menuToggle = output<void>();
 
@@ -25,5 +28,9 @@ export class TopbarComponent {
   @HostListener('window:resize')
   onResize(): void {
     this.isMobile.set(window.innerWidth < this._breakpoint);
+  }
+
+  logout(): void {
+    this.authStore.logout();
   }
 }
