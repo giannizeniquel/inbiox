@@ -116,7 +116,7 @@ export class ConversationComponent implements OnDestroy {
     if (ticket) {
       const ticketId = Number(ticket.ticket_id);
       if (!isNaN(ticketId)) {
-        this.http.put(`${environment.apiUrl}/tickets/${ticketId}/mark-read`, {})
+        this.http.put(`${environment.apiUrl}/api/tickets/${ticketId}/mark-read`, {})
           .subscribe({
             error: () => { /* fire-and-forget */ },
           });

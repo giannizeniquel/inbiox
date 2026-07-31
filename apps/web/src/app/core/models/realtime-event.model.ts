@@ -19,6 +19,7 @@ export enum RealtimeEventType {
   MessageAdded = 'message.added',
   MessageUpdated = 'message.updated',
   ConversationUpdated = 'conversation.updated',
+  TicketRead = 'ticket.read',
 }
 
 // ──────────────────────────────────────────────

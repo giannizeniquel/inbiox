@@ -63,22 +63,19 @@ export class TicketStore {
    * Handles: TicketCreated, TicketStatusChanged, TicketAssigned, MessageAdded.
    */
   private initEventBus(): void {
-    try {
-      const eventBus = inject(EventBusService);
-      const destroyRef = inject(DestroyRef);
+    const eventBus = inject(EventBusService);
+    const destroyRef = inject(DestroyRef);
 
-      eventBus.events$.pipe(
-        filter(e =>
-          e.eventType === RealtimeEventType.TicketCreated
-          || e.eventType === RealtimeEventType.TicketStatusChanged
-          || e.eventType === RealtimeEventType.TicketAssigned
-          || e.eventType === RealtimeEventType.MessageAdded
-        ),
-        takeUntilDestroyed(destroyRef),
-      ).subscribe(e => this.onRealtimeEvent(e));
-    } catch {
-      // Running outside DI context (e.g., unit tests)
-    }
+    eventBus.events$.pipe(
+      filter(e =>
+        e.eventType === RealtimeEventType.TicketCreated
+        || e.eventType === RealtimeEventType.TicketStatusChanged
+        || e.eventType === RealtimeEventType.TicketAssigned
+        || e.eventType === RealtimeEventType.MessageAdded
+        || e.eventType === RealtimeEventType.TicketRead
+      ),
+      takeUntilDestroyed(destroyRef),
+    ).subscribe(e => this.onRealtimeEvent(e));
   }
 
   /**
@@ -91,8 +88,8 @@ export class TicketStore {
         const p = event.payload as MessageAddedPayload;
         // Increment unread if not active ticket
         const activeTicket = this.activeTicket();
-        if (!activeTicket || activeTicket.ticket_id !== String(p.ticketId)) {
-          const current = this.tickets().find(t => t.ticket_id === String(p.ticketId));
+        if (!activeTicket || String(activeTicket.ticket_id) !== String(p.ticketId)) {
+          const current = this.tickets().find(t => String(t.ticket_id) === String(p.ticketId));
           if (current) {
             this.updateUnreadCount(String(p.ticketId), (current.metrics?.unread_count ?? 0) + 1);
           }
@@ -118,7 +115,7 @@ export class TicketStore {
 
       case RealtimeEventType.TicketStatusChanged: {
         const p = event.payload as TicketStatusChangedPayload;
-        const existing = this.tickets().find(t => t.ticket_id === String(p.ticketId));
+        const existing = this.tickets().find(t => String(t.ticket_id) === String(p.ticketId));
         if (existing) {
           this.addOrUpdateTicket({
             ...existing,
@@ -131,13 +128,21 @@ export class TicketStore {
 
       case RealtimeEventType.TicketAssigned: {
         const p = event.payload as TicketAssignedPayload;
-        const existing = this.tickets().find(t => t.ticket_id === String(p.ticketId));
+        const existing = this.tickets().find(t => String(t.ticket_id) === String(p.ticketId));
         if (existing) {
           this.addOrUpdateTicket({
             ...existing,
             owner: { id: p.assigneeId, name: `Agent #${p.assigneeId}` },
-            timestamps: { ...existing.timestamps, updated_at: p.assignedAt },
           });
+        }
+        break;
+      }
+
+      case RealtimeEventType.TicketRead: {
+        // Another user marked this ticket as read — clear our badge
+        const ticketId = event.ticketId ? String(event.ticketId) : null;
+        if (ticketId) {
+          this.markAsRead(ticketId);
         }
         break;
       }
@@ -192,7 +197,7 @@ export class TicketStore {
   /** Add or update a ticket in the list */
   addOrUpdateTicket(ticket: Ticket): void {
     const current = this.tickets();
-    const index = current.findIndex(t => t.ticket_id === ticket.ticket_id);
+    const index = current.findIndex(t => String(t.ticket_id) === String(ticket.ticket_id));
 
     if (index >= 0) {
       const updated = [...current];
@@ -209,14 +214,14 @@ export class TicketStore {
       this.activeTicket.set(null);
       return;
     }
-    const ticket = this.tickets().find(t => t.ticket_id === ticketId) ?? null;
+    const ticket = this.tickets().find(t => String(t.ticket_id) === String(ticketId)) ?? null;
     this.activeTicket.set(ticket);
   }
 
   /** Update unread count for a specific ticket */
   updateUnreadCount(ticketId: string, count: number): void {
     this.tickets.update(tickets =>
-      tickets.map(t => t.ticket_id === ticketId
+      tickets.map(t => String(t.ticket_id) === String(ticketId)
         ? { ...t, metrics: { ...t.metrics, unread_count: count } }
         : t
       )
@@ -226,7 +231,7 @@ export class TicketStore {
   /** Mark a ticket as read */
   markAsRead(ticketId: string): void {
     this.tickets.update(tickets =>
-      tickets.map(t => t.ticket_id === ticketId
+      tickets.map(t => String(t.ticket_id) === String(ticketId)
         ? { ...t, metrics: { ...t.metrics, unread_count: 0 } }
         : t
       )

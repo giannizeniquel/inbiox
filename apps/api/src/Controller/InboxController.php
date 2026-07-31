@@ -8,6 +8,7 @@ use App\Application\DTO\PaginationMetaDTO;
 use App\Application\Query\GetTicketDetailQuery;
 use App\Application\Query\GetTicketMessagesQuery;
 use App\Application\Query\ListTicketsQuery;
+use App\Application\Realtime\RealtimeEventType;
 use App\Application\Security\OwnershipScope;
 use App\Application\Security\WorkspaceScope;
 use App\Domain\Ticket\Ticket;
@@ -18,6 +19,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Uid\Ulid;
 
 #[IsGranted('ROLE_AGENT')]
 class InboxController
@@ -165,6 +167,22 @@ class InboxController
 
             $ticket->setLastReadAt(new \DateTimeImmutable());
             $this->em->flush();
+
+            // Emit real-time event so other clients clear their unread badge
+            $this->em->getConnection()->insert('outbox_events', [
+                'id' => (string) (new Ulid()),
+                'aggregate_type' => 'ticket',
+                'aggregate_id' => $id,
+                'topic' => 'tickets',
+                'event_type' => RealtimeEventType::TicketRead->value,
+                'payload' => json_encode([
+                    'eventType' => RealtimeEventType::TicketRead->value,
+                    'ticketId' => $id,
+                ]),
+                'created_at' => (new \DateTimeImmutable())->format('Y-m-d H:i:s'),
+                'status' => 'pending',
+                'sequence' => 0,
+            ]);
 
             return new JsonResponse(null, Response::HTTP_NO_CONTENT);
         } catch (\Exception $e) {
