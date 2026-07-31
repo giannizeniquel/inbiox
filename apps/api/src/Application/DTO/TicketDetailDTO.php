@@ -11,6 +11,8 @@ class TicketDetailDTO
         public array $contact,
         public ?array $owner,
         public array $timestamps,
+        public array $metrics = ['unread_count' => 0],
+        public ?string $lastMessage = null,
     ) {}
 
     public function toArray(): array
@@ -22,6 +24,8 @@ class TicketDetailDTO
             'contact' => $this->contact,
             'owner' => $this->owner,
             'timestamps' => $this->timestamps,
+            'metrics' => $this->metrics,
+            'last_message' => $this->lastMessage,
         ];
     }
 }

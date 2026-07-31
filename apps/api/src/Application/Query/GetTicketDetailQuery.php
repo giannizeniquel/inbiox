@@ -25,7 +25,17 @@ class GetTicketDetailQuery
                 t.updated_at,
                 c.id as contact_id,
                 c.phone as contact_phone,
-                c.name as contact_name
+                c.name as contact_name,
+                conv.id as conv_id,
+                (SELECT COUNT(*) FROM messages m2
+                 WHERE m2.conversation_id = conv.id
+                 AND m2.direction = 'inbound'
+                 AND m2.created_at > COALESCE(t.last_read_at, '1970-01-01 00:00:00')
+                ) as unread_count,
+                (SELECT m3.content FROM messages m3
+                 WHERE m3.conversation_id = conv.id
+                 ORDER BY m3.created_at DESC LIMIT 1
+                ) as last_message
             FROM tickets t
             INNER JOIN conversations conv ON t.conversation_id = conv.id
             INNER JOIN contacts c ON conv.contact_id = c.id
@@ -74,6 +84,8 @@ class GetTicketDetailQuery
             contact: $contact,
             owner: $owner,
             timestamps: $timestamps,
+            metrics: ['unread_count' => (int) ($row['unread_count'] ?? 0)],
+            lastMessage: $row['last_message'] ?? null,
         );
     }
 }
