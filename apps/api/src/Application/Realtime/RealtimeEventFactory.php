@@ -45,6 +45,10 @@ final readonly class RealtimeEventFactory
         if ($this->mapper->isTicketAssigned($phpClass, $stored)) {
             return RealtimeEventType::TicketAssigned;
         }
+        // Handle wire-format event types (already enum values, not FQCNs)
+        if (str_starts_with($phpClass, 'ticket.') || str_starts_with($phpClass, 'message.') || str_starts_with($phpClass, 'agent.') || str_starts_with($phpClass, 'conversation.')) {
+            return RealtimeEventType::from($phpClass);
+        }
         return RealtimeEventType::from($this->mapper->toEnum($phpClass));
     }
 
@@ -111,6 +115,9 @@ final readonly class RealtimeEventFactory
                 'conversationId' => (int) ($s['conversation_id'] ?? 0),
                 'ticketId'       => $ticketId,
                 'lastMessageAt'  => $s['last_message_at'] ?? null,
+            ],
+            RealtimeEventType::TicketRead => [
+                'ticketId' => $ticketId,
             ],
         };
     }
