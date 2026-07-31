@@ -106,7 +106,38 @@ class ListTicketsQuery
         $countSql = "SELECT COUNT(*) FROM tickets t $whereClause";
         $countStmt = $conn->executeQuery($countSql, $params);
         $total = (int) $countStmt->fetchOne();
-        
+
+        // Compute unread counts post-query (avoids subquery param ordering issues)
+        $unreadCounts = [];
+        $readAgentId = $scopeAgentId ?? 0;
+        if ($readAgentId > 0 && !empty($results)) {
+            $ticketIds = array_column($results, 'id');
+            $convIds = array_unique(array_column($results, 'conv_id'));
+            if (!empty($ticketIds) && !empty($convIds)) {
+                $placeholders = implode(',', array_fill(0, count($ticketIds), '?'));
+                $convPlaceholders = implode(',', array_fill(0, count($convIds), '?'));
+
+                $unreadSql = "SELECT m2.conversation_id, COUNT(*) as cnt
+                    FROM messages m2
+                    LEFT JOIN agent_ticket_reads atr ON atr.ticket_id IN ($placeholders) AND atr.agent_id = ?
+                    WHERE m2.conversation_id IN ($convPlaceholders)
+                    AND m2.direction = 'inbound'
+                    AND m2.created_at > COALESCE(atr.last_read_at, '1970-01-01 00:00:00')
+                    GROUP BY m2.conversation_id";
+
+                $unreadParams = array_merge(
+                    array_map(fn($id) => (int) $id, $ticketIds),
+                    [$readAgentId],
+                    array_map(fn($id) => (int) $id, $convIds),
+                );
+
+                $unreadRows = $conn->executeQuery($unreadSql, $unreadParams)->fetchAllAssociative();
+                foreach ($unreadRows as $row) {
+                    $unreadCounts[(int) $row['conversation_id']] = (int) $row['cnt'];
+                }
+            }
+        }
+
         // Preload agent entities for is_in_shift evaluation
         $now = new \DateTimeImmutable();
         $agentIds = array_unique(array_filter(array_map(fn($r) => $r['assigned_agent_id'] ? (int) $r['assigned_agent_id'] : null, $results)));
@@ -127,7 +158,7 @@ class ListTicketsQuery
             $agentMap[$agent->getId()] = $agent;
         }
         
-        $items = array_map(function ($row) use ($agentMap, $now) {
+        $items = array_map(function ($row) use ($agentMap, $now, $unreadCounts) {
             $owner = null;
             if (!empty($row['assigned_agent_id'])) {
                 $agentId = (int) $row['assigned_agent_id'];
@@ -161,7 +192,7 @@ class ListTicketsQuery
                 ],
                 lastMessage: null,
                 owner: $owner,
-                metrics: ['unread_count' => 0],
+                metrics: ['unread_count' => $unreadCounts[(int) ($row['conv_id'] ?? 0)] ?? 0],
                 timestamps: [
                     'opened_at' => $row['created_at'],
                     'updated_at' => $row['updated_at'],

@@ -1,6 +1,8 @@
 import { Component, inject, OnDestroy, signal, viewChild, computed, ChangeDetectionStrategy, ChangeDetectorRef, input, output, effect } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 import { take } from 'rxjs/operators';
+import { environment } from '../../../../../environments/environment';
 import { ConversationStore } from '../../../../core/stores/conversation.store';
 import { TicketStore } from '../../../../core/stores/ticket.store';
 import { UiStore } from '../../../../core/stores/ui.store';
@@ -61,6 +63,7 @@ export class ConversationComponent implements OnDestroy {
   protected readonly conversationStore = inject(ConversationStore);
   protected readonly ticketStore = inject(TicketStore);
   protected readonly uiStore = inject(UiStore);
+  private readonly http = inject(HttpClient);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly messageSender = inject(MessageSenderService);
   private readonly messageApi = inject(MessageApiService);
@@ -105,6 +108,22 @@ export class ConversationComponent implements OnDestroy {
     void this.activeTicket();
     this.oldestLoadedOffset.set(0);
     this.initialLoadDone = false;
+  });
+
+  /** Mark ticket as read on the backend when the active ticket changes */
+  private readonly markReadEffect = effect(() => {
+    const ticket = this.activeTicket();
+    if (ticket) {
+      const ticketId = Number(ticket.ticket_id);
+      if (!isNaN(ticketId)) {
+        this.http.put(`${environment.apiUrl}/tickets/${ticketId}/mark-read`, {})
+          .subscribe({
+            error: () => { /* fire-and-forget */ },
+          });
+        // Also update local state immediately
+        this.ticketStore.markAsRead(ticket.ticket_id);
+      }
+    }
   });
 
   private scrollTimeout?: ReturnType<typeof setTimeout>;

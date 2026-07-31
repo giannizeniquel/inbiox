@@ -20,3 +20,4 @@ Thumbs.db
 dist/
 tmp/
 *.log
+apps/api/bin/.phpunit.result.cache

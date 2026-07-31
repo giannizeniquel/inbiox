@@ -3,6 +3,11 @@ app_ticket_assign:
     methods: [POST]
     controller: App\Controller\TicketController::assign
 
+app_ticket_mark_read:
+    path: /api/tickets/{id}/mark-read
+    methods: [PUT]
+    controller: App\Controller\InboxController::markRead
+
 app_ticket_assignment:
     path: /api/tickets/{id}/assignment
     methods: [GET]

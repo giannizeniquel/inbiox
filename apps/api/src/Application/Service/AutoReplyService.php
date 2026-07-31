@@ -33,7 +33,7 @@ use Symfony\Component\Uid\Ulid;
  */
 final class AutoReplyService
 {
-    private const AUTO_REPLY_WINDOW_HOURS = 4;
+    private const AUTO_REPLY_WINDOW_HOURS = 2;
 
     public function __construct(
         private readonly AgentRepository $agentRepo,
