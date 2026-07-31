@@ -6,7 +6,11 @@ use App\Application\Service\AssignmentService;
 use App\Domain\Assignment\AssignmentType;
 use App\Domain\Conversation\Conversation;
 use App\Domain\Conversation\ConversationStatus;
+use App\Domain\Event\EventCollector;
+use App\Domain\Event\InboxUpdatedEvent;
+use App\Domain\Event\TicketUpdatedEvent;
 use App\Domain\Message\Message;
+use App\Domain\Outbox\OutboxEvent;
 use App\Domain\Ticket\ProcessedEvent;
 use App\Domain\Ticket\Ticket;
 use App\Domain\Ticket\TicketStatus;
@@ -20,6 +24,7 @@ use App\Repository\ProcessedEventRepository;
 use App\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\OptimisticLockException;
+use Symfony\Component\Uid\Ulid;
 
 /**
  * Handles outbound (agent) messages.
@@ -39,6 +44,7 @@ class HandleOutboundMessageUseCase
         private RuleExecutorService $ruleExecutor,
         private AssignmentService $assignmentService,
         private AgentRepository $agentRepo,
+        private EventCollector $eventCollector,
     ) {}
 
     /**
@@ -83,7 +89,9 @@ class HandleOutboundMessageUseCase
 
         while ($attempt < $maxRetries) {
             try {
-                return $this->executeTransactionWithRetry($ticketId, $content, $eventKey, $agentId, $ticket);
+                $result = $this->executeTransactionWithRetry($ticketId, $content, $eventKey, $agentId, $ticket);
+                $this->persistEventsToOutbox();
+                return $result;
             } catch (OptimisticLockException $e) {
                 $attempt++;
                 if ($attempt >= $maxRetries) {
@@ -248,5 +256,50 @@ class HandleOutboundMessageUseCase
                 'event_key' => $eventKey,
             ];
         });
+    }
+
+    /**
+     * Persist collected domain events to outbox for Mercure real-time.
+     * After auto-assignment, events like TicketAssigned need to be published.
+     */
+    private function persistEventsToOutbox(): void
+    {
+        $events = $this->eventCollector->getEvents();
+        if (empty($events)) {
+            return;
+        }
+
+        foreach ($events as $event) {
+            $payload = [
+                'event_id' => $event->eventId->toRfc4122(),
+                'type' => $event->type,
+                'ticket_id' => $event->ticketId,
+                'occurred_at' => $event->occurredAt->format(\DateTimeInterface::RFC3339),
+                'seq' => $event->seq,
+                'version' => $event->version,
+            ];
+
+            if ($event instanceof TicketUpdatedEvent) {
+                $payload['status'] = $event->status;
+                if ($event->ownerAgentId !== null) {
+                    $payload['assignee_id'] = $event->ownerAgentId;
+                }
+            } elseif ($event instanceof InboxUpdatedEvent) {
+                // Skip inbox events for now (they don't have a wire format yet)
+                continue;
+            }
+
+            $outboxEvent = new OutboxEvent(
+                aggregateType: 'ticket',
+                aggregateId: (int) $event->ticketId,
+                topic: 'tickets',
+                eventType: $event->type,
+                payload: $payload
+            );
+            $this->em->persist($outboxEvent);
+        }
+
+        $this->em->flush();
+        $this->eventCollector->clear();
     }
 }

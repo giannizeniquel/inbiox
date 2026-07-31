@@ -29,6 +29,7 @@ import { WorkspaceStore } from '../../core/stores/workspace.store';
             <label class="workspace-switcher__label">Espacio de trabajo</label>
             <button
               class="workspace-switcher__btn"
+              [class.workspace-switcher__btn--pending]="hasPendingInOther()"
               (click)="toggleDropdown()"
               [attr.aria-expanded]="dropdownOpen()"
             >
@@ -45,11 +46,14 @@ import { WorkspaceStore } from '../../core/stores/workspace.store';
                     class="workspace-switcher__dropdown-item"
                     [class.workspace-switcher__dropdown-item--active]="ws.id === activeWorkspace()?.workspace_id"
                     (click)="onSelectWorkspace(ws.id)"
+                    [title]="hasPending(ws.id) ? 'Nuevos mensajes' : ''"
                   >
-                    <span class="workspace-switcher__dropdown-name">{{ ws.display_name }}</span>
-                    <span class="workspace-switcher__dropdown-phone">{{ ws.phone_number_id }}</span>
+                    <div class="workspace-switcher__dropdown-info">
+                      <span class="workspace-switcher__dropdown-name">{{ ws.display_name }}</span>
+                      <span class="workspace-switcher__dropdown-phone">{{ ws.phone_number_id }}</span>
+                    </div>
                     @if (hasPending(ws.id)) {
-                      <svg class="workspace-switcher__envelope" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" title="Nuevos mensajes">
+                      <svg class="workspace-switcher__envelope" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
                         <polyline points="22,6 12,13 2,6"></polyline>
                       </svg>
@@ -129,13 +133,13 @@ import { WorkspaceStore } from '../../core/stores/workspace.store';
       justify-content: space-between;
       gap: 6px;
       width: 100%;
-      padding: 6px 10px;
-      border: 1px solid var(--border-subtle);
-      border-radius: 6px;
+      padding: 8px 12px;
+      border: 2px solid var(--border-subtle);
+      border-radius: 8px;
       background: var(--bg-input);
       color: var(--text-primary);
       font-family: var(--font-family);
-      font-size: var(--font-sm, 13px);
+      font-size: var(--font-base, 14px);
       font-weight: 500;
       cursor: pointer;
       transition: border-color 150ms ease;
@@ -148,6 +152,11 @@ import { WorkspaceStore } from '../../core/stores/workspace.store';
         outline: 2px solid var(--accent-primary);
         outline-offset: 2px;
       }
+    }
+
+    .workspace-switcher__btn--pending {
+      border-color: var(--accent-green, #128c7e);
+      box-shadow: 0 0 0 1px var(--accent-green, #128c7e);
     }
 
     .workspace-switcher__btn-name {
@@ -187,7 +196,7 @@ import { WorkspaceStore } from '../../core/stores/workspace.store';
       align-items: center;
       gap: 8px;
       width: 100%;
-      padding: 8px 12px;
+      padding: 10px 14px;
       border: none;
       background: transparent;
       color: var(--text-primary);
@@ -207,8 +216,16 @@ import { WorkspaceStore } from '../../core/stores/workspace.store';
       }
     }
 
-    .workspace-switcher__dropdown-name {
+    .workspace-switcher__dropdown-info {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
       flex: 1;
+      min-width: 0;
+    }
+
+    .workspace-switcher__dropdown-name {
+      font-weight: 500;
       text-align: left;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -218,7 +235,9 @@ import { WorkspaceStore } from '../../core/stores/workspace.store';
     .workspace-switcher__dropdown-phone {
       font-size: var(--font-xs, 11px);
       color: var(--text-secondary);
-      flex-shrink: 0;
+      text-align: left;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .workspace-switcher__badge {
@@ -286,7 +305,17 @@ export class WorkspaceSwitcherComponent {
     return 'Workspace';
   });
 
-  /** Whether this workspace has pending messages */
+  /** Whether any non-active workspace has pending messages */
+  protected readonly hasPendingInOther = computed(() => {
+    const active = this.activeWorkspace();
+    for (const ws of this.workspaces()) {
+      if (ws.id !== active?.workspace_id && this.workspaceStore.hasPending(ws.id)) {
+        return true;
+      }
+    }
+    return false;
+  });
+
   hasPending(workspaceId: number): boolean {
     return this.workspaceStore.hasPending(workspaceId);
   }
