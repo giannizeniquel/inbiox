@@ -63,5 +63,8 @@ security:
         # Mercure token endpoint
         - { path: ^/api/mercure, roles: IS_AUTHENTICATED_FULLY }
 
+        # Workspace agent listing (authenticated agents)
+        - { path: ^/api/workspaces/\d+/available-agents, roles: ROLE_AGENT }
+
         # Everything else requires at least ROLE_AGENT
         - { path: ^/api, roles: ROLE_AGENT }

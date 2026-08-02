@@ -9,6 +9,18 @@ import { EventBusService } from '../realtime/event-bus.service';
 import { AuthStore } from './auth.store';
 import { WorkspaceStore } from './workspace.store';
 
+/** Owner information for assignment */
+interface TicketOwner {
+  id: number;
+  name: string;
+}
+
+/** Assignment error with auto-dismiss timestamp */
+interface AssignmentError {
+  message: string;
+  until: number;
+}
+
 const MAX_TICKETS = 1000;
 
 export type TicketFilter = 'mine' | 'waiting' | 'internal';
@@ -29,6 +41,12 @@ export class TicketStore {
 
   /** Loading state */
   readonly loading = signal<boolean>(false);
+
+  /** Tickets currently being assigned (optimistic update in progress) */
+  readonly pendingAssignIds = signal<Set<number>>(new Set());
+
+  /** Assignment errors with auto-dismiss timestamps */
+  readonly assignmentErrors = signal<Map<number, AssignmentError>>(new Map());
 
   /** Reload trigger Subject — emitted when workspace changes */
   readonly reload$ = new Subject<void>();
@@ -145,11 +163,19 @@ export class TicketStore {
         const p = event.payload as TicketAssignedPayload;
         const existing = this.tickets().find(t => String(t.ticket_id) === String(p.ticketId));
         if (existing) {
+          // Only overwrite owner name when Mercure provides a real name.
+          // Otherwise keep the name from optimistic update (or existing owner).
+          const ownerName = p.assigneeName ?? existing.owner?.name ?? `Agent #${p.assigneeId}`;
+          // Implicit status transition: unassigned (new) → active on assignment
+          const wasUnassigned = existing.status === TicketStatus.New || existing.owner === null;
           this.addOrUpdateTicket({
             ...existing,
-            owner: { id: p.assigneeId, name: p.assigneeName ?? `Agent #${p.assigneeId}` },
+            owner: { id: p.assigneeId, name: ownerName },
+            status: wasUnassigned ? TicketStatus.Active : existing.status,
           });
         }
+        // Clear pending state when Mercure confirms assignment
+        this.clearPendingAssign(String(p.ticketId));
         // When a ticket is reassigned, clear the unread badge for the new owner
         if (String(event.ticketId)) {
           this.markAsRead(String(event.ticketId));
@@ -269,5 +295,114 @@ export class TicketStore {
     this.activeTicket.set(null);
     this.filter.set('mine');
     this.loading.set(false);
+    this.pendingAssignIds.set(new Set());
+    this.assignmentErrors.set(new Map());
+  }
+
+  /**
+   * Optimistic assignment: immediately update the ticket owner in the store.
+   *
+   * @param ticketId The ticket ID to assign
+   * @param agentId The agent ID to assign to
+   * @param agentName The agent name for display
+   * @returns The previous owner (for rollback)
+   */
+  optimisticAssign(ticketId: string, agentId: number, agentName: string): TicketOwner | null {
+    const ticketIdNum = parseInt(ticketId, 10);
+
+    // Add to pending set
+    this.pendingAssignIds.update(ids => {
+      const newSet = new Set(ids);
+      newSet.add(ticketIdNum);
+      return newSet;
+    });
+
+    // Find and update the ticket
+    const current = this.tickets();
+    const index = current.findIndex(t => String(t.ticket_id) === String(ticketId));
+    if (index < 0) {
+      return null;
+    }
+
+    const ticket = current[index];
+    const previousOwner = ticket.owner;
+
+    // Update ticket owner optimistically
+    this.addOrUpdateTicket({
+      ...ticket,
+      owner: { id: agentId, name: agentName },
+    });
+
+    return previousOwner;
+  }
+
+  /**
+   * Rollback optimistic assignment: restore the previous owner.
+   *
+   * @param ticketId The ticket ID to rollback
+   * @param previousOwner The previous owner to restore
+   */
+  rollbackAssign(ticketId: string, previousOwner: TicketOwner | null): void {
+    const ticketIdNum = parseInt(ticketId, 10);
+
+    // Remove from pending set
+    this.pendingAssignIds.update(ids => {
+      const newSet = new Set(ids);
+      newSet.delete(ticketIdNum);
+      return newSet;
+    });
+
+    // Restore previous owner
+    const current = this.tickets();
+    const index = current.findIndex(t => String(t.ticket_id) === String(ticketId));
+    if (index >= 0) {
+      this.addOrUpdateTicket({
+        ...current[index],
+        owner: previousOwner,
+      });
+    }
+  }
+
+  /**
+   * Record an assignment error with auto-dismiss after 5 seconds.
+   *
+   * @param ticketId The ticket ID that failed
+   * @param message The error message
+   */
+  assignmentError(ticketId: string, message: string): void {
+    const ticketIdNum = parseInt(ticketId, 10);
+    const until = Date.now() + 5000; // 5 seconds
+
+    this.assignmentErrors.update(errors => {
+      const newMap = new Map(errors);
+      newMap.set(ticketIdNum, { message, until });
+      return newMap;
+    });
+
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+      this.assignmentErrors.update(errors => {
+        const newMap = new Map(errors);
+        const error = newMap.get(ticketIdNum);
+        if (error && error.until <= Date.now()) {
+          newMap.delete(ticketIdNum);
+        }
+        return newMap;
+      });
+    }, 5000);
+  }
+
+  /**
+   * Clear pending state for a ticket (called when Mercure event confirms assignment).
+   *
+   * @param ticketId The ticket ID to clear
+   */
+  clearPendingAssign(ticketId: string): void {
+    const ticketIdNum = parseInt(ticketId, 10);
+    this.pendingAssignIds.update(ids => {
+      const newSet = new Set(ids);
+      newSet.delete(ticketIdNum);
+      return newSet;
+    });
   }
 }

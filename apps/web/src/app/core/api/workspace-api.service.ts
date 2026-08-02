@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { WorkspaceDTO, WorkspacePreferenceResponse } from '../dto/workspace.dto';
+import { AgentAvailabilityDTO } from '../dto/agent-availability.dto';
 import { PaginatedResponse } from './admin-api.service';
 
 /**
@@ -103,6 +104,13 @@ export class WorkspaceApiService {
     return this.http.put<{ workspace_id: number; agent_ids: number[] }>(
       `${this.baseUrl}/api/admin/workspaces/${id}/agents`,
       { agentIds }
+    );
+  }
+
+  /** GET /api/workspaces/{id}/available-agents — get agents available for assignment */
+  getAvailableAgents(workspaceId: number): Observable<AgentAvailabilityDTO[]> {
+    return this.http.get<AgentAvailabilityDTO[]>(
+      `${this.baseUrl}/api/workspaces/${workspaceId}/available-agents`
     );
   }
 }

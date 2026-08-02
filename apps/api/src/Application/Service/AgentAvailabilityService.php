@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Application\Service;
 
+use App\Application\DTO\AgentAvailabilityDTO;
 use App\Domain\Agent\Agent;
 use App\Domain\Agent\AgentShift;
 use App\Domain\Agent\AgentShiftRepository;
 use App\Domain\Ticket\TicketStatus;
+use App\Domain\Workspace\Workspace;
 use App\Repository\AgentRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -126,6 +128,72 @@ final class AgentAvailabilityService
 
         // Sort by id ASC (stable order)
         \usort($available, fn (Agent $a, Agent $b): int => $a->getId() <=> $b->getId());
+
+        return $available;
+    }
+
+    /**
+     * Return all available agents in a workspace at a given UTC moment.
+     *
+     * Uses the same cascade logic as listAvailableAgents() but scoped to a workspace.
+     * Returns AgentAvailabilityDTO[] with capacity information.
+     *
+     * @return AgentAvailabilityDTO[]
+     */
+    public function listAvailableAgentsInWorkspace(Workspace $workspace, \DateTimeImmutable $atUtc): array
+    {
+        // 1. Fetch active agents in workspace (1 query)
+        $agents = $this->agentRepository->findActiveByWorkspace($workspace);
+        if (empty($agents)) {
+            return [];
+        }
+
+        // 2. Batch-load shifts for all active agents (1 query, no N+1)
+        $agentIds = \array_map(fn (Agent $a): ?int => $a->getId(), $agents);
+        $allShifts = $this->agentShiftRepository->findByAgents(\array_filter($agentIds));
+
+        /** @var array<int, AgentShift[]> $shiftsByAgent */
+        $shiftsByAgent = [];
+        foreach ($allShifts as $shift) {
+            $agentId = $shift->getAgent()?->getId();
+            if ($agentId !== null) {
+                $shiftsByAgent[$agentId][] = $shift;
+            }
+        }
+
+        // 3+4. Apply cascade per agent and build DTOs
+        $available = [];
+        foreach ($agents as $agent) {
+            $agentId = $agent->getId();
+
+            // Override check
+            if ($agent->getIsAvailableOverride() !== null) {
+                if ($agent->getOverrideUntil() === null || $agent->getOverrideUntil() >= $atUtc) {
+                    if ($agent->getIsAvailableOverride()) {
+                        $activeCount = $this->countActiveTickets($agentId);
+                        $available[] = AgentAvailabilityDTO::fromEntity($agent, $activeCount);
+                    }
+                    continue;
+                }
+            }
+
+            // Schedule check (uses preloaded shifts — no lazy load)
+            $localTime = $this->utcToLocal($atUtc, $agent->getTimezone());
+            if (!$this->hasShiftAtTime($localTime, $shiftsByAgent[$agentId] ?? [])) {
+                continue;
+            }
+
+            // Capacity check
+            $activeCount = $this->countActiveTickets($agentId);
+            if ($activeCount >= $agent->getMaxActiveTickets()) {
+                continue;
+            }
+
+            $available[] = AgentAvailabilityDTO::fromEntity($agent, $activeCount);
+        }
+
+        // Sort by id ASC (stable order)
+        \usort($available, fn (AgentAvailabilityDTO $a, AgentAvailabilityDTO $b): int => $a->id <=> $b->id);
 
         return $available;
     }

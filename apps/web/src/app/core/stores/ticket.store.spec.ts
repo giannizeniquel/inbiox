@@ -253,4 +253,98 @@ describe('TicketStore', () => {
     store.setLoading(false);
     expect(store.loading()).toBeFalse();
   });
+
+  // ── optimisticAssign() ──
+
+  it('should optimistically update ticket owner', () => {
+    const ticket = makeTicket({ ticket_id: 't1', id: 't1', owner: { id: 1, name: 'Agent A' } });
+    store.loadTickets([ticket]);
+
+    const previousOwner = store.optimisticAssign('t1', 2, 'Agent B');
+
+    expect(previousOwner).toEqual({ id: 1, name: 'Agent A' });
+    expect(store.tickets()[0].owner).toEqual({ id: 2, name: 'Agent B' });
+    expect(store.pendingAssignIds().has(1)).toBeTrue();
+  });
+
+  it('should return null when ticket not found', () => {
+    const previousOwner = store.optimisticAssign('nonexistent', 2, 'Agent B');
+
+    expect(previousOwner).toBeNull();
+  });
+
+  // ── rollbackAssign() ──
+
+  it('should rollback to previous owner', () => {
+    const ticket = makeTicket({ ticket_id: 't1', id: 't1', owner: { id: 1, name: 'Agent A' } });
+    store.loadTickets([ticket]);
+
+    store.optimisticAssign('t1', 2, 'Agent B');
+    store.rollbackAssign('t1', { id: 1, name: 'Agent A' });
+
+    expect(store.tickets()[0].owner).toEqual({ id: 1, name: 'Agent A' });
+    expect(store.pendingAssignIds().has(1)).toBeFalse();
+  });
+
+  it('should handle rollback with null previous owner', () => {
+    const ticket = makeTicket({ ticket_id: 't1', id: 't1', owner: null });
+    store.loadTickets([ticket]);
+
+    store.optimisticAssign('t1', 2, 'Agent B');
+    store.rollbackAssign('t1', null);
+
+    expect(store.tickets()[0].owner).toBeNull();
+  });
+
+  // ── assignmentError() ──
+
+  it('should record assignment error', () => {
+    store.assignmentError('t1', 'Assignment failed');
+
+    const errors = store.assignmentErrors();
+    expect(errors.has(1)).toBeTrue();
+    expect(errors.get(1)?.message).toBe('Assignment failed');
+    expect(errors.get(1)?.until).toBeGreaterThan(Date.now());
+  });
+
+  it('should auto-dismiss error after 5 seconds', (done) => {
+    jasmine.clock().install();
+    store.assignmentError('t1', 'Assignment failed');
+
+    expect(store.assignmentErrors().has(1)).toBeTrue();
+
+    jasmine.clock().tick(5001);
+
+    expect(store.assignmentErrors().has(1)).toBeFalse();
+
+    jasmine.clock().uninstall();
+    done();
+  });
+
+  // ── clearPendingAssign() ──
+
+  it('should clear pending state', () => {
+    const ticket = makeTicket({ ticket_id: 't1', id: 't1' });
+    store.loadTickets([ticket]);
+
+    store.optimisticAssign('t1', 2, 'Agent B');
+    expect(store.pendingAssignIds().has(1)).toBeTrue();
+
+    store.clearPendingAssign('t1');
+    expect(store.pendingAssignIds().has(1)).toBeFalse();
+  });
+
+  // ── reset() clears assignment state ──
+
+  it('should clear assignment state on reset', () => {
+    const ticket = makeTicket({ ticket_id: 't1', id: 't1' });
+    store.loadTickets([ticket]);
+    store.optimisticAssign('t1', 2, 'Agent B');
+    store.assignmentError('t1', 'Error');
+
+    store.reset();
+
+    expect(store.pendingAssignIds().size).toBe(0);
+    expect(store.assignmentErrors().size).toBe(0);
+  });
 });

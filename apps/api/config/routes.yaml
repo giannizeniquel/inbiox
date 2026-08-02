@@ -204,6 +204,13 @@ app_me_workspaces:
     methods: [GET]
     controller: App\Controller\MeController::listMyWorkspaces
 
+# ── Workspace Available Agents ──
+
+app_workspace_available_agents:
+    path: /api/workspaces/{id}/available-agents
+    methods: [GET]
+    controller: App\Controller\WorkspaceAgentController::listAvailableAgents
+
 # ── Admin Workspace Management ──
 
 app_admin_workspaces_list:

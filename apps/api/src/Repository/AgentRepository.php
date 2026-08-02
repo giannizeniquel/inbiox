@@ -41,4 +41,21 @@ class AgentRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * Find active agents in a workspace.
+     *
+     * @return Agent[]
+     */
+    public function findActiveByWorkspace(Workspace $workspace): array
+    {
+        return $this->createQueryBuilder('a')
+            ->innerJoin('a.workspaces', 'w')
+            ->where('w.id = :workspaceId')
+            ->andWhere('a.active = true')
+            ->setParameter('workspaceId', $workspace->getId())
+            ->orderBy('a.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }

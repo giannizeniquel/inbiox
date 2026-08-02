@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Security\Voter;
 
 use App\Domain\Ticket\Ticket;
+use App\Domain\Ticket\TicketStatus;
 use App\Domain\User\User;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
@@ -48,6 +49,19 @@ final class TicketVoter extends Voter
             return false;
         }
 
+        /** @var Ticket $ticket */
+        $ticket = $subject;
+
+        // For ASSIGN attribute, reject resolved/closed tickets with 409
+        if ($attribute === self::ASSIGN) {
+            $status = $ticket->getStatus();
+            if ($status === TicketStatus::RESOLVED->value || $status === TicketStatus::CLOSED->value) {
+                throw new \App\Exception\StateConflictException(
+                    \sprintf('Cannot assign ticket in "%s" state', $status)
+                );
+            }
+        }
+
         // ADMIN and SUPERVISOR can do everything on tickets
         if ($this->security->isGranted('ROLE_SUPERVISOR')) {
             return true;
@@ -60,9 +74,6 @@ final class TicketVoter extends Voter
             if (null === $agent) {
                 return false; // R1: no linked agent → 403
             }
-
-            /** @var Ticket $ticket */
-            $ticket = $subject;
 
             // R2: unassigned tickets are not visible to AGENT
             if (null === $ticket->getAssignedAgentId()) {

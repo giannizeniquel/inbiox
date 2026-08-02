@@ -38,6 +38,6 @@ final readonly class EventTypeMapper
     public function isTicketAssigned(string $phpClassName, array $payload): bool
     {
         return $phpClassName === \App\Domain\Event\TicketUpdatedEvent::class
-            && isset($payload['assignee_id']);
+            && (isset($payload['assignee_id']) || isset($payload['ownerAgentId']));
     }
 }

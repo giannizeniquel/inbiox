@@ -108,6 +108,7 @@ class AssignTicketUseCase
                 'assignment_id' => $assignment->getId(),
                 'ticket_id' => $ticket->getId(),
                 'agent_id' => $assignment->getAgentId(),
+                'agent_name' => $agent->getName(),
                 'assigned_by' => $assignment->getAssignedBy(),
                 'assigned_at' => $assignment->getAssignedAt()->format('Y-m-d H:i:s'),
                 'ticket_status' => $ticket->getStatus(),

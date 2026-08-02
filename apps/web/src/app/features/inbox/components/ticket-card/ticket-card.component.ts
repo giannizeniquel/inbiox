@@ -1,6 +1,7 @@
-import { Component, ChangeDetectionStrategy, input, output, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, computed, signal, ElementRef, inject, HostListener, OnDestroy } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { Ticket, TicketStatus } from '../../../../core/models/ticket.model';
+import { AgentAvailabilityDTO } from '../../../../core/dto/agent-availability.dto';
 
 const STATUS_LABELS: Record<TicketStatus, string> = {
   [TicketStatus.New]: 'Nuevo',
@@ -18,11 +19,38 @@ const STATUS_LABELS: Record<TicketStatus, string> = {
   styleUrl: './ticket-card.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TicketCardComponent {
+export class TicketCardComponent implements OnDestroy {
+  private readonly el = inject(ElementRef);
+
   readonly ticket = input.required<Ticket>();
   readonly isActive = input<boolean>(false);
+  readonly availableAgents = input<AgentAvailabilityDTO[]>([]);
+  readonly canAssign = input<boolean>(false);
 
   readonly select = output<string>(); // emits ticketId
+  readonly assign = output<{ ticketId: string; agentId: number }>(); // emits assignment
+
+  /** Dropdown open state */
+  readonly dropdownOpen = signal(false);
+
+  /** Dropdown position */
+  readonly dropdownTop = signal(0);
+  readonly dropdownLeft = signal(0);
+
+  /** Error badge from parent */
+  readonly assignmentError = input<string | null>(null);
+
+  /** Whether the dropdown should be shown */
+  readonly showDropdown = computed(() => {
+    const t = this.ticket();
+    const agents = this.availableAgents();
+    const assignableStatuses: TicketStatus[] = [
+      TicketStatus.New,
+      TicketStatus.Active,
+      TicketStatus.Waiting,
+    ];
+    return this.canAssign() && assignableStatuses.includes(t.status) && agents.length > 0;
+  });
 
   statusLabel(): string {
     return STATUS_LABELS[this.ticket().status];
@@ -69,6 +97,54 @@ export class TicketCardComponent {
   }
 
   onSelect(): void {
-    this.select.emit(this.ticket().ticket_id);
+    if (!this.dropdownOpen()) {
+      this.select.emit(this.ticket().ticket_id);
+    }
+  }
+
+  toggleDropdown(event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+
+    if (this.dropdownOpen()) {
+      this.closeDropdown();
+      return;
+    }
+
+    // Calculate position relative to the card
+    const cardEl = this.el.nativeElement;
+    const rect = cardEl.getBoundingClientRect();
+    this.dropdownTop.set(rect.bottom + 4);
+    this.dropdownLeft.set(rect.left);
+    this.dropdownOpen.set(true);
+  }
+
+  selectAgent(agent: AgentAvailabilityDTO, event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+    this.assign.emit({ ticketId: this.ticket().ticket_id, agentId: agent.id });
+    this.closeDropdown();
+  }
+
+  closeDropdown(): void {
+    this.dropdownOpen.set(false);
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event): void {
+    if (this.dropdownOpen()) {
+      this.closeDropdown();
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.dropdownOpen()) {
+      this.closeDropdown();
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.closeDropdown();
   }
 }

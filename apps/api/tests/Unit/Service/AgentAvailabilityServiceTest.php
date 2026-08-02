@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Service;
 
+use App\Application\DTO\AgentAvailabilityDTO;
 use App\Application\Service\AgentAvailabilityService;
 use App\Domain\Agent\Agent;
 use App\Domain\Agent\AgentShift;
 use App\Domain\Agent\AgentShiftRepository;
 use App\Domain\Ticket\TicketStatus;
+use App\Domain\Workspace\Workspace;
 use App\Repository\AgentRepository;
 use Doctrine\ORM\AbstractQuery;
 use Doctrine\ORM\EntityManagerInterface;
@@ -1136,5 +1138,205 @@ class AgentAvailabilityServiceTest extends TestCase
         );
 
         self::assertFalse($result);
+    }
+
+    // ────────────────────────────────────────────────────────────
+    //  listAvailableAgentsInWorkspace
+    // ────────────────────────────────────────────────────────────
+
+    public function testListAvailableAgentsInWorkspaceReturnsEmptyWhenNoActive(): void
+    {
+        $workspace = $this->createMock(Workspace::class);
+        $workspace->method('getId')->willReturn(1);
+
+        $this->agentRepository->expects(self::once())
+            ->method('findActiveByWorkspace')
+            ->with($workspace)
+            ->willReturn([]);
+
+        $result = $this->service->listAvailableAgentsInWorkspace(
+            $workspace,
+            new \DateTimeImmutable('now'),
+        );
+
+        self::assertSame([], $result);
+    }
+
+    public function testListAvailableAgentsInWorkspaceFiltersBySchedule(): void
+    {
+        $workspace = $this->createMock(Workspace::class);
+        $workspace->method('getId')->willReturn(1);
+
+        // GIVEN two active agents in workspace, one in shift, one out
+        $agentInShift = $this->createAgent(id: 1);
+        $this->createShift($agentInShift, 1, '08:00', '16:00');
+
+        $agentOutShift = $this->createAgent(id: 2);
+        $this->createShift($agentOutShift, 2, '08:00', '16:00'); // Tuesday, not Monday
+
+        $this->agentRepository->expects(self::once())
+            ->method('findActiveByWorkspace')
+            ->with($workspace)
+            ->willReturn([$agentInShift, $agentOutShift]);
+
+        // Batch-load shifts
+        $this->agentShiftRepository->expects(self::once())
+            ->method('findByAgents')
+            ->with([1, 2])
+            ->willReturn(\array_merge(
+                $agentInShift->getShifts()->toArray(),
+                $agentOutShift->getShifts()->toArray(),
+            ));
+
+        $this->expectActiveTicketCount(1, 2);
+
+        $result = $this->service->listAvailableAgentsInWorkspace(
+            $workspace,
+            $this->utcDateTime('2026-06-15', '12:00'), // Monday 12:00 UTC
+        );
+
+        self::assertCount(1, $result);
+        self::assertSame(1, $result[0]->id);
+    }
+
+    public function testListAvailableAgentsInWorkspaceFiltersByCapacity(): void
+    {
+        $workspace = $this->createMock(Workspace::class);
+        $workspace->method('getId')->willReturn(1);
+
+        // GIVEN two agents in workspace, both in shift, one at capacity
+        $agentFree = $this->createAgent(id: 1, maxActiveTickets: 5);
+        $this->createShift($agentFree, 1, '08:00', '16:00');
+
+        $agentFull = $this->createAgent(id: 2, maxActiveTickets: 5);
+        $this->createShift($agentFull, 1, '08:00', '16:00');
+
+        $this->agentRepository->expects(self::once())
+            ->method('findActiveByWorkspace')
+            ->with($workspace)
+            ->willReturn([$agentFree, $agentFull]);
+
+        $this->agentShiftRepository->expects(self::once())
+            ->method('findByAgents')
+            ->with([1, 2])
+            ->willReturn(\array_merge(
+                $agentFree->getShifts()->toArray(),
+                $agentFull->getShifts()->toArray(),
+            ));
+
+        // Both COUNT queries will be called
+        $queryFree = $this->createMock(Query::class);
+        $queryFree->expects(self::once())
+            ->method('getSingleScalarResult')
+            ->willReturn('3'); // 3 < 5: available
+        $queryFree->expects(self::exactly(2))
+            ->method('setParameter')
+            ->willReturnSelf();
+
+        $queryFull = $this->createMock(Query::class);
+        $queryFull->expects(self::once())
+            ->method('getSingleScalarResult')
+            ->willReturn('5'); // 5 >= 5: full
+        $queryFull->expects(self::exactly(2))
+            ->method('setParameter')
+            ->willReturnSelf();
+
+        $this->entityManager->expects(self::exactly(2))
+            ->method('createQuery')
+            ->with(self::stringContains('COUNT(t.id)'))
+            ->willReturnOnConsecutiveCalls($queryFree, $queryFull);
+
+        $result = $this->service->listAvailableAgentsInWorkspace(
+            $workspace,
+            $this->utcDateTime('2026-06-15', '12:00'), // Monday 12:00 UTC
+        );
+
+        self::assertCount(1, $result);
+        self::assertSame(1, $result[0]->id);
+    }
+
+    public function testListAvailableAgentsInWorkspaceReturnsDtos(): void
+    {
+        $workspace = $this->createMock(Workspace::class);
+        $workspace->method('getId')->willReturn(1);
+
+        $agent = $this->createAgent(id: 1, maxActiveTickets: 5);
+        $this->createShift($agent, 1, '08:00', '16:00');
+
+        $this->agentRepository->expects(self::once())
+            ->method('findActiveByWorkspace')
+            ->with($workspace)
+            ->willReturn([$agent]);
+
+        $this->agentShiftRepository->expects(self::once())
+            ->method('findByAgents')
+            ->with([1])
+            ->willReturn($agent->getShifts()->toArray());
+
+        $this->expectActiveTicketCount(1, 2);
+
+        $result = $this->service->listAvailableAgentsInWorkspace(
+            $workspace,
+            $this->utcDateTime('2026-06-15', '12:00'),
+        );
+
+        self::assertCount(1, $result);
+        self::assertInstanceOf(AgentAvailabilityDTO::class, $result[0]);
+        self::assertSame(1, $result[0]->id);
+        self::assertSame('Agent-1', $result[0]->name);
+        self::assertTrue($result[0]->isAvailable);
+        self::assertSame(2, $result[0]->activeTicketCount);
+        self::assertSame(5, $result[0]->maxActiveTickets);
+    }
+
+    public function testListAvailableAgentsInWorkspaceSortedById(): void
+    {
+        $workspace = $this->createMock(Workspace::class);
+        $workspace->method('getId')->willReturn(1);
+
+        // GIVEN three agents in workspace, all available
+        $agent3 = $this->createAgent(id: 3);
+        $this->createShift($agent3, 1, '08:00', '16:00');
+        $agent1 = $this->createAgent(id: 1);
+        $this->createShift($agent1, 1, '08:00', '16:00');
+        $agent2 = $this->createAgent(id: 2);
+        $this->createShift($agent2, 1, '08:00', '16:00');
+
+        // findActiveByWorkspace returns them in arbitrary order (3, 1, 2)
+        $this->agentRepository->expects(self::once())
+            ->method('findActiveByWorkspace')
+            ->with($workspace)
+            ->willReturn([$agent3, $agent1, $agent2]);
+
+        $this->agentShiftRepository->expects(self::once())
+            ->method('findByAgents')
+            ->with([3, 1, 2])
+            ->willReturn(\array_merge(
+                $agent3->getShifts()->toArray(),
+                $agent1->getShifts()->toArray(),
+                $agent2->getShifts()->toArray(),
+            ));
+
+        // Each agent's count query
+        $this->entityManager->expects(self::exactly(3))
+            ->method('createQuery')
+            ->with(self::stringContains('COUNT(t.id)'))
+            ->willReturnCallback(function () {
+                $q = $this->createMock(Query::class);
+                $q->expects(self::once())->method('getSingleScalarResult')->willReturn('0');
+                $q->expects(self::exactly(2))->method('setParameter')->willReturnSelf();
+                return $q;
+            });
+
+        $result = $this->service->listAvailableAgentsInWorkspace(
+            $workspace,
+            $this->utcDateTime('2026-06-15', '12:00'),
+        );
+
+        // Result must be sorted by id ASC
+        self::assertCount(3, $result);
+        self::assertSame(1, $result[0]->id);
+        self::assertSame(2, $result[1]->id);
+        self::assertSame(3, $result[2]->id);
     }
 }

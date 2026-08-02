@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Application\UseCase\AssignTicketUseCase;
+use App\Exception\StateConflictException;
 use App\Repository\AssignmentRepository;
 use App\Repository\TicketRepository;
 use Psr\Log\LoggerInterface;
+use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Annotation\Route;
@@ -20,7 +22,8 @@ class TicketController
         private AssignTicketUseCase $assignTicketUseCase,
         private TicketRepository $ticketRepo,
         private AssignmentRepository $assignmentRepo,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
+        private Security $security,
     ) {}
 
     #[Route('/tickets/{id}/assign', methods: ['POST'])]
@@ -29,6 +32,17 @@ class TicketController
         #[MapRequestPayload] AssignTicketRequest $request
     ): JsonResponse {
         try {
+            // Load ticket for voter check
+            $ticket = $this->ticketRepo->findById($id);
+            if (!$ticket) {
+                return new JsonResponse(['error' => 'Ticket not found'], 404);
+            }
+
+            // Check ASSIGN permission via voter
+            if (!$this->security->isGranted('ASSIGN', $ticket)) {
+                return new JsonResponse(['error' => 'Forbidden'], 403);
+            }
+
             $result = $this->assignTicketUseCase->assignTicket(
                 $id,
                 $request->agentId,
@@ -36,6 +50,8 @@ class TicketController
                 $request->notes
             );
             return new JsonResponse($result);
+        } catch (StateConflictException $e) {
+            return new JsonResponse(['error' => $e->getMessage()], 409);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
         } catch (\Exception $e) {

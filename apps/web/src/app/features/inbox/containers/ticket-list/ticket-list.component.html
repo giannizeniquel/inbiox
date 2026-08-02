@@ -34,8 +34,12 @@
         <app-ticket-card
           [ticket]="ticket"
           [isActive]="selectedTicketId() === ticket.ticket_id"
+          [availableAgents]="availableAgents()"
+          [canAssign]="canAssignTicket(ticket)"
+          [assignmentError]="ticketStore.assignmentErrors().get(+ticket.ticket_id)?.message ?? null"
           [class.focused]="coordinator().isFocused(ticket.ticket_id)"
           (select)="selectTicket(ticket)"
+          (assign)="onAssign($event)"
           (mouseenter)="coordinator().onCardFocus($index)"
         />
       }
