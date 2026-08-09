@@ -55,6 +55,7 @@
     </div>
   </header>
 
+  <!-- ═══ Group A: KPIs ═══ -->
   <section class="kpi-grid">
     <app-response-time-card
       [value]="frtValue()"
@@ -75,6 +76,49 @@
     />
   </section>
 
+  <!-- ═══ Group B: Operational ═══ -->
+  <section class="section-group">
+    <h2 class="section-group__title">Operación en tiempo real</h2>
+    <div class="section-group__grid">
+      <app-agent-load-card
+        [data]="agentLoadData()"
+        [loading]="agentLoadLoading()"
+      />
+      <app-unassigned-card
+        [data]="unassignedData()"
+        [loading]="unassignedLoading()"
+      />
+      <app-available-agents-card
+        [data]="availableAgentsData()"
+        [loading]="availableAgentsLoading()"
+      />
+      <app-frt-trend-card
+        [data]="frtTrendData()"
+        [loading]="frtTrendLoading()"
+      />
+    </div>
+  </section>
+
+  <!-- ═══ Group C: Detail ═══ -->
+  <section class="section-group">
+    <h2 class="section-group__title">Detalle y patrones</h2>
+    <div class="section-group__grid">
+      <app-heatmap-card
+        [data]="heatmapData()"
+        [loading]="heatmapLoading()"
+      />
+      <app-recurring-card
+        [data]="recurringData()"
+        [loading]="recurringLoading()"
+      />
+      <app-reopened-card
+        [data]="reopenedData()"
+        [loading]="reopenedLoading()"
+      />
+    </div>
+  </section>
+
+  <!-- ═══ Group A: Agents ═══ -->
   <section class="agents-section">
     <h2 class="agents-section__title">Rendimiento de agentes</h2>
     <app-agent-leaderboard

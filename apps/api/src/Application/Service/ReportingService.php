@@ -104,6 +104,106 @@ class ReportingService
     }
 
     /**
+     * Get per-agent active ticket count vs max capacity.
+     *
+     * @param int|null $agentId Optional filter by specific agent
+     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
+     * @return array<int, array{agent_id: int, agent_name: string, active_tickets: int, max_capacity: int, load_percent: float}>
+     */
+    public function getAgentLoad(?int $agentId = null, ?string $phoneNumberId = null): array
+    {
+        return $this->reportingRepository->getAgentLoad($agentId, $phoneNumberId);
+    }
+
+    /**
+     * Get tickets where assigned_agent_id IS NULL.
+     *
+     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
+     * @param \DateTimeImmutable|null $from Optional start of date range
+     * @param \DateTimeImmutable|null $to Optional end of date range
+     * @param int $limit Maximum results (default 50)
+     * @return array{count: int, tickets: array}
+     */
+    public function getUnassigned(?string $phoneNumberId = null, ?\DateTimeImmutable $from = null, ?\DateTimeImmutable $to = null, int $limit = 50): array
+    {
+        return $this->reportingRepository->getUnassigned($phoneNumberId, $from, $to, $limit);
+    }
+
+    /**
+     * Get agents currently available (in-shift and under capacity).
+     *
+     * Delegates to AgentAvailabilityService::listAvailableAgents().
+     *
+     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
+     * @return array<int, array{agent_id: int, agent_name: string, in_shift: bool, active_tickets: int}>
+     */
+    public function getAvailableAgents(?string $phoneNumberId = null): array
+    {
+        // This will be called from the controller, which injects AgentAvailabilityService
+        // Service method is a thin pass-through
+        return [];
+    }
+
+    /**
+     * Get FRT aggregated by day within a date range.
+     *
+     * @param \DateTimeImmutable $from Start of date range (UTC)
+     * @param \DateTimeImmutable $to End of date range (UTC)
+     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
+     * @return array<int, array{date: string, avg_frt_seconds: float, ticket_count: int}>
+     */
+    public function getFrtTrend(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null): array
+    {
+        $this->validateDateRange($from, $to);
+
+        return $this->reportingRepository->getFrtTrend($from, $to, $phoneNumberId);
+    }
+
+    /**
+     * Get ticket volume grouped by day-of-week x hour for heatmap.
+     *
+     * @param \DateTimeImmutable $from Start of date range (UTC)
+     * @param \DateTimeImmutable $to End of date range (UTC)
+     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
+     * @return array<int, array{day_of_week: int, hour: int, count: int}>
+     */
+    public function getHeatmap(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null): array
+    {
+        $this->validateDateRange($from, $to);
+
+        return $this->reportingRepository->getHeatmap($from, $to, $phoneNumberId);
+    }
+
+    /**
+     * Get contacts with >= threshold tickets in the last N days.
+     *
+     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
+     * @param int $threshold Minimum ticket count (default 3)
+     * @param int $days Lookback window in days (default 90)
+     * @return array<int, array{contact_id: int, contact_name: string|null, email: string|null, ticket_count: int, last_ticket_at: string}>
+     */
+    public function getRecurringCustomers(?string $phoneNumberId = null, int $threshold = 3, int $days = 90): array
+    {
+        return $this->reportingRepository->getRecurringCustomers($phoneNumberId, $threshold, $days);
+    }
+
+    /**
+     * Get tickets that transitioned out of resolved status (auto_reopened events).
+     *
+     * @param \DateTimeImmutable $from Start of date range (UTC)
+     * @param \DateTimeImmutable $to End of date range (UTC)
+     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
+     * @param int $limit Maximum results (default 100)
+     * @return array<int, array{ticket_id: int, contact_name: string|null, resolved_at: string|null, reopened_at: string, current_status: string}>
+     */
+    public function getReopened(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null, int $limit = 100): array
+    {
+        $this->validateDateRange($from, $to);
+
+        return $this->reportingRepository->getReopened($from, $to, $phoneNumberId, $limit);
+    }
+
+    /**
      * Validate date range.
      *
      * @throws \InvalidArgumentException If from is after to

@@ -17,6 +17,7 @@ describe('AuthStore', () => {
     email: 'admin@inbiox.com',
     roles: ['ROLE_ADMIN', 'ROLE_USER'],
     agent_id: 1,
+    agent_name: 'Admin Agent',
     is_active: true,
   };
 
