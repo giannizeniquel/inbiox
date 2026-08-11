@@ -3,9 +3,9 @@
 @include kpi-card(var(--color-primary, #3b82f6), $skeleton-width: 80px);
 
 .kpi-card {
-  // VolumeTrend adds bottom margin to the value area
   &__value {
-    margin-bottom: 16px;
+    margin-top: auto;
+    margin-bottom: 8px;
   }
 
   &__chart {
@@ -14,6 +14,7 @@
     justify-content: space-between;
     height: 60px;
     gap: 4px;
+    margin-bottom: auto;
   }
 
   &__bar-container {

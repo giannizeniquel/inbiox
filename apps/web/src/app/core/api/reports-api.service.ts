@@ -2,7 +2,14 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { TimeFilterParams } from '../dto/reports.params';
+import {
+  TimeFilterParams,
+  AgentLoadParams,
+  UnassignedParams,
+  FrtTrendParams,
+  HeatmapParams,
+  RecurringParams,
+} from '../dto/reports.params';
 
 /** Backend response for GET /api/reports/frt */
 export interface FirstResponseTimeResponse {
@@ -47,6 +54,68 @@ export interface AgentMetricsResponse {
   agents: AgentMetricsData[];
 }
 
+// ── Reporting v2 response interfaces ──
+
+/** Backend response for GET /api/reports/agent-load */
+export interface AgentLoadEntry {
+  agent_id: number;
+  agent_name: string;
+  active_tickets: number;
+  max_capacity: number;
+  load_percent: number;
+}
+
+/** Backend response for GET /api/reports/unassigned */
+export interface UnassignedResponse {
+  count: number;
+  tickets: Array<{
+    id: number;
+    contact_name: string | null;
+    created_at: string;
+    priority: string;
+  }>;
+}
+
+/** Backend response for GET /api/reports/available-agents */
+export interface AvailableAgentEntry {
+  agent_id: number;
+  agent_name: string;
+  in_shift: boolean;
+  active_tickets: number;
+}
+
+/** Backend response for GET /api/reports/frt-trend */
+export interface FrtTrendPoint {
+  date: string;
+  avg_frt_seconds: number;
+  ticket_count: number;
+}
+
+/** Backend response for GET /api/reports/heatmap */
+export interface HeatmapCell {
+  day_of_week: number;
+  hour: number;
+  count: number;
+}
+
+/** Backend response for GET /api/reports/recurring-customers */
+export interface RecurringEntry {
+  contact_id: number;
+  contact_name: string | null;
+  email: string | null;
+  ticket_count: number;
+  last_ticket_at: string;
+}
+
+/** Backend response for GET /api/reports/reopened */
+export interface ReopenedEntry {
+  ticket_id: number;
+  contact_name: string | null;
+  resolved_at: string | null;
+  reopened_at: string;
+  current_status: string;
+}
+
 /**
  * ReportsApiService — HTTP client for reports endpoints.
  */
@@ -75,6 +144,8 @@ export class ReportsApiService {
     return httpParams;
   }
 
+  // ── Existing methods ──
+
   getFirstResponseTime(params?: TimeFilterParams): Observable<FirstResponseTimeResponse> {
     return this.http.get<FirstResponseTimeResponse>(`${this.baseUrl}/api/reports/frt`, {
       params: this.buildParams(params),
@@ -101,6 +172,70 @@ export class ReportsApiService {
 
   getAgentMetrics(params?: TimeFilterParams): Observable<AgentMetricsResponse> {
     return this.http.get<AgentMetricsResponse>(`${this.baseUrl}/api/reports/agents`, {
+      params: this.buildParams(params),
+    });
+  }
+
+  // ── Reporting v2 methods ──
+
+  /** GET /api/reports/agent-load */
+  getAgentLoad(params?: AgentLoadParams): Observable<AgentLoadEntry[]> {
+    let httpParams = new HttpParams();
+    if (params?.agentId) {
+      httpParams = httpParams.set('agent_id', String(params.agentId));
+    }
+    return this.http.get<AgentLoadEntry[]>(`${this.baseUrl}/api/reports/agent-load`, {
+      params: httpParams,
+    });
+  }
+
+  /** GET /api/reports/unassigned */
+  getUnassigned(params?: UnassignedParams): Observable<UnassignedResponse> {
+    let httpParams = this.buildParams(params);
+    if (params?.phoneNumberId) {
+      httpParams = httpParams.set('phone_number_id', params.phoneNumberId);
+    }
+    return this.http.get<UnassignedResponse>(`${this.baseUrl}/api/reports/unassigned`, {
+      params: httpParams,
+    });
+  }
+
+  /** GET /api/reports/available-agents */
+  getAvailableAgents(): Observable<AvailableAgentEntry[]> {
+    return this.http.get<AvailableAgentEntry[]>(`${this.baseUrl}/api/reports/available-agents`);
+  }
+
+  /** GET /api/reports/frt-trend */
+  getFrtTrend(params?: FrtTrendParams): Observable<FrtTrendPoint[]> {
+    return this.http.get<FrtTrendPoint[]>(`${this.baseUrl}/api/reports/frt-trend`, {
+      params: this.buildParams(params),
+    });
+  }
+
+  /** GET /api/reports/heatmap */
+  getHeatmap(params?: HeatmapParams): Observable<HeatmapCell[]> {
+    return this.http.get<HeatmapCell[]>(`${this.baseUrl}/api/reports/heatmap`, {
+      params: this.buildParams(params),
+    });
+  }
+
+  /** GET /api/reports/recurring-customers */
+  getRecurringCustomers(params?: RecurringParams): Observable<RecurringEntry[]> {
+    let httpParams = new HttpParams();
+    if (params?.phoneNumberId) {
+      httpParams = httpParams.set('phone_number_id', params.phoneNumberId);
+    }
+    if (params?.threshold) {
+      httpParams = httpParams.set('threshold', String(params.threshold));
+    }
+    return this.http.get<RecurringEntry[]>(`${this.baseUrl}/api/reports/recurring-customers`, {
+      params: httpParams,
+    });
+  }
+
+  /** GET /api/reports/reopened */
+  getReopened(params?: TimeFilterParams): Observable<ReopenedEntry[]> {
+    return this.http.get<ReopenedEntry[]>(`${this.baseUrl}/api/reports/reopened`, {
       params: this.buildParams(params),
     });
   }

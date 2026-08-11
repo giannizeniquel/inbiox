@@ -1,8 +1,9 @@
 # Inbiox
 
-**Inbiox** is a customer support operations platform that centralizes conversations, automates workflows, and enables teams to work efficiently from a unified inbox.
+**Inbiox** is a Customer Operations Intelligence platform that centralizes conversations, automates workflows, predicts operational issues, and enables teams to work efficiently from a unified inbox.
 
 > **Tagline:** All your support, in one inbox.
+> **Vision:** El inbox que no solo gestiona tu equipo de soporte; aprende cómo funciona tu operación, anticipa los problemas y actúa para resolverlos.
 
 ---
 
@@ -24,9 +25,10 @@ Inbiox is designed to replace fragmented support tools (e.g. chatbot platforms, 
 This repository is organized into clearly separated domains:
 
 ### 📦 Product
-- [`01_product/vision.md`](./01_product/vision.md)
-- [`01_product/posicionamiento.md`](./01_product/posicionamiento.md)
-- [`01_product/justificacion_especificacion.md`](./01_product/justificacion_especificacion.md)
+- [`01_product/vision.md`](./01_product/vision.md) — Visión de producto: Customer Operations Intelligence
+- [`01_product/posicionamiento.md`](./01_product/posicionamiento.md) — Posicionamiento frente al mercado
+- [`01_product/roadmap.md`](./01_product/roadmap.md) — Plan de sprints MVP + post-MVP (Autopilot)
+- [`01_product/0-junstificacion-especificacion.md`](./01_product/0-junstificacion-especificacion.md) — Justificación original del proyecto
 
 ---
 
@@ -82,16 +84,18 @@ This repository is organized into clearly separated domains:
 
 ## 🧪 Development Status
 
-Current phase: **MVP**
+Current phase: **MVP — Sprint 11A/11B/12** (Angular Inbox + Realtime + Provider Abstraction)
 
 Core system includes:
 
 - Ticket lifecycle (FSM)
-- Assignment engine
+- Assignment engine with capacity + timezone-awareness
 - Automation rules
 - Reporting (SLA + metrics)
-- Realtime updates (Mercure)
+- Realtime updates (Mercure SSE)
 - Agent management (shifts + availability)
+
+Next: Intelligence Foundation + Copilot (post-MVP, Sprints 13+)
 
 ---
 
@@ -108,8 +112,14 @@ Core system includes:
 
 ## 🚧 Future Scope
 
+- **Intelligence Foundation** — Conversation signals (intent, sentiment, complexity)
+- **Agent Copilot** — Summary, suggested replies, next-action recommendations
+- **Policy Engine** — IF/THEN rules between AI interpretation and domain execution
+- **Predictive Operations** — SLA prediction, predictive assignment, load forecasting
+- **Autopilot** — Progressive autonomy (Assist → Guarded → Autopilot)
+- **Operational Digital Twin** — "What if" simulation and staffing recommendations
 - Advanced SLA (priorities, deadlines)
-- Multi-channel support (email, webchat)
+- Multi-channel support (email, webchat, Telegram, Instagram)
 - Skill-based routing
 - SaaS multi-tenant architecture
 - Billing system

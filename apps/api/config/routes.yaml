@@ -72,6 +72,41 @@ app_report_agents:
     methods: [GET]
     controller: App\Controller\ReportingController::agents
 
+app_report_agent_load:
+    path: /api/reports/agent-load
+    methods: [GET]
+    controller: App\Controller\ReportingController::agentLoad
+
+app_report_unassigned:
+    path: /api/reports/unassigned
+    methods: [GET]
+    controller: App\Controller\ReportingController::unassigned
+
+app_report_available_agents:
+    path: /api/reports/available-agents
+    methods: [GET]
+    controller: App\Controller\ReportingController::availableAgents
+
+app_report_frt_trend:
+    path: /api/reports/frt-trend
+    methods: [GET]
+    controller: App\Controller\ReportingController::frtTrend
+
+app_report_heatmap:
+    path: /api/reports/heatmap
+    methods: [GET]
+    controller: App\Controller\ReportingController::heatmap
+
+app_report_recurring:
+    path: /api/reports/recurring-customers
+    methods: [GET]
+    controller: App\Controller\ReportingController::recurringCustomers
+
+app_report_reopened:
+    path: /api/reports/reopened
+    methods: [GET]
+    controller: App\Controller\ReportingController::reopened
+
 app_debug_inbound:
     path: /debug/inbound/{ticketId}
     methods: [POST]

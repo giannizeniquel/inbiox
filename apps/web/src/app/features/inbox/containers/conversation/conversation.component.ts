@@ -15,6 +15,7 @@ import { ConversationEmptyComponent } from '../../components/conversation-empty/
 import { ConversationLoadingComponent } from '../../components/conversation-loading/conversation-loading.component';
 import { NewMessagesIndicatorComponent } from '../../components/new-messages-indicator/new-messages-indicator.component';
 import { BannerWarningComponent } from '../../../../shared/components/banner-warning/banner-warning.component';
+import { ConversationSkeletonComponent } from '../../components/conversation-skeleton/conversation-skeleton.component';
 import { MessageSenderService } from '../../services/message-sender.service';
 import { Message } from '../../../../core/models/message.model';
 import { mapApiMessagesToCanonical } from '../../../../core/utils/message-mapper.util';
@@ -39,6 +40,7 @@ import { mapApiMessagesToCanonical } from '../../../../core/utils/message-mapper
     ComposerComponent,
     ConversationEmptyComponent,
     ConversationLoadingComponent,
+    ConversationSkeletonComponent,
     NewMessagesIndicatorComponent,
     BannerWarningComponent,
   ],
@@ -80,6 +82,7 @@ export class ConversationComponent implements OnDestroy {
 
   protected readonly showNewMessagesIndicator = signal(false);
   protected readonly isAtBottom = signal(true);
+  protected readonly messageListReady = signal(false);
 
   // React to UiStore notifications from SSE events
   private readonly newMessagesEffect = effect(() => {

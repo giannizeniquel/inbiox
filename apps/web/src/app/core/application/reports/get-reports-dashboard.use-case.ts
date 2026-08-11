@@ -1,9 +1,18 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, throwError, forkJoin, of } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { map, catchError, switchMap } from 'rxjs/operators';
 import { ReportsApiService } from '../../api/reports-api.service';
 import { TimeFilterParams } from '../../dto/reports.params';
 import { extractApiError } from '../shared/extract-api-error';
+import {
+  AgentLoadEntry,
+  UnassignedResponse,
+  AvailableAgentEntry,
+  FrtTrendPoint,
+  HeatmapCell,
+  RecurringEntry,
+  ReopenedEntry,
+} from '../../../features/reports/models/reports.models';
 
 /**
  * GetReportsDashboardInput — parameters for fetching the reports dashboard.
@@ -13,19 +22,24 @@ export interface GetReportsDashboardInput {
 }
 
 /**
- * ReportsDashboardData — the full dashboard data combining all 5 API responses.
+ * ReportsDashboardData — the full dashboard data combining all 12 API responses.
  */
 export interface ReportsDashboardData {
-  /** First Response Time in minutes */
+  // ── Group A: KPIs ──
   frt: { value: number };
-  /** Resolution Time in minutes */
   rt: { value: number };
-  /** Ticket counts (open = new + active + waiting, closed = resolved + closed) */
   counts: { open: number; closed: number };
-  /** Volume trend data points */
   volume: VolumeDataPoint[];
-  /** Agent leaderboard metrics */
   agents: AgentMetricData[];
+  // ── Group B: Operational ──
+  agentLoad: AgentLoadEntry[];
+  unassigned: UnassignedResponse;
+  frtTrend: FrtTrendPoint[];
+  // ── Group C: Detail ──
+  availableAgents: AvailableAgentEntry[];
+  heatmap: HeatmapCell[];
+  recurring: RecurringEntry[];
+  reopened: ReopenedEntry[];
 }
 
 /**
@@ -61,18 +75,20 @@ export class ReportsFetchFailed extends Error {
 /**
  * GetReportsDashboardUseCase — fetches all reports dashboard data.
  *
- * Uses forkJoin over 5 concurrent API calls: FRT, RT, ticket counts,
- * volume trend, and agent metrics. Each stream has its own catchError
- * so that one failing endpoint doesn't kill the whole dashboard —
- * the failing section gets sensible defaults.
+ * Uses 3 sequential forkJoin groups (4 calls each) for bounded concurrency:
+ *   Group A: frt, rt, counts, volume, agents (KPIs)
+ *   Group B: agentLoad, unassigned, frtTrend (operational)
+ *   Group C: availableAgents, heatmap, recurring, reopened (detail)
  *
- * Maps raw API responses into the ReportsDashboardData shape.
+ * Each stream has its own catchError so that one failing endpoint
+ * doesn't kill the whole dashboard — the failing section gets sensible defaults.
  */
 @Injectable({ providedIn: 'root' })
 export class GetReportsDashboardUseCase {
   constructor(private readonly api: ReportsApiService = inject(ReportsApiService)) {}
 
   execute(input: GetReportsDashboardInput): Observable<ReportsDashboardData> {
+    // ── Group A: KPIs (frt, rt, counts, volume, agents) ──
     return forkJoin({
       frt: this.api.getFirstResponseTime(input.params).pipe(
         catchError(() => of({ avg_frt_minutes: 0 })),
@@ -90,28 +106,67 @@ export class GetReportsDashboardUseCase {
         catchError(() => of({ agents: [] })),
       ),
     }).pipe(
-      map(({ frt, rt, counts, volume, agents }) => ({
-        frt: { value: frt.avg_frt_minutes || 0 },
-        rt: { value: rt.avg_rt_minutes || 0 },
-        counts: {
-          open: (counts.new || 0) + (counts.active || 0) + (counts.waiting || 0),
-          closed: (counts.resolved || 0) + (counts.closed || 0),
-        },
-        volume: (volume.data || []).map((item) => ({
-          date: item.date,
-          count: item.tickets_created || 0,
-        })),
-        agents: (agents.agents || []).map((agent) => ({
-          agentId: String(agent.agent_id),
-          agentName: `Agent ${agent.agent_id}`,
-          assigned: agent.tickets_assigned || 0,
-          avgResponseMinutes: agent.avg_frt_minutes || 0,
-          resolved: agent.tickets_resolved || 0,
-          loadPercentage: Math.min(100, (agent.tickets_assigned || 0) * 20),
-        })),
-      })),
+      switchMap((groupA) => {
+        // ── Group B: Operational (agentLoad, unassigned, frtTrend) ──
+        return forkJoin({
+          agentLoad: this.api.getAgentLoad().pipe(
+            catchError(() => of([] as AgentLoadEntry[])),
+          ),
+          unassigned: this.api.getUnassigned(input.params).pipe(
+            catchError(() => of({ count: 0, tickets: [] })),
+          ),
+          frtTrend: this.api.getFrtTrend(input.params).pipe(
+            catchError(() => of([] as FrtTrendPoint[])),
+          ),
+        }).pipe(
+          switchMap((groupB) => {
+            // ── Group C: Detail (availableAgents, heatmap, recurring, reopened) ──
+            return forkJoin({
+              availableAgents: this.api.getAvailableAgents().pipe(
+                catchError(() => of([] as AvailableAgentEntry[])),
+              ),
+              heatmap: this.api.getHeatmap(input.params).pipe(
+                catchError(() => of([] as HeatmapCell[])),
+              ),
+              recurring: this.api.getRecurringCustomers().pipe(
+                catchError(() => of([] as RecurringEntry[])),
+              ),
+              reopened: this.api.getReopened(input.params).pipe(
+                catchError(() => of([] as ReopenedEntry[])),
+              ),
+            }).pipe(
+              map((groupC) => ({
+                frt: { value: groupA.frt.avg_frt_minutes || 0 },
+                rt: { value: groupA.rt.avg_rt_minutes || 0 },
+                counts: {
+                  open: (groupA.counts.new || 0) + (groupA.counts.active || 0) + (groupA.counts.waiting || 0),
+                  closed: (groupA.counts.resolved || 0) + (groupA.counts.closed || 0),
+                },
+                volume: (groupA.volume.data || []).map((item) => ({
+                  date: item.date,
+                  count: item.tickets_created || 0,
+                })),
+                agents: (groupA.agents.agents || []).map((agent) => ({
+                  agentId: String(agent.agent_id),
+                  agentName: `Agent ${agent.agent_id}`,
+                  assigned: agent.tickets_assigned || 0,
+                  avgResponseMinutes: agent.avg_frt_minutes || 0,
+                  resolved: agent.tickets_resolved || 0,
+                  loadPercentage: Math.min(100, (agent.tickets_assigned || 0) * 20),
+                })),
+                agentLoad: groupB.agentLoad,
+                unassigned: groupB.unassigned,
+                frtTrend: groupB.frtTrend,
+                availableAgents: groupC.availableAgents,
+                heatmap: groupC.heatmap,
+                recurring: groupC.recurring,
+                reopened: groupC.reopened,
+              })),
+            );
+          }),
+        );
+      }),
       catchError((err) => {
-        // This catches unexpected errors (e.g., forkJoin structural failure)
         const message = extractApiError(err, 'Failed to fetch reports dashboard');
         return throwError(() => new ReportsFetchFailed(message, err));
       }),

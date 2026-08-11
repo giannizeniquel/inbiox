@@ -98,10 +98,42 @@
 }
 
 .kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 16px;
   margin-bottom: 32px;
+
+  > * {
+    flex: 1 1 240px;
+    min-width: 240px;
+  }
+}
+
+.section-group {
+  margin-bottom: 32px;
+
+  &__title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary, #111827);
+    margin: 0 0 16px 0;
+  }
+
+  &__grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: stretch;
+
+    > * {
+      flex: 1 1 280px;
+      min-width: 280px;
+    }
+  }
+
+  app-heatmap-card {
+    display: block;
+  }
 }
 
 .agents-section {

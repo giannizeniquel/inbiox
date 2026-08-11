@@ -14,40 +14,53 @@ Greenfield - no code yet. Documentation complete in `docs/`, implementation star
 
 ---
 
-## Team Agents (SDD Phases)
+## Pipeline SDD
 
 | Fase | Primario | Backup / Soporte | Límite / 5h | Rol |
 |------|----------|------------------|-------------|-----|
 | orchestrator | DeepSeek V4 Pro | MiniMax M3 | 3.450 / 3.200 | Control e iteración continua |
-| sdd-explore | MiniMax M2.7 | MiMo-V2.5-Pro | 3.400 / 3.250 | Lectura del código base |
-| sdd-propose | DeepSeek V4 Pro | Qwen3.7 Max (refinador) | 3.450 / 950 | Propuesta + veredicto final |
+| sdd-explore | MiniMax M2.7 | MiMo-V2.5-Pro | 3.400 / 3.250 | Lectura e interpretación del código base |
+| sdd-propose | DeepSeek V4 Pro | GPT 5.6 Luna | 3.450 / 2.050 | Propuesta arquitectónica + veredicto final |
 | sdd-spec | Qwen3.7 Plus | Hy3 | 4.300 / 4.300 | Escritura estructurada de requerimientos |
-| sdd-design | MiniMax M3 | MiMo-V2.5-Pro | 3.200 / 3.250 | Diseño arquitectónico profundo |
-| sdd-tasks | Qwen3.7 Plus | Qwen3.6 Plus | 4.300 / 3.300 | Breakdown mecánico de tareas |
-| sdd-apply | DeepSeek V4 Flash | MiMo-V2.5 | 31.650 / 30.100 | Codificación masiva — 61k+ peticiones |
-| sdd-verify | MiniMax M2.7 | Hy3 | 3.400 / 4.300 | Validación vs. spec |
-| sdd-archive | DeepSeek V4 Flash | — | 31.650 | Cierre y limpieza administrativa |
+| sdd-design | MiniMax M3 | MiMo-V2.5-Pro | 3.200 / 3.250 | Diseño técnico detallado |
+| sdd-tasks | Qwen3.7 Plus | Qwen3.6 Plus | 4.300 / 3.300 | Breakdown mecánico de subtareas |
+| sdd-apply | MiMo-V2.5 | Hy3 | 30.100 / 4.300 | Codificación masiva — reemplaza a Flash |
+| sdd-verify | MiniMax M2.7 | Hy3 | 3.400 / 4.300 | Validación estricta vs. spec |
+| sdd-archive | MiMo-V2.5 | Hy3 | 30.100 / 4.300 | Cierre, limpieza y archivo |
+| default | MiMo-V2.5 | Qwen3.7 Plus | 30.100 / 4.300 | Consultas generales fuera de SDD |
 
-### Stack Specialists
+## Subagentes Especializados
 
-| Agente | Primario | Backup | Límite / 5h | Rol |
-|--------|----------|--------|-------------|-----|
-| backend-dev | DeepSeek V4 Pro | DeepSeek V4 Flash | 3.450 / 31.650 | Symfony — diseño + escritura |
-| frontend-dev | Qwen3.7 Plus | Hy3 | 4.300 / 4.300 | Angular — jerarquías y maquetación |
-| code-reviewer | Kimi K2.7 Code | GLM-5.2 | 1.350 / 880 | Revisión enfocada y síntesis de fallos |
-| tester | MiniMax M2.7 | Hy3 | 3.400 / 4.300 | Iteraciones de tests unitarios |
-| documenter | MiMo-V2.5-Pro | — | 3.250 | Contratos API y manuales |
-| auditor | Grok 4.5 / Kimi K3 | — | 120 / 110 (220 2x) | Tercera opinión — solo bloqueos críticos |
-| general | DeepSeek V4 Flash | MiMo-V2.5 | 31.650 / 30.100 | Consultas generales |
+| Subagente | Modelo Primario | Modelo Backup / Soporte | Límite / 5h | Rol |
+|-----------|-----------------|------------------------|-------------|-----|
+| Backend-Dev | DeepSeek V4 Pro | MiMo-V2.5 | 3.450 / 30.100 | Symfony — diseño + escritura de código |
+| Frontend-Dev | Qwen3.7 Plus | Hy3 | 4.300 / 4.300 | Angular — jerarquías y maquetación |
+| Code-Review | GPT 5.6 Luna | Kimi K2.7 Code | 2.050 / 1.350 | Revisión semántica y síntesis de fallos |
+| Tester | MiniMax M2.7 | Hy3 | 3.400 / 4.300 | Testing e iteración de suites |
+| Documentación | MiMo-V2.5-Pro | GPT 5.6 Luna | 3.250 / 2.050 | Contratos API y manuales técnicos |
+| Auditor | Grok 4.5 / Kimi K3 | Qwen3.7 Max | 120 / 110 / 950 | Tercera opinión — solo bloqueos críticos |
 
-### Reserva
+## Reserva de Emergencia
 
 | Modelo | Límite / 5h | Uso |
 |--------|-------------|-----|
 | GLM-5.1 | 880 | Formato de docs y auditorías puntuales |
-| GLM-5.2 | 880 | Formato de docs y auditorías puntuales |
+| GLM-5.2 | 880 | Ídem — backup de Code-Review |
 | Kimi K2.6 | 1.150 | Backup de último recurso |
-| Qwen3.7 Max | 950 | Solo como refinador en sdd-propose |
+| Qwen3.7 Max | 950 | Solo refinador puntual en sdd-propose |
+| Qwen3.6 Plus | 3.300 | Overflow de sdd-tasks si Hy3/Plus se agotan |
+
+## Notas
+
+> ⚠️ DeepSeek V4 Flash fuera de servicio. MiMo-V2.5 absorbe sus tres roles
+> (sdd-apply, sdd-archive, default). Es ahora el único colchón de alto volumen.
+> Si falla, el pipeline cae a Hy3 + Qwen3.7 Plus (4.300 c/u).
+
+> ⚠️ MiniMax M3 cubre tres roles simultáneos (orchestrator backup + sdd-explore
+> + sdd-design) con 3.200 req/5h. Monitorear en ciclos intensivos.
+
+> ✅ Cuando Flash vuelva: restaurar a sdd-apply y default,
+> dejar MiMo-V2.5 como soporte.
 
 ---
 
