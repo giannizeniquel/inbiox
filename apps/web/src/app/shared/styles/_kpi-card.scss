@@ -13,6 +13,9 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     border: 1px solid var(--border-subtle, #e5e7eb);
     transition: box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    min-height: 140px;
 
     &:hover {
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -21,6 +24,7 @@
     &__header {
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 8px;
       margin-bottom: 12px;
     }
@@ -38,10 +42,38 @@
       font-weight: 500;
     }
 
+    &__body {
+      flex: 1;
+      min-height: 0;
+      align-self: stretch;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    &__empty {
+      text-align: center;
+      color: var(--text-secondary, #6b7280);
+      font-size: 14px;
+    }
+
     &__value {
       display: flex;
       align-items: baseline;
+      justify-content: center;
       gap: 4px;
+      margin: auto 0;
+      width: 100%;
+      box-sizing: border-box;
+      min-width: 0;
+    }
+
+    &__breakdown {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 8px;
     }
 
     &__number {

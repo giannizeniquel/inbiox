@@ -92,21 +92,29 @@
         [data]="availableAgentsData()"
         [loading]="availableAgentsLoading()"
       />
-      <app-frt-trend-card
-        [data]="frtTrendData()"
-        [loading]="frtTrendLoading()"
-      />
     </div>
   </section>
 
-  <!-- ═══ Group C: Detail ═══ -->
+  <!-- ═══ FRT Trend: full width ═══ -->
+  <section class="section-group">
+    <h2 class="section-group__title">Tendencia de primera respuesta</h2>
+    <app-frt-trend-card
+      [data]="frtTrendData()"
+      [loading]="frtTrendLoading()"
+    />
+  </section>
+
+  <!-- ═══ Heatmap: full width ═══ -->
   <section class="section-group">
     <h2 class="section-group__title">Detalle y patrones</h2>
+    <app-heatmap-card
+      [data]="heatmapData()"
+      [loading]="heatmapLoading()"
+    />
+  </section>
+
+  <section class="section-group">
     <div class="section-group__grid">
-      <app-heatmap-card
-        [data]="heatmapData()"
-        [loading]="heatmapLoading()"
-      />
       <app-recurring-card
         [data]="recurringData()"
         [loading]="recurringLoading()"

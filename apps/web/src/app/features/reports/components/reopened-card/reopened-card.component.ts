@@ -57,6 +57,12 @@ import { ReopenedEntry } from '../../models/reports.models';
   styles: [`
     @use '../../../../shared/styles/kpi-card' as *;
 
+    @include kpi-card(var(--color-accent, #6366f1));
+
+    .kpi-card__body {
+      align-items: stretch;
+    }
+
     .kpi-card--wide {
       grid-column: span 2;
     }

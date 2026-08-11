@@ -1,4 +1,4 @@
-import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RecurringEntry } from '../../models/reports.models';
 
@@ -34,7 +34,7 @@ import { RecurringEntry } from '../../models/reports.models';
               </tr>
             </thead>
             <tbody>
-              @for (entry of data; track entry.contact_id) {
+              @for (entry of displayedData(); track entry.contact_id) {
                 <tr>
                   <td>{{ entry.contact_name ?? 'Sin nombre' }}</td>
                   <td class="recurring-table__count">{{ entry.ticket_count }}</td>
@@ -43,12 +43,23 @@ import { RecurringEntry } from '../../models/reports.models';
               }
             </tbody>
           </table>
+          @if (hasMore()) {
+            <button class="recurring-toggle" (click)="toggleShowAll()">
+              {{ showAll() ? 'Ver menos' : 'Ver más' }}
+            </button>
+          }
         }
       </div>
     </div>
   `,
   styles: [`
     @use '../../../../shared/styles/kpi-card' as *;
+
+    @include kpi-card(var(--color-accent, #6366f1));
+
+    .kpi-card__body {
+      align-items: stretch;
+    }
 
     .kpi-card--wide {
       grid-column: span 2;
@@ -85,9 +96,41 @@ import { RecurringEntry } from '../../models/reports.models';
       font-size: 12px;
       color: var(--text-secondary, #9ca3af);
     }
+
+    .recurring-toggle {
+      display: block;
+      width: 100%;
+      margin-top: 12px;
+      padding: 8px;
+      background: none;
+      border: 1px dashed var(--border-subtle, #e5e7eb);
+      border-radius: 6px;
+      color: var(--color-accent, #6366f1);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s ease;
+
+      &:hover {
+        background: var(--bg-surface, #f9fafb);
+      }
+    }
   `],
 })
 export class RecurringCardComponent {
   @Input({ required: true }) data: RecurringEntry[] = [];
   @Input() loading: boolean = false;
+
+  private readonly PAGE_SIZE = 15;
+  readonly showAll = signal(false);
+
+  readonly displayedData = computed(() =>
+    this.showAll() ? this.data : this.data.slice(0, this.PAGE_SIZE),
+  );
+
+  readonly hasMore = computed(() => this.data.length > this.PAGE_SIZE);
+
+  toggleShowAll(): void {
+    this.showAll.update(v => !v);
+  }
 }

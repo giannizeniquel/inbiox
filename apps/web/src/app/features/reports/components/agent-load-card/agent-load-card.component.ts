@@ -44,6 +44,12 @@ import { AgentLoadEntry } from '../../models/reports.models';
   styles: [`
     @use '../../../../shared/styles/kpi-card' as *;
 
+    @include kpi-card(var(--color-accent, #6366f1));
+
+    .kpi-card__body {
+      align-items: stretch;
+    }
+
     .kpi-card--wide {
       grid-column: span 2;
     }
@@ -53,6 +59,8 @@ import { AgentLoadEntry } from '../../models/reports.models';
       flex-direction: column;
       gap: 8px;
       margin-top: 8px;
+      max-height: 200px;
+      overflow-y: auto;
     }
 
     .agent-load-item {

@@ -12,7 +12,7 @@ import {
   HeatmapCell,
   RecurringEntry,
   ReopenedEntry,
-} from '../../features/reports/models/reports.models';
+} from '../../../features/reports/models/reports.models';
 
 /**
  * GetReportsDashboardInput — parameters for fetching the reports dashboard.

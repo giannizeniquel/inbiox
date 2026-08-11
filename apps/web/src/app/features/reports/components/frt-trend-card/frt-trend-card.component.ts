@@ -48,25 +48,31 @@ import { FrtTrendPoint } from '../../models/reports.models';
   styles: [`
     @use '../../../../shared/styles/kpi-card' as *;
 
+    @include kpi-card(var(--color-accent, #6366f1));
+
+    .kpi-card__body {
+      align-items: stretch;
+    }
+
     .kpi-card--wide {
-      grid-column: span 2;
+      width: 100%;
     }
 
     .frt-summary {
-      margin-bottom: 8px;
+      margin-bottom: 12px;
     }
 
     .frt-summary__avg {
-      font-size: 13px;
+      font-size: 14px;
       color: var(--text-secondary, #6b7280);
     }
 
     .frt-bars {
       display: flex;
       align-items: flex-end;
-      gap: 4px;
-      height: 120px;
-      margin-top: 8px;
+      gap: 6px;
+      height: 240px;
+      margin-top: 12px;
     }
 
     .frt-bar-item {
@@ -79,19 +85,17 @@ import { FrtTrendPoint } from '../../models/reports.models';
     }
 
     .frt-bar-item__label {
-      font-size: 9px;
+      font-size: 10px;
       color: var(--text-secondary, #9ca3af);
-      writing-mode: vertical-rl;
-      text-orientation: mixed;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-height: 40px;
+      max-width: 100%;
     }
 
     .frt-bar-item__bar-container {
       width: 100%;
-      height: 60px;
+      height: 160px;
       display: flex;
       align-items: flex-end;
     }

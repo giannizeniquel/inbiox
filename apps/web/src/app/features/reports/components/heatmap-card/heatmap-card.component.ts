@@ -61,8 +61,15 @@ import { HeatmapCell } from '../../models/reports.models';
   styles: [`
     @use '../../../../shared/styles/kpi-card' as *;
 
+    @include kpi-card(var(--color-accent, #6366f1));
+
+    .kpi-card__body {
+      align-items: stretch;
+    }
+
     .kpi-card--wide {
-      grid-column: span 2;
+      width: 100%;
+      min-height: 400px;
     }
 
     .heatmap-container {
@@ -106,7 +113,7 @@ import { HeatmapCell } from '../../models/reports.models';
     .heatmap-cell {
       flex: 1;
       aspect-ratio: 1;
-      min-width: 16px;
+      min-width: 32px;
       border-radius: 2px;
       cursor: pointer;
       transition: transform 0.1s ease;

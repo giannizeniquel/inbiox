@@ -3,15 +3,18 @@
 @include kpi-card(var(--color-primary, #f59e0b), $skeleton-width: 80px);
 
 .kpi-card {
-  // TicketCount overrides __value — no flex layout, just spacing
   &__value {
-    display: block;
+    display: flex;
+    justify-content: center;
+    margin-top: auto;
     margin-bottom: 12px;
   }
 
   &__breakdown {
     display: flex;
     gap: 16px;
+    justify-content: center;
+    margin-bottom: auto;
   }
 
   &__status {
