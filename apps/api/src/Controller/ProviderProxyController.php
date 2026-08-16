@@ -136,7 +136,7 @@ class ProviderProxyController extends AbstractController
         // --- Call Graph API ---
         try {
             if ($mediaId !== null && $mimeType !== null) {
-                $graphResponse = $this->graphClient->sendMediaMessage($phone, $mediaId, $mimeType, $caption ?? $content, $phoneNumberId);
+                $graphResponse = $this->graphClient->sendMediaMessage($phone, $mediaId, $mimeType, $caption ?? $content, $phoneNumberId, $filename);
             } else {
                 $graphResponse = $this->graphClient->sendMessage($phone, $content, $phoneNumberId);
             }
@@ -168,7 +168,10 @@ class ProviderProxyController extends AbstractController
 
         return new JsonResponse(
             [
-                'messageId' => $wamid,
+                // DB message ID — the frontend uses this to fetch the media URL
+                'messageId' => $result['message_id'] ?? null,
+                // WhatsApp message ID (WAMID)
+                'externalId' => $wamid,
                 'status' => 'sent',
             ],
             Response::HTTP_OK

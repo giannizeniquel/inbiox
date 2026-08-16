@@ -291,12 +291,13 @@ class GraphClient
      * @param string      $mimeType       MIME type to infer media category
      * @param string|null $caption        Optional caption for image/video/document
      * @param string|null $phoneNumberId  Override phone number ID (null = use default from env)
+     * @param string|null $filename       Original filename (used for the document type so WhatsApp shows it)
      *
      * @return array Decoded JSON response, e.g. {messages: [{id: "wamid.xxx"}]}
      *
      * @throws GraphApiException On Graph API error
      */
-    public function sendMediaMessage(string $to, string $mediaId, string $mimeType, ?string $caption = null, ?string $phoneNumberId = null): array
+    public function sendMediaMessage(string $to, string $mediaId, string $mimeType, ?string $caption = null, ?string $phoneNumberId = null, ?string $filename = null): array
     {
         $phoneNumberId ??= $this->phoneNumberId;
         $to = $this->normalizePhone($to, $phoneNumberId);
@@ -313,6 +314,12 @@ class GraphClient
                 'id' => $mediaId,
             ],
         ];
+
+        // Filename is supported for documents — preserves the original name
+        // the agent sent (otherwise WhatsApp shows "Sin titulo"/"Untitled").
+        if ($mediaType === 'document' && $filename !== null && $filename !== '') {
+            $payload[$mediaType]['filename'] = $filename;
+        }
 
         // Caption is supported for image, video, and document types
         if ($caption !== null && \in_array($mediaType, ['image', 'video', 'document'], true)) {
