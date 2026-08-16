@@ -1,13 +1,13 @@
-import { Component, inject, OnDestroy, signal, viewChild, computed, ChangeDetectionStrategy, ChangeDetectorRef, input, output, effect } from '@angular/core';
+import { Component, inject, signal, viewChild, computed, ChangeDetectionStrategy, input, output, effect } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Subscription } from 'rxjs';
 import { take } from 'rxjs/operators';
 import { environment } from '../../../../../environments/environment';
 import { ConversationStore } from '../../../../core/stores/conversation.store';
 import { TicketStore } from '../../../../core/stores/ticket.store';
 import { UiStore } from '../../../../core/stores/ui.store';
 import { MessageApiService, GetMessagesResponse } from '../../../../core/api/message-api.service';
-import { VirtualScrollViewportComponent } from '../../../../shared/components/virtual-scroll-viewport/virtual-scroll-viewport.component';
+import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
+import { CdkAutoSizeVirtualScroll } from '@angular/cdk-experimental/scrolling';
 import { MessageBubbleComponent } from '../../components/message-bubble/message-bubble.component';
 import { ConversationHeaderComponent } from '../../components/conversation-header/conversation-header.component';
 import { ComposerComponent } from '../../components/composer/composer.component';
@@ -15,6 +15,7 @@ import { ConversationEmptyComponent } from '../../components/conversation-empty/
 import { ConversationLoadingComponent } from '../../components/conversation-loading/conversation-loading.component';
 import { NewMessagesIndicatorComponent } from '../../components/new-messages-indicator/new-messages-indicator.component';
 import { BannerWarningComponent } from '../../../../shared/components/banner-warning/banner-warning.component';
+import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
 import { ConversationSkeletonComponent } from '../../components/conversation-skeleton/conversation-skeleton.component';
 import { MessageSenderService } from '../../services/message-sender.service';
 import { Message } from '../../../../core/models/message.model';
@@ -34,7 +35,8 @@ import { mapApiMessagesToCanonical } from '../../../../core/utils/message-mapper
   selector: 'app-conversation-container',
   standalone: true,
   imports: [
-    VirtualScrollViewportComponent,
+    ScrollingModule,
+    CdkAutoSizeVirtualScroll,
     ConversationHeaderComponent,
     MessageBubbleComponent,
     ComposerComponent,
@@ -43,30 +45,19 @@ import { mapApiMessagesToCanonical } from '../../../../core/utils/message-mapper
     ConversationSkeletonComponent,
     NewMessagesIndicatorComponent,
     BannerWarningComponent,
+    LoadingSpinnerComponent,
   ],
   templateUrl: './conversation.component.html',
   styleUrl: './conversation.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ConversationComponent implements OnDestroy {
-  private readonly vps = viewChild<VirtualScrollViewportComponent<Message>>('vps');
-
-  /** Scroll indices from the viewport */
-  private scrollIndices = signal<{ startIndex: number; endIndex: number }>({ startIndex: 0, endIndex: -1 });
-
-  /** Visible message slice — computed from own messages + scroll indices */
-  protected readonly visibleMessages = computed(() => {
-    const all = this.messages();
-    const { startIndex, endIndex } = this.scrollIndices();
-    if (all.length === 0 || startIndex > endIndex) return [];
-    return all.slice(startIndex, endIndex + 1);
-  });
+export class ConversationComponent {
+  readonly vps = viewChild<CdkVirtualScrollViewport>('vps');
 
   protected readonly conversationStore = inject(ConversationStore);
   protected readonly ticketStore = inject(TicketStore);
   protected readonly uiStore = inject(UiStore);
   private readonly http = inject(HttpClient);
-  private readonly cdr = inject(ChangeDetectorRef);
   private readonly messageSender = inject(MessageSenderService);
   private readonly messageApi = inject(MessageApiService);
 
@@ -80,29 +71,36 @@ export class ConversationComponent implements OnDestroy {
   protected readonly loading = this.conversationStore.loading;
   protected readonly activeTicket = this.ticketStore.activeTicket;
 
-  protected readonly showNewMessagesIndicator = signal(false);
   protected readonly isAtBottom = signal(true);
-  protected readonly messageListReady = signal(false);
+  protected readonly newMessagesCount = signal(0);
+
+  trackById = (_: number, m: Message): string => m.tempId ?? m.id;
 
   // React to UiStore notifications from SSE events
   private readonly newMessagesEffect = effect(() => {
     if (this.uiStore.hasNewMessages()) {
       this.notifyNewMessages();
       this.uiStore.markViewed();
-      this.cdr.markForCheck();
     }
   });
 
-  /** Auto-scroll to bottom after initial message load completes (tracked once) */
+  /** Auto-scroll to bottom once per ticket (tracked flag reset on ticket switch) */
   private initialLoadDone = false;
 
-  private readonly initialLoadEffect = effect(() => {
+  private readonly initialScrollEffect = effect(() => {
+    const vp = this.vps();
     const isLoading = this.loading();
-    if (!isLoading && !this.initialLoadDone && this.messages().length > 0) {
-      this.initialLoadDone = true;
+    if (!vp || isLoading || this.initialLoadDone) return;
+
+    this.initialLoadDone = true;
+    if (this.messages().length > 0) {
       requestAnimationFrame(() => {
-        this.scrollToBottom();
+        vp.scrollTo({ bottom: 0, behavior: 'auto' });
+        this.isAtBottom.set(true);
       });
+    } else {
+      // Empty conversation — nothing to scroll, already "at bottom"
+      this.isAtBottom.set(true);
     }
   });
 
@@ -111,6 +109,9 @@ export class ConversationComponent implements OnDestroy {
     void this.activeTicket();
     this.oldestLoadedOffset.set(0);
     this.initialLoadDone = false;
+    this.loadingOlder.set(false);
+    this.isAtBottom.set(false);
+    this.newMessagesCount.set(0);
   });
 
   /** Mark ticket as read on the backend when the active ticket changes */
@@ -129,13 +130,33 @@ export class ConversationComponent implements OnDestroy {
     }
   });
 
-  private scrollTimeout?: ReturnType<typeof setTimeout>;
-  private subscription?: Subscription;
+  /**
+   * Scroll listener. Uses effect cleanup to re-subscribe whenever the CDK
+   * viewport is recreated (e.g. ticket switch) — no manual flag needed.
+   */
+  private readonly scrollSetupEffect = effect((onCleanup) => {
+    const vp = this.vps();
+    if (!vp) return;
 
-  ngOnDestroy(): void {
-    clearTimeout(this.scrollTimeout);
-    this.subscription?.unsubscribe();
-  }
+    let rafPending = false;
+    const sub = vp.elementScrolled().subscribe(() => {
+      if (rafPending) return;
+      rafPending = true;
+      requestAnimationFrame(() => {
+        rafPending = false;
+        const top = vp.measureScrollOffset('top');
+        if (top < 200 && this.conversationStore.hasMore() && !this.loadingOlder()) {
+          this.loadOlderMessages(vp);
+        }
+        const bottom = vp.measureScrollOffset('bottom');
+        this.isAtBottom.set(bottom === 0);
+        if (bottom === 0) {
+          this.newMessagesCount.set(0);
+        }
+      });
+    });
+    onCleanup(() => sub.unsubscribe());
+  });
 
   /**
    * How many older messages have been loaded from the API (offset tracking).
@@ -144,24 +165,12 @@ export class ConversationComponent implements OnDestroy {
   private readonly oldestLoadedOffset = signal(0);
 
   /** Guard flag to prevent concurrent older-message loads */
-  private loadingOlder = false;
-
-  /** Handle viewport visible range change */
-  protected onVisibleRangeChange(range: { startIndex: number; endIndex: number }): void {
-    this.scrollIndices.set(range);
-    this.cdr.markForCheck();
-  }
-
-  onResolve(): void {
-    const ticket = this.activeTicket();
-    if (!ticket) return;
-  }
+  protected readonly loadingOlder = signal(false);
 
   onRetry(tempId: string): void {
     const message = this.messages().find((m: Message) => m.tempId === tempId);
     if (message) {
       this.conversationStore.retryMessage(tempId);
-      this.cdr.markForCheck();
     }
   }
 
@@ -173,59 +182,44 @@ export class ConversationComponent implements OnDestroy {
     this.scrollToBottom();
   }
 
-  onScroll(): void {
-    const el = this.vps()?.scrollContainer;
-    if (!el) return;
-
-    const threshold = 50;
-    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
-    this.isAtBottom.set(atBottom);
-
-    if (atBottom) {
-      this.showNewMessagesIndicator.set(false);
-    }
-
-    // Scroll-up pagination: when near top, load older messages
-    if (el.scrollTop < 200 && this.conversationStore.hasMore() && !this.loadingOlder) {
-      this.loadOlderMessages(el);
-    }
-  }
-
   scrollToBottom(): void {
-    const v = this.vps();
-    if (!v) return;
-    v.scrollToBottom();
-    this.showNewMessagesIndicator.set(false);
+    const vp = this.vps();
+    if (!vp) return;
+    vp.scrollTo({ bottom: 0, behavior: 'auto' });
     this.isAtBottom.set(true);
+    this.newMessagesCount.set(0);
   }
 
   /**
    * Load older messages from the API and prepend them to the store.
-   * Preserves scroll position by compensating for the added height.
+   * Preserves scroll position by measuring the actual height of prepended items.
    */
-  private loadOlderMessages(el: HTMLElement): void {
+  private loadOlderMessages(vp: CdkVirtualScrollViewport): void {
     const ticket = this.activeTicket();
     if (!ticket) return;
 
-    this.loadingOlder = true;
-    const saveScrollTop = el.scrollTop;
+    this.loadingOlder.set(true);
+    const el = vp.elementRef.nativeElement;
+    const scrollHeightBefore = el.scrollHeight;
 
     this.messageApi.getMessages(ticket.ticket_id, 20, this.oldestLoadedOffset()).pipe(take(1)).subscribe({
       next: (resp: GetMessagesResponse) => {
-        this.conversationStore.prependMessages(mapApiMessagesToCanonical(resp, ticket.ticket_id));
+        const added = mapApiMessagesToCanonical(resp, ticket.ticket_id);
+        this.conversationStore.prependMessages(added);
         this.conversationStore.setHasMore(resp.meta.has_more);
         this.oldestLoadedOffset.set(this.oldestLoadedOffset() + resp.data.length);
 
-        // Preserve scroll position: after prepend, the same visual content
-        // is shifted down by the approximate height of the new items.
-        requestAnimationFrame(() => {
-          el.scrollTop = saveScrollTop + resp.data.length * 80;
-        });
-
-        this.loadingOlder = false;
+        // setTimeout(fn, 0) fires after layout + paint + ResizeObserver corrections.
+        // By then CDK autosize spacers reflect actual measured heights, so the
+        // scrollHeight delta is accurate.
+        setTimeout(() => {
+          const delta = el.scrollHeight - scrollHeightBefore;
+          vp.scrollToOffset(delta);
+          this.loadingOlder.set(false);
+        }, 0);
       },
       error: () => {
-        this.loadingOlder = false;
+        this.loadingOlder.set(false);
       },
     });
   }
@@ -240,10 +234,15 @@ export class ConversationComponent implements OnDestroy {
   }
 
   notifyNewMessages(): void {
-    if (!this.isAtBottom()) {
-      this.showNewMessagesIndicator.set(true);
+    const vp = this.vps();
+    if (!vp) return;
+    if (vp.measureScrollOffset('bottom') === 0) {
+      vp.scrollTo({ bottom: 0, behavior: 'auto' });
+      this.isAtBottom.set(true);
+      this.newMessagesCount.set(0);
     } else {
-      this.scrollToBottom();
+      this.isAtBottom.set(false);
+      this.newMessagesCount.update((c) => c + 1);
     }
   }
 }

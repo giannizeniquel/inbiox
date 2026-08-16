@@ -1,40 +1,36 @@
 // =============================================================================
 // New Messages Indicator
-// Per spec section 17:
-// - Pill: "↓ Nuevos mensajes"
-// - z-index: var(--z-new-msg-indicator, 85)
-// - Appears above composer when new messages arrive and user is scrolled up
+// - Round button, bottom-right, above composer
+// - Down-arrow icon only + optional count badge
+// - Color: matches client message bubble (white + subtle border)
 // =============================================================================
 
 .new-messages-indicator {
   position: absolute;
   bottom: 64px; // above 56px composer + 8px gap
-  left: 50%;
-  transform: translateX(-50%);
+  right: 16px;
   z-index: var(--z-new-msg-indicator, 85);
 
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border: none;
-  border-radius: 20px;
-  background: var(--accent-primary);
-  color: var(--text-on-accent);
-  font-family: var(--font-family);
-  font-size: var(--font-sm);
-  font-weight: 600;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border-subtle, #e5e7eb);
+  background: var(--bg-bubble-client, #ffffff);
+  color: var(--text-primary, #111827);
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  transition: transform 0.15s, opacity 0.15s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  transition: transform 0.15s, opacity 0.15s, box-shadow 0.15s;
 
   &:hover {
-    transform: translateX(-50%) translateY(-2px);
+    transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
   }
 
   &:active {
-    transform: translateX(-50%) translateY(0);
+    transform: translateY(0);
   }
 
   &:focus-visible {
@@ -43,13 +39,22 @@
   }
 }
 
-.new-messages-indicator__arrow {
-  font-size: 16px;
-  line-height: 1;
-}
-
-.new-messages-indicator__text {
-  line-height: 1;
+.new-messages-indicator__badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--accent-primary);
+  color: var(--text-on-accent);
+  font-family: var(--font-family);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 // Dark theme

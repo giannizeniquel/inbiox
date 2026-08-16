@@ -1,12 +1,11 @@
 import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
 
 /**
- * NewMessagesIndicatorComponent — pill shown when new messages arrive and user is not at bottom.
+ * NewMessagesIndicatorComponent — round button shown when user is not at bottom.
  *
- * Per spec section 17:
- * - Shows when visible && !isAtBottom && hasNewMessages
- * - Pill: "↓ Nuevos mensajes"
- * - z-index: var(--z-new-msg-indicator, 85)
+ * - Shows when visible (user scrolled up)
+ * - Down-arrow icon only
+ * - Badge with count of new messages that arrived while scrolled up
  * - Click to scroll to bottom
  */
 @Component({
@@ -18,6 +17,9 @@ import { Component, ChangeDetectionStrategy, input, output } from '@angular/core
 })
 export class NewMessagesIndicatorComponent {
   readonly visible = input<boolean>(false);
+
+  /** Number of new messages that arrived while the user was scrolled up */
+  readonly count = input<number>(0);
 
   readonly click = output<void>();
 

@@ -14,7 +14,6 @@
       </button>
       <app-conversation-header
         [ticket]="activeTicket()!"
-        (resolve)="onResolve()"
       />
     </div>
 
@@ -27,27 +26,28 @@
     @if (loading()) {
       <app-conversation-loading />
     } @else {
-      <app-virtual-scroll-viewport
+      <cdk-virtual-scroll-viewport
         #vps
-        mode="variable"
-        [items]="messages()"
-        [estimatedItemHeight]="80"
-        [bufferSize]="8"
-        (scroll)="onScroll()"
-        (visibleRange)="onVisibleRangeChange($event)"
+        autosize
+        minBufferPx="100"
+        maxBufferPx="200"
+        class="conversation-vp"
       >
-        @for (message of visibleMessages(); track message.id) {
-          <app-message-bubble
-            [message]="message"
-            (retry)="onRetry($event)"
-          />
+        @if (loadingOlder()) {
+          <app-loading-spinner class="older-messages-spinner" />
         }
-      </app-virtual-scroll-viewport>
+        <app-message-bubble
+          *cdkVirtualFor="let msg of messages(); trackBy: trackById"
+          [message]="msg"
+          (retry)="onRetry($event)"
+        />
+      </cdk-virtual-scroll-viewport>
     }
 
-    <!-- New messages indicator -->
+    <!-- Scroll-to-bottom button — visible whenever user is not at the bottom -->
     <app-new-messages-indicator
-      [visible]="showNewMessagesIndicator()"
+      [visible]="!isAtBottom()"
+      [count]="newMessagesCount()"
       (click)="scrollToBottom()"
     />
 
