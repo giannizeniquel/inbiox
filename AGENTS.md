@@ -19,6 +19,8 @@ Greenfield - no code yet. Documentation complete in `docs/`, implementation star
 | Fase | Primario | Backup / Soporte | Límite / 5h | Rol |
 |------|----------|------------------|-------------|-----|
 | orchestrator | DeepSeek V4 Pro | MiniMax M3 | 3.450 / 3.200 | Control e iteración continua |
+| sdd-init | Hy3 | Qwen3.7 Plus | 4.300 / 4.300 | Bootstrap de contexto SDD y detección de stack |
+| sdd-onboard | Hy3 | Qwen3.7 Plus | 4.300 / 4.300 | Walkthrough guiado del ciclo SDD completo |
 | sdd-explore | MiniMax M2.7 | MiMo-V2.5-Pro | 3.400 / 3.250 | Lectura e interpretación del código base |
 | sdd-propose | DeepSeek V4 Pro | GPT 5.6 Luna | 3.450 / 2.050 | Propuesta arquitectónica + veredicto final |
 | sdd-spec | Qwen3.7 Plus | Hy3 | 4.300 / 4.300 | Escritura estructurada de requerimientos |
@@ -52,14 +54,15 @@ Greenfield - no code yet. Documentation complete in `docs/`, implementation star
 
 ## Notas
 
-> ⚠️ DeepSeek V4 Flash fuera de servicio. MiMo-V2.5 absorbe sus tres roles
-> (sdd-apply, sdd-archive, default). Es ahora el único colchón de alto volumen.
-> Si falla, el pipeline cae a Hy3 + Qwen3.7 Plus (4.300 c/u).
+> ⚠️ DeepSeek V4 Flash confirmado offline (5 intentos en 3 agentes distintos).
+> MiMo-V2.5 absorbe sus tres roles originales (sdd-apply, sdd-archive, default);
+> Hy3 toma sdd-init y sdd-onboard para no sobrecargar a MiMo.
+> Si MiMo falla, el pipeline cae a Hy3 + Qwen3.7 Plus (4.300 c/u).
 
 > ⚠️ MiniMax M3 cubre tres roles simultáneos (orchestrator backup + sdd-explore
 > + sdd-design) con 3.200 req/5h. Monitorear en ciclos intensivos.
 
-> ✅ Cuando Flash vuelva: restaurar a sdd-apply y default,
+> ✅ Cuando Flash vuelva: restaurar a sdd-apply, default, sdd-init y sdd-onboard;
 > dejar MiMo-V2.5 como soporte.
 
 ---
