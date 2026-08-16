@@ -142,6 +142,23 @@
   color: var(--text-primary);
 }
 
+.composer__file-preview-btn {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: inherit;
+  text-align: left;
+
+  &:hover .composer__file-name {
+    text-decoration: underline;
+  }
+}
+
 .composer__file-remove {
   display: flex;
   align-items: center;

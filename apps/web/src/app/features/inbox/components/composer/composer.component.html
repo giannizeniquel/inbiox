@@ -35,10 +35,17 @@
     </svg>
   </button>
 
-  <!-- Selected file preview -->
+  <!-- Selected file preview (click to open preview modal) -->
   @if (selectedFile()) {
     <div class="composer__file-preview">
-      <span class="composer__file-name">{{ selectedFile()!.name }}</span>
+      <button
+        class="composer__file-preview-btn"
+        type="button"
+        title="Ver vista previa"
+        (click)="openPreview()"
+      >
+        <span class="composer__file-name">{{ selectedFile()!.name }}</span>
+      </button>
       <button
         class="composer__file-remove"
         type="button"
@@ -92,4 +99,12 @@
       </svg>
     </button>
   }
+
+  <!-- Media preview modal -->
+  <app-media-preview-modal
+    [file]="selectedFile()"
+    [visible]="showPreview()"
+    (accept)="onPreviewAccept()"
+    (cancel)="onPreviewCancel()"
+  />
 </div>

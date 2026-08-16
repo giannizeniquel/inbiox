@@ -1,6 +1,7 @@
 import { Component, ChangeDetectionStrategy, output, signal, ElementRef, viewChild, input } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { generateTempId } from '../../../../core/utils/temp-id.util';
+import { MediaPreviewModalComponent } from '../media-preview-modal/media-preview-modal.component';
 
 /**
  * ComposerComponent — sticky message input bar.
@@ -18,7 +19,7 @@ import { generateTempId } from '../../../../core/utils/temp-id.util';
 @Component({
   selector: 'app-composer',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, MediaPreviewModalComponent],
   templateUrl: './composer.component.html',
   styleUrl: './composer.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -30,6 +31,7 @@ export class ComposerComponent {
   readonly inputEl = viewChild<ElementRef<HTMLTextAreaElement>>('inputEl');
   readonly text = signal('');
   readonly selectedFile = signal<File | null>(null);
+  readonly showPreview = signal(false);
 
   placeholder(): string {
     return 'Escribe un mensaje...';
@@ -55,6 +57,25 @@ export class ComposerComponent {
     this.selectedFile.set(file);
     // Reset the input so the same file can be selected again
     input.value = '';
+    // Auto-open the preview modal on attach
+    if (file) {
+      this.showPreview.set(true);
+    }
+  }
+
+  openPreview(): void {
+    if (this.selectedFile()) {
+      this.showPreview.set(true);
+    }
+  }
+
+  onPreviewAccept(): void {
+    this.showPreview.set(false);
+  }
+
+  onPreviewCancel(): void {
+    this.showPreview.set(false);
+    this.removeSelectedFile();
   }
 
   removeSelectedFile(): void {
@@ -71,6 +92,7 @@ export class ComposerComponent {
 
     this.text.set('');
     this.selectedFile.set(null);
+    this.showPreview.set(false);
 
     if (file) {
       this.sendWithFile.emit({ content, tempId, file });

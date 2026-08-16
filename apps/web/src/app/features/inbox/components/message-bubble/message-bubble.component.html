@@ -18,7 +18,7 @@
               <app-media-audio [attachment]="message().media!" [messageId]="message().id" />
             }
             @case ('document') {
-              <app-media-document [attachment]="message().media!" [messageId]="message().id" />
+              <app-media-document [attachment]="message().media!" [messageId]="message().id" [pending]="message().deliveryStatus === 'sending'" />
             }
           }
           @if (message().media!.caption) {
