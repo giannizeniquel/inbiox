@@ -277,23 +277,31 @@ class WebhookController extends AbstractController
                         if ($msgType === 'text') {
                             $text = $msg['text']['body'] ?? '';
                         } else {
-                            // Media types: build descriptive content for inbox display
-                            $mediaId = $msg[$msgType]['id'] ?? null;
-                            $filename = $msg[$msgType]['filename'] ?? null;
-                            $mimeType = $msg[$msgType]['mime_type'] ?? null;
-                            $caption = $msg[$msgType]['caption'] ?? null;
+                        // Media types: build descriptive content for inbox display
+                        $mediaId = $msg[$msgType]['id'] ?? null;
+                        $filename = $msg[$msgType]['filename'] ?? null;
+                        $mimeType = $msg[$msgType]['mime_type'] ?? null;
+                        $caption = $msg[$msgType]['caption'] ?? null;
 
-                            $typeLabels = [
-                                'document' => '📎 Documento',
-                                'image' => '🖼 Imagen',
-                                'audio' => '🎵 Audio',
-                                'video' => '🎬 Video',
-                            ];
-                            $typeLabel = $typeLabels[$msgType] ?? '📁 ' . ucfirst($msgType);
+                        $typeLabels = [
+                            'document' => '📎 Documento',
+                            'image' => '🖼 Imagen',
+                            'audio' => '🎵 Audio',
+                            'video' => '🎬 Video',
+                        ];
+                        $typeLabel = $typeLabels[$msgType] ?? '📁 ' . ucfirst($msgType);
 
-                            $text = $caption
-                                ? "{$typeLabel}: {$filename} — \"{$caption}\""
-                                : "{$typeLabel}: {$filename}";
+                        $text = $caption
+                            ? "{$typeLabel}: {$filename} — \"{$caption}\""
+                            : "{$typeLabel}: {$filename}";
+
+                        // Build media download payload for storage
+                        $mediaDownloadPayload = $mediaId ? [
+                            'mediaId' => $mediaId,
+                            'mimeType' => $mimeType,
+                            'filename' => $filename,
+                            'caption' => $caption,
+                        ] : null;
                         }
 
                         try {
@@ -303,6 +311,7 @@ class WebhookController extends AbstractController
                                 $wamid,
                                 $phoneNumberId,
                                 $contactName,
+                                $mediaDownloadPayload,
                             );
 
                             $this->logger->info('Inbound message processed', [

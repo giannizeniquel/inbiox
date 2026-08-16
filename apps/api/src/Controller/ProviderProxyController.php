@@ -8,8 +8,13 @@ use App\Application\Service\GraphClient;
 use App\Application\UseCase\HandleOutboundMessageUseCase;
 use App\Domain\Message\Message;
 use App\Domain\Message\MessageDirection;
+use App\Domain\Media\MediaKind;
 use App\Domain\User\User;
 use App\Exception\GraphApiException;
+use App\Exception\MediaTooLargeException;
+use App\Exception\MediaTypeNotAllowedException;
+use App\Infrastructure\Storage\MediaStorageService;
+use App\Infrastructure\Storage\MediaValidator;
 use App\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -20,6 +25,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Uid\Ulid;
 
 #[Route('/api/provider')]
 #[IsGranted('ROLE_AGENT')]
@@ -33,6 +39,8 @@ class ProviderProxyController extends AbstractController
         private readonly GraphClient $graphClient,
         private readonly EntityManagerInterface $em,
         private readonly HandleOutboundMessageUseCase $outboundUseCase,
+        private readonly MediaValidator $mediaValidator,
+        private readonly MediaStorageService $mediaStorageService,
     ) {}
 
     #[Route('/send', methods: ['POST'])]
@@ -52,6 +60,9 @@ class ProviderProxyController extends AbstractController
         $mediaId = $payload['mediaId'] ?? null;
         $mimeType = $payload['mimeType'] ?? null;
         $caption = $payload['caption'] ?? null;
+        $mediaKey = $payload['mediaKey'] ?? null;
+        $filename = $payload['filename'] ?? null;
+        $size = $payload['size'] ?? null;
 
         // Resolve agent ID from authenticated user.
         // If the user doesn't have a linked Agent record (e.g. admin),
@@ -69,11 +80,26 @@ class ProviderProxyController extends AbstractController
         }
         $agentId = $agent?->getId() ?? 0;
 
+        // Build media metadata for persistence
+        $mediaMetadata = null;
+        if ($mediaId !== null && $mimeType !== null) {
+            $mediaMetadata = [
+                'providerId' => $mediaId,
+                'mimeType' => $mimeType,
+                'key' => $mediaKey,
+                'caption' => $caption,
+                'filename' => $filename,
+                'size' => $size,
+                'kind' => MediaKind::fromMime($mimeType)->value,
+            ];
+        }
+
         // --- Process outbound message (creates Message, handles assignment + status) ---
         $result = $this->outboundUseCase->processOutboundMessage(
             ticketId: $ticketId,
             content: $content,
             agentId: $agentId,
+            mediaMetadata: $mediaMetadata,
         );
 
         // --- Phone Resolution Chain ---
@@ -253,7 +279,7 @@ class ProviderProxyController extends AbstractController
     }
 
     #[Route('/media/upload', methods: ['POST'])]
-    public function uploadMedia(Request $request): JsonResponse
+    public function uploadMedia(Request $request, #[CurrentUser] ?User $user): JsonResponse
     {
         /** @var UploadedFile|null $file */
         $file = $request->files->get('file');
@@ -267,14 +293,34 @@ class ProviderProxyController extends AbstractController
 
         $filePath = $file->getPathname();
         $mimeType = $file->getMimeType() ?? 'application/octet-stream';
+        $fileSize = $file->getSize();
+        $filename = $file->getClientOriginalName();
 
+        // 1. Validate MIME and size
         try {
-            $result = $this->graphClient->uploadMedia($filePath, $mimeType);
-
+            $this->mediaValidator->validate($mimeType, $fileSize);
+        } catch (MediaTooLargeException $e) {
             return new JsonResponse(
-                ['mediaId' => $result['id'] ?? ''],
-                Response::HTTP_OK
+                [
+                    'error' => 'FILE_TOO_LARGE',
+                    'maxSize' => $e->getMaxSize(),
+                    'kind' => $e->getKind(),
+                ],
+                Response::HTTP_REQUEST_ENTITY_TOO_LARGE
             );
+        } catch (MediaTypeNotAllowedException $e) {
+            return new JsonResponse(
+                [
+                    'error' => 'UNSUPPORTED_TYPE',
+                    'mimeType' => $e->getMimeType(),
+                ],
+                Response::HTTP_UNSUPPORTED_MEDIA_TYPE
+            );
+        }
+
+        // 2. Upload to WhatsApp Graph API
+        try {
+            $graphResult = $this->graphClient->uploadMedia($filePath, $mimeType);
         } catch (GraphApiException $e) {
             return new JsonResponse(
                 [
@@ -285,6 +331,31 @@ class ProviderProxyController extends AbstractController
                 Response::HTTP_BAD_GATEWAY
             );
         }
+
+        $mediaId = $graphResult['id'] ?? '';
+
+        // 3. Store in object storage (optional — best effort)
+        $key = null;
+        try {
+            $tenantId = 'default';
+            $ticketId = (int) ($request->request->get('ticketId') ?: 0);
+            $ext = pathinfo($filename, PATHINFO_EXTENSION) ?: 'bin';
+            $uuid = Ulid::generate();
+            $s3Key = sprintf('%s/%d/%s.%s', $tenantId, $ticketId, $uuid, $ext);
+
+            $this->mediaStorageService->put($s3Key, file_get_contents($filePath), $mimeType);
+            $key = $s3Key;
+        } catch (\Throwable $e) {
+            // Storage failure is non-fatal — we already have the mediaId from WhatsApp
+        }
+
+        return new JsonResponse(
+            [
+                'mediaId' => $mediaId,
+                'key' => $key,
+            ],
+            Response::HTTP_OK
+        );
     }
 
     #[Route('/media/{mediaId}', methods: ['GET'])]

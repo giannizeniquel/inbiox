@@ -75,6 +75,7 @@ final readonly class RealtimeEventFactory
                 'createdAt'  => $s['created_at'] ?? $s['occurred_at'] ?? '',
                 'externalId' => $s['external_id'] ?? null,
                 'phoneNumberId' => $s['phone_number_id'] ?? null,
+                'media'      => $s['media'] ?? null,
             ],
             RealtimeEventType::TicketStatusChanged => [
                 'ticketId'       => $ticketId,

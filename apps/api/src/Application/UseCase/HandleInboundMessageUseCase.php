@@ -22,6 +22,7 @@ use App\Application\Rule\RuleExecutorService;
 use App\Application\Service\AutoReplyService;
 use App\Domain\Rule\RuleContext;
 use App\Application\UseCase\TransitionTicketStatusUseCase;
+use App\Infrastructure\Storage\MediaDownloadService;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use App\Application\Event\TicketNeedsAutoAssignmentEvent;
@@ -41,6 +42,7 @@ class HandleInboundMessageUseCase
         private EventCollector $eventCollector,
         private AutoReplyService $autoReplyService,
         private LoggerInterface $logger,
+        private readonly ?MediaDownloadService $mediaDownloadService = null,
     ) {}
 
     /**
@@ -51,11 +53,18 @@ class HandleInboundMessageUseCase
      * @param string|null $externalId      WAMID from Meta (for idempotency)
      * @param string|null $phoneNumberId   WhatsApp phone number ID that received this message (CAP-7)
      * @param string|null $contactName     Optional contact name to set on new/existing contacts
+     * @param array|null  $mediaDownloadPayload  Optional media payload: {mediaId, mimeType, filename, caption}
      *
      * @return array{contact_id: int, conversation_id: int, message_id: int, ticket_id: int|null, status: string}
      */
-    public function processInboundMessage(string $phone, string $message, ?string $externalId = null, ?string $phoneNumberId = null, ?string $contactName = null): array
-    {
+    public function processInboundMessage(
+        string $phone,
+        string $message,
+        ?string $externalId = null,
+        ?string $phoneNumberId = null,
+        ?string $contactName = null,
+        ?array $mediaDownloadPayload = null,
+    ): array {
         // 1. Normalize phone: strip non-digits, keep format as-is (WhatsApp sends correct prefix)
         $normalizedPhone = preg_replace('/[^0-9]/', '', $phone);
         if (strlen($normalizedPhone) < 10) {
@@ -64,8 +73,8 @@ class HandleInboundMessageUseCase
 
         $normalizedPhone = '+' . $normalizedPhone;
 
-        $result = $this->em->getConnection()->transactional(function() use ($normalizedPhone, $message, $externalId, $phoneNumberId, $contactName) {
-            return $this->executeInternal($normalizedPhone, $message, $externalId, $phoneNumberId, $contactName);
+        $result = $this->em->getConnection()->transactional(function() use ($normalizedPhone, $message, $externalId, $phoneNumberId, $contactName, $mediaDownloadPayload) {
+            return $this->executeInternal($normalizedPhone, $message, $externalId, $phoneNumberId, $contactName, $mediaDownloadPayload);
         });
 
         // After commit, attempt auto-reply (fire-and-forget)
@@ -117,6 +126,7 @@ foreach ($events as $event) {
                 $payload['direction'] = $event->direction->value;
                 $payload['content'] = $event->content;
                 $payload['sender_name'] = $event->senderName;
+                $payload['media'] = $event->media;
                 // Include phone_number_id for workspace-pending indicator
                 $ticketRow = $this->em->getConnection()->executeQuery(
                     'SELECT phone_number_id FROM tickets WHERE id = ?',
@@ -144,8 +154,14 @@ foreach ($events as $event) {
         $this->eventCollector->clear();
     }
 
-    private function executeInternal(string $phone, string $message, ?string $externalId, ?string $phoneNumberId = null, ?string $contactName = null): array
-    {
+    private function executeInternal(
+        string $phone,
+        string $message,
+        ?string $externalId,
+        ?string $phoneNumberId = null,
+        ?string $contactName = null,
+        ?array $mediaDownloadPayload = null,
+    ): array {
         // 2. Find or create Contact
         $contact = $this->contactRepo->findOneByPhone($phone);
         if (!$contact) {
@@ -198,6 +214,48 @@ foreach ($events as $event) {
         }
 
         $this->em->persist($msg);
+        $this->em->flush(); // Flush to get message ID for media key
+
+        // 5b. Handle media download and storage (fire-and-forget on failure)
+        if ($mediaDownloadPayload && $this->mediaDownloadService !== null) {
+            try {
+                $mediaId = $mediaDownloadPayload['mediaId'];
+                $mimeType = $mediaDownloadPayload['mimeType'] ?? 'application/octet-stream';
+                $filename = $mediaDownloadPayload['filename'] ?? 'file';
+                $caption = $mediaDownloadPayload['caption'] ?? null;
+
+                // Determine tenant and ticket for the object key
+                $tenantId = 'default'; // Default tenant prefix
+                $ticketId = $msg->getId(); // Use message ID as part of key
+
+                $mediaResult = $this->mediaDownloadService->downloadAndStore(
+                    mediaId: $mediaId,
+                    mimeType: $mimeType,
+                    tenantId: $tenantId,
+                    ticketId: $ticketId,
+                    filename: $filename,
+                );
+
+                if ($mediaResult !== null) {
+                    $msg->setMedia([
+                        'key' => $mediaResult['key'],
+                        'mimeType' => $mimeType,
+                        'filename' => $filename,
+                        'size' => $mediaResult['size'],
+                        'kind' => $mediaResult['kind'],
+                        'providerId' => $mediaId,
+                        'caption' => $caption,
+                    ]);
+                    $this->em->flush();
+                }
+            } catch (\Throwable $e) {
+                $this->logger->error('Failed to process inbound media', [
+                    'error' => $e->getMessage(),
+                    'mediaId' => $mediaDownloadPayload['mediaId'] ?? null,
+                ]);
+                // Continue without media — message is already persisted
+            }
+        }
 
         // 6. Handle Ticket - create if new conversation or no open ticket
         // Use findNotClosedByContact to include resolved tickets (for auto-reopen)
@@ -268,6 +326,7 @@ foreach ($events as $event) {
             messageId: $msg->getId(),
             content: $message,
             senderName: $contact->getName(),
+            media: $msg->getMedia(),
         ));
 
         // 9. Execute automation rules (inbound trigger)
