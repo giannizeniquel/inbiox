@@ -81,6 +81,8 @@ import { MediaUrlService } from '../../../../../core/api/media-url.service';
 export class MediaDocumentComponent {
   readonly attachment = input.required<MediaAttachment>();
   readonly messageId = input.required<string>();
+  /** True while the message is still optimistic (no real DB ID yet) */
+  readonly pending = input<boolean>(false);
 
   private mediaUrlService = inject(MediaUrlService);
 
@@ -89,8 +91,15 @@ export class MediaDocumentComponent {
   constructor() {
     effect((onCleanup) => {
       const messageId = this.messageId();
+      const pending = this.pending();
 
       this.docUrl.set(null);
+
+      // Don't fetch for optimistic messages — the tempId is not a valid DB ID.
+      // The URL resolves once the message is confirmed (or on reload).
+      if (pending) {
+        return;
+      }
 
       const sub = this.mediaUrlService.getMediaUrl(messageId).subscribe({
         next: (resp) => {

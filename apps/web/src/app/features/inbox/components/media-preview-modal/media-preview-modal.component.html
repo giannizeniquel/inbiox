@@ -1,0 +1,54 @@
+@if (visible()) {
+  <div class="dialog-overlay" (click)="onCancel()" role="presentation">
+    <div
+      class="dialog-content"
+      (click)="$event.stopPropagation()"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="media-preview-title"
+    >
+      <div class="dialog-header">
+        <h2 id="media-preview-title" class="dialog-title">Vista previa</h2>
+      </div>
+
+      <div class="dialog-body">
+        @switch (kind()) {
+          @case ('image') {
+            <img
+              [src]="previewUrl()!"
+              [alt]="file()?.name ?? ''"
+              class="preview-image"
+            />
+          }
+          @case ('video') {
+            <video [src]="previewUrl()!" controls class="preview-video"></video>
+          }
+          @case ('audio') {
+            <div class="preview-audio">
+              <div class="preview-audio__icon" aria-hidden="true">🎵</div>
+              <div class="preview-audio__meta">
+                <div class="preview-audio__name">{{ file()?.name }}</div>
+                <div class="preview-audio__size">{{ fileSizeDisplay() }}</div>
+              </div>
+              <audio [src]="previewUrl()!" controls></audio>
+            </div>
+          }
+          @case ('document') {
+            <div class="preview-document">
+              <span class="preview-document__icon" aria-hidden="true">{{ icon() }}</span>
+              <div class="preview-document__info">
+                <span class="preview-document__name">{{ file()?.name }}</span>
+                <span class="preview-document__size">{{ fileSizeDisplay() }}</span>
+              </div>
+            </div>
+          }
+        }
+      </div>
+
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-secondary" (click)="onCancel()">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="onAccept()">Aceptar</button>
+      </div>
+    </div>
+  </div>
+}

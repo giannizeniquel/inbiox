@@ -42,23 +42,24 @@ export class WhatsAppCloudProvider implements ProviderInterface {
    * Send a message via backend proxy.
    *
    * POST /api/provider/send { ticketId, content }
-   * Response: { messageId: string, status: string }
+   * Response: { messageId: number, externalId: string, status: string }
    *
-   * The returned Message carries the WAMID as `id`.
+   * `messageId` is the DB ID (used for media URL fetch); `externalId` is the WAMID.
    * MessageSenderService handles optimistic→confirm reconciliation.
    */
   sendMessage(ticketId: string, content: string): Observable<Message> {
-    return this.http.post<{ messageId: string; status: string }>(
+    return this.http.post<{ messageId: number | null; externalId: string | null; status: string }>(
       '/api/provider/send',
       { ticketId, content }
     ).pipe(
       map(response => ({
-        id: response.messageId,        // WAMID from Graph API
+        id: response.messageId != null ? String(response.messageId) : '',
         ticketId,
         content,
         deliveryStatus: 'sent' as DeliveryStatus,
         createdAt: new Date().toISOString(),
         sender: 'agent' as MessageSender,
+        externalId: response.externalId ?? undefined,
       }))
     );
   }
@@ -191,7 +192,7 @@ export class WhatsAppCloudProvider implements ProviderInterface {
     filename?: string,
     size?: number,
   ): Observable<Message> {
-    return this.http.post<{ messageId: string; status: string }>('/api/provider/send', {
+    return this.http.post<{ messageId: number | null; externalId: string | null; status: string }>('/api/provider/send', {
       ticketId,
       content: caption || '',
       mediaId,
@@ -202,12 +203,13 @@ export class WhatsAppCloudProvider implements ProviderInterface {
       size,
     }).pipe(
       map(response => ({
-        id: response.messageId,
+        id: response.messageId != null ? String(response.messageId) : '',
         ticketId,
         content: caption || '',
         deliveryStatus: 'sent' as DeliveryStatus,
         createdAt: new Date().toISOString(),
         sender: 'agent' as MessageSender,
+        externalId: response.externalId ?? undefined,
       }))
     );
   }
