@@ -1,6 +1,10 @@
 import { Component, ChangeDetectionStrategy, input, output, computed } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { Message } from '../../../../core/models/message.model';
+import { MediaImageComponent } from './media-renderer/image.component';
+import { MediaVideoComponent } from './media-renderer/video.component';
+import { MediaAudioComponent } from './media-renderer/audio.component';
+import { MediaDocumentComponent } from './media-renderer/document.component';
 
 type MessageType = 'agent' | 'client' | 'system';
 
@@ -18,7 +22,7 @@ type MessageType = 'agent' | 'client' | 'system';
 @Component({
   selector: 'app-message-bubble',
   standalone: true,
-  imports: [NgClass],
+  imports: [NgClass, MediaImageComponent, MediaVideoComponent, MediaAudioComponent, MediaDocumentComponent],
   templateUrl: './message-bubble.component.html',
   styleUrl: './message-bubble.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -45,6 +49,11 @@ export class MessageBubbleComponent {
     'message-bubble--failed': this.message().deliveryStatus === 'failed',
     'message-bubble--sending': this.message().deliveryStatus === 'sending',
   }));
+
+  hasMedia = computed(() => {
+    const m = this.message();
+    return m.media !== null && m.media !== undefined;
+  });
 
   timeDisplay(): string {
     const date = new Date(this.message().createdAt);

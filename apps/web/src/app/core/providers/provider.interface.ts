@@ -218,9 +218,20 @@ export interface ProviderInterface {
    * @param mediaId - The media ID from uploadMedia
    * @param mimeType - MIME type of the media file
    * @param caption - Optional caption text for the media
+   * @param mediaKey - Optional object-storage key (persisted for download/preview)
+   * @param filename - Original filename
+   * @param size - File size in bytes
    * @returns Observable emitting the sent message
    */
-  sendMediaMessage(ticketId: string, mediaId: string, mimeType: string, caption?: string): Observable<Message>;
+  sendMediaMessage(
+    ticketId: string,
+    mediaId: string,
+    mimeType: string,
+    caption?: string,
+    mediaKey?: string,
+    filename?: string,
+    size?: number,
+  ): Observable<Message>;
 }
 
 /**

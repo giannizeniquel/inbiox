@@ -14,17 +14,41 @@
     </svg>
   </button>
 
-  <!-- Attachment button -->
+  <!-- Attachment button (hidden file input) -->
+  <input
+    #fileInput
+    type="file"
+    class="composer__file-input"
+    accept=".pdf,.txt,.doc,.docx,.csv,.xlsx,.jpg,.jpeg,.png,.webp,.ogg,.mp3,.mp4"
+    (change)="onFileSelected($event)"
+    aria-label="Adjuntar archivo"
+  />
   <button
     class="composer__icon-btn"
     type="button"
     aria-label="Adjuntar archivo"
     title="Adjuntar archivo"
+    (click)="fileInput.click()"
   >
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
     </svg>
   </button>
+
+  <!-- Selected file preview -->
+  @if (selectedFile()) {
+    <div class="composer__file-preview">
+      <span class="composer__file-name">{{ selectedFile()!.name }}</span>
+      <button
+        class="composer__file-remove"
+        type="button"
+        aria-label="Quitar archivo"
+        (click)="removeSelectedFile()"
+      >
+        &times;
+      </button>
+    </div>
+  }
 
   <!-- Text input -->
   <textarea
@@ -53,8 +77,8 @@
     </svg>
   </button>
 
-  <!-- Send button (visible when there's text) -->
-  @if (text().trim()) {
+  <!-- Send button (visible when there's text or a file) -->
+  @if (text().trim() || selectedFile()) {
     <button
       class="composer__send-btn"
       type="button"

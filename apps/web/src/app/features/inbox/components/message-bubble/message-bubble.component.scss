@@ -79,3 +79,14 @@
   font-size: 0.75rem;
   color: var(--text-muted, #9ca3af);
 }
+
+.message-bubble__media {
+  margin-bottom: 4px;
+}
+
+.message-bubble__caption {
+  margin: 4px 0 0;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  word-break: break-word;
+}

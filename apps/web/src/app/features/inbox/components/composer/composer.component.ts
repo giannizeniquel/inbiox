@@ -25,9 +25,11 @@ import { generateTempId } from '../../../../core/utils/temp-id.util';
 })
 export class ComposerComponent {
   readonly sendMessage = output<{ content: string; tempId: string }>();
+  readonly sendWithFile = output<{ content: string; tempId: string; file: File }>();
 
   readonly inputEl = viewChild<ElementRef<HTMLTextAreaElement>>('inputEl');
   readonly text = signal('');
+  readonly selectedFile = signal<File | null>(null);
 
   placeholder(): string {
     return 'Escribe un mensaje...';
@@ -47,13 +49,33 @@ export class ComposerComponent {
     el.style.height = `${el.scrollHeight}px`;
   }
 
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    this.selectedFile.set(file);
+    // Reset the input so the same file can be selected again
+    input.value = '';
+  }
+
+  removeSelectedFile(): void {
+    this.selectedFile.set(null);
+  }
+
   send(): void {
     const content = this.text().trim();
-    if (!content) return;
+    const file = this.selectedFile();
+
+    if (!content && !file) return;
 
     const tempId = generateTempId();
 
     this.text.set('');
-    this.sendMessage.emit({ content, tempId });
+    this.selectedFile.set(null);
+
+    if (file) {
+      this.sendWithFile.emit({ content, tempId, file });
+    } else {
+      this.sendMessage.emit({ content, tempId });
+    }
   }
 }

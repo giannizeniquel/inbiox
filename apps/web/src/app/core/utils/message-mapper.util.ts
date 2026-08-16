@@ -1,4 +1,5 @@
 import { Message, MessageDto } from '../models/message.model';
+import { MediaAttachment } from '../models/media.model';
 import { GetMessagesResponse } from '../api/message-api.service';
 
 /**
@@ -12,6 +13,18 @@ export function mapApiMessageToCanonical(
   ticketId: string
 ): Message {
   const direction = m.direction as 'inbound' | 'outbound' | 'system';
+  const media: MediaAttachment | undefined = m.media
+    ? {
+        key: m.media.key,
+        mimeType: m.media.mimeType,
+        filename: m.media.filename,
+        size: m.media.size,
+        kind: m.media.kind,
+        providerId: m.media.providerId,
+        caption: m.media.caption,
+      }
+    : undefined;
+
   return {
     id: String(m.message_id),
     ticketId,
@@ -20,6 +33,7 @@ export function mapApiMessageToCanonical(
     sender: direction === 'inbound' ? 'customer' : 'agent',
     deliveryStatus: (m.deliveryStatus || 'sent') as Message['deliveryStatus'],
     createdAt: m.created_at || new Date().toISOString(),
+    media,
   };
 }
 

@@ -95,8 +95,12 @@ export class ConversationComponent {
     this.initialLoadDone = true;
     if (this.messages().length > 0) {
       requestAnimationFrame(() => {
-        vp.scrollTo({ bottom: 0, behavior: 'auto' });
-        this.isAtBottom.set(true);
+        this.scrollToBottom();
+        // Autosize measures items asynchronously and images load, shifting the
+        // true bottom. Re-scroll on progressive delays until heights settle.
+        [150, 400, 800].forEach((delay) => {
+          setTimeout(() => this.scrollToBottom(), delay);
+        });
       });
     } else {
       // Empty conversation — nothing to scroll, already "at bottom"
@@ -179,6 +183,14 @@ export class ConversationComponent {
     if (!ticket) return;
 
     this.messageSender.send(ticket.ticket_id, event.content, event.tempId);
+    this.scrollToBottom();
+  }
+
+  onSendFile(event: { content: string; tempId: string; file: File }): void {
+    const ticket = this.activeTicket();
+    if (!ticket) return;
+
+    this.messageSender.sendWithMedia(ticket.ticket_id, event.content, event.file, event.tempId);
     this.scrollToBottom();
   }
 

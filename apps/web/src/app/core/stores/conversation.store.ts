@@ -82,6 +82,7 @@ export class ConversationStore {
           deliveryStatus: 'sent',
           createdAt: p.createdAt,
           externalId: p.externalId ?? undefined,
+          media: p.media ?? undefined,
         };
         this.addMessage(message);
         break;
@@ -121,7 +122,12 @@ export class ConversationStore {
    * @param ticketId - Ticket ID
    * @returns The created optimistic message
    */
-  addOptimisticMessage(tempId: string, content: string, ticketId: string): Message {
+  addOptimisticMessage(
+    tempId: string,
+    content: string,
+    ticketId: string,
+    media?: Message['media'],
+  ): Message {
     const optimistic: Message = {
       id: tempId,
       tempId,
@@ -131,6 +137,7 @@ export class ConversationStore {
       sender: 'agent',
       deliveryStatus: 'sending',
       createdAt: new Date().toISOString(),
+      media,
     };
     this.addMessage(optimistic);
 
@@ -170,6 +177,7 @@ export class ConversationStore {
           return {
             ...confirmed,
             tempId, // Keep tempId for tracking
+            media: confirmed.media ?? m.media, // Preserve optimistic media (local preview)
             deliveryStatus: confirmed.deliveryStatus || m.deliveryStatus,
           };
         }
