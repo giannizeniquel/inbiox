@@ -12,6 +12,13 @@ export interface SendMessageInput {
   content: string;
   sender?: 'agent' | 'customer' | 'system';
   tempId?: string; // Caller-provided for optimistic reconciliation
+  /** Media attachment fields (optional) */
+  mediaId?: string;
+  mediaKey?: string;
+  mimeType?: string;
+  caption?: string;
+  filename?: string;
+  size?: number;
 }
 
 /**
@@ -72,7 +79,20 @@ export class SendMessageUseCase {
   execute(input: SendMessageInput): Observable<SendMessageOutput> {
     const tempId = input.tempId ?? generateTempId();
 
-    return this.provider.sendMessage(input.ticketId, input.content).pipe(
+    // Route to sendMediaMessage if media is attached
+    const sendObservable = input.mediaId
+      ? this.provider.sendMediaMessage(
+          input.ticketId,
+          input.mediaId,
+          input.mimeType ?? 'application/octet-stream',
+          input.caption ?? input.content,
+          input.mediaKey,
+          input.filename,
+          input.size,
+        )
+      : this.provider.sendMessage(input.ticketId, input.content);
+
+    return sendObservable.pipe(
       map((message: Message) => {
         // Reconciliation: attach caller tempId to provider response
         const reconciled: Message = {

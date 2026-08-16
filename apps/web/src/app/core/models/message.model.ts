@@ -1,3 +1,5 @@
+import { MediaAttachment } from './media.model';
+
 /**
  * Message — canonical message model used throughout the frontend.
  * Single source of truth for message shape in stores, components, and services.
@@ -23,6 +25,8 @@ export interface Message {
   externalId?: string;
   /** Reason for delivery failure (when deliveryStatus === 'failed') */
   failedReason?: string;
+  /** Optional media attachment */
+  media?: MediaAttachment;
 }
 
 /**
@@ -35,6 +39,15 @@ export interface MessageDto {
   content: string;
   created_at: string;
   deliveryStatus?: string;
+  media?: {
+    key: string;
+    mimeType: string;
+    filename: string;
+    size: number;
+    kind: 'image' | 'video' | 'audio' | 'document';
+    providerId?: string;
+    caption?: string;
+  };
 }
 
 export interface SendMessageRequest {

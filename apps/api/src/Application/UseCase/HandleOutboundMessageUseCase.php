@@ -55,15 +55,21 @@ class HandleOutboundMessageUseCase
      * @param int $ticketId
      * @param string $content
      * @param int $agentId
+     * @param array|null $mediaMetadata Optional media metadata: {key, mimeType, filename, size, kind, providerId, caption}
      * @return array
      */
     public function processOutboundMessage(
         int $ticketId,
         string $content,
-        int $agentId
+        int $agentId,
+        ?array $mediaMetadata = null,
     ): array {
         // Generate deterministic event key: outbound:{ticketId}:{contentHash}
-        $contentHash = md5($content);
+        // Media messages have empty content (caption lives in media metadata), so
+        // hash the provider media ID (unique per upload) to avoid dedup collisions.
+        $mediaId = $mediaMetadata['providerId'] ?? null;
+        $hashSource = $mediaId !== null ? 'media:' . $mediaId : 'text:' . $content;
+        $contentHash = md5($hashSource);
         $eventKey = sprintf('outbound:%d:%s', $ticketId, $contentHash);
 
         // Check idempotency: return early if already processed (no retry needed)
@@ -89,7 +95,7 @@ class HandleOutboundMessageUseCase
 
         while ($attempt < $maxRetries) {
             try {
-                $result = $this->executeTransactionWithRetry($ticketId, $content, $eventKey, $agentId, $ticket);
+                $result = $this->executeTransactionWithRetry($ticketId, $content, $eventKey, $agentId, $ticket, $mediaMetadata);
                 $this->persistEventsToOutbox();
                 return $result;
             } catch (OptimisticLockException $e) {
@@ -127,9 +133,10 @@ class HandleOutboundMessageUseCase
         string $content,
         string $eventKey,
         int $agentId,
-        ?Ticket &$ticket
+        ?Ticket &$ticket,
+        ?array $mediaMetadata = null,
     ): array {
-        return $this->em->getConnection()->transactional(function() use ($ticketId, $content, $eventKey, $agentId, &$ticket) {
+        return $this->em->getConnection()->transactional(function() use ($ticketId, $content, $eventKey, $agentId, &$ticket, $mediaMetadata) {
             // Get ticket
             $ticket = $this->ticketRepo->findById($ticketId);
             if (!$ticket) {
@@ -182,6 +189,11 @@ class HandleOutboundMessageUseCase
             $msg->setConversation($conversation);
             $msg->setDirection('outbound');
             $msg->setContent($content);
+
+            // Attach media metadata if provided
+            if ($mediaMetadata !== null) {
+                $msg->setMedia($mediaMetadata);
+            }
 
             $this->em->persist($msg);
 

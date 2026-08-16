@@ -1,0 +1,122 @@
+import { Component, ChangeDetectionStrategy, input, inject, signal, effect } from '@angular/core';
+import { MediaAttachment } from '../../../../../core/models/media.model';
+import { MediaUrlService } from '../../../../../core/api/media-url.service';
+
+@Component({
+  selector: 'app-media-document',
+  standalone: true,
+  template: `
+    @if (docUrl()) {
+      <a
+        [href]="docUrl()!"
+        [download]="attachment().filename"
+        class="media-document"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <span class="media-document__icon">{{ icon() }}</span>
+        <span class="media-document__info">
+          <span class="media-document__name">{{ attachment().filename }}</span>
+          <span class="media-document__size">{{ fileSizeDisplay() }}</span>
+        </span>
+      </a>
+    } @else {
+      <div class="media-document media-document--pending">
+        <span class="media-document__icon">{{ icon() }}</span>
+        <span class="media-document__info">
+          <span class="media-document__name">{{ attachment().filename }}</span>
+          <span class="media-document__size">{{ fileSizeDisplay() }}</span>
+        </span>
+      </div>
+    }
+  `,
+  styles: [`
+    .media-document {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--bg-surface, #f3f4f6);
+      border-radius: 8px;
+      text-decoration: none;
+      color: var(--text-primary, #111827);
+      max-width: 300px;
+      transition: background 0.15s;
+    }
+    .media-document:hover {
+      background: var(--bg-surface-hover, #e5e7eb);
+    }
+    .media-document--placeholder {
+      width: 250px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted, #6b7280);
+      font-size: 0.875rem;
+    }
+    .media-document__icon {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+    .media-document__info {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .media-document__name {
+      font-size: 0.875rem;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .media-document__size {
+      font-size: 0.75rem;
+      color: var(--text-muted, #6b7280);
+    }
+  `],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class MediaDocumentComponent {
+  readonly attachment = input.required<MediaAttachment>();
+  readonly messageId = input.required<string>();
+
+  private mediaUrlService = inject(MediaUrlService);
+
+  docUrl = signal<string | null>(null);
+
+  constructor() {
+    effect((onCleanup) => {
+      const messageId = this.messageId();
+
+      this.docUrl.set(null);
+
+      const sub = this.mediaUrlService.getMediaUrl(messageId).subscribe({
+        next: (resp) => {
+          this.docUrl.set(resp.url);
+        },
+        error: () => {
+          this.docUrl.set(null);
+        },
+      });
+
+      onCleanup(() => sub.unsubscribe());
+    });
+  }
+
+  icon(): string {
+    const mime = this.attachment().mimeType;
+    if (mime === 'application/pdf') return '📄';
+    if (mime.includes('word') || mime.includes('document')) return '📝';
+    if (mime.includes('sheet') || mime.includes('excel') || mime === 'text/csv') return '📊';
+    return '📎';
+  }
+
+  fileSizeDisplay(): string {
+    const bytes = this.attachment().size;
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+}

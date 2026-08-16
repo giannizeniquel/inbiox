@@ -4,7 +4,34 @@
       <span class="message-bubble__system-text">{{ message().content }}</span>
     }
     @default {
-      <p class="message-bubble__text">{{ message().content }}</p>
+      <!-- Media rendering -->
+      @if (hasMedia()) {
+        <div class="message-bubble__media">
+          @switch (message().media!.kind) {
+            @case ('image') {
+              <app-media-image [attachment]="message().media!" [messageId]="message().id" />
+            }
+            @case ('video') {
+              <app-media-video [attachment]="message().media!" [messageId]="message().id" />
+            }
+            @case ('audio') {
+              <app-media-audio [attachment]="message().media!" [messageId]="message().id" />
+            }
+            @case ('document') {
+              <app-media-document [attachment]="message().media!" [messageId]="message().id" />
+            }
+          }
+          @if (message().media!.caption) {
+            <p class="message-bubble__caption">{{ message().media!.caption }}</p>
+          }
+        </div>
+      }
+
+      <!-- Text content — only for pure-text messages (media messages use caption) -->
+      @if (!hasMedia() && message().content) {
+        <p class="message-bubble__text">{{ message().content }}</p>
+      }
+
       <span class="message-bubble__meta">
         <span class="message-bubble__time">{{ timeDisplay() }}</span>
         @if (messageType() === 'agent') {

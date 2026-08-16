@@ -59,7 +59,7 @@ class GetTicketMessagesQuery
             $params[] = (int) $cursorData['id'];
         }
         
-        $sql = "SELECT id, content, direction, created_at
+        $sql = "SELECT id, content, direction, created_at, media
                 FROM messages
                 WHERE $where
                 ORDER BY created_at ASC, id ASC
@@ -87,6 +87,7 @@ class GetTicketMessagesQuery
             direction: $row['direction'],
             content: $row['content'],
             createdAt: (new \DateTimeImmutable($row['created_at']))->format('Y-m-d\TH:i:s\Z'),
+            media: is_string($row['media'] ?? null) ? json_decode($row['media'], true) : $row['media'] ?? null,
         ), $results);
         
         return ['items' => $items, 'has_more' => $hasMore, 'next_cursor' => $nextCursor];
@@ -104,7 +105,7 @@ class GetTicketMessagesQuery
             $params[] = (int) $cursorData['id'];
         }
         
-        $sql = "SELECT id, content, direction, created_at
+        $sql = "SELECT id, content, direction, created_at, media
                 FROM messages
                 WHERE $where
                 ORDER BY created_at DESC, id DESC
@@ -139,6 +140,7 @@ class GetTicketMessagesQuery
             direction: $row['direction'],
             content: $row['content'],
             createdAt: (new \DateTimeImmutable($row['created_at']))->format('Y-m-d\TH:i:s\Z'),
+            media: is_string($row['media'] ?? null) ? json_decode($row['media'], true) : $row['media'] ?? null,
         ), $results);
         
         return ['items' => $items, 'has_more' => $hasMore, 'next_cursor' => $nextCursor];

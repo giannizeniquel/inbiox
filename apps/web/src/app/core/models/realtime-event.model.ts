@@ -50,6 +50,15 @@ export interface MessageAddedPayload {
   createdAt: string;
   externalId: string | null;
   phoneNumberId?: string | null;
+  media?: {
+    key: string;
+    mimeType: string;
+    filename: string;
+    size: number;
+    kind: 'image' | 'video' | 'audio' | 'document';
+    providerId?: string;
+    caption?: string;
+  } | null;
 }
 
 /** Payload for `ticket.created` events */

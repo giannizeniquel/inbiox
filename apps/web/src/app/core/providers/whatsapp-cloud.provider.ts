@@ -179,15 +179,36 @@ export class WhatsAppCloudProvider implements ProviderInterface {
   /**
    * Send a message with a media attachment via backend proxy.
    *
-   * POST /api/provider/send { ticketId, content, mediaId, mimeType }
+   * POST /api/provider/send { ticketId, content, mediaId, mimeType, caption, mediaKey, filename, size }
    * Response: Message
    */
-  sendMediaMessage(ticketId: string, mediaId: string, mimeType: string, caption?: string): Observable<Message> {
-    return this.http.post<Message>('/api/provider/send', {
+  sendMediaMessage(
+    ticketId: string,
+    mediaId: string,
+    mimeType: string,
+    caption?: string,
+    mediaKey?: string,
+    filename?: string,
+    size?: number,
+  ): Observable<Message> {
+    return this.http.post<{ messageId: string; status: string }>('/api/provider/send', {
       ticketId,
       content: caption || '',
       mediaId,
       mimeType,
-    });
+      caption,
+      mediaKey,
+      filename,
+      size,
+    }).pipe(
+      map(response => ({
+        id: response.messageId,
+        ticketId,
+        content: caption || '',
+        deliveryStatus: 'sent' as DeliveryStatus,
+        createdAt: new Date().toISOString(),
+        sender: 'agent' as MessageSender,
+      }))
+    );
   }
 }

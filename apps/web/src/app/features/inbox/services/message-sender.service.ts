@@ -1,11 +1,13 @@
 import { Injectable, inject } from '@angular/core';
-import { Subject } from 'rxjs';
+import { Subject, switchMap, of, catchError, throwError } from 'rxjs';
 import { SendMessageUseCase, RetryMessageUseCase } from '../../../core/application/messaging';
 import { ConversationStore } from '../../../core/stores/conversation.store';
 import { Message } from '../../../core/models/message.model';
 import { generateTempId } from '../../../core/utils/temp-id.util';
 import { retryWithBackoff, RetryConfig } from '../../../core/utils/retry.util';
 import { Message as ProviderMessage } from '../../../core/providers/provider.interface';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../environments/environment';
 
 export interface SendResult {
   tempId: string;
@@ -30,6 +32,7 @@ export class MessageSenderService {
   private sendUseCase = inject(SendMessageUseCase);
   private retryUseCase = inject(RetryMessageUseCase);
   private conversationStore = inject(ConversationStore);
+  private http = inject(HttpClient);
 
   private readonly sendResults = new Subject<SendResult>();
   readonly onSendResult$ = this.sendResults.asObservable();
@@ -39,6 +42,14 @@ export class MessageSenderService {
     maxRetries: 2,
     initialDelayMs: 1000,
     maxDelayMs: 5000,
+  };
+
+  /** Client-side file size caps (bytes) */
+  private readonly FILE_SIZE_CAPS: Record<string, number> = {
+    image: 5 * 1024 * 1024,
+    video: 16 * 1024 * 1024,
+    audio: 16 * 1024 * 1024,
+    document: 100 * 1024 * 1024,
   };
 
   /**
@@ -73,6 +84,90 @@ export class MessageSenderService {
           tempId,
           success: false,
           error: 'Send failed after retries',
+        });
+      },
+    });
+
+    return tempId;
+  }
+
+  /**
+   * Send a message with a file attachment.
+   * Flow: client-side validation → POST /api/provider/media/upload → send message with mediaId
+   *
+   * @param ticketId - The ticket/chat ID
+   * @param content - Message content (caption)
+   * @param file - File to attach
+   * @param existingTempId - Optional pre-generated tempId
+   * @returns tempId of the optimistic message
+   */
+  sendWithMedia(ticketId: string, content: string, file: File, existingTempId?: string): string {
+    const tempId = existingTempId ?? generateTempId();
+
+    // Build optimistic media metadata (with local blob URL for immediate preview)
+    const optimisticMedia = this.buildOptimisticMedia(file, content);
+
+    // Client-side pre-flight validation
+    const validationError = this.validateFile(file);
+    if (validationError) {
+      this.conversationStore.addOptimisticMessage(tempId, content, ticketId, optimisticMedia);
+      this.conversationStore.updateMessageStatus(tempId, 'failed');
+      this.sendResults.next({
+        tempId,
+        success: false,
+        error: validationError,
+      });
+      return tempId;
+    }
+
+    // Add optimistic message to store (with media for immediate preview)
+    this.conversationStore.addOptimisticMessage(tempId, content, ticketId, optimisticMedia);
+
+    // Upload file to server
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('ticketId', ticketId);
+
+    this.http.post<{ mediaId: string; key: string | null }>(
+      `${environment.apiUrl}/api/provider/media/upload`,
+      formData
+    ).pipe(
+      switchMap((uploadResult) => {
+        // Now send the message with media
+        return this.sendUseCase.execute({
+          ticketId,
+          content,
+          tempId,
+          mediaId: uploadResult.mediaId,
+          mediaKey: uploadResult.key ?? undefined,
+          mimeType: file.type,
+          caption: content,
+          filename: file.name,
+          size: file.size,
+        });
+      }),
+      catchError((error) => {
+        // Handle 413/415 as user-facing errors
+        if (error.status === 413) {
+          return throwError(() => new Error(`El archivo excede el tamaño máximo: ${error.error?.maxSize ? (error.error.maxSize / 1024 / 1024).toFixed(0) : '?'}MB`));
+        }
+        if (error.status === 415) {
+          return throwError(() => new Error('Tipo de archivo no permitido'));
+        }
+        return throwError(() => error);
+      })
+    ).subscribe({
+      next: (output) => {
+        this.conversationStore.confirmMessage(tempId, toCanonical(output.message, ticketId, tempId, content));
+        this.sendResults.next({ tempId, success: true });
+      },
+      error: (err: unknown) => {
+        console.error('[MessageSender] sendWithMedia failed:', err);
+        this.conversationStore.updateMessageStatus(tempId, 'failed');
+        this.sendResults.next({
+          tempId,
+          success: false,
+          error: err instanceof Error ? err.message : 'Send failed',
         });
       },
     });
@@ -122,6 +217,65 @@ export class MessageSenderService {
    */
   removeFailed(tempId: string): void {
     this.conversationStore.removeMessage(tempId);
+  }
+
+  /**
+   * Client-side file validation before upload.
+   * Returns null if valid, error message string if invalid.
+   */
+  private validateFile(file: File): string | null {
+    // Check MIME type
+    const allowedTypes = [
+      'image/jpeg', 'image/png', 'image/webp',
+      'video/mp4',
+      'audio/ogg', 'audio/mpeg',
+      'application/pdf', 'text/plain',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/csv',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      return 'Tipo de archivo no permitido';
+    }
+
+    // Check size by kind
+    const kind = this.getFileKind(file.type);
+    const maxSize = this.FILE_SIZE_CAPS[kind];
+    if (file.size > maxSize) {
+      return `El archivo excede el tamaño máximo: ${maxSize / 1024 / 1024}MB`;
+    }
+
+    return null;
+  }
+
+  private getFileKind(mimeType: string): string {
+    if (mimeType.startsWith('image/')) return 'image';
+    if (mimeType.startsWith('video/')) return 'video';
+    if (mimeType.startsWith('audio/')) return 'audio';
+    return 'document';
+  }
+
+  /**
+   * Build optimistic media metadata for immediate preview while sending.
+   * Uses a local blob URL for image/video/audio so the file renders
+   * before the server confirms (no pre-signed URL yet).
+   */
+  private buildOptimisticMedia(file: File, caption: string) {
+    const kind = this.getFileKind(file.type) as 'image' | 'video' | 'audio' | 'document';
+    const localUrl = kind !== 'document' ? URL.createObjectURL(file) : undefined;
+
+    return {
+      key: '',
+      mimeType: file.type,
+      filename: file.name,
+      size: file.size,
+      kind,
+      caption: caption || undefined,
+      localUrl,
+    };
   }
 }
 

@@ -9,6 +9,7 @@ class MessageDTO
         public string $direction,
         public string $content,
         public string $createdAt,
+        public ?array $media = null,
     ) {}
 
     public function toArray(): array
@@ -18,6 +19,7 @@ class MessageDTO
             'direction' => $this->direction,
             'content' => $this->content,
             'created_at' => $this->createdAt,
+            'media' => $this->media,
         ];
     }
 }

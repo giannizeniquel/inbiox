@@ -177,6 +177,13 @@ app_provider_media_download:
     methods: [GET]
     controller: App\Controller\ProviderProxyController::downloadMedia
 
+app_message_media_url:
+    path: /api/messages/{id}/media
+    methods: [GET]
+    controller: App\Controller\MediaUrlController
+    requirements:
+        id: '\d+'
+
 app_webhook:
     path: /webhook
     methods: [GET, POST]

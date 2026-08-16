@@ -17,6 +17,7 @@ final readonly class MessageCreatedEvent extends DomainEvent
         public int $messageId,
         public string $content = '',
         public ?string $senderName = null,
+        public ?array $media = null,
     ) {
         parent::__construct(
             $eventId,

@@ -680,7 +680,15 @@ export class FakeWhatsappProvider implements ProviderInterface {
   /**
    * Stub: Send a media message creates a fake message with the media ID.
    */
-  sendMediaMessage(ticketId: string, _mediaId: string, _mimeType: string, caption?: string): Observable<Message> {
+  sendMediaMessage(
+    ticketId: string,
+    _mediaId: string,
+    _mimeType: string,
+    caption?: string,
+    _mediaKey?: string,
+    _filename?: string,
+    _size?: number,
+  ): Observable<Message> {
     const message: Message = {
       id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       ticketId,
