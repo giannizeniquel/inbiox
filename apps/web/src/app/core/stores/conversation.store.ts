@@ -5,6 +5,7 @@ import { Message } from '../models/message.model';
 import { RealtimeEvent, RealtimeEventType,
   MessageAddedPayload, MessageUpdatedPayload } from '../models/realtime-event.model';
 import { EventBusService } from '../realtime/event-bus.service';
+import { TicketStore } from './ticket.store';
 
 const MAX_MESSAGES = 200;
 
@@ -29,6 +30,8 @@ export class ConversationStore {
 
   /** Whether there are more older messages to load (pagination) */
   readonly hasMore = signal<boolean>(true);
+
+  private readonly ticketStore = inject(TicketStore);
 
   constructor() {
     this.initEventBus();
@@ -63,6 +66,13 @@ export class ConversationStore {
     switch (event.eventType) {
       case RealtimeEventType.MessageAdded: {
         const p = event.payload as MessageAddedPayload;
+        // Ignore messages that don't belong to the active conversation/ticket.
+        // Prevents a message from another contact's conversation from leaking
+        // into the currently open chat.
+        const active = this.ticketStore.activeTicket();
+        if (!active || String(active.ticket_id) !== String(p.ticketId)) {
+          return;
+        }
         const message: Message = {
           id: String(p.messageId),
           ticketId: String(p.ticketId),
