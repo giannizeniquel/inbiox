@@ -75,20 +75,33 @@
 }
 
 // Custom scrollbar for the viewport
-app-virtual-scroll-viewport {
+cdk-virtual-scroll-viewport.conversation-vp {
+  flex: 1;
+  min-height: 0;
+  position: relative;
   --virtual-scroll-padding: 12px;
   padding-bottom: 12px;
 }
 
-app-virtual-scroll-viewport::-webkit-scrollbar {
+// Loading spinner shown at top of viewport while fetching older messages.
+// Positioned absolutely to avoid disrupting CDK's virtual scroll layout.
+.older-messages-spinner {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+}
+
+cdk-virtual-scroll-viewport.conversation-vp::-webkit-scrollbar {
   width: 6px;
 }
 
-app-virtual-scroll-viewport::-webkit-scrollbar-track {
+cdk-virtual-scroll-viewport.conversation-vp::-webkit-scrollbar-track {
   background: transparent;
 }
 
-app-virtual-scroll-viewport::-webkit-scrollbar-thumb {
+cdk-virtual-scroll-viewport.conversation-vp::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.2);
   border-radius: 3px;
 
@@ -98,7 +111,7 @@ app-virtual-scroll-viewport::-webkit-scrollbar-thumb {
 }
 
 // Dark theme scrollbar
-:host-context(.dark) app-virtual-scroll-viewport::-webkit-scrollbar-thumb {
+:host-context(.dark) cdk-virtual-scroll-viewport.conversation-vp::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.15);
 
   &:hover {
