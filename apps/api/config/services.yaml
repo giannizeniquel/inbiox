@@ -42,3 +42,27 @@ services:
             $tokenTtl: '%lexik_jwt_authentication.token_ttl%'
         tags:
             - { name: kernel.event_listener, event: lexik_jwt_authentication.on_authentication_success, method: onAuthenticationSuccess, priority: -10 }
+
+    Aws\S3\S3Client:
+        factory: ['App\Infrastructure\Storage\S3ClientFactory', 'create']
+        arguments:
+            $endpoint: '%env(S3_ENDPOINT)%'
+            $region: '%env(S3_REGION)%'
+            $accessKey: '%env(S3_KEY)%'
+            $secretKey: '%env(S3_SECRET)%'
+
+    media.public_s3_client:
+        class: Aws\S3\S3Client
+        factory: ['App\Infrastructure\Storage\S3ClientFactory', 'create']
+        arguments:
+            $endpoint: '%env(S3_PUBLIC_ENDPOINT)%'
+            $region: '%env(S3_REGION)%'
+            $accessKey: '%env(S3_KEY)%'
+            $secretKey: '%env(S3_SECRET)%'
+
+    App\Infrastructure\Storage\MediaStorageService:
+        arguments:
+            $s3Client: '@Aws\S3\S3Client'
+            $publicS3Client: '@media.public_s3_client'
+            $bucket: '%env(S3_BUCKET)%'
+            $urlTtl: '%env(int:MEDIA_URL_TTL)%'
