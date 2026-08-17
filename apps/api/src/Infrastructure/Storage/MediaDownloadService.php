@@ -38,6 +38,10 @@ class MediaDownloadService
         int $ticketId,
         string $filename = 'file',
     ): ?array {
+        // Normalize MIME type: WhatsApp voice notes arrive as
+        // "audio/ogg; codecs=opus" but we want the bare "audio/ogg".
+        $mimeType = strtolower(trim(explode(';', $mimeType)[0]));
+
         try {
             $binary = $this->graphClient->downloadMedia($mediaId);
         } catch (GraphApiException $e) {
