@@ -6,6 +6,7 @@
 .message-bubble {
   display: flex;
   flex-direction: column;
+  width: fit-content;      // dynamic width: shrink to content like WhatsApp
   max-width: 65%;
   padding: 8px 12px;
   border-radius: 7.5px;
@@ -36,6 +37,7 @@
     background-color: var(--bg-bubble-agent, #dcf8c6);
     color: var(--text-primary, #111827);
     margin-left: auto;
+    margin-right: 0.9375rem; // 15px
     border-bottom-right-radius: 3px;
   }
 
@@ -43,6 +45,7 @@
     background-color: var(--bg-bubble-client, #ffffff);
     color: var(--text-primary, #111827);
     margin-right: auto;
+    margin-left: 1.25rem; // 20px
     border-bottom-left-radius: 3px;
     border: 1px solid var(--border-subtle, #e5e7eb);
   }
