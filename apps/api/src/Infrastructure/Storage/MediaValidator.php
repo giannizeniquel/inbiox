@@ -18,12 +18,23 @@ class MediaValidator
     ];
 
     private const ALLOWED_MIME = [
+        // images
         'image/jpeg',
         'image/png',
         'image/webp',
+        'image/gif',
+        'image/svg+xml',
+        // video
         'video/mp4',
+        'video/webm',
+        // audio
         'audio/ogg',
         'audio/mpeg',
+        'audio/mp3',
+        'audio/wav',
+        'audio/aac',
+        'audio/x-m4a',
+        // documents
         'application/pdf',
         'text/plain',
         'application/msword',
@@ -31,6 +42,27 @@ class MediaValidator
         'text/csv',
         'application/vnd.ms-excel',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        // presentations
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        // archives
+        'application/zip',
+        'application/x-zip-compressed',
+        'application/x-rar-compressed',
+        'application/vnd.rar',
+        'application/x-rar',
+        'application/rar',
+        'application/x-compressed',
+        'application/x-7z-compressed',
+        'application/x-tar',
+        'application/gzip',
+        'application/x-gzip',
+        // executables
+        'application/x-msdownload',
+        'application/vnd.microsoft.portable-executable',
+        'application/x-msdos-program',
+        // generic binary (catch-all for unknown types)
+        'application/octet-stream',
     ];
 
     /**
