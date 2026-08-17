@@ -25,7 +25,9 @@
           }
           @case ('audio') {
             <div class="preview-audio">
-              <div class="preview-audio__icon" aria-hidden="true">🎵</div>
+              <div class="preview-audio__icon" aria-hidden="true">
+                <app-file-type-icon [mimeType]="file()!.type" [size]="40" />
+              </div>
               <div class="preview-audio__meta">
                 <div class="preview-audio__name">{{ file()?.name }}</div>
                 <div class="preview-audio__size">{{ fileSizeDisplay() }}</div>
@@ -35,7 +37,9 @@
           }
           @case ('document') {
             <div class="preview-document">
-              <span class="preview-document__icon" aria-hidden="true">{{ icon() }}</span>
+              <span class="preview-document__icon" aria-hidden="true">
+                <app-file-type-icon [mimeType]="file()!.type" [size]="40" />
+              </span>
               <div class="preview-document__info">
                 <span class="preview-document__name">{{ file()?.name }}</span>
                 <span class="preview-document__size">{{ fileSizeDisplay() }}</span>

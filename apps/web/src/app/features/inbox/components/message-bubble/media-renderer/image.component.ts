@@ -20,15 +20,16 @@ import { MediaUrlService } from '../../../../../core/api/media-url.service';
   `,
   styles: [`
     .media-image {
-      max-width: 400px;
-      max-height: 300px;
+      width: 220px;
+      aspect-ratio: 4 / 3;
+      object-fit: contain;
       border-radius: 8px;
       display: block;
-      object-fit: contain;
+      background: var(--bg-surface, #f3f4f6);
     }
     .media-image--placeholder {
-      width: 200px;
-      height: 120px;
+      width: 220px;
+      aspect-ratio: 4 / 3;
       display: flex;
       align-items: center;
       justify-content: center;

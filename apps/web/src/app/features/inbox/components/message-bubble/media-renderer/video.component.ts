@@ -19,14 +19,15 @@ import { MediaUrlService } from '../../../../../core/api/media-url.service';
   `,
   styles: [`
     .media-video {
-      max-width: 400px;
-      max-height: 300px;
+      width: 300px;
+      aspect-ratio: 16 / 9;
       border-radius: 8px;
       display: block;
+      background: #000;
     }
     .media-video--placeholder {
-      width: 200px;
-      height: 120px;
+      width: 300px;
+      aspect-ratio: 16 / 9;
       display: flex;
       align-items: center;
       justify-content: center;

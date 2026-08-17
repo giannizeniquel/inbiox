@@ -1,10 +1,12 @@
 import { Component, ChangeDetectionStrategy, input, inject, signal, effect } from '@angular/core';
 import { MediaAttachment } from '../../../../../core/models/media.model';
 import { MediaUrlService } from '../../../../../core/api/media-url.service';
+import { FileTypeIconComponent } from '../../file-type-icon/file-type-icon.component';
 
 @Component({
   selector: 'app-media-document',
   standalone: true,
+  imports: [FileTypeIconComponent],
   template: `
     @if (docUrl()) {
       <a
@@ -14,7 +16,9 @@ import { MediaUrlService } from '../../../../../core/api/media-url.service';
         target="_blank"
         rel="noopener noreferrer"
       >
-        <span class="media-document__icon">{{ icon() }}</span>
+        <span class="media-document__icon">
+          <app-file-type-icon [mimeType]="attachment().mimeType" [size]="28" />
+        </span>
         <span class="media-document__info">
           <span class="media-document__name">{{ attachment().filename }}</span>
           <span class="media-document__size">{{ fileSizeDisplay() }}</span>
@@ -22,7 +26,9 @@ import { MediaUrlService } from '../../../../../core/api/media-url.service';
       </a>
     } @else {
       <div class="media-document media-document--pending">
-        <span class="media-document__icon">{{ icon() }}</span>
+        <span class="media-document__icon">
+          <app-file-type-icon [mimeType]="attachment().mimeType" [size]="28" />
+        </span>
         <span class="media-document__info">
           <span class="media-document__name">{{ attachment().filename }}</span>
           <span class="media-document__size">{{ fileSizeDisplay() }}</span>
@@ -56,8 +62,11 @@ import { MediaUrlService } from '../../../../../core/api/media-url.service';
       font-size: 0.875rem;
     }
     .media-document__icon {
-      font-size: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       flex-shrink: 0;
+      color: var(--text-secondary, #475569);
     }
     .media-document__info {
       display: flex;
@@ -112,14 +121,6 @@ export class MediaDocumentComponent {
 
       onCleanup(() => sub.unsubscribe());
     });
-  }
-
-  icon(): string {
-    const mime = this.attachment().mimeType;
-    if (mime === 'application/pdf') return '📄';
-    if (mime.includes('word') || mime.includes('document')) return '📝';
-    if (mime.includes('sheet') || mime.includes('excel') || mime === 'text/csv') return '📊';
-    return '📎';
   }
 
   fileSizeDisplay(): string {
