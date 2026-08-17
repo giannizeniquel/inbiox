@@ -56,9 +56,20 @@ class MediaValidator
 
     private function validateMimeType(string $mimeType): void
     {
-        if (!in_array($mimeType, self::ALLOWED_MIME, true)) {
+        $normalized = $this->normalizeMimeType($mimeType);
+        if (!in_array($normalized, self::ALLOWED_MIME, true)) {
             throw new MediaTypeNotAllowedException($mimeType);
         }
+    }
+
+    /**
+     * Normalize a MIME type by stripping parameters (e.g. "; codecs=opus")
+     * and lowercasing. WhatsApp voice notes arrive as "audio/ogg; codecs=opus"
+     * but the whitelist stores the bare "audio/ogg".
+     */
+    private function normalizeMimeType(string $mimeType): string
+    {
+        return strtolower(trim(explode(';', $mimeType)[0]));
     }
 
     private function validateSize(string $mimeType, int $fileSize): void

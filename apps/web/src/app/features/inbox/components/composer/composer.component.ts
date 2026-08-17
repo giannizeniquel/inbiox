@@ -48,7 +48,12 @@ export class ComposerComponent {
     const el = this.inputEl()?.nativeElement;
     if (!el) return;
     el.style.height = 'auto';
-    el.style.height = `${el.scrollHeight}px`;
+    // Only grow to fit content when there is actual text; otherwise let the
+    // CSS min-height handle the empty state (avoids a residual newline keeping
+    // the textarea one line taller than the original).
+    if (el.value.trim().length > 0) {
+      el.style.height = `${el.scrollHeight}px`;
+    }
   }
 
   onFileSelected(event: Event): void {
@@ -93,6 +98,15 @@ export class ComposerComponent {
     this.text.set('');
     this.selectedFile.set(null);
     this.showPreview.set(false);
+
+    // Reset composer height after the DOM reflects the cleared text.
+    // requestAnimationFrame fires after layout, so the textarea is empty.
+    requestAnimationFrame(() => {
+      const el = this.inputEl()?.nativeElement;
+      if (el) {
+        el.style.height = 'auto';
+      }
+    });
 
     if (file) {
       this.sendWithFile.emit({ content, tempId, file });
