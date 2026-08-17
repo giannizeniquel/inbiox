@@ -61,8 +61,10 @@ class MediaDownloadService
         } catch (\Throwable $e) {
             $this->logger->warning('Downloaded media failed validation', [
                 'mediaId' => $mediaId,
+                'mimeType' => $mimeType,
                 'error' => $e->getMessage(),
             ]);
+            error_log('MEDIA_VALIDATION_FAILED mediaId=' . $mediaId . ' mimeType=' . $mimeType);
             return null;
         }
 

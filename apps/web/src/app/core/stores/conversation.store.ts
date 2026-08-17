@@ -7,8 +7,6 @@ import { RealtimeEvent, RealtimeEventType,
 import { EventBusService } from '../realtime/event-bus.service';
 import { TicketStore } from './ticket.store';
 
-const MAX_MESSAGES = 200;
-
 /**
  * ConversationStore — manages message list state for the active chat.
  *
@@ -16,7 +14,9 @@ const MAX_MESSAGES = 200;
  * - messages: signal<Message[]>
  * - loading: signal<boolean>
  * - hasMore: signal<boolean> (pagination)
- * - Max 200 messages cap enforced (slice oldest)
+ *
+ * No message cap — the store can hold the full scrollable history. The CDK
+ * virtual scroll keeps the DOM bounded, so memory growth is acceptable.
  *
  * Optimistic UI via tempId tracking.
  */
@@ -105,12 +105,9 @@ export class ConversationStore {
    */
   private messageCache = new Map<string, { content: string; ticketId: string }>();
 
-  /** Add a message (optimistic or from server), enforcing 200 cap */
+  /** Add a message (optimistic or from server) */
   addMessage(message: Message): void {
-    this.messages.update(msgs => {
-      const next = [...msgs, message];
-      return next.length > MAX_MESSAGES ? next.slice(next.length - MAX_MESSAGES) : next;
-    });
+    this.messages.update(msgs => [...msgs, message]);
   }
 
   /**
@@ -241,21 +238,19 @@ export class ConversationStore {
       const newMessages = messages.filter(m => !existingIds.has(m.id));
       this.messages.update(msgs => [...msgs, ...newMessages]);
     } else {
-      this.messages.set(messages.length > MAX_MESSAGES ? messages.slice(-MAX_MESSAGES) : messages);
+      this.messages.set(messages);
     }
   }
 
   /**
    * Prepend older messages at the start of the array.
    * Used for scroll-up pagination — adds older entries before current ones.
-   * Caps at MAX_MESSAGES, trimming from the newest (end).
    */
   prependMessages(messages: Message[]): void {
     this.messages.update(msgs => {
       const existingIds = new Set(msgs.map(m => m.id));
       const newMessages = messages.filter(m => !existingIds.has(m.id));
-      const next = [...newMessages, ...msgs];
-      return next.length > MAX_MESSAGES ? next.slice(0, MAX_MESSAGES) : next;
+      return [...newMessages, ...msgs];
     });
   }
 

@@ -26,6 +26,11 @@ type MessageType = 'agent' | 'client' | 'system';
   templateUrl: './message-bubble.component.html',
   styleUrl: './message-bubble.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    // Expose the message id on the host so scroll anchoring can locate a
+    // specific message after pagination.
+    '[attr.data-message-id]': 'message().id',
+  },
 })
 export class MessageBubbleComponent {
   readonly message = input.required<Message>();

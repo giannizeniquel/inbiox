@@ -1,4 +1,5 @@
 import { Component, ChangeDetectionStrategy, input, output, computed, effect, signal, HostListener } from '@angular/core';
+import { FileTypeIconComponent } from '../file-type-icon/file-type-icon.component';
 
 type MediaKind = 'image' | 'video' | 'audio' | 'document';
 
@@ -17,6 +18,7 @@ type MediaKind = 'image' | 'video' | 'audio' | 'document';
 @Component({
   selector: 'app-media-preview-modal',
   standalone: true,
+  imports: [FileTypeIconComponent],
   templateUrl: './media-preview-modal.component.html',
   styleUrl: './media-preview-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -70,15 +72,6 @@ export class MediaPreviewModalComponent {
     if (mimeType.startsWith('video/')) return 'video';
     if (mimeType.startsWith('audio/')) return 'audio';
     return 'document';
-  }
-
-  icon(): string {
-    const mime = this.file()?.type ?? '';
-    if (mime === 'application/pdf') return '📄';
-    if (mime.includes('word') || mime.includes('document')) return '📝';
-    if (mime.includes('sheet') || mime.includes('excel') || mime === 'text/csv') return '📊';
-    if (mime.startsWith('text/')) return '📃';
-    return '📎';
   }
 
   fileSizeDisplay(): string {
