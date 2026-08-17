@@ -274,6 +274,7 @@ class WebhookController extends AbstractController
                         }
 
                         // Extract message content based on type
+                        $mediaDownloadPayload = null;
                         if ($msgType === 'text') {
                             $text = $msg['text']['body'] ?? '';
                         } else {
