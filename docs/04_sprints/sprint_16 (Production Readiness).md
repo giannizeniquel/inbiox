@@ -11,20 +11,29 @@
 
 ---
 
-## Fase 0 — Bloqueantes de seguridad y configuración
+## Fase 0 — Bloqueantes de seguridad y configuración ✅ COMPLETADA
 
 *Sin esto, no se debería exponer el sistema a internet real.*
 
-| # | Ítem | Dónde | Motivo |
-|---|---|---|---|
-| 0.1 | Agregar `fileReplacements` de `environment.prod.ts` en `angular.json` | Frontend build (`angular.json`) | Sin esto, el build de producción (`ng build --configuration production`) sigue empaquetando `environment.ts` de desarrollo, apuntando a `localhost:8000`. |
-| 0.2 | Ocultar `DebugPanelComponent` cuando `environment.production === true` | `inbox-page.component.html`, `debug-panel.component.ts` | Hoy la guarda es `isPlatformBrowser` (siempre `true` en SPA), no `environment.production` — el panel de debug es visible para cualquier usuario final en producción. |
-| 0.3 | Parametrizar `secure` de la cookie de refresh token por entorno | `config/packages/gesdinet_jwt_refresh_token.yaml`, `AuthController::logout()` | Hoy hardcodeado en `false` sin override de producción — el refresh token viaja sin el flag `Secure` incluso sobre HTTPS. |
-| 0.4 | Parametrizar CORS (`allow_origin`) por entorno | `config/packages/nelmio_cors.yaml` | Hoy hardcodeado a `http://localhost:4200` — el front de producción no podría llamar a la API tal como está. |
-| 0.5 | Rate limiting en `POST /api/auth/login` (y opcionalmente en el webhook, como defensa adicional al HMAC) | `security.yaml` + `symfony/rate-limiter` | No existe ningún límite de intentos — login expuesto a fuerza bruta. |
-| 0.6 | Corregir migración duplicada de índice (`idx_tickets_created_at`) | `migrations/Version20260809000001.php` (duplica `Version20260503210000.php`) | Rompe `doctrine:migrations:migrate` en cualquier entorno nuevo (CI, staging limpio, onboarding). |
-| 0.7 | Actualizar el docblock de `TicketVoter` para reflejar el modelo real (bandeja compartida: cualquier agente ve cualquier ticket) | `TicketVoter.php` | El comentario actual documenta la regla opuesta (agente solo ve tickets propios) y no se corresponde con ningún caller real — puede inducir a "corregir" el comportamiento correcto pensando que es un bug. |
-| 0.8 | Dejar constancia explícita en código de que `OwnershipScope` es intencionalmente no-op (reportes sin restricción por agente, decisión de producto confirmada) | `OwnershipScope.php`, `ReportingController`, `ReportVoter` | Misma razón que 0.7 — evitar que se "arregle" algo que es una decisión deliberada. |
+**Rama:** `sprint-16-production-readiness` · **Commits:** `91b94dc`, `abaf284`, `ba8bf69`, `f6dd802`, `469c846`, `104d15d`, `a375f6c`, `3a1509c`
+
+| # | Ítem | Dónde | Motivo | Estado |
+|---|---|---|---|---|
+| 0.1 | Agregar `fileReplacements` de `environment.prod.ts` en `angular.json` | `angular.json`, `environment.prod.ts` | Sin esto, el build de producción seguía empaquetando `environment.ts` de desarrollo, apuntando a `localhost:8000`. | ✅ `91b94dc` — verificado con `ng build --configuration production`: cero referencias a `localhost` en el bundle final. |
+| 0.2 | Ocultar `DebugPanelComponent` cuando `environment.production === true` | `debug-panel.component.ts` | La guarda era `isPlatformBrowser` (siempre `true` en SPA), no `environment.production` — el panel de debug era visible para cualquier usuario final en producción. | ✅ `abaf284` — `isDev` ahora depende de `!environment.production`. |
+| 0.3 | Parametrizar `secure` de la cookie de refresh token por entorno | `gesdinet_jwt_refresh_token.yaml`, `AuthController::logout()`, `.env*` | Estaba hardcodeado en `false` sin override de producción — el refresh token viajaba sin el flag `Secure` incluso sobre HTTPS. | ✅ `ba8bf69` — `%env(bool:REFRESH_COOKIE_SECURE)%`, default `0` en dev, debe setearse `1` en producción. |
+| 0.4 | Parametrizar CORS (`allow_origin`) por entorno | `nelmio_cors.yaml`, `.env*` | Estaba hardcodeado a `http://localhost:4200` — el front de producción no podría llamar a la API tal como estaba. | ✅ `f6dd802` — `%env(CORS_ALLOW_ORIGIN)%` + `origin_regex: true`. |
+| 0.5 | Rate limiting en `POST /api/auth/login` | `security.yaml`, `rate_limiter.yaml`, `composer.json/.lock` | No existía ningún límite de intentos — login expuesto a fuerza bruta. | ✅ `469c846` — `login_throttling` nativo de Symfony (5/min por usuario+IP, 25/min por IP). Requiere `composer install` en cualquier otro checkout. |
+| 0.6 | Corregir migración duplicada de índice (`idx_tickets_created_at`) | `Version20260809000001.php` | Rompía `doctrine:migrations:migrate` en cualquier entorno nuevo (CI, staging limpio, onboarding). | ✅ `104d15d` — migración convertida en no-op documentado (el índice ya lo crea `Version20260503210000`). |
+| 0.7 | Actualizar el docblock de `TicketVoter` para reflejar el modelo real (bandeja compartida) | `TicketVoter.php` | El comentario documentaba la regla opuesta (agente solo ve tickets propios) — podía inducir a "corregir" el comportamiento correcto pensando que era un bug. | ✅ `a375f6c` — sin cambios de lógica, solo documentación. |
+| 0.8 | Dejar constancia de que `OwnershipScope` es intencionalmente no-op | `OwnershipScope.php`, `ReportingController.php`, `ReportVoter.php` | Misma razón que 0.7 — decisión de producto confirmada (reportes sin restricción por agente, por ahora). | ✅ `3a1509c` — sin cambios de lógica, solo documentación. |
+
+### Hallazgos adicionales durante la implementación (no forman parte de Fase 0, quedan como deuda anotada)
+
+- **Migraciones rotas desde cero por otro motivo, distinto al índice duplicado:** `Version20260612000002` hace `ALTER TABLE messages ADD ...` pero ninguna migración anterior crea la tabla `messages` — un `doctrine:migrations:migrate` limpio sigue fallando ahí. Requiere revisar el baseline de schema inicial. **Pendiente, no resuelto.**
+- **Test desactualizado:** `tests/Unit/OwnershipScopeTest::testAgentWithLinkedAgentReturnsId` espera que `getAgentId()` devuelva el id del agente — contradice la decisión de producto de no restringir reportes. No se tocó (0.8 era solo documentación). **Pendiente: actualizar o eliminar ese test.**
+- **`vendor/` no versionado:** cualquier otro checkout necesita correr `composer install` para traer `symfony/rate-limiter` (0.5).
+- Validación realizada por el sub-agente: `php -l` en todos los archivos PHP tocados, `debug:config` de los 3 bundles afectados, suite completa de PHPUnit (388 tests; ~58 fallos preexistentes y no relacionados, confirmados contra el commit base antes de esta fase), `ng build --configuration production` exitoso.
 
 ---
 
@@ -76,7 +85,17 @@ Autoasignación explícita ("tomar" una conversación sin responder), chatbot in
 
 ## Orden de ejecución
 
-1. **Fase 0** — cambios acotados e independientes del resto; sin ellos no debería salir nada a producción.
-2. **Fase 3** — mayor riesgo regulatorio/de negocio (incumplimiento con Meta); toca el dominio (`TicketStateMachine`), conviene resolverla antes que la Fase 1 porque ambas comparten el mecanismo de auditoría de cierre.
+1. ~~**Fase 0**~~ ✅ **Completada** — 8 commits en `sprint-16-production-readiness` (ver detalle arriba).
+2. **Fase 3** ← en curso — mayor riesgo regulatorio/de negocio (incumplimiento con Meta); toca el dominio (`TicketStateMachine`), conviene resolverla antes que la Fase 1 porque ambas comparten el mecanismo de auditoría de cierre.
 3. **Fase 1** — reutiliza la distinción "cierre humano vs. sistema" que deja lista la Fase 3.
 4. **Fase 2** — fixes de UI independientes, se pueden hacer en paralelo a cualquiera de las anteriores.
+
+---
+
+## Bitácora
+
+| Fecha | Evento |
+|---|---|
+| Sprint 16 — día 1 | Plan creado, rama `sprint-16-production-readiness` abierta desde `test` (todas las demás ramas ya estaban mergeadas en `test`, no hizo falta mergear nada). |
+| Sprint 16 — día 1 | Fase 0 delegada a sub-agente e implementada completa (8/8 ítems, ver tabla de Fase 0). |
+| Sprint 16 — día 1 | Fase 3 delegada a sub-agente. |
