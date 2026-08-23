@@ -1,7 +1,11 @@
+# CORS_ALLOW_ORIGIN is a regex (see .env.dev / .env.example) matched against
+# the request Origin header. Defaults to the local Angular dev server
+# (http://localhost:4200, plus other localhost/127.0.0.1 ports). MUST be
+# overridden in production to the real frontend origin(s).
 nelmio_cors:
     defaults:
-        origin_regex: false
-        allow_origin: ['http://localhost:4200']
+        origin_regex: true
+        allow_origin: ['%env(CORS_ALLOW_ORIGIN)%']
         allow_methods: ['GET', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE']
         allow_headers: ['Content-Type', 'Authorization', 'Accept']
         expose_headers: ['Link']
