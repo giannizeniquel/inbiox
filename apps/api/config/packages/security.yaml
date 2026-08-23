@@ -32,6 +32,14 @@ security:
                 check_path: /api/auth/refresh
             entry_point: jwt
             user_checker: App\Security\UserChecker
+            # Brute-force protection on POST /api/auth/login (json_login above).
+            # Symfony's built-in login throttling: 5 attempts/minute per
+            # username+IP, and 25 (5x) attempts/minute per IP overall, via
+            # DefaultLoginRateLimiter (see LoginThrottlingListener). Backed by
+            # the "cache.rate_limiter" pool (config/packages/rate_limiter.yaml).
+            login_throttling:
+                max_attempts: 5
+                interval: '1 minute'
 
     access_control:
         # Public endpoints (no auth required)

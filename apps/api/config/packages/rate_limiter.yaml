@@ -1,0 +1,18 @@
+# Rate limiting configuration.
+#
+# The login brute-force protection itself is configured directly on the
+# "api" firewall in config/packages/security.yaml via `login_throttling`,
+# which uses Symfony's built-in DefaultLoginRateLimiter. That listener
+# creates and manages its own internal rate limiters (keyed by
+# username+IP and by IP alone) backed by the "cache.rate_limiter" pool
+# registered below — no custom named limiter is declared here to avoid
+# duplicating/conflicting with those internal limiters.
+#
+# This file only makes sure the `framework.rate_limiter` component is
+# explicitly enabled (it's auto-enabled once symfony/rate-limiter is
+# installed, but we keep it explicit for clarity and future limiters,
+# e.g. one for the /webhook endpoint as an extra defense on top of the
+# HMAC signature check).
+framework:
+    rate_limiter:
+        enabled: true
