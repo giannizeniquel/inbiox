@@ -1,10 +1,11 @@
-import { Component, inject, OnInit, OnDestroy, computed, PLATFORM_ID, inject as inject$1 } from '@angular/core';
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { Component, inject, OnInit, OnDestroy, computed } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { MercureService } from '../../../../core/realtime/mercure.service';
 import { EventBusService } from '../../../../core/realtime/event-bus.service';
 import { ConnectionStore } from '../../../../core/stores/connection.store';
 import { ProviderInterface, PROVIDER_INTERFACE } from '../../../../core/providers';
 import { Subscription } from 'rxjs';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-debug-panel',
@@ -18,10 +19,10 @@ export class DebugPanelComponent implements OnInit, OnDestroy {
   private readonly eventBus = inject(EventBusService);
   private readonly connectionStore = inject(ConnectionStore);
   private readonly provider = inject(PROVIDER_INTERFACE);
-  private readonly platformId = inject(PLATFORM_ID);
 
-  // Only show in browser development mode (not SSR)
-  readonly isDev = isPlatformBrowser(this.platformId);
+  // Only show outside of production builds — never expose debug internals
+  // (connection state, provider name, raw event stream) to end users in prod.
+  readonly isDev = !environment.production;
 
   readonly connectionState = this.mercure.connectionState;
   readonly reconnectCount = this.mercure.reconnectCount;
