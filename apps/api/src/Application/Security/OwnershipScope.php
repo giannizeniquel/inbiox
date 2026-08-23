@@ -10,11 +10,20 @@ use Symfony\Bundle\SecurityBundle\Security;
 /**
  * Determines the ownership scope for the current authenticated user.
  *
- * Returns the Agent ID for ROLE_AGENT users with a linked Agent.
- * Returns null for SUPERVISOR, ADMIN, or AGENT users without a linked Agent.
+ * INTENTIONALLY A NO-OP TODAY — not a bug:
  *
- * This is used at the QUERY level to add WHERE clauses, preventing
- * data leakage and poor performance from post-query filtering.
+ * `getAgentId()` always returns null, for every role including AGENT.
+ * This is a confirmed product decision (see docs/04_sprints/sprint_16
+ * (Production Readiness).md): reports/metrics are NOT restricted by
+ * agent — every authenticated agent can see every other agent's metrics,
+ * for now. Ticket/conversation data is still scoped by workspace (see
+ * WorkspaceScope), just not by individual agent ownership.
+ *
+ * This class (and the `agent_id` WHERE-clause plumbing that consumes it
+ * in ReportingRepository/ReportingService) is kept in place so that
+ * per-agent restriction can be reintroduced later without re-plumbing
+ * every query — do not "fix" `getAgentId()` to return the current
+ * agent's ID without an explicit product decision to do so.
  */
 final class OwnershipScope
 {

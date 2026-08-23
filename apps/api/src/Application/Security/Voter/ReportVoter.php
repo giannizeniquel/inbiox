@@ -12,16 +12,20 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 /**
  * Authorizes access to report endpoints.
  *
- * Attribute: VIEW_REPORT
+ * NOT CURRENTLY USED — reserved for future use:
  *
- *   VIEW_REPORT
- *   -----------
- *   ADMIN        ✓
- *   SUPERVISOR   ✓
- *   AGENT        ✗ (personal metrics only via OwnershipScope query filter)
- *
- * AGENT is denied at the voter level; their data access is scoped
- * by the OwnershipScope at the query level in ReportingService.
+ * This voter's `VIEW_REPORT` attribute is defined but never invoked by
+ * `ReportingController` or any other caller. In practice, any
+ * authenticated agent (ROLE_AGENT or higher) can access every reporting
+ * endpoint via `#[IsGranted('ROLE_AGENT')]` on the controller, and
+ * `OwnershipScope::getAgentId()` always returns null, so no per-agent
+ * filtering is applied to report data either. This is a confirmed
+ * product decision (see docs/04_sprints/sprint_16 (Production
+ * Readiness).md): reports are intentionally unrestricted by agent, not
+ * a bug. The logic below (AGENT denied, SUPERVISOR+/ADMIN allowed) is
+ * kept as reserved/dead code in case per-role report restriction is
+ * reintroduced later — do not wire it into the controller without an
+ * explicit product decision to do so.
  */
 final class ReportVoter extends Voter
 {

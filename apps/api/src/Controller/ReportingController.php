@@ -19,9 +19,14 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * REST controller for reporting and metrics endpoints.
  *
  * All endpoints require `from` and `to` query parameters in UTC.
- * Authorization:
- * - AGENT: sees only their own metrics (via OwnershipScope)
- * - SUPERVISOR/ADMIN: sees all metrics
+ *
+ * Authorization: any authenticated agent (ROLE_AGENT or higher) can access
+ * every endpoint here. Reports/metrics are NOT restricted by agent — this
+ * is an intentional product decision (see docs/04_sprints/sprint_16
+ * (Production Readiness).md), not a bug. `getScopeAgentId()` below always
+ * returns null (see OwnershipScope), so no per-agent filtering is applied
+ * to any query. `ReportVoter::VIEW_REPORT` exists but is not used by this
+ * controller; it is reserved for a possible future access restriction.
  */
 #[IsGranted('ROLE_AGENT')]
 class ReportingController
@@ -56,7 +61,9 @@ class ReportingController
 
     /**
      * Get the scoped agent ID for ownership filtering.
-     * AGENT sees only their metrics; SUPERVISOR/ADMIN see all.
+     *
+     * Always null today for every role (including AGENT) — see
+     * OwnershipScope for why this is intentional and not a bug.
      */
     private function getScopeAgentId(): ?int
     {
