@@ -14,15 +14,34 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 /**
  * Authorizes actions on Ticket objects.
  *
- * Attribute matrix:
- *   VIEW   | EDIT   | ASSIGN | CLOSE
- *   ------ | ------ | ------ | ------
- *   ADMIN       ✓       ✓       ✓       ✓
- *   SUPERVISOR  ✓       ✓       ✓       ✓
- *   AGENT       ✓(*)    ✓(*)    ✓(*)    ✓(*)
+ * IMPORTANT — read before "fixing" anything here:
  *
- *   (*) AGENT only for tickets where ticket.assignedAgentId === user.agent.id
- *       Unassigned tickets (assignedAgentId IS NULL) are NOT visible to AGENT.
+ * Inbiox is a SHARED inbox by design (confirmed product decision, see
+ * docs/04_sprints/sprint_16 (Production Readiness).md). Any authenticated
+ * agent can VIEW any ticket, regardless of who it's assigned to. There is
+ * no VIEW check applied anywhere in the controllers that list or read
+ * tickets — visibility is intentionally unrestricted.
+ *
+ * The ASSIGN attribute below is the only one actually invoked by callers
+ * today, and its "AGENT can only act on own tickets" logic only applies to
+ * ASSIGN (e.g. reassigning/taking over a ticket). It does NOT reflect a
+ * VIEW restriction.
+ *
+ * The VIEW, EDIT, and CLOSE constants are defined for future use but are
+ * currently never checked by any controller (reserved/dead code, kept
+ * intentionally — do not remove). If they are wired up in the future,
+ * revisit the logic below since it was written under the (incorrect, for
+ * VIEW) assumption that unassigned/other-agent tickets should be hidden.
+ *
+ * Real attribute matrix (as actually enforced today):
+ *   - VIEW / EDIT / CLOSE: not checked by any controller — reserved for
+ *     future use, currently a no-op if ever called.
+ *   - ASSIGN: the only attribute actually invoked today.
+ *       ADMIN / SUPERVISOR: always allowed (subject to the resolved/closed
+ *         state guard below).
+ *       AGENT: only allowed when the ticket is already assigned to that
+ *         agent (ticket.assignedAgentId === user.agent.id); denied for
+ *         unassigned tickets and tickets assigned to a different agent.
  */
 final class TicketVoter extends Voter
 {
@@ -75,7 +94,9 @@ final class TicketVoter extends Voter
                 return false; // R1: no linked agent → 403
             }
 
-            // R2: unassigned tickets are not visible to AGENT
+            // R2: AGENT cannot ASSIGN an unassigned ticket via this voter
+            // (this only governs the ASSIGN attribute, not visibility —
+            // ticket VIEW is unrestricted for all authenticated agents).
             if (null === $ticket->getAssignedAgentId()) {
                 return false;
             }
