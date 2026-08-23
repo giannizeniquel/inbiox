@@ -8,6 +8,7 @@ use App\Domain\RefreshToken\RefreshToken;
 use App\Domain\User\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -28,6 +29,8 @@ final class AuthController extends AbstractController
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly TokenStorageInterface $tokenStorage,
+        #[Autowire(env: 'bool:REFRESH_COOKIE_SECURE')]
+        private readonly bool $refreshCookieSecure,
     ) {}
 
     /**
@@ -88,11 +91,11 @@ final class AuthController extends AbstractController
         $response = new JsonResponse(['message' => 'Logged out successfully']);
         $response->headers->clearCookie(
             self::REFRESH_COOKIE_NAME,
-            '/',       // path
-            null,      // domain
-            false,     // secure (dev)
-            true,      // httpOnly
-            'lax'      // sameSite
+            '/',                        // path
+            null,                       // domain
+            $this->refreshCookieSecure, // secure — same env-driven flag as gesdinet_jwt_refresh_token.yaml
+            true,                       // httpOnly
+            'lax'                       // sameSite
         );
 
         return $response;

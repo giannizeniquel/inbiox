@@ -8,5 +8,8 @@ gesdinet_jwt_refresh_token:
         same_site: lax
         path: /
         http_only: true
-        secure: false
+        # REFRESH_COOKIE_SECURE defaults to false so local dev (plain HTTP) keeps
+        # working. MUST be set to true in production (served over HTTPS) so the
+        # refresh token cookie is only ever sent over an encrypted connection.
+        secure: '%env(bool:REFRESH_COOKIE_SECURE)%'
         remove_token_from_body: true
