@@ -95,6 +95,71 @@ No actor/reason plumbing exists anywhere in the closure audit trail: `recordUnas
 3. **Closure audit mechanism:** repair and reuse the orphaned `TicketEvent`/`AutoCloseRule` mechanism (make `GetContactTimelineQuery` read it) vs. design a new event type shared with Fase 1. Repairing the existing one is probably in scope here since Fase 3 needs *a* working closure-audit path regardless.
 4. **Frontend window-state propagation:** derive "window reopened" from the existing `MessageCreatedEvent{direction: inbound}` vs. extend the `TicketUpdatedEvent` Mercure payload with the new timestamp. Must stay event-driven either way — no polling.
 
+## Detailed tradeoff analysis (decisions 1, 3, 4) — 2026-08-28
+
+Decision #2 (`closeDueToWindowExpiry()`, a dedicated method separate from human `close()`) is settled — no further analysis needed.
+
+### Decision 1 — Choke point in `GraphClient::sendMessage()` vs. per-caller checks
+
+`GraphClient` (`apps/api/src/Application/Service/GraphClient.php`) is a genuinely thin wrapper today: constructor takes only `accessToken`, `phoneNumberId`, `HttpClientInterface` (L23-27), zero Doctrine/domain imports. `sendMessage()` (L89-121) and `sendTemplate()` (L235-282) are independent method bodies sharing only `normalizePhone()` (phone formatting) — so a check inside `sendMessage()` cannot leak into `sendTemplate()` today, though that would need re-checking if the two methods are ever refactored to share more code.
+
+**The phantom-message question has a definitive, code-verified answer: a `GraphClient`-only choke point does NOT solve it.**
+
+Verified the exact ordering in both callers:
+- **`AutoReplyService::doMaybeSend()`** (`apps/api/src/Application/Service/AutoReplyService.php`): calls `GraphClient::sendMessage()` at **L121**, and only constructs + `persist()`s the local `Message` **afterward**, at **L137-145**, using the real WhatsApp message ID (`$wamid`) from the Graph response. Send-before-persist. A guard thrown from inside `GraphClient` would, today, prevent this caller's phantom message — but only as a side effect of this specific ordering, not because of anything the architecture guarantees. If this method is ever refactored to persist-then-send (matching the other flow), the protection silently disappears with no compiler or test signal.
+- **`HandleOutboundMessageUseCase`** (already documented above): persists the `Message` and executes the FSM transition inside a transaction that **commits before** `ProviderProxyController::send()` calls `GraphClient::sendMessage()`. A guard inside `GraphClient` fires strictly after that transaction has already closed — no exception thrown from that deep in the call stack can undo it. **This is the flow where the actual phantom-message risk lives, and a `GraphClient`-only check does nothing for it.**
+
+Conclusion: **each caller must check the window before its own persist step, regardless of where any additional check lives.** A `GraphClient`-level check can only ever be a redundant backstop, not the fix.
+
+Other considerations:
+- What `GraphClient` would need to accept a timestamp/entity/repository to check the window, none of it free: a raw `DateTimeImmutable` param keeps it dependency-free but embeds a compliance rule in a transport class (and still requires each caller to resolve the value, which is most of the actual work anyway); accepting a `Ticket` entity or injecting a repository is a real layering violation for what the class's own docblock calls a "thin HTTP wrapper."
+- `ProviderProxyController` already maps Meta's real error code `132000` to HTTP 422 / `MESSAGE_TOO_OLD` (`mapGraphErrorCode()`, L386-408) — reusing `GraphApiException(..., 132000)` for a proactive check flows through existing catch blocks for free, but is dishonest about the exception's origin (it didn't come from Graph). A distinct exception type is honest but needs new catch wiring, and either way doesn't change the ordering problem above.
+- Testability: a check inside `GraphClient` couples window-logic tests to HTTP-client mocking; a small dedicated check (pure function: window open given `lastInboundMessageAt` + `now`) is trivially unit-testable and lets each caller test its own guard-before-persist ordering independently.
+
+| | Choke point in `GraphClient` | Duplicated per-caller check |
+|---|---|---|
+| Prevents phantom messages | **No** — only accidentally protects `AutoReplyService` (send-before-persist order); does nothing for the persist-before-send flow, which is the real risk | Yes, by construction |
+| Layering | Forces a thin HTTP wrapper to accept a business timestamp/entity it doesn't need | Keeps `GraphClient` untouched |
+| Template safety | Safe today, fragile if `sendMessage`/`sendTemplate` share code later | N/A |
+| Exception mapping | Can reuse existing `132000`/`MESSAGE_TOO_OLD` contract, at the cost of honesty about origin | Each caller controls its own error shape |
+| Testability | Coupled to HTTP-client mocking | Pure/isolated |
+| Forgotten-caller risk | Lower (one place), but false sense of completeness | Higher, as already happened once with `AutoReplyService` |
+| Defense-in-depth | Can be added *in addition to* per-caller checks | N/A |
+
+### Decision 3 — Repair `TicketEvent`/`AutoCloseRule` audit path vs. build new
+
+`TicketEvent` (`apps/api/src/Domain/Event/TicketEvent.php`, table `ticket_events` from `Version20260505022731.php` L27): fields `id`, `ticketId`, `type` (varchar 50), `source` (varchar 20, default `'system'`), `createdAt`. **Not narrowly shaped for `AutoCloseRule`** — already reused by `AutoReopenRule` (`'auto_reopened'`), `AddTagToTicketUseCase`/`RemoveTagFromTicketUseCase` (`'tag_added'`/`'tag_removed'`, with `source` as a real parameter, not hardcoded). It is also already **read** by `ReportingRepository` (L704-710, joined on `type = 'auto_reopened'`) — so "orphaned" is accurate only relative to `GetContactTimelineQuery`, which unions solely `outbox_events` and `assignments` and never touches `ticket_events`.
+
+A new type value (`window_expired_closed`) fits the existing shape with zero schema change. The one real gap: no free-text reason/note column — `source` is a short actor tag, not a reason. If Fase 1 later needs richer human-close reasons beyond who/what triggered it, that's a small additive nullable column, not a redesign.
+
+**Duplicate-timeline-entry risk — checked and refuted.** Read `TransitionTicketStatusUseCase` in full: both `close()` and `resolve()`/`execute()` perform raw SQL `executeStatement()` UPDATEs directly, never touching `EventCollector` or constructing `TicketUpdatedEvent`. Grepped the only construction site of `TicketUpdatedEvent`: `AssignmentService.php` (assignment changes only). **Resolving or closing a ticket today produces zero outbox events at all.** The speculative collision risk noted in the first exploration pass does not apply — there is nothing in `outbox_events` for a new `ticket_events`-sourced timeline entry to collide with. (Separate, adjacent gap worth flagging: the frontend's `TicketStatusChanged` handler in `ticket.store.ts` is wired and ready, but nothing currently fires that event for resolve/close — out of scope here.)
+
+| | Repair (`GetContactTimelineQuery` reads `ticket_events`) | New event type/table |
+|---|---|---|
+| Schema change | None for the window-expiry case; a `reason` column is a small additive migration if ever needed | New table, migration, DTO, and read path from scratch |
+| Existing consumers | `ReportingRepository` already depends on this table/shape — consistent reuse | Two parallel audit mechanisms until Fase 1 unifies them |
+| Duplication risk | None — confirmed no outbox event fires for close()/resolve() | N/A, but doesn't need to solve a problem that doesn't exist |
+| Fase 1 fit | `source` already supports non-`'system'` actors — incremental extension | Fase 1 would need to migrate off it or maintain two paths |
+| Effort | Low — one `UNION ALL` branch + DTO mapping + optional column | Medium/high |
+
+### Decision 4 — Frontend window-state propagation
+
+Confirmed `Message` (frontend, `message.model.ts` L7-30) already carries `direction` and `createdAt`; `MessageAddedPayload` (`realtime-event.model.ts` L44-56) carries both too, and backend `RealtimeEventFactory::buildPayload()` for `MessageAdded` (L69-79) already emits them. So reacting live to an already-open chat requires **zero backend changes** — confirmed.
+
+**But local-only derivation is unsafe at ticket-open time — confirmed, and worse than a scroll edge case.** All three initial-load call sites (`app-shell.component.ts:145`, `ticket-list.component.ts:179`, `inbox-page.component.ts:57`) call `getMessages(ticketId, 20, 0)` — most recent 20 messages, offset 0, every time a ticket is opened. `ConversationStore.prependMessages()` is only used for scroll-up pagination of *older* history, never for the initial fetch. **The moment a ticket is opened**, if the true last inbound message isn't among the most recent 20 (realistic: this codebase sends one message per media attachment via `sendMediaMessage()`, so a burst of agent replies with attachments easily exceeds 20 outbound messages after the last customer message), a local `max(createdAt where direction==='inbound')` over loaded messages either finds nothing (wrongly treats the window as never-open) or returns a stale timestamp (understates elapsed time) — wrong at page load, not just after scrolling.
+
+Extending `TicketUpdatedEvent`'s payload is also a bigger change than it first appears: its only construction site is `AssignmentService.php` (assignment flows) — it is never fired by anything related to inbound messages. Carrying `lastInboundMessageAt` through it would require a **new emission call** at `HandleInboundMessageUseCase`, a currently non-participating call site — not just a field added to an existing payload.
+
+**A third option, not in the original framing**: split the concern. A REST-surfaced baseline (`Ticket.timestamps.last_inbound_message_at`, added to the ticket serializer) gives a correct value at ticket-open time immune to the pagination cap, and the existing `MessageAdded{direction:inbound}` event (already firing, zero changes) handles the *incremental* "window just reopened while the chat is open" signal. These aren't mutually exclusive — the REST field solves the load-time correctness gap that neither pure-local nor Mercure-only options solve.
+
+| | Local-only (`MessageCreatedEvent`) | Extend `TicketUpdatedEvent` | REST baseline + local incremental |
+|---|---|---|---|
+| Backend change | None | New emission call at `HandleInboundMessageUseCase` (not currently a `TicketUpdatedEvent` producer) + payload field | Ticket serializer field addition |
+| Frontend change | Computed signal only | New payload type field + `ticket.store.ts` handling | `Ticket` interface field + one-time read, reuses the local listener |
+| Correct at ticket-open | **No** — confirmed unsafe due to the 20-message/offset-0 initial load cap | Yes, once wired to the right trigger | Yes — sourced from the ticket record, immune to the cap |
+| Correct while chat stays open | Yes | Yes (redundant machinery) | Yes (same local listener) |
+| Effort | Lowest, but incomplete | Medium — easy to underestimate the new emission site | Medium — a genuinely separate REST change on top of no Mercure work |
+
 ## Unrelated debt noticed in passing (not in scope for this change)
 
 - `StatusActionsComponent` is dead code (zero template usages) and, independently, writes to `TicketStore` directly after an HTTP response — the same store-sync anti-pattern this session's Fase 2 work deliberately avoided for the resolve button. Worth a cleanup pass on its own, separate from this change.
