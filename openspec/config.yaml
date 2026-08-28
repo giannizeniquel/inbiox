@@ -1,0 +1,86 @@
+# openspec/config.yaml
+schema: spec-driven
+
+context: |
+  Monorepo: apps/api/ (Symfony 7.4, PHP 8.2+, MySQL, Doctrine migrations),
+  apps/web/ (Angular 19, standalone components, signals, CDK scrolling).
+  Realtime: Mercure SSE (event-driven, not state sync). Storage: Flysystem
+  S3 -> MinIO (dev) / Cloudflare R2 (prod). docker-compose with 11 services.
+  Conventions: REST API is single source of truth; deterministic behavior;
+  FSM-based workflows (no invalid transitions); full auditability.
+  Branching: feature/x -> test -> feature/x -> main. NEVER merge test -> main
+  directly. Work stays on the active feature/sprint branch.
+
+strict_tdd: true
+
+strict_tdd_notes: |
+  Backend (PHPUnit, 30 *Test.php files, 354 test methods): strict TDD is
+  ENABLED but baselined against ~58 pre-existing failures confirmed on the
+  base commit, NOT against a green suite. New/changed code MUST have a
+  failing test first and MUST NOT increase the failure count beyond the
+  baseline; it is not required to fix pre-existing unrelated failures.
+  Backend tests require `make up` (Docker) first; Docker is currently down.
+  A clean migrate-from-scratch is also currently broken (see risks below).
+
+  Frontend (Karma/Jasmine, 26 *.spec.ts files, stores/use-cases only, zero
+  component tests for inbox/conversation): the spec suite is NOT RUNNABLE in
+  this environment (no Chrome/Chromium binary, CHROME_BIN unset under WSL2).
+  Strict TDD (red-green-refactor via `ng test`) is NOT enforceable for
+  frontend work right now. Fall back to `ng build --configuration production`
+  (confirmed exit 0) as the enforceable verification gate for frontend
+  changes until a headless Chrome binary is available.
+
+testing:
+  backend:
+    framework: PHPUnit
+    test_files: 30
+    test_methods: 354
+    status: not_green
+    known_failures_baseline: 58
+    run_command: "make up && docker compose exec php bin/phpunit"
+    coverage: unknown
+  frontend:
+    framework: Karma/Jasmine
+    spec_files: 26
+    coverage_scope: stores and use-cases only (no component tests for inbox/conversation)
+    status: unrunnable_in_environment
+    blocker: "No Chrome/Chromium binary; CHROME_BIN unset (WSL2)"
+    fallback_verify_command: "cd apps/web && ./node_modules/.bin/ng build --configuration production"
+    fallback_verify_status: confirmed_exit_0
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+    - State whether the change touches Mercure event contracts (event-driven realtime, not local state patching)
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+    - Reference the matching domain under openspec/specs/ (administration, authentication, authorization, contacts, conversation-virtual-scroll, file-attachments, identity-management, reports, virtual-scroll, virtual-scroll-variable) when applicable
+  design:
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
+    - For realtime features, document the Mercure event flow explicitly; do not design local store patches that duplicate event-driven updates
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+    - Forecast the 800-line review budget (this project's confirmed override of the 400-line default) per this session's preflight
+  apply:
+    guidelines:
+      - Follow existing code patterns
+      - Stay on the active feature/sprint branch; never merge test -> main directly
+    tdd: true
+    test_command: "docker compose exec php bin/phpunit"
+    tdd_caveat: "Baseline against 58 pre-existing backend failures, not zero. Frontend: use ng build in place of ng test (Chrome unavailable)."
+  verify:
+    test_command: "docker compose exec php bin/phpunit"
+    build_command: "cd apps/web && ./node_modules/.bin/ng build --configuration production"
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas
+    - Checkbox state in existing changes' tasks.md is known to be desynced from code; do not trust checkbox counts as authoritative status without verification
+
+delivery:
+  execution_mode: interactive
+  artifact_store: hybrid
+  delivery_strategy: single-pr
+  review_budget_lines: 800
