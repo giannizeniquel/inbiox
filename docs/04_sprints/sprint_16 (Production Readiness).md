@@ -48,16 +48,34 @@
 
 ---
 
-## Fase 2 — Reconectar funcionalidad ya construida (frontend)
+## Fase 2 — Reconectar funcionalidad ya construida (frontend) ⚠️ PARCIAL (3 de 4)
 
 *Está hecho, solo falta conectarlo. Bajo esfuerzo, alto impacto visible para el usuario final.*
 
-| # | Ítem | Impacto |
-|---|---|---|
-| 2.1 | Conectar el botón "Resolver" del header (`(resolve)` sin listener) a la acción real, respetando la autorización de la Fase 1 (mostrar mensaje claro si da 403) | Hoy no hace nada — es la acción principal del flujo diario del agente. |
-| 2.2 | Conectar el "tap para reintentar" en mensajes fallidos (`onFailedClick()` sin `(click)` en el template) | Hoy un mensaje fallido queda trabado sin forma de reintentar desde la UI, pese a que todo el pipeline de retry ya funciona. |
-| 2.3 | Conectar `InboxErrorComponent` / `ConversationErrorComponent` en los `catch` de carga de tickets/mensajes, en vez de solo loguear a consola | Hoy un error de red deja al agente con una pantalla vacía sin explicación. |
-| 2.4 | Deshabilitar (o implementar) los botones de emoji/voz del composer, que hoy no hacen nada pese a parecer activos | Evita que un agente piense que el sistema está roto al no obtener respuesta al click. |
+**Rama:** `sprint-16-production-readiness` · **Commit:** `b3d2cb0`
+
+| # | Ítem | Impacto | Estado |
+|---|---|---|---|
+| 2.1 | Conectar el botón "Resolver" del header (`(resolve)` sin listener) a la acción real, respetando la autorización de la Fase 1 (mostrar mensaje claro si da 403) | Hoy no hace nada — es la acción principal del flujo diario del agente. | ✅ `b3d2cb0` |
+| 2.2 | Conectar el "tap para reintentar" en mensajes fallidos (`onFailedClick()` sin `(click)` en el template) | Hoy un mensaje fallido queda trabado sin forma de reintentar desde la UI, pese a que todo el pipeline de retry ya funciona. | ✅ `b3d2cb0` |
+| 2.3 | Conectar `InboxErrorComponent` / `ConversationErrorComponent` en los `catch` de carga de tickets/mensajes, en vez de solo loguear a consola | Hoy un error de red deja al agente con una pantalla vacía sin explicación. | ❌ **Excluido a propósito — ver abajo** |
+| 2.4 | Deshabilitar (o implementar) los botones de emoji/voz del composer, que hoy no hacen nada pese a parecer activos | Evita que un agente piense que el sistema está roto al no obtener respuesta al click. | ✅ `b3d2cb0` |
+
+### Detalle de implementación (2.1, 2.2, 2.4)
+
+- **2.1** — `WorkflowApiService` gana `resolve()` y `close()` sobre los endpoints que ya existían (`POST /tickets/{id}/resolve`, `POST /tickets/{id}/close`). Ambos **omiten deliberadamente** `createHttpErrorHandler`: ese helper aplana la respuesta a un `Error` genérico y **descarta el status code**, y un 403 acá es un resultado esperado (no admin, ni supervisor, ni dueño) que necesita su propio mensaje. El camino de éxito **no escribe en el store**: el backend emite `ticket.status_changed` y `TicketStore` ya lo aplica vía el pipeline de Mercure — escribir también acá duplicaría el camino de actualización y rompería la convención event-driven del proyecto. El botón además refleja el estado en vuelo (`RESOLVIENDO…`) y queda inerte en tickets ya `resolved`/`closed`, donde el FSM del backend rechazaría la transición.
+- **2.2** — El gap era más chico de lo que sugería la auditoría: `onFailedClick()` **y** el listener `(retry)` del padre ya existían, y el estilo `&--failed` ya traía `cursor: pointer`, `:hover` y `:focus-visible`. Faltaba únicamente el binding `(click)` en el template del bubble. Se agregó junto con activación por teclado (Enter/Space) y `aria-label`, condicionados a un nuevo computed `isRetriable()` para que la burbuja solo sea alcanzable por teclado cuando hay algo que reintentar.
+- **2.4** — Los botones de emoji y voz quedan `disabled` con `title` explícito ("no disponible todavía") y estilo `:disabled`. No se implementó la funcionalidad, solo se dejó de mentirle al usuario.
+
+**Verificación:** `ng build --configuration production`, exit 0, sin warnings nuevos (los 4 de budget SCSS/bundle son preexistentes). Los tests de frontend **no se ejecutaron**: no hay Chrome/Chromium ni `CHROME_BIN` en el entorno, y ninguno de los 26 `.spec.ts` cubre los componentes tocados.
+
+### Por qué 2.3 quedó afuera
+
+Conectar los componentes de error requiere tocar el **camino de carga inicial de mensajes**, que está entrelazado con la restauración de scroll (`captureAnchor`/`restoreAnchor`, `scrollState`, `paginationArmed`). Ese es exactamente el código que costó varias iteraciones de ida y vuelta en la sesión del 17/08 antes de quedar estable.
+
+Además, el único `catch` disponible hoy en `conversation.component.ts` es el de `loadOlderMessages()` (paginación), y ahí un `app-conversation-error` a pantalla completa sería **peor** que el estado actual: borraría una conversación cargada porque falló una página de historial. El componente está pensado para la carga inicial fallida, y ese punto de fallo todavía no tiene un signal de error donde colgarse (`ConversationStore` expone `loading`/`messages`/`hasMore`, no `error`).
+
+**Requiere:** agregar un signal de error a `ConversationStore`, distinguir fallo de carga inicial vs. fallo de paginación, y un pase de smoke test sobre el scroll. Es un cambio propio, no un agregado al final de esta fase.
 
 ---
 
@@ -86,9 +104,9 @@ Autoasignación explícita ("tomar" una conversación sin responder), chatbot in
 ## Orden de ejecución
 
 1. ~~**Fase 0**~~ ✅ **Completada** — 8 commits en `sprint-16-production-readiness` (ver detalle arriba).
-2. **Fase 3** ← en curso — mayor riesgo regulatorio/de negocio (incumplimiento con Meta); toca el dominio (`TicketStateMachine`), conviene resolverla antes que la Fase 1 porque ambas comparten el mecanismo de auditoría de cierre.
-3. **Fase 1** — reutiliza la distinción "cierre humano vs. sistema" que deja lista la Fase 3.
-4. **Fase 2** — fixes de UI independientes, se pueden hacer en paralelo a cualquiera de las anteriores.
+2. ~~**Fase 2**~~ ⚠️ **Parcial (3 de 4)** — `b3d2cb0`. Se adelantó porque son fixes de UI independientes. Falta 2.3 (ver su justificación arriba).
+3. **Fase 3** ← **siguiente, sin arrancar** — mayor riesgo regulatorio/de negocio (incumplimiento con Meta); toca el dominio (`TicketStateMachine`), conviene resolverla antes que la Fase 1 porque ambas comparten el mecanismo de auditoría de cierre. **A trabajar vía SDD** por ser cambio de dominio con migración.
+4. **Fase 1** — reutiliza la distinción "cierre humano vs. sistema" que deja lista la Fase 3.
 
 ---
 
@@ -99,3 +117,7 @@ Autoasignación explícita ("tomar" una conversación sin responder), chatbot in
 | Sprint 16 — día 1 | Plan creado, rama `sprint-16-production-readiness` abierta desde `test` (todas las demás ramas ya estaban mergeadas en `test`, no hizo falta mergear nada). |
 | Sprint 16 — día 1 | Fase 0 delegada a sub-agente e implementada completa (8/8 ítems, ver tabla de Fase 0). |
 | Sprint 16 — día 1 | Fase 3 delegada a sub-agente. |
+| 2026-08-28 | ⚠️ **Corrección de bitácora:** la delegación de Fase 3 del día 1 **no produjo ningún cambio de código**. Verificado en esta fecha: `lastInboundMessageAt` no existe en `apps/`, `TicketStateMachine::TRANSITIONS` no tiene las transiciones directas a `closed` (3.4), y no hay Command ni scheduler de cierre por ventana vencida (3.5). La entrada anterior registra el *encargo*, no un resultado. Fase 3 sigue en cero. |
+| 2026-08-28 | Todo el trabajo local pusheado a `origin` por primera vez desde el 2026-06-15 (113 commits: `main` +26, `test` y `sprint-16-production-readiness` creadas en el remoto). |
+| 2026-08-28 | Limpieza de ramas: 9 ramas `feature/*` y `fix/*` borradas tras verificar que estaban 100% contenidas en `test` (`git branch --merged`, 0 commits ahead cada una). Quedan `main`, `test`, `sprint-16-production-readiness`, `sprint-14-tracker`. |
+| 2026-08-28 | Fase 2 implementada parcial (2.1, 2.2, 2.4) en `b3d2cb0`. 2.3 excluido con justificación documentada. |
