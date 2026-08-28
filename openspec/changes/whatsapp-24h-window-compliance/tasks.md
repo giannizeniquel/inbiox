@@ -14,12 +14,12 @@
 | Delivery strategy (preflight) | single-pr |
 | Chain strategy | pending |
 
-Decision needed before apply: **Yes**
-Chained PRs recommended: **Yes**
-Chain strategy: pending
+Decision needed before apply: **Resolved — 2026-08-28**
+Chained PRs recommended: Yes (declined by user)
+Chain strategy: **`size:exception` approved — single PR**
 800-line budget risk: **High**
 
-**This does not silently confirm the preflight `single-pr` choice.** The estimate (~1,050–1,100 changed lines: ~19 backend files, ~10 new/modified test files, 5 frontend files, 1 migration, 1 compose-service edit) is meaningfully over the 800-line budget, not a rounding margin. Per this project's own guard rule (`single-pr` → `Decision needed before apply: Yes`), the orchestrator must bring this back to the user **before `sdd-apply` starts** — either accept `size:exception` for one large PR, or switch to `stacked-to-main` / `feature-branch-chain` using the 5 work units below. Do not proceed as if single-PR is still uncontested.
+**Decision**: the estimate (~1,050–1,100 changed lines: ~19 backend files, ~10 new/modified test files, 5 frontend files, 1 migration, 1 compose-service edit) is meaningfully over the 800-line budget, not a rounding margin. Brought back to the user per this project's guard rule before `sdd-apply` started. **User approved `size:exception` — one single PR**, the same call made for `file-attachments` (~900-1100 lines, also approved as a single-PR exception). The 5 work units below remain useful as internal commit boundaries and rollback checkpoints, not as separate PRs.
 
 ### Suggested Work Units
 
