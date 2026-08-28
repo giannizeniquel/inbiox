@@ -14,12 +14,29 @@
       </button>
       <app-conversation-header
         [ticket]="activeTicket()!"
+        [resolving]="resolving()"
+        (resolve)="onResolveTicket()"
       />
     </div>
 
     <!-- Contextual warning banner (conditional) -->
     @if (warningMessage()) {
       <app-banner-warning>{{ warningMessage() }}</app-banner-warning>
+    }
+
+    <!-- Result of a workflow action the agent triggered (e.g. resolve) -->
+    @if (actionMessage()) {
+      <app-banner-warning>
+        {{ actionMessage() }}
+        <button
+          type="button"
+          class="conversation-container__dismiss-btn"
+          aria-label="Cerrar aviso"
+          (click)="onDismissActionMessage()"
+        >
+          &times;
+        </button>
+      </app-banner-warning>
     }
 
     <!-- Virtual-scroll message area -->

@@ -1,11 +1,12 @@
 import { Component, inject, signal, viewChild, computed, ChangeDetectionStrategy, input, output, effect } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { take } from 'rxjs/operators';
 import { environment } from '../../../../../environments/environment';
 import { ConversationStore } from '../../../../core/stores/conversation.store';
 import { TicketStore } from '../../../../core/stores/ticket.store';
 import { UiStore } from '../../../../core/stores/ui.store';
 import { MessageApiService, GetMessagesResponse } from '../../../../core/api/message-api.service';
+import { WorkflowApiService } from '../../../../core/api/workflow-api.service';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import { CdkAutoSizeVirtualScroll } from '@angular/cdk-experimental/scrolling';
 import { MessageBubbleComponent } from '../../components/message-bubble/message-bubble.component';
@@ -86,9 +87,19 @@ export class ConversationComponent {
   private readonly http = inject(HttpClient);
   private readonly messageSender = inject(MessageSenderService);
   private readonly messageApi = inject(MessageApiService);
+  private readonly workflowApi = inject(WorkflowApiService);
 
   /** Contextual warning message (e.g. SLA breach, internal note) */
   protected readonly warningMessage = input<string | null>(null);
+
+  /**
+   * Feedback for a workflow action the agent just triggered (resolve).
+   * Null while idle; set to a user-facing message on failure.
+   */
+  protected readonly actionMessage = signal<string | null>(null);
+
+  /** True while a resolve request is in flight — keeps the action idempotent. */
+  protected readonly resolving = signal(false);
 
   /** Emitted when user taps back button on mobile — closes conversation panel */
   protected readonly back = output<void>();
@@ -237,6 +248,47 @@ export class ConversationComponent {
     if (message) {
       this.conversationStore.retryMessage(tempId);
     }
+  }
+
+  /**
+   * Resolve the active ticket.
+   *
+   * Authorization lives on the backend (admin, supervisor, or current owner).
+   * A 403 is an expected outcome here, not a bug, so it gets its own message
+   * instead of a generic failure.
+   */
+  onResolveTicket(): void {
+    const ticket = this.activeTicket();
+    if (!ticket || this.resolving()) return;
+
+    this.resolving.set(true);
+    this.actionMessage.set(null);
+
+    this.workflowApi
+      .resolve(ticket.ticket_id)
+      .pipe(take(1))
+      .subscribe({
+        next: () => {
+          this.resolving.set(false);
+          // No local store write on purpose: the backend emits
+          // `ticket.status_changed`, which TicketStore already applies via the
+          // Mercure pipeline. Patching here too would duplicate the update path
+          // and break the project's event-driven realtime convention.
+        },
+        error: (err: HttpErrorResponse) => {
+          this.resolving.set(false);
+          this.actionMessage.set(
+            err.status === 403
+              ? 'No tenés permiso para resolver esta conversación. Solo puede hacerlo un administrador, un supervisor o el agente asignado.'
+              : 'No se pudo resolver la conversación. Reintentá en unos segundos.'
+          );
+        },
+      });
+  }
+
+  /** Dismiss the workflow action message. */
+  onDismissActionMessage(): void {
+    this.actionMessage.set(null);
   }
 
   onSendMessage(event: { content: string; tempId: string }): void {

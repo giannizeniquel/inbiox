@@ -56,6 +56,18 @@
     outline-offset: 1px;
   }
 
+  // Not-yet-implemented actions (emoji, voice): visibly inert so the agent
+  // does not read silence as a broken app.
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+
+    &:hover {
+      background: transparent;
+      color: var(--text-secondary);
+    }
+  }
+
   &--voice {
     // slightly smaller since mic icon is 18px
   }

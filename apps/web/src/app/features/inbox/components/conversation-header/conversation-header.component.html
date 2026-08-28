@@ -44,9 +44,12 @@
   <!-- Right: resolve button -->
   <button
     class="conversation-header__resolve-btn"
+    type="button"
+    [disabled]="resolving() || !canResolve()"
     [attr.aria-label]="'Resolver conversación con ' + contactName()"
+    [attr.aria-busy]="resolving() ? 'true' : null"
     (click)="onResolve()"
   >
-    RESOLVER
+    {{ resolving() ? 'RESOLVIENDO…' : 'RESOLVER' }}
   </button>
 </header>

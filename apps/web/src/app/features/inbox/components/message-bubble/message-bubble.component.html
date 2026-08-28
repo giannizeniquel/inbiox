@@ -1,4 +1,14 @@
-<div class="message-bubble" [ngClass]="bubbleClasses()">
+<div
+  class="message-bubble"
+  [ngClass]="bubbleClasses()"
+  [attr.role]="isRetriable() ? 'button' : null"
+  [attr.tabindex]="isRetriable() ? 0 : null"
+  [attr.title]="isRetriable() ? 'Reintentar envío' : null"
+  [attr.aria-label]="isRetriable() ? 'Mensaje no enviado. Activar para reintentar.' : null"
+  (click)="onFailedClick()"
+  (keydown.enter)="onFailedClick()"
+  (keydown.space)="onFailedClick()"
+>
   @switch (messageType()) {
     @case ('system') {
       <span class="message-bubble__system-text">{{ message().content }}</span>

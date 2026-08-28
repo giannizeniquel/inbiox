@@ -22,7 +22,19 @@ const STATUS_LABELS: Record<TicketStatus, string> = {
 export class ConversationHeaderComponent {
   readonly ticket = input.required<Ticket>();
 
+  /** True while the parent's resolve request is in flight. */
+  readonly resolving = input<boolean>(false);
+
   readonly resolve = output<void>();
+
+  /**
+   * A ticket that already reached a terminal-ish state has nothing to resolve —
+   * the backend FSM would reject the transition anyway, so don't offer it.
+   */
+  protected readonly canResolve = computed(() => {
+    const status = this.ticket().status;
+    return status !== TicketStatus.Resolved && status !== TicketStatus.Closed;
+  });
 
   statusLabel(): string {
     return STATUS_LABELS[this.ticket().status];

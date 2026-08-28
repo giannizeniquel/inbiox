@@ -60,6 +60,16 @@ export class MessageBubbleComponent {
     return m.media !== null && m.media !== undefined;
   });
 
+  /**
+   * A failed outbound message the agent can retry. Drives the interactive
+   * affordances (role/tabindex/title) so the bubble is only reachable by
+   * keyboard when there is actually something to retry.
+   */
+  protected readonly isRetriable = computed(() => {
+    const m = this.message();
+    return m.deliveryStatus === 'failed' && !!m.tempId;
+  });
+
   timeDisplay(): string {
     const date = new Date(this.message().createdAt);
     return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });

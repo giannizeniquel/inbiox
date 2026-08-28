@@ -18,4 +18,32 @@ export class WorkflowApiService {
       })
       .pipe(catchError(createHttpErrorHandler('WorkflowApi')));
   }
+
+  /**
+   * Resolve a ticket.
+   *
+   * Unlike `transition()`, this deliberately does NOT pipe through
+   * `createHttpErrorHandler`: that helper flattens the response into a generic
+   * `Error` and drops the status code. Callers need to tell an authorization
+   * failure (403 — not admin, supervisor, nor current owner) apart from any
+   * other failure in order to show the right message, so the raw
+   * `HttpErrorResponse` is propagated instead.
+   */
+  resolve(ticketId: string): Observable<Ticket> {
+    return this.http.post<Ticket>(
+      `${this.baseUrl}/api/tickets/${ticketId}/resolve`,
+      {}
+    );
+  }
+
+  /**
+   * Close a ticket. Propagates the raw `HttpErrorResponse` for the same reason
+   * as `resolve()`.
+   */
+  close(ticketId: string): Observable<Ticket> {
+    return this.http.post<Ticket>(
+      `${this.baseUrl}/api/tickets/${ticketId}/close`,
+      {}
+    );
+  }
 }

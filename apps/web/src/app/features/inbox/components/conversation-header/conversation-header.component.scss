@@ -173,6 +173,16 @@
     opacity: 0.85;
   }
 
+  // In flight, or already resolved/closed — nothing to trigger.
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+
+    &:hover {
+      opacity: 0.45;
+    }
+  }
+
   &:focus-visible {
     outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
