@@ -115,7 +115,7 @@
 
 ## 🐛 Deuda técnica conocida
 
-1. 🔴 **Migraciones rotas desde cero** — `Version20260612000002` hace `ALTER TABLE messages ADD ...` pero ninguna migración previa crea la tabla `messages`. Un `doctrine:migrations:migrate` limpio falla ahí (rompe CI, staging nuevo y onboarding). Distinto del índice duplicado ya corregido en `104d15d`.
+1. ✅ **Migraciones rotas desde cero — RESUELTO** (`c590982`). Faltaba el `CREATE TABLE` de `messages`. Reparado con `Version20250503000002`, ejecutado y validado contra la base de dev: `doctrine:migrations:status` → 23/23 ejecutadas, 0 nuevas. `messages` no aparece en el diff de `doctrine:schema:update --dump-sql` — quedó perfectamente sincronizada con la entidad.
 2. **~58 tests backend en rojo** — preexistentes, sin triage. Incluye 3 fallos de Sprint 10 por fragilidad de fixture (`day_of_week` hardcodeado vs. reloj UTC del contenedor) documentados en `verify-sprint10-final.md` con veredicto FAIL.
 3. **`OwnershipScopeTest::testAgentWithLinkedAgentReturnsId`** contradice la decisión de producto de reportes sin restricción por agente. Actualizar o eliminar.
 4. **`vendor/` no versionado** — cualquier checkout nuevo necesita `composer install` (`symfony/rate-limiter` desde Fase 0).
@@ -125,6 +125,10 @@
 8. **21 changes de OpenSpec sin archivar** — varios de sprints ya completados. Los checkboxes de `tasks.md` están desincronizados del código y usan formatos heterogéneos, así que **no son fuente confiable** de estado. Requiere triage manual contra código.
 9. **SCSS budget** — 3 componentes exceden el límite de 4KB; bundle inicial 77KB sobre el presupuesto de 500KB.
 10. **`.atl/` no está en `.gitignore`** — un hook reescribe `skill-registry.md` y su cache en cada prompt, dejando el working tree permanentemente sucio.
+11. **Tres divergencias de mapeo descubiertas al validar el fix de migraciones** (`doctrine:schema:validate`, 28/08), ninguna relacionada con `messages`:
+    - `Ticket.php` no declara el índice `idx_tickets_created_at` (existe en la DB desde `Version20260503210000`, pero falta en las anotaciones de la entidad) — Doctrine propone dropearlo para "sincronizar".
+    - `Ticket.lastReadAt` está mapeado como `datetime_immutable` pero la columna real es `DATETIME` a secas.
+    - `TicketTag` tiene una asociación bidireccional rota: `TicketTag#ticket` y `TicketTag#tag` referencian campos inversos (`Ticket#ticketTags`, `Tag#ticketTags`) que no existen.
 
 ---
 
