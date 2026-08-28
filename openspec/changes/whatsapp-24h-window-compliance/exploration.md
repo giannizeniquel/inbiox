@@ -160,6 +160,15 @@ Extending `TicketUpdatedEvent`'s payload is also a bigger change than it first a
 | Correct while chat stays open | Yes | Yes (redundant machinery) | Yes (same local listener) |
 | Effort | Lowest, but incomplete | Medium — easy to underestimate the new emission site | Medium — a genuinely separate REST change on top of no Mercure work |
 
+## Decisions closed — 2026-08-28
+
+All four open decisions are settled. `sdd-propose` should treat these as fixed constraints, not options to re-litigate.
+
+1. **Window-check placement: per-caller, not a `GraphClient`-only choke point.** Each of the three callers (`HandleOutboundMessageUseCase`, `AutoReplyService`, and any future caller) MUST check the window before its own persist step. A guard inside `GraphClient::sendMessage()` MAY additionally be added as a defense-in-depth backstop, but is explicitly not a substitute for the per-caller checks — confirmed it cannot prevent the phantom-message case for the persist-before-send flow (`HandleOutboundMessageUseCase`).
+2. **`TransitionTicketStatusUseCase` shape: dedicated `closeDueToWindowExpiry()` method**, separate from the human `close()`. (Decided earlier, restated here for completeness.)
+3. **Closure audit: repair and reuse the existing `TicketEvent`/`ticket_events` mechanism.** `GetContactTimelineQuery` gains a `UNION ALL` branch reading `ticket_events`. No new table. A `reason` column may be added later if Fase 1 needs it — not required now.
+4. **Frontend window-state: REST baseline + existing live event, not Mercure payload changes.** Add `lastInboundMessageAt` to the `Ticket` REST serializer/response and the frontend `Ticket.timestamps` model, read once at ticket load. For live updates while the chat stays open, reuse the already-firing `MessageAdded{direction: inbound}` event (zero backend changes needed for that half). Do not attempt to derive the value purely from `ConversationStore.messages()` (unsafe per the confirmed 20-message/offset-0 initial load), and do not extend `TicketUpdatedEvent`'s payload (its only producer, `AssignmentService`, is unrelated to inbound messages — would require a new emission call, not a field addition).
+
 ## Unrelated debt noticed in passing (not in scope for this change)
 
 - `StatusActionsComponent` is dead code (zero template usages) and, independently, writes to `TicketStore` directly after an HTTP response — the same store-sync anti-pattern this session's Fase 2 work deliberately avoided for the resolve button. Worth a cleanup pass on its own, separate from this change.
