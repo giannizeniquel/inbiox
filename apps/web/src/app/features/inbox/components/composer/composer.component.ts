@@ -1,7 +1,13 @@
-import { Component, ChangeDetectionStrategy, output, signal, ElementRef, viewChild, input } from '@angular/core';
+import { Component, ChangeDetectionStrategy, DestroyRef, inject, output, signal, ElementRef, viewChild, input, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { generateTempId } from '../../../../core/utils/temp-id.util';
 import { MediaPreviewModalComponent } from '../media-preview-modal/media-preview-modal.component';
+
+/** WhatsApp's literal conversation-window duration (Sprint 16 Fase 3). */
+const WINDOW_HOURS = 24;
+
+/** How often the local clock ticks to re-evaluate window expiry (ms). */
+const CLOCK_TICK_INTERVAL_MS = 60_000;
 
 /**
  * ComposerComponent — sticky message input bar.
@@ -32,6 +38,42 @@ export class ComposerComponent {
   readonly text = signal('');
   readonly selectedFile = signal<File | null>(null);
   readonly showPreview = signal(false);
+
+  /**
+   * WhatsApp 24h conversation-window compliance (Sprint 16 Fase 3).
+   *
+   * Timestamp of the customer's most recent inbound message, resolved by
+   * the container (design.md D7 — this component stays store-free). `null`
+   * means "no known inbound message yet" — advisory-only, never blocks
+   * sending (D8: the UI must never falsely lock an agent out).
+   */
+  readonly lastInboundMessageAt = input<string | null>(null);
+
+  /**
+   * Local clock, ticked every 60s so `windowExpired` re-evaluates without a
+   * manual refresh or any polling — a UI refresh timer, not a server poll
+   * (design.md's Mercure Event Flow section).
+   */
+  private readonly now = signal(Date.now());
+
+  constructor() {
+    const intervalId = setInterval(() => this.now.set(Date.now()), CLOCK_TICK_INTERVAL_MS);
+    inject(DestroyRef).onDestroy(() => clearInterval(intervalId));
+  }
+
+  /**
+   * True once the full literal 24h window has elapsed since the last
+   * inbound message. Deliberately does NOT apply the backend's safety
+   * margin — the UI is advisory, the backend is authoritative (design.md:
+   * "Accepted UI/backend skew"). `null` last-inbound never expires (D8).
+   */
+  readonly windowExpired = computed<boolean>(() => {
+    const lastInbound = this.lastInboundMessageAt();
+    if (!lastInbound) return false;
+
+    const expiresAtMs = new Date(lastInbound).getTime() + WINDOW_HOURS * 60 * 60 * 1000;
+    return this.now() >= expiresAtMs;
+  });
 
   placeholder(): string {
     return 'Escribe un mensaje...';
@@ -88,6 +130,8 @@ export class ComposerComponent {
   }
 
   send(): void {
+    if (this.windowExpired()) return;
+
     const content = this.text().trim();
     const file = this.selectedFile();
 

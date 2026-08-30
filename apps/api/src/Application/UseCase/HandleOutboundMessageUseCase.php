@@ -16,7 +16,9 @@ use App\Domain\Ticket\Ticket;
 use App\Domain\Ticket\TicketStatus;
 use App\Application\Rule\RuleExecutorService;
 use App\Domain\Rule\RuleContext;
+use App\Domain\Ticket\ConversationWindowPolicy;
 use App\Exception\ConcurrencyException;
+use App\Exception\ConversationWindowExpiredException;
 use App\Repository\AgentRepository;
 use App\Repository\ConversationRepository;
 use App\Repository\MessageRepository;
@@ -45,6 +47,7 @@ class HandleOutboundMessageUseCase
         private AssignmentService $assignmentService,
         private AgentRepository $agentRepo,
         private EventCollector $eventCollector,
+        private ConversationWindowPolicy $windowPolicy,
     ) {}
 
     /**
@@ -141,6 +144,14 @@ class HandleOutboundMessageUseCase
             $ticket = $this->ticketRepo->findById($ticketId);
             if (!$ticket) {
                 throw new \InvalidArgumentException('Ticket not found');
+            }
+
+            // WhatsApp 24h conversation-window guard-before-persist (design.md
+            // D3/D4): reject free text once the effective window has elapsed,
+            // before any message row is persisted and before any FSM
+            // transition — never a phantom "sent" message.
+            if (!$this->windowPolicy->isOpenForSending($ticket->getLastInboundMessageAt(), new \DateTimeImmutable())) {
+                throw new ConversationWindowExpiredException($ticketId, $ticket->getLastInboundMessageAt());
             }
 
             // Get conversation

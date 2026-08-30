@@ -10,6 +10,7 @@ use App\Domain\Message\Message;
 use App\Domain\Message\MessageDirection;
 use App\Domain\Media\MediaKind;
 use App\Domain\User\User;
+use App\Exception\ConversationWindowExpiredException;
 use App\Exception\GraphApiException;
 use App\Exception\MediaTooLargeException;
 use App\Exception\MediaTypeNotAllowedException;
@@ -95,12 +96,25 @@ class ProviderProxyController extends AbstractController
         }
 
         // --- Process outbound message (creates Message, handles assignment + status) ---
-        $result = $this->outboundUseCase->processOutboundMessage(
-            ticketId: $ticketId,
-            content: $content,
-            agentId: $agentId,
-            mediaMetadata: $mediaMetadata,
-        );
+        // This single call site covers both free-text and media sends (the media
+        // metadata, when present, is passed through above) — one catch below
+        // guards both.
+        try {
+            $result = $this->outboundUseCase->processOutboundMessage(
+                ticketId: $ticketId,
+                content: $content,
+                agentId: $agentId,
+                mediaMetadata: $mediaMetadata,
+            );
+        } catch (ConversationWindowExpiredException $e) {
+            return new JsonResponse(
+                [
+                    'type' => 'CONVERSATION_WINDOW_EXPIRED',
+                    'message' => $e->getMessage(),
+                ],
+                Response::HTTP_UNPROCESSABLE_ENTITY
+            );
+        }
 
         // --- Phone Resolution Chain ---
         $ticket = $this->ticketRepository->find($ticketId);

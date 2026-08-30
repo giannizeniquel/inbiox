@@ -94,6 +94,34 @@ services:
       - mercure
     restart: always
 
+  # WhatsApp 24h conversation-window compliance (Sprint 16 Fase 3, design.md
+  # Phase 6). Mirrors the `publisher` service's shape: no user-supplied
+  # arguments, no untrusted value reaches the shell string. A non-zero exit
+  # must not kill the loop — covered by restart: always plus the service's
+  # own per-ticket \Throwable catch (ConversationWindowExpiryService).
+  #
+  # Gated behind a profile on purpose: unlike `publisher`, this service
+  # actively closes real tickets on a recurring schedule. It must not start
+  # as a side effect of a routine `docker compose up -d` / `make up` before
+  # task 6.5's manual --dry-run gate has been run and reviewed. Start it
+  # deliberately with `docker compose --profile window-closer up -d
+  # window-closer` (or `COMPOSE_PROFILES=window-closer docker compose up -d`).
+  # Once started, `restart: always` keeps it running across engine restarts,
+  # same as any other long-running service — the profile only gates the
+  # first, deliberate activation.
+  window-closer:
+    profiles:
+      - window-closer
+    build:
+      context: ./infra/docker/php
+    container_name: inbiox_window_closer
+    volumes:
+      - ./apps/api:/var/www/html
+    command: sh -c "while true; do php bin/console app:conversation-window:close-expired; sleep 900; done"
+    depends_on:
+      - php
+    restart: always
+
   minio:
     image: minio/minio:latest
     container_name: inbiox_minio

@@ -87,6 +87,7 @@ class ListTicketsQuery
         $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
         
         $sql = "SELECT t.id, t.status, t.priority, t.assigned_agent_id, t.created_at, t.updated_at,
+                       t.last_inbound_message_at,
                        c.phone, c.name as contact_name, conv.id as conv_id,
                        a.name as agent_name, a.max_active_tickets,
                        (SELECT COUNT(*) FROM tickets t2
@@ -189,6 +190,7 @@ class ListTicketsQuery
                 timestamps: [
                     'opened_at' => $row['created_at'],
                     'updated_at' => $row['updated_at'],
+                    'last_inbound_message_at' => $row['last_inbound_message_at'] ?? null,
                 ],
             );
         }, $results);

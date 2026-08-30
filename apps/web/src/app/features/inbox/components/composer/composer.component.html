@@ -1,4 +1,16 @@
 <div class="composer">
+  @if (windowExpired()) {
+    <!--
+      WhatsApp 24h conversation-window compliance (Sprint 16 Fase 3):
+      the customer has not written in over 24h, so Meta will reject any
+      free-text send. The backend is authoritative and will reject with
+      422 regardless; this is a proactive UX explanation only.
+    -->
+    <p class="warning" role="status">
+      Han pasado más de 24 horas desde el último mensaje del cliente. No se pueden enviar mensajes de texto libre;
+      esperá a que el cliente escriba de nuevo o usá una plantilla aprobada.
+    </p>
+  } @else {
   <!-- Emoji button — not implemented yet, disabled so it does not look active -->
   <button
     class="composer__icon-btn"
@@ -100,6 +112,7 @@
         <polygon points="22 2 15 22 11 13 2 9 22 2"/>
       </svg>
     </button>
+  }
   }
 
   <!-- Media preview modal -->

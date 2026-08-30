@@ -3,6 +3,7 @@
 namespace App\Application\Query;
 
 use App\Application\DTO\TimelineEventDTO;
+use App\Domain\Event\TicketEventType;
 use Doctrine\ORM\EntityManagerInterface;
 
 class GetContactTimelineQuery
@@ -67,16 +68,26 @@ class GetContactTimelineQuery
     {
         $outboxWhere = "t.contact_id = :contact_id\n              AND oe.aggregate_type = 'Ticket'\n              AND (oe.event_type LIKE '%TicketCreated%' OR oe.event_type LIKE '%TicketUpdated%')";
         $assignmentWhere = 't.contact_id = :contact_id';
+        // D6 allow-list: only the two WhatsApp 24h window-compliance event
+        // types are surfaced here. Reading every ticket_events type would
+        // silently add tag_added/tag_removed/auto_reopened to every contact
+        // timeline — an out-of-scope behavior change.
+        $ticketEventWhere = "t.contact_id = :contact_id\n              AND te.type IN ('" . TicketEventType::WINDOW_EXPIRED_CLOSED . "', '" . TicketEventType::WINDOW_REOPENED . "')";
 
         if ($before !== null) {
             $outboxWhere .= "\n            AND oe.created_at < :before_date";
             $assignmentWhere .= "\n            AND a.assigned_at < :before_date";
+            $ticketEventWhere .= "\n            AND te.created_at < :before_date";
         }
 
         if ($phoneNumberId !== null) {
             $outboxWhere .= "\n            AND t.phone_number_id = :phone_number_id";
             $assignmentWhere .= "\n            AND t.phone_number_id = :phone_number_id";
+            $ticketEventWhere .= "\n            AND t.phone_number_id = :phone_number_id";
         }
+
+        $windowExpiredClosedType = TicketEventType::WINDOW_EXPIRED_CLOSED;
+        $windowReopenedType = TicketEventType::WINDOW_REOPENED;
 
         return <<<SQL
         SELECT type, occurred_at, content, ticket_id, ticket_status, assigned_to, agent_id, direction
@@ -117,6 +128,25 @@ class GetContactTimelineQuery
             JOIN tickets t ON a.ticket_id = t.id
             LEFT JOIN agents ag ON a.agent_id = ag.id
             WHERE {$assignmentWhere}
+
+            UNION ALL
+
+            -- WhatsApp 24h conversation-window closure/reopen audit (D6 allow-list)
+            SELECT
+                CASE te.type
+                    WHEN '{$windowExpiredClosedType}' THEN 'ticket.window_expired_closed'
+                    WHEN '{$windowReopenedType}' THEN 'ticket.window_reopened'
+                END AS type,
+                te.created_at AS occurred_at,
+                NULL AS content,
+                t.id AS ticket_id,
+                t.status AS ticket_status,
+                NULL AS assigned_to,
+                NULL AS agent_id,
+                NULL AS direction
+            FROM ticket_events te
+            JOIN tickets t ON te.ticket_id = t.id
+            WHERE {$ticketEventWhere}
         ) AS timeline
         ORDER BY occurred_at DESC
         LIMIT :limit

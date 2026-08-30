@@ -7,12 +7,24 @@ namespace App\Domain\Ticket;
  *
  * Valid transitions:
  * - new → active (first agent response)
+ * - new → closed (WhatsApp 24h window expired before any agent response)
  * - active → waiting (agent waits for customer)
+ * - active → closed (WhatsApp 24h window expired)
  * - waiting → active (customer responds)
+ * - waiting → closed (WhatsApp 24h window expired)
  * - active → resolved (ticket resolved)
  * - waiting → resolved (ticket resolved)
  * - resolved → waiting (customer responds - auto-reopen)
  * - resolved → closed (auto-close after inactivity)
+ *
+ * `new|active|waiting → closed` was added for WhatsApp 24h conversation-
+ * window compliance (design.md D2 — Option A: never routed through
+ * `resolved`, so `resolved_at` and resolution metrics stay uncontaminated).
+ * This widening only affects the CLOSING side. `closed` remains strictly
+ * terminal: no `closed → *` transition exists in this table, by design.
+ * The system-triggered reopen path (`TransitionTicketStatusUseCase::
+ * reopenDueToInboundMessage()`) never routes through this shared table —
+ * see design.md D1.
  */
 class TicketStateMachine
 {
@@ -22,14 +34,17 @@ class TicketStateMachine
     private const TRANSITIONS = [
         TicketStatus::NEW->value => [
             TicketStatus::ACTIVE->value => true,
+            TicketStatus::CLOSED->value => true,
         ],
         TicketStatus::ACTIVE->value => [
             TicketStatus::WAITING->value => true,
             TicketStatus::RESOLVED->value => true,
+            TicketStatus::CLOSED->value => true,
         ],
         TicketStatus::WAITING->value => [
             TicketStatus::ACTIVE->value => true,
             TicketStatus::RESOLVED->value => true,
+            TicketStatus::CLOSED->value => true,
         ],
         TicketStatus::RESOLVED->value => [
             TicketStatus::WAITING->value => true,

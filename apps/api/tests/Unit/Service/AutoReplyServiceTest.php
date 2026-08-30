@@ -13,6 +13,7 @@ use App\Domain\Agent\AgentShiftRepository;
 use App\Domain\Contact\Contact;
 use App\Domain\Conversation\Conversation;
 use App\Domain\Event\EventCollector;
+use App\Domain\Ticket\ConversationWindowPolicy;
 use App\Domain\Ticket\ProcessedEvent;
 use App\Domain\Ticket\Ticket;
 use App\Exception\GraphApiException;
@@ -48,6 +49,7 @@ class AutoReplyServiceTest extends TestCase
     private ProcessedEventRepository&MockObject $processedEventRepo;
     private EventCollector&MockObject $eventCollector;
     private LoggerInterface&MockObject $logger;
+    private ConversationWindowPolicy $windowPolicy;
     private AutoReplyService $service;
 
     protected function setUp(): void
@@ -67,6 +69,8 @@ class AutoReplyServiceTest extends TestCase
             $this->em,
         );
 
+        $this->windowPolicy = new ConversationWindowPolicy(safetyMarginMinutes: 5);
+
         $this->service = new AutoReplyService(
             $this->agentRepo,
             $this->availabilityService,
@@ -75,6 +79,7 @@ class AutoReplyServiceTest extends TestCase
             $this->eventCollector,
             $this->logger,
             $this->em,
+            $this->windowPolicy,
         );
     }
 
@@ -116,6 +121,7 @@ class AutoReplyServiceTest extends TestCase
         ?Contact $contact = null,
         ?string $phoneNumberId = '123456789',
         ?Conversation $conversation = null,
+        ?\DateTimeImmutable $lastInboundMessageAt = new \DateTimeImmutable('-1 hour'),
     ): Ticket {
         $ticket = new Ticket();
         if ($agent !== null) {
@@ -130,6 +136,7 @@ class AutoReplyServiceTest extends TestCase
         if ($conversation !== null) {
             $ticket->setConversation($conversation);
         }
+        $ticket->setLastInboundMessageAt($lastInboundMessageAt);
 
         return $ticket;
     }
@@ -369,6 +376,40 @@ class AutoReplyServiceTest extends TestCase
 
         // Assertion: we reached here without exception
         $this->assertTrue(true);
+    }
+
+    // ────────────────────────────────────────────────────────────
+    //  Test 8 (WhatsApp 24h window compliance): expired window → no send
+    // ────────────────────────────────────────────────────────────
+
+    public function testDoesNotSendWhenConversationWindowHasExpired(): void
+    {
+        $agent = $this->createAgent();
+        $contact = $this->createContact(phone: '+5493625123456');
+        $ticket = $this->createTicket(
+            agent: $agent,
+            contact: $contact,
+            lastInboundMessageAt: new \DateTimeImmutable('-25 hours'),
+        );
+
+        $this->agentRepo->expects(self::once())
+            ->method('findById')
+            ->with(1)
+            ->willReturn($agent);
+
+        $this->processedEventRepo->expects(self::once())
+            ->method('findByEventId')
+            ->willReturn(null);
+
+        // Fire-and-forget: early return, not an error — no send, no persist.
+        $this->graphClient->expects(self::never())->method('sendMessage');
+        $this->em->expects(self::never())->method('persist');
+
+        $this->logger->expects(self::once())
+            ->method('info')
+            ->with(self::stringContains('window'));
+
+        $this->service->maybeSend($ticket);
     }
 
     // ────────────────────────────────────────────────────────────

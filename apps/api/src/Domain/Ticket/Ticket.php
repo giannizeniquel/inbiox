@@ -64,6 +64,9 @@ class Ticket
     #[ORM\Column(name: "last_read_at", type: "datetime_immutable", nullable: true)]
     private ?\DateTimeImmutable $lastReadAt = null;
 
+    #[ORM\Column(name: "last_inbound_message_at", type: "datetime_immutable", nullable: true)]
+    private ?\DateTimeImmutable $lastInboundMessageAt = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -226,6 +229,17 @@ class Ticket
     public function setLastReadAt(?\DateTimeImmutable $lastReadAt): self
     {
         $this->lastReadAt = $lastReadAt;
+        return $this;
+    }
+
+    public function getLastInboundMessageAt(): ?\DateTimeImmutable
+    {
+        return $this->lastInboundMessageAt;
+    }
+
+    public function setLastInboundMessageAt(?\DateTimeImmutable $lastInboundMessageAt): self
+    {
+        $this->lastInboundMessageAt = $lastInboundMessageAt;
         return $this;
     }
 

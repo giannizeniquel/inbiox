@@ -10,6 +10,7 @@ use App\Application\UseCase\TransitionTicketStatusUseCase;
 use App\Application\Rule\RuleExecutorService;
 use App\Domain\Agent\AgentShiftRepository;
 use App\Domain\Event\EventCollector;
+use App\Domain\Ticket\ConversationWindowPolicy;
 use App\Repository\AgentRepository;
 use App\Repository\ContactRepository;
 use App\Repository\ConversationRepository;
@@ -64,6 +65,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
             $this->eventCollector,
             $this->logger,
             $this->em,
+            new ConversationWindowPolicy(safetyMarginMinutes: 5),
         );
 
         $this->useCase = new HandleInboundMessageUseCase(

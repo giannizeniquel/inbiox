@@ -261,7 +261,34 @@ foreach ($events as $event) {
         // Use findNotClosedByContact to include resolved tickets (for auto-reopen)
         $ticket = $this->ticketRepo->findNotClosedByContact($contact, $phoneNumberId);
         $isNewTicket = false;
-        
+        $wasReopened = false;
+
+        // WhatsApp 24h conversation-window compliance: a ticket closed
+        // specifically by the window-expiry process reactivates on a new
+        // inbound message instead of spawning a new ticket (design.md D1).
+        // No human-facing endpoint can trigger this — see
+        // TransitionTicketStatusUseCase::reopenDueToInboundMessage()'s own
+        // guard and TicketWorkflowControllerWindowIsolationTest.
+        //
+        // Known accepted limitation (proposal.md/design.md, deferred to a
+        // future phase): a reopened ticket may not appear live in the
+        // agent's ticket list, because no ticket-level Mercure event fires
+        // for it — `TicketUpdatedEvent` is deliberately NOT extended here
+        // (fixed constraint). The reopen is fully correct in the database
+        // (status='active', closed_at=NULL, `ticket_events` audit row) and
+        // becomes visible on the agent's next list load. Do NOT add a new
+        // event emission here to close this gap — it is out of scope for
+        // this change.
+        if (!$ticket) {
+            $reopenable = $this->ticketRepo->findWindowExpiredClosedByContact($contact, $phoneNumberId);
+            if ($reopenable !== null
+                && $reopenable->getConversation()?->getId() === $conversation->getId()) {
+                $this->transitionUseCase->reopenDueToInboundMessage((int) $reopenable->getId());
+                $ticket = $reopenable;
+                $wasReopened = true;
+            }
+        }
+
         if (!$ticket) {
             $ticket = new Ticket();
             $ticket->setContact($contact);
@@ -276,6 +303,15 @@ foreach ($events as $event) {
         } else {
             // Existing ticket: lock to prevent seq duplicates under concurrency
             $this->em->lock($ticket, LockMode::PESSIMISTIC_WRITE);
+
+            // `reopenDueToInboundMessage()` writes via raw SQL, so the
+            // managed entity fetched above still reports the stale
+            // `status = 'closed'`. Without this refresh, step 7's
+            // waiting→active branch (and the returned `ticket_status`)
+            // would read/report the wrong status.
+            if ($wasReopened) {
+                $this->em->refresh($ticket);
+            }
         }
 
         // 7. FSM transition: waiting → active on customer response
@@ -298,6 +334,13 @@ foreach ($events as $event) {
         $conversation->setUpdatedAt(new \DateTimeImmutable());
         $contact->setUpdatedAt(new \DateTimeImmutable());
         $ticket->setUpdatedAt(new \DateTimeImmutable());
+
+        // WhatsApp 24h conversation-window compliance: this is the single
+        // writer for `lastInboundMessageAt` (design.md, task 3.1/3.8) — it
+        // must fire on every inbound message, for both a brand-new ticket
+        // and a reused/reopened one, and on no other path (outbound sends
+        // and auto-replies never touch this field).
+        $ticket->setLastInboundMessageAt($msg->getCreatedAt());
 
         // 8. Flush everything
         $this->em->flush();

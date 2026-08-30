@@ -29,6 +29,17 @@
   display: none;
 }
 
+// WhatsApp 24h conversation-window compliance (Sprint 16 Fase 3): shown in
+// place of the input row while the window is expired.
+.warning {
+  flex: 1;
+  margin: 0;
+  padding: 8px 12px;
+  color: var(--text-secondary);
+  font-size: var(--font-base);
+  line-height: 1.4;
+}
+
 // Icon buttons (emoji, attach, voice)
 .composer__icon-btn {
   display: flex;

@@ -27,6 +27,9 @@ export interface Ticket {
   timestamps: {
     opened_at: string;
     updated_at: string;
+    // WhatsApp 24h conversation-window compliance (Sprint 16 Fase 3).
+    // Optional: keeps ticket.store.ts's existing object literals compiling.
+    last_inbound_message_at?: string | null;
   };
   // Alias for compatibility
   id: string;

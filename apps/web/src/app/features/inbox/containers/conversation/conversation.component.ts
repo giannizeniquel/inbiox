@@ -111,6 +111,35 @@ export class ConversationComponent {
   protected readonly isAtBottom = signal(true);
   protected readonly newMessagesCount = signal(0);
 
+  /**
+   * WhatsApp 24h conversation-window compliance (Sprint 16 Fase 3, design.md D7).
+   *
+   * Derived, read-only signal — never written back to any store. Takes the
+   * more recent of the REST baseline (`activeTicket().timestamps.
+   * last_inbound_message_at`, loaded once) and the latest inbound message
+   * already present in `ConversationStore.messages()` (kept live by the
+   * existing `MessageAdded` Mercure handler). This is what lets the
+   * composer's window-expired state flip back automatically on a new
+   * inbound message with no polling and no new Mercure payload.
+   */
+  protected readonly lastInboundMessageAt = computed<string | null>(() => {
+    const restBaseline = this.activeTicket()?.timestamps.last_inbound_message_at ?? null;
+
+    let latestFromMessages: string | null = null;
+    const messages = this.messages();
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].direction === 'inbound') {
+        latestFromMessages = messages[i].createdAt;
+        break;
+      }
+    }
+
+    if (!restBaseline) return latestFromMessages;
+    if (!latestFromMessages) return restBaseline;
+
+    return new Date(latestFromMessages) > new Date(restBaseline) ? latestFromMessages : restBaseline;
+  });
+
   trackById = (_: number, m: Message): string => m.tempId ?? m.id;
 
   // React to UiStore notifications from SSE events

@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Domain\Event\TicketEventType;
 use App\Domain\Ticket\Ticket;
 use App\Domain\Ticket\TicketRepositoryInterface;
 use App\Domain\Ticket\TicketStatus;
@@ -61,6 +62,48 @@ class TicketRepository extends ServiceEntityRepository implements TicketReposito
     public function findById(int $id): ?Ticket
     {
         return $this->find($id);
+    }
+
+    /**
+     * Find a `closed` ticket for this contact eligible for system-triggered
+     * reopen: the ticket's MOST RECENT `ticket_events` row must be of type
+     * `window_expired_closed`. A ticket with zero events, a different
+     * latest event type, or closed for another reason yields no match —
+     * unchanged, so `HandleInboundMessageUseCase` falls back to creating a
+     * new ticket, exactly as it does today (design.md).
+     *
+     * DQL cannot express a correlated `ORDER BY ... LIMIT 1` subquery, so
+     * this uses the connection directly (precedent: `TransitionTicketStatusUseCase`),
+     * then rehydrates via `$this->find($id)` so the caller receives a
+     * managed entity it can `lock()`.
+     */
+    public function findWindowExpiredClosedByContact(Contact $contact, ?string $phoneNumberId = null): ?Ticket
+    {
+        $sql = 'SELECT t.id
+                FROM tickets t
+                WHERE t.contact_id = :contact_id
+                  AND t.status = :status
+                  AND (SELECT te.type
+                       FROM ticket_events te
+                       WHERE te.ticket_id = t.id
+                       ORDER BY te.created_at DESC, te.id DESC
+                       LIMIT 1) = :window_expired_closed';
+        $params = [
+            'contact_id' => $contact->getId() ?? 0,
+            'status' => TicketStatus::CLOSED->value,
+            'window_expired_closed' => TicketEventType::WINDOW_EXPIRED_CLOSED,
+        ];
+
+        if ($phoneNumberId !== null) {
+            $sql .= ' AND t.phone_number_id = :phone_number_id';
+            $params['phone_number_id'] = $phoneNumberId;
+        }
+
+        $sql .= ' ORDER BY t.updated_at DESC, t.id DESC LIMIT 1';
+
+        $id = $this->getEntityManager()->getConnection()->fetchOne($sql, $params);
+
+        return $id !== false ? $this->find((int) $id) : null;
     }
 
     public function findByConversation(Conversation $conversation): ?Ticket

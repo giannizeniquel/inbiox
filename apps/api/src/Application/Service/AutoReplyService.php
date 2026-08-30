@@ -10,6 +10,7 @@ use App\Domain\Event\EventCollector;
 use App\Domain\Event\MessageCreatedEvent;
 use App\Domain\Message\Message;
 use App\Domain\Message\MessageDirection;
+use App\Domain\Ticket\ConversationWindowPolicy;
 use App\Domain\Ticket\ProcessedEvent;
 use App\Domain\Ticket\Ticket;
 use App\Exception\GraphApiException;
@@ -43,6 +44,7 @@ final class AutoReplyService
         private readonly EventCollector $eventCollector,
         private readonly LoggerInterface $logger,
         private readonly EntityManagerInterface $em,
+        private readonly ConversationWindowPolicy $windowPolicy,
     ) {}
 
     /**
@@ -111,6 +113,17 @@ final class AutoReplyService
 
         if ($to === null || $to === '') {
             $this->logger->warning('AutoReply skipped: contact has no phone number', [
+                'contactId' => $contactId,
+                'ticket_id' => $ticket->getId(),
+            ]);
+            return;
+        }
+
+        // WhatsApp 24h conversation-window guard: an auto-reply is fire-and-
+        // forget, so an expired window is not an error — just an early
+        // return with a log line, never a throw (design.md caller table).
+        if (!$this->windowPolicy->isOpenForSending($ticket->getLastInboundMessageAt(), new \DateTimeImmutable())) {
+            $this->logger->info('AutoReply skipped: conversation window has expired', [
                 'contactId' => $contactId,
                 'ticket_id' => $ticket->getId(),
             ]);

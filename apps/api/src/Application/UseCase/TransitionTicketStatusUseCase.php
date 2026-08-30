@@ -5,6 +5,8 @@ namespace App\Application\UseCase;
 use App\Application\Service\AssignmentService;
 use App\Domain\Agent\Agent;
 use App\Domain\Assignment\AssignmentType;
+use App\Domain\Event\TicketEvent;
+use App\Domain\Event\TicketEventType;
 use App\Domain\Ticket\Ticket;
 use App\Domain\Ticket\TicketStateMachine;
 use App\Domain\Ticket\TicketStatus;
@@ -122,6 +124,125 @@ class TransitionTicketStatusUseCase
                 'previous_status' => $currentStatus,
                 'new_status' => $newStatus,
                 'reason' => 'success',
+            ];
+        });
+    }
+
+    /**
+     * Close a ticket because its WhatsApp 24h conversation window has
+     * elapsed (design.md D2/D3).
+     *
+     * Unlike `close()`, this does not require the ticket to be `resolved` —
+     * validity is delegated entirely to the widened FSM
+     * (`new|active|waiting|resolved → closed`, task 0.9). Writes a
+     * `TicketEvent(WINDOW_EXPIRED_CLOSED, 'system')` row so the closure is
+     * distinguishable from a human close in the audit trail (ticket-closure-
+     * audit capability).
+     */
+    public function closeDueToWindowExpiry(int $ticketId): array
+    {
+        return $this->em->getConnection()->transactional(function () use ($ticketId) {
+            $ticket = $this->em->getConnection()->executeQuery(
+                "SELECT * FROM tickets WHERE id = ? FOR UPDATE",
+                [$ticketId]
+            )->fetchAssociative();
+
+            if (!$ticket) {
+                throw new \InvalidArgumentException('Ticket not found: ' . $ticketId);
+            }
+
+            $currentStatus = $ticket['status'];
+
+            // Validity delegated to the FSM (task 0.9's widening); rejects
+            // an already-closed ticket via its own guard — no special-cased
+            // check needed here.
+            $newStatus = $this->stateMachine->transition($currentStatus, TicketStatus::CLOSED->value);
+
+            if (!empty($ticket['assigned_agent_id'])) {
+                $this->recordUnassignIfOwner($ticketId);
+                $this->em->flush();
+            }
+
+            $this->em->getConnection()->executeStatement(
+                "UPDATE tickets SET status = ?, closed_at = NOW(), updated_at = NOW() WHERE id = ?",
+                [$newStatus, $ticketId]
+            );
+
+            $event = new TicketEvent($ticketId, TicketEventType::WINDOW_EXPIRED_CLOSED, 'system');
+            $this->em->persist($event);
+            $this->em->flush();
+
+            return [
+                'ticket_id' => $ticketId,
+                'previous_status' => $currentStatus,
+                'new_status' => $newStatus,
+                'reason' => 'window_expired',
+            ];
+        });
+    }
+
+    /**
+     * Reopen a ticket that was closed by the WhatsApp 24h window-expiry
+     * process, in response to a new inbound customer message (design.md D1).
+     *
+     * This method deliberately NEVER calls `$this->stateMachine` — no
+     * `closed → *` entry exists in `TicketStateMachine::TRANSITIONS`, and
+     * none is ever added, so this reopen path is structurally unreachable
+     * from any human-facing endpoint (e.g. `POST /tickets/{id}/transition`).
+     * It has its own independent guard, mirroring how `closeDueToWindowExpiry()`
+     * and `close()` already coexist without colliding.
+     *
+     * Guard 2 (latest event type) is re-checked here, inside the locked
+     * transaction, rather than trusted from the repository lookup that fed
+     * the caller: the two calls are separated in time and a concurrent
+     * close could change the reason in between.
+     */
+    public function reopenDueToInboundMessage(int $ticketId): array
+    {
+        return $this->em->getConnection()->transactional(function () use ($ticketId) {
+            $ticket = $this->em->getConnection()->executeQuery(
+                "SELECT * FROM tickets WHERE id = ? FOR UPDATE",
+                [$ticketId]
+            )->fetchAssociative();
+
+            if (!$ticket) {
+                throw new \InvalidArgumentException('Ticket not found: ' . $ticketId);
+            }
+
+            // Guard 1: only a closed ticket is eligible.
+            if ($ticket['status'] !== TicketStatus::CLOSED->value) {
+                throw new \InvalidArgumentException('Only closed tickets can be reopened: ' . $ticketId);
+            }
+
+            // Guard 2: the ticket's latest event must be a window-expiry
+            // closure — re-checked here under the lock, not trusted from
+            // the caller's earlier repository lookup.
+            $latestType = $this->em->getConnection()->fetchOne(
+                'SELECT type FROM ticket_events WHERE ticket_id = ? ORDER BY created_at DESC, id DESC LIMIT 1',
+                [$ticketId]
+            );
+            if ($latestType !== TicketEventType::WINDOW_EXPIRED_CLOSED) {
+                throw new \InvalidArgumentException(
+                    'Ticket ' . $ticketId . ' is not eligible for system-triggered reopen'
+                );
+            }
+
+            $newStatus = TicketStatus::ACTIVE->value;
+
+            $this->em->getConnection()->executeStatement(
+                "UPDATE tickets SET status = ?, closed_at = NULL, updated_at = NOW() WHERE id = ?",
+                [$newStatus, $ticketId]
+            );
+
+            $event = new TicketEvent($ticketId, TicketEventType::WINDOW_REOPENED, 'system');
+            $this->em->persist($event);
+            $this->em->flush();
+
+            return [
+                'ticket_id' => $ticketId,
+                'previous_status' => $ticket['status'],
+                'new_status' => $newStatus,
+                'reason' => 'window_reopened',
             ];
         });
     }
