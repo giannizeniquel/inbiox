@@ -3,7 +3,7 @@
 **Fecha:** 28 de agosto, 2026
 **Stack:** Symfony 7.4 + PHP 8.2 (backend) · Angular 19 (frontend) · MySQL · Mercure SSE · MinIO/R2 (archivos)
 **Rama de trabajo:** `sprint-16-production-readiness`
-**Estado general:** Núcleo operativo completo y funcional. En fase de *production readiness* — Fase 0 (bloqueantes de seguridad) cerrada, Fase 2 parcial, Fase 3 (cumplimiento ventana 24h de Meta) sin arrancar.
+**Estado general:** Núcleo operativo completo y funcional. En fase de *production readiness* — Fase 0, Fase 1 y Fase 3 cerradas, Fase 2 parcial (falta 2.3). Pendiente: smoketest de `test` → `main` (103 commits, congelado desde el inicio de este ciclo de trabajo).
 
 > ⚠️ **Cómo leer este documento.** Verificado contra código y git el 28/08/2026, no contra documentación previa. El reporte anterior (14/06/2026) declaraba "Sprint 10 Agent Management: no iniciado" y "Branch: develop" — ambas afirmaciones eran falsas al momento de leerlas. Si este documento contradice a otro, gana el código.
 
@@ -96,10 +96,12 @@
 |---|---|---|
 | **Fase 0** | Bloqueantes de seguridad y config (build de prod, debug panel, cookie `Secure`, CORS, rate limiting, migración duplicada, docs de voter/scope) | ✅ **Completada** — 8/8 |
 | **Fase 2** | Reconectar UI ya construida | ⚠️ **Parcial 3/4** (`b3d2cb0`) — falta 2.3 |
-| **Fase 3** | Cumplimiento ventana 24h de Meta | 🔴 **Sin arrancar** — mayor riesgo regulatorio |
-| **Fase 1** | Autorización y trazabilidad de cierre/resolución | ⬜ Pendiente |
+| **Fase 3** | Cumplimiento ventana 24h de Meta | ✅ **Completada** — 45/45 tareas, SDD completo, commit `53b90f6`, archivado |
+| **Fase 1** | Autorización y trazabilidad de cierre/resolución | ✅ **Completada** — 28/28 tareas, SDD completo, commit `4407a4e`, archivado |
 
-> 🔴 **Fase 3 es el ítem crítico.** No existe `lastInboundMessageAt` (el único reloj válido para la ventana de Meta), el FSM no permite cerrar sin pasar por `resolved`, y no hay job de cierre automático. Hoy **nada impide enviar texto libre fuera de la ventana de 24h**, lo cual es un incumplimiento con Meta, no una preferencia de producto. A trabajar vía SDD por ser cambio de dominio con migración.
+**Fase 3, resumen técnico:** `lastInboundMessageAt` en `Ticket`, bloqueo de texto libre por llamador (antes de persistir, no centralizado en `GraphClient`), `closeDueToWindowExpiry()` con cierre directo `new/active/waiting → closed` sin pasar por `resolved`, reapertura sistémica exclusiva vía mensaje entrante (nunca alcanzable por endpoint humano), job de cierre programado (`window-closer`, gateado por `profiles` en `docker-compose.yml` — no arranca solo con `make up`).
+
+**Fase 1, resumen técnico:** autorización por ticket vía `TicketVoter::CLOSE` en `/resolve`, `/close` y `/transition` (destino resuelto/cerrado); actor real en la auditoría (ya no `'system'` hardcodeado); clasificación dueño/override/sin-dueño escrita en `ticket_events`. **Hallazgo verificado durante el desarrollo:** `POST /tickets/{id}/close` nunca puede tener éxito para un agente sobre su propio ticket — resolver ya lo desasigna, así que para cuando `/close` es alcanzable, el dueño ya no existe. El cierre propio de un agente ocurre vía `/transition` directo, mientras todavía es dueño.
 
 ---
 
@@ -129,6 +131,7 @@
     - `Ticket.php` no declara el índice `idx_tickets_created_at` (existe en la DB desde `Version20260503210000`, pero falta en las anotaciones de la entidad) — Doctrine propone dropearlo para "sincronizar".
     - `Ticket.lastReadAt` está mapeado como `datetime_immutable` pero la columna real es `DATETIME` a secas.
     - `TicketTag` tiene una asociación bidireccional rota: `TicketTag#ticket` y `TicketTag#tag` referencian campos inversos (`Ticket#ticketTags`, `Tag#ticketTags`) que no existen.
+12. **Inestabilidad de la suite completa de PHPUnit por contención de JWT/rate-limiter** (descubierto 29/08 al implementar Fase 1) — corriendo los ~500 tests juntos, el conteo de fallos varía entre corridas (58-61, no un número fijo), incluyendo tests que nada tienen que ver entre sí (`AuthorizationTest`, `AgentControllerTest`, `ReportingV2Test`). Aislando cualquier archivo de test nuevo del resto, siempre pasa limpio — confirma que es un problema de entorno de test compartido (logins JWT reales + `login_throttling` de Symfony), no una regresión de lógica. Sin triage propio todavía.
 
 ---
 
@@ -136,11 +139,11 @@
 
 ### Antes de producción (bloqueantes)
 
-1. **Fase 3 — ventana de 24h de Meta.** Cumplimiento normativo, no preferencia. Vía SDD.
-2. **Smoke test de `test`** para desbloquear el merge a `main` (103 commits esperando).
-3. **Arreglar el baseline de migraciones** (deuda #1) — sin esto no hay staging ni CI reproducible.
-4. **Triage de los ~58 tests en rojo** — hoy no se puede distinguir una regresión real del ruido de fondo.
-5. **Fase 1 — autorización y trazabilidad de cierre.**
+1. ~~Fase 3 — ventana de 24h de Meta.~~ ✅ Completada.
+2. ~~Arreglar el baseline de migraciones~~ ✅ Completada (deuda #1, `c590982`).
+3. ~~Fase 1 — autorización y trazabilidad de cierre.~~ ✅ Completada.
+4. **Smoke test de `test`** para desbloquear el merge a `main` (103 commits esperando) — el único bloqueante de producción que queda de esta lista.
+5. **Triage de los ~58 tests en rojo** — hoy no se puede distinguir una regresión real del ruido de fondo. Relacionado con la deuda #12 (inestabilidad de la suite por JWT/rate-limiter).
 
 ### Post-lanzamiento, por apalancamiento
 
