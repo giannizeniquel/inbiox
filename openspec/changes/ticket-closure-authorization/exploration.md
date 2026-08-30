@@ -103,6 +103,16 @@ The `ticket_events` table, its new index (`idx_ticket_events_ticket_created`), a
 4. **403 response shape**: match `TicketController::assign()`'s existing `{'error': 'Forbidden'}` shape, or something resolve/close-specific?
 5. **Exact audit wording**: "Supervisor X closed…" / "Agent Y closed…" — how should an ADMIN actor be labeled, given `ROLE_ADMIN` inherits `ROLE_SUPERVISOR` via the role hierarchy (so an admin acting is also, technically, a supervisor)?
 
+## Decisions closed — 2026-08-29
+
+All five open decisions are settled. `sdd-propose` should treat these as fixed constraints, not options to re-litigate.
+
+1. **No-prior-owner close/resolve: `ticket_events`-only.** `TicketWorkflowController` always writes a `TicketEvent(MANUAL_CLOSED/MANUAL_RESOLVED, actor)` row after a successful action, whether or not the ticket had a prior owner. `recordUnassignIfOwner()` stays exactly as it is today — it only fires, and only writes to `assignments`, when there was a real owner to unassign. `Assignment`'s meaning is not stretched to cover "no ownership change happened."
+2. **Event-writing responsibility: caller-level (as recommended).** `close()`/`resolve()`/`execute()` stay event-free. `TicketWorkflowController` emits the manual-close/resolve `TicketEvent` itself after success — matching the `AutoCloseRule`/`AutoReopenRule` convention, avoiding any risk of misattributing or double-emitting for `AutoCloseRule`'s existing automatic closes.
+3. **`TicketEvent.source` width: resolve by join at read time.** No column-width change. `source` keeps storing a compact reference (an agent/user ID); `GetContactTimelineQuery` resolves the display name/role via a join, mirroring the existing `assignments` branch's `LEFT JOIN agents` pattern.
+4. **403 response shape: custom to this action**, not reused from `TicketController::assign()`'s generic `{'error': 'Forbidden'}`. `sdd-design` to specify the exact shape (e.g. distinguishing "not the owner" from "no role at all," if useful).
+5. **Actor labeling, exact**: an actor who is `ROLE_SUPERVISOR` but not `ROLE_ADMIN` → **"Sup"**; `ROLE_ADMIN` → **"Admin"**; `ROLE_AGENT` → **"Agente"**. Since `ROLE_ADMIN` inherits `ROLE_SUPERVISOR` via the role hierarchy, the check order matters: test for `ROLE_ADMIN` first, only label "Sup" when the actor has `ROLE_SUPERVISOR` and does NOT have `ROLE_ADMIN`.
+
 ## Recommendation
 
 Treat the sprint doc's 4-item breakdown (1.1-1.4) as structurally correct, but design 1.2 and 1.3 as **one unified change** (spanning `Assignment` audit + `ticket_events` audit) rather than independent patches — specifically because of the verified `AutoCloseRule` coupling. Approach: caller-level event emission (`TicketWorkflowController` writes the audit event after a successful resolve/close), keeping the shared `close()`/`resolve()`/`execute()` methods event-free exactly as they are today. This is lower-risk than threading an actor parameter through those methods, matches the existing convention 2 of 3 current callers already follow, and required zero changes to `AutoCloseRule`/`AutoReopenRule` themselves.
