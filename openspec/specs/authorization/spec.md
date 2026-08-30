@@ -10,7 +10,7 @@ Defines Role-Based Access Control (RBAC), ticket ownership rules, controller pro
 
 ### Requirement: RBAC Permission Matrix
 
-The system SHALL enforce the following permission matrix via Symfony Security `#[IsGranted]` attributes on controllers.
+The system SHALL enforce the following permission matrix via Symfony Security `#[IsGranted]` attributes on controllers, plus a per-ticket ownership check for resolving/closing a ticket.
 
 | Action | ROLE_ADMIN | ROLE_SUPERVISOR | ROLE_AGENT |
 |--------|:----------:|:---------------:|:----------:|
@@ -20,10 +20,15 @@ The system SHALL enforce the following permission matrix via Symfony Security `#
 | View assigned tickets | ✅ | ✅ | ✅ |
 | View all tickets | ✅ | ✅ | ❌ |
 | Reassign tickets | ✅ | ✅ | ❌ |
-| Close own tickets | ✅ | ✅ | ✅ |
+| Resolve own tickets, or close own tickets via a direct transition | ✅ | ✅ | ✅ |
+| Resolve/close another agent's ticket | ✅ | ✅ | ❌ |
+| Close a ticket via the two-step resolve-then-close action | ✅ | ✅ | ❌ (structurally always unowned by that point — see note) |
 | System config | ✅ | ❌ | ❌ |
 
-Roles are hierarchical: `ROLE_ADMIN` includes all `ROLE_SUPERVISOR` permissions, `ROLE_SUPERVISOR` includes all `ROLE_AGENT` permissions.
+Roles are hierarchical: `ROLE_ADMIN` includes all `ROLE_SUPERVISOR` permissions, `ROLE_SUPERVISOR` includes all `ROLE_AGENT` permissions. Resolving or closing a ticket — including a generic transition whose target status is `resolved` or `closed` — is allowed only for an admin, a supervisor, or the ticket's current owning agent; any other case is rejected.
+(Previously: closing was declared only as a role-level `ROLE_AGENT` check with no per-ticket ownership enforcement, and the ownership scenarios below covered only the generic transition endpoint.)
+
+**Note on the two-step close action**: resolving a ticket unassigns it as a documented side effect (confirmed intentional, for accurate real-time workload reporting). Because of this, a ticket eligible for the two-step resolve-then-close action has no owner by the time that action is reachable — an agent can never satisfy the "current owning agent" condition there, regardless of who resolved it. An agent's own-ticket closure is achieved instead by a direct transition to closed from an active/in-progress state, while ownership still holds. This is a factual consequence of the confirmed unassign-on-resolve behavior, not a separate policy choice.
 
 #### Scenario: Admin accesses user management
 
@@ -61,7 +66,6 @@ Roles are hierarchical: `ROLE_ADMIN` includes all `ROLE_SUPERVISOR` permissions,
 - GIVEN a user with `ROLE_AGENT`
 - WHEN `GET /api/tickets` is called without agent filter context
 - THEN the response SHALL only contain tickets assigned to the user's Agent
-- AND tickets assigned to other agents SHALL NOT be visible
 
 #### Scenario: Supervisor can view all tickets
 
@@ -69,17 +73,49 @@ Roles are hierarchical: `ROLE_ADMIN` includes all `ROLE_SUPERVISOR` permissions,
 - WHEN `GET /api/tickets` is called
 - THEN the response SHALL be 200 with ALL tickets regardless of assignment
 
-#### Scenario: Agent can close own ticket
+#### Scenario: Agent can resolve own ticket
 
 - GIVEN a user with `ROLE_AGENT` linked to Agent id=3
-- WHEN `POST /api/tickets/{id}/transition` is called for a ticket assigned to Agent 3
+- WHEN `POST /tickets/{id}/resolve` is called for an active/waiting ticket assigned to Agent 3
+- THEN the response SHALL be 200
+- AND the ticket is no longer assigned to Agent 3 as a result (confirmed intentional side effect, unrelated to this requirement)
+
+#### Scenario: Agent can close own ticket via a direct transition
+
+- GIVEN a user with `ROLE_AGENT` linked to Agent id=3
+- WHEN `POST /tickets/{id}/transition` (target `closed`) is called for an active/waiting ticket assigned to Agent 3
 - THEN the response SHALL be 200
 
-#### Scenario: Agent cannot close another agent's ticket
+#### Scenario: Agent can never close a ticket via the two-step close action, even one they resolved themselves
+
+- GIVEN a user with `ROLE_AGENT` linked to Agent id=3, who has just resolved a ticket previously assigned to them
+- WHEN that same agent calls `POST /tickets/{id}/close`
+- THEN the response SHALL be 403
+- AND this holds regardless of who resolved the ticket, because resolving unassigns it (per the confirmed unassign-on-resolve behavior) before the close action becomes reachable
+
+#### Scenario: Agent cannot resolve or close another agent's ticket
 
 - GIVEN a user with `ROLE_AGENT` linked to Agent id=3
-- WHEN `POST /api/tickets/{id}/transition` is called for a ticket assigned to Agent 7
+- WHEN `POST /tickets/{id}/resolve`, `/close`, or `/transition` (target `resolved`/`closed`) is called for a ticket assigned to Agent 7
 - THEN the response SHALL be 403
+
+#### Scenario: Supervisor can resolve or close another agent's ticket
+
+- GIVEN a user with `ROLE_SUPERVISOR`
+- WHEN `POST /tickets/{id}/resolve` or `/close` is called for a ticket assigned to any agent, or with no owner
+- THEN the response SHALL be 200
+
+#### Scenario: Admin can resolve or close another agent's ticket
+
+- GIVEN a user with `ROLE_ADMIN`
+- WHEN `POST /tickets/{id}/resolve` or `/close` is called for a ticket assigned to any agent, or with no owner
+- THEN the response SHALL be 200
+
+#### Scenario: Non-closing transition unaffected
+
+- GIVEN a user with `ROLE_AGENT` not owning a ticket
+- WHEN `POST /tickets/{id}/transition` is called with a target status other than `resolved` or `closed`
+- THEN the response SHALL behave exactly as before this change, unaffected by the ownership check
 
 #### Scenario: Admin can access system config
 
@@ -259,7 +295,7 @@ The system SHALL restrict debug endpoints to the `dev` environment only.
 | Type | Count |
 |------|-------|
 | Requirements | 6 |
-| Total Scenarios | 20 |
+| Total Scenarios | 30 |
 
 ## Coverage
 
