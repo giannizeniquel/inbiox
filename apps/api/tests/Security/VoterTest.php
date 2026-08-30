@@ -122,7 +122,52 @@ class VoterTest extends TestCase
             // AGENT — no linked agent (denied — R1)
             'AGENT no agent VIEW'               => ['ROLE_AGENT', 1, null, TicketVoter::VIEW, $d],
             'AGENT no agent EDIT'               => ['ROLE_AGENT', 1, null, TicketVoter::EDIT, $d],
+
+            // AGENT — CLOSE on an unassigned ticket (denied — R2). This is
+            // the design.md D3 case: every ticket reachable via POST
+            // /tickets/{id}/close is structurally unowned, so this must
+            // deny even the agent who resolved it seconds earlier.
+            'AGENT CLOSE unassigned ticket'     => ['ROLE_AGENT', null, 1, TicketVoter::CLOSE, $d],
+
+            // AGENT — no linked Agent, CLOSE own ticket (denied — R1)
+            'AGENT no agent CLOSE own ticket'   => ['ROLE_AGENT', 1, null, TicketVoter::CLOSE, $d],
         ];
+    }
+
+    /**
+     * Regression proof for design.md D1: wiring `TicketVoter::CLOSE` must
+     * NOT collide with the `ASSIGN` attribute's resolved/closed state guard.
+     * The identical (SUPERVISOR, resolved ticket) case is GRANTED with no
+     * exception under CLOSE, but still throws `StateConflictException`
+     * under ASSIGN.
+     */
+    public function testSupervisorCloseGrantedOnResolvedTicketWhileAssignStillThrows(): void
+    {
+        $security = $this->createMock(Security::class);
+        $security->method('isGranted')->willReturnCallback(
+            fn (string $roleName): bool => \in_array($roleName, ['ROLE_SUPERVISOR', 'ROLE_AGENT'], true)
+        );
+
+        $user = new User();
+        $user->setRoles(['ROLE_SUPERVISOR']);
+
+        $ticket = $this->createMock(Ticket::class);
+        $ticket->method('getStatus')->willReturn(\App\Domain\Ticket\TicketStatus::RESOLVED->value);
+        $ticket->method('getAssignedAgentId')->willReturn(null);
+
+        $token = $this->createMock(TokenInterface::class);
+        $token->method('getUser')->willReturn($user);
+
+        $voter = new TicketVoter($security);
+
+        self::assertSame(
+            VoterInterface::ACCESS_GRANTED,
+            $voter->vote($token, $ticket, [TicketVoter::CLOSE]),
+            'CLOSE on a resolved ticket must be granted for a supervisor, no exception'
+        );
+
+        $this->expectException(\App\Exception\StateConflictException::class);
+        $voter->vote($token, $ticket, [TicketVoter::ASSIGN]);
     }
 
     // ────────────────────────────────────────────────────────

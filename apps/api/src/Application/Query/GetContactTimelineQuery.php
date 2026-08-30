@@ -68,11 +68,22 @@ class GetContactTimelineQuery
     {
         $outboxWhere = "t.contact_id = :contact_id\n              AND oe.aggregate_type = 'Ticket'\n              AND (oe.event_type LIKE '%TicketCreated%' OR oe.event_type LIKE '%TicketUpdated%')";
         $assignmentWhere = 't.contact_id = :contact_id';
-        // D6 allow-list: only the two WhatsApp 24h window-compliance event
-        // types are surfaced here. Reading every ticket_events type would
-        // silently add tag_added/tag_removed/auto_reopened to every contact
-        // timeline — an out-of-scope behavior change.
-        $ticketEventWhere = "t.contact_id = :contact_id\n              AND te.type IN ('" . TicketEventType::WINDOW_EXPIRED_CLOSED . "', '" . TicketEventType::WINDOW_REOPENED . "')";
+        // D6 allow-list: only the WhatsApp 24h window-compliance event types
+        // plus the six manual closure/resolution audit types (D2) are
+        // surfaced here. Reading every ticket_events type would silently
+        // add tag_added/tag_removed/auto_reopened/auto_closed to every
+        // contact timeline — an out-of-scope behavior change.
+        $allowListedTypes = [
+            TicketEventType::WINDOW_EXPIRED_CLOSED,
+            TicketEventType::WINDOW_REOPENED,
+            TicketEventType::MANUAL_RESOLVED_OWNER,
+            TicketEventType::MANUAL_RESOLVED_OVERRIDE,
+            TicketEventType::MANUAL_RESOLVED_UNOWNED,
+            TicketEventType::MANUAL_CLOSED_OWNER,
+            TicketEventType::MANUAL_CLOSED_OVERRIDE,
+            TicketEventType::MANUAL_CLOSED_UNOWNED,
+        ];
+        $ticketEventWhere = "t.contact_id = :contact_id\n              AND te.type IN ('" . implode("', '", $allowListedTypes) . "')";
 
         if ($before !== null) {
             $outboxWhere .= "\n            AND oe.created_at < :before_date";
@@ -88,6 +99,12 @@ class GetContactTimelineQuery
 
         $windowExpiredClosedType = TicketEventType::WINDOW_EXPIRED_CLOSED;
         $windowReopenedType = TicketEventType::WINDOW_REOPENED;
+        $manualResolvedOwnerType = TicketEventType::MANUAL_RESOLVED_OWNER;
+        $manualResolvedOverrideType = TicketEventType::MANUAL_RESOLVED_OVERRIDE;
+        $manualResolvedUnownedType = TicketEventType::MANUAL_RESOLVED_UNOWNED;
+        $manualClosedOwnerType = TicketEventType::MANUAL_CLOSED_OWNER;
+        $manualClosedOverrideType = TicketEventType::MANUAL_CLOSED_OVERRIDE;
+        $manualClosedUnownedType = TicketEventType::MANUAL_CLOSED_UNOWNED;
 
         return <<<SQL
         SELECT type, occurred_at, content, ticket_id, ticket_status, assigned_to, agent_id, direction
@@ -131,21 +148,37 @@ class GetContactTimelineQuery
 
             UNION ALL
 
-            -- WhatsApp 24h conversation-window closure/reopen audit (D6 allow-list)
+            -- WhatsApp 24h conversation-window closure/reopen audit, plus
+            -- manual closure/resolution audit trail (D6 allow-list)
             SELECT
                 CASE te.type
                     WHEN '{$windowExpiredClosedType}' THEN 'ticket.window_expired_closed'
                     WHEN '{$windowReopenedType}' THEN 'ticket.window_reopened'
+                    WHEN '{$manualResolvedOwnerType}' THEN 'ticket.manual_resolved_owner'
+                    WHEN '{$manualResolvedOverrideType}' THEN 'ticket.manual_resolved_override'
+                    WHEN '{$manualResolvedUnownedType}' THEN 'ticket.manual_resolved_unowned'
+                    WHEN '{$manualClosedOwnerType}' THEN 'ticket.manual_closed_owner'
+                    WHEN '{$manualClosedOverrideType}' THEN 'ticket.manual_closed_override'
+                    WHEN '{$manualClosedUnownedType}' THEN 'ticket.manual_closed_unowned'
                 END AS type,
                 te.created_at AS occurred_at,
                 NULL AS content,
                 t.id AS ticket_id,
                 t.status AS ticket_status,
-                NULL AS assigned_to,
-                NULL AS agent_id,
+                CASE WHEN u.id IS NULL THEN NULL ELSE CONCAT(
+                    CASE
+                        WHEN JSON_CONTAINS(u.roles, '"ROLE_ADMIN"') THEN 'Admin'
+                        WHEN JSON_CONTAINS(u.roles, '"ROLE_SUPERVISOR"') THEN 'Sup'
+                        ELSE 'Agente'
+                    END,
+                    ' ', COALESCE(ag.name, u.email)
+                ) END AS assigned_to,
+                ag.id AS agent_id,
                 NULL AS direction
             FROM ticket_events te
             JOIN tickets t ON te.ticket_id = t.id
+            LEFT JOIN `user` u ON te.source = CONCAT('u:', u.id)
+            LEFT JOIN agents ag ON ag.user_id = u.id
             WHERE {$ticketEventWhere}
         ) AS timeline
         ORDER BY occurred_at DESC

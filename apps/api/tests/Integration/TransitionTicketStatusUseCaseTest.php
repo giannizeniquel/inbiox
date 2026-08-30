@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
+use App\Application\UseCase\ResolveTicketUseCase;
 use App\Application\UseCase\TransitionTicketStatusUseCase;
+use App\Domain\Agent\Agent;
 use App\Domain\Contact\Contact;
 use App\Domain\Conversation\Conversation;
 use App\Domain\Event\TicketEventType;
@@ -222,5 +224,179 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
 
         $this->expectException(\InvalidArgumentException::class);
         $useCase->reopenDueToInboundMessage($ticketId);
+    }
+
+    // ── Phase 3: actor threading (design.md D5/D4/D7) ──
+
+    private function createAgent(string $name): int
+    {
+        $agent = new Agent($name);
+        $this->em->persist($agent);
+        $this->em->flush();
+
+        $id = $agent->getId();
+        \assert($id !== null);
+
+        return $id;
+    }
+
+    private function createTicketWithOwner(string $status, int $agentId): int
+    {
+        $contact = new Contact();
+        $contact->setPhone('+5491100000200');
+        $this->em->persist($contact);
+
+        $conversation = new Conversation();
+        $conversation->setContact($contact);
+        $this->em->persist($conversation);
+
+        $ticket = new Ticket();
+        $ticket->setContact($contact);
+        $ticket->setConversation($conversation);
+        $ticket->setStatus($status);
+        $ticket->setAssignedAgentId($agentId);
+        $this->em->persist($ticket);
+        $this->em->flush();
+
+        $id = $ticket->getId();
+        \assert($id !== null);
+
+        return $id;
+    }
+
+    private function latestAssignmentAssignedBy(int $ticketId): ?string
+    {
+        return $this->em->getConnection()->fetchOne(
+            'SELECT assigned_by FROM assignments WHERE ticket_id = ? ORDER BY id DESC LIMIT 1',
+            [$ticketId]
+        ) ?: null;
+    }
+
+    public function testExecuteWithARealActorRecordsAssignedByAsThatActorNotSystem(): void
+    {
+        $agentId = $this->createAgent('Actor Test Agent');
+        $ticketId = $this->createTicketWithOwner(TicketStatus::ACTIVE->value, $agentId);
+
+        $useCase = static::getContainer()->get(TransitionTicketStatusUseCase::class);
+        $useCase->execute($ticketId, TicketStatus::RESOLVED->value, true, true, 'u:9');
+
+        self::assertSame('u:9', $this->latestAssignmentAssignedBy($ticketId));
+    }
+
+    public function testCloseWithARealActorRecordsAssignedByAsThatActorNotSystem(): void
+    {
+        $agentId = $this->createAgent('Actor Test Agent Close');
+        $ticketId = $this->createTicketWithOwner(TicketStatus::RESOLVED->value, $agentId);
+
+        $useCase = static::getContainer()->get(TransitionTicketStatusUseCase::class);
+        $useCase->close($ticketId, 'u:11');
+
+        self::assertSame('u:11', $this->latestAssignmentAssignedBy($ticketId));
+    }
+
+    public function testResolveForwardsTheActorThroughToTheAssignment(): void
+    {
+        $agentId = $this->createAgent('Actor Test Agent Resolve');
+        $ticketId = $this->createTicketWithOwner(TicketStatus::ACTIVE->value, $agentId);
+
+        $useCase = static::getContainer()->get(TransitionTicketStatusUseCase::class);
+        $useCase->resolve($ticketId, 'u:13');
+
+        self::assertSame('u:13', $this->latestAssignmentAssignedBy($ticketId));
+    }
+
+    public function testResolveTicketUseCaseForwardsTheActor(): void
+    {
+        $agentId = $this->createAgent('Actor Test Agent ResolveUseCase');
+        $ticketId = $this->createTicketWithOwner(TicketStatus::ACTIVE->value, $agentId);
+
+        $resolveUseCase = static::getContainer()->get(ResolveTicketUseCase::class);
+        $resolveUseCase->execute($ticketId, 'u:17');
+
+        self::assertSame('u:17', $this->latestAssignmentAssignedBy($ticketId));
+    }
+
+    public function testExecuteWithoutAnExplicitActorStillDefaultsToSystem(): void
+    {
+        $agentId = $this->createAgent('Default System Agent');
+        $ticketId = $this->createTicketWithOwner(TicketStatus::ACTIVE->value, $agentId);
+
+        $useCase = static::getContainer()->get(TransitionTicketStatusUseCase::class);
+        $useCase->execute($ticketId, TicketStatus::RESOLVED->value, true, true);
+
+        self::assertSame('system', $this->latestAssignmentAssignedBy($ticketId));
+    }
+
+    public function testCloseWithoutAnExplicitActorStillDefaultsToSystem(): void
+    {
+        $agentId = $this->createAgent('Default System Agent Close');
+        $ticketId = $this->createTicketWithOwner(TicketStatus::RESOLVED->value, $agentId);
+
+        $useCase = static::getContainer()->get(TransitionTicketStatusUseCase::class);
+        $useCase->close($ticketId);
+
+        self::assertSame('system', $this->latestAssignmentAssignedBy($ticketId));
+    }
+
+    public function testExecuteReturnsThePreTransitionOwnerAsPreviousAssignedAgentId(): void
+    {
+        $agentId = $this->createAgent('Prev Owner Agent');
+        $ticketId = $this->createTicketWithOwner(TicketStatus::ACTIVE->value, $agentId);
+
+        $useCase = static::getContainer()->get(TransitionTicketStatusUseCase::class);
+        $result = $useCase->execute($ticketId, TicketStatus::RESOLVED->value, true, true, 'u:9');
+
+        self::assertSame($agentId, $result['previous_assigned_agent_id']);
+    }
+
+    public function testExecuteReturnsNullPreviousAssignedAgentIdWhenUnowned(): void
+    {
+        $ticketId = $this->createTicket(TicketStatus::ACTIVE->value);
+
+        $useCase = static::getContainer()->get(TransitionTicketStatusUseCase::class);
+        $result = $useCase->execute($ticketId, TicketStatus::RESOLVED->value, true, true, 'u:9');
+
+        self::assertNull($result['previous_assigned_agent_id']);
+    }
+
+    public function testCloseReturnsThePreTransitionOwnerAsPreviousAssignedAgentId(): void
+    {
+        $agentId = $this->createAgent('Prev Owner Agent Close');
+        $ticketId = $this->createTicketWithOwner(TicketStatus::RESOLVED->value, $agentId);
+
+        $useCase = static::getContainer()->get(TransitionTicketStatusUseCase::class);
+        $result = $useCase->close($ticketId, 'u:11');
+
+        self::assertSame($agentId, $result['previous_assigned_agent_id']);
+    }
+
+    /**
+     * design.md D7: `execute()` lands on `closed` when a caller transitions
+     * directly there — the agent's primary own-ticket close path once D3's
+     * `/close` finding holds. `closed_at` must be set, matching `close()`'s
+     * own behavior.
+     */
+    public function testExecuteSetsClosedAtWhenLandingOnClosed(): void
+    {
+        $ticketId = $this->createTicket(TicketStatus::ACTIVE->value);
+
+        $useCase = static::getContainer()->get(TransitionTicketStatusUseCase::class);
+        $useCase->execute($ticketId, TicketStatus::CLOSED->value);
+
+        $closedAt = $this->em->getConnection()->fetchOne('SELECT closed_at FROM tickets WHERE id = ?', [$ticketId]);
+        self::assertNotNull($closedAt);
+    }
+
+    // ── Phase 3.6: regression — automatic callers unaffected by the new optional $actor ──
+
+    public function testAutoReopenRuleStillCompilesAndBehavesUnchangedWithTheNewOptionalActorParameter(): void
+    {
+        $ticketId = $this->createTicket(TicketStatus::RESOLVED->value);
+
+        $useCase = static::getContainer()->get(TransitionTicketStatusUseCase::class);
+        // Mirrors AutoReopenRule::execute()'s exact 4-positional-arg call site.
+        $result = $useCase->execute($ticketId, TicketStatus::WAITING->value, false, false);
+
+        self::assertSame(TicketStatus::WAITING->value, $result['new_status']);
     }
 }

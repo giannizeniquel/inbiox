@@ -22,8 +22,8 @@ class ResolveTicketUseCase
      * @param int $ticketId
      * @return array
      */
-    public function execute(int $ticketId): array
+    public function execute(int $ticketId, string $actor = 'system'): array
     {
-        return $this->transitionUseCase->resolve($ticketId);
+        return $this->transitionUseCase->resolve($ticketId, $actor);
     }
 }

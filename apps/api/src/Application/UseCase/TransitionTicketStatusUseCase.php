@@ -34,7 +34,7 @@ class TransitionTicketStatusUseCase
     /**
      * Record UNASSIGN audit if the ticket owner is being resolved/closed.
      */
-    private function recordUnassignIfOwner(int $ticketId): void
+    private function recordUnassignIfOwner(int $ticketId, string $actor = 'system'): void
     {
         $ticketEntity = $this->ticketRepo->findById($ticketId);
         if ($ticketEntity === null) {
@@ -56,7 +56,7 @@ class TransitionTicketStatusUseCase
             agent: null,
             previousAgent: $agent,
             type: AssignmentType::UNASSIGN,
-            assignedBy: 'system',
+            assignedBy: $actor,
         );
     }
 
@@ -73,9 +73,10 @@ class TransitionTicketStatusUseCase
         int $ticketId,
         string $targetStatus,
         bool $setFirstResponse = false,
-        bool $setResolved = false
+        bool $setResolved = false,
+        string $actor = 'system'
     ): array {
-        return $this->em->getConnection()->transactional(function() use ($ticketId, $targetStatus, $setFirstResponse, $setResolved) {
+        return $this->em->getConnection()->transactional(function() use ($ticketId, $targetStatus, $setFirstResponse, $setResolved, $actor) {
             // Lock ticket for update
             $ticket = $this->em->getConnection()->executeQuery(
                 "SELECT * FROM tickets WHERE id = ? FOR UPDATE",
@@ -95,7 +96,7 @@ class TransitionTicketStatusUseCase
             if (($newStatus === TicketStatus::RESOLVED->value || $newStatus === TicketStatus::CLOSED->value)
                 && !empty($ticket['assigned_agent_id'])
             ) {
-                $this->recordUnassignIfOwner($ticketId);
+                $this->recordUnassignIfOwner($ticketId, $actor);
                 // Flush entity changes (Assignment + ticket entity modifications)
                 // so they are part of this transaction before the raw SQL status update
                 $this->em->flush();
@@ -115,6 +116,13 @@ class TransitionTicketStatusUseCase
                 $updates[] = 'resolved_at = NOW()';
             }
 
+            // Set closed_at when landing on closed via this generic entry
+            // point (design.md D7) — the agent's primary own-ticket close
+            // path once /close is structurally unowned-only (D3).
+            if ($newStatus === TicketStatus::CLOSED->value && empty($ticket['closed_at'])) {
+                $updates[] = 'closed_at = NOW()';
+            }
+
             // Execute update
             $sql = "UPDATE tickets SET " . implode(', ', $updates) . " WHERE id = ?";
             $this->em->getConnection()->executeStatement($sql, $params);
@@ -123,6 +131,8 @@ class TransitionTicketStatusUseCase
                 'ticket_id' => $ticketId,
                 'previous_status' => $currentStatus,
                 'new_status' => $newStatus,
+                'previous_assigned_agent_id' => isset($ticket['assigned_agent_id'])
+                    ? (int) $ticket['assigned_agent_id'] : null,
                 'reason' => 'success',
             ];
         });
@@ -250,17 +260,17 @@ class TransitionTicketStatusUseCase
     /**
      * Resolve a ticket (manual or automated)
      */
-    public function resolve(int $ticketId): array
+    public function resolve(int $ticketId, string $actor = 'system'): array
     {
-        return $this->execute($ticketId, TicketStatus::RESOLVED->value, true, true);
+        return $this->execute($ticketId, TicketStatus::RESOLVED->value, true, true, $actor);
     }
 
     /**
      * Close a resolved ticket
      */
-    public function close(int $ticketId): array
+    public function close(int $ticketId, string $actor = 'system'): array
     {
-        return $this->em->getConnection()->transactional(function() use ($ticketId) {
+        return $this->em->getConnection()->transactional(function() use ($ticketId, $actor) {
             $ticket = $this->em->getConnection()->executeQuery(
                 "SELECT * FROM tickets WHERE id = ? FOR UPDATE",
                 [$ticketId]
@@ -276,7 +286,7 @@ class TransitionTicketStatusUseCase
 
             // Record UNASSIGN audit if ticket has an owner
             if (!empty($ticket['assigned_agent_id'])) {
-                $this->recordUnassignIfOwner($ticketId);
+                $this->recordUnassignIfOwner($ticketId, $actor);
                 $this->em->flush();
             }
 
@@ -289,6 +299,8 @@ class TransitionTicketStatusUseCase
                 'ticket_id' => $ticketId,
                 'previous_status' => $ticket['status'],
                 'new_status' => TicketStatus::CLOSED->value,
+                'previous_assigned_agent_id' => isset($ticket['assigned_agent_id'])
+                    ? (int) $ticket['assigned_agent_id'] : null,
                 'reason' => 'success',
             ];
         });
