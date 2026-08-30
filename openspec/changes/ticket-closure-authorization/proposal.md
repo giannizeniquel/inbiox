@@ -22,7 +22,7 @@ Grounded by `exploration.md`; its five closed decisions are **fixed constraints*
 
 - **1.1 Authorization** — `POST /tickets/{id}/resolve`, `/close`, and `/transition` **when the target status is `resolved` or `closed`** are restricted to `ROLE_ADMIN`, `ROLE_SUPERVISOR`, or the ticket's current owning `ROLE_AGENT`. Reuses the **existing `TicketVoter`**, whose `ASSIGN` rule (SUPERVISOR+ always; AGENT only if `ticket.assignedAgentId === user.agent.id`) is already almost exactly this rule. Structural pattern: `TicketController::assign()`'s manual `Security::isGranted()` + hand-built `JsonResponse` — **not** `MediaUrlController`'s `#[IsGranted(subject:)]`, which needs entity-typed route params these raw `int $id` actions do not have.
 - **1.2 Real actor in the `assignments` audit trail** — replace the hardcoded `'system'` at the `recordUnassignIfOwner()` **call site** with the real actor threaded from the controller. `AssignmentService::recordOwnershipChange()` is untouched — it already takes a real `string $assignedBy`.
-- **1.3 Human vs. automatic close** — add `MANUAL_CLOSED`/`MANUAL_RESOLVED` to `TicketEventType`; `TicketWorkflowController` writes the row after a successful action, **always**, owner or not. `close()`/`resolve()`/`execute()` internals are not touched.
+- **1.3 Human vs. automatic close** — add owner/override/unowned-granular constants to `TicketEventType` (see "Ownership-status distinction" below — supersedes a flat `MANUAL_CLOSED`/`MANUAL_RESOLVED` pair); `TicketWorkflowController` writes the row after a successful action, **always**, owner or not. `close()`/`resolve()`/`execute()` internals are not touched.
 - **1.4 Timeline** — extend `GetContactTimelineQuery`'s existing `ticket_events` allow-list (today `window_expired_closed`/`window_reopened`) and its `CASE` mapping with the two new types, plus a join to resolve the actor's display name and label (constraint 5), reusing the **existing `LEFT JOIN agents` shape** already present in the `assignments` branch.
 
 ### Confirmed no-ops (verified, stated so they are not "fixed" by mistake)
@@ -30,6 +30,21 @@ Grounded by `exploration.md`; its five closed decisions are **fixed constraints*
 - `AutoCloseRule` and `AutoReopenRule` need **zero** changes — they already emit `auto_closed`/`auto_reopened` correctly from the Rule layer.
 - `closeDueToWindowExpiry()` (sibling change) needs **zero** changes — separate method, own emission, already isolated and attributed to `system`.
 - `AssignmentService`, `TicketEvent` (column widths), `OwnershipScope`, `ReportVoter`, `ReportingController`, `TimelineEventDTO` — unchanged.
+
+### Ownership-status distinction in the audit trail (new requirement, confirmed 2026-08-29)
+
+Answering the proposal's open product questions surfaced a real scope addition, not just clarifications:
+
+1. **`recordUnassignIfOwner()`'s always-unassign-on-close behavior stays exactly as it is — confirmed intentional, not a side effect to reconsider.** The user's reasoning: agent workload reporting, real-time assigned-ticket counts, and a future AI auto-assignment feature all depend on an agent's *current* assigned-ticket count being accurate — a closed ticket remaining "assigned" would pollute all three. No design change follows from this; it validates the current behavior and closes that open question with no code impact beyond constraint 2's real-actor threading (already in scope).
+2. **The timeline must distinguish an owner closing their own ticket from a supervisor/admin closing someone else's** — "as precise as possible," in the user's words. The `Admin`/`Sup`/`Agente` role label alone (constraint 5) does not capture this; two `Sup` entries look identical whether the supervisor was closing their own linked ticket or overriding another agent's.
+3. **A close/resolve with no prior owner is expected to be rare** (agents are expected to answer within the 24h window) **but MUST be clearly visible when it happens** — not folded indistinguishably into the normal case.
+
+**Net effect on 1.3/1.4**: `TicketEventType`'s `MANUAL_CLOSED`/`MANUAL_RESOLVED` (as originally scoped) are not granular enough. The type needs to carry three states per action: closed/resolved by the ticket's own owner, closed/resolved by a non-owner (supervisor/admin override), and closed/resolved with no owner at all. Verified `ticket_events.type` is `VARCHAR(50)` (`Version20260505022731.php:27`) — comfortably fits longer discriminator values (e.g. `manual_closed_owner`, `manual_closed_override`, `manual_closed_unowned`, and the `_resolved_` equivalents), so this is encodable at the `type` level with **zero schema change**, preserving the "no migration" success criterion and reusing the exact extensible-allow-list pattern the sibling change already established — not a new mechanism.
+
+**Left open for `sdd-design` to finalize** (do not treat the exact names above as final):
+- The precise `TicketEventType` constant set and naming.
+- Whether "unowned" is a realistic state for **resolve** as well as **close** (resolving a ticket generally implies someone worked it; an unowned resolve may not be a real scenario — design should confirm against the FSM/use cases rather than this proposal assuming it applies symmetrically to both actions).
+- How "owner vs. override" is determined at write time: compare the acting agent's ID against `ticket.assignedAgentId` at the moment of the action (the controller/use case already has both values in hand at that exact point — no extra lookup should be needed).
 
 ### Out of Scope
 
@@ -55,8 +70,8 @@ Grounded by `exploration.md`; its five closed decisions are **fixed constraints*
 
 1. Wire a per-ticket authorization check into all three `TicketWorkflowController` actions (`/transition` conditionally, on target status), returning the custom 403 shape.
 2. Thread the authenticated actor from the controller into `TransitionTicketStatusUseCase`, replacing `'system'` at the `recordUnassignIfOwner()` call site while leaving that method's owner-only firing condition intact.
-3. Add the two `TicketEventType` constants; the controller persists a `TicketEvent(type, actorId)` after every successful manual resolve/close.
-4. Extend the timeline query's allow-list, `CASE`, and actor join; apply the Admin/Sup/Agente labeling with `ROLE_ADMIN` checked first.
+3. Add the `TicketEventType` constants covering owner / override / unowned per action (design to finalize exact set — see "Ownership-status distinction" above); the controller determines which applies by comparing the acting agent against `ticket.assignedAgentId` at that moment, and persists a `TicketEvent(type, actorId)` after every successful manual resolve/close.
+4. Extend the timeline query's allow-list, `CASE`, and actor join; apply the Admin/Sup/Agente labeling with `ROLE_ADMIN` checked first, plus the owner/override/unowned distinction from step 3.
 
 ## Mercure Event Contract
 
@@ -69,7 +84,7 @@ Grounded by `exploration.md`; its five closed decisions are **fixed constraints*
 | `src/Controller/TicketWorkflowController.php` | Modified | `#[CurrentUser]` + per-action authorization; custom 403; emits `MANUAL_CLOSED`/`MANUAL_RESOLVED` after success |
 | `src/Application/Security/Voter/TicketVoter.php` | Modified | Wire the closure rule (see Open Item) |
 | `src/Application/UseCase/TransitionTicketStatusUseCase.php` | Modified | Real actor at the `recordUnassignIfOwner()` call site; `close()`/`resolve()`/`execute()` internals unchanged |
-| `src/Domain/Event/TicketEventType.php` | Modified | `MANUAL_CLOSED`, `MANUAL_RESOLVED` |
+| `src/Domain/Event/TicketEventType.php` | Modified | Owner/override/unowned-granular constants per action (design to finalize exact set) |
 | `src/Application/Query/GetContactTimelineQuery.php` | Modified | Allow-list + `CASE` + actor join and labeling |
 | `apps/api/tests/` | New | **All net-new** — see Testing Constraints |
 | `apps/api/migrations/` | None | No schema change |
@@ -120,7 +135,8 @@ Exploration flagged this and deliberately did not resolve it. **`sdd-design` dec
 
 - [ ] `POST /tickets/{id}/resolve` and `/close` return the custom 403 for a `ROLE_AGENT` who is not the ticket's owner, and 200 for the owner, a supervisor, or an admin.
 - [ ] `POST /tickets/{id}/transition` is gated identically **only** when the target status is `resolved` or `closed`; every other transition behaves exactly as today.
-- [ ] Every successful manual resolve/close writes exactly one `ticket_events` row of type `manual_resolved`/`manual_closed` carrying the real actor — **including when the ticket had no prior owner**.
+- [ ] Every successful manual resolve/close writes exactly one `ticket_events` row carrying the real actor — **including when the ticket had no prior owner** — and its `type` distinguishes owner-closed, override-closed (non-owner supervisor/admin), and unowned-closed as three visibly different outcomes in the timeline.
+- [ ] `recordUnassignIfOwner()`'s unassign-on-close behavior is unchanged — confirmed intentional (agent workload reporting, live assigned-ticket counts, future AI auto-assignment). Only the real-actor threading changes, never the unassign logic itself.
 - [ ] When a prior owner existed, the resulting `assignments` row records the real actor, never the literal `'system'`.
 - [ ] `AutoCloseRule` still writes exactly one `auto_closed` event attributed to `system`, with no additional manual-close event.
 - [ ] `closeDueToWindowExpiry()` still writes exactly one `window_expired_closed` event attributed to `system`, unchanged.
