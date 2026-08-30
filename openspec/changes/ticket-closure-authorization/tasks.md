@@ -17,12 +17,12 @@
 | Delivery strategy (preflight) | single-pr |
 | Chain strategy | size-exception (recommended, pending explicit user confirmation) |
 
-Decision needed before apply: **Yes**
-Chained PRs recommended: No
-Chain strategy: size-exception
+Decision needed before apply: **Resolved — 2026-08-29**
+Chained PRs recommended: No (declined by user, single PR chosen)
+Chain strategy: **`size:exception` approved — single PR**
 800-line budget risk: Medium
 
-**Honest framing, not silently assumed either way**: this change touches noticeably fewer files than the sibling (7 modified + 1 new vs. the sibling's ~19 backend + 5 frontend + 1 migration), has zero migration and zero frontend work, so it does **not** read as a dramatic overage the way the sibling's ~1,050–1,100 lines did. But the estimate still lands at or slightly above 800, driven entirely by the test surface (exploration confirmed **zero** existing coverage for audit-writing, no-prior-owner, and controller-authorization paths — this is substantially new test surface, not incremental edits). This is a genuine borderline case: bring it back to the user before `sdd-apply` starts, same as the sibling's guard rule required, with the recommendation to extend the same `size:exception` precedent already approved once this session — not to silently default to it.
+**Decision**: this change touches noticeably fewer files than the sibling (7 modified + 1 new vs. the sibling's ~19 backend + 5 frontend + 1 migration), has zero migration and zero frontend work, so it does not read as a dramatic overage the way the sibling's ~1,050–1,100 lines did — but the estimate still lands at or slightly above 800, driven entirely by the test surface (exploration confirmed zero existing coverage for audit-writing, no-prior-owner, and controller-authorization paths). Brought back to the user per this project's guard rule before `sdd-apply` started. **User approved `size:exception` — one single PR**, the same call already made twice this session (`file-attachments`, and this branch's sibling `whatsapp-24h-window-compliance`). The 4 work units below remain internal commit boundaries, not separate PRs.
 
 ### Suggested Work Units (internal commit boundaries if `size:exception` is confirmed; PR boundaries if the user instead chooses to chain)
 
