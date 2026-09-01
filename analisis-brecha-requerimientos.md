@@ -3,6 +3,8 @@
 **Resumen ejecutivo:** Inbiox ya cubre el núcleo operativo (multi-número, tickets con FSM, asignación automática equitativa, turnos por agente, contacto/agenda, etiquetas, cierre/re-apertura, tiempo real con Mercure y reporting base). Los gaps principales son: **motor de chatbot/flujo guiado**, **integración IA + GCG**, **atribución de mensajes por analista** (estructural), **exportación/importación masiva**, y los conceptos de **equipo/área**, **cliente-empresa** y **tipo de consulta**.
 
 > ⚠️ **Nota de vigencia:** la documentación interna está desactualizada. `reporte-estado-proyecto.md` (junio 2026) y `AGENTS.md` declaran "greenfield / Sprint 10 Agent Management no iniciado", pero el código real ya incluye módulos maduros de Agentes, turnos, workspaces y disponibilidad. Este análisis fue verificado contra el código (no contra la documentación) el 17 de agosto de 2026.
+>
+> **Actualización 01/09/2026:** re-verificado contra código tras el merge de Sprint 16 Fase 1 (`ticket-closure-authorization`) y Fase 3 (`whatsapp-24h-window-compliance`) a la rama `test`. Cinco filas cambiaron de estado o de matiz: **#3** (causa raíz corregida), **#9a** (pasa a ✅ opt-in), **#9b** (pasa a ✅ acotado), **#9c** (sin cambios, confirmado) y se agrega la fila **#9d** (nuevo requisito propio de ventana 24h, antes solo implícito en #9c). Los cambios están marcados inline con 🆕.
 
 ---
 
@@ -36,7 +38,7 @@
 | 2c | Derivar a **grupo/equipo** | ❌ | No existe el concepto de equipo/área. Solo agentes individuales y `Workspace` (que representa el número, no un área). |
 | 2d | Ver a quién está asignada / asignadas vs sin asignar | ✅ | `ListTicketsQuery` (`filter=unassigned/assigned/mine`), `owner` en `TicketListItemDTO`. |
 | 2e | Distribución equitativa | ✅ | Idem 2a (menor carga → menos auto-asignaciones hoy → menor id). |
-| 3 | **Autoasignación** por el analista (self-claim) | ❌ (bloqueado) | `TicketVoter`: *"Unassigned tickets are NOT visible to AGENT"* — un agente no ve ni puede reclamar tickets sin dueño. El frontend además filtra self-assign. **Es decisión de producto**, no solo técnica (ver §4 Tier 1 #6). |
+| 3 | **Autoasignación** por el analista (self-claim) | ❌ (bloqueado) 🆕 | Sigue bloqueado, pero la causa raíz cambió tras Fase 1: `TicketVoter.php:110-115` niega el permiso `ASSIGN` (no `VIEW`) sobre tickets sin dueño para `ROLE_AGENT` — la cola sin asignar **sí es visible** (inbox compartido por diseño, documentado explícitamente en el voter líneas 17-58); nunca fue un problema de visibilidad sino de la regla de negocio de `ASSIGN`. No existe endpoint `claim`. **Sigue siendo decisión de producto** (ver §4 Tier 1 #6), pero el cambio técnico real es más acotado: relajar `ASSIGN`, no exponer una cola oculta. |
 | 4 | Contabilizar por analista, con participación de **todos** los que intervinieron | ❌ (gap estructural) | `Message` sin `sender_agent_id`. Solo `Assignment` (historial de *dueño*, no de quién respondió cada mensaje). El reporting cuenta por `tickets.assigned_agent_id` (dueño actual), no por autoría. Ver §6. |
 | 5 | Historial de respondidas/cerradas/finalizadas | ✅ | `ListTicketsQuery` con `status=resolved,closed`. |
 | 6a | Turnos configurables (7-13h / 13-18h, agentes distintos) | ✅ | `AgentShift` + `AgentAvailabilityService` (día/hora por agente, timezone, cruces de medianoche). |
@@ -46,9 +48,10 @@
 | 8a | Etiquetas manuales + filtrado | ⚠️ | `Tag`/`TicketTag` + `TagController` (alta/baja manual). **`ListTicketsQuery` no acepta filtro por tag** — no se puede filtrar el inbox por etiqueta hoy. |
 | 8b | Etiquetado automático según opción (ej. "YPF") | ❌ | Depende del chatbot (#1). |
 | 8c | Identificar/filtrar por cliente-empresa (YPF, Tenaris) | ❌ | No hay concepto de "empresa/cliente" distinto del contacto individual, ni filtro por ese campo. |
-| 9a | Cierre automático por inactividad (24h) | ⚠️ | `AutoCloseRule` existe (umbral 24h) pero **solo se dispara manualmente** (`triggerType='manual'`). **No hay cron/scheduler** que cierre solo. |
-| 9b | Reabrir conversación cerrada | ⚠️ | `AutoReopenRule` reabre `resolved→waiting`, pero el FSM **no permite transición desde `closed`** (terminal). Se reabre un `resolved`, no un `closed` (que es adonde llega tras 24h). |
-| 9c | Plantillas Meta para contactar tras la ventana de 24h | ✅ | `GraphClient::sendTemplate()` + `ProviderProxyController::sendTemplate`. |
+| 9a | Cierre automático por inactividad (24h) | ✅ (opt-in) 🆕 | Fase 3 agregó `CloseExpiredConversationWindowsCommand` + `ConversationWindowExpiryService`, corriendo en loop real vía `docker-compose.yml` (servicio `window-closer`, cada 15 min, `restart: always`). **Caveat:** está detrás de `--profile window-closer` — no arranca con un `docker compose up` normal, requiere activación deliberada (gate manual de dry-run, task 6.5 del plan). |
+| 9b | Reabrir conversación cerrada | ✅ (acotado) 🆕 | `TransitionTicketStatusUseCase::reopenDueToInboundMessage()` (líneas 210-258) permite `closed→active` cuando llega un inbound, **pero solo si** el cierre fue por vencimiento de ventana (`TicketEvent` = `WINDOW_EXPIRED_CLOSED`). La FSM compartida (`TicketStateMachine.php:53`) sigue sin `closed→*` genérico: un ticket cerrado manualmente por un agente sigue siendo terminal para siempre. |
+| 9c | Plantillas Meta para contactar tras la ventana de 24h | ✅ | `GraphClient::sendTemplate()` + `ProviderProxyController::sendTemplate`, confirmado independiente del nuevo guard de ventana (que solo vive en `HandleOutboundMessageUseCase`, para mensajes libres de agente). |
+| 9d | Cumplimiento estructural de la ventana 24h de Meta (bloqueo de envío libre fuera de ventana) | ✅ 🆕 | **Requisito nuevo, no listado explícitamente en la versión anterior de este análisis** — antes era solo una nota bajo #9c. Ahora existe como capability propia: `ConversationWindowPolicy.php` + spec dedicado `openspec/specs/whatsapp-conversation-window/spec.md`. Guarda el envío de mensajes libres de agente (`HandleOutboundMessageUseCase`) fuera de la ventana de 24h post-último-inbound. |
 | 10 | Exportar conversaciones (CSV/XLSX) por fecha/analista/estado | ❌ | No existe endpoint de exportación ni botón de descarga. Reporting es solo JSON en pantalla. |
 | 11 | Reporte: todos los agentes que participaron, detalle, demora, cantidad por agente | ❌ | Mismo root cause que #4: sin atribución mensaje→agente no se sabe quiénes intervinieron más allá del dueño final. |
 | 12 | Historial/reportes filtrando abiertas/cerradas/etc. | ✅ | Idem #5. |
@@ -69,12 +72,12 @@
 
 | # | Ítem | Desbloquea |
 |---|------|-----------|
-| 1 | **Filtro por etiqueta en el inbox** (`ListTicketsQuery` + join `ticket_tags`) — dato ya existe, solo exponerlo | #8a, parte de #18 |
-| 2 | **Cron/scheduler para `AutoCloseRule`** (Command + Symfony Scheduler recorriendo `resolved` vencidos) | #9a |
-| 3 | **Transición `closed → waiting`** en `TicketStateMachine` (o flujo de reapertura manual) | #9b |
+| 1 | **Filtro por etiqueta en el inbox** (`ListTicketsQuery` + join `ticket_tags`) — dato ya existe, solo exponerlo. Aprovechar y sumar `waiting` al whitelist de estados (`ListTicketsQuery.php:79`), sigue faltando. | #8a, parte de #18 |
+| ~~2~~ | ~~Cron/scheduler para `AutoCloseRule`~~ ✅ Hecho en Fase 3 (`CloseExpiredConversationWindowsCommand`), pero queda **activar el profile `window-closer`** en el `docker-compose.yml` de cada entorno (hoy opt-in) | #9a |
+| ~~3~~ | ~~Transición `closed → waiting`~~ ✅ Hecho en Fase 3, pero **solo para cierres por vencimiento de ventana** (`WINDOW_EXPIRED_CLOSED`). Falta decidir si un cierre manual de agente también debería poder reabrirse. | #9b |
 | 4 | **Importación de contactos CSV/Excel** (upload + parser, reusa `CreateContactUseCase`) | #7b |
 | 5 | **Exportación CSV de reportes** (capa fina sobre `ReportingRepository`) | #10, #17 |
-| 6 | **Habilitar self-claim**: relajar `TicketVoter` + endpoint `POST /tickets/{id}/claim` + quitar filtro self-assign del frontend | #3 |
+| 6 | **Habilitar self-claim**: relajar la regla `ASSIGN` de `TicketVoter` (la cola sin asignar ya es visible, no hace falta tocar `VIEW`) + endpoint `POST /tickets/{id}/claim` + quitar filtro self-assign del frontend | #3 |
 
 > ⚠️ **Ítem 6 — decisión de producto previa:** hoy la cola "sin asignar" está oculta a los analistas a propósito. Habilitar self-claim implica decidir si los agentes pueden ver la cola global. No es solo técnico.
 
