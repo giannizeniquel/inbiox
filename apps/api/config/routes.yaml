@@ -107,6 +107,11 @@ app_report_reopened:
     methods: [GET]
     controller: App\Controller\ReportingController::reopened
 
+app_report_export:
+    path: /api/reports/export
+    methods: [GET]
+    controller: App\Controller\ReportingController::export
+
 app_debug_inbound:
     path: /debug/inbound/{ticketId}
     methods: [POST]

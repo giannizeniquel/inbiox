@@ -239,4 +239,19 @@ export class ReportsApiService {
       params: this.buildParams(params),
     });
   }
+
+  /**
+   * GET /api/reports/export — streamed CSV download.
+   *
+   * `ROLE_SUPERVISOR`-gated on the backend (admins inherit). Returns the raw
+   * response body as a `Blob` so the caller can trigger a client-side file
+   * save; filters reuse the same `from`/`to` params as every other reports
+   * endpoint.
+   */
+  exportTicketsCsv(params?: TimeFilterParams): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/api/reports/export`, {
+      params: this.buildParams(params),
+      responseType: 'blob',
+    });
+  }
 }

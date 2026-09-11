@@ -5,7 +5,6 @@ namespace App\Application\Query;
 use App\Application\DTO\TicketListItemDTO;
 use App\Application\Service\AgentAvailabilityService;
 use App\Domain\Agent\Agent;
-use App\Domain\Tag\Tag;
 use App\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -16,6 +15,7 @@ class ListTicketsQuery
         private EntityManagerInterface $entityManager,
         private AgentAvailabilityService $agentAvailabilityService,
         private TicketRepository $ticketRepository,
+        private TicketFilterBuilder $ticketFilterBuilder = new TicketFilterBuilder(),
     ) {}
 
     /**
@@ -52,56 +52,15 @@ class ListTicketsQuery
         $offset = ($page - 1) * $limit;
         
         $conn = $this->entityManager->getConnection();
-        
-        $where = [];
-        $params = [];
-        
-        if ($filter === 'unassigned') {
-            $where[] = 't.assigned_agent_id IS NULL';
-        } elseif ($filter === 'assigned') {
-            $where[] = 't.assigned_agent_id IS NOT NULL';
-        } elseif ($filter === 'mine' && $agentId) {
-            $where[] = 't.assigned_agent_id = ?';
-            $params[] = $agentId;
-        }
-        
-        // Ownership scope: force filter to own tickets for AGENT role
-        // This is applied BEFORE the 'mine' filter check to prevent AGENT from
-        // bypassing the scope via the 'all' filter.
-        if (null !== $scopeAgentId) {
-            $where[] = 't.assigned_agent_id = ?';
-            $params[] = (string) $scopeAgentId;
-        }
 
-        // Workspace scope: filter by phone_number_id for AGENT with active workspace
-        if (null !== $phoneNumberId) {
-            $where[] = 't.phone_number_id = ?';
-            $params[] = $phoneNumberId;
-        }
-        
-        if ($status) {
-            $statuses = array_filter(array_map('trim', explode(',', $status)), fn($s) => in_array($s, ['new','active','waiting','resolved','closed']));
-            if ($statuses) {
-                $placeholders = implode(',', array_fill(0, count($statuses), '?'));
-                $where[] = "t.status IN ($placeholders)";
-                $params = array_merge($params, $statuses);
-            }
-        }
-
-        if (null !== $tag && '' !== trim($tag)) {
-            $tags = array_values(array_unique(array_filter(
-                array_map(fn($n) => Tag::normalize($n), explode(',', $tag)),
-                fn($n) => '' !== $n,
-            )));
-            if (count($tags) > 5) {
-                throw new \InvalidArgumentException('A maximum of 5 tags may be filtered at once');
-            }
-            foreach ($tags as $name) {
-                $where[] = 'EXISTS (SELECT 1 FROM ticket_tags tt JOIN tags tg ON tg.id = tt.tag_id
-                                    WHERE tt.ticket_id = t.id AND tg.name = ?)';
-                $params[] = $name;
-            }
-        }
+        [$where, $params] = $this->ticketFilterBuilder->build(
+            filter: $filter,
+            agentId: $agentId,
+            status: $status,
+            scopeAgentId: $scopeAgentId,
+            phoneNumberId: $phoneNumberId,
+            tag: $tag,
+        );
 
         $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
         

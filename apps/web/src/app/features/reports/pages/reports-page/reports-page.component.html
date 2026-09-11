@@ -52,7 +52,22 @@
           <button class="apply-btn" (click)="applyCustomFilter()">Aplicar</button>
         </div>
       }
+
+      @if (authStore.isAdmin() || authStore.isSupervisor()) {
+        <button
+          class="export-csv-btn"
+          type="button"
+          [disabled]="exporting()"
+          (click)="exportCsv()"
+        >
+          {{ exporting() ? 'Exportando...' : 'Exportar CSV' }}
+        </button>
+      }
     </div>
+
+    @if (exportError()) {
+      <p class="reports-page__export-error">{{ exportError() }}</p>
+    }
   </header>
 
   <!-- ═══ Group A: KPIs ═══ -->

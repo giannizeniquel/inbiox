@@ -4,14 +4,20 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Application\Query\ExportTicketsCsvQuery;
+use App\Application\Query\TicketFilterBuilder;
 use App\Application\Security\OwnershipScope;
 use App\Application\Security\WorkspaceScope;
 use App\Application\Service\AgentAvailabilityService;
 use App\Application\Service\ReportingService;
 use Doctrine\ORM\EntityManagerInterface;
+use League\Csv\Bom;
+use League\Csv\Writer;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -39,7 +45,9 @@ class ReportingController
         private EntityManagerInterface $entityManager,
         private OwnershipScope $ownershipScope,
         private WorkspaceScope $workspaceScope,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
+        private ExportTicketsCsvQuery $exportTicketsCsvQuery,
+        private TicketFilterBuilder $ticketFilterBuilder,
     ) {}
 
     /**
@@ -449,6 +457,73 @@ class ReportingController
             ]);
             return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
         }
+    }
+
+    /**
+     * Export the filtered ticket list as a streamed CSV download.
+     *
+     * GET /reports/export?from=...&to=...[&agent_id=1][&status=...][&tag=...]
+     *
+     * Supervisor-gated (bulk PII export): `#[IsGranted('ROLE_SUPERVISOR')]`.
+     * `ROLE_ADMIN` inherits via `security.yaml`'s `role_hierarchy`. Filter
+     * semantics (status whitelist, tag AND-semantics, max 5 tags) match
+     * `ListTicketsQuery` exactly via the shared `TicketFilterBuilder`.
+     */
+    #[Route('/reports/export', methods: ['GET'])]
+    #[IsGranted('ROLE_SUPERVISOR')]
+    public function export(Request $request): Response
+    {
+        try {
+            $from = $this->parseDateTime($request->query->get('from'));
+            $to = $this->parseDateTime($request->query->get('to'));
+        } catch (\InvalidArgumentException $e) {
+            return new JsonResponse(['error' => $e->getMessage()], 400);
+        }
+
+        $agentId = $request->query->get('agent_id');
+        $status = $request->query->get('status');
+        $tag = $request->query->get('tag');
+        $phoneNumberId = $this->getScopePhoneNumberId();
+
+        // Validate filter args up front (no DB query — same pure builder used
+        // inside ExportTicketsCsvQuery::stream) so an invalid request (e.g.
+        // >5 tags) fails with 400 before any streaming/headers are sent.
+        try {
+            $this->ticketFilterBuilder->build(
+                filter: $agentId ? 'mine' : 'all',
+                agentId: $agentId,
+                status: $status,
+                phoneNumberId: $phoneNumberId,
+                tag: $tag,
+            );
+        } catch (\InvalidArgumentException $e) {
+            return new JsonResponse(['error' => $e->getMessage()], 400);
+        }
+
+        $filename = sprintf('tickets_%s_%s.csv', $from->format('Y-m-d'), $to->format('Y-m-d'));
+
+        $exportQuery = $this->exportTicketsCsvQuery;
+        $response = new StreamedResponse(function () use ($exportQuery, $from, $to, $agentId, $status, $tag, $phoneNumberId): void {
+            set_time_limit(0);
+
+            $stream = fopen('php://output', 'w+');
+            // `Writer::setOutputBOM()` only takes effect via league/csv's own
+            // `download()`/`toString()` readers, which is not compatible with
+            // writing directly to an already-open output stream in chunks —
+            // so the BOM is written to the stream by hand instead.
+            fwrite($stream, Bom::Utf8->value);
+
+            $writer = Writer::createFromStream($stream);
+
+            $exportQuery->stream($writer, $from, $to, $agentId, $status, $tag, $phoneNumberId);
+        });
+
+        $response->headers->set('Content-Type', 'text/csv; charset=utf-8');
+        $response->headers->set('Content-Disposition', sprintf('attachment; filename="%s"', $filename));
+        $response->headers->set('X-Accel-Buffering', 'no');
+        $response->headers->set('Cache-Control', 'no-store');
+
+        return $response;
     }
 
     /**

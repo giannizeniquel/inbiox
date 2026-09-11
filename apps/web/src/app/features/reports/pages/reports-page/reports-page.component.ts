@@ -2,8 +2,10 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TimeFilter } from '../../../../core/dto/reports.params';
+import { AuthStore } from '../../../../core/stores/auth.store';
 import { BuildTimeFilterParamsUseCase } from '../../../../core/application/reports/build-time-filter-params.use-case';
 import { GetReportsDashboardUseCase } from '../../../../core/application/reports/get-reports-dashboard.use-case';
+import { ExportTicketsCsvUseCase } from '../../../../core/application/reports/export-tickets-csv.use-case';
 import { ResponseTimeCardComponent } from '../../components/kpi-cards/response-time-card.component';
 import { ResolutionTimeCardComponent } from '../../components/kpi-cards/resolution-time-card.component';
 import { TicketCountCardComponent } from '../../components/kpi-cards/ticket-count-card.component';
@@ -51,10 +53,14 @@ import {
 export class ReportsPageComponent implements OnInit {
   private readonly buildTimeFilterParamsUseCase = inject(BuildTimeFilterParamsUseCase);
   private readonly getReportsDashboardUseCase = inject(GetReportsDashboardUseCase);
+  private readonly exportTicketsCsvUseCase = inject(ExportTicketsCsvUseCase);
+  readonly authStore = inject(AuthStore);
 
   readonly timeFilter = signal<TimeFilter>('7d');
   readonly fromDate = signal<string>('');
   readonly toDate = signal<string>('');
+  readonly exporting = signal(false);
+  readonly exportError = signal<string | null>(null);
 
   // ── Group A: KPIs ──
   readonly frtLoading = signal(true);
@@ -105,6 +111,27 @@ export class ReportsPageComponent implements OnInit {
     if (this.fromDate() && this.toDate()) {
       this.loadAllData();
     }
+  }
+
+  exportCsv(): void {
+    const params = this.buildTimeFilterParamsUseCase.build(
+      this.timeFilter(),
+      this.fromDate(),
+      this.toDate(),
+    );
+
+    this.exporting.set(true);
+    this.exportError.set(null);
+
+    this.exportTicketsCsvUseCase.execute(params).subscribe({
+      next: () => {
+        this.exporting.set(false);
+      },
+      error: () => {
+        this.exporting.set(false);
+        this.exportError.set('No se pudo exportar el CSV. Intentá nuevamente.');
+      },
+    });
   }
 
   private loadAllData(): void {
