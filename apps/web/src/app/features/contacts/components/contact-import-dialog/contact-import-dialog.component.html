@@ -1,0 +1,79 @@
+<div class="dialog-overlay" (click)="onClose()" role="presentation">
+  <div
+    class="dialog-content"
+    (click)="$event.stopPropagation()"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="import-dialog-title"
+  >
+    <div class="dialog-header">
+      <h2 id="import-dialog-title" class="dialog-title">Importar Contactos (CSV)</h2>
+    </div>
+
+    <div class="dialog-body">
+      @if (!result()) {
+        <p class="import-hint">
+          El archivo debe tener una columna <strong>phone</strong> (requerida) y, opcionalmente,
+          <strong>name</strong>, <strong>email</strong>, <strong>status</strong>, <strong>channel</strong>,
+          <strong>owner_id</strong>. Máximo 2 MB / 1000 filas.
+        </p>
+
+        <input
+          type="file"
+          accept=".csv,text/csv"
+          (change)="onFileSelected($event)"
+          [disabled]="loading()"
+          aria-label="Seleccionar archivo CSV"
+        />
+
+        @if (errorMessage()) {
+          <div class="dialog-error">{{ errorMessage() }}</div>
+        }
+      } @else {
+        <div class="import-summary">
+          <p>
+            <strong>{{ result()!.imported }}</strong> importados,
+            <strong>{{ result()!.failed }}</strong> omitidos
+            (de {{ result()!.totalRows }} filas).
+          </p>
+
+          @if (result()!.errors.length > 0) {
+            <ul class="import-errors">
+              @for (error of result()!.errors; track error.row) {
+                <li>
+                  Fila {{ error.row }} ({{ error.phone }}): {{ reasonLabel(error.reason) }}
+                </li>
+              }
+            </ul>
+            @if (result()!.errorsTruncated) {
+              <p class="import-truncated-note">
+                Se muestran los primeros {{ result()!.errors.length }} errores.
+              </p>
+            }
+          }
+        </div>
+      }
+    </div>
+
+    <div class="dialog-actions">
+      @if (!result()) {
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="onSubmit()"
+          [disabled]="loading() || !selectedFile()"
+        >
+          @if (loading()) {
+            <span class="spinner" aria-hidden="true"></span>
+          }
+          Importar
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="onClose()" [disabled]="loading()">
+          Cancelar
+        </button>
+      } @else {
+        <button type="button" class="btn btn-primary" (click)="onClose()">Cerrar</button>
+      }
+    </div>
+  </div>
+</div>

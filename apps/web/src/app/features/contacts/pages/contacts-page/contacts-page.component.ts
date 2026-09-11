@@ -1,7 +1,8 @@
 import { Component, ChangeDetectionStrategy, inject, OnInit, OnDestroy, signal } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ContactsApiService } from '../../../../core/api/contacts-api.service';
+import { ContactsApiService, ImportContactsResult } from '../../../../core/api/contacts-api.service';
+import { AuthStore } from '../../../../core/stores/auth.store';
 import { ContactsStore } from '../../stores/contacts.store';
 import { GetContactsUseCase } from '../../application/contacts';
 import { ContactFilters, UIContact } from '../../models';
@@ -11,6 +12,7 @@ import { ContactSearchComponent } from '../../components/contact-search/contact-
 import { ContactFiltersComponent } from '../../components/contact-filters/contact-filters.component';
 import { ContactCreateDialogComponent } from '../../components/contact-create-dialog/contact-create-dialog.component';
 import { ContactEditDialogComponent } from '../../components/contact-edit-dialog/contact-edit-dialog.component';
+import { ContactImportDialogComponent } from '../../components/contact-import-dialog/contact-import-dialog.component';
 
 /** Guard flag to prevent URL sync feedback loops */
 let updatingFromUrl = false;
@@ -36,6 +38,7 @@ let updatingFromUrl = false;
     ContactFiltersComponent,
     ContactCreateDialogComponent,
     ContactEditDialogComponent,
+    ContactImportDialogComponent,
   ],
   templateUrl: './contacts-page.component.html',
   styleUrl: './contacts-page.component.scss',
@@ -45,6 +48,7 @@ export class ContactsPageComponent implements OnInit, OnDestroy {
   protected readonly store = inject(ContactsStore);
   private readonly getContacts = inject(GetContactsUseCase);
   private readonly contactsApi = inject(ContactsApiService);
+  protected readonly authStore = inject(AuthStore);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private routeSubscription?: Subscription;
@@ -52,6 +56,7 @@ export class ContactsPageComponent implements OnInit, OnDestroy {
   /** Dialog visibility state */
   showCreateDialog = false;
   showEditDialog = false;
+  showImportDialog = false;
   editingContact: UIContact | null = null;
 
   /** Separate loading flag for load-more (does not trigger skeleton swap) */
@@ -237,6 +242,19 @@ export class ContactsPageComponent implements OnInit, OnDestroy {
   /** Open create dialog */
   onAddContact(): void {
     this.showCreateDialog = true;
+  }
+
+  /** Open the CSV import dialog (ROLE_SUPERVISOR only — trigger is hidden otherwise) */
+  onImportContacts(): void {
+    this.showImportDialog = true;
+  }
+
+  /** Handle import dialog close — reload the list when at least one row was imported */
+  onImportDialogClose(result: ImportContactsResult | null): void {
+    this.showImportDialog = false;
+    if (result && result.imported > 0) {
+      this.loadContacts();
+    }
   }
 
   onRetryRequested(): void {

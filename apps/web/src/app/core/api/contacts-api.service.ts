@@ -12,6 +12,23 @@ import {
 } from '../dto/contact-transport.dto';
 import { TimelineEventResponse } from '../dto/timeline-transport.dto';
 
+/** Per-row import failure, as returned by POST /api/contacts/import */
+export interface ImportContactsErrorEntry {
+  row: number;
+  phone: string;
+  reason: string;
+  message: string;
+}
+
+/** Partial-success result of a CSV contact import */
+export interface ImportContactsResult {
+  totalRows: number;
+  imported: number;
+  failed: number;
+  errors: ImportContactsErrorEntry[];
+  errorsTruncated: boolean;
+}
+
 /**
  * ContactsApiService — HTTP client for contacts endpoints.
  *
@@ -121,6 +138,16 @@ export class ContactsApiService {
         email: response.email || null,
       }))
     );
+  }
+
+  /**
+   * POST /api/contacts/import - Bulk CSV contact import (ROLE_SUPERVISOR only).
+   * Do not set Content-Type manually — the browser must add the multipart boundary.
+   */
+  importContacts(file: File): Observable<ImportContactsResult> {
+    const form = new FormData();
+    form.append('file', file);
+    return this.http.post<ImportContactsResult>(`${this.baseUrl}/api/contacts/import`, form);
   }
 
   /**

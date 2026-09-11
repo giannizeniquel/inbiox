@@ -142,6 +142,11 @@ app_contacts_create:
     methods: [POST]
     controller: App\Controller\ContactController::create
 
+app_contacts_import:
+    path: /api/contacts/import
+    methods: [POST]
+    controller: App\Controller\ContactController::import
+
 app_contacts_update:
     path: /api/contacts/{id}
     methods: [PUT]

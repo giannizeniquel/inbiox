@@ -43,6 +43,23 @@
   }
 }
 
+.btn-import {
+  align-self: flex-start;
+  padding: 0.5rem 1rem;
+  background: var(--bg-surface, #f1f5f9);
+  color: var(--text-secondary, #475569);
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: var(--bg-card-active, #e2e8f0);
+  }
+}
+
 .contacts-detail-panel {
   flex: 1;
   height: 100%;

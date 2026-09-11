@@ -8,6 +8,11 @@
       <button type="button" class="btn-add" (click)="onAddContact()">
         + Agregar Contacto
       </button>
+      @if (authStore.isAdmin() || authStore.isSupervisor()) {
+        <button type="button" class="btn-import" (click)="onImportContacts()">
+          Importar CSV
+        </button>
+      }
     </div>
     <app-contact-filters
       [filters]="store.filters()"
@@ -42,5 +47,11 @@
   <app-contact-edit-dialog
     [contact]="editingContact"
     (close)="onEditDialogClose($event)"
+  />
+}
+
+@if (showImportDialog) {
+  <app-contact-import-dialog
+    (close)="onImportDialogClose($event)"
   />
 }

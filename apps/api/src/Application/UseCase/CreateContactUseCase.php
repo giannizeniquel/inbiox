@@ -5,6 +5,8 @@ namespace App\Application\UseCase;
 use App\Application\DTO\ContactDetailDTO;
 use App\Domain\Contact\Contact;
 use App\Domain\Contact\ContactRepositoryInterface;
+use App\Domain\Contact\PhoneNormalizer;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 
 class CreateContactUseCase
@@ -20,10 +22,7 @@ class CreateContactUseCase
             throw new \InvalidArgumentException('Phone is required');
         }
 
-        $phone = '+' . preg_replace('/[^0-9]/', '', $data['phone']);
-        if (strlen($phone) < 10) {
-            throw new \InvalidArgumentException('Invalid phone number');
-        }
+        $phone = PhoneNormalizer::normalize($data['phone']);
 
         $existing = $this->contactRepository->findOneByPhone($phone);
         if ($existing) {
@@ -54,7 +53,17 @@ class CreateContactUseCase
         }
 
         $this->entityManager->persist($contact);
-        $this->entityManager->flush();
+
+        try {
+            $this->entityManager->flush();
+        } catch (UniqueConstraintViolationException $e) {
+            // Defense-in-depth: the pre-check above closes this race in the
+            // overwhelming majority of cases, but a true concurrent request can
+            // still win the DB-level unique constraint at flush time. Convert it
+            // into the same deterministic error the pre-check throws instead of
+            // letting it propagate uncaught (which would close the EntityManager).
+            throw new \InvalidArgumentException('Contact with this phone already exists');
+        }
 
         return new ContactDetailDTO(
             id: $contact->getId(),

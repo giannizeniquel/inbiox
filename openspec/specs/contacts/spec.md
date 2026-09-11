@@ -359,6 +359,13 @@ The system MUST define REST endpoints for contact operations.
 - THEN the endpoint MUST perform a soft delete (archive) rather than hard delete
 - AND response MUST return success confirmation
 
+#### Scenario: Concurrent duplicate phone on create
+
+- GIVEN two requests attempt to create a contact with the same phone at nearly the same time
+- WHEN the second request's flush hits the database's unique constraint
+- THEN the system MUST return a deterministic duplicate-contact error (never a `500`)
+- AND the `EntityManager` MUST remain usable for any subsequent operation in the same process
+
 ---
 
 ### Requirement: UI Specifications

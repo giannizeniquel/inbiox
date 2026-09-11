@@ -10,8 +10,11 @@ use App\Application\Query\ListContactsQuery;
 use App\Application\Security\WorkspaceScope;
 use App\Application\UseCase\CreateContactUseCase;
 use App\Application\UseCase\DeleteContactUseCase;
+use App\Application\UseCase\ImportContactsFromCsvUseCase;
 use App\Application\UseCase\UpdateContactUseCase;
+use App\Exception\ImportRejectedException;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
@@ -26,6 +29,7 @@ class ContactController
         private CreateContactUseCase $createContactUseCase,
         private UpdateContactUseCase $updateContactUseCase,
         private DeleteContactUseCase $deleteContactUseCase,
+        private ImportContactsFromCsvUseCase $importContactsFromCsvUseCase,
         private WorkspaceScope $workspaceScope,
         private LoggerInterface $logger,
     ) {}
@@ -146,6 +150,47 @@ class ContactController
         } catch (\Exception $e) {
             $referenceId = bin2hex(random_bytes(8));
             $this->logger->error('Error updating contact: {message}', [
+                'reference' => $referenceId,
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
+        }
+    }
+
+    /**
+     * POST /contacts/import — bulk CSV contact import.
+     *
+     * Method-level ROLE_SUPERVISOR overrides the class-level ROLE_AGENT: single-contact
+     * creation stays available to agents, but a request that can create up to 1000
+     * globally shared contacts in one shot is gated to supervisors.
+     */
+    #[Route('/contacts/import', methods: ['POST'])]
+    #[IsGranted('ROLE_SUPERVISOR')]
+    public function import(Request $request): JsonResponse
+    {
+        /** @var UploadedFile|null $file */
+        $file = $request->files->get('file');
+
+        if (!$file instanceof UploadedFile || !$file->isValid()) {
+            return new JsonResponse([
+                'error' => 'file_missing',
+                'message' => 'No valid file provided. Use multipart/form-data with a "file" field.',
+            ], 400);
+        }
+
+        try {
+            $result = $this->importContactsFromCsvUseCase->execute(
+                $file->getPathname(),
+                $file->getClientOriginalName(),
+            );
+
+            return new JsonResponse($result->toArray(), 200);
+        } catch (ImportRejectedException $e) {
+            return new JsonResponse(['error' => $e->getReason(), 'message' => $e->getMessage()], 400);
+        } catch (\Exception $e) {
+            $referenceId = bin2hex(random_bytes(8));
+            $this->logger->error('Error importing contacts: {message}', [
                 'reference' => $referenceId,
                 'exception' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
