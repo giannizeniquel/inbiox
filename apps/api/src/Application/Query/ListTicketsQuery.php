@@ -5,6 +5,7 @@ namespace App\Application\Query;
 use App\Application\DTO\TicketListItemDTO;
 use App\Application\Service\AgentAvailabilityService;
 use App\Domain\Agent\Agent;
+use App\Domain\Tag\Tag;
 use App\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -31,6 +32,8 @@ class ListTicketsQuery
      * @param string|null $phoneNumberId Workspace scope: filters by ticket phone_number_id.
      *                                   Used by InboxController via WorkspaceScope.
      *                                   null = no workspace filter (SUPERVISOR/ADMIN).
+     * @param string|null $tag Comma-separated tag names (AND semantics, max 5).
+     *                         Each matched ticket must carry ALL specified tags.
      */
     public function execute(
         int $page = 1,
@@ -42,6 +45,7 @@ class ListTicketsQuery
         string $sort = 'last_message_desc',
         ?int $scopeAgentId = null,
         ?string $phoneNumberId = null,
+        ?string $tag = null,
     ): array {
         $page = max(1, $page);
         $limit = min(100, max(1, $limit));
@@ -76,14 +80,29 @@ class ListTicketsQuery
         }
         
         if ($status) {
-            $statuses = array_filter(array_map('trim', explode(',', $status)), fn($s) => in_array($s, ['new','active','resolved','closed']));
+            $statuses = array_filter(array_map('trim', explode(',', $status)), fn($s) => in_array($s, ['new','active','waiting','resolved','closed']));
             if ($statuses) {
                 $placeholders = implode(',', array_fill(0, count($statuses), '?'));
                 $where[] = "t.status IN ($placeholders)";
                 $params = array_merge($params, $statuses);
             }
         }
-        
+
+        if (null !== $tag && '' !== trim($tag)) {
+            $tags = array_values(array_unique(array_filter(
+                array_map(fn($n) => Tag::normalize($n), explode(',', $tag)),
+                fn($n) => '' !== $n,
+            )));
+            if (count($tags) > 5) {
+                throw new \InvalidArgumentException('A maximum of 5 tags may be filtered at once');
+            }
+            foreach ($tags as $name) {
+                $where[] = 'EXISTS (SELECT 1 FROM ticket_tags tt JOIN tags tg ON tg.id = tt.tag_id
+                                    WHERE tt.ticket_id = t.id AND tg.name = ?)';
+                $params[] = $name;
+            }
+        }
+
         $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
         
         $sql = "SELECT t.id, t.status, t.priority, t.assigned_agent_id, t.created_at, t.updated_at,
