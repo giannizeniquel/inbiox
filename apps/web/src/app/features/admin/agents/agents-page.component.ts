@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminAgentDTO, AdminUserDTO } from '../../../core/api/admin-api.service';
@@ -31,6 +31,11 @@ import { ManageAgentUserLinkingUseCase } from '../../../core/application/admin/l
   ],
 })
 export class AgentsPageComponent implements OnInit {
+  private static readonly FALLBACK_TIMEZONES = [
+    'UTC', 'America/Argentina/Buenos_Aires', 'America/Bogota', 'America/Mexico_City',
+    'America/New_York', 'America/Sao_Paulo', 'Europe/London', 'Europe/Madrid',
+  ] as const;
+
   private readonly fb = inject(FormBuilder);
   private readonly listAgentsUseCase = inject(ListAgentsUseCase);
   private readonly getAvailableUsersForLinkingUseCase = inject(GetAvailableUsersForLinkingUseCase);
@@ -50,6 +55,16 @@ export class AgentsPageComponent implements OnInit {
   readonly currentPage = signal(1);
   readonly totalPages = signal(1);
 
+  readonly timezones: readonly string[] =
+    typeof Intl.supportedValuesOf === 'function'
+      ? Intl.supportedValuesOf('timeZone')
+      : AgentsPageComponent.FALLBACK_TIMEZONES;
+
+  readonly timezoneOptions = computed(() => {
+    const current = this.editingAgent()?.timezone;
+    return current && !this.timezones.includes(current) ? [current, ...this.timezones] : this.timezones;
+  });
+
   // Modal state
   readonly showForm = signal(false);
   readonly editingAgent = signal<AdminAgentDTO | null>(null);
@@ -61,6 +76,7 @@ export class AgentsPageComponent implements OnInit {
   readonly agentForm = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
     active: [true],
+    timezone: ['UTC', [Validators.required]],
   });
 
   readonly linkForm = this.fb.group({
@@ -105,13 +121,13 @@ export class AgentsPageComponent implements OnInit {
 
   openCreateForm(): void {
     this.editingAgent.set(null);
-    this.agentForm.reset({ name: '', active: true });
+    this.agentForm.reset({ name: '', active: true, timezone: 'UTC' });
     this.showForm.set(true);
   }
 
   openEditForm(agent: AdminAgentDTO): void {
     this.editingAgent.set(agent);
-    this.agentForm.reset({ name: agent.name, active: agent.active });
+    this.agentForm.reset({ name: agent.name, active: agent.active, timezone: agent.timezone });
     this.showForm.set(true);
   }
 
@@ -130,7 +146,7 @@ export class AgentsPageComponent implements OnInit {
     this.showLinkForm.set(null);
   }
 
-  hasAgentError(field: 'name' | 'active'): boolean {
+  hasAgentError(field: 'name' | 'active' | 'timezone'): boolean {
     const control = this.agentForm.get(field);
     return !!control && control.touched && control.invalid;
   }
@@ -167,12 +183,12 @@ export class AgentsPageComponent implements OnInit {
   }
 
   private createAgent(): void {
-    const { name } = this.agentForm.getRawValue();
+    const { name, timezone } = this.agentForm.getRawValue();
 
     this.saving.set(true);
     this.error.set(null);
 
-    this.createAgentUseCase.execute({ name: name.trim() }).subscribe({
+    this.createAgentUseCase.execute({ name: name.trim(), timezone }).subscribe({
       next: () => {
         this.saving.set(false);
         this.success.set('Agent created successfully');
@@ -187,7 +203,7 @@ export class AgentsPageComponent implements OnInit {
   }
 
   private updateAgent(agent: AdminAgentDTO): void {
-    const { name, active } = this.agentForm.getRawValue();
+    const { name, active, timezone } = this.agentForm.getRawValue();
 
     this.saving.set(true);
     this.error.set(null);
@@ -196,6 +212,7 @@ export class AgentsPageComponent implements OnInit {
       id: agent.id,
       name: name.trim(),
       active,
+      timezone,
     }).subscribe({
       next: () => {
         this.saving.set(false);

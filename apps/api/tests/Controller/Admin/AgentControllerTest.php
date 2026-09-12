@@ -210,6 +210,17 @@ class AgentControllerTest extends WebTestCase
         self::assertSame(404, $this->client->getResponse()->getStatusCode());
     }
 
+    public function testGetAgentAllowedForAdmin(): void
+    {
+        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $token = $this->login('admin@test.local');
+
+        $agent = $this->createAgent('Target Agent');
+
+        $this->client->request('GET', "/api/admin/agents/{$agent->getId()}", [], [], $this->authHeaders($token));
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+    }
+
     // ────────────────────────────────────────────────────────
     //  Create Agent
     // ────────────────────────────────────────────────────────
@@ -243,6 +254,87 @@ class AgentControllerTest extends WebTestCase
         ], \json_encode([]));
 
         self::assertSame(400, $this->client->getResponse()->getStatusCode());
+    }
+
+    public function testCreateAgentWithoutTimezoneDefaultsToUtc(): void
+    {
+        $this->createUser('supervisor@test.local', ['ROLE_SUPERVISOR']);
+        $token = $this->login('supervisor@test.local');
+
+        $this->client->request('POST', '/api/admin/agents', [], [], $this->authHeaders($token) + [
+            'CONTENT_TYPE' => 'application/json',
+        ], \json_encode([
+            'name' => 'New Agent',
+        ]));
+
+        $response = $this->client->getResponse();
+        self::assertSame(201, $response->getStatusCode());
+
+        $data = \json_decode($response->getContent(), true);
+        self::assertSame('UTC', $data['timezone']);
+    }
+
+    public function testCreateAgentWithExplicitValidTimezone(): void
+    {
+        $this->createUser('supervisor@test.local', ['ROLE_SUPERVISOR']);
+        $token = $this->login('supervisor@test.local');
+
+        $this->client->request('POST', '/api/admin/agents', [], [], $this->authHeaders($token) + [
+            'CONTENT_TYPE' => 'application/json',
+        ], \json_encode([
+            'name' => 'New Agent',
+            'timezone' => 'America/Sao_Paulo',
+        ]));
+
+        $response = $this->client->getResponse();
+        self::assertSame(201, $response->getStatusCode());
+
+        $data = \json_decode($response->getContent(), true);
+        self::assertSame('America/Sao_Paulo', $data['timezone']);
+    }
+
+    public function testCreateAgentWithInvalidTimezoneReturns400(): void
+    {
+        $this->createUser('supervisor@test.local', ['ROLE_SUPERVISOR']);
+        $token = $this->login('supervisor@test.local');
+
+        $this->client->request('POST', '/api/admin/agents', [], [], $this->authHeaders($token) + [
+            'CONTENT_TYPE' => 'application/json',
+        ], \json_encode([
+            'name' => 'New Agent',
+            'timezone' => 'Not/A_Zone',
+        ]));
+
+        self::assertSame(400, $this->client->getResponse()->getStatusCode());
+    }
+
+    public function testCreateAgentWithNonStringTimezoneReturns400(): void
+    {
+        $this->createUser('supervisor@test.local', ['ROLE_SUPERVISOR']);
+        $token = $this->login('supervisor@test.local');
+
+        $this->client->request('POST', '/api/admin/agents', [], [], $this->authHeaders($token) + [
+            'CONTENT_TYPE' => 'application/json',
+        ], \json_encode([
+            'name' => 'New Agent',
+            'timezone' => 123,
+        ]));
+
+        self::assertSame(400, $this->client->getResponse()->getStatusCode());
+    }
+
+    public function testCreateAgentAllowedForAdmin(): void
+    {
+        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $token = $this->login('admin@test.local');
+
+        $this->client->request('POST', '/api/admin/agents', [], [], $this->authHeaders($token) + [
+            'CONTENT_TYPE' => 'application/json',
+        ], \json_encode([
+            'name' => 'Admin Created Agent',
+        ]));
+
+        self::assertSame(201, $this->client->getResponse()->getStatusCode());
     }
 
     // ────────────────────────────────────────────────────────
@@ -289,6 +381,104 @@ class AgentControllerTest extends WebTestCase
         self::assertFalse($data['active']);
     }
 
+    public function testUpdateAgentTimezone(): void
+    {
+        $this->createUser('supervisor@test.local', ['ROLE_SUPERVISOR']);
+        $token = $this->login('supervisor@test.local');
+
+        $agent = $this->createAgent('Timezone Agent');
+
+        $this->client->request('PUT', "/api/admin/agents/{$agent->getId()}", [], [], $this->authHeaders($token) + [
+            'CONTENT_TYPE' => 'application/json',
+        ], \json_encode([
+            'timezone' => 'Europe/Lisbon',
+        ]));
+
+        $response = $this->client->getResponse();
+        self::assertSame(200, $response->getStatusCode());
+
+        $data = \json_decode($response->getContent(), true);
+        self::assertSame('Europe/Lisbon', $data['timezone']);
+
+        $this->em->clear();
+        $updatedAgent = $this->em->getRepository(Agent::class)->find($agent->getId());
+        self::assertSame('Europe/Lisbon', $updatedAgent->getTimezone());
+    }
+
+    public function testUpdateAgentOmittingTimezoneLeavesItUnchanged(): void
+    {
+        $this->createUser('supervisor@test.local', ['ROLE_SUPERVISOR']);
+        $token = $this->login('supervisor@test.local');
+
+        $agent = $this->createAgent('Timezone Agent');
+        $agent->setTimezone('Europe/Lisbon');
+        $this->em->flush();
+
+        $this->client->request('PUT', "/api/admin/agents/{$agent->getId()}", [], [], $this->authHeaders($token) + [
+            'CONTENT_TYPE' => 'application/json',
+        ], \json_encode([
+            'name' => 'Timezone Agent Renamed',
+        ]));
+
+        $response = $this->client->getResponse();
+        self::assertSame(200, $response->getStatusCode());
+
+        $data = \json_decode($response->getContent(), true);
+        self::assertSame('Europe/Lisbon', $data['timezone']);
+    }
+
+    public function testUpdateAgentWithInvalidTimezoneReturns400(): void
+    {
+        $this->createUser('supervisor@test.local', ['ROLE_SUPERVISOR']);
+        $token = $this->login('supervisor@test.local');
+
+        $agent = $this->createAgent('Timezone Agent');
+
+        $this->client->request('PUT', "/api/admin/agents/{$agent->getId()}", [], [], $this->authHeaders($token) + [
+            'CONTENT_TYPE' => 'application/json',
+        ], \json_encode([
+            'timezone' => 'Not/A_Zone',
+        ]));
+
+        self::assertSame(400, $this->client->getResponse()->getStatusCode());
+
+        $this->em->clear();
+        $unchangedAgent = $this->em->getRepository(Agent::class)->find($agent->getId());
+        self::assertSame('UTC', $unchangedAgent->getTimezone());
+    }
+
+    public function testUpdateAgentWithNonStringTimezoneReturns400(): void
+    {
+        $this->createUser('supervisor@test.local', ['ROLE_SUPERVISOR']);
+        $token = $this->login('supervisor@test.local');
+
+        $agent = $this->createAgent('Timezone Agent');
+
+        $this->client->request('PUT', "/api/admin/agents/{$agent->getId()}", [], [], $this->authHeaders($token) + [
+            'CONTENT_TYPE' => 'application/json',
+        ], \json_encode([
+            'timezone' => 123,
+        ]));
+
+        self::assertSame(400, $this->client->getResponse()->getStatusCode());
+    }
+
+    public function testUpdateAgentAllowedForAdmin(): void
+    {
+        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $token = $this->login('admin@test.local');
+
+        $agent = $this->createAgent('Old Name');
+
+        $this->client->request('PUT', "/api/admin/agents/{$agent->getId()}", [], [], $this->authHeaders($token) + [
+            'CONTENT_TYPE' => 'application/json',
+        ], \json_encode([
+            'name' => 'Updated By Admin',
+        ]));
+
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+    }
+
     // ────────────────────────────────────────────────────────
     //  Delete Agent (Soft Delete)
     // ────────────────────────────────────────────────────────
@@ -318,5 +508,16 @@ class AgentControllerTest extends WebTestCase
 
         $this->client->request('DELETE', '/api/admin/agents/99999', [], [], $this->authHeaders($token));
         self::assertSame(404, $this->client->getResponse()->getStatusCode());
+    }
+
+    public function testDeleteAgentAllowedForAdmin(): void
+    {
+        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $token = $this->login('admin@test.local');
+
+        $agent = $this->createAgent('Delete Agent');
+
+        $this->client->request('DELETE', "/api/admin/agents/{$agent->getId()}", [], [], $this->authHeaders($token));
+        self::assertSame(204, $this->client->getResponse()->getStatusCode());
     }
 }

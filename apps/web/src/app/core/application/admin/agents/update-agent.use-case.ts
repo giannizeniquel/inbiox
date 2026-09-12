@@ -11,6 +11,7 @@ export interface UpdateAgentInput {
   id: number;
   name: string;
   active: boolean;
+  timezone: string;
 }
 
 /**
@@ -44,6 +45,7 @@ export class UpdateAgentUseCase {
     return this.api.updateAgent(input.id, {
       name: input.name.trim(),
       active: input.active,
+      timezone: input.timezone,
     }).pipe(
       map((agent) => ({ agent })),
       catchError((err) => {

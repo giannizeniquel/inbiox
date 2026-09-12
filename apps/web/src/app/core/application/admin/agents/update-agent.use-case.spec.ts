@@ -11,6 +11,7 @@ describe('UpdateAgentUseCase', () => {
     name: 'Updated Agent',
     active: true,
     is_available: true,
+    timezone: 'UTC',
     user_id: null,
     user_email: null,
     created_at: '2024-01-01T00:00:00Z',
@@ -24,9 +25,9 @@ describe('UpdateAgentUseCase', () => {
 
   it('should call api.updateAgent with id and trimmed name and active', (done) => {
     apiSpy.updateAgent.and.returnValue(of(mockAgent));
-    useCase.execute({ id: 5, name: '  Updated Agent  ', active: true }).subscribe({
+    useCase.execute({ id: 5, name: '  Updated Agent  ', active: true, timezone: 'UTC' }).subscribe({
       next: () => {
-        expect(apiSpy.updateAgent).toHaveBeenCalledWith(5, { name: 'Updated Agent', active: true });
+        expect(apiSpy.updateAgent).toHaveBeenCalledWith(5, { name: 'Updated Agent', active: true, timezone: 'UTC' });
         done();
       },
     });
@@ -34,7 +35,7 @@ describe('UpdateAgentUseCase', () => {
 
   it('should return UpdateAgentOutput with the updated agent', (done) => {
     apiSpy.updateAgent.and.returnValue(of(mockAgent));
-    useCase.execute({ id: 5, name: 'Updated Agent', active: true }).subscribe({
+    useCase.execute({ id: 5, name: 'Updated Agent', active: true, timezone: 'UTC' }).subscribe({
       next: (output: UpdateAgentOutput) => {
         expect(output.agent).toEqual(mockAgent);
         done();
@@ -45,9 +46,9 @@ describe('UpdateAgentUseCase', () => {
   it('should send active=false when deactivating', (done) => {
     const deactivatedAgent = { ...mockAgent, active: false };
     apiSpy.updateAgent.and.returnValue(of(deactivatedAgent));
-    useCase.execute({ id: 5, name: 'Updated Agent', active: false }).subscribe({
+    useCase.execute({ id: 5, name: 'Updated Agent', active: false, timezone: 'UTC' }).subscribe({
       next: () => {
-        expect(apiSpy.updateAgent).toHaveBeenCalledWith(5, { name: 'Updated Agent', active: false });
+        expect(apiSpy.updateAgent).toHaveBeenCalledWith(5, { name: 'Updated Agent', active: false, timezone: 'UTC' });
         done();
       },
     });
@@ -55,10 +56,20 @@ describe('UpdateAgentUseCase', () => {
 
   it('should throw AgentUpdateFailed when api.updateAgent errors with not-found', (done) => {
     apiSpy.updateAgent.and.returnValue(throwError(() => new Error('Agent not found')));
-    useCase.execute({ id: 999, name: 'Ghost', active: true }).subscribe({
+    useCase.execute({ id: 999, name: 'Ghost', active: true, timezone: 'UTC' }).subscribe({
       error: (err: AgentUpdateFailed) => {
         expect(err).toBeInstanceOf(AgentUpdateFailed);
         expect(err.message).toBe('Agent not found');
+        done();
+      },
+    });
+  });
+
+  it('should pass a non-UTC timezone through to the update payload', (done) => {
+    apiSpy.updateAgent.and.returnValue(of(mockAgent));
+    useCase.execute({ id: 5, name: 'Updated Agent', active: true, timezone: 'Europe/Lisbon' }).subscribe({
+      next: () => {
+        expect(apiSpy.updateAgent).toHaveBeenCalledWith(5, { name: 'Updated Agent', active: true, timezone: 'Europe/Lisbon' });
         done();
       },
     });

@@ -108,6 +108,16 @@ class AgentTest extends TestCase
         self::assertSame($user, $agent->getUser());
     }
 
+    public function testSetTimezoneRejectsInvalidIana(): void
+    {
+        $agent = new Agent('Invalid Timezone Agent');
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid timezone: "Not/AZone"');
+
+        $agent->setTimezone('Not/AZone');
+    }
+
     public function testAgentKeepsExistingFields(): void
     {
         $agent = new Agent('Existing Fields Agent');

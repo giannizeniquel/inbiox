@@ -11,6 +11,7 @@ describe('CreateAgentUseCase', () => {
     name: 'Agent Bob',
     active: true,
     is_available: true,
+    timezone: 'UTC',
     user_id: null,
     user_email: null,
     created_at: '2024-01-01T00:00:00Z',
@@ -78,6 +79,26 @@ describe('CreateAgentUseCase', () => {
     useCase.execute({ name: 'ValidAgentName' }).subscribe({
       next: (output: CreateAgentOutput) => {
         expect(output.agent.name).toBe('Agent Bob');
+        done();
+      },
+    });
+  });
+
+  it('should pass timezone through to the create payload when provided', (done) => {
+    apiSpy.createAgent.and.returnValue(of(mockAgent));
+    useCase.execute({ name: 'Agent Bob', timezone: 'America/Sao_Paulo' }).subscribe({
+      next: () => {
+        expect(apiSpy.createAgent).toHaveBeenCalledWith({ name: 'Agent Bob', timezone: 'America/Sao_Paulo' });
+        done();
+      },
+    });
+  });
+
+  it('should omit timezone from the create payload when not provided', (done) => {
+    apiSpy.createAgent.and.returnValue(of(mockAgent));
+    useCase.execute({ name: 'Agent Bob' }).subscribe({
+      next: () => {
+        expect(apiSpy.createAgent).toHaveBeenCalledWith({ name: 'Agent Bob' });
         done();
       },
     });

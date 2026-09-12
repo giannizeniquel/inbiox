@@ -18,7 +18,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  *
  * All endpoints require ROLE_SUPERVISOR.
  */
-#[IsGranted('ROLE_ADMIN')]
+#[IsGranted('ROLE_SUPERVISOR')]
 #[Route('/api/admin/agents')]
 final class AgentController
 {
@@ -89,7 +89,14 @@ final class AgentController
                 return new JsonResponse(['error' => 'name is required and must be a string'], 400);
             }
 
+            $timezone = $data['timezone'] ?? 'UTC';
+
+            if (!\is_string($timezone)) {
+                return new JsonResponse(['error' => 'timezone must be a string'], 400);
+            }
+
             $agent = new Agent($name);
+            $agent->setTimezone($timezone);
             $this->entityManager->persist($agent);
             $this->entityManager->flush();
 
@@ -158,6 +165,13 @@ final class AgentController
                 $agent->setActive((bool) $data['active']);
             }
 
+            if (isset($data['timezone'])) {
+                if (!\is_string($data['timezone'])) {
+                    return new JsonResponse(['error' => 'timezone must be a string'], 400);
+                }
+                $agent->setTimezone($data['timezone']);
+            }
+
             $this->entityManager->flush();
 
             return new JsonResponse($this->serializeAgent($agent));
@@ -211,6 +225,7 @@ final class AgentController
             'id' => (int) $agent->getId(),
             'name' => $agent->getName(),
             'active' => $agent->isActive(),
+            'timezone' => $agent->getTimezone(),
             'is_available' => $agent->isAvailable(),
             'user_id' => null !== $user ? (int) $user->getId() : null,
             'user_email' => null !== $user ? $user->getEmail() : null,

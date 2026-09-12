@@ -11,6 +11,7 @@ describe('ListAgentsUseCase', () => {
     name: 'Agent Alice',
     active: true,
     is_available: true,
+    timezone: 'UTC',
     user_id: 10,
     user_email: 'alice@example.com',
     created_at: '2024-01-01T00:00:00Z',

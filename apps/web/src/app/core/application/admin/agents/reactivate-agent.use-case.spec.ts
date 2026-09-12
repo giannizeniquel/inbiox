@@ -11,6 +11,7 @@ describe('ReactivateAgentUseCase', () => {
     name: 'Reactivated Agent',
     active: true,
     is_available: true,
+    timezone: 'UTC',
     user_id: null,
     user_email: null,
     created_at: '2024-01-01T00:00:00Z',

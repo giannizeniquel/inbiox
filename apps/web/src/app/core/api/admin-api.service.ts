@@ -19,6 +19,7 @@ export interface AdminAgentDTO {
   name: string;
   active: boolean;
   is_available: boolean;
+  timezone: string;
   user_id: number | null;
   user_email: string | null;
   created_at: string;
@@ -57,11 +58,13 @@ export interface UpdateUserPayload {
 
 export interface CreateAgentPayload {
   name: string;
+  timezone?: string;
 }
 
 export interface UpdateAgentPayload {
   name?: string;
   active?: boolean;
+  timezone?: string;
 }
 
 export interface LinkUserPayload {

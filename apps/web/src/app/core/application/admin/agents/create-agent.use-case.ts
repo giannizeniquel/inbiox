@@ -9,6 +9,7 @@ import { extractApiError } from '../../shared/extract-api-error';
  */
 export interface CreateAgentInput {
   name: string;
+  timezone?: string;
 }
 
 /**
@@ -54,7 +55,9 @@ export class CreateAgentUseCase {
       return throwError(() => new InvalidAgentName('Agent name is required'));
     }
 
-    return this.api.createAgent({ name: trimmed }).pipe(
+    const payload = input.timezone ? { name: trimmed, timezone: input.timezone } : { name: trimmed };
+
+    return this.api.createAgent(payload).pipe(
       map((agent) => ({ agent })),
       catchError((err) => {
         const message = extractApiError(err, 'Failed to create agent');
