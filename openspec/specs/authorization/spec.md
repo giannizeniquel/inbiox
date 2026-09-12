@@ -26,7 +26,9 @@ The system SHALL enforce the following permission matrix via Symfony Security `#
 | System config | ✅ | ❌ | ❌ |
 
 Roles are hierarchical: `ROLE_ADMIN` includes all `ROLE_SUPERVISOR` permissions, `ROLE_SUPERVISOR` includes all `ROLE_AGENT` permissions. Resolving or closing a ticket — including a generic transition whose target status is `resolved` or `closed` — is allowed only for an admin, a supervisor, or the ticket's current owning agent; any other case is rejected.
-(Previously: closing was declared only as a role-level `ROLE_AGENT` check with no per-ticket ownership enforcement, and the ownership scenarios below covered only the generic transition endpoint.)
+
+The "Reassign tickets: ROLE_AGENT ❌" row governs only user-initiated reassignment requests (e.g. an explicit manual reassign action or endpoint). It does NOT govern system-triggered ownership changes, such as the reply-triggered auto-assignment defined by the `reply-auto-assignment` capability, where any replying agent — regardless of role — may become or replace the ticket's owner as a side effect of sending a message. This row and the reply-auto-assignment behavior are independent and do not contradict each other.
+(Previously: the matrix did not distinguish user-initiated reassignment from system-triggered reassignment, so the "Reassign tickets: ROLE_AGENT ❌" row appeared to contradict the already-live reply-auto-assignment behavior.)
 
 **Note on the two-step close action**: resolving a ticket unassigns it as a documented side effect (confirmed intentional, for accurate real-time workload reporting). Because of this, a ticket eligible for the two-step resolve-then-close action has no owner by the time that action is reachable — an agent can never satisfy the "current owning agent" condition there, regardless of who resolved it. An agent's own-ticket closure is achieved instead by a direct transition to closed from an active/in-progress state, while ownership still holds. This is a factual consequence of the confirmed unassign-on-resolve behavior, not a separate policy choice.
 
@@ -128,6 +130,13 @@ Roles are hierarchical: `ROLE_ADMIN` includes all `ROLE_SUPERVISOR` permissions,
 - GIVEN a user with `ROLE_SUPERVISOR`
 - WHEN `POST /admin/outbox/publish` is called
 - THEN the response SHALL be 403
+
+#### Scenario: Agent reply auto-assignment is not blocked by the reassign-tickets restriction
+
+- GIVEN a ROLE_AGENT user who is not the current ticket owner
+- WHEN that agent sends an outbound reply to the ticket (the system-triggered reply-auto-assignment path)
+- THEN ownership SHALL transfer to the replying agent
+- AND this SHALL NOT be treated as a denied "Reassign tickets" action, because that restriction governs only user-initiated reassignment requests
 
 ---
 
@@ -295,7 +304,7 @@ The system SHALL restrict debug endpoints to the `dev` environment only.
 | Type | Count |
 |------|-------|
 | Requirements | 6 |
-| Total Scenarios | 30 |
+| Total Scenarios | 31 |
 
 ## Coverage
 

@@ -14,6 +14,7 @@ use App\Exception\ConversationWindowExpiredException;
 use App\Exception\GraphApiException;
 use App\Exception\MediaTooLargeException;
 use App\Exception\MediaTypeNotAllowedException;
+use App\Exception\StateConflictException;
 use App\Infrastructure\Storage\MediaStorageService;
 use App\Infrastructure\Storage\MediaValidator;
 use App\Repository\TicketRepository;
@@ -81,6 +82,10 @@ class ProviderProxyController extends AbstractController
         }
         $agentId = $agent?->getId() ?? 0;
 
+        // Resolved/closed ownership guard (design.md D3): role_hierarchy makes
+        // ROLE_ADMIN inherit ROLE_SUPERVISOR, so this single check covers both.
+        $senderIsPrivileged = $this->isGranted('ROLE_SUPERVISOR');
+
         // Build media metadata for persistence
         $mediaMetadata = null;
         if ($mediaId !== null && $mimeType !== null) {
@@ -105,6 +110,7 @@ class ProviderProxyController extends AbstractController
                 content: $content,
                 agentId: $agentId,
                 mediaMetadata: $mediaMetadata,
+                senderIsPrivileged: $senderIsPrivileged,
             );
         } catch (ConversationWindowExpiredException $e) {
             return new JsonResponse(
@@ -113,6 +119,14 @@ class ProviderProxyController extends AbstractController
                     'message' => $e->getMessage(),
                 ],
                 Response::HTTP_UNPROCESSABLE_ENTITY
+            );
+        } catch (StateConflictException $e) {
+            return new JsonResponse(
+                [
+                    'type' => 'TICKET_NOT_OWNED',
+                    'message' => $e->getMessage(),
+                ],
+                Response::HTTP_CONFLICT
             );
         }
 

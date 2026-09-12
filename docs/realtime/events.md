@@ -119,10 +119,12 @@ All ownership changes now use the `ticket.assigned` event with the `assignment_t
 
 | Type | Meaning |
 |------|---------|
-| `AUTO_ASSIGN` | System assigned via `AutoAssignTicketUseCase` |
+| `AUTO_ASSIGN` | System assigned. Two independent sources emit this type: (1) `AutoAssignTicketUseCase` — least-loaded-agent auto-assignment of an unassigned ticket; (2) `HandleOutboundMessageUseCase` — reply-triggered claim, when any agent replies to a ticket that has no owner yet |
 | `MANUAL_ASSIGN` | Supervisor assigned via `AssignTicketUseCase` |
-| `REASSIGN` | Transfer from one agent to another |
+| `REASSIGN` | Transfer from one agent to another. Two independent sources emit this type: (1) `AssignTicketUseCase` — a supervisor manually reassigns; (2) `HandleOutboundMessageUseCase` — reply-triggered reassignment, when any agent (any role — `ROLE_AGENT`/`ROLE_SUPERVISOR`/`ROLE_ADMIN`) other than the current owner replies to an already-owned, non-resolved/closed ticket. This is intentional, first-class behavior, not an undocumented side effect (see `openspec/specs/reply-auto-assignment/spec.md`) |
 | `UNASSIGN` | Ownership removed (e.g. ticket resolved/closed) |
+
+**Reply-triggered ownership change (`HandleOutboundMessageUseCase`)**: any outbound agent reply claims an unassigned ticket or reassigns an already-owned ticket to the replying agent, regardless of role — no "Reassign tickets" permission check applies, since this is system-triggered, not a user-initiated reassignment request. On a `resolved`/`closed` ticket, ownership is instead frozen: a privileged sender (`ROLE_SUPERVISOR`/`ROLE_ADMIN`) or the current owner may still reply without any ownership change, but a non-owning, non-privileged agent's reply is rejected outright with HTTP 409 `{"type": "TICKET_NOT_OWNED"}` — no message is persisted and no ownership change occurs.
 
 ## Event Source Mapping
 

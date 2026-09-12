@@ -9,6 +9,8 @@ use App\Domain\Ticket\TicketStatus;
 use App\Domain\Contact\Contact;
 use App\Domain\Conversation\Conversation;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\LockMode;
+use Doctrine\ORM\Query;
 use Doctrine\Persistence\ManagerRegistry;
 
 class TicketRepository extends ServiceEntityRepository implements TicketRepositoryInterface
@@ -62,6 +64,30 @@ class TicketRepository extends ServiceEntityRepository implements TicketReposito
     public function findById(int $id): ?Ticket
     {
         return $this->find($id);
+    }
+
+    /**
+     * Locking read: PESSIMISTIC_WRITE acquired as part of the SELECT itself
+     * (design.md D1). MUST be the transaction's FIRST statement so nothing
+     * else can open a consistent-read snapshot ahead of the lock.
+     *
+     * Query::HINT_REFRESH forces Doctrine to overwrite any stale identity-map
+     * copy with the just-locked row instead of silently reusing it.
+     *
+     * Rejected: `findById()` + `$em->lock()` (AssignTicketUseCase convention)
+     * — under MySQL REPEATABLE READ, `findById()` opens the consistent-read
+     * snapshot BEFORE the lock is acquired, so a later `refresh()` still
+     * reads the pre-lock snapshot. TOCTOU survives.
+     */
+    public function findByIdForUpdate(int $id): ?Ticket
+    {
+        return $this->createQueryBuilder('t')
+            ->where('t.id = :id')
+            ->setParameter('id', $id)
+            ->getQuery()
+            ->setLockMode(LockMode::PESSIMISTIC_WRITE)
+            ->setHint(Query::HINT_REFRESH, true)
+            ->getOneOrNullResult();
     }
 
     /**

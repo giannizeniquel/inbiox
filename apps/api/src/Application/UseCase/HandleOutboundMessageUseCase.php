@@ -17,8 +17,10 @@ use App\Domain\Ticket\TicketStatus;
 use App\Application\Rule\RuleExecutorService;
 use App\Domain\Rule\RuleContext;
 use App\Domain\Ticket\ConversationWindowPolicy;
+use App\Domain\Ticket\TicketOwnershipGuard;
 use App\Exception\ConcurrencyException;
 use App\Exception\ConversationWindowExpiredException;
+use App\Exception\StateConflictException;
 use App\Repository\AgentRepository;
 use App\Repository\ConversationRepository;
 use App\Repository\MessageRepository;
@@ -66,6 +68,7 @@ class HandleOutboundMessageUseCase
         string $content,
         int $agentId,
         ?array $mediaMetadata = null,
+        bool $senderIsPrivileged = false,
     ): array {
         // Generate deterministic event key: outbound:{ticketId}:{contentHash}
         // Media messages have empty content (caption lives in media metadata), so
@@ -95,13 +98,20 @@ class HandleOutboundMessageUseCase
         $maxRetries = 3;
         $attempt = 0;
         $ticket = null;
+        $result = null;
 
         while ($attempt < $maxRetries) {
             try {
-                $result = $this->executeTransactionWithRetry($ticketId, $content, $eventKey, $agentId, $ticket, $mediaMetadata);
-                $this->persistEventsToOutbox();
-                return $result;
+                $result = $this->executeTransactionWithRetry($ticketId, $content, $eventKey, $agentId, $ticket, $mediaMetadata, $senderIsPrivileged);
+                break;
             } catch (OptimisticLockException $e) {
+                // A rolled-back attempt must not leak its collected events
+                // (e.g. TicketAssigned) into the next attempt's flush —
+                // otherwise the retry re-collects the same events again,
+                // producing a phantom event with a duplicate seq
+                // (design.md D6).
+                $this->eventCollector->clear();
+
                 $attempt++;
                 if ($attempt >= $maxRetries) {
                     throw new ConcurrencyException(
@@ -121,11 +131,32 @@ class HandleOutboundMessageUseCase
 
                 // Clear entity manager to avoid stale state
                 $this->em->clear();
+            } catch (\Throwable $e) {
+                // Any other abort (e.g. StateConflictException,
+                // ConversationWindowExpiredException) must also discard
+                // whatever this attempt collected before propagating —
+                // there is no retry for these, but the collector must not
+                // carry stale events into some later, unrelated call
+                // (design.md D6).
+                $this->eventCollector->clear();
+                throw $e;
             }
         }
 
-        // Should never reach here, but satisfy static analysis
-        throw new ConcurrencyException('Unexpected error in retry loop');
+        if ($result === null) {
+            // Should never reach here, but satisfy static analysis
+            throw new ConcurrencyException('Unexpected error in retry loop');
+        }
+
+        // Persist events AFTER the transaction fully commits (moved OUT of
+        // the try block, matching AssignTicketUseCase:118-121 /
+        // AutoAssignTicketUseCase:55-62): keeping the outbox flush inside
+        // the try let an outbox-flush OptimisticLockException re-execute
+        // the WHOLE transaction and re-collect duplicate events
+        // (design.md D6).
+        $this->persistEventsToOutbox();
+
+        return $result;
     }
 
     /**
@@ -138,12 +169,35 @@ class HandleOutboundMessageUseCase
         int $agentId,
         ?Ticket &$ticket,
         ?array $mediaMetadata = null,
+        bool $senderIsPrivileged = false,
     ): array {
-        return $this->em->getConnection()->transactional(function() use ($ticketId, $content, $eventKey, $agentId, &$ticket, $mediaMetadata) {
-            // Get ticket
-            $ticket = $this->ticketRepo->findById($ticketId);
+        return $this->em->getConnection()->transactional(function() use ($ticketId, $content, $eventKey, $agentId, &$ticket, $mediaMetadata, $senderIsPrivileged) {
+            // Get ticket — pessimistic locking read as the FIRST statement of
+            // the transaction (design.md D1). Under MySQL REPEATABLE READ, a
+            // plain findById() opens a consistent-read snapshot BEFORE any
+            // lock is acquired; a later refresh() would still read that
+            // stale snapshot. A locking read here blocks until any
+            // conflicting transaction commits, then HINT_REFRESH hydrates
+            // from the latest-committed row.
+            $ticket = $this->ticketRepo->findByIdForUpdate($ticketId);
             if (!$ticket) {
                 throw new \InvalidArgumentException('Ticket not found');
+            }
+
+            // Resolved/closed ownership guard (design.md D3-D5, spec.md
+            // "Resolved/Closed Ticket Ownership Guard"): a non-owning,
+            // non-privileged agent may not claim/reassign a resolved/closed
+            // ticket by replying. Runs BEFORE the window-policy check below
+            // — a 409 here is more informative than a misleading 422, and
+            // ownership on a closed ticket is stable/authoritative while the
+            // window is merely time-dependent.
+            $status = $ticket->getStatus();
+            $skipOwnershipChange = TicketOwnershipGuard::isResolvedOrClosed($status);
+            if (TicketOwnershipGuard::blocksReassignment($status, $senderIsPrivileged, $agentId, $ticket->getAssignedAgentId())) {
+                throw new StateConflictException(sprintf(
+                    'Cannot send to ticket in "%s" state: sender is not the assigned owner',
+                    $status
+                ));
             }
 
             // WhatsApp 24h conversation-window guard-before-persist (design.md
@@ -161,8 +215,9 @@ class HandleOutboundMessageUseCase
             }
 
             // Auto-assign agent to ticket if not already assigned to this agent
+            // (skipped on resolved/closed tickets — ownership is frozen there).
             $currentAssigneeId = $ticket->getAssignedAgentId();
-            if ($agentId > 0 && $currentAssigneeId !== $agentId) {
+            if (!$skipOwnershipChange && $agentId > 0 && $currentAssigneeId !== $agentId) {
                 $agent = $this->agentRepo->findById($agentId);
                 if ($agent !== null) {
                     $previousAgent = null;
