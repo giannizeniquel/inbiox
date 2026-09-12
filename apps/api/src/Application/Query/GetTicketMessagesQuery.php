@@ -59,20 +59,20 @@ class GetTicketMessagesQuery
             $params[] = (int) $cursorData['id'];
         }
         
-        $sql = "SELECT id, content, direction, created_at, media
+        $sql = "SELECT id, content, direction, created_at, media, sender_agent_id, sender_type
                 FROM messages
                 WHERE $where
                 ORDER BY created_at ASC, id ASC
                 LIMIT " . ($limit + 1);
-        
+
         $stmt = $this->entityManager->getConnection()->executeQuery($sql, $params);
         $results = $stmt->fetchAllAssociative();
-        
+
         $hasMore = count($results) > $limit;
         if ($hasMore) {
             array_pop($results);
         }
-        
+
         $nextCursor = null;
         if ($hasMore && $results) {
             $last = end($results);
@@ -81,18 +81,20 @@ class GetTicketMessagesQuery
                 'id' => (int) $last['id'],
             ]));
         }
-        
+
         $items = array_map(fn($row) => new MessageDTO(
             messageId: (int) $row['id'],
             direction: $row['direction'],
             content: $row['content'],
             createdAt: (new \DateTimeImmutable($row['created_at']))->format('Y-m-d\TH:i:s\Z'),
             media: is_string($row['media'] ?? null) ? json_decode($row['media'], true) : $row['media'] ?? null,
+            senderAgentId: isset($row['sender_agent_id']) ? (int) $row['sender_agent_id'] : null,
+            senderType: $row['sender_type'] ?? null,
         ), $results);
-        
+
         return ['items' => $items, 'has_more' => $hasMore, 'next_cursor' => $nextCursor];
     }
-    
+
     private function getMessagesBackward(int $conversationId, ?array $cursorData, int $limit, int $offset = 0): array
     {
         $params = [$conversationId];
@@ -105,27 +107,27 @@ class GetTicketMessagesQuery
             $params[] = (int) $cursorData['id'];
         }
         
-        $sql = "SELECT id, content, direction, created_at, media
+        $sql = "SELECT id, content, direction, created_at, media, sender_agent_id, sender_type
                 FROM messages
                 WHERE $where
                 ORDER BY created_at DESC, id DESC
                 LIMIT " . ($limit + 1);
-        
+
         if ($offset > 0) {
             $sql .= " OFFSET " . $offset;
         }
-        
+
         $stmt = $this->entityManager->getConnection()->executeQuery($sql, $params);
         $results = $stmt->fetchAllAssociative();
-        
+
         $hasMore = count($results) > $limit;
         if ($hasMore) {
             array_pop($results);
         }
-        
+
         // Reverse to chronological
         $results = array_reverse($results);
-        
+
         $nextCursor = null;
         if ($hasMore && $results) {
             $first = $results[0];
@@ -134,15 +136,17 @@ class GetTicketMessagesQuery
                 'id' => (int) $first['id'],
             ]));
         }
-        
+
         $items = array_map(fn($row) => new MessageDTO(
             messageId: (int) $row['id'],
             direction: $row['direction'],
             content: $row['content'],
             createdAt: (new \DateTimeImmutable($row['created_at']))->format('Y-m-d\TH:i:s\Z'),
             media: is_string($row['media'] ?? null) ? json_decode($row['media'], true) : $row['media'] ?? null,
+            senderAgentId: isset($row['sender_agent_id']) ? (int) $row['sender_agent_id'] : null,
+            senderType: $row['sender_type'] ?? null,
         ), $results);
-        
+
         return ['items' => $items, 'has_more' => $hasMore, 'next_cursor' => $nextCursor];
     }
 }

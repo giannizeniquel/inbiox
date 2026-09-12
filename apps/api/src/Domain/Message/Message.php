@@ -42,6 +42,12 @@ class Message
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $media = null;
 
+    #[ORM\Column(name: 'sender_agent_id', type: 'bigint', nullable: true)]
+    private ?int $senderAgentId = null;
+
+    #[ORM\Column(name: 'sender_type', type: 'string', length: 20, nullable: true)]
+    private ?string $senderType = null;
+
     #[ORM\Column(name: 'created_at', type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
 
@@ -146,5 +152,27 @@ class Message
     public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
+    }
+
+    public function getSenderAgentId(): ?int
+    {
+        return $this->senderAgentId;
+    }
+
+    public function setSenderAgentId(?int $senderAgentId): self
+    {
+        $this->senderAgentId = $senderAgentId;
+        return $this;
+    }
+
+    public function getSenderType(): ?string
+    {
+        return $this->senderType;
+    }
+
+    public function setSenderType(MessageSenderType $senderType): self
+    {
+        $this->senderType = $senderType->value;
+        return $this;
     }
 }

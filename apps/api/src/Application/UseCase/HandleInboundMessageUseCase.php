@@ -9,6 +9,7 @@ use App\Domain\Event\EventCollector;
 use App\Domain\Event\MessageCreatedEvent;
 use App\Domain\Event\TicketCreatedEvent;
 use App\Domain\Message\Message;
+use App\Domain\Message\MessageSenderType;
 use App\Domain\Outbox\OutboxEvent;
 use App\Domain\Ticket\Ticket;
 use App\Domain\Ticket\TicketStatus;
@@ -212,6 +213,7 @@ foreach ($events as $event) {
         if ($externalId) {
             $msg->setExternalId($externalId);
         }
+        $msg->setSenderType(MessageSenderType::CONTACT);
 
         $this->em->persist($msg);
         $this->em->flush(); // Flush to get message ID for media key

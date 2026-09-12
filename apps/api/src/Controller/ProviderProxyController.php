@@ -8,6 +8,7 @@ use App\Application\Service\GraphClient;
 use App\Application\UseCase\HandleOutboundMessageUseCase;
 use App\Domain\Message\Message;
 use App\Domain\Message\MessageDirection;
+use App\Domain\Message\MessageSenderType;
 use App\Domain\Media\MediaKind;
 use App\Domain\User\User;
 use App\Exception\ConversationWindowExpiredException;
@@ -66,21 +67,9 @@ class ProviderProxyController extends AbstractController
         $filename = $payload['filename'] ?? null;
         $size = $payload['size'] ?? null;
 
-        // Resolve agent ID from authenticated user.
-        // If the user doesn't have a linked Agent record (e.g. admin),
-        // create or find one so they can be assigned to tickets.
-        $agent = $user?->getAgent();
-        if ($user && !$agent) {
-            $agent = $this->em->getRepository(\App\Domain\Agent\Agent::class)
-                ->findOneBy(['user' => $user]);
-            if (!$agent) {
-                $agent = new \App\Domain\Agent\Agent($user->getEmail() ?? 'Admin');
-                $agent->setUser($user);
-                $this->em->persist($agent);
-                $this->em->flush();
-            }
-        }
-        $agentId = $agent?->getId() ?? 0;
+        // Resolve agent ID from authenticated user (degrades to null, never
+        // fails the send — design.md D4).
+        $agentId = $this->resolveActingAgentId($user) ?? 0;
 
         // Resolved/closed ownership guard (design.md D3): role_hierarchy makes
         // ROLE_ADMIN inherit ROLE_SUPERVISOR, so this single check covers both.
@@ -206,8 +195,38 @@ class ProviderProxyController extends AbstractController
         );
     }
 
+    /**
+     * Resolve the acting agent's id from the authenticated user, degrading
+     * gracefully (never throwing) rather than failing the caller's send.
+     *
+     * If the user doesn't have a linked Agent record (e.g. admin), create or
+     * find one so they can be assigned to tickets. Extracted from send()'s
+     * original inline fallback (design.md D4).
+     */
+    private function resolveActingAgentId(?User $user): ?int
+    {
+        if ($user === null) {
+            return null;
+        }
+
+        try {
+            $agent = $user->getAgent()
+                ?? $this->em->getRepository(\App\Domain\Agent\Agent::class)->findOneBy(['user' => $user]);
+            if (!$agent) {
+                $agent = new \App\Domain\Agent\Agent($user->getEmail() ?? 'Admin');
+                $agent->setUser($user);
+                $this->em->persist($agent);
+                $this->em->flush();
+            }
+
+            return $agent->getId();
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     #[Route('/template/send', methods: ['POST'])]
-    public function sendTemplate(Request $request): JsonResponse
+    public function sendTemplate(Request $request, #[CurrentUser] ?User $user): JsonResponse
     {
         $payload = json_decode($request->getContent(), true);
 
@@ -293,6 +312,8 @@ class ProviderProxyController extends AbstractController
             $message->setDirection(MessageDirection::OUTBOUND->value);
             $message->setDeliveryStatus('sent');
             $message->setUpdatedAt(new \DateTimeImmutable());
+            $message->setSenderAgentId($this->resolveActingAgentId($user));
+            $message->setSenderType(MessageSenderType::AGENT);
             if ($ticket->getConversation()) {
                 $message->setConversation($ticket->getConversation());
             }

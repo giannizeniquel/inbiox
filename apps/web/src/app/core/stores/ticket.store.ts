@@ -106,9 +106,15 @@ export class TicketStore {
     switch (event.eventType) {
       case RealtimeEventType.MessageAdded: {
         const p = event.payload as MessageAddedPayload;
-        // Increment unread if not active ticket
+        // Increment unread if not active ticket — inbound only (message-agent-
+        // attribution, design.md D6): outbound messages now broadcast too
+        // (human-agent replies), and an agent's own reply (or a colleague's)
+        // must never inflate the unread badge.
         const activeTicket = this.activeTicket();
-        if (!activeTicket || String(activeTicket.ticket_id) !== String(p.ticketId)) {
+        if (
+          p.direction === 'inbound'
+          && (!activeTicket || String(activeTicket.ticket_id) !== String(p.ticketId))
+        ) {
           const current = this.tickets().find(t => String(t.ticket_id) === String(p.ticketId));
           if (current) {
             this.updateUnreadCount(String(p.ticketId), (current.metrics?.unread_count ?? 0) + 1);

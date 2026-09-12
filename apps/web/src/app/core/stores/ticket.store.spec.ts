@@ -1,5 +1,6 @@
 import { TicketStore, TicketFilter } from './ticket.store';
 import { Ticket, TicketStatus } from '../models/ticket.model';
+import { RealtimeEventType } from '../models/realtime-event.model';
 
 describe('TicketStore', () => {
   let store: TicketStore;
@@ -346,5 +347,49 @@ describe('TicketStore', () => {
 
     expect(store.pendingAssignIds().size).toBe(0);
     expect(store.assignmentErrors().size).toBe(0);
+  });
+
+  // ── onRealtimeEvent(MessageAdded) direction guard (message-agent-attribution, design.md D6) ──
+  // Outbound messages now broadcast too (human-agent replies) — an agent's
+  // own reply (or a colleague's) on a non-active ticket must never inflate
+  // the unread badge; only genuine inbound (contact) messages should.
+
+  function makeMessageAddedEvent(direction: 'inbound' | 'outbound', ticketId = 't1') {
+    return {
+      eventId: 'evt-1',
+      eventType: RealtimeEventType.MessageAdded,
+      ticketId,
+      payload: {
+        messageId: 1,
+        ticketId,
+        content: 'Hi',
+        direction,
+        senderName: null,
+        createdAt: '2024-01-01T00:00:00Z',
+        externalId: null,
+      },
+    };
+  }
+
+  it('should skip the unread bump for an outbound MessageAdded on a non-active ticket', () => {
+    store.loadTickets([makeTicket({ ticket_id: 't1', id: 't1', metrics: { unread_count: 0 } })]);
+    store.setActiveTicket(null); // no active ticket — t1 is not active
+
+    (store as unknown as { onRealtimeEvent(e: unknown): void }).onRealtimeEvent(
+      makeMessageAddedEvent('outbound')
+    );
+
+    expect(store.tickets()[0].metrics.unread_count).toBe(0);
+  });
+
+  it('should bump unread for an inbound MessageAdded on a non-active ticket', () => {
+    store.loadTickets([makeTicket({ ticket_id: 't1', id: 't1', metrics: { unread_count: 0 } })]);
+    store.setActiveTicket(null);
+
+    (store as unknown as { onRealtimeEvent(e: unknown): void }).onRealtimeEvent(
+      makeMessageAddedEvent('inbound')
+    );
+
+    expect(store.tickets()[0].metrics.unread_count).toBe(1);
   });
 });

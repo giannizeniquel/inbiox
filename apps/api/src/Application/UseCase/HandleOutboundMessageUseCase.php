@@ -9,7 +9,10 @@ use App\Domain\Conversation\ConversationStatus;
 use App\Domain\Event\EventCollector;
 use App\Domain\Event\InboxUpdatedEvent;
 use App\Domain\Event\TicketUpdatedEvent;
+use App\Domain\Event\MessageCreatedEvent;
 use App\Domain\Message\Message;
+use App\Domain\Message\MessageDirection;
+use App\Domain\Message\MessageSenderType;
 use App\Domain\Outbox\OutboxEvent;
 use App\Domain\Ticket\ProcessedEvent;
 use App\Domain\Ticket\Ticket;
@@ -255,6 +258,8 @@ class HandleOutboundMessageUseCase
             $msg->setConversation($conversation);
             $msg->setDirection('outbound');
             $msg->setContent($content);
+            $msg->setSenderAgentId($agentId > 0 ? $agentId : null);
+            $msg->setSenderType(MessageSenderType::AGENT);
 
             // Attach media metadata if provided
             if ($mediaMetadata !== null) {
@@ -319,6 +324,26 @@ class HandleOutboundMessageUseCase
 
             $this->em->flush();
 
+            // Collect MessageCreatedEvent for human-agent replies (design.md D5) —
+            // makes outbound messages broadcast over Mercure for the first time.
+            // $msg->getId() exists because of the flush() above.
+            $senderName = $agentId > 0 ? $this->agentRepo->findById($agentId)?->getName() : null;
+            $this->eventCollector->collect(new MessageCreatedEvent(
+                eventId: new Ulid(),
+                ticketId: $ticketId,
+                occurredAt: new \DateTimeImmutable(),
+                seq: $ticket->incrementLastEventSeq(),
+                version: 1,
+                direction: MessageDirection::OUTBOUND,
+                messageId: $msg->getId(),
+                content: $content,
+                senderName: $senderName,
+                media: $msg->getMedia(),
+            ));
+
+            // Flush again to persist the bumped lastEventSeq (design.md D5).
+            $this->em->flush();
+
             // Execute automation rules (outbound trigger)
             $ruleContext = new RuleContext($ticket, $msg, 'outbound');
             $this->ruleExecutor->execute($ruleContext);
@@ -370,6 +395,20 @@ class HandleOutboundMessageUseCase
             } elseif ($event instanceof InboxUpdatedEvent) {
                 // Skip inbox events for now (they don't have a wire format yet)
                 continue;
+            } elseif ($event instanceof MessageCreatedEvent) {
+                $payload['message_id'] = $event->messageId;
+                $payload['direction'] = $event->direction->value;
+                $payload['content'] = $event->content;
+                $payload['sender_name'] = $event->senderName;
+                $payload['media'] = $event->media;
+                // Include phone_number_id for workspace-pending indicator
+                $ticketRow = $this->em->getConnection()->executeQuery(
+                    'SELECT phone_number_id FROM tickets WHERE id = ?',
+                    [$event->ticketId]
+                )->fetchAssociative();
+                if ($ticketRow && !empty($ticketRow['phone_number_id'])) {
+                    $payload['phone_number_id'] = $ticketRow['phone_number_id'];
+                }
             }
 
             $outboxEvent = new OutboxEvent(
