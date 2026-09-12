@@ -19,16 +19,19 @@ The system SHALL enforce the following permission matrix via Symfony Security `#
 | View all reports | ✅ | ✅ | ❌ |
 | View assigned tickets | ✅ | ✅ | ✅ |
 | View all tickets | ✅ | ✅ | ❌ |
-| Reassign tickets | ✅ | ✅ | ❌ |
+| Reassign tickets | ✅* | ✅* | ❌ |
 | Resolve own tickets, or close own tickets via a direct transition | ✅ | ✅ | ✅ |
 | Resolve/close another agent's ticket | ✅ | ✅ | ❌ |
 | Close a ticket via the two-step resolve-then-close action | ✅ | ✅ | ❌ (structurally always unowned by that point — see note) |
 | System config | ✅ | ❌ | ❌ |
 
+`*` Reassign is role-permitted but SHALL additionally be blocked by the agent-assignment-eligibility state guard: `POST /tickets/{id}/assign` returns 409 `AGENT_NOT_ACTIVE` when the target agent's `is_active_now` is `false`, for every role including `ROLE_ADMIN` and `ROLE_SUPERVISOR`. This is a per-request state check, not a role restriction — it does not change which roles are permitted to reassign.
+
+(Previously: the "Reassign tickets" row carried no state-guard qualification; ✅ for ROLE_ADMIN/ROLE_SUPERVISOR meant reassignment always succeeded once role-authorized. This entry now clarifies that role-authorization is necessary but not sufficient — target-agent eligibility is also enforced.)
+
 Roles are hierarchical: `ROLE_ADMIN` includes all `ROLE_SUPERVISOR` permissions, `ROLE_SUPERVISOR` includes all `ROLE_AGENT` permissions. Resolving or closing a ticket — including a generic transition whose target status is `resolved` or `closed` — is allowed only for an admin, a supervisor, or the ticket's current owning agent; any other case is rejected.
 
-The "Reassign tickets: ROLE_AGENT ❌" row governs only user-initiated reassignment requests (e.g. an explicit manual reassign action or endpoint). It does NOT govern system-triggered ownership changes, such as the reply-triggered auto-assignment defined by the `reply-auto-assignment` capability, where any replying agent — regardless of role — may become or replace the ticket's owner as a side effect of sending a message. This row and the reply-auto-assignment behavior are independent and do not contradict each other.
-(Previously: the matrix did not distinguish user-initiated reassignment from system-triggered reassignment, so the "Reassign tickets: ROLE_AGENT ❌" row appeared to contradict the already-live reply-auto-assignment behavior.)
+The "Reassign tickets: ROLE_AGENT ❌" row governs only user-initiated reassignment requests (e.g. an explicit manual reassign action or endpoint). It does NOT govern system-triggered ownership changes, such as the reply-triggered auto-assignment defined by the `reply-auto-assignment` capability, where any replying agent — regardless of role — may become or replace the ticket's owner as a side effect of sending a message. This row and the reply-auto-assignment behavior are independent and do not contradict each other. The new agent-assignment-eligibility state guard likewise does not apply to that system-triggered path, which keeps its own capacity-inclusive cascade unchanged.
 
 **Note on the two-step close action**: resolving a ticket unassigns it as a documented side effect (confirmed intentional, for accurate real-time workload reporting). Because of this, a ticket eligible for the two-step resolve-then-close action has no owner by the time that action is reachable — an agent can never satisfy the "current owning agent" condition there, regardless of who resolved it. An agent's own-ticket closure is achieved instead by a direct transition to closed from an active/in-progress state, while ownership still holds. This is a factual consequence of the confirmed unassign-on-resolve behavior, not a separate policy choice.
 
@@ -137,6 +140,20 @@ The "Reassign tickets: ROLE_AGENT ❌" row governs only user-initiated reassignm
 - WHEN that agent sends an outbound reply to the ticket (the system-triggered reply-auto-assignment path)
 - THEN ownership SHALL transfer to the replying agent
 - AND this SHALL NOT be treated as a denied "Reassign tickets" action, because that restriction governs only user-initiated reassignment requests
+
+#### Scenario: Supervisor's reassign attempt is blocked by the Activo state guard, not by role
+
+- GIVEN a `ROLE_SUPERVISOR` user (role-permitted to reassign) and a target agent whose `is_active_now` is `false`
+- WHEN `POST /tickets/{id}/assign` is called targeting that agent
+- THEN the response SHALL be 409 `AGENT_NOT_ACTIVE`
+- AND this is NOT a 403 role-denial — the supervisor's reassign permission is unchanged; only the target agent's state is rejected
+
+#### Scenario: Admin's reassign attempt is blocked by the Activo state guard, not by role
+
+- GIVEN a `ROLE_ADMIN` user and a target agent whose `is_active_now` is `false`
+- WHEN `POST /tickets/{id}/assign` is called targeting that agent
+- THEN the response SHALL be 409 `AGENT_NOT_ACTIVE`
+- AND this is NOT a 403 role-denial — admin's reassign permission is unchanged; only the target agent's state is rejected
 
 ---
 
@@ -304,7 +321,7 @@ The system SHALL restrict debug endpoints to the `dev` environment only.
 | Type | Count |
 |------|-------|
 | Requirements | 6 |
-| Total Scenarios | 31 |
+| Total Scenarios | 33 |
 
 ## Coverage
 

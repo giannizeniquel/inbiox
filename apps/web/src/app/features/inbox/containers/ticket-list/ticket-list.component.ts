@@ -252,6 +252,13 @@ export class TicketListComponent implements OnInit {
         // Show error badge for 5s
         const errorMessage = err?.error?.error ?? 'Error al asignar ticket';
         this.ticketStore.assignmentError(ticketId, errorMessage);
+
+        // Race condition: the target agent's shift/override may have changed
+        // between dropdown-load and assign-click. Reload the roster so the
+        // agent re-renders under Inactivo instead of leaving a stale dropdown.
+        if (err?.status === 409 && err?.error?.type === 'AGENT_NOT_ACTIVE') {
+          this.loadAvailableAgents();
+        }
       },
     });
   }

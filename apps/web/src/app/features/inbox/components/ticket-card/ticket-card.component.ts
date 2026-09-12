@@ -40,17 +40,33 @@ export class TicketCardComponent implements OnDestroy {
   /** Error badge from parent */
   readonly assignmentError = input<string | null>(null);
 
-  /** Whether the dropdown should be shown */
+  /**
+   * Whether the assign-dropdown trigger should be shown.
+   *
+   * The roster is now ALWAYS the full workspace roster (Activo + Inactivo),
+   * so an empty/all-Inactivo roster must NOT hide the button — the button
+   * visibility depends only on ticket-state/ownership eligibility, unrelated
+   * to whether any agent happens to currently be Activo.
+   */
   readonly showDropdown = computed(() => {
     const t = this.ticket();
-    const agents = this.availableAgents();
     const assignableStatuses: TicketStatus[] = [
       TicketStatus.New,
       TicketStatus.Active,
       TicketStatus.Waiting,
     ];
-    return this.canAssign() && assignableStatuses.includes(t.status) && agents.length > 0;
+    return this.canAssign() && assignableStatuses.includes(t.status);
   });
+
+  /** Activo agents (is_active_now = true), rendered first in the dropdown. */
+  readonly activeAgents = computed(() =>
+    this.availableAgents().filter((a) => a.is_active_now),
+  );
+
+  /** Inactivo agents (is_active_now = false), rendered after the Activo group. */
+  readonly inactiveAgents = computed(() =>
+    this.availableAgents().filter((a) => !a.is_active_now),
+  );
 
   statusLabel(): string {
     return STATUS_LABELS[this.ticket().status];
@@ -122,6 +138,13 @@ export class TicketCardComponent implements OnDestroy {
   selectAgent(agent: AgentAvailabilityDTO, event: Event): void {
     event.stopPropagation();
     event.preventDefault();
+
+    // Inactivo agents are not selectable — mirrors the backend's hard block
+    // (AgentNotActiveException) so the UI never emits a doomed assign call.
+    if (!agent.is_active_now) {
+      return;
+    }
+
     this.assign.emit({ ticketId: this.ticket().ticket_id, agentId: agent.id });
     this.closeDropdown();
   }

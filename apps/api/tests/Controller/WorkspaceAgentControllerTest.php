@@ -202,24 +202,52 @@ class WorkspaceAgentControllerTest extends WebTestCase
         self::assertCount(1, $data);
         self::assertSame($agent->getId(), $data[0]['id']);
         self::assertSame('Agent A', $data[0]['name']);
-        self::assertArrayHasKey('is_available', $data[0]);
+        self::assertArrayHasKey('is_active_now', $data[0]);
         self::assertArrayHasKey('active_ticket_count', $data[0]);
         self::assertArrayHasKey('max_active_tickets', $data[0]);
     }
 
-    public function testAgentOutsideShiftExcluded(): void
+    /**
+     * Roster behavior (not survivor-list): an agent outside their shift, with
+     * no override, is still RETURNED in the roster — just flagged Inactivo.
+     * Uses isAvailableOverride=false for determinism (not weekday-dependent).
+     */
+    public function testAgentWithoutActiveShiftReturnedAsInactivo(): void
     {
         $workspace = $this->createWorkspace();
 
-        // Create agent with shift on Tuesday only
+        // Agent explicitly Inactivo via override (deterministic, no shift needed)
         $agent = $this->createAgent('Agent A');
         $agent->addWorkspace($workspace);
-        $this->createShift($agent, 2, '08:00', '16:00'); // Tuesday
+        $agent->setIsAvailableOverride(false);
+        $this->em->flush();
 
         $this->createUser('agent@test.local', ['ROLE_AGENT'], $agent);
         $token = $this->login('agent@test.local');
 
-        // Request on Monday 12:00 UTC (not in shift)
+        $this->client->request('GET', '/api/workspaces/' . $workspace->getId() . '/available-agents', [], [], $this->authHeaders($token));
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+
+        $data = \json_decode($this->client->getResponse()->getContent(), true);
+        // THEN the agent is still present in the roster, just Inactivo
+        self::assertCount(1, $data);
+        self::assertSame($agent->getId(), $data[0]['id']);
+        self::assertFalse($data[0]['is_active_now']);
+    }
+
+    public function testInactiveAgentNeverAppearsInRoster(): void
+    {
+        $workspace = $this->createWorkspace();
+
+        // Agent with active=false must never appear, regardless of shift/override
+        $agent = $this->createAgent('Agent A', active: false);
+        $agent->addWorkspace($workspace);
+        $this->em->flush();
+
+        $requester = $this->createAgent('Requester');
+        $this->createUser('agent@test.local', ['ROLE_AGENT'], $requester);
+        $token = $this->login('agent@test.local');
+
         $this->client->request('GET', '/api/workspaces/' . $workspace->getId() . '/available-agents', [], [], $this->authHeaders($token));
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
 

@@ -881,6 +881,155 @@ class AgentAvailabilityServiceTest extends TestCase
     }
 
     // ────────────────────────────────────────────────────────────
+    //  isActiveNow — manual-assign eligibility predicate (Activo/Inactivo)
+    //  Spec: agent-assignment-eligibility. Capacity is NEVER consulted.
+    //  Algorithm: account-active pre-filter, then override (if set and
+    //  unexpired) takes precedence, ELSE shift-match.
+    // ────────────────────────────────────────────────────────────
+
+    public function testIsActiveNowInactiveAccountReturnsFalse(): void
+    {
+        // GIVEN an inactive agent, even with a matching shift
+        $agent = $this->createAgent(active: false);
+        $this->createShift($agent, 1, '08:00', '16:00');
+
+        $this->expectNoActiveTicketCount();
+        $result = $this->service->isActiveNow(
+            $agent,
+            $agent->getShifts()->toArray(),
+            $this->utcDateTime('2026-06-15', '12:00'), // Monday, in shift
+        );
+
+        // THEN Inactivo regardless of shift/override
+        self::assertFalse($result);
+    }
+
+    public function testIsActiveNowOverrideTrueUnexpiredReturnsTrue(): void
+    {
+        // GIVEN override = true, unexpired TTL, no shifts at all
+        $now = $this->utcDateTime('2026-06-14', '10:00');
+        $ttl = $now->modify('+120 minutes');
+        $agent = $this->createAgent(isAvailableOverride: true, overrideUntil: $ttl);
+
+        $this->expectNoActiveTicketCount();
+        $result = $this->service->isActiveNow($agent, [], $now->modify('+60 minutes'));
+
+        self::assertTrue($result);
+    }
+
+    public function testIsActiveNowOverrideFalseUnexpiredReturnsFalse(): void
+    {
+        // GIVEN override = false, unexpired (persistent), even though in-shift
+        $agent = $this->createAgent(isAvailableOverride: false, overrideUntil: null);
+        $this->createShift($agent, 1, '08:00', '16:00');
+
+        $this->expectNoActiveTicketCount();
+        $result = $this->service->isActiveNow(
+            $agent,
+            $agent->getShifts()->toArray(),
+            $this->utcDateTime('2026-06-15', '12:00'), // Monday, in shift — override still wins
+        );
+
+        self::assertFalse($result);
+    }
+
+    public function testIsActiveNowOverrideExpiredFallsThroughToInShiftReturnsTrue(): void
+    {
+        // GIVEN override = true, TTL expired by evaluation time
+        $ttl = $this->utcDateTime('2026-06-14', '12:00');
+        $agent = $this->createAgent(isAvailableOverride: true, overrideUntil: $ttl);
+        $this->createShift($agent, 1, '08:00', '16:00');
+
+        // WHEN evaluated Monday 12:00 (TTL expired, in shift)
+        $this->expectNoActiveTicketCount();
+        $result = $this->service->isActiveNow(
+            $agent,
+            $agent->getShifts()->toArray(),
+            $this->utcDateTime('2026-06-15', '12:00'),
+        );
+
+        self::assertTrue($result);
+    }
+
+    public function testIsActiveNowOverrideExpiredFallsThroughToOutOfShiftReturnsFalse(): void
+    {
+        // GIVEN override = true, TTL expired, agent shift is Monday only
+        $ttl = $this->utcDateTime('2026-06-14', '12:00');
+        $agent = $this->createAgent(isAvailableOverride: true, overrideUntil: $ttl);
+        $this->createShift($agent, 1, '08:00', '16:00');
+
+        // WHEN evaluated Tuesday 12:00 (TTL expired, outside shift)
+        $this->expectNoActiveTicketCount();
+        $result = $this->service->isActiveNow(
+            $agent,
+            $agent->getShifts()->toArray(),
+            $this->utcDateTime('2026-06-16', '12:00'),
+        );
+
+        self::assertFalse($result);
+    }
+
+    public function testIsActiveNowNoOverrideInShiftReturnsTrue(): void
+    {
+        // GIVEN no override, agent in shift
+        $agent = $this->createAgent();
+        $this->createShift($agent, 1, '08:00', '16:00');
+
+        $this->expectNoActiveTicketCount();
+        $result = $this->service->isActiveNow(
+            $agent,
+            $agent->getShifts()->toArray(),
+            $this->utcDateTime('2026-06-15', '12:00'),
+        );
+
+        self::assertTrue($result);
+    }
+
+    public function testIsActiveNowNoOverrideOutOfShiftReturnsFalse(): void
+    {
+        // GIVEN no override, agent outside shift
+        $agent = $this->createAgent();
+        $this->createShift($agent, 1, '08:00', '16:00');
+
+        $this->expectNoActiveTicketCount();
+        $result = $this->service->isActiveNow(
+            $agent,
+            $agent->getShifts()->toArray(),
+            $this->utcDateTime('2026-06-16', '12:00'), // Tuesday
+        );
+
+        self::assertFalse($result);
+    }
+
+    public function testIsActiveNowNoShiftsReturnsFalse(): void
+    {
+        // GIVEN no override, no shifts defined
+        $agent = $this->createAgent();
+
+        $this->expectNoActiveTicketCount();
+        $result = $this->service->isActiveNow($agent, [], new \DateTimeImmutable('now'));
+
+        self::assertFalse($result);
+    }
+
+    /** Capacity is NEVER consulted — an in-shift agent at full capacity is still Activo. */
+    public function testIsActiveNowIgnoresCapacityEvenWhenAtLimit(): void
+    {
+        $agent = $this->createAgent(maxActiveTickets: 1);
+        $this->createShift($agent, 1, '08:00', '16:00');
+
+        // No COUNT query must ever be issued by isActiveNow
+        $this->expectNoActiveTicketCount();
+        $result = $this->service->isActiveNow(
+            $agent,
+            $agent->getShifts()->toArray(),
+            $this->utcDateTime('2026-06-15', '12:00'),
+        );
+
+        self::assertTrue($result);
+    }
+
+    // ────────────────────────────────────────────────────────────
     //  listAvailableAgents
     // ────────────────────────────────────────────────────────────
 
@@ -1141,20 +1290,23 @@ class AgentAvailabilityServiceTest extends TestCase
     }
 
     // ────────────────────────────────────────────────────────────
-    //  listAvailableAgentsInWorkspace
+    //  listWorkspaceAgentRoster
+    //  Spec: agent-assignment-eligibility — Workspace Agent Roster Endpoint.
+    //  Returns EVERY active=true workspace agent (never active=false),
+    //  each carrying is_active_now (override-or-shift, capacity ignored).
     // ────────────────────────────────────────────────────────────
 
-    public function testListAvailableAgentsInWorkspaceReturnsEmptyWhenNoActive(): void
+    public function testListWorkspaceAgentRosterReturnsEmptyWhenNoAgents(): void
     {
         $workspace = $this->createMock(Workspace::class);
         $workspace->method('getId')->willReturn(1);
 
         $this->agentRepository->expects(self::once())
-            ->method('findActiveByWorkspace')
+            ->method('findByWorkspace')
             ->with($workspace)
             ->willReturn([]);
 
-        $result = $this->service->listAvailableAgentsInWorkspace(
+        $result = $this->service->listWorkspaceAgentRoster(
             $workspace,
             new \DateTimeImmutable('now'),
         );
@@ -1162,162 +1314,133 @@ class AgentAvailabilityServiceTest extends TestCase
         self::assertSame([], $result);
     }
 
-    public function testListAvailableAgentsInWorkspaceFiltersBySchedule(): void
+    public function testListWorkspaceAgentRosterExcludesInactiveAgents(): void
     {
         $workspace = $this->createMock(Workspace::class);
         $workspace->method('getId')->willReturn(1);
 
-        // GIVEN two active agents in workspace, one in shift, one out
-        $agentInShift = $this->createAgent(id: 1);
-        $this->createShift($agentInShift, 1, '08:00', '16:00');
-
-        $agentOutShift = $this->createAgent(id: 2);
-        $this->createShift($agentOutShift, 2, '08:00', '16:00'); // Tuesday, not Monday
+        // GIVEN one active=true agent (Activo via override) and one active=false agent
+        $activeAgent = $this->createAgent(id: 1, active: true, isAvailableOverride: true, overrideUntil: null);
+        $inactiveAgent = $this->createAgent(id: 2, active: false);
 
         $this->agentRepository->expects(self::once())
-            ->method('findActiveByWorkspace')
+            ->method('findByWorkspace')
             ->with($workspace)
-            ->willReturn([$agentInShift, $agentOutShift]);
+            ->willReturn([$activeAgent, $inactiveAgent]);
 
-        // Batch-load shifts
+        // Only the active=true agent's shifts are batch-loaded
         $this->agentShiftRepository->expects(self::once())
             ->method('findByAgents')
-            ->with([1, 2])
-            ->willReturn(\array_merge(
-                $agentInShift->getShifts()->toArray(),
-                $agentOutShift->getShifts()->toArray(),
-            ));
+            ->with([1])
+            ->willReturn([]);
 
-        $this->expectActiveTicketCount(1, 2);
+        $this->expectActiveTicketCount(1, 0);
 
-        $result = $this->service->listAvailableAgentsInWorkspace(
+        $result = $this->service->listWorkspaceAgentRoster(
             $workspace,
-            $this->utcDateTime('2026-06-15', '12:00'), // Monday 12:00 UTC
+            $this->utcDateTime('2026-06-15', '12:00'),
         );
 
+        // THEN active=false NEVER appears in the roster
         self::assertCount(1, $result);
         self::assertSame(1, $result[0]->id);
     }
 
-    public function testListAvailableAgentsInWorkspaceFiltersByCapacity(): void
+    public function testListWorkspaceAgentRosterAtCapacityAgentStillActivo(): void
     {
         $workspace = $this->createMock(Workspace::class);
         $workspace->method('getId')->willReturn(1);
 
-        // GIVEN two agents in workspace, both in shift, one at capacity
-        $agentFree = $this->createAgent(id: 1, maxActiveTickets: 5);
-        $this->createShift($agentFree, 1, '08:00', '16:00');
-
-        $agentFull = $this->createAgent(id: 2, maxActiveTickets: 5);
-        $this->createShift($agentFull, 1, '08:00', '16:00');
+        // GIVEN an agent Activo via override, already at full capacity
+        $agent = $this->createAgent(id: 1, isAvailableOverride: true, overrideUntil: null, maxActiveTickets: 1);
 
         $this->agentRepository->expects(self::once())
-            ->method('findActiveByWorkspace')
-            ->with($workspace)
-            ->willReturn([$agentFree, $agentFull]);
-
-        $this->agentShiftRepository->expects(self::once())
-            ->method('findByAgents')
-            ->with([1, 2])
-            ->willReturn(\array_merge(
-                $agentFree->getShifts()->toArray(),
-                $agentFull->getShifts()->toArray(),
-            ));
-
-        // Both COUNT queries will be called
-        $queryFree = $this->createMock(Query::class);
-        $queryFree->expects(self::once())
-            ->method('getSingleScalarResult')
-            ->willReturn('3'); // 3 < 5: available
-        $queryFree->expects(self::exactly(2))
-            ->method('setParameter')
-            ->willReturnSelf();
-
-        $queryFull = $this->createMock(Query::class);
-        $queryFull->expects(self::once())
-            ->method('getSingleScalarResult')
-            ->willReturn('5'); // 5 >= 5: full
-        $queryFull->expects(self::exactly(2))
-            ->method('setParameter')
-            ->willReturnSelf();
-
-        $this->entityManager->expects(self::exactly(2))
-            ->method('createQuery')
-            ->with(self::stringContains('COUNT(t.id)'))
-            ->willReturnOnConsecutiveCalls($queryFree, $queryFull);
-
-        $result = $this->service->listAvailableAgentsInWorkspace(
-            $workspace,
-            $this->utcDateTime('2026-06-15', '12:00'), // Monday 12:00 UTC
-        );
-
-        self::assertCount(1, $result);
-        self::assertSame(1, $result[0]->id);
-    }
-
-    public function testListAvailableAgentsInWorkspaceReturnsDtos(): void
-    {
-        $workspace = $this->createMock(Workspace::class);
-        $workspace->method('getId')->willReturn(1);
-
-        $agent = $this->createAgent(id: 1, maxActiveTickets: 5);
-        $this->createShift($agent, 1, '08:00', '16:00');
-
-        $this->agentRepository->expects(self::once())
-            ->method('findActiveByWorkspace')
+            ->method('findByWorkspace')
             ->with($workspace)
             ->willReturn([$agent]);
 
         $this->agentShiftRepository->expects(self::once())
             ->method('findByAgents')
             ->with([1])
-            ->willReturn($agent->getShifts()->toArray());
+            ->willReturn([]);
 
-        $this->expectActiveTicketCount(1, 2);
+        // Agent is AT capacity (1 active ticket, max = 1) — capacity is never
+        // consulted by is_active_now, only reported for display purposes
+        $this->expectActiveTicketCount(1, 1);
 
-        $result = $this->service->listAvailableAgentsInWorkspace(
+        $result = $this->service->listWorkspaceAgentRoster(
             $workspace,
-            $this->utcDateTime('2026-06-15', '12:00'),
+            new \DateTimeImmutable('now'),
         );
 
         self::assertCount(1, $result);
-        self::assertInstanceOf(AgentAvailabilityDTO::class, $result[0]);
-        self::assertSame(1, $result[0]->id);
-        self::assertSame('Agent-1', $result[0]->name);
-        self::assertTrue($result[0]->isAvailable);
-        self::assertSame(2, $result[0]->activeTicketCount);
-        self::assertSame(5, $result[0]->maxActiveTickets);
+        self::assertTrue($result[0]->isActiveNow);
+        self::assertSame(1, $result[0]->activeTicketCount);
+        self::assertSame(1, $result[0]->maxActiveTickets);
     }
 
-    public function testListAvailableAgentsInWorkspaceSortedById(): void
+    public function testListWorkspaceAgentRosterSortsActivoBeforeInactivo(): void
     {
         $workspace = $this->createMock(Workspace::class);
         $workspace->method('getId')->willReturn(1);
 
-        // GIVEN three agents in workspace, all available
-        $agent3 = $this->createAgent(id: 3);
-        $this->createShift($agent3, 1, '08:00', '16:00');
-        $agent1 = $this->createAgent(id: 1);
-        $this->createShift($agent1, 1, '08:00', '16:00');
-        $agent2 = $this->createAgent(id: 2);
-        $this->createShift($agent2, 1, '08:00', '16:00');
+        // GIVEN agent 1 = Inactivo (override false), agent 2 = Activo (override true)
+        $agentInactivo = $this->createAgent(id: 1, isAvailableOverride: false, overrideUntil: null);
+        $agentActivo = $this->createAgent(id: 2, isAvailableOverride: true, overrideUntil: null);
 
-        // findActiveByWorkspace returns them in arbitrary order (3, 1, 2)
         $this->agentRepository->expects(self::once())
-            ->method('findActiveByWorkspace')
+            ->method('findByWorkspace')
+            ->with($workspace)
+            ->willReturn([$agentInactivo, $agentActivo]);
+
+        $this->agentShiftRepository->expects(self::once())
+            ->method('findByAgents')
+            ->with([1, 2])
+            ->willReturn([]);
+
+        $this->entityManager->expects(self::exactly(2))
+            ->method('createQuery')
+            ->with(self::stringContains('COUNT(t.id)'))
+            ->willReturnCallback(function () {
+                $q = $this->createMock(Query::class);
+                $q->expects(self::once())->method('getSingleScalarResult')->willReturn('0');
+                $q->expects(self::exactly(2))->method('setParameter')->willReturnSelf();
+                return $q;
+            });
+
+        $result = $this->service->listWorkspaceAgentRoster(
+            $workspace,
+            new \DateTimeImmutable('now'),
+        );
+
+        // THEN Activo (id 2) sorts before Inactivo (id 1)
+        self::assertCount(2, $result);
+        self::assertSame(2, $result[0]->id);
+        self::assertTrue($result[0]->isActiveNow);
+        self::assertSame(1, $result[1]->id);
+        self::assertFalse($result[1]->isActiveNow);
+    }
+
+    public function testListWorkspaceAgentRosterSortsByIdWithinSameTier(): void
+    {
+        $workspace = $this->createMock(Workspace::class);
+        $workspace->method('getId')->willReturn(1);
+
+        // GIVEN three Activo agents (all override=true), arbitrary input order
+        $agent3 = $this->createAgent(id: 3, isAvailableOverride: true, overrideUntil: null);
+        $agent1 = $this->createAgent(id: 1, isAvailableOverride: true, overrideUntil: null);
+        $agent2 = $this->createAgent(id: 2, isAvailableOverride: true, overrideUntil: null);
+
+        $this->agentRepository->expects(self::once())
+            ->method('findByWorkspace')
             ->with($workspace)
             ->willReturn([$agent3, $agent1, $agent2]);
 
         $this->agentShiftRepository->expects(self::once())
             ->method('findByAgents')
             ->with([3, 1, 2])
-            ->willReturn(\array_merge(
-                $agent3->getShifts()->toArray(),
-                $agent1->getShifts()->toArray(),
-                $agent2->getShifts()->toArray(),
-            ));
+            ->willReturn([]);
 
-        // Each agent's count query
         $this->entityManager->expects(self::exactly(3))
             ->method('createQuery')
             ->with(self::stringContains('COUNT(t.id)'))
@@ -1328,15 +1451,46 @@ class AgentAvailabilityServiceTest extends TestCase
                 return $q;
             });
 
-        $result = $this->service->listAvailableAgentsInWorkspace(
+        $result = $this->service->listWorkspaceAgentRoster(
             $workspace,
-            $this->utcDateTime('2026-06-15', '12:00'),
+            new \DateTimeImmutable('now'),
         );
 
-        // Result must be sorted by id ASC
+        // THEN same tier (all Activo) sorts by id ASC
         self::assertCount(3, $result);
         self::assertSame(1, $result[0]->id);
         self::assertSame(2, $result[1]->id);
         self::assertSame(3, $result[2]->id);
+    }
+
+    public function testListWorkspaceAgentRosterReturnsDtoWithIsActiveNowKey(): void
+    {
+        $workspace = $this->createMock(Workspace::class);
+        $workspace->method('getId')->willReturn(1);
+
+        $agent = $this->createAgent(id: 1, isAvailableOverride: true, overrideUntil: null, maxActiveTickets: 5);
+
+        $this->agentRepository->expects(self::once())
+            ->method('findByWorkspace')
+            ->with($workspace)
+            ->willReturn([$agent]);
+
+        $this->agentShiftRepository->expects(self::once())
+            ->method('findByAgents')
+            ->with([1])
+            ->willReturn([]);
+
+        $this->expectActiveTicketCount(1, 2);
+
+        $result = $this->service->listWorkspaceAgentRoster($workspace, new \DateTimeImmutable('now'));
+
+        self::assertCount(1, $result);
+        self::assertInstanceOf(AgentAvailabilityDTO::class, $result[0]);
+        self::assertSame(1, $result[0]->id);
+        self::assertSame('Agent-1', $result[0]->name);
+        self::assertTrue($result[0]->isActiveNow);
+        self::assertSame(2, $result[0]->activeTicketCount);
+        self::assertSame(5, $result[0]->maxActiveTickets);
+        self::assertArrayHasKey('is_active_now', $result[0]->toArray());
     }
 }

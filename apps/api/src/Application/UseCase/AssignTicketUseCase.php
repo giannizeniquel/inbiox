@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\UseCase;
 
+use App\Application\Service\AgentAvailabilityService;
 use App\Application\Service\AssignmentService;
 use App\Domain\Assignment\AssignmentType;
 use App\Domain\Event\EventCollector;
@@ -11,6 +12,7 @@ use App\Domain\Event\InboxUpdatedEvent;
 use App\Domain\Event\TicketUpdatedEvent;
 use App\Domain\Outbox\OutboxEvent;
 use App\Domain\Ticket\TicketStatus;
+use App\Exception\AgentNotActiveException;
 use App\Repository\AgentRepository;
 use App\Repository\AssignmentRepository;
 use App\Repository\TicketRepository;
@@ -39,6 +41,7 @@ class AssignTicketUseCase
         private AgentRepository $agentRepo,
         private EventCollector $eventCollector,
         private AssignmentService $assignmentService,
+        private AgentAvailabilityService $agentAvailabilityService,
     ) {}
 
     /**
@@ -79,6 +82,17 @@ class AssignTicketUseCase
 
             // Lock ticket to prevent concurrent modifications
             $this->em->lock($ticket, LockMode::PESSIMISTIC_WRITE);
+
+            // Assign-time Activo guard: HARD BLOCK for every role, no bypass.
+            // Capacity is never checked here — only account-active + override/shift.
+            $isActiveNow = $this->agentAvailabilityService->isActiveNow(
+                $agent,
+                $agent->getShifts()->toArray(),
+                new \DateTimeImmutable('now', new \DateTimeZone('UTC')),
+            );
+            if (!$isActiveNow) {
+                throw AgentNotActiveException::forAgent($agentId, $agent->getName());
+            }
 
             // Detect assignment type from current ownership
             $currentOwnerId = $ticket->getAssignedAgentId();

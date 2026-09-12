@@ -7,7 +7,7 @@
 export interface AgentAvailabilityDTO {
   id: number;
   name: string;
-  is_available: boolean;
+  is_active_now: boolean;
   active_ticket_count: number;
   max_active_tickets: number;
 }

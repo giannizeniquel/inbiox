@@ -11,25 +11,32 @@ use App\Domain\Assignment\Assignment;
 use App\Domain\Outbox\OutboxEvent;
 use App\Domain\Ticket\Ticket;
 use App\Domain\Ticket\TicketStatus;
+use App\Domain\User\User;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
- * Integration tests for Sprint 10 Agent Management — PR3.
+ * Integration tests for Sprint 10 Agent Management — PR3, plus the
+ * ticket-assign-dropdown-status assign-time Activo guard (Phase 3).
  *
  * Covers:
  *   - Full auto-assignment flow (agent → shift → ticket → assign)
  *   - Audit trail (Assignment row created with correct type)
  *   - Outbox event queued
  *   - Deterministic tiebreaker behavior
+ *   - Assign-time guard: 409 AGENT_NOT_ACTIVE for every role, no bypass
  */
-class Sprint10AgentManagementTest extends KernelTestCase
+class Sprint10AgentManagementTest extends WebTestCase
 {
+    private const TEST_PASSWORD = 'test-password';
+
     private ?EntityManagerInterface $em = null;
+    private ?KernelBrowser $client = null;
 
     protected function setUp(): void
     {
-        self::bootKernel();
+        $this->client = static::createClient();
         $this->em = static::getContainer()->get(EntityManagerInterface::class);
 
         // Clean all relevant tables (order respects FK constraints)
@@ -43,13 +50,74 @@ class Sprint10AgentManagementTest extends KernelTestCase
         $conn->executeStatement('DELETE FROM agent_shifts');
         $conn->executeStatement('DELETE FROM conversations');
         $conn->executeStatement('DELETE FROM contacts');
+        $conn->executeStatement('DELETE FROM refresh_tokens');
         $conn->executeStatement('DELETE FROM agents');
+        $conn->executeStatement('DELETE FROM `user`');
     }
 
     protected function tearDown(): void
     {
         parent::tearDown();
         $this->em = null;
+        $this->client = null;
+    }
+
+    // ────────────────────────────────────────────────────────
+    //  Helpers (assign-time guard tests)
+    // ────────────────────────────────────────────────────────
+
+    private function createUser(
+        string $email,
+        array $roles = ['ROLE_AGENT'],
+        ?Agent $agent = null,
+    ): User {
+        $user = new User();
+        $user->setEmail($email);
+        $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
+        $user->setRoles($roles);
+        $user->setIsActive(true);
+
+        if (null !== $agent) {
+            $agent->setUser($user);
+            $this->em->persist($agent);
+        }
+
+        $this->em->persist($user);
+        $this->em->flush();
+
+        return $user;
+    }
+
+    private function login(string $email): string
+    {
+        $this->client->request('POST', '/api/auth/login', [], [], [
+            'CONTENT_TYPE' => 'application/json',
+        ], \json_encode([
+            'email' => $email,
+            'password' => self::TEST_PASSWORD,
+        ]));
+
+        $response = $this->client->getResponse();
+        self::assertSame(200, $response->getStatusCode());
+
+        $data = \json_decode($response->getContent(), true);
+        return $data['access_token'];
+    }
+
+    private function authHeaders(string $token): array
+    {
+        return ['HTTP_AUTHORIZATION' => 'Bearer ' . $token];
+    }
+
+    private function postAssign(int $ticketId, int $agentId, string $assignedBy, string $token): void
+    {
+        $this->client->request('POST', '/api/tickets/' . $ticketId . '/assign', [], [], \array_merge(
+            ['CONTENT_TYPE' => 'application/json'],
+            $this->authHeaders($token),
+        ), \json_encode([
+            'agentId' => $agentId,
+            'assignedBy' => $assignedBy,
+        ]));
     }
 
     /**
@@ -358,5 +426,144 @@ class Sprint10AgentManagementTest extends KernelTestCase
         $this->assertFalse($result['assigned']);
         $this->assertNull($result['agent_id']);
         $this->assertEquals('ticket_not_found', $result['reason']);
+    }
+
+    // ────────────────────────────────────────────────────────
+    //  Assign-time Activo guard (ticket-assign-dropdown-status, Phase 3)
+    //
+    //  HARD BLOCK for every role — no bypass. Uses isAvailableOverride for
+    //  deterministic Activo/Inactivo state (not weekday-dependent).
+    // ────────────────────────────────────────────────────────
+
+    /** ROLE_AGENT: blocked from assigning to an Inactivo agent, even on own ticket. */
+    public function testAssignRejectsInactiveAgentForRoleAgent(): void
+    {
+        $ownerAgent = new Agent('Owner Agent');
+        $ownerAgent->setMaxActiveTickets(5);
+        $this->em->persist($ownerAgent);
+        $this->em->flush();
+        $this->createUser('owner@test.local', ['ROLE_AGENT'], $ownerAgent);
+        $token = $this->login('owner@test.local');
+
+        $inactiveAgent = new Agent('Inactivo Agent');
+        $inactiveAgent->setIsAvailableOverride(false);
+        $this->em->persist($inactiveAgent);
+        $this->em->flush();
+
+        // Ticket already owned by the requesting agent (voter allows ASSIGN)
+        $ticket = new Ticket();
+        $ticket->setStatus(TicketStatus::ACTIVE->value);
+        $ticket->setAssignedAgentId($ownerAgent->getId());
+        $this->em->persist($ticket);
+        $this->em->flush();
+
+        $this->postAssign((int) $ticket->getId(), (int) $inactiveAgent->getId(), 'owner@test.local', $token);
+
+        self::assertSame(409, $this->client->getResponse()->getStatusCode());
+        $data = \json_decode($this->client->getResponse()->getContent(), true);
+        self::assertSame('AGENT_NOT_ACTIVE', $data['type']);
+    }
+
+    /** ROLE_SUPERVISOR: blocked from assigning to an Inactivo agent — no role bypass. */
+    public function testAssignRejectsInactiveAgentForRoleSupervisor(): void
+    {
+        $this->createUser('supervisor@test.local', ['ROLE_SUPERVISOR']);
+        $token = $this->login('supervisor@test.local');
+
+        $inactiveAgent = new Agent('Inactivo Agent');
+        $inactiveAgent->setIsAvailableOverride(false);
+        $this->em->persist($inactiveAgent);
+        $this->em->flush();
+
+        $ticket = new Ticket();
+        $ticket->setStatus(TicketStatus::NEW->value);
+        $this->em->persist($ticket);
+        $this->em->flush();
+
+        $this->postAssign((int) $ticket->getId(), (int) $inactiveAgent->getId(), 'supervisor@test.local', $token);
+
+        self::assertSame(409, $this->client->getResponse()->getStatusCode());
+        $data = \json_decode($this->client->getResponse()->getContent(), true);
+        self::assertSame('AGENT_NOT_ACTIVE', $data['type']);
+    }
+
+    /** ROLE_ADMIN: blocked from assigning to an Inactivo agent — no role bypass. */
+    public function testAssignRejectsInactiveAgentForRoleAdmin(): void
+    {
+        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $token = $this->login('admin@test.local');
+
+        $inactiveAgent = new Agent('Inactivo Agent');
+        $inactiveAgent->setIsAvailableOverride(false);
+        $this->em->persist($inactiveAgent);
+        $this->em->flush();
+
+        $ticket = new Ticket();
+        $ticket->setStatus(TicketStatus::NEW->value);
+        $this->em->persist($ticket);
+        $this->em->flush();
+
+        $this->postAssign((int) $ticket->getId(), (int) $inactiveAgent->getId(), 'admin@test.local', $token);
+
+        self::assertSame(409, $this->client->getResponse()->getStatusCode());
+        $data = \json_decode($this->client->getResponse()->getContent(), true);
+        self::assertSame('AGENT_NOT_ACTIVE', $data['type']);
+    }
+
+    /** Assignment succeeds when the target agent is Activo. */
+    public function testAssignSucceedsForActiveAgent(): void
+    {
+        $this->createUser('supervisor@test.local', ['ROLE_SUPERVISOR']);
+        $token = $this->login('supervisor@test.local');
+
+        $activeAgent = new Agent('Activo Agent');
+        $activeAgent->setIsAvailableOverride(true);
+        $this->em->persist($activeAgent);
+        $this->em->flush();
+
+        $ticket = new Ticket();
+        $ticket->setStatus(TicketStatus::NEW->value);
+        $this->em->persist($ticket);
+        $this->em->flush();
+
+        $this->postAssign((int) $ticket->getId(), (int) $activeAgent->getId(), 'supervisor@test.local', $token);
+
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+        $data = \json_decode($this->client->getResponse()->getContent(), true);
+        self::assertSame($activeAgent->getId(), $data['agent_id']);
+    }
+
+    /** A 409 rejection must write no Assignment row and emit no outbox event. */
+    public function testAssignRejectionWritesNoAssignmentRowOrOutboxEvent(): void
+    {
+        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $token = $this->login('admin@test.local');
+
+        $inactiveAgent = new Agent('Inactivo Agent');
+        $inactiveAgent->setIsAvailableOverride(false);
+        $this->em->persist($inactiveAgent);
+        $this->em->flush();
+
+        $ticket = new Ticket();
+        $ticket->setStatus(TicketStatus::NEW->value);
+        $this->em->persist($ticket);
+        $this->em->flush();
+        $ticketId = (int) $ticket->getId();
+
+        $this->postAssign($ticketId, (int) $inactiveAgent->getId(), 'admin@test.local', $token);
+
+        self::assertSame(409, $this->client->getResponse()->getStatusCode());
+
+        $assignmentCount = (int) $this->em->getConnection()->executeQuery(
+            'SELECT COUNT(*) FROM assignments WHERE ticket_id = ?',
+            [$ticketId],
+        )->fetchOne();
+        self::assertSame(0, $assignmentCount, 'No Assignment row should be created on rejection');
+
+        $outboxCount = (int) $this->em->getConnection()->executeQuery(
+            'SELECT COUNT(*) FROM outbox_events WHERE aggregate_id = ?',
+            [$ticketId],
+        )->fetchOne();
+        self::assertSame(0, $outboxCount, 'No outbox event should be queued on rejection');
     }
 }

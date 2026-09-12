@@ -68,6 +68,40 @@ final class AgentAvailabilityService
     }
 
     /**
+     * Evaluate manual-assign eligibility ("Activo"/"Inactivo") for a single
+     * agent at a given UTC moment.
+     *
+     * Narrower than isAvailable(): account-active pre-filter, then override
+     * (if set and unexpired) takes precedence, ELSE shift-match. CAPACITY IS
+     * NEVER CONSULTED — an in-shift agent at full capacity is still Activo.
+     *
+     * Shifts are passed explicitly so both the batch roster (preloaded via
+     * findByAgents()) and a single-agent guard check can call this with no
+     * N+1 query.
+     *
+     * @param AgentShift[] $shifts
+     */
+    public function isActiveNow(Agent $agent, array $shifts, \DateTimeImmutable $atUtc): bool
+    {
+        // Step 1: Account active check
+        if (!$agent->isActive()) {
+            return false;
+        }
+
+        // Step 2: Override check (dominates schedule; capacity never checked)
+        if ($agent->getIsAvailableOverride() !== null) {
+            if ($agent->getOverrideUntil() === null || $agent->getOverrideUntil() >= $atUtc) {
+                return $agent->getIsAvailableOverride();
+            }
+        }
+
+        // Step 3: Schedule check (capacity deliberately ignored)
+        $localTime = $this->utcToLocal($atUtc, $agent->getTimezone());
+
+        return $this->hasShiftAtTime($localTime, $shifts);
+    }
+
+    /**
      * Return all active agents that are available at a given UTC moment.
      *
      * Batch-loads shifts in one query (no N+1). Applies the full cascade in
@@ -133,23 +167,29 @@ final class AgentAvailabilityService
     }
 
     /**
-     * Return all available agents in a workspace at a given UTC moment.
+     * Return the FULL manual-assign roster for a workspace: every
+     * `active = true` agent (an `active = false` agent NEVER appears),
+     * each carrying a computed `is_active_now` (Activo/Inactivo) flag.
      *
-     * Uses the same cascade logic as listAvailableAgents() but scoped to a workspace.
-     * Returns AgentAvailabilityDTO[] with capacity information.
+     * Unlike listAvailableAgents()/listAvailableAgentsInWorkspace() (removed),
+     * this does NOT filter agents out — it always returns the roster so the
+     * UI can show who exists and why they are or aren't currently assignable.
+     * Capacity is NEVER consulted for eligibility (only reported for display).
      *
      * @return AgentAvailabilityDTO[]
      */
-    public function listAvailableAgentsInWorkspace(Workspace $workspace, \DateTimeImmutable $atUtc): array
+    public function listWorkspaceAgentRoster(Workspace $workspace, \DateTimeImmutable $atUtc): array
     {
-        // 1. Fetch active agents in workspace (1 query)
-        $agents = $this->agentRepository->findActiveByWorkspace($workspace);
-        if (empty($agents)) {
+        // 1. Fetch all workspace agents, then filter to active=true in PHP
+        $agents = $this->agentRepository->findByWorkspace($workspace);
+        $activeAgents = \array_values(\array_filter($agents, fn (Agent $a): bool => $a->isActive()));
+
+        if (empty($activeAgents)) {
             return [];
         }
 
-        // 2. Batch-load shifts for all active agents (1 query, no N+1)
-        $agentIds = \array_map(fn (Agent $a): ?int => $a->getId(), $agents);
+        // 2. Batch-load shifts for the active agents only (1 query, no N+1)
+        $agentIds = \array_map(fn (Agent $a): ?int => $a->getId(), $activeAgents);
         $allShifts = $this->agentShiftRepository->findByAgents(\array_filter($agentIds));
 
         /** @var array<int, AgentShift[]> $shiftsByAgent */
@@ -161,41 +201,26 @@ final class AgentAvailabilityService
             }
         }
 
-        // 3+4. Apply cascade per agent and build DTOs
-        $available = [];
-        foreach ($agents as $agent) {
+        // 3. Build the full roster (no eligibility-based exclusion)
+        $roster = [];
+        foreach ($activeAgents as $agent) {
             $agentId = $agent->getId();
-
-            // Override check
-            if ($agent->getIsAvailableOverride() !== null) {
-                if ($agent->getOverrideUntil() === null || $agent->getOverrideUntil() >= $atUtc) {
-                    if ($agent->getIsAvailableOverride()) {
-                        $activeCount = $this->countActiveTickets($agentId);
-                        $available[] = AgentAvailabilityDTO::fromEntity($agent, $activeCount);
-                    }
-                    continue;
-                }
-            }
-
-            // Schedule check (uses preloaded shifts — no lazy load)
-            $localTime = $this->utcToLocal($atUtc, $agent->getTimezone());
-            if (!$this->hasShiftAtTime($localTime, $shiftsByAgent[$agentId] ?? [])) {
-                continue;
-            }
-
-            // Capacity check
+            $isActiveNow = $this->isActiveNow($agent, $shiftsByAgent[$agentId] ?? [], $atUtc);
             $activeCount = $this->countActiveTickets($agentId);
-            if ($activeCount >= $agent->getMaxActiveTickets()) {
-                continue;
-            }
 
-            $available[] = AgentAvailabilityDTO::fromEntity($agent, $activeCount);
+            $roster[] = AgentAvailabilityDTO::fromEntity($agent, $activeCount, $isActiveNow);
         }
 
-        // Sort by id ASC (stable order)
-        \usort($available, fn (AgentAvailabilityDTO $a, AgentAvailabilityDTO $b): int => $a->id <=> $b->id);
+        // 4. Sort: Activo first, then id ASC (stable order within each tier)
+        \usort($roster, function (AgentAvailabilityDTO $a, AgentAvailabilityDTO $b): int {
+            if ($a->isActiveNow !== $b->isActiveNow) {
+                return $a->isActiveNow ? -1 : 1;
+            }
 
-        return $available;
+            return $a->id <=> $b->id;
+        });
+
+        return $roster;
     }
 
     /**

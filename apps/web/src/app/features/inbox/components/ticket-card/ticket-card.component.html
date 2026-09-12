@@ -91,23 +91,46 @@
         Sin agentes disponibles
       </div>
     } @else {
-      @for (agent of availableAgents(); track agent.id) {
-        <button
-          class="ticket-card__dropdown-item"
-          role="option"
-          [attr.aria-selected]="ticket().owner?.id === agent.id"
-          (click)="selectAgent(agent, $event)"
-          (keydown.enter)="selectAgent(agent, $event)"
-        >
-          <span class="ticket-card__dropdown-name">{{ agent.name }}</span>
-          <span class="ticket-card__dropdown-capacity">
-            {{ agent.active_ticket_count }}/{{ agent.max_active_tickets }}
-          </span>
-          <span
-            class="ticket-card__dropdown-status"
-            [ngClass]="agent.is_available ? 'status-available' : 'status-unavailable'"
-          ></span>
-        </button>
+      @if (activeAgents().length > 0) {
+        <div class="ticket-card__dropdown-group-header">Activo</div>
+        @for (agent of activeAgents(); track agent.id) {
+          <button
+            class="ticket-card__dropdown-item"
+            role="option"
+            [attr.aria-selected]="ticket().owner?.id === agent.id"
+            (click)="selectAgent(agent, $event)"
+            (keydown.enter)="selectAgent(agent, $event)"
+          >
+            <span class="ticket-card__dropdown-name">{{ agent.name }}</span>
+            <span class="ticket-card__dropdown-capacity">
+              {{ agent.active_ticket_count }}/{{ agent.max_active_tickets }}
+            </span>
+            <span class="ticket-card__dropdown-badge ticket-card__dropdown-badge--active">Activo</span>
+            <span class="ticket-card__dropdown-status status-available"></span>
+          </button>
+        }
+      }
+
+      @if (inactiveAgents().length > 0) {
+        <div class="ticket-card__dropdown-group-header">Inactivo</div>
+        @for (agent of inactiveAgents(); track agent.id) {
+          <button
+            class="ticket-card__dropdown-item ticket-card__dropdown-item--disabled"
+            role="option"
+            [attr.aria-selected]="ticket().owner?.id === agent.id"
+            [attr.aria-disabled]="true"
+            [disabled]="true"
+            (click)="selectAgent(agent, $event)"
+            (keydown.enter)="selectAgent(agent, $event)"
+          >
+            <span class="ticket-card__dropdown-name">{{ agent.name }}</span>
+            <span class="ticket-card__dropdown-capacity">
+              {{ agent.active_ticket_count }}/{{ agent.max_active_tickets }}
+            </span>
+            <span class="ticket-card__dropdown-badge ticket-card__dropdown-badge--inactive">Inactivo</span>
+            <span class="ticket-card__dropdown-status status-unavailable"></span>
+          </button>
+        }
       }
     }
   </div>

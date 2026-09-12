@@ -240,6 +240,16 @@
   text-align: center;
 }
 
+// Activo/Inactivo group header
+.ticket-card__dropdown-group-header {
+  padding: 6px 12px 2px;
+  font-size: var(--font-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
 .ticket-card__dropdown-item {
   display: flex;
   align-items: center;
@@ -267,6 +277,35 @@
   &[aria-selected='true'] {
     background: rgba(59, 91, 219, 0.08);
     font-weight: 600;
+  }
+
+  // Inactivo rows are not selectable — mirrors the backend hard block
+  &--disabled,
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+
+    &:hover {
+      background: transparent;
+    }
+  }
+}
+
+.ticket-card__dropdown-badge {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: var(--font-xs);
+  font-weight: 600;
+
+  &--active {
+    background: rgba(34, 197, 94, 0.12);
+    color: var(--status-resolved, #22c55e);
+  }
+
+  &--inactive {
+    background: rgba(107, 114, 128, 0.12);
+    color: var(--status-closed, #6b7280);
   }
 }
 

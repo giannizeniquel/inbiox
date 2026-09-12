@@ -14,17 +14,17 @@ class AgentAvailabilityDTO
     public function __construct(
         public readonly int $id,
         public readonly string $name,
-        public readonly bool $isAvailable,
+        public readonly bool $isActiveNow,
         public readonly int $activeTicketCount,
         public readonly int $maxActiveTickets,
     ) {}
 
-    public static function fromEntity(Agent $agent, int $activeTicketCount): self
+    public static function fromEntity(Agent $agent, int $activeTicketCount, bool $isActiveNow): self
     {
         return new self(
             id: (int) $agent->getId(),
             name: $agent->getName(),
-            isAvailable: $agent->isAvailable(),
+            isActiveNow: $isActiveNow,
             activeTicketCount: $activeTicketCount,
             maxActiveTickets: $agent->getMaxActiveTickets(),
         );
@@ -38,7 +38,7 @@ class AgentAvailabilityDTO
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'is_available' => $this->isAvailable,
+            'is_active_now' => $this->isActiveNow,
             'active_ticket_count' => $this->activeTicketCount,
             'max_active_tickets' => $this->maxActiveTickets,
         ];

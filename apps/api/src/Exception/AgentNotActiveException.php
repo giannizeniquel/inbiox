@@ -1,0 +1,31 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Exception;
+
+/**
+ * Exception thrown when a ticket assignment targets an agent that is not
+ * currently Activo (per AgentAvailabilityService::isActiveNow()).
+ *
+ * HARD BLOCK for every role (ROLE_AGENT, ROLE_SUPERVISOR, ROLE_ADMIN) — no
+ * bypass. Thrown inside AssignTicketUseCase's transaction, after the
+ * pessimistic lock, before recordOwnershipChange(): a rejection writes no
+ * assignment row and emits no event; the transaction rolls back.
+ *
+ * Subclass of StateConflictException so existing generic 409 handling still
+ * applies if a caller only catches the parent type, while TicketController
+ * gets a machine-readable discriminator (AGENT_NOT_ACTIVE) via a
+ * subclass-first catch arm.
+ */
+class AgentNotActiveException extends StateConflictException
+{
+    public static function forAgent(int $agentId, string $agentName): self
+    {
+        return new self(\sprintf(
+            'Agent "%s" (id=%d) is not currently active and cannot be assigned',
+            $agentName,
+            $agentId,
+        ));
+    }
+}

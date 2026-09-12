@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Application\UseCase\AssignTicketUseCase;
+use App\Exception\AgentNotActiveException;
 use App\Exception\StateConflictException;
 use App\Repository\AssignmentRepository;
 use App\Repository\TicketRepository;
@@ -50,6 +51,10 @@ class TicketController
                 $request->notes
             );
             return new JsonResponse($result);
+        } catch (AgentNotActiveException $e) {
+            // Subclass-first: must be caught BEFORE the generic StateConflictException
+            // arm below so the frontend gets the machine-readable discriminator.
+            return new JsonResponse(['type' => 'AGENT_NOT_ACTIVE', 'error' => $e->getMessage()], 409);
         } catch (StateConflictException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 409);
         } catch (\InvalidArgumentException $e) {

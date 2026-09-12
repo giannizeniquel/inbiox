@@ -43,7 +43,7 @@ final class WorkspaceAgentController
             }
 
             $atUtc = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-            $agents = $this->agentAvailabilityService->listAvailableAgentsInWorkspace($workspace, $atUtc);
+            $agents = $this->agentAvailabilityService->listWorkspaceAgentRoster($workspace, $atUtc);
 
             $data = array_map(fn ($dto) => $dto->toArray(), $agents);
 
