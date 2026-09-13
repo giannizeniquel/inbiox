@@ -57,12 +57,16 @@ Chain strategy: pending
 - [x] 3.6 GREEN: thread `teamId` through `getFrtMetrics`, `getRtMetrics`, `getCountsByStatus` (DQL `t.teamId`), `getVolumeOverTime`, `getAgentPerformance` (sub+join clauses). Also threaded through `ReportingService`'s 5 pass-through methods (intermediate layer, implied by design, not separately listed in this task).
 - [x] 3.7 Modify `ReportingController.php` — forward `teamId` to metrics + CSV export.
 
-## Phase 4: Frontend Admin UI (Slice 2) — NOT STARTED
+## Phase 4: Frontend Admin UI (Slice 2) — ✅ DONE
 
-- [ ] 4.1 Create `core/dto/team.dto.ts`, `core/api/team-api.service.ts`. **NOTE**: both files already exist — created ahead of schedule during Phase 5 (Slice 3) as a minimal read-only shape (`TeamDTO { id, workspace_id, name, is_active }`, `TeamApiService.listTeams()`) needed by the inbox/reports filter dropdown. Slice 2 should EXTEND `team-api.service.ts` with create/update/delete methods and `team.dto.ts` with request shapes, not recreate them.
-- [ ] 4.2 Create `list/create/update/deactivate-team.use-case.ts`.
-- [ ] 4.3 Create `features/admin/teams/teams-page.component.{ts,html,scss}` — copy `workspaces-page.component.ts`; surface 400 via `err?.error?.error`.
-- [ ] 4.4 Modify `app.routes.ts` — `admin/teams`, `roleGuard('ROLE_ADMIN')`, lazy-loaded.
+- [x] 4.1 Extended `core/dto/team.dto.ts` (`CreateTeamRequest`, `UpdateTeamRequest`, `TeamDTO` gained optional `agent_count`/`agent_ids`/`created_at`/`updated_at`) and `core/api/team-api.service.ts` (`listAll`/`create`/`update`/`deactivate`/`assignAgents` against `/api/admin/teams/*`) — extended the Slice-3 files in place, not recreated.
+- [x] 4.2 Created `core/application/admin/teams/{list,create,update,deactivate}-team.use-case.ts` — 1:1 structural mirrors of the workspace use-cases (same `extractApiError` + typed `*Failed` error pattern).
+- [x] 4.3 Created `features/admin/teams/teams-page.component.{ts,html,scss}` — structural copy of `workspaces-page.component.ts`; agent-assignment modal surfaces the 400 body via `err?.error?.error` (same pattern already used by `workspaces-page`).
+- [x] 4.4 Modified `app.routes.ts` — `admin/teams` route, lazy-loaded. Also added the nav link in `shell/sidebar/sidebar.component.html` (not separately listed in this task, but required for the page to be reachable).
+
+**Deviation**: task 4.4 specified `roleGuard('ROLE_ADMIN')`; used `roleGuard('ROLE_SUPERVISOR')` instead (and sidebar gate `isAdmin() || isSupervisor()`, matching the `admin/agents` link) to match the spec's explicit requirement ("administration" domain: "Team CRUD... accessible to ROLE_ADMIN + ROLE_SUPERVISOR... mirrors Agent CRUD access, not stricter User-CRUD-only-Admin") and the backend `Admin/TeamController`'s actual `#[IsGranted('ROLE_SUPERVISOR')]` gate (Slice 1). A `ROLE_ADMIN`-only frontend guard would have blocked supervisors the backend explicitly allows.
+
+**Deviation**: Team's `workspaceId` is required at creation and immutable afterwards (backend `update()` never accepts `workspaceId`) — unlike workspace's form, the create/edit form disables the workspace `<select>` when editing and shows a hint. Also added a `workspaces()` signal (loaded via `WorkspaceApiService.listAll(1, 100)`, mirroring the existing `?limit=100` agent-list precedent) to populate that select and to render workspace display names in the teams table/agent-modal instead of raw IDs.
 
 ## Phase 5: Frontend Filter UI (Slice 3) — ✅ DONE
 
@@ -71,6 +75,6 @@ Chain strategy: pending
 
 ## Phase 6: Verification
 
-- [ ] 6.1 `docker compose exec php bin/phpunit` — no new failures beyond 58-failure baseline. Slice 3 self-check (not the official cross-cutting sign-off): full suite re-run after Slice 3 = 699 tests (680 + 19 new, all green), 18 errors + 39 failures = 57 failing (same count as Slice 1's baseline), zero overlap between failing test names and any Slice-3-touched class. Left unchecked pending Slice 2 + official sdd-verify pass.
-- [ ] 6.2 `cd apps/web && ./node_modules/.bin/ng build --configuration production` — exit 0. Slice 3 self-check: ran clean (exit 0) as part of Phase 5 frontend work; left unchecked pending Slice 2 + official sdd-verify pass (this task covers the whole change, not just Slice 3).
-- [ ] 6.3 Manual E2E: create team, assign roster, filter inbox by team. Filter-by-team now works end-to-end (Slice 1 API + Slice 3 UI); "create team, assign roster" still requires Slice 2's admin UI (or direct API calls) to complete this scenario.
+- [x] 6.1 `docker compose exec php bin/phpunit` — no new failures beyond baseline. Official cross-cutting sdd-verify pass (post-Slice-2): 699 tests, 18 errors + 39 failures = 57 failing, byte-identical to established baseline, zero overlap between failing names and any team-area-entity file. Focused re-run of all team-area-entity tests: 71/71 green.
+- [x] 6.2 `cd apps/web && ./node_modules/.bin/ng build --configuration production` — exit 0, confirmed by official cross-cutting sdd-verify pass, no new errors/warnings from team-area-entity files.
+- [ ] 6.3 Manual E2E (create team, assign roster, filter inbox by team): code-level end-to-end trace confirmed by sdd-verify (every hop backed by a passing test), but the actual click-through in a running browser is PENDING — deferred to the user's own manual smoke-test pass at the end of Tier 2, per established session convention. Not a verify gap; an intentionally deferred human step.

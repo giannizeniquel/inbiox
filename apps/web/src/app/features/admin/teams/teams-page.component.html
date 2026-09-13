@@ -1,0 +1,207 @@
+
+    <div class="admin-page">
+      <div class="admin-page__header">
+        <h1>Team Management</h1>
+        <button class="btn btn--primary" (click)="openCreateForm()">
+          + Create Team
+        </button>
+      </div>
+
+      <!-- Error banner -->
+      @if (error(); as err) {
+        <div class="alert alert--error" role="alert">
+          {{ err }}
+          <button class="alert__close" (click)="error.set(null)" aria-label="Dismiss error">&times;</button>
+        </div>
+      }
+
+      <!-- Success banner -->
+      @if (success(); as msg) {
+        <div class="alert alert--success" role="status">
+          {{ msg }}
+          <button class="alert__close" (click)="success.set(null)" aria-label="Dismiss message">&times;</button>
+        </div>
+      }
+
+      <!-- Loading state -->
+      @if (loading()) {
+        <div class="loading" role="status" aria-live="polite">Loading teams...</div>
+      }
+
+      <!-- Teams table -->
+      @if (!loading()) {
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Workspace</th>
+                <th>Name</th>
+                <th>Active</th>
+                <th>Agents</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (team of teams(); track team.id) {
+                <tr [class.row--inactive]="!team.is_active">
+                  <td>{{ team.id }}</td>
+                  <td>{{ workspaceName(team.workspace_id) }}</td>
+                  <td>{{ team.name }}</td>
+                  <td>
+                    <span class="status-dot" [class.status-dot--active]="team.is_active"
+                          [class.status-dot--inactive]="!team.is_active">
+                    </span>
+                    {{ team.is_active ? 'Active' : 'Inactive' }}
+                  </td>
+                  <td>{{ team.agent_count ?? '—' }}</td>
+                   <td class="actions-cell">
+                     <button class="btn btn--sm btn--outline" (click)="openEditForm(team)" [attr.aria-label]="'Edit ' + team.name">Edit</button>
+                     <button class="btn btn--sm btn--outline" (click)="openAgentModal(team)" [attr.aria-label]="'Manage agents for ' + team.name">Agents</button>
+                     @if (team.is_active) {
+                       <button class="btn btn--sm btn--danger" (click)="confirmDelete(team)" [attr.aria-label]="'Deactivate ' + team.name">Deactivate</button>
+                     }
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="6" class="empty-state">No teams found.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        @if (totalPages() > 1) {
+          <div class="pagination">
+            <button class="btn btn--sm btn--outline" [disabled]="currentPage() <= 1"
+                    (click)="goToPage(currentPage() - 1)" aria-label="Previous page">Previous</button>
+            <span class="pagination__info">Page {{ currentPage() }} of {{ totalPages() }}</span>
+            <button class="btn btn--sm btn--outline" [disabled]="currentPage() >= totalPages()"
+                    (click)="goToPage(currentPage() + 1)" aria-label="Next page">Next</button>
+          </div>
+        }
+      }
+
+      <!-- Create/Edit Modal -->
+      @if (showForm()) {
+        <div class="modal-overlay" (click)="closeForm()">
+          <div class="modal" role="dialog" aria-modal="true" [attr.aria-labelledby]="editingTeam() ? 'modal-title-edit' : 'modal-title-create'" (click)="$event.stopPropagation()">
+            <div class="modal__header">
+              <h2 [id]="editingTeam() ? 'modal-title-edit' : 'modal-title-create'">{{ editingTeam() ? 'Edit Team' : 'Create Team' }}</h2>
+              <button class="modal__close" (click)="closeForm()" aria-label="Close dialog">&times;</button>
+            </div>
+            <form [formGroup]="teamForm" (ngSubmit)="onSubmit()">
+              <div class="modal__body">
+                <div class="form-group">
+                  <label class="form-label" for="team-workspace-id">Workspace</label>
+                  <select id="team-workspace-id" class="form-input"
+                          formControlName="workspaceId"
+                          [class.form-input--error]="hasFieldError('workspaceId')">
+                    <option [ngValue]="null" disabled>Select a workspace…</option>
+                    @for (ws of workspaces(); track ws.id) {
+                      <option [ngValue]="ws.id">{{ ws.display_name }}</option>
+                    }
+                  </select>
+                  @if (editingTeam()) {
+                    <p class="form-hint">Workspace cannot be changed after creation.</p>
+                  }
+                  @if (hasFieldError('workspaceId')) {
+                    @if (teamForm.controls.workspaceId.errors?.['required']) {
+                      <p class="form-error">Workspace is required</p>
+                    }
+                  }
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="team-name">Name</label>
+                  <input id="team-name" type="text" class="form-input"
+                         formControlName="name" placeholder="e.g. Support Tier 1"
+                         [class.form-input--error]="hasFieldError('name')" />
+                  @if (hasFieldError('name')) {
+                    @if (teamForm.controls.name.errors?.['required']) {
+                      <p class="form-error">Name is required</p>
+                    }
+                    @if (teamForm.controls.name.errors?.['minlength']) {
+                      <p class="form-error">Name must be at least 2 characters</p>
+                    }
+                  }
+                </div>
+
+                @if (editingTeam()) {
+                  <div class="form-group">
+                    <label class="form-label">
+                      <input type="checkbox" formControlName="isActive" />
+                      Active
+                    </label>
+                  </div>
+                }
+              </div>
+              <div class="modal__footer">
+                <button type="button" class="btn btn--outline" (click)="closeForm()">Cancel</button>
+                <button type="submit" class="btn btn--primary" [disabled]="teamForm.invalid || saving()">
+                  {{ saving() ? 'Saving...' : (editingTeam() ? 'Save Changes' : 'Create Team') }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      }
+
+      <!-- Delete Confirmation Modal -->
+      @if (showDeleteConfirm(); as teamToDelete) {
+        <div class="modal-overlay" (click)="cancelDelete()">
+          <div class="modal modal--sm" role="alertdialog" aria-modal="true" aria-labelledby="modal-title-delete" (click)="$event.stopPropagation()">
+            <div class="modal__header">
+              <h2 id="modal-title-delete">Confirm Deactivation</h2>
+              <button class="modal__close" (click)="cancelDelete()" aria-label="Close dialog">&times;</button>
+            </div>
+            <div class="modal__body">
+              <p>Are you sure you want to deactivate <strong>{{ teamToDelete.name }}</strong>?</p>
+              <p class="text-warning">The team will stop being available for new ticket assignment. Existing tickets keep their team attribution.</p>
+            </div>
+            <div class="modal__footer">
+              <button class="btn btn--outline" (click)="cancelDelete()">Cancel</button>
+              <button class="btn btn--danger" (click)="executeDelete()" [disabled]="saving()">
+                {{ saving() ? 'Deactivating...' : 'Deactivate' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Agent Assignment Modal -->
+      @if (showAgentModal() && assigningTeam(); as team) {
+        <div class="modal-overlay" (click)="closeAgentModal()">
+          <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title-agents" (click)="$event.stopPropagation()">
+            <div class="modal__header">
+              <h2 id="modal-title-agents">Assign Agents — {{ team.name }}</h2>
+              <button class="modal__close" (click)="closeAgentModal()" aria-label="Close dialog">&times;</button>
+            </div>
+            <div class="modal__body">
+              <p class="text-warning">Only agents already assigned to the team's workspace ({{ workspaceName(team.workspace_id) }}) can be added.</p>
+              @if (agentOptions().length === 0) {
+                <p>Loading agents...</p>
+              } @else {
+                @for (agent of agentOptions(); track agent.id) {
+                  <div class="form-group" style="display:flex;align-items:center;gap:8px;padding:4px 0;">
+                    <input type="checkbox"
+                           [id]="'agent-' + agent.id"
+                           [checked]="agent.assigned"
+                           (change)="agent.assigned = !agent.assigned" />
+                    <label [for]="'agent-' + agent.id">{{ agent.name }}</label>
+                  </div>
+                }
+              }
+            </div>
+            <div class="modal__footer">
+              <button type="button" class="btn btn--outline" (click)="closeAgentModal()">Cancel</button>
+              <button type="button" class="btn btn--primary" (click)="saveAgents()" [disabled]="savingAgents()">
+                {{ savingAgents() ? 'Saving...' : 'Save' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>

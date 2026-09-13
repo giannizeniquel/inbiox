@@ -1,0 +1,9 @@
+// Teams page uses _admin-common.scss for base styles.
+// Page-specific override: hint text under the (edit-mode) disabled
+// workspace select, since _admin-common.scss has no generic `.form-hint`.
+.form-hint {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary, #6b7280);
+  margin-top: 4px;
+  margin-bottom: 0;
+}
