@@ -142,6 +142,10 @@ export class ReportsApiService {
       httpParams = httpParams.set('to', to);
     }
 
+    if (params?.teamId !== undefined && params.teamId !== null) {
+      httpParams = httpParams.set('teamId', String(params.teamId));
+    }
+
     return httpParams;
   }
 

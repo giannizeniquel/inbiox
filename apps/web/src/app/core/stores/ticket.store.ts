@@ -39,6 +39,13 @@ export class TicketStore {
   /** Active filter tab */
   readonly filter = signal<TicketFilter>('mine');
 
+  /**
+   * Single-select team filter (team-area-entity, Slice 3). Server-side
+   * filter — independent of and composable with `filter` above — forwarded
+   * as a query param to `GET /api/tickets`. `null` = no team scope.
+   */
+  readonly selectedTeamId = signal<number | null>(null);
+
   /** Loading state */
   readonly loading = signal<boolean>(false);
 
@@ -239,6 +246,11 @@ export class TicketStore {
     this.filter.set(filter);
   }
 
+  /** Set the active team filter (null clears it) */
+  setTeamId(teamId: number | null): void {
+    this.selectedTeamId.set(teamId);
+  }
+
   /** Load tickets, enforcing a max cap of 1000 */
   loadTickets(tickets: Ticket[]): void {
     const capped = tickets.slice(0, MAX_TICKETS);
@@ -300,6 +312,7 @@ export class TicketStore {
     this.tickets.set([]);
     this.activeTicket.set(null);
     this.filter.set('mine');
+    this.selectedTeamId.set(null);
     this.loading.set(false);
     this.pendingAssignIds.set(new Set());
     this.assignmentErrors.set(new Map());

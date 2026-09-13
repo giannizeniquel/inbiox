@@ -24,6 +24,7 @@ import { mapApiMessagesToCanonical } from '../../../../core/utils/message-mapper
 import { TicketCardComponent } from '../../components/ticket-card/ticket-card.component';
 import { TicketSearchComponent } from '../../components/chat-search/ticket-search.component';
 import { TicketFiltersComponent } from '../../components/chat-filters/ticket-filters.component';
+import { TeamFilterComponent } from '../../components/team-filter/team-filter.component';
 import { VirtualScrollViewportComponent } from '../../../../shared/components/virtual-scroll-viewport/virtual-scroll-viewport.component';
 import { VirtualListCoordinatorDirective } from '../../../../shared/directives/virtual-list-coordinator.directive';
 import { RealtimeEvent, RealtimeEventType, TicketAssignedPayload } from '../../../../core/models/realtime-event.model';
@@ -37,6 +38,7 @@ import { EventBusService } from '../../../../core/realtime/event-bus.service';
     TicketCardComponent,
     TicketSearchComponent,
     TicketFiltersComponent,
+    TeamFilterComponent,
     VirtualScrollViewportComponent,
     VirtualListCoordinatorDirective,
   ],
@@ -99,7 +101,7 @@ export class TicketListComponent implements OnInit {
   private loadTickets(): void {
     this.ticketStore.setLoading(true);
 
-    this.ticketApi.getTickets().subscribe({
+    this.ticketApi.getTickets(this.ticketStore.selectedTeamId()).subscribe({
       next: (tickets) => {
         this.ticketStore.loadTickets(tickets);
         this.ticketStore.setLoading(false);
@@ -191,6 +193,17 @@ export class TicketListComponent implements OnInit {
 
   onFilterChange(filter: 'mine' | 'waiting' | 'internal'): void {
     this.ticketStore.setFilter(filter);
+  }
+
+  /**
+   * Handle team filter selection (team-area-entity, Slice 3). Unlike the
+   * status tabs above (client-side filter over an already-loaded list),
+   * the team filter is server-side — it re-fetches the ticket list scoped
+   * to the selected team, composable with any other query-time filter.
+   */
+  onTeamFilterChange(teamId: number | null): void {
+    this.ticketStore.setTeamId(teamId);
+    this.loadTickets();
   }
 
   /** Handle ticket search query from TicketSearchComponent */

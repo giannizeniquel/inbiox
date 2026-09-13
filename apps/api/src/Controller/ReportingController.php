@@ -88,6 +88,16 @@ class ReportingController
     }
 
     /**
+     * Read the optional `teamId` query parameter (single-select team filter).
+     */
+    private function getTeamId(Request $request): ?int
+    {
+        $teamId = $request->query->get('teamId');
+
+        return null !== $teamId ? (int) $teamId : null;
+    }
+
+    /**
      * Get First Response Time metrics.
      *
      * GET /reports/frt?from=2026-01-01T00:00:00Z&to=2026-01-02T00:00:00Z[&agent_id=1]
@@ -107,8 +117,9 @@ class ReportingController
             }
 
             $phoneNumberId = $this->getScopePhoneNumberId();
+            $teamId = $this->getTeamId($request);
 
-            $metrics = $this->reportingService->getFrt($from, $to, $agentId, $phoneNumberId);
+            $metrics = $this->reportingService->getFrt($from, $to, $agentId, $phoneNumberId, $teamId);
             return new JsonResponse($metrics);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
@@ -136,7 +147,8 @@ class ReportingController
 
             $scopeAgentId = $this->getScopeAgentId();
             $phoneNumberId = $this->getScopePhoneNumberId();
-            $metrics = $this->reportingService->getRt($from, $to, $scopeAgentId, $phoneNumberId);
+            $teamId = $this->getTeamId($request);
+            $metrics = $this->reportingService->getRt($from, $to, $scopeAgentId, $phoneNumberId, $teamId);
 
             return new JsonResponse($metrics);
         } catch (\InvalidArgumentException $e) {
@@ -165,7 +177,8 @@ class ReportingController
 
             $scopeAgentId = $this->getScopeAgentId();
             $phoneNumberId = $this->getScopePhoneNumberId();
-            $counts = $this->reportingService->getCounts($from, $to, $scopeAgentId, $phoneNumberId);
+            $teamId = $this->getTeamId($request);
+            $counts = $this->reportingService->getCounts($from, $to, $scopeAgentId, $phoneNumberId, $teamId);
 
             return new JsonResponse($counts);
         } catch (\InvalidArgumentException $e) {
@@ -194,7 +207,8 @@ class ReportingController
 
             $scopeAgentId = $this->getScopeAgentId();
             $phoneNumberId = $this->getScopePhoneNumberId();
-            $volume = $this->reportingService->getVolume($from, $to, $scopeAgentId, $phoneNumberId);
+            $teamId = $this->getTeamId($request);
+            $volume = $this->reportingService->getVolume($from, $to, $scopeAgentId, $phoneNumberId, $teamId);
 
             return new JsonResponse($volume);
         } catch (\InvalidArgumentException $e) {
@@ -229,7 +243,8 @@ class ReportingController
             }
 
             $phoneNumberId = $this->getScopePhoneNumberId();
-            $performance = $this->reportingService->getAgentPerformance($from, $to, $agentId, $phoneNumberId);
+            $teamId = $this->getTeamId($request);
+            $performance = $this->reportingService->getAgentPerformance($from, $to, $agentId, $phoneNumberId, $teamId);
             return new JsonResponse($performance);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
@@ -484,6 +499,7 @@ class ReportingController
         $status = $request->query->get('status');
         $tag = $request->query->get('tag');
         $phoneNumberId = $this->getScopePhoneNumberId();
+        $teamId = $this->getTeamId($request);
 
         // Validate filter args up front (no DB query — same pure builder used
         // inside ExportTicketsCsvQuery::stream) so an invalid request (e.g.
@@ -495,6 +511,7 @@ class ReportingController
                 status: $status,
                 phoneNumberId: $phoneNumberId,
                 tag: $tag,
+                teamId: $teamId,
             );
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
@@ -503,7 +520,7 @@ class ReportingController
         $filename = sprintf('tickets_%s_%s.csv', $from->format('Y-m-d'), $to->format('Y-m-d'));
 
         $exportQuery = $this->exportTicketsCsvQuery;
-        $response = new StreamedResponse(function () use ($exportQuery, $from, $to, $agentId, $status, $tag, $phoneNumberId): void {
+        $response = new StreamedResponse(function () use ($exportQuery, $from, $to, $agentId, $status, $tag, $phoneNumberId, $teamId): void {
             set_time_limit(0);
 
             $stream = fopen('php://output', 'w+');
@@ -515,7 +532,7 @@ class ReportingController
 
             $writer = Writer::createFromStream($stream);
 
-            $exportQuery->stream($writer, $from, $to, $agentId, $status, $tag, $phoneNumberId);
+            $exportQuery->stream($writer, $from, $to, $agentId, $status, $tag, $phoneNumberId, $teamId);
         });
 
         $response->headers->set('Content-Type', 'text/csv; charset=utf-8');

@@ -7,6 +7,9 @@
   <!-- Filters -->
   <app-ticket-filters (filterChange)="onFilterChange($event)" />
 
+  <!-- Team filter (single-select, composable with the tab filter above) -->
+  <app-team-filter (teamChange)="onTeamFilterChange($event)" />
+
   <!-- Search -->
   <app-ticket-search (search)="onSearch($event)" />
 

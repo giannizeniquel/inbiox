@@ -176,4 +176,54 @@ class TicketFilterBuilderTest extends TestCase
         );
         self::assertSame(['42', 'phone-1', 'active', 'waiting', 'vip'], $params);
     }
+
+    // --- Phase 3 (Slice 3): team filter (single-select, appended LAST) ---
+
+    public function test_null_team_id_produces_no_clause(): void
+    {
+        [$where, $params] = $this->builder->build(teamId: null);
+
+        self::assertSame([], $where);
+        self::assertSame([], $params);
+    }
+
+    public function test_team_id_appends_exactly_one_clause(): void
+    {
+        [$where, $params] = $this->builder->build(teamId: 7);
+
+        self::assertSame(['t.team_id = ?'], $where);
+        self::assertSame(['7'], $params);
+    }
+
+    public function test_team_id_is_appended_last_after_tag_clauses(): void
+    {
+        [$where, $params] = $this->builder->build(
+            scopeAgentId: 42,
+            phoneNumberId: 'phone-1',
+            status: 'active,waiting',
+            tag: 'vip',
+            teamId: 7,
+        );
+
+        self::assertSame(
+            [
+                't.assigned_agent_id = ?',
+                't.phone_number_id = ?',
+                't.status IN (?,?)',
+                'EXISTS (SELECT 1 FROM ticket_tags tt JOIN tags tg ON tg.id = tt.tag_id
+                                    WHERE tt.ticket_id = t.id AND tg.name = ?)',
+                't.team_id = ?',
+            ],
+            $where,
+        );
+        self::assertSame(['42', 'phone-1', 'active', 'waiting', 'vip', '7'], $params);
+    }
+
+    public function test_team_id_composes_independently_with_multi_tag_and_filter(): void
+    {
+        [$where, $params] = $this->builder->build(tag: 'vip,urgente', teamId: 3);
+
+        self::assertCount(3, $where);
+        self::assertSame(['vip', 'urgente', '3'], $params);
+    }
 }

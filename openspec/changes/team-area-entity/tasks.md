@@ -47,30 +47,30 @@ Chain strategy: pending
 - [x] 2.8 Register routes in `config/routes.yaml` — admin CRUD, assignAgents, setTeam, `app_teams_list`.
 - [x] 2.9 Integration test: deactivate team retains `tickets.team_id` (spec: team-management).
 
-## Phase 3: Filter Threading — Backend (Slice 3)
+## Phase 3: Filter Threading — Backend (Slice 3) — ✅ DONE
 
-- [ ] 3.1 RED: extend `TicketFilterBuilderTest.php` — `teamId=null` byte-identical; `teamId=7` appends one clause last (spec: ticket-list-filters).
-- [ ] 3.2 GREEN: append `?int $teamId = null` to `TicketFilterBuilder::build()`.
-- [ ] 3.3 Modify `ListTicketsQuery.php`, `ExportTicketsCsvQuery.php` — thread `teamId` last.
-- [ ] 3.4 Modify `InboxController.php` — read `teamId` query param.
-- [ ] 3.5 RED: `ReportingRepositoryTest.php` — `teamId=null` identical for all 5 methods; `teamId` set narrows correctly (spec: reports).
-- [ ] 3.6 GREEN: thread `teamId` through `getFrtMetrics`, `getRtMetrics`, `getCountsByStatus` (DQL `t.teamId`), `getVolumeOverTime`, `getAgentPerformance` (sub+join clauses).
-- [ ] 3.7 Modify `ReportingController.php` — forward `teamId` to metrics + CSV export.
+- [x] 3.1 RED: extend `TicketFilterBuilderTest.php` — `teamId=null` byte-identical; `teamId=7` appends one clause last (spec: ticket-list-filters).
+- [x] 3.2 GREEN: append `?int $teamId = null` to `TicketFilterBuilder::build()`.
+- [x] 3.3 Modify `ListTicketsQuery.php`, `ExportTicketsCsvQuery.php` — thread `teamId` last.
+- [x] 3.4 Modify `InboxController.php` — read `teamId` query param.
+- [x] 3.5 RED: `ReportingRepositoryTeamFilterTest.php` — `teamId=null` identical for all 5 methods; `teamId` set narrows correctly (spec: reports). (Named `ReportingRepositoryTeamFilterTest.php`, not `ReportingRepositoryTest.php` — no such file existed to extend.)
+- [x] 3.6 GREEN: thread `teamId` through `getFrtMetrics`, `getRtMetrics`, `getCountsByStatus` (DQL `t.teamId`), `getVolumeOverTime`, `getAgentPerformance` (sub+join clauses). Also threaded through `ReportingService`'s 5 pass-through methods (intermediate layer, implied by design, not separately listed in this task).
+- [x] 3.7 Modify `ReportingController.php` — forward `teamId` to metrics + CSV export.
 
-## Phase 4: Frontend Admin UI (Slice 2)
+## Phase 4: Frontend Admin UI (Slice 2) — NOT STARTED
 
-- [ ] 4.1 Create `core/dto/team.dto.ts`, `core/api/team-api.service.ts`.
+- [ ] 4.1 Create `core/dto/team.dto.ts`, `core/api/team-api.service.ts`. **NOTE**: both files already exist — created ahead of schedule during Phase 5 (Slice 3) as a minimal read-only shape (`TeamDTO { id, workspace_id, name, is_active }`, `TeamApiService.listTeams()`) needed by the inbox/reports filter dropdown. Slice 2 should EXTEND `team-api.service.ts` with create/update/delete methods and `team.dto.ts` with request shapes, not recreate them.
 - [ ] 4.2 Create `list/create/update/deactivate-team.use-case.ts`.
 - [ ] 4.3 Create `features/admin/teams/teams-page.component.{ts,html,scss}` — copy `workspaces-page.component.ts`; surface 400 via `err?.error?.error`.
 - [ ] 4.4 Modify `app.routes.ts` — `admin/teams`, `roleGuard('ROLE_ADMIN')`, lazy-loaded.
 
-## Phase 5: Frontend Filter UI (Slice 3)
+## Phase 5: Frontend Filter UI (Slice 3) — ✅ DONE
 
-- [ ] 5.1 Modify inbox feature — single-select team `<select>` from `GET /api/teams`, composable with tag filter.
-- [ ] 5.2 Modify reports UI — team filter control.
+- [x] 5.1 Modify inbox feature — single-select team `<select>` from `GET /api/teams`, composable with tag filter. **NOTE**: no tag filter UI/state exists in the inbox frontend today (verified — `tag` is backend-only, unused by any frontend caller; status filtering is 100% client-side over an unfiltered list). Built a new standalone `TeamFilterComponent` (`features/inbox/components/team-filter/`) instead, wired as the first real server-side filter: `TicketStore.selectedTeamId` signal + `TicketApiService.getTickets(teamId?)` sends `?teamId=` to the already-updated `GET /api/tickets`. Composable with the existing client-side status tabs (independent state, both active simultaneously).
+- [x] 5.2 Modify reports UI — team filter control. Added `teamId?: number` to `TimeFilterParams`, threaded through `ReportsApiService.buildParams()`; reuses the same `TeamFilterComponent` in `ReportsPageComponent`, wired into `loadAllData()`/`exportCsv()`.
 
 ## Phase 6: Verification
 
-- [ ] 6.1 `docker compose exec php bin/phpunit` — no new failures beyond 58-failure baseline.
-- [ ] 6.2 `cd apps/web && ./node_modules/.bin/ng build --configuration production` — exit 0.
-- [ ] 6.3 Manual E2E: create team, assign roster, filter inbox by team.
+- [ ] 6.1 `docker compose exec php bin/phpunit` — no new failures beyond 58-failure baseline. Slice 3 self-check (not the official cross-cutting sign-off): full suite re-run after Slice 3 = 699 tests (680 + 19 new, all green), 18 errors + 39 failures = 57 failing (same count as Slice 1's baseline), zero overlap between failing test names and any Slice-3-touched class. Left unchecked pending Slice 2 + official sdd-verify pass.
+- [ ] 6.2 `cd apps/web && ./node_modules/.bin/ng build --configuration production` — exit 0. Slice 3 self-check: ran clean (exit 0) as part of Phase 5 frontend work; left unchecked pending Slice 2 + official sdd-verify pass (this task covers the whole change, not just Slice 3).
+- [ ] 6.3 Manual E2E: create team, assign roster, filter inbox by team. Filter-by-team now works end-to-end (Slice 1 API + Slice 3 UI); "create team, assign roster" still requires Slice 2's admin UI (or direct API calls) to complete this scenario.

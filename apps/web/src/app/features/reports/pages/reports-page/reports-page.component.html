@@ -34,6 +34,9 @@
         </button>
       </div>
 
+      <!-- Team filter (single-select, composable with the time filter above) -->
+      <app-team-filter (teamChange)="onTeamFilterChange($event)" />
+
       @if (timeFilter() === 'custom') {
         <div class="custom-date-picker">
           <input

@@ -19,6 +19,7 @@ import { HeatmapCardComponent } from '../../components/heatmap-card/heatmap-card
 import { RecurringCardComponent } from '../../components/recurring-card/recurring-card.component';
 import { ReopenedCardComponent } from '../../components/reopened-card/reopened-card.component';
 import { ResponseDelayCardComponent } from '../../components/response-delay-card/response-delay-card.component';
+import { TeamFilterComponent } from '../../../inbox/components/team-filter/team-filter.component';
 import {
   AgentLoadEntry,
   UnassignedResponse,
@@ -49,6 +50,7 @@ import {
     RecurringCardComponent,
     ReopenedCardComponent,
     ResponseDelayCardComponent,
+    TeamFilterComponent,
   ],
   templateUrl: './reports-page.component.html',
   styleUrl: './reports-page.component.scss',
@@ -62,6 +64,8 @@ export class ReportsPageComponent implements OnInit {
   readonly timeFilter = signal<TimeFilter>('7d');
   readonly fromDate = signal<string>('');
   readonly toDate = signal<string>('');
+  /** Single-select team filter (team-area-entity, Slice 3) */
+  readonly selectedTeamId = signal<number | null>(null);
   readonly exporting = signal(false);
   readonly exportError = signal<string | null>(null);
 
@@ -118,12 +122,21 @@ export class ReportsPageComponent implements OnInit {
     }
   }
 
+  /** Handle team filter selection — reloads all dashboard data scoped to the team */
+  onTeamFilterChange(teamId: number | null): void {
+    this.selectedTeamId.set(teamId);
+    this.loadAllData();
+  }
+
   exportCsv(): void {
-    const params = this.buildTimeFilterParamsUseCase.build(
-      this.timeFilter(),
-      this.fromDate(),
-      this.toDate(),
-    );
+    const params = {
+      ...this.buildTimeFilterParamsUseCase.build(
+        this.timeFilter(),
+        this.fromDate(),
+        this.toDate(),
+      ),
+      ...(this.selectedTeamId() !== null ? { teamId: this.selectedTeamId()! } : {}),
+    };
 
     this.exporting.set(true);
     this.exportError.set(null);
@@ -140,11 +153,14 @@ export class ReportsPageComponent implements OnInit {
   }
 
   private loadAllData(): void {
-    const params = this.buildTimeFilterParamsUseCase.build(
-      this.timeFilter(),
-      this.fromDate(),
-      this.toDate(),
-    );
+    const params = {
+      ...this.buildTimeFilterParamsUseCase.build(
+        this.timeFilter(),
+        this.fromDate(),
+        this.toDate(),
+      ),
+      ...(this.selectedTeamId() !== null ? { teamId: this.selectedTeamId()! } : {}),
+    };
 
     // ── Set all loading states ──
     this.frtLoading.set(true);

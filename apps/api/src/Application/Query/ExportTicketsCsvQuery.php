@@ -52,6 +52,7 @@ class ExportTicketsCsvQuery
      * @param string|null $status Comma-separated status filter
      * @param string|null $tag Comma-separated tag names (AND semantics, max 5)
      * @param string|null $phoneNumberId Workspace scope
+     * @param int|null $teamId Single-select team filter, composable with $tag
      *
      * @return int total number of data rows written
      */
@@ -63,6 +64,7 @@ class ExportTicketsCsvQuery
         ?string $status = null,
         ?string $tag = null,
         ?string $phoneNumberId = null,
+        ?int $teamId = null,
     ): int {
         $writer->insertOne(self::COLUMNS);
 
@@ -74,6 +76,7 @@ class ExportTicketsCsvQuery
             status: $status,
             phoneNumberId: $phoneNumberId,
             tag: $tag,
+            teamId: $teamId,
         );
 
         $baseWhere[] = 't.created_at >= ?';

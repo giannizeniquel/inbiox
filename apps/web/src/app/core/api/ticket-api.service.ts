@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { Ticket } from '../models/ticket.model';
@@ -12,9 +12,20 @@ export class TicketApiService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiUrl;
 
-  getTickets(): Observable<Ticket[]> {
+  /**
+   * @param teamId Optional single-select team filter — forwarded to
+   *               `GET /api/tickets?teamId=...` (team-area-entity, Slice 3).
+   *               Composable with any future server-side filter params.
+   */
+  getTickets(teamId?: number | null): Observable<Ticket[]> {
+    let params = new HttpParams();
+    if (teamId !== null && teamId !== undefined) {
+      params = params.set('teamId', String(teamId));
+    }
+
     const call = this.http.get<{ data: Ticket[]; meta: { total: number; page: number } }>(
-      `${this.baseUrl}/api/tickets`
+      `${this.baseUrl}/api/tickets`,
+      { params }
     );
     return retryWithBackoff(call).pipe(
       map((response) => response.data),

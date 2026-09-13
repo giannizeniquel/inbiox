@@ -34,6 +34,7 @@ class ListTicketsQuery
      *                                   null = no workspace filter (SUPERVISOR/ADMIN).
      * @param string|null $tag Comma-separated tag names (AND semantics, max 5).
      *                         Each matched ticket must carry ALL specified tags.
+     * @param int|null $teamId Single-select team filter, composable with $tag.
      */
     public function execute(
         int $page = 1,
@@ -46,6 +47,7 @@ class ListTicketsQuery
         ?int $scopeAgentId = null,
         ?string $phoneNumberId = null,
         ?string $tag = null,
+        ?int $teamId = null,
     ): array {
         $page = max(1, $page);
         $limit = min(100, max(1, $limit));
@@ -60,6 +62,7 @@ class ListTicketsQuery
             scopeAgentId: $scopeAgentId,
             phoneNumberId: $phoneNumberId,
             tag: $tag,
+            teamId: $teamId,
         );
 
         $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';

@@ -9,7 +9,7 @@ use App\Domain\Tag\Tag;
  * `ExportTicketsCsvQuery`. Extracted verbatim from `ListTicketsQuery`'s
  * original filter block — clause and param ORDER is behavior-preserving:
  * filter/mine → ownership scope → workspace scope → status whitelist →
- * tag AND-semantics (max 5, `Tag::normalize()`).
+ * tag AND-semantics (max 5, `Tag::normalize()`) → team (single-select).
  *
  * Callers appending their own clauses (date range, keyset cursor, …) MUST
  * do so AFTER calling `build()` so existing positional `?` params stay
@@ -24,6 +24,8 @@ class TicketFilterBuilder
      * @param int|null $scopeAgentId Ownership scope: forces WHERE assigned_agent_id = scopeAgentId
      * @param string|null $phoneNumberId Workspace scope: filters by ticket phone_number_id
      * @param string|null $tag Comma-separated tag names (AND semantics, max 5)
+     * @param int|null $teamId Single-select team filter, appended LAST — see
+     *                         design.md D6, all 3 callers use named arguments
      *
      * @return array{0: list<string>, 1: list<string>} [$where, $params]
      */
@@ -34,6 +36,7 @@ class TicketFilterBuilder
         ?int $scopeAgentId = null,
         ?string $phoneNumberId = null,
         ?string $tag = null,
+        ?int $teamId = null,
     ): array {
         $where = [];
         $params = [];
@@ -83,6 +86,11 @@ class TicketFilterBuilder
                                     WHERE tt.ticket_id = t.id AND tg.name = ?)';
                 $params[] = $name;
             }
+        }
+
+        if (null !== $teamId) {
+            $where[] = 't.team_id = ?';
+            $params[] = (string) $teamId;
         }
 
         return [$where, $params];

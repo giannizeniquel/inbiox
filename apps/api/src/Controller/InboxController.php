@@ -49,6 +49,8 @@ class InboxController
             $search = $request->query->get('search');
             $sort = $request->query->get('sort', 'last_message_desc');
             $tag = $request->query->get('tag');
+            $teamIdRaw = $request->query->get('teamId');
+            $teamId = null !== $teamIdRaw ? (int) $teamIdRaw : null;
 
             // Ownership scope: AGENT sees only own tickets; SUPERVISOR/ADMIN see all
             $scopeAgentId = $this->ownershipScope->getAgentId();
@@ -67,6 +69,7 @@ class InboxController
                 scopeAgentId: $scopeAgentId,
                 phoneNumberId: $phoneNumberId,
                 tag: $tag,
+                teamId: $teamId,
             );
 
             $items = array_map(fn($dto) => $dto->toArray(), $result['items']);
