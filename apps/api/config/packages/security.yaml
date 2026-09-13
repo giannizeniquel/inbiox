@@ -65,6 +65,9 @@ security:
         # Admin API — Agent management (supervisor or higher)
         - { path: ^/api/admin/agents, roles: ROLE_SUPERVISOR }
 
+        # Admin API — Team management (supervisor or higher, mirrors Agent CRUD access)
+        - { path: ^/api/admin/teams, roles: ROLE_SUPERVISOR }
+
         # Debug routes — dev-only (DebugController gates by kernel.environment)
         - { path: ^/debug, roles: ROLE_ADMIN }
 

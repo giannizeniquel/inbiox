@@ -62,6 +62,9 @@ class Ticket
     #[ORM\Column(name: "phone_number_id", type: "string", length: 36, nullable: true)]
     private ?string $phoneNumberId = null;
 
+    #[ORM\Column(name: "team_id", type: "bigint", nullable: true)]
+    private ?int $teamId = null;
+
     #[ORM\Column(name: "last_read_at", type: "datetime_immutable", nullable: true)]
     private ?\DateTimeImmutable $lastReadAt = null;
 
@@ -219,6 +222,17 @@ class Ticket
     public function setPhoneNumberId(?string $phoneNumberId): self
     {
         $this->phoneNumberId = $phoneNumberId;
+        return $this;
+    }
+
+    public function getTeamId(): ?int
+    {
+        return $this->teamId;
+    }
+
+    public function setTeamId(?int $teamId): self
+    {
+        $this->teamId = $teamId;
         return $this;
     }
 

@@ -13,6 +13,11 @@ app_ticket_assignment:
     methods: [GET]
     controller: App\Controller\TicketController::getAssignment
 
+app_ticket_set_team:
+    path: /api/tickets/{id}/team
+    methods: [PUT]
+    controller: App\Controller\TicketController::setTeam
+
 app_inbox_tickets:
     path: /api/tickets
     methods: [GET]
@@ -304,6 +309,45 @@ app_admin_workspaces_assign_agents:
     path: /api/admin/workspaces/{id}/agents
     methods: [PUT]
     controller: App\Controller\Admin\WorkspaceController::assignAgents
+
+# ── Admin Team Management (Tier 2 #7) ──
+
+app_admin_teams_list:
+    path: /api/admin/teams
+    methods: [GET]
+    controller: App\Controller\Admin\TeamController::list
+
+app_admin_teams_create:
+    path: /api/admin/teams
+    methods: [POST]
+    controller: App\Controller\Admin\TeamController::create
+
+app_admin_teams_get:
+    path: /api/admin/teams/{id}
+    methods: [GET]
+    controller: App\Controller\Admin\TeamController::get
+
+app_admin_teams_update:
+    path: /api/admin/teams/{id}
+    methods: [PUT]
+    controller: App\Controller\Admin\TeamController::update
+
+app_admin_teams_delete:
+    path: /api/admin/teams/{id}
+    methods: [DELETE]
+    controller: App\Controller\Admin\TeamController::delete
+
+app_admin_teams_assign_agents:
+    path: /api/admin/teams/{id}/agents
+    methods: [PUT]
+    controller: App\Controller\Admin\TeamController::assignAgents
+
+# ── Teams — scoped listing (any authenticated agent) ──
+
+app_teams_list:
+    path: /api/teams
+    methods: [GET]
+    controller: App\Controller\TeamController::list
 
 app_agent_set_availability:
     path: /api/agents/{id}/availability

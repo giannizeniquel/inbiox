@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Agent;
 
+use App\Domain\Team\Team;
 use App\Domain\User\User;
 use App\Domain\Workspace\Workspace;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -80,11 +81,18 @@ class Agent
     #[ORM\JoinColumn(name: 'active_workspace_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
     private ?Workspace $activeWorkspace = null;
 
+    #[ORM\ManyToMany(targetEntity: Team::class, inversedBy: 'agents')]
+    #[ORM\JoinTable(name: 'agent_team')]
+    #[ORM\JoinColumn(name: 'agent_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
+    #[ORM\InverseJoinColumn(name: 'team_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
+    private Collection $teams;
+
     public function __construct(string $name)
     {
         $this->name = $name;
         $this->shifts = new ArrayCollection();
         $this->workspaces = new ArrayCollection();
+        $this->teams = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
     }
@@ -233,6 +241,26 @@ class Agent
     public function removeWorkspace(Workspace $workspace): self
     {
         $this->workspaces->removeElement($workspace);
+        return $this;
+    }
+
+    /** @return Collection<int, Team> */
+    public function getTeams(): Collection
+    {
+        return $this->teams;
+    }
+
+    public function addTeam(Team $team): self
+    {
+        if (!$this->teams->contains($team)) {
+            $this->teams->add($team);
+        }
+        return $this;
+    }
+
+    public function removeTeam(Team $team): self
+    {
+        $this->teams->removeElement($team);
         return $this;
     }
 
