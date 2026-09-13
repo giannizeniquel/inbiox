@@ -204,6 +204,52 @@ class ReportingService
     }
 
     /**
+     * Get aggregate + per-agent response-delay metrics.
+     *
+     * @param \DateTimeImmutable $from Start of date range (UTC) — filters on ticket episode start
+     * @param \DateTimeImmutable $to End of date range (UTC)
+     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
+     * @return array{data_available_from: string|null, partial_data: bool, aggregate: array{avg_delay_seconds: float|null, sample_count: int, unanswered_inbound_count: int}, per_agent: array<int, array{agent_id: int, agent_name: string|null, avg_delay_seconds: float|null, sample_count: int}>}
+     */
+    public function getResponseDelay(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null): array
+    {
+        $this->validateDateRange($from, $to);
+
+        $cutoff = $this->reportingRepository->getAttributionCutoff();
+        $metrics = $this->reportingRepository->getResponseDelayMetrics($from, $to, $phoneNumberId);
+
+        return [
+            'data_available_from' => $cutoff?->format('Y-m-d H:i:s'),
+            // Null cutoff means the whole messages table is unattributed —
+            // that is partial data too, not "no data available at all".
+            'partial_data' => $cutoff === null || $cutoff > $from,
+            'aggregate' => $metrics['aggregate'],
+            'per_agent' => $metrics['per_agent'],
+        ];
+    }
+
+    /**
+     * Get per-ticket participation drill-down.
+     *
+     * @param int $ticketId Ticket ID
+     * @return array|null null when the ticket does not exist
+     */
+    public function getTicketParticipation(int $ticketId): ?array
+    {
+        $result = $this->reportingRepository->getTicketParticipation($ticketId);
+
+        if ($result === null) {
+            return null;
+        }
+
+        $result['data_available_from'] = $result['data_available_from'] instanceof \DateTimeImmutable
+            ? $result['data_available_from']->format('Y-m-d H:i:s')
+            : $result['data_available_from'];
+
+        return $result;
+    }
+
+    /**
      * Validate date range.
      *
      * @throws \InvalidArgumentException If from is after to

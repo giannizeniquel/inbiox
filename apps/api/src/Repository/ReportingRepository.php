@@ -737,4 +737,351 @@ class ReportingRepository extends ServiceEntityRepository
 
         return $reopened;
     }
+
+    /**
+     * Get the attribution cutoff — the earliest `created_at` among any
+     * `sender_type IN ('agent', 'automatic', 'contact')` message.
+     *
+     * Messages before this timestamp have `sender_type IS NULL` (legacy,
+     * pre-attribution-rollout rows) and must be excluded from response-delay
+     * sampling and attribution everywhere. Returns null only when the whole
+     * `messages` table is unattributed (no non-NULL sender_type row exists).
+     */
+    public function getAttributionCutoff(): ?\DateTimeImmutable
+    {
+        $conn = $this->entityManager->getConnection();
+
+        $sql = "SELECT MIN(c) AS data_available_from FROM (
+                (SELECT created_at AS c FROM messages WHERE sender_type = 'agent'     ORDER BY created_at LIMIT 1)
+              UNION ALL
+                (SELECT created_at AS c FROM messages WHERE sender_type = 'automatic' ORDER BY created_at LIMIT 1)
+              UNION ALL
+                (SELECT created_at AS c FROM messages WHERE sender_type = 'contact'   ORDER BY created_at LIMIT 1)
+            ) probe";
+
+        $result = $conn->fetchAssociative($sql);
+        $value = $result['data_available_from'] ?? null;
+
+        return $value !== null ? new \DateTimeImmutable($value) : null;
+    }
+
+    /**
+     * Get aggregate + per-agent response-delay metrics.
+     *
+     * Episode-partition scoping: a message belongs to the ticket most recently
+     * opened at or before it on the same conversation (`[ticket.created_at,
+     * next_ticket.created_at)`). Burst collapse: consecutive inbound messages
+     * with no intervening `sender_type='agent'` reply are one run — exactly
+     * one delay sample per run, measured from the run's first message to the
+     * next agent reply. `automatic` messages never split a burst nor stop the
+     * clock. Legacy `sender_type IS NULL` rows (before the attribution
+     * cutoff) are excluded from the whole stream. Range filter is on
+     * `tickets.created_at` (episode start), not reply timestamp.
+     *
+     * @return array{aggregate: array{avg_delay_seconds: float|null, sample_count: int, unanswered_inbound_count: int}, per_agent: array<int, array{agent_id: int, agent_name: string|null, avg_delay_seconds: float|null, sample_count: int}>}
+     */
+    public function getResponseDelayMetrics(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null): array
+    {
+        $conn = $this->entityManager->getConnection();
+        $timeDiff = $this->getTimeDiffExpression('b.inbound_at', 'r.reply_at');
+
+        $params = [
+            'from' => $from->format('Y-m-d H:i:s'),
+            'to' => $to->format('Y-m-d H:i:s'),
+        ];
+
+        $workspaceClause = '';
+        if ($phoneNumberId !== null) {
+            $workspaceClause = ' AND t.phone_number_id = :phoneNumberId';
+            $params['phoneNumberId'] = $phoneNumberId;
+        }
+
+        $sql = "WITH cutoff AS (
+                SELECT MIN(c) AS data_available_from FROM (
+                    (SELECT created_at AS c FROM messages WHERE sender_type = 'agent'     ORDER BY created_at LIMIT 1)
+                  UNION ALL
+                    (SELECT created_at AS c FROM messages WHERE sender_type = 'automatic' ORDER BY created_at LIMIT 1)
+                  UNION ALL
+                    (SELECT created_at AS c FROM messages WHERE sender_type = 'contact'   ORDER BY created_at LIMIT 1)
+                ) probe
+            ),
+            scoped_convs AS (
+                SELECT DISTINCT t.conversation_id FROM tickets t
+                WHERE t.conversation_id IS NOT NULL
+                  AND t.created_at >= :from AND t.created_at < :to{$workspaceClause}
+            ),
+            episodes AS (
+                SELECT t.id AS ticket_id, t.conversation_id, t.created_at AS episode_start,
+                       LEAD(t.created_at) OVER (PARTITION BY t.conversation_id
+                                                ORDER BY t.created_at, t.id) AS episode_end
+                FROM tickets t
+                JOIN scoped_convs sc ON sc.conversation_id = t.conversation_id
+            ),
+            msgs AS (
+                SELECT e.ticket_id, m.id, m.created_at, m.direction, m.sender_type, m.sender_agent_id
+                FROM episodes e
+                JOIN messages m ON m.conversation_id = e.conversation_id
+                               AND m.created_at >= e.episode_start
+                               AND (e.episode_end IS NULL OR m.created_at < e.episode_end)
+                CROSS JOIN cutoff cf
+                WHERE e.episode_start >= :from AND e.episode_start < :to
+                  AND m.sender_type IS NOT NULL
+                  AND m.created_at >= cf.data_available_from
+            ),
+            seq AS (
+                SELECT s.*,
+                       SUM(CASE WHEN s.sender_type = 'agent' THEN 1 ELSE 0 END)
+                         OVER (PARTITION BY s.ticket_id ORDER BY s.created_at, s.id
+                               ROWS UNBOUNDED PRECEDING) AS reply_seq
+                FROM msgs s
+            ),
+            bursts AS (
+                SELECT ticket_id, reply_seq, created_at AS inbound_at, burst_size
+                FROM (
+                    SELECT q.ticket_id, q.reply_seq, q.created_at, q.id,
+                           ROW_NUMBER() OVER (PARTITION BY q.ticket_id, q.reply_seq
+                                              ORDER BY q.created_at, q.id) AS rn,
+                           COUNT(*) OVER (PARTITION BY q.ticket_id, q.reply_seq) AS burst_size
+                    FROM seq q WHERE q.direction = 'inbound'
+                ) ranked
+                WHERE rn = 1
+            ),
+            agent_replies AS (
+                SELECT ticket_id, reply_seq, created_at AS reply_at, sender_agent_id
+                FROM seq WHERE sender_type = 'agent'
+            )
+            SELECT r.sender_agent_id AS agent_id, a.name AS agent_name,
+                   COUNT(r.reply_at) AS sample_count,
+                   SUM({$timeDiff}) AS sum_delay,
+                   SUM(CASE WHEN r.reply_at IS NULL THEN 1 ELSE 0 END) AS unanswered_count
+            FROM bursts b
+            LEFT JOIN agent_replies r ON r.ticket_id = b.ticket_id
+                                     AND r.reply_seq = b.reply_seq + 1
+            LEFT JOIN agents a ON a.id = r.sender_agent_id
+            GROUP BY r.sender_agent_id, a.name
+            ORDER BY r.sender_agent_id";
+
+        $rows = $conn->fetchAllAssociative($sql, $params);
+
+        $aggregateSampleCount = 0;
+        $aggregateSumDelay = 0.0;
+        $unansweredInboundCount = 0;
+        $perAgent = [];
+
+        foreach ($rows as $row) {
+            $sampleCount = (int) $row['sample_count'];
+            $sumDelay = $row['sum_delay'] !== null ? (float) $row['sum_delay'] : null;
+            $unansweredInboundCount += (int) $row['unanswered_count'];
+
+            if ($sampleCount > 0) {
+                $aggregateSampleCount += $sampleCount;
+                $aggregateSumDelay += $sumDelay ?? 0.0;
+            }
+
+            if ($row['agent_id'] !== null) {
+                $perAgent[] = [
+                    'agent_id' => (int) $row['agent_id'],
+                    'agent_name' => $row['agent_name'],
+                    'avg_delay_seconds' => $sampleCount > 0 ? round($sumDelay / $sampleCount, 2) : null,
+                    'sample_count' => $sampleCount,
+                ];
+            }
+        }
+
+        return [
+            'aggregate' => [
+                'avg_delay_seconds' => $aggregateSampleCount > 0 ? round($aggregateSumDelay / $aggregateSampleCount, 2) : null,
+                'sample_count' => $aggregateSampleCount,
+                'unanswered_inbound_count' => $unansweredInboundCount,
+            ],
+            'per_agent' => $perAgent,
+        ];
+    }
+
+    /**
+     * Get per-ticket participation drill-down: participants, per-agent
+     * delay samples, automatic activity, and burst pairs — scoped to the
+     * ticket's own episode. Reuses the same burst-based sampling and
+     * clock start/stop rules as {@see getResponseDelayMetrics()}.
+     *
+     * @return array{ticket_id: int, data_available_from: \DateTimeImmutable|null, partial_data: bool, participants: array<int, array{agent_id: int, agent_name: string|null, message_count: int, sample_count: int, avg_delay_seconds: float|null}>, automatic_message_count: int, unanswered_inbound_count: int, pairs: array<int, array{run_start_at: string, reply_at: string|null, agent_id: int|null, delay_seconds: float|null}>}|null null when the ticket does not exist or has no conversation
+     */
+    public function getTicketParticipation(int $ticketId): ?array
+    {
+        $conn = $this->entityManager->getConnection();
+
+        $ticketRow = $conn->fetchAssociative(
+            'SELECT id, conversation_id, created_at FROM tickets WHERE id = :ticketId',
+            ['ticketId' => $ticketId]
+        );
+
+        if ($ticketRow === false || $ticketRow['conversation_id'] === null) {
+            return null;
+        }
+
+        $conversationId = (int) $ticketRow['conversation_id'];
+        $episodeStart = $ticketRow['created_at'];
+
+        // Episode end: next ticket on the same conversation, (created_at, id)
+        // lexicographic tie-break — same order as the LEAD() version, so both
+        // queries agree on episode bounds (see design.md "degenerate tie" note).
+        $episodeEndRow = $conn->fetchAssociative(
+            'SELECT MIN(t2.created_at) AS episode_end FROM tickets t2
+             WHERE t2.conversation_id = :conversationId
+               AND (t2.created_at > :episodeStart
+                    OR (t2.created_at = :episodeStart AND t2.id > :ticketId))',
+            ['conversationId' => $conversationId, 'episodeStart' => $episodeStart, 'ticketId' => $ticketId]
+        );
+        $episodeEnd = $episodeEndRow['episode_end'] ?? null;
+
+        $cutoff = $this->getAttributionCutoff();
+        $timeDiff = $this->getTimeDiffExpression('b.inbound_at', 'r.reply_at');
+
+        $params = [
+            'conversationId' => $conversationId,
+            'episodeStart' => $episodeStart,
+            'cutoff' => $cutoff !== null ? $cutoff->format('Y-m-d H:i:s') : '1970-01-01 00:00:00',
+        ];
+        $episodeEndClause = '';
+        if ($episodeEnd !== null) {
+            $episodeEndClause = ' AND m.created_at < :episodeEnd';
+            $params['episodeEnd'] = $episodeEnd;
+        }
+
+        $sql = "WITH msgs AS (
+                SELECT m.id, m.created_at, m.direction, m.sender_type, m.sender_agent_id
+                FROM messages m
+                WHERE m.conversation_id = :conversationId
+                  AND m.created_at >= :episodeStart{$episodeEndClause}
+                  AND m.sender_type IS NOT NULL
+                  AND m.created_at >= :cutoff
+            ),
+            seq AS (
+                SELECT s.*,
+                       SUM(CASE WHEN s.sender_type = 'agent' THEN 1 ELSE 0 END)
+                         OVER (ORDER BY s.created_at, s.id ROWS UNBOUNDED PRECEDING) AS reply_seq
+                FROM msgs s
+            ),
+            bursts AS (
+                SELECT reply_seq, created_at AS inbound_at, burst_size
+                FROM (
+                    SELECT q.reply_seq, q.created_at, q.id,
+                           ROW_NUMBER() OVER (PARTITION BY q.reply_seq ORDER BY q.created_at, q.id) AS rn,
+                           COUNT(*) OVER (PARTITION BY q.reply_seq) AS burst_size
+                    FROM seq q WHERE q.direction = 'inbound'
+                ) ranked
+                WHERE rn = 1
+            ),
+            agent_replies AS (
+                SELECT reply_seq, created_at AS reply_at, sender_agent_id
+                FROM seq WHERE sender_type = 'agent'
+            )
+            SELECT b.inbound_at, b.burst_size, r.reply_at, r.sender_agent_id AS agent_id, a.name AS agent_name,
+                   {$timeDiff} AS delay_seconds
+            FROM bursts b
+            LEFT JOIN agent_replies r ON r.reply_seq = b.reply_seq + 1
+            LEFT JOIN agents a ON a.id = r.sender_agent_id
+            ORDER BY b.inbound_at";
+
+        $pairRows = $conn->fetchAllAssociative($sql, $params);
+
+        // Rollup over ALL episode messages (including legacy sender_type IS
+        // NULL rows) for message counts / automatic activity / unattributed
+        // detection — independent of the cutoff-filtered seq/bursts pipeline.
+        $rollupParams = ['conversationId' => $conversationId, 'episodeStart' => $episodeStart];
+        $rollupEpisodeEndClause = '';
+        if ($episodeEnd !== null) {
+            $rollupEpisodeEndClause = ' AND m.created_at < :episodeEnd';
+            $rollupParams['episodeEnd'] = $episodeEnd;
+        }
+        $rollupSql = "SELECT m.sender_type, m.sender_agent_id, COUNT(*) AS message_count
+            FROM messages m
+            WHERE m.conversation_id = :conversationId
+              AND m.created_at >= :episodeStart{$rollupEpisodeEndClause}
+            GROUP BY m.sender_type, m.sender_agent_id";
+        $rollupRows = $conn->fetchAllAssociative($rollupSql, $rollupParams);
+
+        $messageCountByAgent = [];
+        $automaticMessageCount = 0;
+        $unattributedCount = 0;
+        foreach ($rollupRows as $row) {
+            $count = (int) $row['message_count'];
+            if ($row['sender_type'] === null) {
+                $unattributedCount += $count;
+            } elseif ($row['sender_type'] === 'automatic') {
+                $automaticMessageCount += $count;
+            } elseif ($row['sender_type'] === 'agent' && $row['sender_agent_id'] !== null) {
+                $agentId = (int) $row['sender_agent_id'];
+                $messageCountByAgent[$agentId] = ($messageCountByAgent[$agentId] ?? 0) + $count;
+            }
+        }
+
+        $participantStats = [];
+        $unansweredInboundCount = 0;
+        $pairs = [];
+
+        foreach ($pairRows as $row) {
+            $agentId = $row['agent_id'] !== null ? (int) $row['agent_id'] : null;
+            $delaySeconds = $row['delay_seconds'] !== null ? (float) $row['delay_seconds'] : null;
+
+            $pairs[] = [
+                'run_start_at' => $row['inbound_at'],
+                'reply_at' => $row['reply_at'],
+                'agent_id' => $agentId,
+                'delay_seconds' => $delaySeconds,
+            ];
+
+            if ($agentId === null) {
+                $unansweredInboundCount++;
+                continue;
+            }
+
+            if (!isset($participantStats[$agentId])) {
+                $participantStats[$agentId] = [
+                    'agent_name' => $row['agent_name'],
+                    'sample_count' => 0,
+                    'sum_delay' => 0.0,
+                ];
+            }
+            $participantStats[$agentId]['sample_count']++;
+            $participantStats[$agentId]['sum_delay'] += $delaySeconds ?? 0.0;
+        }
+
+        // Fallback agent-name lookup: an agent who replied without a
+        // preceding unanswered burst (unprompted message) has message_count
+        // but never appears in $participantStats.
+        $missingAgentIds = array_diff(array_keys($messageCountByAgent), array_keys($participantStats));
+        $agentNameMap = [];
+        if (!empty($missingAgentIds)) {
+            $placeholders = implode(',', array_map('intval', $missingAgentIds));
+            $nameRows = $conn->fetchAllAssociative("SELECT id, name FROM agents WHERE id IN ({$placeholders})");
+            foreach ($nameRows as $nameRow) {
+                $agentNameMap[(int) $nameRow['id']] = $nameRow['name'];
+            }
+        }
+
+        $agentIds = array_unique(array_merge(array_keys($messageCountByAgent), array_keys($participantStats)));
+        sort($agentIds);
+        $participants = [];
+        foreach ($agentIds as $agentId) {
+            $stats = $participantStats[$agentId] ?? ['agent_name' => null, 'sample_count' => 0, 'sum_delay' => 0.0];
+            $participants[] = [
+                'agent_id' => $agentId,
+                'agent_name' => $stats['agent_name'] ?? $agentNameMap[$agentId] ?? null,
+                'message_count' => $messageCountByAgent[$agentId] ?? 0,
+                'sample_count' => $stats['sample_count'],
+                'avg_delay_seconds' => $stats['sample_count'] > 0 ? round($stats['sum_delay'] / $stats['sample_count'], 2) : null,
+            ];
+        }
+
+        return [
+            'ticket_id' => $ticketId,
+            'data_available_from' => $cutoff,
+            'partial_data' => $unattributedCount > 0 || $cutoff === null,
+            'participants' => $participants,
+            'automatic_message_count' => $automaticMessageCount,
+            'unanswered_inbound_count' => $unansweredInboundCount,
+            'pairs' => $pairs,
+        ];
+    }
 }

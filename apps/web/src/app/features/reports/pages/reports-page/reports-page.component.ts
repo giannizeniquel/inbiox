@@ -18,6 +18,7 @@ import { FrtTrendCardComponent } from '../../components/frt-trend-card/frt-trend
 import { HeatmapCardComponent } from '../../components/heatmap-card/heatmap-card.component';
 import { RecurringCardComponent } from '../../components/recurring-card/recurring-card.component';
 import { ReopenedCardComponent } from '../../components/reopened-card/reopened-card.component';
+import { ResponseDelayCardComponent } from '../../components/response-delay-card/response-delay-card.component';
 import {
   AgentLoadEntry,
   UnassignedResponse,
@@ -26,6 +27,7 @@ import {
   HeatmapCell,
   RecurringEntry,
   ReopenedEntry,
+  ResponseDelayReport,
 } from '../../models/reports.models';
 
 @Component({
@@ -46,6 +48,7 @@ import {
     HeatmapCardComponent,
     RecurringCardComponent,
     ReopenedCardComponent,
+    ResponseDelayCardComponent,
   ],
   templateUrl: './reports-page.component.html',
   styleUrl: './reports-page.component.scss',
@@ -84,6 +87,8 @@ export class ReportsPageComponent implements OnInit {
   readonly agentLoadData = signal<AgentLoadEntry[]>([]);
   readonly unassignedData = signal<UnassignedResponse | null>(null);
   readonly frtTrendData = signal<FrtTrendPoint[]>([]);
+  readonly responseDelayLoading = signal(true);
+  readonly responseDelayData = signal<ResponseDelayReport | null>(null);
 
   // ── Group C: Detail ──
   readonly availableAgentsLoading = signal(true);
@@ -150,6 +155,7 @@ export class ReportsPageComponent implements OnInit {
     this.agentLoadLoading.set(true);
     this.unassignedLoading.set(true);
     this.frtTrendLoading.set(true);
+    this.responseDelayLoading.set(true);
     this.availableAgentsLoading.set(true);
     this.heatmapLoading.set(true);
     this.recurringLoading.set(true);
@@ -175,10 +181,12 @@ export class ReportsPageComponent implements OnInit {
         this.agentLoadData.set(data.agentLoad);
         this.unassignedData.set(data.unassigned);
         this.frtTrendData.set(data.frtTrend);
+        this.responseDelayData.set(data.responseDelay);
 
         this.agentLoadLoading.set(false);
         this.unassignedLoading.set(false);
         this.frtTrendLoading.set(false);
+        this.responseDelayLoading.set(false);
 
         // ── Group C: Detail ──
         this.availableAgentsData.set(data.availableAgents);
@@ -201,6 +209,7 @@ export class ReportsPageComponent implements OnInit {
         this.agentLoadLoading.set(false);
         this.unassignedLoading.set(false);
         this.frtTrendLoading.set(false);
+        this.responseDelayLoading.set(false);
         this.availableAgentsLoading.set(false);
         this.heatmapLoading.set(false);
         this.recurringLoading.set(false);

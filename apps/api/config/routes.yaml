@@ -112,6 +112,16 @@ app_report_export:
     methods: [GET]
     controller: App\Controller\ReportingController::export
 
+app_report_response_delay:
+    path: /api/reports/response-delay
+    methods: [GET]
+    controller: App\Controller\ReportingController::responseDelay
+
+app_report_ticket_participation:
+    path: /api/reports/tickets/{id}/participation
+    methods: [GET]
+    controller: App\Controller\ReportingController::ticketParticipation
+
 app_debug_inbound:
     path: /debug/inbound/{ticketId}
     methods: [POST]

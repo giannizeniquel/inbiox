@@ -527,6 +527,60 @@ class ReportingController
     }
 
     /**
+     * Get aggregate + per-agent response-delay metrics.
+     *
+     * GET /reports/response-delay?from=...&to=...
+     */
+    #[Route('/reports/response-delay', methods: ['GET'])]
+    public function responseDelay(Request $request): JsonResponse
+    {
+        try {
+            $from = $this->parseDateTime($request->query->get('from'));
+            $to = $this->parseDateTime($request->query->get('to'));
+            $phoneNumberId = $this->getScopePhoneNumberId();
+
+            $result = $this->reportingService->getResponseDelay($from, $to, $phoneNumberId);
+
+            return new JsonResponse($result);
+        } catch (\InvalidArgumentException $e) {
+            return new JsonResponse(['error' => $e->getMessage()], 400);
+        } catch (\Exception $e) {
+            $referenceId = bin2hex(random_bytes(8));
+            $this->logger->error('Error fetching response delay metrics: {message}', [
+                'reference' => $referenceId,
+                'exception' => $e->getMessage(),
+            ]);
+            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
+        }
+    }
+
+    /**
+     * Get per-ticket participation drill-down.
+     *
+     * GET /reports/tickets/{id}/participation
+     */
+    #[Route('/reports/tickets/{id}/participation', methods: ['GET'])]
+    public function ticketParticipation(Request $request, int $id): JsonResponse
+    {
+        try {
+            $result = $this->reportingService->getTicketParticipation($id);
+
+            if ($result === null) {
+                return new JsonResponse(['error' => 'Ticket not found'], 404);
+            }
+
+            return new JsonResponse($result);
+        } catch (\Exception $e) {
+            $referenceId = bin2hex(random_bytes(8));
+            $this->logger->error('Error fetching ticket participation: {message}', [
+                'reference' => $referenceId,
+                'exception' => $e->getMessage(),
+            ]);
+            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
+        }
+    }
+
+    /**
      * Count active tickets for a specific agent (helper for available-agents).
      */
     private function countActiveTicketsForAgent(int $agentId): int

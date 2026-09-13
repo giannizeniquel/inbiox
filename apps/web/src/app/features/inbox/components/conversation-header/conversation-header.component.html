@@ -41,15 +41,27 @@
     </div>
   </div>
 
-  <!-- Right: resolve button -->
-  <button
-    class="conversation-header__resolve-btn"
-    type="button"
-    [disabled]="resolving() || !canResolve()"
-    [attr.aria-label]="'Resolver conversación con ' + contactName()"
-    [attr.aria-busy]="resolving() ? 'true' : null"
-    (click)="onResolve()"
-  >
-    {{ resolving() ? 'RESOLVIENDO…' : 'RESOLVER' }}
-  </button>
+  <!-- Right: participation toggle + resolve button -->
+  <div class="conversation-header__actions">
+    <button
+      class="conversation-header__participation-btn"
+      type="button"
+      [attr.aria-expanded]="participationOpen() ? 'true' : 'false'"
+      [attr.aria-label]="'Ver participación de ' + contactName()"
+      (click)="onToggleParticipation()"
+    >
+      Participación
+    </button>
+
+    <button
+      class="conversation-header__resolve-btn"
+      type="button"
+      [disabled]="resolving() || !canResolve()"
+      [attr.aria-label]="'Resolver conversación con ' + contactName()"
+      [attr.aria-busy]="resolving() ? 'true' : null"
+      (click)="onResolve()"
+    >
+      {{ resolving() ? 'RESOLVIENDO…' : 'RESOLVER' }}
+    </button>
+  </div>
 </header>

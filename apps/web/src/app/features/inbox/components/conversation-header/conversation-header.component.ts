@@ -25,7 +25,12 @@ export class ConversationHeaderComponent {
   /** True while the parent's resolve request is in flight. */
   readonly resolving = input<boolean>(false);
 
+  /** True when the "Participación" panel is currently expanded. */
+  readonly participationOpen = input<boolean>(false);
+
   readonly resolve = output<void>();
+
+  readonly toggleParticipation = output<void>();
 
   /**
    * A ticket that already reached a terminal-ish state has nothing to resolve —
@@ -65,5 +70,9 @@ export class ConversationHeaderComponent {
 
   onResolve(): void {
     this.resolve.emit();
+  }
+
+  onToggleParticipation(): void {
+    this.toggleParticipation.emit();
   }
 }

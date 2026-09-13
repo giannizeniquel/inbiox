@@ -12,3 +12,5 @@ export type { GetReportsDashboardInput, ReportsDashboardData, VolumeDataPoint, A
 export { ReportsFetchFailed } from './get-reports-dashboard.use-case';
 
 export { ExportTicketsCsvUseCase } from './export-tickets-csv.use-case';
+
+export { GetTicketParticipationUseCase, TicketParticipationFetchFailed } from './get-ticket-participation.use-case';

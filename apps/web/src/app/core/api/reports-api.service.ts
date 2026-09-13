@@ -10,6 +10,7 @@ import {
   HeatmapParams,
   RecurringParams,
 } from '../dto/reports.params';
+import { ResponseDelayReport, TicketParticipation } from '../dto/response-delay.dto';
 
 /** Backend response for GET /api/reports/frt */
 export interface FirstResponseTimeResponse {
@@ -253,5 +254,19 @@ export class ReportsApiService {
       params: this.buildParams(params),
       responseType: 'blob',
     });
+  }
+
+  /** GET /api/reports/response-delay */
+  getResponseDelay(params?: TimeFilterParams): Observable<ResponseDelayReport> {
+    return this.http.get<ResponseDelayReport>(`${this.baseUrl}/api/reports/response-delay`, {
+      params: this.buildParams(params),
+    });
+  }
+
+  /** GET /api/reports/tickets/{id}/participation */
+  getTicketParticipation(ticketId: number): Observable<TicketParticipation> {
+    return this.http.get<TicketParticipation>(
+      `${this.baseUrl}/api/reports/tickets/${ticketId}/participation`,
+    );
   }
 }

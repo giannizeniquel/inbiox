@@ -33,9 +33,28 @@ describe('GetReportsDashboardUseCase', () => {
       'getTicketCounts',
       'getVolumeTrend',
       'getAgentMetrics',
+      'getAgentLoad',
+      'getUnassigned',
+      'getFrtTrend',
+      'getResponseDelay',
+      'getAvailableAgents',
+      'getHeatmap',
+      'getRecurringCustomers',
+      'getReopened',
     ]);
     useCase = new GetReportsDashboardUseCase(apiSpy);
   });
+
+  /** Wires up every stream past Group A so a full execute() completes. */
+  function mockGroupsBAndC(): void {
+    apiSpy.getAgentLoad.and.returnValue(of([]));
+    apiSpy.getUnassigned.and.returnValue(of({ count: 0, tickets: [] }));
+    apiSpy.getFrtTrend.and.returnValue(of([]));
+    apiSpy.getAvailableAgents.and.returnValue(of([]));
+    apiSpy.getHeatmap.and.returnValue(of([]));
+    apiSpy.getRecurringCustomers.and.returnValue(of([]));
+    apiSpy.getReopened.and.returnValue(of([]));
+  }
 
   it('should call all 5 API methods with params', (done) => {
     apiSpy.getFirstResponseTime.and.returnValue(of(mockFrt));
@@ -130,6 +149,47 @@ describe('GetReportsDashboardUseCase', () => {
         expect(data.volume).toEqual([]);
         expect(data.agents).toEqual([]);
         expect(data.frt.value).toBe(5.5); // still works
+        done();
+      },
+    });
+  });
+
+  it('should degrade responseDelay to null on failure — never a zeroed object', (done) => {
+    apiSpy.getFirstResponseTime.and.returnValue(of(mockFrt));
+    apiSpy.getResolutionTime.and.returnValue(of(mockRt));
+    apiSpy.getTicketCounts.and.returnValue(of(mockCounts));
+    apiSpy.getVolumeTrend.and.returnValue(of(mockVolume));
+    apiSpy.getAgentMetrics.and.returnValue(of(mockAgents));
+    mockGroupsBAndC();
+    apiSpy.getResponseDelay.and.returnValue(throwError(() => new Error('Response delay error')));
+
+    useCase.execute(input).subscribe({
+      next: (data: ReportsDashboardData) => {
+        expect(data.responseDelay).toBeNull();
+        done();
+      },
+    });
+  });
+
+  it('should pass through the responseDelay report when the call succeeds', (done) => {
+    const mockResponseDelay = {
+      data_available_from: '2026-01-01T00:00:00Z',
+      partial_data: false,
+      aggregate: { avg_delay_seconds: 120, sample_count: 5, unanswered_inbound_count: 1 },
+      per_agent: [],
+    };
+
+    apiSpy.getFirstResponseTime.and.returnValue(of(mockFrt));
+    apiSpy.getResolutionTime.and.returnValue(of(mockRt));
+    apiSpy.getTicketCounts.and.returnValue(of(mockCounts));
+    apiSpy.getVolumeTrend.and.returnValue(of(mockVolume));
+    apiSpy.getAgentMetrics.and.returnValue(of(mockAgents));
+    mockGroupsBAndC();
+    apiSpy.getResponseDelay.and.returnValue(of(mockResponseDelay));
+
+    useCase.execute(input).subscribe({
+      next: (data: ReportsDashboardData) => {
+        expect(data.responseDelay).toEqual(mockResponseDelay);
         done();
       },
     });

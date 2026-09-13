@@ -10,6 +10,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Table(name: 'messages')]
 #[ORM\Index(name: 'idx_messages_conversation_id', columns: ['conversation_id'])]
 #[ORM\Index(name: 'idx_messages_conversation_created_id', columns: ['conversation_id', 'created_at', 'id'])]
+#[ORM\Index(name: 'idx_messages_sender_type_created_at', columns: ['sender_type', 'created_at'])]
 class Message
 {
     #[ORM\Id]
