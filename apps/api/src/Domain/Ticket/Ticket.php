@@ -12,6 +12,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(name: 'idx_tickets_status', columns: ['status'])]
 #[ORM\Index(name: 'idx_tickets_assigned_agent_id', columns: ['assigned_agent_id'])]
 #[ORM\Index(name: 'idx_tickets_owner_status', columns: ['assigned_agent_id', 'status'])]
+#[ORM\Index(name: 'idx_tickets_conversation_created_id', columns: ['conversation_id', 'created_at', 'id'])]
 class Ticket
 {
     #[ORM\Id]
@@ -60,6 +61,9 @@ class Ticket
 
     #[ORM\Column(name: "phone_number_id", type: "string", length: 36, nullable: true)]
     private ?string $phoneNumberId = null;
+
+    #[ORM\Column(name: "team_id", type: "bigint", nullable: true)]
+    private ?int $teamId = null;
 
     #[ORM\Column(name: "last_read_at", type: "datetime_immutable", nullable: true)]
     private ?\DateTimeImmutable $lastReadAt = null;
@@ -218,6 +222,17 @@ class Ticket
     public function setPhoneNumberId(?string $phoneNumberId): self
     {
         $this->phoneNumberId = $phoneNumberId;
+        return $this;
+    }
+
+    public function getTeamId(): ?int
+    {
+        return $this->teamId;
+    }
+
+    public function setTeamId(?int $teamId): self
+    {
+        $this->teamId = $teamId;
         return $this;
     }
 

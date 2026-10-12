@@ -73,6 +73,13 @@ export class ConversationStore {
         if (!active || String(active.ticket_id) !== String(p.ticketId)) {
           return;
         }
+        // Idempotent insert guard (design.md D6): a human-agent reply now
+        // also broadcasts via Mercure, so the sender's own optimistic
+        // confirmMessage() may already have this id before the echo
+        // arrives (or vice versa) — never insert the same server id twice.
+        if (this.messages().some(m => m.id === String(p.messageId))) {
+          return;
+        }
         const message: Message = {
           id: String(p.messageId),
           ticketId: String(p.ticketId),
@@ -168,18 +175,24 @@ export class ConversationStore {
    */
   confirmMessage(tempId: string, confirmed: Message): void {
     this.messages.update(msgs =>
-      msgs.map(m => {
-        if (m.tempId === tempId) {
-          // Reconciliation: keep tempId but merge confirmed data
-          return {
-            ...confirmed,
-            tempId, // Keep tempId for tracking
-            media: confirmed.media ?? m.media, // Preserve optimistic media (local preview)
-            deliveryStatus: confirmed.deliveryStatus || m.deliveryStatus,
-          };
-        }
-        return m;
-      })
+      msgs
+        .map(m => {
+          if (m.tempId === tempId) {
+            // Reconciliation: keep tempId but merge confirmed data
+            return {
+              ...confirmed,
+              tempId, // Keep tempId for tracking
+              media: confirmed.media ?? m.media, // Preserve optimistic media (local preview)
+              deliveryStatus: confirmed.deliveryStatus || m.deliveryStatus,
+            };
+          }
+          return m;
+        })
+        // Echo-arrives-first race guard (design.md D6): if the Mercure echo
+        // for this server id was appended before confirmMessage() ran, drop
+        // that separate entry now that the optimistic one has been
+        // reconciled to the same id — otherwise the message would appear twice.
+        .filter(m => !(m.id === confirmed.id && m.tempId !== tempId))
     );
     // Clear from cache on confirmation
     this.messageCache.delete(tempId);

@@ -10,6 +10,7 @@ use App\Domain\Event\EventCollector;
 use App\Domain\Event\MessageCreatedEvent;
 use App\Domain\Message\Message;
 use App\Domain\Message\MessageDirection;
+use App\Domain\Message\MessageSenderType;
 use App\Domain\Ticket\ConversationWindowPolicy;
 use App\Domain\Ticket\ProcessedEvent;
 use App\Domain\Ticket\Ticket;
@@ -155,6 +156,8 @@ final class AutoReplyService
                 $msg->setExternalId($wamid);
             }
             $msg->setDeliveryStatus('sent');
+            $msg->setSenderAgentId($agent->getId());
+            $msg->setSenderType(MessageSenderType::AUTOMATIC);
             $this->em->persist($msg);
 
             // Update conversation timestamp

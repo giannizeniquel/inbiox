@@ -150,6 +150,46 @@
   &.conn-offline { background: var(--conn-offline); }
 }
 
+// Actions group (participation toggle + resolve button)
+.conversation-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+// Participation toggle button
+.conversation-header__participation-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  border: 1px solid var(--border-subtle, #e5e7eb);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--font-xs);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+
+  &[aria-expanded="true"] {
+    background: var(--accent-primary);
+    color: var(--text-on-accent);
+    border-color: var(--accent-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+  }
+}
+
 // Resolve button
 .conversation-header__resolve-btn {
   display: inline-flex;

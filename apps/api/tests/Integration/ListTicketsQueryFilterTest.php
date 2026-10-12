@@ -9,8 +9,10 @@ use App\Domain\Contact\Contact;
 use App\Domain\Conversation\Conversation;
 use App\Domain\Tag\Tag;
 use App\Domain\Tag\TicketTag;
+use App\Domain\Team\Team;
 use App\Domain\Ticket\Ticket;
 use App\Domain\Ticket\TicketStatus;
+use App\Domain\Workspace\Workspace;
 use App\Repository\TagRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -38,6 +40,8 @@ class ListTicketsQueryFilterTest extends KernelTestCase
         $conn->executeStatement('DELETE FROM tickets');
         $conn->executeStatement('DELETE FROM conversations');
         $conn->executeStatement('DELETE FROM contacts');
+        $conn->executeStatement('DELETE FROM teams');
+        $conn->executeStatement('DELETE FROM workspaces');
     }
 
     protected function tearDown(): void
@@ -46,7 +50,7 @@ class ListTicketsQueryFilterTest extends KernelTestCase
         $this->em = null;
     }
 
-    private function createTicket(string $status, array $tagNames = [], ?int $assignedAgentId = null): int
+    private function createTicket(string $status, array $tagNames = [], ?int $assignedAgentId = null, ?int $teamId = null): int
     {
         $this->phoneSeq++;
 
@@ -64,6 +68,9 @@ class ListTicketsQueryFilterTest extends KernelTestCase
         $ticket->setStatus($status);
         if (null !== $assignedAgentId) {
             $ticket->setAssignedAgentId($assignedAgentId);
+        }
+        if (null !== $teamId) {
+            $ticket->setTeamId($teamId);
         }
         $this->em->persist($ticket);
         $this->em->flush();
@@ -85,6 +92,18 @@ class ListTicketsQueryFilterTest extends KernelTestCase
         \assert($id !== null);
 
         return $id;
+    }
+
+    private function createTeam(string $name = 'Support'): Team
+    {
+        $workspace = new Workspace('+549110000' . random_int(1000, 9999), 'Workspace for ' . $name);
+        $this->em->persist($workspace);
+
+        $team = new Team($workspace, $name);
+        $this->em->persist($team);
+        $this->em->flush();
+
+        return $team;
     }
 
     // --- Phase 1/2: status whitelist ---
@@ -205,5 +224,57 @@ class ListTicketsQueryFilterTest extends KernelTestCase
 
         self::assertCount(1, $result['items']);
         self::assertSame($ownTagged, $result['items'][0]->ticketId);
+    }
+
+    // --- Phase 3 (Slice 3): team filter (ticket-list-filters spec) ---
+
+    public function test_team_id_returns_only_matching_team_tickets(): void
+    {
+        $team = $this->createTeam();
+        $inTeam = $this->createTicket('active', [], null, $team->getId());
+        $this->createTicket('active');
+
+        $query = static::getContainer()->get(ListTicketsQuery::class);
+        $result = $query->execute(page: 1, limit: 20, teamId: $team->getId());
+
+        self::assertCount(1, $result['items']);
+        self::assertSame($inTeam, $result['items'][0]->ticketId);
+    }
+
+    public function test_team_id_with_zero_matching_tickets_returns_empty_no_error(): void
+    {
+        $team = $this->createTeam();
+        $this->createTicket('active');
+
+        $query = static::getContainer()->get(ListTicketsQuery::class);
+        $result = $query->execute(page: 1, limit: 20, teamId: $team->getId());
+
+        self::assertCount(0, $result['items']);
+        self::assertSame(0, $result['total']);
+    }
+
+    public function test_team_id_omitted_is_byte_identical_to_pre_change_behavior(): void
+    {
+        $this->createTicket('active', ['vip']);
+        $this->createTicket('waiting');
+
+        $query = static::getContainer()->get(ListTicketsQuery::class);
+        $result = $query->execute(page: 1, limit: 20);
+
+        self::assertCount(2, $result['items']);
+    }
+
+    public function test_team_id_composes_with_multi_tag_and_filter(): void
+    {
+        $team = $this->createTeam();
+        $matchesBoth = $this->createTicket('active', ['vip', 'urgente'], null, $team->getId());
+        $this->createTicket('active', ['vip', 'urgente']); // right tags, wrong team
+        $this->createTicket('active', ['vip'], null, $team->getId()); // right team, missing a tag
+
+        $query = static::getContainer()->get(ListTicketsQuery::class);
+        $result = $query->execute(page: 1, limit: 20, tag: 'vip,urgente', teamId: $team->getId());
+
+        self::assertCount(1, $result['items']);
+        self::assertSame($matchesBoth, $result['items'][0]->ticketId);
     }
 }

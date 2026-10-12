@@ -12,6 +12,7 @@ import {
   HeatmapCell,
   RecurringEntry,
   ReopenedEntry,
+  ResponseDelayReport,
 } from '../../../features/reports/models/reports.models';
 
 /**
@@ -35,6 +36,7 @@ export interface ReportsDashboardData {
   agentLoad: AgentLoadEntry[];
   unassigned: UnassignedResponse;
   frtTrend: FrtTrendPoint[];
+  responseDelay: ResponseDelayReport | null;
   // ── Group C: Detail ──
   availableAgents: AvailableAgentEntry[];
   heatmap: HeatmapCell[];
@@ -118,6 +120,11 @@ export class GetReportsDashboardUseCase {
           frtTrend: this.api.getFrtTrend(input.params).pipe(
             catchError(() => of([] as FrtTrendPoint[])),
           ),
+          // Degrades to null on failure — NEVER a zeroed object, so the UI
+          // can tell "no data yet" apart from "0 seconds average delay".
+          responseDelay: this.api.getResponseDelay(input.params).pipe(
+            catchError(() => of(null as ResponseDelayReport | null)),
+          ),
         }).pipe(
           switchMap((groupB) => {
             // ── Group C: Detail (availableAgents, heatmap, recurring, reopened) ──
@@ -157,6 +164,7 @@ export class GetReportsDashboardUseCase {
                 agentLoad: groupB.agentLoad,
                 unassigned: groupB.unassigned,
                 frtTrend: groupB.frtTrend,
+                responseDelay: groupB.responseDelay,
                 availableAgents: groupC.availableAgents,
                 heatmap: groupC.heatmap,
                 recurring: groupC.recurring,

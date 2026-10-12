@@ -1,5 +1,6 @@
 import { ConversationStore } from './conversation.store';
 import { Message } from '../models/message.model';
+import { RealtimeEventType, MessageAddedPayload } from '../models/realtime-event.model';
 
 describe('ConversationStore', () => {
   let store: ConversationStore;
@@ -285,5 +286,82 @@ describe('ConversationStore', () => {
 
     expect(store.hasMessage('temp-1')).toBeTrue();
     expect(store.hasMessage('nonexistent')).toBeFalse();
+  });
+
+  // ── onRealtimeEvent(MessageAdded) dedup guard (message-agent-attribution, design.md D6) ──
+  // A human-agent reply now also broadcasts over Mercure, so the sender's own
+  // optimistic confirmMessage() may already hold this server id before the
+  // echo arrives — the echo must be a no-op, never a second bubble.
+
+  function makeMessageAddedEvent(overrides: Partial<MessageAddedPayload> = {}) {
+    return {
+      eventId: 'evt-1',
+      eventType: RealtimeEventType.MessageAdded,
+      ticketId: 'ticket-1',
+      payload: {
+        messageId: 501,
+        ticketId: 501,
+        content: 'Echoed reply',
+        direction: 'outbound' as const,
+        senderName: 'Agent A',
+        createdAt: '2024-01-01T00:05:00Z',
+        externalId: null,
+        ...overrides,
+      },
+    };
+  }
+
+  it('should ignore a MessageAdded echo whose id is already in messages()', () => {
+    (store as unknown as { ticketStore: { activeTicket(): unknown } }).ticketStore = {
+      activeTicket: () => ({ ticket_id: 'ticket-1' }),
+    };
+    store.addMessage(makeMessage({ id: '501' }));
+
+    (store as unknown as { onRealtimeEvent(e: unknown): void }).onRealtimeEvent(
+      makeMessageAddedEvent()
+    );
+
+    expect(store.messages().length).toBe(1);
+  });
+
+  it('should add a MessageAdded event for a message id not yet present', () => {
+    (store as unknown as { ticketStore: { activeTicket(): unknown } }).ticketStore = {
+      activeTicket: () => ({ ticket_id: 'ticket-1' }),
+    };
+
+    (store as unknown as { onRealtimeEvent(e: unknown): void }).onRealtimeEvent(
+      makeMessageAddedEvent()
+    );
+
+    expect(store.messages().length).toBe(1);
+    expect(store.messages()[0].id).toBe('501');
+  });
+
+  // ── confirmMessage() echo-arrives-first race guard (design.md D6) ──
+
+  it('should drop a duplicate entry sharing the confirmed server id from an earlier echo', () => {
+    // Echo arrived first and was appended directly (no tempId).
+    store.addMessage(makeMessage({ id: 'server-id-123', tempId: undefined }));
+    // Optimistic entry for the same logical send, still pending confirmation.
+    store.addOptimisticMessage('temp-1', 'Hello', 'ticket-1');
+    expect(store.messages().length).toBe(2);
+
+    const confirmed: Message = {
+      id: 'server-id-123',
+      ticketId: 'ticket-1',
+      content: 'Hello',
+      direction: 'outbound',
+      sender: 'agent',
+      deliveryStatus: 'sent',
+      createdAt: '2024-01-01T00:01:00Z',
+    };
+
+    store.confirmMessage('temp-1', confirmed);
+
+    // Only the reconciled optimistic entry remains — the earlier echo's
+    // duplicate row (tempId !== 'temp-1') is dropped.
+    expect(store.messages().length).toBe(1);
+    expect(store.messages()[0].id).toBe('server-id-123');
+    expect(store.messages()[0].tempId).toBe('temp-1');
   });
 });

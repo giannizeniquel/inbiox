@@ -70,6 +70,12 @@ export const routes: Routes = [
           import('./features/admin/workspaces/workspaces-page.component').then(m => m.WorkspacesPageComponent),
       },
       {
+        path: 'admin/teams',
+        canActivate: [roleGuard('ROLE_SUPERVISOR')],
+        loadComponent: () =>
+          import('./features/admin/teams/teams-page.component').then(m => m.TeamsPageComponent),
+      },
+      {
         path: 'settings',
         loadComponent: () =>
           import('./features/settings/pages/settings-page/settings-page.component').then(m => m.SettingsPageComponent),

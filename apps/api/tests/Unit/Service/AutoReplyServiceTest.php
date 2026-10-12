@@ -14,6 +14,8 @@ use App\Domain\Contact\Contact;
 use App\Domain\Conversation\Conversation;
 use App\Domain\Event\EventCollector;
 use App\Domain\Ticket\ConversationWindowPolicy;
+use App\Domain\Message\Message;
+use App\Domain\Message\MessageSenderType;
 use App\Domain\Ticket\ProcessedEvent;
 use App\Domain\Ticket\Ticket;
 use App\Exception\GraphApiException;
@@ -410,6 +412,48 @@ class AutoReplyServiceTest extends TestCase
             ->with(self::stringContains('window'));
 
         $this->service->maybeSend($ticket);
+    }
+
+    // ────────────────────────────────────────────────────────────
+    //  Attribution (message-agent-attribution): sender_agent_id + AUTOMATIC
+    // ────────────────────────────────────────────────────────────
+
+    public function testSetsAutomaticAttributionOnTheAutoReplyMessage(): void
+    {
+        $agent = $this->createAgent(id: 7);
+        $contact = $this->createContact(phone: '+5493625123456');
+        $conversation = new Conversation();
+        $conversation->setContact($contact);
+        $conversation->setStatus('open');
+        $ticket = $this->createTicket(agent: $agent, contact: $contact, phoneNumberId: '123456789', conversation: $conversation);
+
+        $this->agentRepo->expects(self::once())
+            ->method('findById')
+            ->with(7)
+            ->willReturn($agent);
+
+        $this->processedEventRepo->expects(self::exactly(2))
+            ->method('findByEventId')
+            ->with('auto-reply:1')
+            ->willReturn(null);
+
+        $this->graphClient->expects(self::once())
+            ->method('sendMessage')
+            ->willReturn(['messages' => [['id' => 'wamid.test']]]);
+
+        $persistedMessage = null;
+        $this->em->method('persist')->willReturnCallback(function ($entity) use (&$persistedMessage) {
+            if ($entity instanceof Message) {
+                $persistedMessage = $entity;
+            }
+        });
+        $this->em->method('flush');
+
+        $this->service->maybeSend($ticket);
+
+        self::assertNotNull($persistedMessage, 'AutoReplyService must persist a Message entity');
+        self::assertSame(7, $persistedMessage->getSenderAgentId());
+        self::assertSame(MessageSenderType::AUTOMATIC->value, $persistedMessage->getSenderType());
     }
 
     // ────────────────────────────────────────────────────────────

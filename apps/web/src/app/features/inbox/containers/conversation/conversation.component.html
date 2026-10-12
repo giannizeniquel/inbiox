@@ -15,9 +15,16 @@
       <app-conversation-header
         [ticket]="activeTicket()!"
         [resolving]="resolving()"
+        [participationOpen]="participationOpen()"
         (resolve)="onResolveTicket()"
+        (toggleParticipation)="onToggleParticipation()"
       />
     </div>
+
+    <!-- "Participación" panel — collapsible, lazy-fetches only while open -->
+    @if (participationOpen()) {
+      <app-ticket-participation [ticketId]="+activeTicket()!.ticket_id" />
+    }
 
     <!-- Contextual warning banner (conditional) -->
     @if (warningMessage()) {

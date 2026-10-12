@@ -30,13 +30,14 @@ class ReportingService
      * @param \DateTimeImmutable $to End of date range (UTC)
      * @param int|null $agentId Optional filter by assigned agent
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
+     * @param int|null $teamId Optional filter by team (single-select)
      * @return array{avg_frt: float|null, min_frt: int|null, max_frt: int|null}
      */
-    public function getFrt(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null): array
+    public function getFrt(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
     {
         $this->validateDateRange($from, $to);
 
-        return $this->reportingRepository->getFrtMetrics($from, $to, $agentId, $phoneNumberId);
+        return $this->reportingRepository->getFrtMetrics($from, $to, $agentId, $phoneNumberId, $teamId);
     }
 
     /**
@@ -46,13 +47,14 @@ class ReportingService
      * @param \DateTimeImmutable $to End of date range (UTC)
      * @param int|null $agentId Optional filter by assigned agent
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
+     * @param int|null $teamId Optional filter by team (single-select)
      * @return array{avg_rt: float|null, min_rt: int|null, max_rt: int|null}
      */
-    public function getRt(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null): array
+    public function getRt(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
     {
         $this->validateDateRange($from, $to);
 
-        return $this->reportingRepository->getRtMetrics($from, $to, $agentId, $phoneNumberId);
+        return $this->reportingRepository->getRtMetrics($from, $to, $agentId, $phoneNumberId, $teamId);
     }
 
     /**
@@ -62,13 +64,14 @@ class ReportingService
      * @param \DateTimeImmutable $to End of date range (UTC)
      * @param int|null $agentId Optional filter by assigned agent
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
+     * @param int|null $teamId Optional filter by team (single-select)
      * @return array{new: int, active: int, waiting: int, resolved: int, closed: int}
      */
-    public function getCounts(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null): array
+    public function getCounts(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
     {
         $this->validateDateRange($from, $to);
 
-        return $this->reportingRepository->getCountsByStatus($from, $to, $agentId, $phoneNumberId);
+        return $this->reportingRepository->getCountsByStatus($from, $to, $agentId, $phoneNumberId, $teamId);
     }
 
     /**
@@ -78,13 +81,14 @@ class ReportingService
      * @param \DateTimeImmutable $to End of date range (UTC)
      * @param int|null $agentId Optional filter by assigned agent
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
+     * @param int|null $teamId Optional filter by team (single-select)
      * @return array<int, array{date: string, tickets_created: int, tickets_resolved: int}>
      */
-    public function getVolume(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null): array
+    public function getVolume(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
     {
         $this->validateDateRange($from, $to);
 
-        return $this->reportingRepository->getVolumeOverTime($from, $to, $agentId, $phoneNumberId);
+        return $this->reportingRepository->getVolumeOverTime($from, $to, $agentId, $phoneNumberId, $teamId);
     }
 
     /**
@@ -94,13 +98,14 @@ class ReportingService
      * @param \DateTimeImmutable $to End of date range (UTC)
      * @param int|null $agentId Optional filter by specific agent
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
+     * @param int|null $teamId Optional filter by team (single-select)
      * @return array<int, array{agent_id: int, tickets_assigned: int, tickets_resolved: int, avg_frt: float|null, avg_rt: float|null}>
      */
-    public function getAgentPerformance(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null): array
+    public function getAgentPerformance(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
     {
         $this->validateDateRange($from, $to);
 
-        return $this->reportingRepository->getAgentPerformance($from, $to, $agentId, $phoneNumberId);
+        return $this->reportingRepository->getAgentPerformance($from, $to, $agentId, $phoneNumberId, $teamId);
     }
 
     /**
@@ -201,6 +206,52 @@ class ReportingService
         $this->validateDateRange($from, $to);
 
         return $this->reportingRepository->getReopened($from, $to, $phoneNumberId, $limit);
+    }
+
+    /**
+     * Get aggregate + per-agent response-delay metrics.
+     *
+     * @param \DateTimeImmutable $from Start of date range (UTC) — filters on ticket episode start
+     * @param \DateTimeImmutable $to End of date range (UTC)
+     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
+     * @return array{data_available_from: string|null, partial_data: bool, aggregate: array{avg_delay_seconds: float|null, sample_count: int, unanswered_inbound_count: int}, per_agent: array<int, array{agent_id: int, agent_name: string|null, avg_delay_seconds: float|null, sample_count: int}>}
+     */
+    public function getResponseDelay(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null): array
+    {
+        $this->validateDateRange($from, $to);
+
+        $cutoff = $this->reportingRepository->getAttributionCutoff();
+        $metrics = $this->reportingRepository->getResponseDelayMetrics($from, $to, $phoneNumberId);
+
+        return [
+            'data_available_from' => $cutoff?->format('Y-m-d H:i:s'),
+            // Null cutoff means the whole messages table is unattributed —
+            // that is partial data too, not "no data available at all".
+            'partial_data' => $cutoff === null || $cutoff > $from,
+            'aggregate' => $metrics['aggregate'],
+            'per_agent' => $metrics['per_agent'],
+        ];
+    }
+
+    /**
+     * Get per-ticket participation drill-down.
+     *
+     * @param int $ticketId Ticket ID
+     * @return array|null null when the ticket does not exist
+     */
+    public function getTicketParticipation(int $ticketId): ?array
+    {
+        $result = $this->reportingRepository->getTicketParticipation($ticketId);
+
+        if ($result === null) {
+            return null;
+        }
+
+        $result['data_available_from'] = $result['data_available_from'] instanceof \DateTimeImmutable
+            ? $result['data_available_from']->format('Y-m-d H:i:s')
+            : $result['data_available_from'];
+
+        return $result;
     }
 
     /**

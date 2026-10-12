@@ -10,7 +10,9 @@ use App\Domain\Contact\Contact;
 use App\Domain\Conversation\Conversation;
 use App\Domain\Tag\Tag;
 use App\Domain\Tag\TicketTag;
+use App\Domain\Team\Team;
 use App\Domain\Ticket\Ticket;
+use App\Domain\Workspace\Workspace;
 use App\Repository\TagRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use League\Csv\Reader;
@@ -45,6 +47,8 @@ class ExportTicketsCsvQueryTest extends KernelTestCase
         $conn->executeStatement('DELETE FROM conversations');
         $conn->executeStatement('DELETE FROM contacts');
         $conn->executeStatement('DELETE FROM agents');
+        $conn->executeStatement('DELETE FROM teams');
+        $conn->executeStatement('DELETE FROM workspaces');
     }
 
     protected function tearDown(): void
@@ -59,6 +63,7 @@ class ExportTicketsCsvQueryTest extends KernelTestCase
         ?int $assignedAgentId = null,
         ?\DateTimeImmutable $createdAt = null,
         string $contactName = 'Jane Doe',
+        ?int $teamId = null,
     ): int {
         $this->phoneSeq++;
 
@@ -80,6 +85,9 @@ class ExportTicketsCsvQueryTest extends KernelTestCase
         }
         if (null !== $createdAt) {
             $ticket->setCreatedAt($createdAt);
+        }
+        if (null !== $teamId) {
+            $ticket->setTeamId($teamId);
         }
         $this->em->persist($ticket);
         $this->em->flush();
@@ -115,6 +123,18 @@ class ExportTicketsCsvQueryTest extends KernelTestCase
         return $id;
     }
 
+    private function createTeam(string $name = 'Support'): Team
+    {
+        $workspace = new Workspace('+549110000' . random_int(1000, 9999), 'Workspace for ' . $name);
+        $this->em->persist($workspace);
+
+        $team = new Team($workspace, $name);
+        $this->em->persist($team);
+        $this->em->flush();
+
+        return $team;
+    }
+
     /** @return list<array<string, string>> */
     private function runExport(
         \DateTimeImmutable $from,
@@ -123,11 +143,12 @@ class ExportTicketsCsvQueryTest extends KernelTestCase
         ?string $status = null,
         ?string $tag = null,
         ?string $phoneNumberId = null,
+        ?int $teamId = null,
     ): array {
         $query = static::getContainer()->get(ExportTicketsCsvQuery::class);
         $writer = Writer::createFromString();
 
-        $query->stream($writer, $from, $to, $agentId, $status, $tag, $phoneNumberId);
+        $query->stream($writer, $from, $to, $agentId, $status, $tag, $phoneNumberId, $teamId);
 
         $reader = Reader::createFromString($writer->toString());
         $reader->setHeaderOffset(0);
@@ -242,5 +263,23 @@ class ExportTicketsCsvQueryTest extends KernelTestCase
         $count = $query->stream($writer, new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-31'));
 
         self::assertSame(2, $count);
+    }
+
+    // --- Phase 3 (Slice 3): team filter (ticket-list-filters spec) ---
+
+    public function test_team_id_filter_narrows_export_rows(): void
+    {
+        $team = $this->createTeam();
+        $inTeam = $this->createTicket(createdAt: new \DateTimeImmutable('2026-01-10'), teamId: $team->getId());
+        $this->createTicket(createdAt: new \DateTimeImmutable('2026-01-11'));
+
+        $records = $this->runExport(
+            new \DateTimeImmutable('2026-01-01'),
+            new \DateTimeImmutable('2026-01-31'),
+            teamId: $team->getId(),
+        );
+
+        self::assertCount(1, $records);
+        self::assertSame((string) $inTeam, $records[0]['ticket_id']);
     }
 }

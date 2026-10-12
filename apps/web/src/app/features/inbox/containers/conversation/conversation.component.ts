@@ -11,6 +11,7 @@ import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrollin
 import { CdkAutoSizeVirtualScroll } from '@angular/cdk-experimental/scrolling';
 import { MessageBubbleComponent } from '../../components/message-bubble/message-bubble.component';
 import { ConversationHeaderComponent } from '../../components/conversation-header/conversation-header.component';
+import { TicketParticipationComponent } from '../../components/ticket-participation/ticket-participation.component';
 import { ComposerComponent } from '../../components/composer/composer.component';
 import { ConversationEmptyComponent } from '../../components/conversation-empty/conversation-empty.component';
 import { ConversationLoadingComponent } from '../../components/conversation-loading/conversation-loading.component';
@@ -65,6 +66,7 @@ const PAGINATION_THRESHOLD = 200;
     ScrollingModule,
     CdkAutoSizeVirtualScroll,
     ConversationHeaderComponent,
+    TicketParticipationComponent,
     MessageBubbleComponent,
     ComposerComponent,
     ConversationEmptyComponent,
@@ -100,6 +102,9 @@ export class ConversationComponent {
 
   /** True while a resolve request is in flight — keeps the action idempotent. */
   protected readonly resolving = signal(false);
+
+  /** True when the "Participación" panel is expanded (lazy-fetches on open). */
+  protected readonly participationOpen = signal(false);
 
   /** Emitted when user taps back button on mobile — closes conversation panel */
   protected readonly back = output<void>();
@@ -183,6 +188,7 @@ export class ConversationComponent {
     this.paginationArmed.set(true);
     this.isAtBottom.set(false);
     this.newMessagesCount.set(0);
+    this.participationOpen.set(false);
   });
 
   /** Mark ticket as read on the backend when the active ticket changes */
@@ -318,6 +324,11 @@ export class ConversationComponent {
   /** Dismiss the workflow action message. */
   onDismissActionMessage(): void {
     this.actionMessage.set(null);
+  }
+
+  /** Toggle the "Participación" panel — fetch is lazy (gated by `@if` in the template). */
+  onToggleParticipation(): void {
+    this.participationOpen.update((open) => !open);
   }
 
   onSendMessage(event: { content: string; tempId: string }): void {
