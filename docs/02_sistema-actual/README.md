@@ -98,7 +98,6 @@ Auditoría hecha contra el código en `239ee15`. Un documento "engañoso" contie
 | `docs/03_architecture/saas-multi-tenant.md` | Diseño futuro. **Contiene fragmentos de credenciales y teléfonos reales** (ver [00](00-estado-y-pendientes.md#riesgos-ordenados-por-severidad)). | No compartir hasta sanearlo. |
 | `docs/04_sprints/*`, `sdd/`, `openspec/sprint-12-3-reports/`, `openspec/changes/*` sin archivar (21) | Históricos; checklists poco fiables. | Solo historia. |
 | `simulate.js`, `scripts/*.js`, `inbiox-outbox-publisher.service` (raíz) | Obsoletos (rutas sin `/api`, sin JWT, topics viejos). | No usar sin revisar. |
-| Skill `inbiox-backend` | Desactualizada (estructura de carpetas que no coincide). | Con cuidado. |
 
 ## Qué no cubre esta documentación
 
