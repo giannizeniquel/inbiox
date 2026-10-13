@@ -63,3 +63,10 @@ cd apps/web && ./node_modules/.bin/ng build --configuration production
 - Frontend role checks are not hierarchical: `isAdmin()` and `isSupervisor()` are separate flags, so supervisor-gated UI must check `isAdmin() || isSupervisor()`.
 - Ticket status changes follow the FSM in `apps/api/src/Domain/Ticket/TicketStateMachine.php`.
 - Realtime events are written to the `outbox_events` table and published by the `publisher` service; use cases never publish to Mercure directly.
+
+---
+
+## Additions (minimalism)
+
+- Every addition — dependency, skill, plugin, MCP server, agent configuration — needs a real, concrete use case in this project. Without one, it does not go in.
+- gentle-ai's `branch-pr` and `issue-creation` skills enforce the gentle-ai repository's process (an issue first). They do not apply to inbiox: do not open or require an issue before a PR. Push, PR, and merge are human decisions.
