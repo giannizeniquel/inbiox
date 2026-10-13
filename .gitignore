@@ -23,6 +23,7 @@ tmp/
 apps/api/bin/.phpunit.result.cache
 # Local AI runtime state
 .atl/
+.codegraph/
 
 # Zed editor
 .zed/

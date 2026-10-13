@@ -2,56 +2,64 @@
 
 ## Architecture
 
-- **Type:** SaaS customer support platform
-
----
-
-## Pipeline SDD
-
-Model routing for the SDD pipeline and subagents: see `docs/sdd-model-routing.md`.
+- **Type:** SaaS customer support platform. WhatsApp conversations become tickets that are assigned to agents.
+- **Stack:** Symfony 7.4 API (`apps/api`), Angular 21 (`apps/web`), MySQL 8, Mercure (SSE realtime via a transactional outbox), WhatsApp Cloud API, MinIO/S3 for media.
+- **Current-system knowledge base:** start at `docs/02_sistema-actual/README.md`. It maps features, flows, business rules, API permissions, known risks, and the manual test guide, all verified against the code. Most other docs under `docs/` are partially stale; that README lists which ones to trust.
 
 ---
 
 ## Workflow
 
+Work follows **Organic Driven Development (ODD)**, defined in the user-level agent instructions installed by gentle-ai (4.1.1+).
+
+- Small, understood changes are made directly, with their focused test and the suite run once each.
+- Large work is tracked in `odd/tasks/<feature-name>.md` (Specs, Tasks, Log), mirrored in Engram under `odd/<feature-name>/tasks`, and delivered as work-unit commits on a feature branch. Push, PR, and merge remain human decisions.
+- **SDD is retired (2026-10-13).** Do not create new `openspec/changes/`. `openspec/specs/` remains a reference for confirmed behavior. `openspec/changes/`, `openspec/config.yaml`, `sdd/`, `docs/05_sdd/`, and `docs/sdd-model-routing.md` are historical.
+
+---
+
+## Testing
+
+Use these commands as the test runner for test-first work.
+
+### Backend (PHPUnit)
+
+```bash
+# 1. Clear the login rate limiter first, or ~140 false failures appear (HTTP tests log in repeatedly).
+docker exec inbiox_php php bin/console cache:pool:clear cache.rate_limiter --env=test
+# 2. Run with more memory; the default 128M runs out mid-suite.
+docker exec inbiox_php php -d memory_limit=512M vendor/bin/phpunit            # full suite
+docker exec inbiox_php php -d memory_limit=512M vendor/bin/phpunit --filter X # focused
 ```
-ORQUESTADOR
-    │
-    ├─→ SDD phases (explore → propose → spec → design → tasks)
-    │         │
-    │    sdd-apply───────┼──────────→ backend-dev
-    │                   │                ↓
-    │                   │           code-reviewer ←──← tester + documenter
-    │                   │
-    │                   └──────────→ frontend-dev
-    │                                    ↓
-    │                               code-reviewer ←──← tester + documenter
-    │
-    └─→ sdd-verify → sdd-archive
+
+- `make test` does **not** apply either step above, so it produces false failures.
+- The suite is **not green**: 45 tests fail on `test` at `239ee15` (triaged in `docs/02_sistema-actual/00-estado-y-pendientes.md`). Compare failing test **names** before and after a change, not just the count.
+- Never run two full suites at the same time: they share one test database.
+- The test database is built from the Doctrine mapping, not from migrations, so tests do not validate the migration chain.
+
+### Frontend (Angular)
+
+- Karma/Jasmine specs cannot run in this WSL2 environment (no Chrome). Write specs, but the enforceable gate is the production build:
+
+```bash
+cd apps/web && ./node_modules/.bin/ng build --configuration production
 ```
 
 ---
 
 ## Local Development
 
-- **Location:** Always work inside WSL2 (`/home/...`), NEVER in `/mnt/c`
-- **Setup:** See `docs/07_dev/setup_local.md`
-- **Services:** Docker with MySQL, Redis, Mercure, Mailhog
-- **Commands:** see `Makefile` (`make up`, `make bash`, `make migrate`, `make test`)
+- **Location:** always work inside WSL2 (`/home/...`), never in `/mnt/c`.
+- **Setup:** see `docs/02_sistema-actual/09-guia-de-pruebas-manuales.md` section 1 (`docs/07_dev/setup_local.md` is a generic template and does not apply).
+- **Services (docker-compose):** `php`, `nginx` (API on :8000), `db` (MySQL), `mercure` (:3000), `publisher` (outbox → Mercure), `web` (`ng serve` on :4200), `minio`, `adminer`. `window-closer` (24 h window auto-close) only runs with `--profile window-closer`. `redis` and `mailhog` are not used by the app.
+- **Commands:** `make up`, `make bash`, `make migrate`. `make seed` calls a command that does not exist; seed users with `docker exec inbiox_php php bin/console app:seed-users`.
 
 ---
 
 ## Key Conventions
 
-- Single source of truth: REST API
-- Deterministic behavior: same input → same result
-- Event-driven realtime: not state sync
-- FSM-based workflows: no invalid transitions
-- Auditability: all actions traceable
-
----
-
-## Documentation
-
-Start at `docs/README.md` for product and architecture docs.
-See `docs/04_sprints/` for implementation plan (10 sprints MVP).
+- HTTP routes are registered **only** in `apps/api/config/routes.yaml`. Controller `#[Route]` attributes are not loaded; a route missing from that file is unreachable.
+- Effective permissions combine `access_control` in `security.yaml`, class-level `#[IsGranted]`, method-level `#[IsGranted]`, and voters. All of them must pass.
+- Frontend role checks are not hierarchical: `isAdmin()` and `isSupervisor()` are separate flags, so supervisor-gated UI must check `isAdmin() || isSupervisor()`.
+- Ticket status changes follow the FSM in `apps/api/src/Domain/Ticket/TicketStateMachine.php`.
+- Realtime events are written to the `outbox_events` table and published by the `publisher` service; use cases never publish to Mercure directly.
