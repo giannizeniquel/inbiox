@@ -85,7 +85,7 @@ Auditoría hecha contra el código en `239ee15`. Un documento "engañoso" contie
 | `docs/04_sprints/sprint_16 (Production Readiness).md` | Fiel al código. | Contexto de la decisión de "bandeja compartida". |
 | `docker-compose.yml` (sus comentarios) | Vigente. | Cómo corren `publisher` y `window-closer`. |
 | `reporte-estado-proyecto.md` | Parcialmente desactualizado (dice que faltan atribución, equipos, import/export; ya existen). | Leer con cuidado. |
-| `AGENTS.md` | Parcialmente desactualizado (servicios docker incompletos; `make seed` llama a un comando inexistente). | Leer con cuidado. |
+| `AGENTS.md` | **Vigente** (reescrito el 13/10/2026 para ODD: comandos de test, servicios, convenciones). | Guía para agentes y comandos de test. |
 | `docs/03_architecture/ADR-004-platform-ready-bounded-contexts.md` | Parcialmente desactualizado: afirma que existe una interfaz `MessagingProvider` en el backend; no existe. | Sirve como intención de diseño, no como descripción. |
 | `docs/03_architecture/api-contracts.md`, `docs/05_sdd/changelog.md` | Parcialmente desactualizados. | Con cuidado. |
 | `README.md` (raíz) | **Engañoso** ("Frontend planned", `apps/worker` inexistente). | Ignorar. |
