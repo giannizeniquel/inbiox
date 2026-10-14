@@ -1,40 +1,12 @@
 <?php
 
-return array (
-  'Symfony\\Bundle\\FrameworkBundle\\FrameworkBundle' => 
-  array (
-    'all' => true,
-  ),
-  'Doctrine\\Bundle\\DoctrineBundle\\DoctrineBundle' => 
-  array (
-    'all' => true,
-  ),
-  'Doctrine\\Bundle\\MigrationsBundle\\DoctrineMigrationsBundle' => 
-  array (
-    'all' => true,
-  ),
-  'Symfony\\Bundle\\MakerBundle\\MakerBundle' => 
-  array (
-    'dev' => true,
-  ),
-  'Symfony\\Bundle\\MercureBundle\\MercureBundle' => 
-  array (
-    'all' => true,
-  ),
-  'Nelmio\\CorsBundle\\NelmioCorsBundle' => 
-  array (
-    'all' => true,
-  ),
-  'Symfony\\Bundle\\SecurityBundle\\SecurityBundle' => 
-  array (
-    'all' => true,
-  ),
-  'Lexik\\Bundle\\JWTAuthenticationBundle\\LexikJWTAuthenticationBundle' => 
-  array (
-    'all' => true,
-  ),
-  'Gesdinet\\JWTRefreshTokenBundle\\GesdinetJWTRefreshTokenBundle' => 
-  array (
-    'all' => true,
-  ),
-);
+return [
+    Symfony\Bundle\FrameworkBundle\FrameworkBundle::class => ['all' => true],
+    Doctrine\Bundle\DoctrineBundle\DoctrineBundle::class => ['all' => true],
+    Doctrine\Bundle\MigrationsBundle\DoctrineMigrationsBundle::class => ['all' => true],
+    Symfony\Bundle\MakerBundle\MakerBundle::class => ['dev' => true],
+    Nelmio\CorsBundle\NelmioCorsBundle::class => ['all' => true],
+    Symfony\Bundle\SecurityBundle\SecurityBundle::class => ['all' => true],
+    Lexik\Bundle\JWTAuthenticationBundle\LexikJWTAuthenticationBundle::class => ['all' => true],
+    Gesdinet\JWTRefreshTokenBundle\GesdinetJWTRefreshTokenBundle::class => ['all' => true],
+];
