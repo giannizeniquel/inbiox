@@ -47,7 +47,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T9 | S1, S7 | inline | done | Phase 1: docs in `02_sistema-actual` updated for the deletions |
 | T10 | S1 | inline | done | Phase 1 items that change a contract or the environment (see L9): L11–L16 |
 | T11 | S2 | inline | done | Phase 2: routes regenerated as `#[Route]` attributes from the YAML; `routes.yaml` = `routing.controllers` (L19) |
-| T12 | S2 | inline | done | Phase 2: removed 8 single-implementation interfaces (L20) |
+| T12 | S2 | inline | done | Phase 2: removed 8 single-implementation interfaces (7 repository interfaces + `EventCollector`) (L20) |
 | T13 | S2 | inline | done | Phase 2: moved 162 classes into 11 modules in one commit, plus the event_type migration (L21) |
 | T14 | S2, S7 | inline | done | Phase 2: docs paths and line refs updated after the moves (L22) |
 
@@ -167,3 +167,9 @@ Later phases, each with its own branch and task list when it starts:
     - A live outbox event with the new class name was published with HTTP 200; the test row was deleted.
     - Full suite: 692 tests, exactly the 6 baseline failures.
 - **L22 (2026-10-14), T14 (docs):** a script rewrote moved paths in `02_sistema-actual`, `AGENTS.md` and `arquitectura.md` (174 rewrites). It shifted 97 `File.php:line` refs from the phase-2 base (`97c0eec`) to HEAD, using a per-file line diff. 5 ambiguous `Admin/*Controller` refs and 6 bare `Admin/` mentions were fixed by hand. The doc 02 folder table was rewritten as a module table. Spot check: `HandleInboundMessageUseCase.php:381-384` still points at the auto-assignment dispatch. Remaining old-folder mentions are struck-through deleted files only.
+- **L23 (2026-10-14), phase 2 review:** the full range `4f28857..a73adc1` was refused with `lens_context_budget_exceeded` (442 files). User: "si, vamos así". It was split into three candidates, each reviewed in its own temporary worktree:
+  - T10 (`4f28857..97c0eec`): risk + reliability.
+  - Routes (`97c0eec..b971b31`): risk + reliability.
+  - Interfaces (`b971b31..e2d847f`): reliability + readability.
+  - Outcome: all three approved and acknowledged (authority burned), with 0 blocking findings. Readability advisories: R2-001 (the B4 doc row was stale and the 7+1 vs 8 counts confusing) is fixed here; R2-002 (import order in `AddTagToTicketUseCase`) is not applied, because the project has no import-order rule or formatter.
+  - The module move `3f70628` and the docs commit `a73adc1` are not reviewed: the move is too large for the reviewer, so it relies on the mechanical checks in L21. The temporary worktrees were removed.
