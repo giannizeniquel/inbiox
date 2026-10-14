@@ -25,7 +25,7 @@ Full rules and glossary in `docs/arquitectura.md`. New code follows them; existi
   - Business vocabulary in Spanish; technical vocabulary in English (layer folders, technical suffixes, jargon like webhook/outbox/token). Framework contracts are never translated.
   - No accents or `ñ` in identifiers.
 - **Minimalism:** every class, layer, or dependency needs a concrete current use.
-- **Check twice before deleting "dead" code.** Before removing anything that looks unused, (1) search every reference, including config, docker, systemd, scripts, and the frontend, and (2) read the code that uses it to confirm what it really does. Live code has nearly been deleted this way before.
+- **Check twice before deleting "dead" code.** Before removing anything that looks unused, (1) search every reference, including config, docker, systemd, host crontabs (`crontab -l`), scripts, and the frontend, and (2) read the code that uses it to confirm what it really does. Live code has nearly been deleted this way before.
 
 ---
 
