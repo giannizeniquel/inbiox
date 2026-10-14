@@ -9,12 +9,10 @@ use App\Disponibilidad\AgentAvailabilityService;
 use App\Agente\Agent;
 use App\Disponibilidad\AgentShift;
 use App\Disponibilidad\Repository\AgentShiftRepository;
+use App\Ticket\Repository\TicketRepository;
 use App\Ticket\TicketStatus;
 use App\Administracion\Workspace;
 use App\Agente\Repository\AgentRepository;
-use Doctrine\ORM\AbstractQuery;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Query;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -38,19 +36,19 @@ class AgentAvailabilityServiceTest extends TestCase
 {
     private AgentRepository&MockObject $agentRepository;
     private AgentShiftRepository&MockObject $agentShiftRepository;
-    private EntityManagerInterface&MockObject $entityManager;
+    private TicketRepository&MockObject $ticketRepository;
     private AgentAvailabilityService $service;
 
     protected function setUp(): void
     {
         $this->agentRepository = $this->createMock(AgentRepository::class);
         $this->agentShiftRepository = $this->createMock(AgentShiftRepository::class);
-        $this->entityManager = $this->createMock(EntityManagerInterface::class);
+        $this->ticketRepository = $this->createMock(TicketRepository::class);
 
         $this->service = new AgentAvailabilityService(
             $this->agentRepository,
             $this->agentShiftRepository,
-            $this->entityManager,
+            $this->ticketRepository,
         );
     }
 
@@ -113,34 +111,24 @@ class AgentAvailabilityServiceTest extends TestCase
     }
 
     /**
-     * Configure the entity manager mock to return a given count for the
+     * Configure the ticket repository mock to return a given count for the
      * active-tickets COUNT query.
      */
     private function expectActiveTicketCount(int $agentId, int $count): void
     {
-        $query = $this->createMock(Query::class);
-        $query->expects(self::once())
-            ->method('getSingleScalarResult')
-            ->willReturn((string) $count);
-
-        $query->expects(self::exactly(2))
-            ->method('setParameter')
-            ->willReturnSelf();
-
-        $this->entityManager->expects(self::once())
-            ->method('createQuery')
-            ->with(self::stringContains('COUNT(t.id)'))
-            ->willReturn($query);
+        $this->ticketRepository->expects(self::once())
+            ->method('countActiveForAgent')
+            ->willReturn($count);
     }
 
     /**
-     * Configure the entity manager mock to expect NO COUNT query.
+     * Configure the ticket repository mock to expect NO COUNT query.
      * Use when the algorithm short-circuits before capacity.
      */
     private function expectNoActiveTicketCount(): void
     {
-        $this->entityManager->expects(self::never())
-            ->method('createQuery');
+        $this->ticketRepository->expects(self::never())
+            ->method('countActiveForAgent');
     }
 
     /**
@@ -860,18 +848,9 @@ class AgentAvailabilityServiceTest extends TestCase
         $at = $this->utcDateTime('2026-06-15', '12:00');
 
         // Expect TWO COUNT queries (one per isAvailable call)
-        $query1 = $this->createMock(Query::class);
-        $query1->expects(self::once())->method('getSingleScalarResult')->willReturn('2');
-        $query1->expects(self::exactly(2))->method('setParameter')->willReturnSelf();
-
-        $query2 = $this->createMock(Query::class);
-        $query2->expects(self::once())->method('getSingleScalarResult')->willReturn('2');
-        $query2->expects(self::exactly(2))->method('setParameter')->willReturnSelf();
-
-        $this->entityManager->expects(self::exactly(2))
-            ->method('createQuery')
-            ->with(self::stringContains('COUNT(t.id)'))
-            ->willReturnOnConsecutiveCalls($query1, $query2);
+        $this->ticketRepository->expects(self::exactly(2))
+            ->method('countActiveForAgent')
+            ->willReturnOnConsecutiveCalls(2, 2);
 
         // Call twice, should get identical results
         $result1 = $this->service->isAvailable($agent, $at);
@@ -1099,26 +1078,12 @@ class AgentAvailabilityServiceTest extends TestCase
 
         // Both COUNT queries will be called. We need to handle the
         // sequential calls differently per agent.
-        $queryFree = $this->createMock(Query::class);
-        $queryFree->expects(self::once())
-            ->method('getSingleScalarResult')
-            ->willReturn('3'); // 3 < 5: available
-        $queryFree->expects(self::exactly(2))
-            ->method('setParameter')
-            ->willReturnSelf();
-
-        $queryFull = $this->createMock(Query::class);
-        $queryFull->expects(self::once())
-            ->method('getSingleScalarResult')
-            ->willReturn('5'); // 5 >= 5: full
-        $queryFull->expects(self::exactly(2))
-            ->method('setParameter')
-            ->willReturnSelf();
-
-        $this->entityManager->expects(self::exactly(2))
-            ->method('createQuery')
-            ->with(self::stringContains('COUNT(t.id)'))
-            ->willReturnOnConsecutiveCalls($queryFree, $queryFull);
+        $this->ticketRepository->expects(self::exactly(2))
+            ->method('countActiveForAgent')
+            ->willReturnOnConsecutiveCalls(
+                3, // 3 < 5: available
+                5, // 5 >= 5: full
+            );
 
         $result = $this->service->listAvailableAgents(
             $this->utcDateTime('2026-06-15', '12:00'), // Monday 12:00 UTC
@@ -1184,15 +1149,9 @@ class AgentAvailabilityServiceTest extends TestCase
             ));
 
         // Each agent's count query
-        $this->entityManager->expects(self::exactly(3))
-            ->method('createQuery')
-            ->with(self::stringContains('COUNT(t.id)'))
-            ->willReturnCallback(function () {
-                $q = $this->createMock(Query::class);
-                $q->expects(self::once())->method('getSingleScalarResult')->willReturn('0');
-                $q->expects(self::exactly(2))->method('setParameter')->willReturnSelf();
-                return $q;
-            });
+        $this->ticketRepository->expects(self::exactly(3))
+            ->method('countActiveForAgent')
+            ->willReturn(0);
 
         $result = $this->service->listAvailableAgents(
             $this->utcDateTime('2026-06-15', '12:00'),
@@ -1226,7 +1185,7 @@ class AgentAvailabilityServiceTest extends TestCase
             ->with([1])
             ->willReturn($agent->getShifts()->toArray());
 
-        $this->entityManager->expects(self::never())->method('createQuery');
+        $this->ticketRepository->expects(self::never())->method('countActiveForAgent');
 
         $result = $this->service->listAvailableAgents(
             $this->utcDateTime('2026-06-15', '12:00'),
@@ -1398,15 +1357,9 @@ class AgentAvailabilityServiceTest extends TestCase
             ->with([1, 2])
             ->willReturn([]);
 
-        $this->entityManager->expects(self::exactly(2))
-            ->method('createQuery')
-            ->with(self::stringContains('COUNT(t.id)'))
-            ->willReturnCallback(function () {
-                $q = $this->createMock(Query::class);
-                $q->expects(self::once())->method('getSingleScalarResult')->willReturn('0');
-                $q->expects(self::exactly(2))->method('setParameter')->willReturnSelf();
-                return $q;
-            });
+        $this->ticketRepository->expects(self::exactly(2))
+            ->method('countActiveForAgent')
+            ->willReturn(0);
 
         $result = $this->service->listWorkspaceAgentRoster(
             $workspace,
@@ -1441,15 +1394,9 @@ class AgentAvailabilityServiceTest extends TestCase
             ->with([3, 1, 2])
             ->willReturn([]);
 
-        $this->entityManager->expects(self::exactly(3))
-            ->method('createQuery')
-            ->with(self::stringContains('COUNT(t.id)'))
-            ->willReturnCallback(function () {
-                $q = $this->createMock(Query::class);
-                $q->expects(self::once())->method('getSingleScalarResult')->willReturn('0');
-                $q->expects(self::exactly(2))->method('setParameter')->willReturnSelf();
-                return $q;
-            });
+        $this->ticketRepository->expects(self::exactly(3))
+            ->method('countActiveForAgent')
+            ->willReturn(0);
 
         $result = $this->service->listWorkspaceAgentRoster(
             $workspace,

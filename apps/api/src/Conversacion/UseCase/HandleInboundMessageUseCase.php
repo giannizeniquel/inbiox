@@ -129,12 +129,9 @@ foreach ($events as $event) {
                 $payload['sender_name'] = $event->senderName;
                 $payload['media'] = $event->media;
                 // Include phone_number_id for workspace-pending indicator
-                $ticketRow = $this->em->getConnection()->executeQuery(
-                    'SELECT phone_number_id FROM tickets WHERE id = ?',
-                    [$event->ticketId]
-                )->fetchAssociative();
-                if ($ticketRow && !empty($ticketRow['phone_number_id'])) {
-                    $payload['phone_number_id'] = $ticketRow['phone_number_id'];
+                $phoneNumberId = $this->ticketRepo->findPhoneNumberId($event->ticketId);
+                if (!empty($phoneNumberId)) {
+                    $payload['phone_number_id'] = $phoneNumberId;
                 }
             } elseif ($event instanceof TicketCreatedEvent) {
                 $payload['status'] = $event->status->value;

@@ -5,7 +5,7 @@ namespace App\Compartido\Outbox;
 use App\Compartido\Realtime\MercureJwtService;
 
 use App\Compartido\Realtime\RealtimeEventFactory;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Compartido\Repository\OutboxEventRepository;
 
 /**
  * Publishes unpublished outbox events to Mercure hub.
@@ -21,7 +21,7 @@ class OutboxPublisherService
     private const BATCH_SIZE = 100;
 
     public function __construct(
-        private readonly EntityManagerInterface $em,
+        private readonly OutboxEventRepository $outboxRepo,
         private readonly RealtimeEventFactory $factory,
         private readonly MercureJwtService $jwtService,
         private readonly string $mercureUrl = 'http://mercure:80/.well-known/mercure'
@@ -64,18 +64,7 @@ class OutboxPublisherService
      */
     private function findUnpublishedEvents(): array
     {
-        $conn = $this->em->getConnection();
-
-        // Use query() directly instead of prepare() to avoid introspection issues
-        $sql = '
-            SELECT id, aggregate_type, aggregate_id, topic, event_type, payload, created_at, published_at, retry_count, status, sequence
-            FROM outbox_events
-            WHERE published_at IS NULL AND status = \'pending\'
-            ORDER BY created_at ASC, id ASC
-            LIMIT 100
-        ';
-
-        $rows = $conn->fetchAllAssociative($sql);
+        $rows = $this->outboxRepo->findPendingBatch();
 
         error_log('OutboxPublisher: Found ' . count($rows) . ' rows from DB');
 
@@ -225,19 +214,7 @@ class OutboxPublisherService
      */
     private function markPublished(OutboxEvent $event): void
     {
-        $conn = $this->em->getConnection();
-
-        $sql = '
-            UPDATE outbox_events
-            SET published_at = :published_at,
-                status = \'published\'
-            WHERE id = :id
-        ';
-
-        $conn->executeStatement($sql, [
-            'published_at' => (new \DateTimeImmutable())->format('Y-m-d H:i:s'),
-            'id' => $event->getId(), // Already a string
-        ]);
+        $this->outboxRepo->markPublished($event->getId(), new \DateTimeImmutable());
     }
 
     /**
@@ -249,20 +226,7 @@ class OutboxPublisherService
         $newRetryCount = $currentRetryCount + 1;
 
         if ($newRetryCount >= self::MAX_RETRIES) {
-            $conn = $this->em->getConnection();
-
-            $sql = '
-                UPDATE outbox_events
-                SET retry_count = :retry_count,
-                    status = :status
-                WHERE id = :id
-            ';
-
-            $conn->executeStatement($sql, [
-                'retry_count' => $newRetryCount,
-                'status' => self::DEAD_LETTER_STATUS,
-                'id' => $event->getId(),
-            ]);
+            $this->outboxRepo->markDeadLetter($event->getId(), $newRetryCount, self::DEAD_LETTER_STATUS);
 
             error_log(sprintf(
                 'OutboxPublisher: Event %s dead-lettered after %d retries (type=%s, aggregate_id=%d)',
@@ -272,17 +236,7 @@ class OutboxPublisherService
                 $event->getAggregateId()
             ));
         } else {
-            $conn = $this->em->getConnection();
-
-            $sql = '
-                UPDATE outbox_events
-                SET retry_count = retry_count + 1
-                WHERE id = :id
-            ';
-
-            $conn->executeStatement($sql, [
-                'id' => $event->getId(),
-            ]);
+            $this->outboxRepo->incrementRetryCount($event->getId());
         }
     }
 }

@@ -43,10 +43,7 @@ class AddTagToTicketUseCase
             }
 
             // Check if ticket already has this tag
-            $existing = $this->em->getConnection()->executeQuery(
-                "SELECT 1 FROM ticket_tags WHERE ticket_id = ? AND tag_id = ?",
-                [$ticketId, $tag->getId()]
-            )->fetchOne();
+            $existing = $this->tagRepo->isAttachedToTicket($ticketId, $tag->getId());
 
             // Idempotent - don't add duplicate or emit event
             if ($existing) {

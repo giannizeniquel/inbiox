@@ -6,6 +6,7 @@ use App\Disponibilidad\AgentAvailabilityService;
 use App\Agente\Agent;
 use App\Ticket\Ticket;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Query\Expr\Join;
 use Doctrine\Persistence\ManagerRegistry;
@@ -1090,8 +1091,11 @@ class ReportingRepository extends ServiceEntityRepository
         $missingAgentIds = array_diff(array_keys($messageCountByAgent), array_keys($participantStats));
         $agentNameMap = [];
         if (!empty($missingAgentIds)) {
-            $placeholders = implode(',', array_map('intval', $missingAgentIds));
-            $nameRows = $conn->fetchAllAssociative("SELECT id, name FROM agents WHERE id IN ({$placeholders})");
+            $nameRows = $conn->fetchAllAssociative(
+                'SELECT id, name FROM agents WHERE id IN (?)',
+                [array_values(array_map('intval', $missingAgentIds))],
+                [ArrayParameterType::INTEGER]
+            );
             foreach ($nameRows as $nameRow) {
                 $agentNameMap[(int) $nameRow['id']] = $nameRow['name'];
             }
@@ -1120,5 +1124,26 @@ class ReportingRepository extends ServiceEntityRepository
             'unanswered_inbound_count' => $unansweredInboundCount,
             'pairs' => $pairs,
         ];
+    }
+
+    /**
+     * Empty the tables that `app:seed-reports` refills: ticket_events,
+     * tickets, agent_shifts, contacts and agents, in that order, with foreign
+     * key checks off while it runs. Test database only; the command guards it.
+     *
+     * Native SQL because DQL and the QueryBuilder have no TRUNCATE and no
+     * session variables (`SET FOREIGN_KEY_CHECKS`). TRUNCATE commits
+     * implicitly in MySQL, so never call this inside a transaction.
+     */
+    public function truncateSeedTables(): void
+    {
+        $conn = $this->getEntityManager()->getConnection();
+        $conn->executeStatement('SET FOREIGN_KEY_CHECKS = 0');
+        $conn->executeStatement('TRUNCATE TABLE ticket_events');
+        $conn->executeStatement('TRUNCATE TABLE tickets');
+        $conn->executeStatement('TRUNCATE TABLE agent_shifts');
+        $conn->executeStatement('TRUNCATE TABLE contacts');
+        $conn->executeStatement('TRUNCATE TABLE agents');
+        $conn->executeStatement('SET FOREIGN_KEY_CHECKS = 1');
     }
 }

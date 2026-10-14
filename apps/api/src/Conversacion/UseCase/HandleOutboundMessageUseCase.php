@@ -302,10 +302,7 @@ class HandleOutboundMessageUseCase
                 );
             } else if ($shouldSetFirstResponse) {
                 // Just set first_response_at without status change
-                $this->em->getConnection()->executeStatement(
-                    "UPDATE tickets SET first_response_at = NOW(), updated_at = NOW() WHERE id = ?",
-                    [$ticketId]
-                );
+                $this->ticketRepo->markFirstResponse($ticketId);
             }
 
             // Update conversation timestamps
@@ -406,12 +403,9 @@ class HandleOutboundMessageUseCase
                 $payload['sender_name'] = $event->senderName;
                 $payload['media'] = $event->media;
                 // Include phone_number_id for workspace-pending indicator
-                $ticketRow = $this->em->getConnection()->executeQuery(
-                    'SELECT phone_number_id FROM tickets WHERE id = ?',
-                    [$event->ticketId]
-                )->fetchAssociative();
-                if ($ticketRow && !empty($ticketRow['phone_number_id'])) {
-                    $payload['phone_number_id'] = $ticketRow['phone_number_id'];
+                $phoneNumberId = $this->ticketRepo->findPhoneNumberId($event->ticketId);
+                if (!empty($phoneNumberId)) {
+                    $payload['phone_number_id'] = $phoneNumberId;
                 }
             }
 

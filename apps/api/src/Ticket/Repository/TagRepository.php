@@ -36,4 +36,19 @@ class TagRepository extends ServiceEntityRepository
         $this->getEntityManager()->persist($tag);
         $this->getEntityManager()->flush();
     }
+
+    /**
+     * Whether a `ticket_tags` row links this ticket and tag.
+     */
+    public function isAttachedToTicket(int $ticketId, int $tagId): bool
+    {
+        return (bool) $this->getEntityManager()->getConnection()->createQueryBuilder()
+            ->select('1')
+            ->from('ticket_tags')
+            ->where('ticket_id = :ticketId')
+            ->andWhere('tag_id = :tagId')
+            ->setParameter('ticketId', $ticketId)
+            ->setParameter('tagId', $tagId)
+            ->fetchOne();
+    }
 }

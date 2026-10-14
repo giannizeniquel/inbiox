@@ -78,10 +78,7 @@ class TransitionTicketStatusUseCase
     ): array {
         return $this->em->getConnection()->transactional(function() use ($ticketId, $targetStatus, $setFirstResponse, $setResolved, $actor) {
             // Lock ticket for update
-            $ticket = $this->em->getConnection()->executeQuery(
-                "SELECT * FROM tickets WHERE id = ? FOR UPDATE",
-                [$ticketId]
-            )->fetchAssociative();
+            $ticket = $this->ticketRepo->findRowByIdForUpdate($ticketId);
 
             if (!$ticket) {
                 throw new \InvalidArgumentException('Ticket not found: ' . $ticketId);
@@ -102,30 +99,24 @@ class TransitionTicketStatusUseCase
                 $this->em->flush();
             }
 
-            // Build update SQL
-            $updates = ['status = ?', 'updated_at = NOW()'];
-            $params = [$newStatus, $ticketId];
-
             // Set first_response_at if this is an agent reply and not already set
-            if ($setFirstResponse && empty($ticket['first_response_at'])) {
-                $updates[] = 'first_response_at = NOW()';
-            }
+            $markFirstResponse = $setFirstResponse && empty($ticket['first_response_at']);
 
             // Set resolved_at if transitioning to resolved
-            if ($setResolved && $newStatus === TicketStatus::RESOLVED->value && empty($ticket['resolved_at'])) {
-                $updates[] = 'resolved_at = NOW()';
-            }
+            $markResolved = $setResolved && $newStatus === TicketStatus::RESOLVED->value && empty($ticket['resolved_at']);
 
             // Set closed_at when landing on closed via this generic entry
             // point (design.md D7) — the agent's primary own-ticket close
             // path once /close is structurally unowned-only (D3).
-            if ($newStatus === TicketStatus::CLOSED->value && empty($ticket['closed_at'])) {
-                $updates[] = 'closed_at = NOW()';
-            }
+            $markClosed = $newStatus === TicketStatus::CLOSED->value && empty($ticket['closed_at']);
 
-            // Execute update
-            $sql = "UPDATE tickets SET " . implode(', ', $updates) . " WHERE id = ?";
-            $this->em->getConnection()->executeStatement($sql, $params);
+            $this->ticketRepo->updateStatusAfterTransition(
+                $ticketId,
+                $newStatus,
+                $markFirstResponse,
+                $markResolved,
+                $markClosed,
+            );
 
             return [
                 'ticket_id' => $ticketId,
@@ -152,10 +143,7 @@ class TransitionTicketStatusUseCase
     public function closeDueToWindowExpiry(int $ticketId): array
     {
         return $this->em->getConnection()->transactional(function () use ($ticketId) {
-            $ticket = $this->em->getConnection()->executeQuery(
-                "SELECT * FROM tickets WHERE id = ? FOR UPDATE",
-                [$ticketId]
-            )->fetchAssociative();
+            $ticket = $this->ticketRepo->findRowByIdForUpdate($ticketId);
 
             if (!$ticket) {
                 throw new \InvalidArgumentException('Ticket not found: ' . $ticketId);
@@ -173,10 +161,7 @@ class TransitionTicketStatusUseCase
                 $this->em->flush();
             }
 
-            $this->em->getConnection()->executeStatement(
-                "UPDATE tickets SET status = ?, closed_at = NOW(), updated_at = NOW() WHERE id = ?",
-                [$newStatus, $ticketId]
-            );
+            $this->ticketRepo->markClosed($ticketId, $newStatus);
 
             $event = new TicketEvent($ticketId, TicketEventType::WINDOW_EXPIRED_CLOSED, 'system');
             $this->em->persist($event);
@@ -210,10 +195,7 @@ class TransitionTicketStatusUseCase
     public function reopenDueToInboundMessage(int $ticketId): array
     {
         return $this->em->getConnection()->transactional(function () use ($ticketId) {
-            $ticket = $this->em->getConnection()->executeQuery(
-                "SELECT * FROM tickets WHERE id = ? FOR UPDATE",
-                [$ticketId]
-            )->fetchAssociative();
+            $ticket = $this->ticketRepo->findRowByIdForUpdate($ticketId);
 
             if (!$ticket) {
                 throw new \InvalidArgumentException('Ticket not found: ' . $ticketId);
@@ -227,10 +209,7 @@ class TransitionTicketStatusUseCase
             // Guard 2: the ticket's latest event must be a window-expiry
             // closure — re-checked here under the lock, not trusted from
             // the caller's earlier repository lookup.
-            $latestType = $this->em->getConnection()->fetchOne(
-                'SELECT type FROM ticket_events WHERE ticket_id = ? ORDER BY created_at DESC, id DESC LIMIT 1',
-                [$ticketId]
-            );
+            $latestType = $this->ticketRepo->findLatestEventType($ticketId);
             if ($latestType !== TicketEventType::WINDOW_EXPIRED_CLOSED) {
                 throw new \InvalidArgumentException(
                     'Ticket ' . $ticketId . ' is not eligible for system-triggered reopen'
@@ -239,10 +218,7 @@ class TransitionTicketStatusUseCase
 
             $newStatus = TicketStatus::ACTIVE->value;
 
-            $this->em->getConnection()->executeStatement(
-                "UPDATE tickets SET status = ?, closed_at = NULL, updated_at = NOW() WHERE id = ?",
-                [$newStatus, $ticketId]
-            );
+            $this->ticketRepo->markReopened($ticketId, $newStatus);
 
             $event = new TicketEvent($ticketId, TicketEventType::WINDOW_REOPENED, 'system');
             $this->em->persist($event);
@@ -271,10 +247,7 @@ class TransitionTicketStatusUseCase
     public function close(int $ticketId, string $actor = 'system'): array
     {
         return $this->em->getConnection()->transactional(function() use ($ticketId, $actor) {
-            $ticket = $this->em->getConnection()->executeQuery(
-                "SELECT * FROM tickets WHERE id = ? FOR UPDATE",
-                [$ticketId]
-            )->fetchAssociative();
+            $ticket = $this->ticketRepo->findRowByIdForUpdate($ticketId);
 
             if (!$ticket) {
                 throw new \InvalidArgumentException('Ticket not found: ' . $ticketId);
@@ -290,10 +263,7 @@ class TransitionTicketStatusUseCase
                 $this->em->flush();
             }
 
-            $this->em->getConnection()->executeStatement(
-                "UPDATE tickets SET status = ?, closed_at = NOW(), updated_at = NOW() WHERE id = ?",
-                [TicketStatus::CLOSED->value, $ticketId]
-            );
+            $this->ticketRepo->markClosed($ticketId, TicketStatus::CLOSED->value);
 
             return [
                 'ticket_id' => $ticketId,

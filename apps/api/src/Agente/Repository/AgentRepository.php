@@ -5,6 +5,7 @@ namespace App\Agente\Repository;
 use App\Agente\Agent;
 use App\Administracion\Workspace;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\Persistence\ManagerRegistry;
 
 class AgentRepository extends ServiceEntityRepository
@@ -57,5 +58,25 @@ class AgentRepository extends ServiceEntityRepository
             ->orderBy('a.id', 'ASC')
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Take row locks on the given `agents` rows: `SELECT id ... FOR UPDATE`.
+     * Only the lock matters; the result is discarded.
+     *
+     * Native SQL because DQL cannot do this without side effects: a DQL
+     * PESSIMISTIC_WRITE read hydrates and refreshes the managed Agent
+     * entities, which the caller already holds. Runs on the EntityManager's
+     * connection, so it joins the caller's open transaction.
+     *
+     * @param int[] $ids non-empty
+     */
+    public function lockRowsForUpdate(array $ids): void
+    {
+        $this->getEntityManager()->getConnection()->executeQuery(
+            'SELECT id FROM agents WHERE id IN (?) FOR UPDATE',
+            [array_values($ids)],
+            [ArrayParameterType::INTEGER],
+        );
     }
 }

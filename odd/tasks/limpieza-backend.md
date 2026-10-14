@@ -59,7 +59,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T14 | S2, S7 | inline | done | Phase 2: docs paths and line refs updated after the moves (L22) |
 | T15 | S8 | delegated (context backstop) | done | 3a: 82 characterization tests in `tests/Characterization/` (L25) |
 | T16 | S8 | delegated (context backstop) | done | 3b: `InternalServerErrorListener`, 71 catch-alls removed (L26) |
-| T17 | S8, S3 | inline | pending | 3c SQL into repositories |
+| T17 | S8, S3 | delegated (context backstop) | in progress | 3c-1 done (L28); 3c-2 pending: Query classes and `TicketFilterBuilder` |
 | T18 | S8 | inline | pending | 3d thin controllers, per module |
 | T19 | S8 | inline | pending | 3e single outbox writer (needs 2 user decisions) |
 
@@ -223,3 +223,13 @@ Later phases, each with its own branch and task list when it starts:
   3. `GET /api/tickets/{id}` has `owner.name: null` (hardcoded in `GetTicketDetailQuery`), so "Asignado:" is empty after a reload.
   4. Unknown URLs give an HTML 404 to browsers (Symfony's default; the 3b listener leaves HTTP exceptions alone). Error formats are deferred to phase 5.
   - Smoke data left in the dev DB: tickets 468–480, `Smoke2 …` contacts, team 2, workspace 4, agents 13–14, user 12. Overrides of agents 1–3 were cleared, and message 219's `created_at` was backdated.
+- **L28 (2026-10-14), T17 3c-1:** a bounded writer moved the SQL in use cases, services and commands into named repository methods.
+  - **Native SQL** (bound params, a why-comment, own test): `TicketRepository::findRowByIdForUpdate`, `AgentRepository::lockRowsForUpdate` and `ReportingRepository::truncateSeedTables`.
+  - **DBAL QueryBuilder:** `updateStatusAfterTransition`, `markClosed`, `markReopened`, `findLatestEventType`, `markFirstResponse`, `findPhoneNumberId`, `findIdsWithExpiredWindow`, `TagRepository::isAttachedToTicket`, and the recreated `Compartido/Repository/OutboxEventRepository` (7 methods).
+  - The `ReportingRepository` agents `IN` list is now bound. 22 new tests in `tests/Integration/Repository/`, two of which prove the row lock holds with `NOWAIT` from a second connection.
+  - **Parent fix:** a characterization mock of `TicketRepository` now forwards `findRowByIdForUpdate` to `new TicketRepository(ManagerRegistry)`. The pinned behavior is unchanged (`InvalidArgumentException` returns the generic 500, with no assignment).
+  - **Independent verifier** (high risk: locking and writes): PASS on statement equivalence, transactions/locking, wiring, scope and S3, with no blockers. It captured the SQL each new method renders, inside a rolled-back transaction, and it matches the old statements. Full suite: 800 tests, exactly the 6 baseline failures.
+  - **Advisories, for 3c-2:**
+    1. `InvalidTransitionException` is declared inside `TicketStateMachine.php`, so a test that builds it first fails when run alone.
+    2. The existing native `ReportingRepository::getTicketParticipation` has no why-comment and no test.
+    3. `countActiveForAgent` has no test of its own.

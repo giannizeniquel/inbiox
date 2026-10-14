@@ -7,9 +7,7 @@ namespace App\Conversacion\UseCase;
 use App\Ticket\UseCase\TransitionTicketStatusUseCase;
 use App\Conversacion\ConversationWindowPolicy;
 use App\Ticket\TicketStatus;
-use Doctrine\DBAL\ArrayParameterType;
-use Doctrine\DBAL\ParameterType;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Ticket\Repository\TicketRepository;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -36,7 +34,7 @@ final class ConversationWindowExpiryService
     ];
 
     public function __construct(
-        private readonly EntityManagerInterface $em,
+        private readonly TicketRepository $ticketRepo,
         private readonly TransitionTicketStatusUseCase $transitionUseCase,
         private readonly LoggerInterface $logger,
         private readonly int $safetyMarginMinutes = 0,
@@ -59,15 +57,10 @@ final class ConversationWindowExpiryService
             ->modify(sprintf('-%d hours', ConversationWindowPolicy::WINDOW_HOURS))
             ->modify(sprintf('+%d minutes', $margin));
 
-        $ids = $this->em->getConnection()->fetchFirstColumn(
-            'SELECT id FROM tickets
-             WHERE status IN (?)
-               AND last_inbound_message_at IS NOT NULL
-               AND last_inbound_message_at < ?
-             ORDER BY last_inbound_message_at ASC
-             LIMIT ' . (int) $limit,
-            [self::ELIGIBLE_STATUSES, $threshold->format('Y-m-d H:i:s')],
-            [ArrayParameterType::STRING, ParameterType::STRING]
+        $ids = $this->ticketRepo->findIdsWithExpiredWindow(
+            self::ELIGIBLE_STATUSES,
+            $threshold->format('Y-m-d H:i:s'),
+            $limit,
         );
 
         if ($dryRun) {

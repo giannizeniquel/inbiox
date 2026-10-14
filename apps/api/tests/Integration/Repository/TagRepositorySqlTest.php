@@ -1,0 +1,61 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Integration\Repository;
+
+use App\Contacto\Contact;
+use App\Conversacion\Conversation;
+use App\Ticket\Repository\TagRepository;
+use App\Ticket\Tag;
+use App\Ticket\Ticket;
+use App\Ticket\TicketStatus;
+use App\Ticket\TicketTag;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+
+/**
+ * TagRepository::isAttachedToTicket(), moved out of AddTagToTicketUseCase
+ * in phase 3c-1.
+ */
+class TagRepositorySqlTest extends KernelTestCase
+{
+    public function testIsAttachedToTicket(): void
+    {
+        self::bootKernel();
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        $repo = static::getContainer()->get(TagRepository::class);
+        $conn = $em->getConnection();
+
+        $contact = new Contact();
+        $contact->setPhone('+5491100009902');
+        $em->persist($contact);
+        $conversation = new Conversation();
+        $conversation->setContact($contact);
+        $em->persist($conversation);
+        $ticket = new Ticket();
+        $ticket->setContact($contact);
+        $ticket->setConversation($conversation);
+        $ticket->setStatus(TicketStatus::NEW->value);
+        $em->persist($ticket);
+        $attached = new Tag('repo-sql-attached-' . bin2hex(random_bytes(3)));
+        $other = new Tag('repo-sql-other-' . bin2hex(random_bytes(3)));
+        $em->persist($attached);
+        $em->persist($other);
+        $em->flush();
+        $em->persist(new TicketTag($ticket, $attached));
+        $em->flush();
+
+        try {
+            self::assertTrue($repo->isAttachedToTicket((int) $ticket->getId(), (int) $attached->getId()));
+            self::assertFalse($repo->isAttachedToTicket((int) $ticket->getId(), (int) $other->getId()));
+            self::assertFalse($repo->isAttachedToTicket(999999999, (int) $attached->getId()));
+        } finally {
+            $conn->executeStatement('DELETE FROM ticket_tags WHERE ticket_id = ?', [$ticket->getId()]);
+            $conn->executeStatement('DELETE FROM tags WHERE id IN (?, ?)', [$attached->getId(), $other->getId()]);
+            $conn->executeStatement('DELETE FROM tickets WHERE id = ?', [$ticket->getId()]);
+            $conn->executeStatement('DELETE FROM conversations WHERE id = ?', [$conversation->getId()]);
+            $conn->executeStatement('DELETE FROM contacts WHERE id = ?', [$contact->getId()]);
+        }
+    }
+}

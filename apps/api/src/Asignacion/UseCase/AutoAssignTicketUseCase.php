@@ -11,6 +11,7 @@ use App\Asignacion\AssignmentType;
 use App\Compartido\EventCollector;
 use App\Compartido\Outbox\OutboxEvent;
 use App\Ticket\TicketStatus;
+use App\Agente\Repository\AgentRepository;
 use App\Asignacion\Repository\AssignmentRepository;
 use App\Ticket\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -42,6 +43,7 @@ final class AutoAssignTicketUseCase
         private AgentAvailabilityService $availabilityService,
         private AssignmentService $assignmentService,
         private EventCollector $eventCollector,
+        private AgentRepository $agentRepo,
     ) {}
 
     /**
@@ -79,13 +81,8 @@ final class AutoAssignTicketUseCase
      */
     private function executeInternal(int $ticketId): array
     {
-        $conn = $this->em->getConnection();
-
         // 1. Lock the ticket row FOR UPDATE
-        $ticketRow = $conn->executeQuery(
-            'SELECT * FROM tickets WHERE id = ? FOR UPDATE',
-            [$ticketId],
-        )->fetchAssociative();
+        $ticketRow = $this->ticketRepo->findRowByIdForUpdate($ticketId);
 
         if (!$ticketRow) {
             return [
@@ -122,11 +119,7 @@ final class AutoAssignTicketUseCase
 
         // 4. Lock candidate agent rows FOR UPDATE
         $agentIds = array_map(fn (Agent $a): int => (int) $a->getId(), $availableAgents);
-        $placeholders = implode(',', array_fill(0, \count($agentIds), '?'));
-        $conn->executeQuery(
-            "SELECT id FROM agents WHERE id IN ($placeholders) FOR UPDATE",
-            $agentIds,
-        );
+        $this->agentRepo->lockRowsForUpdate($agentIds);
 
         // 5. Re-filter capacity inside the lock + gather tiebreaker data
         $todayStart = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->setTime(0, 0, 0);
