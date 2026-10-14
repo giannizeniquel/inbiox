@@ -60,11 +60,14 @@ docker exec inbiox_php php -d memory_limit=512M vendor/bin/phpunit --filter X # 
 
 ### Frontend (Angular)
 
-- Karma/Jasmine specs cannot run in this WSL2 environment (no Chrome). Write specs, but the enforceable gate is the production build:
+- Karma/Jasmine specs cannot run in this WSL2 environment (no Chrome). Write specs, but the enforceable gates are the production build and the spec typecheck (`ng build` excludes `*.spec.ts`, so only `tsc` catches broken specs):
 
 ```bash
 cd apps/web && ./node_modules/.bin/ng build --configuration production
+cd apps/web && ./node_modules/.bin/tsc -p tsconfig.spec.json --noEmit
 ```
+
+- Behavior is checked by hand with `docs/02_sistema-actual/09-guia-de-pruebas-manuales.md`. The baseline of build warnings is in `odd/tasks/limpieza-frontend.md`; a change must not add new ones.
 
 ---
 

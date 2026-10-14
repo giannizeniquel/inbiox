@@ -3,6 +3,8 @@
 > Qué puede hacer el usuario en cada pantalla y qué código lo implementa. Volver al [índice](README.md).
 > Rutas relativas a `apps/web/src/app/`. Capas y convenciones en [02](02-arquitectura-y-tecnologias.md#frontend-capas-y-carpetas).
 > Nada de esto se probó en un navegador para esta documentación; los tests de frontend no pudieron ejecutarse.
+>
+> **Actualización 13/10/2026 (fase 0 de la limpieza del frontend):** la estructura objetivo y sus reglas están en [`docs/arquitectura.md` § Frontend](../arquitectura.md). La red de seguridad es `ng build --configuration production` (13 warnings de línea base), `tsc -p tsconfig.spec.json --noEmit` (0 errores) y la [guía de pruebas manuales](09-guia-de-pruebas-manuales.md). El detalle de la línea base y de las fases está en `odd/tasks/limpieza-frontend.md`. Este documento describe el código actual; cada fase lo actualiza.
 
 ## Mapa de rutas (`app.routes.ts`)
 
