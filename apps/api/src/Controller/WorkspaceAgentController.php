@@ -10,7 +10,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
@@ -19,7 +19,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * GET /api/workspaces/{id}/available-agents — returns agents available for assignment
  */
 #[IsGranted('ROLE_AGENT')]
-#[Route('/api/workspaces')]
 final class WorkspaceAgentController
 {
     public function __construct(
@@ -28,7 +27,7 @@ final class WorkspaceAgentController
         private readonly LoggerInterface $logger,
     ) {}
 
-    #[Route('/{id}/available-agents', methods: ['GET'])]
+    #[Route('/api/workspaces/{id}/available-agents', name: 'app_workspace_available_agents', methods: ['GET'])]
     public function listAvailableAgents(int $id): JsonResponse
     {
         try {

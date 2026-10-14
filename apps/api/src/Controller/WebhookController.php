@@ -12,7 +12,7 @@ use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * Single webhook endpoint for Meta WhatsApp Cloud API.
@@ -37,6 +37,7 @@ class WebhookController extends AbstractController
     /**
      * Entry point: dispatches to verify() (GET) or receive() (POST).
      */
+    #[Route('/webhook', name: 'app_webhook', methods: ['GET', 'POST'])]
     public function handle(Request $request): Response
     {
         if ($request->getMethod() === 'GET') {

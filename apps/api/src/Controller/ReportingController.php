@@ -18,7 +18,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
@@ -101,7 +101,7 @@ class ReportingController
      *
      * GET /reports/frt?from=2026-01-01T00:00:00Z&to=2026-01-02T00:00:00Z[&agent_id=1]
      */
-    #[Route('/reports/frt', methods: ['GET'])]
+    #[Route('/api/reports/frt', name: 'app_report_frt', methods: ['GET'])]
     public function frt(Request $request): JsonResponse
     {
         try {
@@ -137,7 +137,7 @@ class ReportingController
      *
      * GET /reports/rt?from=2026-01-01T00:00:00Z&to=2026-01-02T00:00:00Z
      */
-    #[Route('/reports/rt', methods: ['GET'])]
+    #[Route('/api/reports/rt', name: 'app_report_rt', methods: ['GET'])]
     public function rt(Request $request): JsonResponse
     {
         try {
@@ -167,7 +167,7 @@ class ReportingController
      *
      * GET /reports/counts?from=2026-01-01T00:00:00Z&to=2026-01-02T00:00:00Z
      */
-    #[Route('/reports/counts', methods: ['GET'])]
+    #[Route('/api/reports/counts', name: 'app_report_counts', methods: ['GET'])]
     public function counts(Request $request): JsonResponse
     {
         try {
@@ -197,7 +197,7 @@ class ReportingController
      *
      * GET /reports/volume?from=2026-01-01T00:00:00Z&to=2026-01-02T00:00:00Z
      */
-    #[Route('/reports/volume', methods: ['GET'])]
+    #[Route('/api/reports/volume', name: 'app_report_volume', methods: ['GET'])]
     public function volume(Request $request): JsonResponse
     {
         try {
@@ -227,7 +227,7 @@ class ReportingController
      *
      * GET /reports/agents?from=2026-01-01T00:00:00Z&to=2026-01-02T00:00:00Z[&agent_id=1]
      */
-    #[Route('/reports/agents', methods: ['GET'])]
+    #[Route('/api/reports/agents', name: 'app_report_agents', methods: ['GET'])]
     public function agents(Request $request): JsonResponse
     {
         try {
@@ -262,7 +262,7 @@ class ReportingController
      *
      * GET /reports/agent-load[?agent_id=1][&phone_number_id=...]
      */
-    #[Route('/reports/agent-load', methods: ['GET'])]
+    #[Route('/api/reports/agent-load', name: 'app_report_agent_load', methods: ['GET'])]
     public function agentLoad(Request $request): JsonResponse
     {
         try {
@@ -292,7 +292,7 @@ class ReportingController
      *
      * GET /reports/unassigned[?from=...][&to=...][&phone_number_id=...]
      */
-    #[Route('/reports/unassigned', methods: ['GET'])]
+    #[Route('/api/reports/unassigned', name: 'app_report_unassigned', methods: ['GET'])]
     public function unassigned(Request $request): JsonResponse
     {
         try {
@@ -320,7 +320,7 @@ class ReportingController
      *
      * GET /reports/available-agents[?phone_number_id=...]
      */
-    #[Route('/reports/available-agents', methods: ['GET'])]
+    #[Route('/api/reports/available-agents', name: 'app_report_available_agents', methods: ['GET'])]
     public function availableAgents(Request $request): JsonResponse
     {
         try {
@@ -369,7 +369,7 @@ class ReportingController
      *
      * GET /reports/frt-trend?from=...&to=...[&phone_number_id=...]
      */
-    #[Route('/reports/frt-trend', methods: ['GET'])]
+    #[Route('/api/reports/frt-trend', name: 'app_report_frt_trend', methods: ['GET'])]
     public function frtTrend(Request $request): JsonResponse
     {
         try {
@@ -397,7 +397,7 @@ class ReportingController
      *
      * GET /reports/heatmap?from=...&to=...[&phone_number_id=...]
      */
-    #[Route('/reports/heatmap', methods: ['GET'])]
+    #[Route('/api/reports/heatmap', name: 'app_report_heatmap', methods: ['GET'])]
     public function heatmap(Request $request): JsonResponse
     {
         try {
@@ -425,7 +425,7 @@ class ReportingController
      *
      * GET /reports/recurring-customers[?phone_number_id=...][&threshold=3]
      */
-    #[Route('/reports/recurring-customers', methods: ['GET'])]
+    #[Route('/api/reports/recurring-customers', name: 'app_report_recurring', methods: ['GET'])]
     public function recurringCustomers(Request $request): JsonResponse
     {
         try {
@@ -450,7 +450,7 @@ class ReportingController
      *
      * GET /reports/reopened?from=...&to=...[&phone_number_id=...]
      */
-    #[Route('/reports/reopened', methods: ['GET'])]
+    #[Route('/api/reports/reopened', name: 'app_report_reopened', methods: ['GET'])]
     public function reopened(Request $request): JsonResponse
     {
         try {
@@ -483,8 +483,8 @@ class ReportingController
      * semantics (status whitelist, tag AND-semantics, max 5 tags) match
      * `ListTicketsQuery` exactly via the shared `TicketFilterBuilder`.
      */
-    #[Route('/reports/export', methods: ['GET'])]
     #[IsGranted('ROLE_SUPERVISOR')]
+    #[Route('/api/reports/export', name: 'app_report_export', methods: ['GET'])]
     public function export(Request $request): Response
     {
         try {
@@ -547,7 +547,7 @@ class ReportingController
      *
      * GET /reports/response-delay?from=...&to=...
      */
-    #[Route('/reports/response-delay', methods: ['GET'])]
+    #[Route('/api/reports/response-delay', name: 'app_report_response_delay', methods: ['GET'])]
     public function responseDelay(Request $request): JsonResponse
     {
         try {
@@ -575,7 +575,7 @@ class ReportingController
      *
      * GET /reports/tickets/{id}/participation
      */
-    #[Route('/reports/tickets/{id}/participation', methods: ['GET'])]
+    #[Route('/api/reports/tickets/{id}/participation', name: 'app_report_ticket_participation', methods: ['GET'])]
     public function ticketParticipation(Request $request, int $id): JsonResponse
     {
         try {

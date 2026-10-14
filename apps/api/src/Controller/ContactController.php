@@ -17,7 +17,7 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_AGENT')]
@@ -34,7 +34,7 @@ class ContactController
         private LoggerInterface $logger,
     ) {}
 
-    #[Route('/contacts', methods: ['GET'])]
+    #[Route('/api/contacts', name: 'app_contacts_list', methods: ['GET'])]
     public function list(Request $request): JsonResponse
     {
         try {
@@ -84,7 +84,7 @@ class ContactController
         }
     }
 
-    #[Route('/contacts/{id}', methods: ['GET'])]
+    #[Route('/api/contacts/{id}', name: 'app_contacts_detail', methods: ['GET'])]
     public function get(int $id): JsonResponse
     {
         try {
@@ -106,7 +106,7 @@ class ContactController
         }
     }
 
-    #[Route('/contacts', methods: ['POST'])]
+    #[Route('/api/contacts', name: 'app_contacts_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
         try {
@@ -132,7 +132,7 @@ class ContactController
         }
     }
 
-    #[Route('/contacts/{id}', methods: ['PUT'])]
+    #[Route('/api/contacts/{id}', name: 'app_contacts_update', methods: ['PUT'])]
     public function update(int $id, Request $request): JsonResponse
     {
         try {
@@ -165,8 +165,8 @@ class ContactController
      * creation stays available to agents, but a request that can create up to 1000
      * globally shared contacts in one shot is gated to supervisors.
      */
-    #[Route('/contacts/import', methods: ['POST'])]
     #[IsGranted('ROLE_SUPERVISOR')]
+    #[Route('/api/contacts/import', name: 'app_contacts_import', methods: ['POST'])]
     public function import(Request $request): JsonResponse
     {
         /** @var UploadedFile|null $file */
@@ -199,7 +199,7 @@ class ContactController
         }
     }
 
-    #[Route('/contacts/{id}', methods: ['DELETE'])]
+    #[Route('/api/contacts/{id}', name: 'app_contacts_delete', methods: ['DELETE'])]
     public function delete(int $id): JsonResponse
     {
         try {

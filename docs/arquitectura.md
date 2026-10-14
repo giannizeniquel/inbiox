@@ -39,7 +39,7 @@ Un módulo solo crea las carpetas que usa. Si hace falta, también puede tener `
 6. **No hay interfaz sin dos implementaciones reales** (por ejemplo, el cliente real de Graph y uno falso para tests). En los demás casos se inyecta la clase concreta.
 7. **Un módulo puede usar los casos de uso y las consultas de otro módulo.** No puede importar sus controladores ni sus repositorios, ni leer o escribir sus tablas por SQL.
 8. **Las rutas se declaran solo con atributos `#[Route]` en cada controlador**, junto al código que las atiende. `config/routes.yaml` tiene una única entrada, `resource: routing.controllers`, que carga los atributos de todos los controladores, estén en el módulo que estén. Nunca conviven las dos fuentes.
-   - **Transición:** hoy las rutas reales viven en `routes.yaml`, y los atributos que existen están desactualizados y no se cargan. En la fase 2 los atributos se regeneran **a partir del YAML**. La prueba de que no cambió nada es que la salida de `debug:router` sea idéntica antes y después.
+   - **Transición (hecha en la fase 2):** los atributos se regeneraron **a partir del YAML**. La prueba de que no cambió nada es que la salida de `debug:router` sea idéntica antes y después.
 9. **Los estados y los valores fijos son enums respaldados de PHP** (por ejemplo, el estado del ticket), con un método `etiqueta()` para el texto que se muestra en la UI. Solo se usa una tabla de catálogo cuando el negocio necesita configurar los valores sin un deploy (por ejemplo, las etiquetas).
 
 ### SQL

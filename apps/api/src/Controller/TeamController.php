@@ -9,7 +9,7 @@ use App\Domain\User\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
@@ -34,7 +34,7 @@ final class TeamController
         private readonly Security $security,
     ) {}
 
-    #[Route('/api/teams', methods: ['GET'])]
+    #[Route('/api/teams', name: 'app_teams_list', methods: ['GET'])]
     public function list(): JsonResponse
     {
         $user = $this->security->getUser();

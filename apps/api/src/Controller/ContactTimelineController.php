@@ -10,7 +10,7 @@ use App\Application\Security\WorkspaceScope;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_AGENT')]
@@ -22,7 +22,7 @@ class ContactTimelineController
         private LoggerInterface $logger,
     ) {}
 
-    #[Route('/api/contacts/{id}/timeline', methods: ['GET'])]
+    #[Route('/api/contacts/{id}/timeline', name: 'app_contacts_timeline', methods: ['GET'])]
     public function getTimeline(int $id, Request $request): JsonResponse
     {
         try {

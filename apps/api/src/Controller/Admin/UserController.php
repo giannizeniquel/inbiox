@@ -13,7 +13,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
@@ -22,7 +22,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * All endpoints require ROLE_ADMIN.
  */
 #[IsGranted('ROLE_ADMIN')]
-#[Route('/api/admin/users')]
 final class UserController
 {
     public function __construct(
@@ -31,7 +30,7 @@ final class UserController
         private readonly LoggerInterface $logger,
     ) {}
 
-    #[Route('', methods: ['GET'])]
+    #[Route('/api/admin/users', name: 'admin_users_list', methods: ['GET'])]
     public function list(Request $request): JsonResponse
     {
         try {
@@ -77,7 +76,7 @@ final class UserController
         }
     }
 
-    #[Route('', methods: ['POST'])]
+    #[Route('/api/admin/users', name: 'admin_users_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
         try {
@@ -140,7 +139,7 @@ final class UserController
         }
     }
 
-    #[Route('/{id}', methods: ['GET'])]
+    #[Route('/api/admin/users/{id}', name: 'admin_users_get', methods: ['GET'])]
     public function get(int $id): JsonResponse
     {
         try {
@@ -162,7 +161,7 @@ final class UserController
         }
     }
 
-    #[Route('/{id}', methods: ['PUT'])]
+    #[Route('/api/admin/users/{id}', name: 'admin_users_update', methods: ['PUT'])]
     public function update(int $id, Request $request): JsonResponse
     {
         try {
@@ -231,7 +230,7 @@ final class UserController
         }
     }
 
-    #[Route('/{id}', methods: ['DELETE'])]
+    #[Route('/api/admin/users/{id}', name: 'admin_users_delete', methods: ['DELETE'])]
     public function delete(int $id): JsonResponse
     {
         try {

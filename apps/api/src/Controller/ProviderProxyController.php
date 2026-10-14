@@ -24,13 +24,12 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Uid\Ulid;
 
-#[Route('/api/provider')]
 #[IsGranted('ROLE_AGENT')]
 class ProviderProxyController extends AbstractController
 {
@@ -46,7 +45,7 @@ class ProviderProxyController extends AbstractController
         private readonly MediaStorageService $mediaStorageService,
     ) {}
 
-    #[Route('/send', methods: ['POST'])]
+    #[Route('/api/provider/send', name: 'app_provider_send', methods: ['POST'])]
     public function send(Request $request, #[CurrentUser] ?User $user): JsonResponse
     {
         $payload = json_decode($request->getContent(), true);
@@ -225,7 +224,7 @@ class ProviderProxyController extends AbstractController
         }
     }
 
-    #[Route('/template/send', methods: ['POST'])]
+    #[Route('/api/provider/template/send', name: 'app_provider_template_send', methods: ['POST'])]
     public function sendTemplate(Request $request, #[CurrentUser] ?User $user): JsonResponse
     {
         $payload = json_decode($request->getContent(), true);
@@ -330,7 +329,7 @@ class ProviderProxyController extends AbstractController
         );
     }
 
-    #[Route('/media/upload', methods: ['POST'])]
+    #[Route('/api/provider/media/upload', name: 'app_provider_media_upload', methods: ['POST'])]
     public function uploadMedia(Request $request, #[CurrentUser] ?User $user): JsonResponse
     {
         /** @var UploadedFile|null $file */
@@ -410,7 +409,7 @@ class ProviderProxyController extends AbstractController
         );
     }
 
-    #[Route('/media/{mediaId}', methods: ['GET'])]
+    #[Route('/api/provider/media/{mediaId}', name: 'app_provider_media_download', methods: ['GET'])]
     public function downloadMedia(string $mediaId): Response
     {
         try {

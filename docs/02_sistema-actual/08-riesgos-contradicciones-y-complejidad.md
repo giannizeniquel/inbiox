@@ -78,7 +78,7 @@ Formato pedido por el método: qué es · por qué parece existir · ¿respaldad
 | Reportes con SQL nativo + `str_replace` para derivar el conteo | Rendimiento en reportes | — | El patrón ya produjo un bug (conteo "sin asignar" en 0); revisar si se repite. |
 | `ProcessedEvent` como tabla genérica de idempotencia | Reutilización para respuestas y auto-respuestas | — | Nombre/ubicación engañosos (`Domain/Ticket`). |
 | Idempotencia de salientes por hash del contenido | Evitar duplicados por reintentos | No (efecto: textos repetidos legítimos se descartan) | Candidato a revisar la clave (p. ej. un id generado por el cliente); requiere decisión. |
-| Atributos `#[Route]` + `routes.yaml` | Dos estilos convivieron | — | Elegir una fuente (hoy solo funciona el yaml). |
+| Atributos `#[Route]` + `routes.yaml` | Dos estilos convivieron | — | **Resuelto en la fase 2:** los atributos son la única fuente. |
 | Workaround `WS2_TEST_PHONE_NUMBER_ID` en `GraphClient` | Número de prueba argentino | No (documentado como temporal) | Sí, cuando ya no se use ese número. |
 
 ## Código muerto, inalcanzable o de propósito no claro

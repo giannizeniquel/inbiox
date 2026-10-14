@@ -10,7 +10,7 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
@@ -19,7 +19,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * All endpoints require ROLE_SUPERVISOR.
  */
 #[IsGranted('ROLE_SUPERVISOR')]
-#[Route('/api/admin/agents')]
 final class AgentController
 {
     public function __construct(
@@ -27,7 +26,7 @@ final class AgentController
         private readonly LoggerInterface $logger,
     ) {}
 
-    #[Route('', methods: ['GET'])]
+    #[Route('/api/admin/agents', name: 'admin_agents_list', methods: ['GET'])]
     public function list(Request $request): JsonResponse
     {
         try {
@@ -73,7 +72,7 @@ final class AgentController
         }
     }
 
-    #[Route('', methods: ['POST'])]
+    #[Route('/api/admin/agents', name: 'admin_agents_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
         try {
@@ -114,7 +113,7 @@ final class AgentController
         }
     }
 
-    #[Route('/{id}', methods: ['GET'])]
+    #[Route('/api/admin/agents/{id}', name: 'admin_agents_get', methods: ['GET'])]
     public function get(int $id): JsonResponse
     {
         try {
@@ -136,7 +135,7 @@ final class AgentController
         }
     }
 
-    #[Route('/{id}', methods: ['PUT'])]
+    #[Route('/api/admin/agents/{id}', name: 'admin_agents_update', methods: ['PUT'])]
     public function update(int $id, Request $request): JsonResponse
     {
         try {
@@ -188,7 +187,7 @@ final class AgentController
         }
     }
 
-    #[Route('/{id}', methods: ['DELETE'])]
+    #[Route('/api/admin/agents/{id}', name: 'admin_agents_delete', methods: ['DELETE'])]
     public function delete(int $id): JsonResponse
     {
         try {

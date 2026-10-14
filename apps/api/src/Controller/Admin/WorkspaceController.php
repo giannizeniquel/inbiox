@@ -12,7 +12,7 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
@@ -21,7 +21,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * All endpoints require ROLE_ADMIN.
  */
 #[IsGranted('ROLE_ADMIN')]
-#[Route('/api/admin/workspaces')]
 final class WorkspaceController
 {
     public function __construct(
@@ -29,7 +28,7 @@ final class WorkspaceController
         private readonly LoggerInterface $logger,
     ) {}
 
-    #[Route('', methods: ['GET'])]
+    #[Route('/api/admin/workspaces', name: 'app_admin_workspaces_list', methods: ['GET'])]
     public function list(Request $request): JsonResponse
     {
         try {
@@ -73,7 +72,7 @@ final class WorkspaceController
         }
     }
 
-    #[Route('', methods: ['POST'])]
+    #[Route('/api/admin/workspaces', name: 'app_admin_workspaces_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
         try {
@@ -125,7 +124,7 @@ final class WorkspaceController
         }
     }
 
-    #[Route('/{id}', methods: ['GET'])]
+    #[Route('/api/admin/workspaces/{id}', name: 'app_admin_workspaces_get', methods: ['GET'])]
     public function get(int $id): JsonResponse
     {
         try {
@@ -147,7 +146,7 @@ final class WorkspaceController
         }
     }
 
-    #[Route('/{id}', methods: ['PUT'])]
+    #[Route('/api/admin/workspaces/{id}', name: 'app_admin_workspaces_update', methods: ['PUT'])]
     public function update(int $id, Request $request): JsonResponse
     {
         try {
@@ -197,7 +196,7 @@ final class WorkspaceController
         }
     }
 
-    #[Route('/{id}', methods: ['DELETE'])]
+    #[Route('/api/admin/workspaces/{id}', name: 'app_admin_workspaces_delete', methods: ['DELETE'])]
     public function delete(int $id): JsonResponse
     {
         try {
@@ -223,7 +222,7 @@ final class WorkspaceController
         }
     }
 
-    #[Route('/{id}/agents', methods: ['PUT'])]
+    #[Route('/api/admin/workspaces/{id}/agents', name: 'app_admin_workspaces_assign_agents', methods: ['PUT'])]
     public function assignAgents(int $id, Request $request): JsonResponse
     {
         try {

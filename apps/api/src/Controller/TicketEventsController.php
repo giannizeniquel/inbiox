@@ -8,7 +8,7 @@ use App\Domain\Outbox\OutboxEvent;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * Provides sequence-based resync of outbox events for a ticket.
@@ -30,7 +30,7 @@ final class TicketEventsController
         private readonly MercureJwtService $jwtService,
     ) {}
 
-    #[Route('/api/tickets/{id}/events', methods: ['GET'], requirements: ['id' => '\d+'])]
+    #[Route('/api/tickets/{id}/events', name: 'app_ticket_events_resync', methods: ['GET'])]
     public function listSince(int $id, Request $request): JsonResponse
     {
         // 1. Auth: validate JWT

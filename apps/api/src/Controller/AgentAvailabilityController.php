@@ -20,7 +20,7 @@ use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
@@ -56,7 +56,7 @@ class AgentAvailabilityController
      * Set an agent's availability override with optional TTL.
      * Returns 200 with the updated availability state.
      */
-    #[Route('/agents/{id}/availability', methods: ['POST'])]
+    #[Route('/api/agents/{id}/availability', name: 'app_agent_set_availability', methods: ['POST'])]
     public function setAvailability(
         int $id,
         #[MapRequestPayload] SetAgentAvailabilityRequest $request,
@@ -105,7 +105,7 @@ class AgentAvailabilityController
      * Clear an agent's availability override (reset to NULL).
      * Returns 204 on success.
      */
-    #[Route('/agents/{id}/availability', methods: ['DELETE'])]
+    #[Route('/api/agents/{id}/availability', name: 'app_agent_clear_availability', methods: ['DELETE'])]
     public function clearAvailability(int $id): JsonResponse
     {
         // Ownership check: AGENT can only modify their own availability
@@ -144,7 +144,7 @@ class AgentAvailabilityController
      * Read the full availability state for an agent.
      * Reuses AgentAvailabilityService for determination. Read-only.
      */
-    #[Route('/agents/{id}/availability', methods: ['GET'])]
+    #[Route('/api/agents/{id}/availability', name: 'app_agent_get_availability', methods: ['GET'])]
     public function getAvailability(int $id): JsonResponse
     {
         // Ownership check: AGENT can only view their own availability
@@ -212,7 +212,7 @@ class AgentAvailabilityController
      * Create a weekly shift for an agent.
      * Returns 201 with the created shift data.
      */
-    #[Route('/agents/{id}/shifts', methods: ['POST'])]
+    #[Route('/api/agents/{id}/shifts', name: 'app_agent_create_shift', methods: ['POST'])]
     public function createShift(
         int $id,
         #[MapRequestPayload] CreateAgentShiftRequest $request,
@@ -269,7 +269,7 @@ class AgentAvailabilityController
      * Delete an agent's shift.
      * Returns 204 on success.
      */
-    #[Route('/agents/{id}/shifts/{shiftId}', methods: ['DELETE'])]
+    #[Route('/api/agents/{id}/shifts/{shiftId}', name: 'app_agent_delete_shift', methods: ['DELETE'])]
     public function deleteShift(int $id, int $shiftId): JsonResponse
     {
         // Ownership check: AGENT can only modify their own shifts

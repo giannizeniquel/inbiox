@@ -30,7 +30,7 @@
 
 ## F1. Mensaje entrante de WhatsApp
 
-**Entrada:** `POST /webhook` → `Controller/WebhookController::handle` (`config/routes.yaml:212-215`). Público, autenticado por firma HMAC.
+**Entrada:** `POST /webhook` → `Controller/WebhookController::handle` (`#[Route]` del método). Público, autenticado por firma HMAC.
 
 ```mermaid
 flowchart TD
@@ -319,7 +319,7 @@ stateDiagram-v2
 - `AddTagToTicketUseCase` existe (normaliza a minúsculas, es idempotente, audita en `ticket_events`) y solo lo usa `KeywordTaggingRule`. **No hay forma HTTP de etiquetar a mano**: `TagController` (sin ruta) y `RemoveTagFromTicketUseCase` se borraron en la fase 1.
 - **Filtro:** `GET /api/tickets?tag=a,b` (AND, máximo 5) en `Application/Query/TicketFilterBuilder.php:77-85`, y columna `tags` del export CSV. **Sin UI.**
 
-**Si falla, revisar:** `config/routes.yaml` (no hay ruta) → `TicketFilterBuilder.php` → `ticket_tags`.
+**Si falla, revisar:** `debug:router` (no hay ruta) → `TicketFilterBuilder.php` → `ticket_tags`.
 
 ---
 

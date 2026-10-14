@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use Symfony\Component\Routing\Attribute\Route;
 use App\Domain\Message\Message;
 use App\Infrastructure\Storage\MediaUrlService;
 use App\Repository\MessageRepository;
@@ -12,6 +13,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+#[Route('/api/messages/{id}/media', name: 'app_message_media_url', methods: ['GET'], requirements: ['id' => '\d+'])]
 class MediaUrlController extends AbstractController
 {
     public function __construct(

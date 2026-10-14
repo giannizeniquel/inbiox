@@ -1,6 +1,6 @@
 # 06 — API HTTP y permisos
 
-> Las 90 rutas reales (`apps/api/config/routes.yaml`, verificado con `debug:router`) y quién puede usar cada una. Volver al [índice](README.md).
+> Las 90 rutas reales (atributos `#[Route]` de los controladores, verificado con `debug:router`) y quién puede usar cada una. Volver al [índice](README.md).
 > Controladores relativos a `apps/api/src/Controller/`.
 
 ## Cómo se calcula el rol efectivo
@@ -29,7 +29,7 @@ Jerarquía: `ROLE_ADMIN` ⊃ `ROLE_SUPERVISOR` ⊃ `ROLE_AGENT` (`security.yaml:
 
 > Un usuario con roles vacíos solo puede hacer login, refresh, logout, `/api/auth/me` y `/api/me/workspace(s)`.
 
-**Receta para un 403:** buscar la ruta en `routes.yaml` → ver qué regla de `access_control` coincide primero → ver `#[IsGranted]` de clase y método del controlador → ver voters dentro de la acción.
+**Receta para un 403:** buscar la ruta con `debug:router` (o el `#[Route]` del controlador) → ver qué regla de `access_control` coincide primero → ver `#[IsGranted]` de clase y método del controlador → ver voters dentro de la acción.
 
 ---
 
@@ -214,7 +214,6 @@ Registradas en todos los entornos; responden 404 fuera de `dev`/`test` (`DebugCo
 |---|---|---|
 | `TagController` (`POST`/`DELETE …/tags`), `AutoCloseController` (`POST …/auto-close`) | Solo tenían `#[Route]`, sin entrada en `routes.yaml`. **Borrado en la fase 1 de la limpieza.** | `odd/tasks/limpieza-backend.md` |
 | `GET /api/tickets/{id}/events` | Registrado, pero el firewall rechaza el token que envía el frontend. | [R5](00-estado-y-pendientes.md#r5-endpoint-de-resync-de-eventos-inseguro-y-además-inalcanzable) |
-| Atributos `#[Route]` en general | Decorativos; varios con paths distintos al real (sin `/api`). `TicketEventsController` declara un `requirements` que no está en el yaml. | [02](02-arquitectura-y-tecnologias.md#ruteo-routesyaml-es-la-única-fuente) |
 | `AgentVoter`, `ReportVoter`, `TicketVoter::VIEW/EDIT`, `ActiveUserListener` | Nadie los usaba o nunca actuaban. **Borrado en la fase 1 de la limpieza.** | `odd/tasks/limpieza-backend.md` |
 
 Endpoints vivos **sin UI**: plantillas, asignar equipo a ticket, historial de asignaciones, `/auto-assign`, `/transition`, `/close`, borrar contacto, override/turnos de un agente, filtros `tag`/`status`/`search`/`sort` del listado.

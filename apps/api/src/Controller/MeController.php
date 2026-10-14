@@ -22,7 +22,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
@@ -39,7 +39,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * GET  /api/me/workspaces      — returns the agent's assigned workspaces
  */
 #[IsGranted('IS_AUTHENTICATED_FULLY')]
-#[Route('/api/me')]
 final class MeController
 {
     public function __construct(
@@ -49,8 +48,8 @@ final class MeController
         private readonly ReplaceAgentShiftsUseCase $replaceAgentShiftsUseCase,
     ) {}
 
-    #[Route('/settings', methods: ['GET'])]
     #[IsGranted('ROLE_AGENT')]
+    #[Route('/api/me/settings', name: 'app_me_settings', methods: ['GET'])]
     public function getSettings(): JsonResponse
     {
         try {
@@ -123,8 +122,8 @@ final class MeController
         }
     }
 
-    #[Route('/profile', methods: ['PUT'])]
     #[IsGranted('ROLE_AGENT')]
+    #[Route('/api/me/profile', name: 'app_me_profile', methods: ['PUT'])]
     public function updateProfile(#[MapRequestPayload] UpdateProfileRequest $request): JsonResponse
     {
         try {
@@ -152,8 +151,8 @@ final class MeController
         }
     }
 
-    #[Route('/notifications', methods: ['PUT'])]
     #[IsGranted('ROLE_AGENT')]
+    #[Route('/api/me/notifications', name: 'app_me_notifications', methods: ['PUT'])]
     public function updateNotifications(#[MapRequestPayload] UpdateNotificationsRequest $request): JsonResponse
     {
         try {
@@ -185,8 +184,8 @@ final class MeController
         }
     }
 
-    #[Route('/auto-reply', methods: ['PUT'])]
     #[IsGranted('ROLE_AGENT')]
+    #[Route('/api/me/auto-reply', name: 'app_me_auto_reply', methods: ['PUT'])]
     public function updateAutoReply(#[MapRequestPayload] UpdateAutoReplyRequest $request): JsonResponse
     {
         try {
@@ -217,8 +216,8 @@ final class MeController
         }
     }
 
-    #[Route('/shifts', methods: ['GET'])]
     #[IsGranted('ROLE_AGENT')]
+    #[Route('/api/me/shifts', name: 'app_me_shifts_list', methods: ['GET'])]
     public function getShifts(): JsonResponse
     {
         try {
@@ -252,8 +251,8 @@ final class MeController
         }
     }
 
-    #[Route('/shifts', methods: ['PUT'])]
     #[IsGranted('ROLE_AGENT')]
+    #[Route('/api/me/shifts', name: 'app_me_shifts_replace', methods: ['PUT'])]
     public function replaceShifts(#[MapRequestPayload] ReplaceShiftsRequest $request): JsonResponse
     {
         try {
@@ -278,7 +277,7 @@ final class MeController
         }
     }
 
-    #[Route('/workspace', methods: ['GET'])]
+    #[Route('/api/me/workspace', name: 'app_me_workspace', methods: ['GET'])]
     public function getActiveWorkspace(): JsonResponse
     {
         try {
@@ -306,7 +305,7 @@ final class MeController
         }
     }
 
-    #[Route('/workspace', methods: ['PUT'])]
+    #[Route('/api/me/workspace', name: 'app_me_workspace_set', methods: ['PUT'])]
     public function setActiveWorkspace(Request $request): JsonResponse
     {
         try {
@@ -387,7 +386,7 @@ final class MeController
         return $agent;
     }
 
-    #[Route('/workspaces', methods: ['GET'])]
+    #[Route('/api/me/workspaces', name: 'app_me_workspaces', methods: ['GET'])]
     public function listMyWorkspaces(): JsonResponse
     {
         try {

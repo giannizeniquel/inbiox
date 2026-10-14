@@ -16,7 +16,7 @@ use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_AGENT')]
@@ -31,7 +31,7 @@ class TicketController
         private EntityManagerInterface $entityManager,
     ) {}
 
-    #[Route('/tickets/{id}/assign', methods: ['POST'])]
+    #[Route('/api/tickets/{id}/assign', name: 'app_ticket_assign', methods: ['POST'])]
     public function assign(
         int $id,
         #[MapRequestPayload] AssignTicketRequest $request
@@ -83,7 +83,7 @@ class TicketController
      * match the ticket's phone_number_id, otherwise 400 and team_id is left
      * unchanged.
      */
-    #[Route('/tickets/{id}/team', methods: ['PUT'])]
+    #[Route('/api/tickets/{id}/team', name: 'app_ticket_set_team', methods: ['PUT'])]
     public function setTeam(int $id, Request $request): JsonResponse
     {
         try {
@@ -135,7 +135,7 @@ class TicketController
         }
     }
 
-    #[Route('/tickets/{id}/assignment', methods: ['GET'])]
+    #[Route('/api/tickets/{id}/assignment', name: 'app_ticket_assignment', methods: ['GET'])]
     public function getAssignment(int $id): JsonResponse
     {
         try {

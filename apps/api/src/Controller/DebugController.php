@@ -7,7 +7,7 @@ use App\Application\UseCase\AssignTicketUseCase;
 use App\Application\UseCase\TransitionTicketStatusUseCase;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpKernel\KernelInterface;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
 /**
@@ -33,7 +33,7 @@ class DebugController extends AbstractController
         return new JsonResponse(['error' => 'Not found'], 404);
     }
 
-    #[Route('/debug/inbound/{ticketId}', name: 'debug_inbound', methods: ['POST'])]
+    #[Route('/debug/inbound/{ticketId}', name: 'app_debug_inbound', methods: ['POST'])]
     public function inbound(int $ticketId): JsonResponse
     {
         if (!$this->isDevOrTest()) {
@@ -72,7 +72,7 @@ class DebugController extends AbstractController
         }
     }
 
-    #[Route('/debug/outbound/{ticketId}', name: 'debug_outbound', methods: ['POST'])]
+    #[Route('/debug/outbound/{ticketId}', name: 'app_debug_outbound', methods: ['POST'])]
     public function outbound(int $ticketId): JsonResponse
     {
         if (!$this->isDevOrTest()) {
@@ -109,7 +109,7 @@ class DebugController extends AbstractController
         }
     }
 
-    #[Route('/debug/status/{ticketId}', name: 'debug_status', methods: ['POST'])]
+    #[Route('/debug/status/{ticketId}', name: 'app_debug_status', methods: ['POST'])]
     public function status(int $ticketId): JsonResponse
     {
         if (!$this->isDevOrTest()) {
@@ -137,7 +137,7 @@ class DebugController extends AbstractController
         }
     }
 
-    #[Route('/debug/assign/{ticketId}', name: 'debug_assign', methods: ['POST'])]
+    #[Route('/debug/assign/{ticketId}', name: 'app_debug_assign', methods: ['POST'])]
     public function assign(int $ticketId): JsonResponse
     {
         if (!$this->isDevOrTest()) {

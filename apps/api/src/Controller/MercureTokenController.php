@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use Symfony\Component\Routing\Attribute\Route;
 use App\Application\Service\MercureJwtService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -19,6 +20,7 @@ final class MercureTokenController extends AbstractController
     ) {}
 
     // Route registered in config/routes.yaml (app_mercure_token)
+    #[Route('/api/mercure/token', name: 'app_mercure_token', methods: ['GET'])]
     public function getToken(#[CurrentUser] ?User $user): JsonResponse
     {
         if (null === $user) {

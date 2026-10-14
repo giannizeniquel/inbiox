@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use Symfony\Component\Routing\Attribute\Route;
 use App\Domain\RefreshToken\RefreshToken;
 use App\Domain\User\User;
 use Doctrine\ORM\EntityManagerInterface;
@@ -40,6 +41,7 @@ final class AuthController extends AbstractController
      * This route exists only to pass the RouterListener; the controller
      * is never reached because json_login returns a response directly.
      */
+    #[Route('/api/auth/login', name: 'api_auth_login', methods: ['POST'])]
     public function login(): never
     {
         throw new \RuntimeException('Unreachable: handled by json_login firewall');
@@ -52,6 +54,7 @@ final class AuthController extends AbstractController
      * This route exists only to pass the RouterListener; the controller
      * is never reached because refresh_jwt returns a response directly.
      */
+    #[Route('/api/auth/refresh', name: 'api_auth_refresh_path', methods: ['POST'])]
     public function refresh(): never
     {
         throw new \RuntimeException('Unreachable: handled by refresh_jwt firewall');
@@ -63,6 +66,7 @@ final class AuthController extends AbstractController
      * Invalidates the current refresh token and clears the cookie.
      * Requires a valid JWT (IS_AUTHENTICATED_FULLY).
      */
+    #[Route('/api/auth/logout', name: 'api_auth_logout', methods: ['POST'])]
     public function logout(Request $request): JsonResponse
     {
         $refreshTokenRepo = $this->entityManager->getRepository(RefreshToken::class);
@@ -107,6 +111,7 @@ final class AuthController extends AbstractController
      * Returns the current authenticated user's profile.
      * Requires a valid JWT (IS_AUTHENTICATED_FULLY).
      */
+    #[Route('/api/auth/me', name: 'api_auth_me', methods: ['GET'])]
     public function me(): JsonResponse
     {
         $user = $this->getUser();

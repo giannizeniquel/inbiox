@@ -12,7 +12,7 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
@@ -22,7 +22,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * All endpoints require ROLE_ADMIN.
  */
 #[IsGranted('ROLE_ADMIN')]
-#[Route('/api/admin/agents')]
 final class AgentLinkController
 {
     public function __construct(
@@ -39,7 +38,7 @@ final class AgentLinkController
      * - 400 if user is deactivated (Q3 from design)
      * - 409 on UNIQUE constraint violation
      */
-    #[Route('/{id}/link-user', methods: ['POST'])]
+    #[Route('/api/admin/agents/{id}/link-user', name: 'admin_agents_link_user', methods: ['POST'])]
     public function linkUser(int $id, Request $request): JsonResponse
     {
         try {
@@ -115,7 +114,7 @@ final class AgentLinkController
      *
      * Unlinks the User from an Agent.
      */
-    #[Route('/{id}/link-user', methods: ['DELETE'])]
+    #[Route('/api/admin/agents/{id}/link-user', name: 'admin_agents_unlink_user', methods: ['DELETE'])]
     public function unlinkUser(int $id): JsonResponse
     {
         try {

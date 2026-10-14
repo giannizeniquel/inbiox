@@ -46,6 +46,10 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T8 | S1 | inline | done | Phase 1, block 4: obsolete root tooling and `bin/outbox-direct.php` |
 | T9 | S1, S7 | inline | done | Phase 1: docs in `02_sistema-actual` updated for the deletions |
 | T10 | S1 | inline | done | Phase 1 items that change a contract or the environment (see L9): L11–L16 |
+| T11 | S2 | inline | done | Phase 2: routes regenerated as `#[Route]` attributes from the YAML; `routes.yaml` = `routing.controllers` (L19) |
+| T12 | S2 | inline | pending | Phase 2: remove single-implementation interfaces (8, from the explorer map) |
+| T13 | S2 | inline | pending | Phase 2: move classes into modules (map in L19), one commit per module; event-class rename blocker first |
+| T14 | S2, S7 | inline | pending | Phase 2: docs paths (`02_sistema-actual`) after the moves |
 
 ### Baseline of failing tests (phase 0, after `1afba20`)
 
@@ -138,3 +142,12 @@ Later phases, each with its own branch and task list when it starts:
 - **L16 (2026-10-14), T10 item 6:** re-verified that no code or config reads `MEDIA_ENABLED` or `JWT_COOKIE_NAME`. The refresh cookie name is hardcoded as `token_parameter_name: inbiox_refresh` in `gesdinet_jwt_refresh_token.yaml`, so the `api-contracts.md` row saying it was required was wrong. Claude must not read `.env*`, so the user removed the lines by hand (`.env` lines 18 and 30, `.env.example` 32, `.env.test` 10); a first `sd` attempt matched nothing, for an unknown reason. Docs 02/08/api-contracts updated. Checks: `lint:container` OK; full suite 692 tests, exactly the 6 baseline failures.
 - **L17 (2026-10-14), integration branch:** user: "no vamos a mergear a test, ahi vive la app funcionando (con errores pero anda). Podemos crear una rama nueva test-refactor o algo asi a donde ir mergeando lo que estamos haciendo". Created and pushed `test-refactor` from `origin/test` (`b543593`). Phase PRs target it in order (0, then 1); the frontend phases also target it. If `test` gets fixes, merge `test` into `test-refactor`.
 - **L18 (2026-10-14), missed caller of `--status` (T10 item 1):** the frontend's smoke baseline (`32d97cb`) mentioned a host crontab running `app:outbox:publish`. The user's crontab had `* * * * * docker exec inbiox_php php /var/www/html/bin/console app:outbox:publish --status=pending 2>/dev/null`. Since `e04c3a4` it failed every minute, silently because of `2>/dev/null`. No impact, because the docker `publisher` runs every 2 s, but it was a third publisher. Root cause: the reference search covered the repo, docker and systemd, but not host crontabs. User: "si, borrala y agregá lo de crontab a la regla". Removed the line (it was the only one; backup in `/tmp/claude-1000/crontab.bak`), and the `AGENTS.md` rule now lists host crontabs.
+- **L19 (2026-10-14), phase 2 start:** user: "si, arrancá la fase 2". Branch `chore/limpieza-backend-fase-2` stacked on `97c0eec`. The user asked whether the frontend should wait; the answer was no, because phase 2 does not change the API contract.
+  - **T11 (routes):** a script turned the `debug:router` dump (YAML order) into one `#[Route]` per action: 90 routes in 24 controllers. It deleted the stale attributes and switched the `Annotation` import to `Attribute`. The stale `requirements` on `TicketEventsController` was not carried over, because the YAML did not have it.
+  - Checks: `debug:router` gives the same 91 names, each with identical content (path, regex, methods, requirements, defaults, options). Only the listing order changed. A route-match probe (a concrete URL per route and method, 92 probes) resolves every URL to the same route before and after, with no shadowing in either. `lint:container` OK. Full suite: 692 tests, exactly the 6 baseline failures.
+  - **Explorer map** (`f2-map.csv`, session scratchpad): 171 files, 38 with debatable placement. Blockers it found:
+    1. `outbox_events.event_type` stores event FQCNs, and `EventTypeMapper` rejects unknown names, so moving event classes breaks stored rows (pending retry and resync).
+    2. `RulePass` registers rules by hardcoded class-name strings.
+    3. The Doctrine mapping only scans `src/Domain`, with prefix `App\Domain`.
+    4. The service config hardcodes FQCNs (`services.yaml`, `services_test.yaml`, `packages/test.yaml`, `security.yaml`, `gesdinet_jwt_refresh_token.yaml`, `bin/outbox-publish.php`).
+  - Single-implementation interfaces: Assignment, Contact, Conversation, Message, Tag, Ticket and RuleExecutionLog repository interfaces, plus `EventCollector`. The only test doubles are PHPUnit mocks, which also work on concrete classes.

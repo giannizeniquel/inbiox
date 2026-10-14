@@ -12,7 +12,7 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
@@ -33,7 +33,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * ROLE_SUPERVISOR, per spec.
  */
 #[IsGranted('ROLE_SUPERVISOR')]
-#[Route('/api/admin/teams')]
 final class TeamController
 {
     public function __construct(
@@ -41,7 +40,7 @@ final class TeamController
         private readonly LoggerInterface $logger,
     ) {}
 
-    #[Route('', methods: ['GET'])]
+    #[Route('/api/admin/teams', name: 'app_admin_teams_list', methods: ['GET'])]
     public function list(Request $request): JsonResponse
     {
         try {
@@ -85,7 +84,7 @@ final class TeamController
         }
     }
 
-    #[Route('', methods: ['POST'])]
+    #[Route('/api/admin/teams', name: 'app_admin_teams_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
         try {
@@ -143,7 +142,7 @@ final class TeamController
         }
     }
 
-    #[Route('/{id}', methods: ['GET'])]
+    #[Route('/api/admin/teams/{id}', name: 'app_admin_teams_get', methods: ['GET'])]
     public function get(int $id): JsonResponse
     {
         try {
@@ -165,7 +164,7 @@ final class TeamController
         }
     }
 
-    #[Route('/{id}', methods: ['PUT'])]
+    #[Route('/api/admin/teams/{id}', name: 'app_admin_teams_update', methods: ['PUT'])]
     public function update(int $id, Request $request): JsonResponse
     {
         try {
@@ -215,7 +214,7 @@ final class TeamController
         }
     }
 
-    #[Route('/{id}', methods: ['DELETE'])]
+    #[Route('/api/admin/teams/{id}', name: 'app_admin_teams_delete', methods: ['DELETE'])]
     public function delete(int $id): JsonResponse
     {
         try {
@@ -243,7 +242,7 @@ final class TeamController
         }
     }
 
-    #[Route('/{id}/agents', methods: ['PUT'])]
+    #[Route('/api/admin/teams/{id}/agents', name: 'app_admin_teams_assign_agents', methods: ['PUT'])]
     public function assignAgents(int $id, Request $request): JsonResponse
     {
         try {

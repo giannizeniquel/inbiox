@@ -88,16 +88,15 @@ Todo en `apps/api/src/`.
 
 ### Cómo encontrar el código de un request (receta)
 
-1. Buscar el path en `apps/api/config/routes.yaml` → da el `controller`.
-2. Abrir el controlador y **ignorar sus atributos `#[Route]`** (no se cargan; varios tienen paths distintos al real, p. ej. sin `/api`).
-3. Ver permisos: `config/packages/security.yaml` (`access_control`, la primera regla que coincide) + `#[IsGranted]` de clase + `#[IsGranted]` de método + voters dentro de la acción. **Todas** deben pasar.
-4. Seguir la llamada al caso de uso / consulta en `Application/`.
-5. Ante un 500 con `reference`, buscar ese valor en los logs: es el patrón de manejo de errores de casi todos los controladores.
+1. Buscar el path con `php bin/console debug:router --show-controllers` o con `rg "#\[Route\('/api/…"` → da el controlador.
+2. Ver permisos: `config/packages/security.yaml` (`access_control`, la primera regla que coincide) + `#[IsGranted]` de clase + `#[IsGranted]` de método + voters dentro de la acción. **Todas** deben pasar.
+3. Seguir la llamada al caso de uso / consulta en `Application/`.
+4. Ante un 500 con `reference`, buscar ese valor en los logs: es el patrón de manejo de errores de casi todos los controladores.
 
-### Ruteo: `routes.yaml` es la única fuente
+### Ruteo: los atributos `#[Route]` son la única fuente
 
-- `config/routes.yaml` define las **90 rutas** con `path`, `methods` y `controller`. No importa atributos (`config/routes/` solo tiene `framework.yaml` y `security.yaml`). Verificado con `debug:router`.
-- Los `#[Route]` de los controladores son **código muerto y engañoso**. Por eso `TagController` y `AutoCloseController`, que solo tenían atributos, eran inalcanzables (se borraron en la fase 1).
+- Desde la fase 2, cada acción declara su ruta con `#[Route]` y `config/routes.yaml` solo tiene `resource: routing.controllers`. Las **90 rutas** se regeneraron a partir del YAML anterior: `debug:router` da el mismo conjunto con el mismo contenido (cambia solo el orden del listado) y cada URL sigue resolviendo a la misma ruta.
+- Antes de la fase 2, el YAML era la única fuente y los atributos estaban muertos: por eso `TagController` y `AutoCloseController`, que solo tenían atributos, eran inalcanzables (se borraron en la fase 1).
 - `src/Kernel.php` define un método `configure()` que `MicroKernelTrait` nunca llama (código muerto, propósito no confirmado).
 
 ## Frontend: capas y carpetas

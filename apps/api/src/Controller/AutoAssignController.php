@@ -7,7 +7,7 @@ namespace App\Controller;
 use App\Application\UseCase\AutoAssignTicketUseCase;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_AGENT')]
@@ -18,7 +18,7 @@ class AutoAssignController
         private LoggerInterface $logger,
     ) {}
 
-    #[Route('/tickets/{id}/auto-assign', methods: ['POST'])]
+    #[Route('/api/tickets/{id}/auto-assign', name: 'app_ticket_auto_assign', methods: ['POST'])]
     public function autoAssign(int $id): JsonResponse
     {
         // Validate ticket ID

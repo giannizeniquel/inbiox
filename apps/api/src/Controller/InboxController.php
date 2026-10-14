@@ -19,7 +19,7 @@ use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Uid\Ulid;
 
@@ -37,7 +37,7 @@ class InboxController
         private LoggerInterface $logger,
     ) {}
 
-    #[Route('/tickets', methods: ['GET'])]
+    #[Route('/api/tickets', name: 'app_inbox_tickets', methods: ['GET'])]
     public function listTickets(Request $request): JsonResponse
     {
         try {
@@ -98,7 +98,7 @@ class InboxController
         }
     }
 
-    #[Route('/tickets/{id}', methods: ['GET'])]
+    #[Route('/api/tickets/{id}', name: 'app_inbox_ticket_detail', methods: ['GET'])]
     public function getTicket(int $id): JsonResponse
     {
         try {
@@ -120,7 +120,7 @@ class InboxController
         }
     }
 
-    #[Route('/tickets/{id}/messages', methods: ['GET'])]
+    #[Route('/api/tickets/{id}/messages', name: 'app_inbox_ticket_messages', methods: ['GET'])]
     public function getMessages(int $id, Request $request): JsonResponse
     {
         try {
@@ -164,7 +164,7 @@ class InboxController
         }
     }
 
-    #[Route('/tickets/{id}/mark-read', methods: ['PUT'])]
+    #[Route('/api/tickets/{id}/mark-read', name: 'app_ticket_mark_read', methods: ['PUT'])]
     public function markRead(int $id): JsonResponse
     {
         try {

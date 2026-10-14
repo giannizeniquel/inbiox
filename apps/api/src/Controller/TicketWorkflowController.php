@@ -18,7 +18,7 @@ use Psr\Log\LoggerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -35,7 +35,7 @@ class TicketWorkflowController
         private ClosureAuditClassifier $classifier,
     ) {}
 
-    #[Route('/tickets/{id}/transition', methods: ['POST'])]
+    #[Route('/api/tickets/{id}/transition', name: 'app_ticket_transition', methods: ['POST'])]
     public function transition(int $id, Request $request, #[CurrentUser] ?User $user): JsonResponse
     {
         try {
@@ -84,7 +84,7 @@ class TicketWorkflowController
         }
     }
 
-    #[Route('/tickets/{id}/resolve', methods: ['POST'])]
+    #[Route('/api/tickets/{id}/resolve', name: 'app_ticket_resolve', methods: ['POST'])]
     public function resolve(int $id, #[CurrentUser] ?User $user): JsonResponse
     {
         try {
@@ -112,7 +112,7 @@ class TicketWorkflowController
         }
     }
 
-    #[Route('/tickets/{id}/close', methods: ['POST'])]
+    #[Route('/api/tickets/{id}/close', name: 'app_ticket_close', methods: ['POST'])]
     public function close(int $id, #[CurrentUser] ?User $user): JsonResponse
     {
         try {

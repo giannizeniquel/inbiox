@@ -80,7 +80,7 @@ Auditoría hecha contra el código en `239ee15`. Un documento "engañoso" contie
 | Documento | Estado | Uso recomendado |
 |---|---|---|
 | [`analisis-brecha-requerimientos.md`](../../analisis-brecha-requerimientos.md) | **Vigente** (el mejor). Desactualizado en un punto: §4.1 presenta el filtro `waiting` como bug vivo (ya corregido en Tier 1 #1). | Referencia de requisitos del cliente y backlog. Esta carpeta no lo duplica. |
-| `apps/api/config/routes.yaml` | **Vigente** — es la única fuente real de rutas. | Contrato real de la API. |
+| Atributos `#[Route]` de `apps/api/src/**/Controller` | **Vigente** — única fuente de rutas desde la fase 2 (`routes.yaml` solo carga `routing.controllers`). | Contrato real de la API. |
 | `openspec/specs/*` (21 specs) | Mayormente vigentes, con contradicciones listadas en [08](08-riesgos-contradicciones-y-complejidad.md#contradicciones-entre-specs-y-código). | Fuente de las reglas "Confirmadas". |
 | `docs/04_sprints/sprint_16 (Production Readiness).md` | Fiel al código. | Contexto de la decisión de "bandeja compartida". |
 | `docker-compose.yml` (sus comentarios) | Vigente. | Cómo corren `publisher` y `window-closer`. |
