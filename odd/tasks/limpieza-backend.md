@@ -217,3 +217,9 @@ Later phases, each with its own branch and task list when it starts:
   - **Intended visible changes, approved by the user as the "500 genérico" unification:** S2 `"Internal error"` becomes S1, and uncaught non-HTTP exceptions on `/api` return S1 instead of Symfony's problem+json, which leaked the exception message. Per-action log messages were replaced by one log format.
   - **Tests:** 4 new listener tests. They pin the 404, 401 and 403 bodies as unchanged, and the forced uncaught exception now returns S1 (RED before the listener). The 3 S2 characterization tests now assert S1.
   - **Parent checks:** `lint:container` OK; full suite 778 tests, exactly the 6 baseline failures.
+- **L27 (2026-10-14), shared smoke (guide 09):** the frontend agent ran it with front `e47b12e`+`d85ccbe` against back `3f2b83f`. P-01..P-24 match the phase-0 baseline. P-07 got further (upload reached Meta's 502), which is not a regression. Findings, all pre-existing and not caused by the cleanup:
+  1. Resolving a `new` or closed ticket gives a 500. It was the same 500 before, only with the S2 text; pinned in 3a.
+  2. `/assign` without `assignedBy` gives a 500: an uninitialized typed property in `AssignTicketRequest`, because `symfony/validator` is not installed.
+  3. `GET /api/tickets/{id}` has `owner.name: null` (hardcoded in `GetTicketDetailQuery`), so "Asignado:" is empty after a reload.
+  4. Unknown URLs give an HTML 404 to browsers (Symfony's default; the 3b listener leaves HTTP exceptions alone). Error formats are deferred to phase 5.
+  - Smoke data left in the dev DB: tickets 468–480, `Smoke2 …` contacts, team 2, workspace 4, agents 13–14, user 12. Overrides of agents 1–3 were cleared, and message 219's `created_at` was backdated.
