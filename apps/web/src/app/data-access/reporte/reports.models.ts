@@ -1,9 +1,7 @@
 /**
- * Reporting v2 response interfaces. Also re-exports `reports.params` and
- * `response-delay.dto` for existing imports.
+ * Reporting v2 response interfaces. Request params live in `reports.params`;
+ * response-delay and ticket-participation shapes live in `response-delay.dto`.
  */
-export * from './reports.params';
-export * from './response-delay.dto';
 
 // ── Reporting v2 response interfaces ──
 

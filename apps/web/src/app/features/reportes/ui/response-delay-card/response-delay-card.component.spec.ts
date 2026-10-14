@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { ResponseDelayCardComponent } from './response-delay-card.component';
-import { ResponseDelayReport } from '../../../../data-access/reporte/reports.models';
+import { ResponseDelayReport } from '../../../../data-access/reporte/response-delay.dto';
 
 /**
  * ResponseDelayCardComponent tests — documents the never-zero / partial-data

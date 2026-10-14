@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, input, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { GetTicketParticipationUseCase } from '../../../../data-access/reporte/get-ticket-participation.use-case';
+import { ReportsApiService } from '../../../../data-access/reporte/reports-api.service';
 import { TicketParticipation } from '../../../../data-access/reporte/response-delay.dto';
 
 /**
@@ -8,8 +8,8 @@ import { TicketParticipation } from '../../../../data-access/reporte/response-de
  *
  * Lists participating agents (message count + average delay), automatic
  * activity count, and surfaces `partial_data` as "sin datos de atribución"
- * rather than a zero value. Injects GetTicketParticipationUseCase rather
- * than ReportsApiService.
+ * rather than a zero value. Injects ReportsApiService, whose
+ * getTicketParticipation already maps errors to a user-facing message.
  */
 @Component({
   selector: 'app-ticket-participation',
@@ -117,7 +117,7 @@ import { TicketParticipation } from '../../../../data-access/reporte/response-de
   `],
 })
 export class TicketParticipationComponent {
-  private readonly getTicketParticipationUseCase = inject(GetTicketParticipationUseCase);
+  private readonly reportsApi = inject(ReportsApiService);
 
   readonly ticketId = input.required<number>();
 
@@ -130,7 +130,7 @@ export class TicketParticipationComponent {
     this.loading.set(true);
     this.error.set(null);
 
-    this.getTicketParticipationUseCase.execute(id).subscribe({
+    this.reportsApi.getTicketParticipation(id).subscribe({
       next: (result) => {
         this.data.set(result);
         this.loading.set(false);

@@ -1,6 +1,6 @@
 import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ResponseDelayReport } from '../../../../data-access/reporte/reports.models';
+import { ResponseDelayReport } from '../../../../data-access/reporte/response-delay.dto';
 
 /**
  * ResponseDelayCardComponent — aggregate + per-agent response-delay card.

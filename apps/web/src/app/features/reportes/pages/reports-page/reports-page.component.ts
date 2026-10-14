@@ -28,8 +28,8 @@ import {
   HeatmapCell,
   RecurringEntry,
   ReopenedEntry,
-  ResponseDelayReport,
 } from '../../../../data-access/reporte/reports.models';
+import { ResponseDelayReport } from '../../../../data-access/reporte/response-delay.dto';
 
 @Component({
   selector: 'app-reports-page',

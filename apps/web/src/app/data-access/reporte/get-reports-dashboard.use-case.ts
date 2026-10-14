@@ -12,8 +12,8 @@ import {
   HeatmapCell,
   RecurringEntry,
   ReopenedEntry,
-  ResponseDelayReport,
 } from './reports.models';
+import { ResponseDelayReport } from './response-delay.dto';
 
 /**
  * GetReportsDashboardInput — parameters for fetching the reports dashboard.

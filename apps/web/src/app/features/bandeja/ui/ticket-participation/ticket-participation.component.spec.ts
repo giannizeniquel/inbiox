@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { TicketParticipationComponent } from './ticket-participation.component';
-import { GetTicketParticipationUseCase } from '../../../../data-access/reporte/get-ticket-participation.use-case';
+import { ReportsApiService } from '../../../../data-access/reporte/reports-api.service';
 import { TicketParticipation } from '../../../../data-access/reporte/response-delay.dto';
 
 /**
@@ -11,14 +11,14 @@ import { TicketParticipation } from '../../../../data-access/reporte/response-de
  */
 describe('TicketParticipationComponent', () => {
   let fixture: ComponentFixture<TicketParticipationComponent>;
-  let useCaseSpy: jasmine.SpyObj<GetTicketParticipationUseCase>;
+  let apiSpy: jasmine.SpyObj<ReportsApiService>;
 
   beforeEach(async () => {
-    useCaseSpy = jasmine.createSpyObj('GetTicketParticipationUseCase', ['execute']);
+    apiSpy = jasmine.createSpyObj('ReportsApiService', ['getTicketParticipation']);
 
     await TestBed.configureTestingModule({
       imports: [TicketParticipationComponent],
-      providers: [{ provide: GetTicketParticipationUseCase, useValue: useCaseSpy }],
+      providers: [{ provide: ReportsApiService, useValue: apiSpy }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(TicketParticipationComponent);
@@ -37,7 +37,7 @@ describe('TicketParticipationComponent', () => {
       unanswered_inbound_count: 0,
       pairs: [],
     };
-    useCaseSpy.execute.and.returnValue(of(participation));
+    apiSpy.getTicketParticipation.and.returnValue(of(participation));
 
     fixture.componentRef.setInput('ticketId', 42);
     fixture.detectChanges();
@@ -60,7 +60,7 @@ describe('TicketParticipationComponent', () => {
       unanswered_inbound_count: 0,
       pairs: [],
     };
-    useCaseSpy.execute.and.returnValue(of(participation));
+    apiSpy.getTicketParticipation.and.returnValue(of(participation));
 
     fixture.componentRef.setInput('ticketId', 42);
     fixture.detectChanges();
@@ -70,7 +70,7 @@ describe('TicketParticipationComponent', () => {
   });
 
   it('refetches when ticketId changes', () => {
-    useCaseSpy.execute.and.returnValue(of({
+    apiSpy.getTicketParticipation.and.returnValue(of({
       ticket_id: 1,
       data_available_from: null,
       partial_data: false,
@@ -82,10 +82,10 @@ describe('TicketParticipationComponent', () => {
 
     fixture.componentRef.setInput('ticketId', 1);
     fixture.detectChanges();
-    expect(useCaseSpy.execute).toHaveBeenCalledWith(1);
+    expect(apiSpy.getTicketParticipation).toHaveBeenCalledWith(1);
 
     fixture.componentRef.setInput('ticketId', 2);
     fixture.detectChanges();
-    expect(useCaseSpy.execute).toHaveBeenCalledWith(2);
+    expect(apiSpy.getTicketParticipation).toHaveBeenCalledWith(2);
   });
 });

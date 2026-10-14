@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import {
   TimeFilterParams,
@@ -11,6 +12,7 @@ import {
   RecurringParams,
 } from './reports.params';
 import { ResponseDelayReport, TicketParticipation } from './response-delay.dto';
+import { extractApiError } from '../../core/http/extract-api-error';
 
 /** Backend response for GET /api/reports/frt */
 export interface FirstResponseTimeResponse {
@@ -267,10 +269,19 @@ export class ReportsApiService {
     });
   }
 
-  /** GET /api/reports/tickets/{id}/participation */
+  /**
+   * GET /api/reports/tickets/{id}/participation — per-ticket participation
+   * drill-down for the inbox "Participación" panel. Errors become a plain
+   * `Error` carrying the backend's message (via `extractApiError`).
+   */
   getTicketParticipation(ticketId: number): Observable<TicketParticipation> {
-    return this.http.get<TicketParticipation>(
-      `${this.baseUrl}/api/reports/tickets/${ticketId}/participation`,
-    );
+    return this.http
+      .get<TicketParticipation>(`${this.baseUrl}/api/reports/tickets/${ticketId}/participation`)
+      .pipe(
+        catchError((err) => {
+          const message = extractApiError(err, 'No se pudo cargar la participación del ticket');
+          return throwError(() => new Error(message));
+        }),
+      );
   }
 }
