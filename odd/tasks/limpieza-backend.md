@@ -14,7 +14,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
     - Controllers only handle HTTP.
     - Every write goes through a use case.
     - No interface without two real implementations.
-    - A module may call another module's use cases but never touch its tables via SQL.
+    - A module may call another module's use cases, queries and repositories, but never writes SQL on its tables (adjusted in L31).
     - Routes are declared only with `#[Route]` attributes, loaded via `routing.controllers`. They are regenerated from `routes.yaml` in phase 2, and `debug:router` must be identical before and after (L7).
     - States are backed enums, not catalog tables (L7).
 - **S3 — SQL rule.** User: "evitar SQL puro tipo string. ej: $sql='SELECT...'. SIEMPRE debemos tener un repository que ejecute funciones que utilicen metodos de doctrine".
@@ -249,3 +249,12 @@ Later phases, each with its own branch and task list when it starts:
     2. `(:p IS NULL OR …)` may hurt index use; not measured.
     3. The `TimelineEventDTO` deprecation is pre-existing.
     4. Rule-7 tension: some Query classes read another module's repository. Revisit in 3d.
+- **L30 (2026-10-14), shared smoke after 3c (guide 09):** the frontend agent ran it with its phase 3 (`9f1f174..a9671c7`) against back `4df4131`. No regressions. It compared inbox, detail, messages, contacts, timeline and CSV reads directly in MySQL against the `e1425d3` SQL: identical in every filter and in pagination. `/assign`: 200 on assign and reassign, 409 `AGENT_NOT_ACTIVE` for an inactive agent. New pre-existing findings for the contradiction track, confirmed in the code (neither handler checks that the parent exists):
+  1. `GET /api/contacts/{id}/timeline` for an unknown contact returns 200 with empty `events` instead of 404 (`ContactTimelineController::getTimeline`).
+  2. `GET /api/tickets/{id}/messages` for an unknown ticket returns 200 with empty `data` instead of 404 (`InboxController::getMessages`).
+  - **User decision (verbatim):** "cuando terminemos el refactor, los rename al español de todo lo que dijimos, etc, vamos a hacer una pasada tranquila por funcionalidad y dependencia para ir viendo si el codigo es entendible-legible o conviene cambiar algo. eso ya seria otra fase. primero nos enfocamos en el trabajo actual". A comprehension pass is a later, separate phase, not part of this feature.
+  - Next: T18 (3d).
+- **L31 (2026-10-14), rule 7 adjusted (T18 prep):** about 33 imports of another module's repository already exist (outside Compartido), and the Administracion controllers manage Agente entities (`Agent`, `Team`). User, choosing option 1: "si, 1. Ajustar la regla 7 (recomendada)."
+  - New rule 7 in `docs/arquitectura.md`: a module may use another module's use cases, queries and repositories. The SQL on a table lives only in its owner module's repository, and other modules call its methods. Importing another module's controllers stays forbidden.
+  - Existing cross-module calls to write or lock methods (`Conversacion` → `TicketRepository::markFirstResponse`, `Asignacion` → `AgentRepository::lockRowsForUpdate`) comply, because the SQL stays in the owner's repository.
+  - The L29 advisory 4 (Query classes reading another module's repository) is closed by this rule.
