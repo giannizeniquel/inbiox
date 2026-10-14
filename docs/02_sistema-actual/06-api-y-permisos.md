@@ -1,7 +1,7 @@
 # 06 — API HTTP y permisos
 
 > Las 90 rutas reales (atributos `#[Route]` de los controladores, verificado con `debug:router`) y quién puede usar cada una. Volver al [índice](README.md).
-> Controladores relativos a `apps/api/src/Controller/`.
+> Controladores en `apps/api/src/<Modulo>/Controller/` (desde la fase 2).
 
 ## Cómo se calcula el rol efectivo
 
@@ -230,4 +230,4 @@ Endpoints vivos **sin UI**: plantillas, asignar equipo a ticket, historial de as
 | Roles en el frontend (`core/stores/auth.store.ts:40-52`) | No jerárquicos (`isAdmin`, `isSupervisor`; no hay `isAgent`) | Jerárquicos | `roleGuard` lo compensa dejando pasar siempre al admin (`core/auth/auth.guard.ts:55-58`). Hoy no queda ninguna comprobación `isSupervisor()` sin `\|\| isAdmin()`. |
 | Informes (`/reports`) | Sin guard | Agente | Consistente: los agentes ven todos los reportes. |
 | Importar CSV / Exportar CSV | `isAdmin() \|\| isSupervisor()` | Supervisor | Consistente. |
-| Comentarios desactualizados | `contacts-page.component.ts:247` ("ROLE_SUPERVISOR only") | `Admin/TeamController.php:26-33` dice que `AgentController` exige Admin (hoy exige Supervisor); `InboxController.php:55` dice "AGENT sees only own tickets" | Confunden al lector; no cambian comportamiento. |
+| Comentarios desactualizados | `contacts-page.component.ts:247` ("ROLE_SUPERVISOR only") | `Administracion/Controller/TeamController.php:26-33` dice que `AgentController` exige Admin (hoy exige Supervisor); `InboxController.php:55` dice "AGENT sees only own tickets" | Confunden al lector; no cambian comportamiento. |

@@ -41,34 +41,34 @@ Una bandeja de atención compartida: los mensajes que llegan por **WhatsApp Clou
 
 | Término | Qué significa en Inbiox | Dónde vive |
 |---|---|---|
-| **Contacto** | La persona del otro lado de WhatsApp. Se identifica por teléfono, **único en todo el sistema** (no por workspace). | `apps/api/src/Domain/Contact/Contact.php` |
-| **Conversación** | Historial de mensajes de un contacto con **un** número de WhatsApp. En la práctica nunca se cierra. | `Domain/Conversation/Conversation.php` |
-| **Mensaje** | Un mensaje entrante (`inbound`) o saliente (`outbound`). Pertenece a la conversación, **no** al ticket. | `Domain/Message/Message.php` |
-| **Ticket** | Un caso de atención: un "episodio" dentro de una conversación. Hay a lo sumo un ticket no cerrado por contacto y número. | `Domain/Ticket/Ticket.php` |
-| **Estado del ticket** | `new` → `active` → `waiting` → `resolved` → `closed`. Ver la máquina de estados (FSM) en [04-flujos.md](04-flujos.md#f4-transiciones-de-estado-del-ticket). | `Domain/Ticket/TicketStateMachine.php` |
-| **Dueño (owner)** | El agente asignado al ticket (`tickets.assigned_agent_id`). | `Application/Service/AssignmentService.php` |
-| **Usuario** | Credenciales y roles para iniciar sesión (`ROLE_AGENT`, `ROLE_SUPERVISOR`, `ROLE_ADMIN`). | `Domain/User/User.php` |
-| **Agente** | La persona que atiende (turnos, capacidad, workspaces). Se vincula 1:1 y de forma opcional con un usuario. | `Domain/Agent/Agent.php` |
-| **Workspace** | Un número de WhatsApp Business (`phone_number_id` de Meta). Los agentes pertenecen a uno o varios. | `Domain/Workspace/Workspace.php` |
-| **Workspace activo** | El workspace que el usuario eligió en el selector; filtra la bandeja, contactos y reportes. | `Application/Security/WorkspaceScope.php` |
-| **Equipo (team)** | Área dentro de un workspace (Sprint 18). Hoy solo sirve para filtrar; **no** participa en la asignación. | `Domain/Team/Team.php` |
-| **Turno (shift)** | Franja semanal de trabajo de un agente, en su zona horaria. | `Domain/Agent/AgentShift.php` |
+| **Contacto** | La persona del otro lado de WhatsApp. Se identifica por teléfono, **único en todo el sistema** (no por workspace). | `apps/api/src/Contacto/Contact.php` |
+| **Conversación** | Historial de mensajes de un contacto con **un** número de WhatsApp. En la práctica nunca se cierra. | `Conversacion/Conversation.php` |
+| **Mensaje** | Un mensaje entrante (`inbound`) o saliente (`outbound`). Pertenece a la conversación, **no** al ticket. | `Conversacion/Message.php` |
+| **Ticket** | Un caso de atención: un "episodio" dentro de una conversación. Hay a lo sumo un ticket no cerrado por contacto y número. | `Ticket/Ticket.php` |
+| **Estado del ticket** | `new` → `active` → `waiting` → `resolved` → `closed`. Ver la máquina de estados (FSM) en [04-flujos.md](04-flujos.md#f4-transiciones-de-estado-del-ticket). | `Ticket/TicketStateMachine.php` |
+| **Dueño (owner)** | El agente asignado al ticket (`tickets.assigned_agent_id`). | `Asignacion/AssignmentService.php` |
+| **Usuario** | Credenciales y roles para iniciar sesión (`ROLE_AGENT`, `ROLE_SUPERVISOR`, `ROLE_ADMIN`). | `Administracion/User.php` |
+| **Agente** | La persona que atiende (turnos, capacidad, workspaces). Se vincula 1:1 y de forma opcional con un usuario. | `Agente/Agent.php` |
+| **Workspace** | Un número de WhatsApp Business (`phone_number_id` de Meta). Los agentes pertenecen a uno o varios. | `Administracion/Workspace.php` |
+| **Workspace activo** | El workspace que el usuario eligió en el selector; filtra la bandeja, contactos y reportes. | `Compartido/Security/WorkspaceScope.php` |
+| **Equipo (team)** | Área dentro de un workspace (Sprint 18). Hoy solo sirve para filtrar; **no** participa en la asignación. | `Agente/Team.php` |
+| **Turno (shift)** | Franja semanal de trabajo de un agente, en su zona horaria. | `Disponibilidad/AgentShift.php` |
 | **Override** | Disponibilidad forzada a mano ("disponible"/"no disponible"), con vencimiento opcional. Tiene prioridad sobre el turno. | `Agent.php` (`is_available_override`, `override_until`) |
 | **Capacidad** | Máximo de tickets activos (`new`/`active`/`waiting`) por agente; por defecto 10. | `Agent.php` (`max_active_tickets`) |
-| **Auto-asignación** | El sistema elige un agente disponible con menos carga cuando llega un mensaje. | `Application/UseCase/AutoAssignTicketUseCase.php` |
-| **Auto-claim** | Cuando un agente responde un ticket no resuelto ni cerrado, pasa a ser su dueño, **aunque el ticket ya tuviera otro dueño** (se registra como `REASSIGN` y se lo quita al anterior). | `Application/UseCase/HandleOutboundMessageUseCase.php:220-242` |
-| **Auto-respuesta** | Mensaje fijo que se envía al cliente si su agente no está disponible (máximo 1 cada 2 h por contacto). | `Application/Service/AutoReplyService.php` |
-| **Ventana de 24 h** | Regla de Meta: solo se puede enviar texto libre hasta 24 h después del último mensaje del cliente. Pasado ese plazo hay que usar una **plantilla**. | `Domain/Ticket/ConversationWindowPolicy.php` |
+| **Auto-asignación** | El sistema elige un agente disponible con menos carga cuando llega un mensaje. | `Asignacion/UseCase/AutoAssignTicketUseCase.php` |
+| **Auto-claim** | Cuando un agente responde un ticket no resuelto ni cerrado, pasa a ser su dueño, **aunque el ticket ya tuviera otro dueño** (se registra como `REASSIGN` y se lo quita al anterior). | `Conversacion/UseCase/HandleOutboundMessageUseCase.php:224-246` |
+| **Auto-respuesta** | Mensaje fijo que se envía al cliente si su agente no está disponible (máximo 1 cada 2 h por contacto). | `Automatizacion/AutoReplyService.php` |
+| **Ventana de 24 h** | Regla de Meta: solo se puede enviar texto libre hasta 24 h después del último mensaje del cliente. Pasado ese plazo hay que usar una **plantilla**. | `Conversacion/ConversationWindowPolicy.php` |
 | **Plantilla (template)** | Mensaje pre-aprobado por Meta que se puede enviar fuera de la ventana de 24 h. Hoy no tiene UI. | `ProviderProxyController::sendTemplate` |
 | **WAMID** | Identificador que Meta asigna a cada mensaje de WhatsApp. Se guarda en `messages.external_id`. | — |
-| **Webhook** | Endpoint público `POST /webhook` donde Meta envía mensajes entrantes y estados de entrega. | `Controller/WebhookController.php` |
-| **Outbox** | Tabla `outbox_events` donde los casos de uso dejan eventos para publicar después en tiempo real. Patrón "transactional outbox". | `Domain/Outbox/OutboxEvent.php` |
-| **Publicador** | Proceso que lee el outbox cada 2 s y envía los eventos a Mercure (`app:outbox:publish`). | `Application/Service/OutboxPublisherService.php` |
+| **Webhook** | Endpoint público `POST /webhook` donde Meta envía mensajes entrantes y estados de entrega. | `Conversacion/Controller/WebhookController.php` |
+| **Outbox** | Tabla `outbox_events` donde los casos de uso dejan eventos para publicar después en tiempo real. Patrón "transactional outbox". | `Compartido/Outbox/OutboxEvent.php` |
+| **Publicador** | Proceso que lee el outbox cada 2 s y envía los eventos a Mercure (`app:outbox:publish`). | `Compartido/Outbox/OutboxPublisherService.php` |
 | **Dead letter** | Evento del outbox que falló 5 veces y ya no se reintenta. | `OutboxPublisherService.php` |
 | **Mercure** | Servidor (hub) de Server-Sent Events (SSE). El navegador queda suscripto y recibe eventos sin recargar. | servicio `mercure` en `docker-compose.yml` |
 | **Topic** | "Canal" de Mercure. Hoy casi todo se publica en un único topic: `tickets`. | `MercureJwtService.php` |
-| **Caso de uso (use case)** | Clase que implementa una operación de negocio completa (backend `Application/UseCase/`, frontend `core/application/`). | — |
-| **Voter** | Clase de Symfony que decide si un usuario puede hacer algo sobre un objeto concreto (p. ej. resolver un ticket). Están repartidos en **dos carpetas**: `Application/Security/Voter/` (tickets, agentes, reportes) y `Security/Voter/` (solo `MessageVoter`). | `Application/Security/Voter/`, `Security/Voter/` |
+| **Caso de uso (use case)** | Clase que implementa una operación de negocio completa (backend `<Modulo>/UseCase/`, frontend `core/application/`). | — |
+| **Voter** | Clase de Symfony que decide si un usuario puede hacer algo sobre un objeto concreto (p. ej. resolver un ticket). Viven en `<Modulo>/Security/` (`Ticket/Security/TicketVoter`, `Conversacion/Security/MessageVoter`). | `Ticket/Security/`, `Conversacion/Security/` |
 | **FSM** | *Finite State Machine*: tabla de transiciones de estado permitidas. | `TicketStateMachine.php` |
 | **Store** | En Angular, servicio con *signals* que guarda el estado compartido de la pantalla. | `apps/web/src/app/core/stores/` |
 | **Tier 1 / Tier 2** | Prioridades del backlog definidas en el análisis de brecha. | [`analisis-brecha-requerimientos.md`](../../analisis-brecha-requerimientos.md) |

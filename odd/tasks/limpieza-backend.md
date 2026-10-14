@@ -49,7 +49,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T11 | S2 | inline | done | Phase 2: routes regenerated as `#[Route]` attributes from the YAML; `routes.yaml` = `routing.controllers` (L19) |
 | T12 | S2 | inline | done | Phase 2: removed 8 single-implementation interfaces (L20) |
 | T13 | S2 | inline | done | Phase 2: moved 162 classes into 11 modules in one commit, plus the event_type migration (L21) |
-| T14 | S2, S7 | inline | pending | Phase 2: docs paths (`02_sistema-actual`) after the moves |
+| T14 | S2, S7 | inline | done | Phase 2: docs paths and line refs updated after the moves (L22) |
 
 ### Baseline of failing tests (phase 0, after `1afba20`)
 
@@ -166,3 +166,4 @@ Later phases, each with its own branch and task list when it starts:
     - `RulePass` still registers both rules (2× `addRule`).
     - A live outbox event with the new class name was published with HTTP 200; the test row was deleted.
     - Full suite: 692 tests, exactly the 6 baseline failures.
+- **L22 (2026-10-14), T14 (docs):** a script rewrote moved paths in `02_sistema-actual`, `AGENTS.md` and `arquitectura.md` (174 rewrites). It shifted 97 `File.php:line` refs from the phase-2 base (`97c0eec`) to HEAD, using a per-file line diff. 5 ambiguous `Admin/*Controller` refs and 6 bare `Admin/` mentions were fixed by hand. The doc 02 folder table was rewritten as a module table. Spot check: `HandleInboundMessageUseCase.php:381-384` still points at the auto-assignment dispatch. Remaining old-folder mentions are struck-through deleted files only.
