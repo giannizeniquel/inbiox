@@ -57,7 +57,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T12 | S2 | inline | done | Phase 2: removed 8 single-implementation interfaces (7 repository interfaces + `EventCollector`) (L20) |
 | T13 | S2 | inline | done | Phase 2: moved 162 classes into 11 modules in one commit, plus the event_type migration (L21) |
 | T14 | S2, S7 | inline | done | Phase 2: docs paths and line refs updated after the moves (L22) |
-| T15 | S8 | inline | pending | 3a characterization tests |
+| T15 | S8 | delegated (context backstop) | done | 3a: 82 characterization tests in `tests/Characterization/` (L25) |
 | T16 | S8 | inline | pending | 3b generic 500 listener |
 | T17 | S8, S3 | inline | pending | 3c SQL into repositories |
 | T18 | S8 | inline | pending | 3d thin controllers, per module |
@@ -193,3 +193,18 @@ Later phases, each with its own branch and task list when it starts:
   - Many actions have no tests.
 
   Split decided with the user (S8).
+- **L25 (2026-10-14), T15 (3a):** a bounded writer (route: delegated, context-backstop reason; edit surface `tests/Characterization/**`) wrote 82 characterization tests in 9 files.
+  - **Covered:** all `app_admin_workspaces_*`, `app_me_workspace(s)` and `_set`, inbox detail and messages, `mark_read` (exact outbox row), auto-assign and assignment history, contacts detail/update/delete, the 4 realtime and report routes, events resync, and both 500 envelopes (S1 through stubbed collaborators, S2 on transition/resolve/close).
+  - **Skipped:** debug routes, the webhook (HMAC), and media upload/download/url (they need S3 and Graph doubles). The S1 500 is not pinned for EM-only controllers.
+  - **Likely bugs pinned as-is**, marked `// Characterization`:
+    - ticket detail has no ownership or workspace scope;
+    - the detail response has hardcoded null `owner.name` and `closed_at`;
+    - messages of an unknown ticket return 200;
+    - auto-assign has no scope, and its `InvalidArgumentException` becomes a 500;
+    - the event_type format differs between writers;
+    - the admin `me/workspaces` returns fixed `agent_count` and `has_pending` values;
+    - `PUT me/workspace` creates an Agent row;
+    - an unknown contact gives 400 on update but 404 on delete;
+    - resync filters by `aggregate_id` only, has an unreachable header branch, and `verifyToken` skips the expiry check;
+    - resolve and close return a 500 on an invalid transition.
+  - **Parent spot check:** `phpunit tests/Characterization` gives OK (82 tests, 485 assertions). The full suite has 774 tests and exactly the 6 baseline failures.
