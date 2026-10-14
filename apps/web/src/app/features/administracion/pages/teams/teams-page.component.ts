@@ -5,10 +5,6 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../../environments/environment';
 import { TeamDTO } from '../../../../data-access/administracion/team.dto';
 import { WorkspaceDTO } from '../../../../data-access/administracion/workspace.dto';
-import { ListTeamsUseCase } from '../../../../data-access/administracion/list-teams.use-case';
-import { CreateTeamUseCase } from '../../../../data-access/administracion/create-team.use-case';
-import { UpdateTeamUseCase } from '../../../../data-access/administracion/update-team.use-case';
-import { DeactivateTeamUseCase } from '../../../../data-access/administracion/deactivate-team.use-case';
 import { TeamApiService } from '../../../../data-access/administracion/team-api.service';
 import { WorkspaceApiService } from '../../../../data-access/administracion/workspace-api.service';
 
@@ -44,10 +40,6 @@ interface AgentOption {
 })
 export class TeamsPageComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
-  private readonly listUseCase = inject(ListTeamsUseCase);
-  private readonly createUseCase = inject(CreateTeamUseCase);
-  private readonly updateUseCase = inject(UpdateTeamUseCase);
-  private readonly deactivateUseCase = inject(DeactivateTeamUseCase);
   private readonly teamApi = inject(TeamApiService);
   private readonly workspaceApi = inject(WorkspaceApiService);
   private readonly http = inject(HttpClient);
@@ -87,7 +79,7 @@ export class TeamsPageComponent implements OnInit {
 
   private loadWorkspaces(): void {
     this.workspaceApi.listAll(1, 100).subscribe({
-      next: (res) => this.workspaces.set(res.data),
+      next: (res) => this.workspaces.set(res.items),
       error: () => {
         // Non-fatal: workspace names fall back to their id in the table/form.
       },
@@ -102,9 +94,9 @@ export class TeamsPageComponent implements OnInit {
   loadTeams(): void {
     this.loading.set(true);
     this.error.set(null);
-    this.listUseCase.execute({ page: this.currentPage() }).subscribe({
+    this.teamApi.listAll(this.currentPage()).subscribe({
       next: (res) => {
-        this.teams.set(res.teams);
+        this.teams.set(res.items);
         this.totalPages.set(res.totalPages);
         this.loading.set(false);
       },
@@ -170,7 +162,7 @@ export class TeamsPageComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
 
-    this.createUseCase.execute({
+    this.teamApi.create({
       workspaceId,
       name: name.trim(),
       isActive,
@@ -194,8 +186,7 @@ export class TeamsPageComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
 
-    this.updateUseCase.execute({
-      id: team.id,
+    this.teamApi.update(team.id, {
       name: name.trim(),
       isActive,
     }).subscribe({
@@ -227,7 +218,7 @@ export class TeamsPageComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
 
-    this.deactivateUseCase.execute({ id: team.id }).subscribe({
+    this.teamApi.deactivate(team.id).subscribe({
       next: () => {
         this.saving.set(false);
         this.success.set(`Team "${team.name}" deactivated successfully`);

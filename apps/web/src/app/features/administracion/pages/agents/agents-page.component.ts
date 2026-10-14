@@ -1,14 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { AdminAgentDTO, AdminUserDTO } from '../../../../data-access/administracion/admin-api.service';
-import { ListAgentsUseCase } from '../../../../data-access/administracion/list-agents.use-case';
-import { GetAvailableUsersForLinkingUseCase } from '../../../../data-access/administracion/get-available-users-for-linking.use-case';
-import { CreateAgentUseCase } from '../../../../data-access/administracion/create-agent.use-case';
-import { UpdateAgentUseCase } from '../../../../data-access/administracion/update-agent.use-case';
-import { DeactivateAgentUseCase } from '../../../../data-access/administracion/deactivate-agent.use-case';
-import { ReactivateAgentUseCase } from '../../../../data-access/administracion/reactivate-agent.use-case';
-import { ManageAgentUserLinkingUseCase } from '../../../../data-access/administracion/manage-agent-user-linking.use-case';
+import { AdminAgentDTO, AdminApiService, AdminUserDTO } from '../../../../data-access/administracion/admin-api.service';
 
 /**
  * AgentsPage — Supervisor agent management.
@@ -17,8 +10,8 @@ import { ManageAgentUserLinkingUseCase } from '../../../../data-access/administr
  * ROLE_ADMIN can also link/unlink users to agents.
  * Features: paginated table, create form, edit modal, link/unlink user, soft-delete.
  *
- * Business logic is delegated to granular use cases; this component is a thin
- * orchestrator holding only signals, modal state, and template logic.
+ * API calls go through AdminApiService; this component holds only signals,
+ * modal state, and template logic.
  */
 @Component({
   selector: 'app-agents-page',
@@ -37,13 +30,7 @@ export class AgentsPageComponent implements OnInit {
   ] as const;
 
   private readonly fb = inject(FormBuilder);
-  private readonly listAgentsUseCase = inject(ListAgentsUseCase);
-  private readonly getAvailableUsersForLinkingUseCase = inject(GetAvailableUsersForLinkingUseCase);
-  private readonly createAgentUseCase = inject(CreateAgentUseCase);
-  private readonly updateAgentUseCase = inject(UpdateAgentUseCase);
-  private readonly deactivateAgentUseCase = inject(DeactivateAgentUseCase);
-  private readonly reactivateAgentUseCase = inject(ReactivateAgentUseCase);
-  private readonly manageLinkingUseCase = inject(ManageAgentUserLinkingUseCase);
+  private readonly adminApi = inject(AdminApiService);
 
   // State
   readonly agents = signal<AdminAgentDTO[]>([]);
@@ -90,9 +77,9 @@ export class AgentsPageComponent implements OnInit {
   loadAgents(): void {
     this.loading.set(true);
     this.error.set(null);
-    this.listAgentsUseCase.execute({ page: this.currentPage() }).subscribe({
+    this.adminApi.listAgents(this.currentPage()).subscribe({
       next: (res) => {
-        this.agents.set(res.agents);
+        this.agents.set(res.items);
         this.totalPages.set(res.totalPages);
         this.loading.set(false);
       },
@@ -104,7 +91,7 @@ export class AgentsPageComponent implements OnInit {
   }
 
   loadUnlinkedUsers(): void {
-    this.getAvailableUsersForLinkingUseCase.execute({}).subscribe({
+    this.adminApi.listUsersAvailableForLinking().subscribe({
       next: (res) => {
         this.unlinkedUsers.set(res.users);
       },
@@ -188,7 +175,7 @@ export class AgentsPageComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
 
-    this.createAgentUseCase.execute({ name: name.trim(), timezone }).subscribe({
+    this.adminApi.createAgent({ name: name.trim(), timezone }).subscribe({
       next: () => {
         this.saving.set(false);
         this.success.set('Agent created successfully');
@@ -208,7 +195,7 @@ export class AgentsPageComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
 
-    this.updateAgentUseCase.execute({
+    this.adminApi.updateAgent({
       id: agent.id,
       name: name.trim(),
       active,
@@ -233,7 +220,7 @@ export class AgentsPageComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
 
-    this.manageLinkingUseCase.link({ agentId: agent.id, userId: userId! }).subscribe({
+    this.adminApi.linkUser(agent.id, userId!).subscribe({
       next: () => {
         this.saving.set(false);
         this.success.set(`User linked to "${agent.name}" successfully`);
@@ -262,7 +249,7 @@ export class AgentsPageComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
 
-    this.manageLinkingUseCase.unlink({ agentId: agent.id }).subscribe({
+    this.adminApi.unlinkUser(agent.id).subscribe({
       next: () => {
         this.saving.set(false);
         this.success.set(`User unlinked from "${agent.name}" successfully`);
@@ -291,7 +278,7 @@ export class AgentsPageComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
 
-    this.deactivateAgentUseCase.execute({ id: agent.id }).subscribe({
+    this.adminApi.deactivateAgent(agent.id).subscribe({
       next: () => {
         this.saving.set(false);
         this.success.set(`Agent "${agent.name}" deactivated successfully`);
@@ -309,7 +296,7 @@ export class AgentsPageComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
 
-    this.reactivateAgentUseCase.execute({ id: agent.id }).subscribe({
+    this.adminApi.reactivateAgent(agent.id).subscribe({
       next: () => {
         this.saving.set(false);
         this.success.set(`Agent "${agent.name}" reactivated successfully`);

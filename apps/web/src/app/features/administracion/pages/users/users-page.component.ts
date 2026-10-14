@@ -1,12 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { AdminUserDTO, AdminAgentDTO } from '../../../../data-access/administracion/admin-api.service';
-import { ListUsersUseCase } from '../../../../data-access/administracion/list-users.use-case';
-import { CreateUserUseCase } from '../../../../data-access/administracion/create-user.use-case';
-import { UpdateUserUseCase } from '../../../../data-access/administracion/update-user.use-case';
-import { DeactivateUserUseCase } from '../../../../data-access/administracion/deactivate-user.use-case';
-import { ReactivateUserUseCase } from '../../../../data-access/administracion/reactivate-user.use-case';
+import { AdminUserDTO, AdminAgentDTO, AdminApiService } from '../../../../data-access/administracion/admin-api.service';
 import { atLeastOneRoleValidator } from '../../../../shared/validators';
 
 /**
@@ -15,8 +10,8 @@ import { atLeastOneRoleValidator } from '../../../../shared/validators';
  * Allows ROLE_ADMIN to view, create, edit, and soft-delete users.
  * Features: paginated table, create form, edit modal, soft-delete with confirmation.
  *
- * Business logic is delegated to granular use cases; this component is a thin
- * orchestrator holding only signals, form state, modal state, and template logic.
+ * API calls go through AdminApiService; this component holds only signals,
+ * form state, modal state, and template logic.
  */
 @Component({
   selector: 'app-users-page',
@@ -30,11 +25,7 @@ import { atLeastOneRoleValidator } from '../../../../shared/validators';
 })
 export class UsersPageComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
-  private readonly listUsersUseCase = inject(ListUsersUseCase);
-  private readonly createUserUseCase = inject(CreateUserUseCase);
-  private readonly updateUserUseCase = inject(UpdateUserUseCase);
-  private readonly deactivateUserUseCase = inject(DeactivateUserUseCase);
-  private readonly reactivateUserUseCase = inject(ReactivateUserUseCase);
+  private readonly adminApi = inject(AdminApiService);
 
   // State
   readonly users = signal<AdminUserDTO[]>([]);
@@ -65,9 +56,9 @@ export class UsersPageComponent implements OnInit {
   loadUsers(): void {
     this.loading.set(true);
     this.error.set(null);
-    this.listUsersUseCase.execute({ page: this.currentPage() }).subscribe({
+    this.adminApi.listUsers(this.currentPage()).subscribe({
       next: (res) => {
-        this.users.set(res.users);
+        this.users.set(res.items);
         this.totalPages.set(res.totalPages);
         this.loading.set(false);
       },
@@ -79,7 +70,7 @@ export class UsersPageComponent implements OnInit {
   }
 
   loadAvailableAgents(): void {
-    this.createUserUseCase.loadAvailableAgents().subscribe({
+    this.adminApi.listAgentsAvailableForLinking().subscribe({
       next: (agents) => {
         this.availableAgents.set(agents);
       },
@@ -157,7 +148,7 @@ export class UsersPageComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
 
-    this.createUserUseCase.execute({
+    this.adminApi.createUser({
       email,
       password,
       roles,
@@ -182,7 +173,7 @@ export class UsersPageComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
 
-    this.updateUserUseCase.execute({
+    this.adminApi.updateUser({
       id: user.id,
       email,
       password,
@@ -216,7 +207,7 @@ export class UsersPageComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
 
-    this.deactivateUserUseCase.execute({ id: user.id }).subscribe({
+    this.adminApi.deactivateUser(user.id).subscribe({
       next: () => {
         this.saving.set(false);
         this.success.set(`User "${user.email}" deactivated successfully`);
@@ -234,7 +225,7 @@ export class UsersPageComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
 
-    this.reactivateUserUseCase.execute({ id: user.id }).subscribe({
+    this.adminApi.reactivateUser(user.id).subscribe({
       next: () => {
         this.saving.set(false);
         this.success.set(`User "${user.email}" reactivated successfully`);

@@ -4,10 +4,6 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../../environments/environment';
 import { WorkspaceDTO } from '../../../../data-access/administracion/workspace.dto';
-import { ListWorkspacesUseCase } from '../../../../data-access/administracion/list-workspaces.use-case';
-import { CreateWorkspaceUseCase } from '../../../../data-access/administracion/create-workspace.use-case';
-import { UpdateWorkspaceUseCase } from '../../../../data-access/administracion/update-workspace.use-case';
-import { DeactivateWorkspaceUseCase } from '../../../../data-access/administracion/deactivate-workspace.use-case';
 import { WorkspaceApiService } from '../../../../data-access/administracion/workspace-api.service';
 
 interface AgentOption {
@@ -34,10 +30,6 @@ interface AgentOption {
 })
 export class WorkspacesPageComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
-  private readonly listUseCase = inject(ListWorkspacesUseCase);
-  private readonly createUseCase = inject(CreateWorkspaceUseCase);
-  private readonly updateUseCase = inject(UpdateWorkspaceUseCase);
-  private readonly deactivateUseCase = inject(DeactivateWorkspaceUseCase);
   private readonly workspaceApi = inject(WorkspaceApiService);
   private readonly http = inject(HttpClient);
 
@@ -75,9 +67,9 @@ export class WorkspacesPageComponent implements OnInit {
   loadWorkspaces(): void {
     this.loading.set(true);
     this.error.set(null);
-    this.listUseCase.execute({ page: this.currentPage() }).subscribe({
+    this.workspaceApi.listAll(this.currentPage()).subscribe({
       next: (res) => {
-        this.workspaces.set(res.workspaces);
+        this.workspaces.set(res.items);
         this.totalPages.set(res.totalPages);
         this.loading.set(false);
       },
@@ -139,7 +131,7 @@ export class WorkspacesPageComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
 
-    this.createUseCase.execute({
+    this.workspaceApi.create({
       phoneNumberId: phoneNumberId.trim(),
       displayName: displayName.trim(),
       isActive,
@@ -163,8 +155,7 @@ export class WorkspacesPageComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
 
-    this.updateUseCase.execute({
-      id: ws.id,
+    this.workspaceApi.update(ws.id, {
       phoneNumberId: phoneNumberId.trim(),
       displayName: displayName.trim(),
       isActive,
@@ -197,7 +188,7 @@ export class WorkspacesPageComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
 
-    this.deactivateUseCase.execute({ id: ws.id }).subscribe({
+    this.workspaceApi.deactivate(ws.id).subscribe({
       next: () => {
         this.saving.set(false);
         this.success.set(`Workspace "${ws.display_name}" deactivated successfully`);

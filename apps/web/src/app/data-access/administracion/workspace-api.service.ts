@@ -1,10 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { WorkspaceDTO, WorkspacePreferenceResponse } from './workspace.dto';
 import { AgentAvailabilityDTO } from '../disponibilidad/agent-availability.dto';
-import { PaginatedResponse } from './admin-api.service';
+import { Page, PaginatedResponse, rethrowApiError, toPage } from './admin-api.service';
 
 /**
  * WorkspaceApiService — HTTP client for workspace endpoints.
@@ -19,6 +20,9 @@ import { PaginatedResponse } from './admin-api.service';
  * - PUT    /api/admin/workspaces/{id} — update
  * - DELETE /api/admin/workspaces/{id} — soft delete
  * - PUT    /api/admin/workspaces/{id}/agents — assign agents
+ *
+ * The list/create/update/deactivate admin methods fail with a plain `Error`
+ * carrying the backend's message (see `rethrowApiError`).
  */
 @Injectable({ providedIn: 'root' })
 export class WorkspaceApiService {
@@ -51,14 +55,17 @@ export class WorkspaceApiService {
 
   // ── Admin endpoints ───────────────────────────────────
 
-  /** GET /api/admin/workspaces — paginated list */
-  listAll(page = 1, limit = 20): Observable<PaginatedResponse<WorkspaceDTO>> {
+  /** GET /api/admin/workspaces — one page of workspaces */
+  listAll(page: number, limit = 20): Observable<Page<WorkspaceDTO>> {
     const params = new HttpParams()
       .set('page', page)
       .set('limit', limit);
     return this.http.get<PaginatedResponse<WorkspaceDTO>>(
       `${this.baseUrl}/api/admin/workspaces`,
       { params }
+    ).pipe(
+      map(toPage),
+      rethrowApiError('Failed to load workspaces'),
     );
   }
 
@@ -71,7 +78,7 @@ export class WorkspaceApiService {
     return this.http.post<WorkspaceDTO>(
       `${this.baseUrl}/api/admin/workspaces`,
       payload
-    );
+    ).pipe(rethrowApiError('Failed to create workspace'));
   }
 
   /** PUT /api/admin/workspaces/{id} — update workspace */
@@ -86,14 +93,14 @@ export class WorkspaceApiService {
     return this.http.put<WorkspaceDTO>(
       `${this.baseUrl}/api/admin/workspaces/${id}`,
       payload
-    );
+    ).pipe(rethrowApiError('Failed to update workspace'));
   }
 
   /** DELETE /api/admin/workspaces/{id} — soft delete */
   deactivate(id: number): Observable<void> {
     return this.http.delete<void>(
       `${this.baseUrl}/api/admin/workspaces/${id}`
-    );
+    ).pipe(rethrowApiError('Failed to deactivate workspace'));
   }
 
   /** PUT /api/admin/workspaces/{id}/agents — assign agents */
