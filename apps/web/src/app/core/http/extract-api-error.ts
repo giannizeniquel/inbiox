@@ -2,8 +2,7 @@
  * extractApiError — Extract a user-facing error message from an unknown error.
  *
  * Prefers `err.error.error` (API error envelope), then `err.message`, then fallback.
- * This is the same pattern used inline in the admin/reports components before the
- * use case refactor — extracted here so every use case can reuse it identically.
+ * Used by the data-access API services so the backend's message reaches the screen.
  *
  * @param err - The caught error (HttpErrorResponse, Error, or unknown)
  * @param fallback - Default message if nothing extractable
