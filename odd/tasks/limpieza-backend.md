@@ -1,7 +1,7 @@
 # Backend cleanup (apps/api)
 
 Objective: regain control of the backend. Make it minimal, with an honest architecture and written development rules, and add no new features.
-Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `test` at `b543593`). Delivery: one PR per phase; push, PR and merge are user decisions. Test runner: PHPUnit (see `AGENTS.md` § Testing).
+Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `test` at `b543593`). Delivery: one PR per phase into the integration branch `test-refactor` (created from `test` at `b543593`; `test` keeps the working app and is not merged into); push, PR and merge are user decisions. Test runner: PHPUnit (see `AGENTS.md` § Testing).
 
 ## Specs
 
@@ -136,3 +136,4 @@ Later phases, each with its own branch and task list when it starts:
   - `docker compose up -d --remove-orphans` removed both containers; no others changed.
   - Checks: `docker compose config` OK; `lint:container` OK; full suite 692 tests, exactly the 6 baseline failures.
 - **L16 (2026-10-14), T10 item 6:** re-verified that no code or config reads `MEDIA_ENABLED` or `JWT_COOKIE_NAME`. The refresh cookie name is hardcoded as `token_parameter_name: inbiox_refresh` in `gesdinet_jwt_refresh_token.yaml`, so the `api-contracts.md` row saying it was required was wrong. Claude must not read `.env*`, so the user removed the lines by hand (`.env` lines 18 and 30, `.env.example` 32, `.env.test` 10); a first `sd` attempt matched nothing, for an unknown reason. Docs 02/08/api-contracts updated. Checks: `lint:container` OK; full suite 692 tests, exactly the 6 baseline failures.
+- **L17 (2026-10-14), integration branch:** user: "no vamos a mergear a test, ahi vive la app funcionando (con errores pero anda). Podemos crear una rama nueva test-refactor o algo asi a donde ir mergeando lo que estamos haciendo". Created and pushed `test-refactor` from `origin/test` (`b543593`). Phase PRs target it in order (0, then 1); the frontend phases also target it. If `test` gets fixes, merge `test` into `test-refactor`.
