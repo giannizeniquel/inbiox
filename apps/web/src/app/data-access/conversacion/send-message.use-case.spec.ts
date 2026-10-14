@@ -1,10 +1,10 @@
 import { of, throwError } from 'rxjs';
 import { SendMessageUseCase, SendMessageOutput, MessageSendFailed } from './send-message.use-case';
-import { ProviderInterface, Message } from './provider.interface';
+import { WhatsAppCloudProvider, Message } from './whatsapp-cloud.provider';
 
 describe('SendMessageUseCase', () => {
   let useCase: SendMessageUseCase;
-  let providerSpy: jasmine.SpyObj<ProviderInterface>;
+  let providerSpy: jasmine.SpyObj<WhatsAppCloudProvider>;
 
   const providerMessage: Message = {
     id: 'provider-id-123',
@@ -16,7 +16,7 @@ describe('SendMessageUseCase', () => {
   };
 
   beforeEach(() => {
-    providerSpy = jasmine.createSpyObj('ProviderInterface', ['sendMessage']);
+    providerSpy = jasmine.createSpyObj('WhatsAppCloudProvider', ['sendMessage']);
     useCase = new SendMessageUseCase(providerSpy);
   });
 

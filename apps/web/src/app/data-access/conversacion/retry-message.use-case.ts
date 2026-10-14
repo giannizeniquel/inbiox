@@ -1,7 +1,7 @@
-import { Injectable, Inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { Observable, throwError } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { ProviderInterface, Message, PROVIDER_INTERFACE } from './provider.interface';
+import { WhatsAppCloudProvider, Message } from './whatsapp-cloud.provider';
 import { retryWithBackoff, RetryConfig } from '../../core/http/retry.util';
 
 /**
@@ -40,15 +40,15 @@ export class MessageNotFound extends Error {
  * Per spec (application-layer-messaging):
  * - Accepts tempId, originalContent, ticketId (no internal cache — M-7 fixed)
  * - Maintains same tempId for idempotency
- * - Resubmits via ProviderInterface with retryWithBackoff
+ * - Resubmits via WhatsAppCloudProvider with retryWithBackoff
  * - Throws MessageNotFound if tempId does not exist
  *
- * DI Contract: Uses ProviderInterface via DI.
+ * DI Contract: WhatsAppCloudProvider is injected through the constructor.
  * Caller fetches cached payload from ConversationStore (single source of truth).
  */
 @Injectable({ providedIn: 'root' })
 export class RetryMessageUseCase {
-  private readonly provider: ProviderInterface;
+  private readonly provider: WhatsAppCloudProvider;
 
   /** Retry config for retry attempts (max 1 retry, 1s backoff) */
   private readonly retryConfig: RetryConfig = {
@@ -56,7 +56,7 @@ export class RetryMessageUseCase {
     initialDelayMs: 1000,
   };
 
-  constructor(@Inject(PROVIDER_INTERFACE) provider: ProviderInterface) {
+  constructor(provider: WhatsAppCloudProvider) {
     this.provider = provider;
   }
 
@@ -66,7 +66,7 @@ export class RetryMessageUseCase {
    * Flow:
    * 1. Use originalContent and ticketId from input (no internal cache lookup)
    * 2. Maintain same tempId for idempotency
-   * 3. Resubmit via ProviderInterface with retryWithBackoff
+   * 3. Resubmit via WhatsAppCloudProvider with retryWithBackoff
    * 4. Return new Message with updated providerId
    * 5. Throw MessageNotFound if tempId is empty
    *
@@ -111,11 +111,4 @@ export class RetryMessageUseCase {
       })
     );
   }
-}
-
-/**
- * Factory function for creating RetryMessageUseCase with DI.
- */
-export function createRetryMessageUseCase(provider: ProviderInterface): RetryMessageUseCase {
-  return new RetryMessageUseCase(provider);
 }

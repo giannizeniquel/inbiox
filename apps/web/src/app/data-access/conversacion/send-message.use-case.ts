@@ -1,7 +1,7 @@
-import { Injectable, inject, Inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { Observable, throwError } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
-import { ProviderInterface, Message, PROVIDER_INTERFACE } from './provider.interface';
+import { WhatsAppCloudProvider, Message } from './whatsapp-cloud.provider';
 import { generateTempId } from './temp-id.util';
 
 /**
@@ -46,7 +46,7 @@ export class MessageSendFailed extends Error {
  *
  * Per spec (application-layer-messaging):
  * - Accepts ticketId and content
- * - Sends via ProviderInterface
+ * - Sends via WhatsAppCloudProvider
  * - Returns reconciled Message with tempId
  * - Throws MessageSendFailed on provider rejection (deliveryStatus === 'failed')
  *
@@ -57,9 +57,9 @@ export class MessageSendFailed extends Error {
  */
 @Injectable({ providedIn: 'root' })
 export class SendMessageUseCase {
-  private readonly provider: ProviderInterface;
+  private readonly provider: WhatsAppCloudProvider;
 
-  constructor(@Inject(PROVIDER_INTERFACE) provider: ProviderInterface) {
+  constructor(provider: WhatsAppCloudProvider) {
     this.provider = provider;
   }
 
@@ -68,7 +68,7 @@ export class SendMessageUseCase {
    *
    * Flow:
    * 1. Generate or use caller-provided tempId
-   * 2. Send via ProviderInterface
+   * 2. Send via WhatsAppCloudProvider
    * 3. Map tempId to provider-assigned id on success
    * 4. Throw MessageSendFailed if deliveryStatus === 'failed'
    *
@@ -134,11 +134,4 @@ export class SendMessageUseCase {
       })
     );
   }
-}
-
-/**
- * Factory function for creating SendMessageUseCase with DI.
- */
-export function createSendMessageUseCase(provider: ProviderInterface): SendMessageUseCase {
-  return new SendMessageUseCase(provider);
 }

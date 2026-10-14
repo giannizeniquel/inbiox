@@ -5,11 +5,11 @@ import {
   RetryMessageOutput,
   MessageNotFound,
 } from './retry-message.use-case';
-import { ProviderInterface, Message } from './provider.interface';
+import { WhatsAppCloudProvider, Message } from './whatsapp-cloud.provider';
 
 describe('RetryMessageUseCase', () => {
   let useCase: RetryMessageUseCase;
-  let providerSpy: jasmine.SpyObj<ProviderInterface>;
+  let providerSpy: jasmine.SpyObj<WhatsAppCloudProvider>;
 
   const providerMessage: Message = {
     id: 'provider-id-456',
@@ -27,7 +27,7 @@ describe('RetryMessageUseCase', () => {
   };
 
   beforeEach(() => {
-    providerSpy = jasmine.createSpyObj('ProviderInterface', ['sendMessage']);
+    providerSpy = jasmine.createSpyObj('WhatsAppCloudProvider', ['sendMessage']);
     useCase = new RetryMessageUseCase(providerSpy);
   });
 

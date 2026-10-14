@@ -6,7 +6,7 @@ import { ConversationStore } from './conversation.store';
 import { Message } from './message.model';
 import { generateTempId } from './temp-id.util';
 import { retryWithBackoff, RetryConfig } from '../../core/http/retry.util';
-import { Message as ProviderMessage } from './provider.interface';
+import { Message as ProviderMessage } from './whatsapp-cloud.provider';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 
@@ -68,7 +68,7 @@ export class MessageSenderService {
     // Add optimistic message to store (optimistic UI)
     this.conversationStore.addOptimisticMessage(tempId, content, ticketId);
 
-    // Route through Application Layer → ProviderInterface with RxJS retry
+    // Route through SendMessageUseCase → WhatsAppCloudProvider with RxJS retry
     retryWithBackoff(
       this.sendUseCase.execute({ ticketId, content, tempId }),
       this.retryConfig

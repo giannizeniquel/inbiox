@@ -3,11 +3,6 @@ import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptorsFromDi, withInterceptors } from '@angular/common/http';
 
 import { routes } from './app.routes';
-import { ProviderInterface, PROVIDER_INTERFACE } from './data-access/conversacion/provider.interface';
-import { WhatsAppCloudProvider } from './data-access/conversacion/whatsapp-cloud.provider';
-import { SendMessageUseCase } from './data-access/conversacion/send-message.use-case';
-import { RetryMessageUseCase } from './data-access/conversacion/retry-message.use-case';
-import { HttpClient } from '@angular/common/http';
 import { authInterceptor } from './core/auth/auth.interceptor';
 import { AuthStore } from './core/auth/auth.store';
 
@@ -24,20 +19,6 @@ const initializeAuth = {
   multi: true,
 };
 
-// Factory for SendMessageUseCase
-const sendMessageUseCaseProvider = {
-  provide: SendMessageUseCase,
-  useFactory: (provider: ProviderInterface) => new SendMessageUseCase(provider),
-  deps: [PROVIDER_INTERFACE],
-};
-
-// Factory for RetryMessageUseCase
-const retryMessageUseCaseProvider = {
-  provide: RetryMessageUseCase,
-  useFactory: (provider: ProviderInterface) => new RetryMessageUseCase(provider),
-  deps: [PROVIDER_INTERFACE],
-};
-
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -47,16 +28,5 @@ export const appConfig: ApplicationConfig = {
       withInterceptors([authInterceptor]),
     ),
     initializeAuth,
-    // ProviderInterface injected as WhatsAppCloudProvider
-    {
-      provide: PROVIDER_INTERFACE,
-      useFactory: () => {
-        const http = inject(HttpClient);
-        return new WhatsAppCloudProvider(http);
-      },
-    },
-    // Application Layer use cases
-    sendMessageUseCaseProvider,
-    retryMessageUseCaseProvider,
   ]
 };
