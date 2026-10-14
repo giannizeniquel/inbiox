@@ -54,7 +54,6 @@ flowchart LR
 | **Angular 21** (standalone + signals), RxJS 7.8, Angular CDK (scroll virtual) | Aplicación web. | Especificación de producto §7. Uso de signals y CDK: **Justificación no documentada.** |
 | **WhatsApp Cloud API** (Graph API v25.0) | Canal de mensajería. | Producto: "atención principalmente sobre WhatsApp" (`retomar-proyecto-inbiox.md`). |
 | **S3 / MinIO** (`aws/aws-sdk-php`) | Guardar adjuntos y servirlos con URL prefirmada. | Especificación de producto §7: "AWS (objetivo)". MinIO como sustituto local: **Justificación no documentada.** |
-| `league/flysystem-aws-s3-v3` | Instalado y **sin uso** (`FlysystemFactory` se borró en la fase 1). | — |
 | `league/csv` | Export CSV en streaming con protección anti CSV-injection. | Spec `openspec/specs/reports-export`. |
 | **Docker Compose** + nginx | Entorno local. No hay manifiestos de producción en el repo. | **Justificación no documentada.** |
 | Redis, MailHog | Servicios en `docker-compose.yml` **sin uso** por la aplicación. | — |
