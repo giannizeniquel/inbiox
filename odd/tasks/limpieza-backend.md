@@ -45,7 +45,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T7 | S1 | inline | done | Phase 1, block 3: inert `ActiveUserListener` and the unreachable `'supersecret'` JWT fallback |
 | T8 | S1 | inline | done | Phase 1, block 4: obsolete root tooling and `bin/outbox-direct.php` |
 | T9 | S1, S7 | inline | done | Phase 1: docs in `02_sistema-actual` updated for the deletions |
-| T10 | S1 | inline | pending — needs user decision | Phase 1 items that change a contract or the environment (see L9) |
+| T10 | S1 | inline | in progress | Phase 1 items that change a contract or the environment (see L9). Item 1 done (L11); items 2–6 pending user decision |
 
 ### Baseline of failing tests (phase 0, after `1afba20`)
 
@@ -119,3 +119,8 @@ Later phases, each with its own branch and task list when it starts:
     5. docker `redis` and `mailhog`: unused by the app; `php` depends on `redis`.
     6. env vars `MEDIA_ENABLED` and `JWT_COOKIE_NAME`: never read, but they live in `.env*` files, which Claude must not read.
 - **L10 (2026-10-14), phase 1 review:** RDD assess high (`hot_path`); the user granted review with lenses risk + reliability. Result: approved, acknowledged (lineage `review-3f503f4a969f9e93`, authority burned). The reviewed boundary advances to `4f28857`. Phase 1 is still unpushed; push is the user's decision.
+- **L11 (2026-10-14), T10 item 1:**
+  - User rule: "siempre mirar dos veces antes de eliminar codigo que se considere muerto, ya paso en el front que casi borran codigo vivo pensando que era muerto." Added to `AGENTS.md` § Development Rules.
+  - Re-verified: `--status` was only echoed. `publishPending()` takes no argument and hardcodes `status = 'pending'`. The only callers were `docker-compose.yml` and `inbiox-outbox-publisher.service`, both passing the default.
+  - User: "si, agregala y borrá el --status". Removed the option and updated both callers and docs 02/08.
+  - Checks: the command runs; `--status` now fails with "option does not exist"; the publisher was recreated and runs clean; `lint:container` OK; full suite 692 tests, exactly the 6 baseline failures, no flake.

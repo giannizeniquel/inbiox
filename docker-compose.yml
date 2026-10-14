@@ -88,7 +88,7 @@ services:
     container_name: inbiox_publisher
     volumes:
       - ./apps/api:/var/www/html
-    command: sh -c "while true; do php bin/console app:outbox:publish --status=pending; sleep 2; done"
+    command: sh -c "while true; do php bin/console app:outbox:publish; sleep 2; done"
     depends_on:
       - php
       - mercure

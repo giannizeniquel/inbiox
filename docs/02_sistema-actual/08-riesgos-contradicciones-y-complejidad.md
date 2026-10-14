@@ -84,7 +84,7 @@ Formato pedido por el método: qué es · por qué parece existir · ¿respaldad
 
 ## Código muerto, inalcanzable o de propósito no claro
 
-> **Fase 1 de la limpieza (13/10/2026):** se borró el código muerto confirmado: `TagController` (con `RemoveTagFromTicketUseCase`), `AutoCloseController`, `AutoCloseRule`, `AutoCloseTicketUseCase`, `RebalanceUnassignedTicketsUseCase`, `TicketAutoAssignmentRequestedEvent`, `ConversationUpdatedEvent`, los métodos sin llamadores de `TicketStateMachine` y `ReportingService`, `AgentVoter`, `ReportVoter`, `TicketVoter::VIEW/EDIT`, `ActiveUserListener`, `Kernel::configure()`, el JWT de respaldo `'supersecret'`, `FlysystemFactory`, `InboundMessageRequest`, `Role`, los repositorios sin uso (`OutboxEventRepository`, `UserRepository`, `WorkspaceRepository`), `bin/outbox-direct.php` y los scripts de la raíz. Seguimiento en `odd/tasks/limpieza-backend.md`. La tabla lista lo que queda.
+> **Fase 1 de la limpieza (13/10/2026):** se borró el código muerto confirmado: `TagController` (con `RemoveTagFromTicketUseCase`), `AutoCloseController`, `AutoCloseRule`, `AutoCloseTicketUseCase`, `RebalanceUnassignedTicketsUseCase`, `TicketAutoAssignmentRequestedEvent`, `ConversationUpdatedEvent`, los métodos sin llamadores de `TicketStateMachine` y `ReportingService`, `AgentVoter`, `ReportVoter`, `TicketVoter::VIEW/EDIT`, `ActiveUserListener`, `Kernel::configure()`, el JWT de respaldo `'supersecret'`, `FlysystemFactory`, `InboundMessageRequest`, `Role`, los repositorios sin uso (`OutboxEventRepository`, `UserRepository`, `WorkspaceRepository`), `bin/outbox-direct.php`, los scripts de la raíz y la opción ignorada `--status` de `app:outbox:publish`. Seguimiento en `odd/tasks/limpieza-backend.md`. La tabla lista lo que queda.
 
 | Elemento | Situación | Evidencia |
 |---|---|---|
@@ -92,7 +92,6 @@ Formato pedido por el método: qué es · por qué parece existir · ¿respaldad
 | `Agent.is_available` / `setAvailable()` | Columna legacy nunca escrita (pero expuesta en la API admin). | `Agent.php:35-36, 134-144` |
 | `WebhookPayload.processed` | Nunca se pone en `true`. | búsqueda de `setProcessed` |
 | `ConversationStatus::CLOSED` | Nunca escrito. | búsqueda |
-| `OutboxPublishCommand --status` | Se lee y se ignora. | `OutboxPublishCommand.php:28-31` |
 | Reglas con disparador `outbound` | El motor se invoca; ninguna regla lo soporta. | `HandleOutboundMessageUseCase.php:348-349` |
 | `symfony/mercure-bundle` y sus variables | Configurado, sin uso. | `config/packages/mercure.yaml` |
 | `MEDIA_ENABLED`, `JWT_COOKIE_NAME` | Variables de entorno que nadie lee. | búsqueda |

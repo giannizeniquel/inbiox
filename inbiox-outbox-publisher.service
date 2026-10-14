@@ -4,7 +4,7 @@ After=docker.service
 
 [Service]
 Type=simple
-ExecStart=/bin/sh -c 'while true; do docker exec inbiox_php php /var/www/html/bin/console app:outbox:publish --status=pending 2>/dev/null; sleep 2; done'
+ExecStart=/bin/sh -c 'while true; do docker exec inbiox_php php /var/www/html/bin/console app:outbox:publish 2>/dev/null; sleep 2; done'
 Restart=always
 RestartSec=5
 User=gianni
