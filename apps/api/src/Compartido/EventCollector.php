@@ -17,6 +17,9 @@ class EventCollector
         $this->events[] = $event;
     }
 
+    /**
+     * @return DomainEvent[]
+     */
     public function getEvents(): array
     {
         return $this->events;
