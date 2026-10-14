@@ -4,44 +4,34 @@ declare(strict_types=1);
 
 namespace App\Agente\Controller;
 
-use App\Administracion\Controller\ActiveWorkspaceDTO;
-use App\Automatizacion\Controller\UpdateAutoReplyRequest;
-use App\Disponibilidad\Controller\ReplaceShiftsRequest;
-use App\Administracion\Query\WorkspaceDTO;
-use App\Disponibilidad\UseCase\ReplaceAgentShiftsUseCase;
-use App\Agente\Agent;
-use App\Disponibilidad\AgentShift;
 use App\Administracion\User;
-use App\Administracion\Workspace;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Agente\Agent;
+use App\Agente\UseCase\UpdateAgentProfileUseCase;
+use App\Agente\UseCase\UpdateNotificationPreferencesUseCase;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * Controller for current user's settings and preferences.
+ * Current agent's settings page and preferences.
  *
  * GET  /api/me/settings        — returns all settings sections
  * PUT  /api/me/profile         — update signature
  * PUT  /api/me/notifications   — update notification preferences
- * PUT  /api/me/auto-reply      — update auto-reply settings
- * GET  /api/me/shifts          — list current agent's shifts
- * PUT  /api/me/shifts          — replace all shifts
- * GET  /api/me/workspace       — returns the active workspace or 404 if none set
- * PUT  /api/me/workspace       — sets the active workspace
- * GET  /api/me/workspaces      — returns the agent's assigned workspaces
+ *
+ * The other /api/me endpoints live in their modules: auto-reply in
+ * Automatizacion, shifts in Disponibilidad, workspaces in Administracion.
  */
 #[IsGranted('IS_AUTHENTICATED_FULLY')]
 final class MeController
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
         private readonly Security $security,
-        private readonly ReplaceAgentShiftsUseCase $replaceAgentShiftsUseCase,
+        private readonly UpdateAgentProfileUseCase $updateAgentProfileUseCase,
+        private readonly UpdateNotificationPreferencesUseCase $updateNotificationPreferencesUseCase,
     ) {}
 
     #[IsGranted('ROLE_AGENT')]
@@ -118,9 +108,7 @@ final class MeController
             return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
         }
 
-        $agent->setSignature($request->signature);
-
-        $this->entityManager->flush();
+        $this->updateAgentProfileUseCase->execute($agent, $request->signature);
 
         return new JsonResponse([
             'name' => $agent->getName(),
@@ -138,244 +126,12 @@ final class MeController
             return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
         }
 
-        if ($request->sound !== null) {
-            $agent->setNotificationSound($request->sound);
-        }
-        if ($request->desktop !== null) {
-            $agent->setDesktopNotifications($request->desktop);
-        }
-
-        $this->entityManager->flush();
+        $this->updateNotificationPreferencesUseCase->execute($agent, $request->sound, $request->desktop);
 
         return new JsonResponse([
             'sound' => $agent->hasNotificationSound(),
             'desktop' => $agent->hasDesktopNotifications(),
         ]);
-    }
-
-    #[IsGranted('ROLE_AGENT')]
-    #[Route('/api/me/auto-reply', name: 'app_me_auto_reply', methods: ['PUT'])]
-    public function updateAutoReply(#[MapRequestPayload] UpdateAutoReplyRequest $request): JsonResponse
-    {
-        $agent = $this->getAgent();
-        if (null === $agent) {
-            return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
-        }
-
-        if ($request->enabled !== null) {
-            $agent->setAutoReplyEnabled($request->enabled);
-        }
-        // Always set message (may be null to clear it)
-        $agent->setAutoReplyMessage($request->message);
-
-        $this->entityManager->flush();
-
-        return new JsonResponse([
-            'enabled' => $agent->isAutoReplyEnabled(),
-            'message' => $agent->getAutoReplyMessage(),
-        ]);
-    }
-
-    #[IsGranted('ROLE_AGENT')]
-    #[Route('/api/me/shifts', name: 'app_me_shifts_list', methods: ['GET'])]
-    public function getShifts(): JsonResponse
-    {
-        $agent = $this->getAgent();
-        if (null === $agent) {
-            return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
-        }
-
-        $shifts = [];
-        foreach ($agent->getShifts() as $shift) {
-            $shifts[] = [
-                'dayOfWeek' => $shift->getDayOfWeek(),
-                'start' => $shift->getStartTime()->format('H:i'),
-                'end' => $shift->getEndTime()->format('H:i'),
-            ];
-        }
-
-        // Sort by dayOfWeek then start
-        \usort($shifts, function (array $a, array $b) {
-            return [$a['dayOfWeek'], $a['start']] <=> [$b['dayOfWeek'], $b['start']];
-        });
-
-        return new JsonResponse($shifts);
-    }
-
-    #[IsGranted('ROLE_AGENT')]
-    #[Route('/api/me/shifts', name: 'app_me_shifts_replace', methods: ['PUT'])]
-    public function replaceShifts(#[MapRequestPayload] ReplaceShiftsRequest $request): JsonResponse
-    {
-        try {
-            $agent = $this->getAgent();
-            if (null === $agent) {
-                return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
-            }
-
-            $agentId = (int) $agent->getId();
-            $created = $this->replaceAgentShiftsUseCase->execute($agentId, $request->shifts);
-
-            return new JsonResponse($created);
-        } catch (\InvalidArgumentException $e) {
-            return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
-        }
-    }
-
-    #[Route('/api/me/workspace', name: 'app_me_workspace', methods: ['GET'])]
-    public function getActiveWorkspace(): JsonResponse
-    {
-        $agent = $this->getAgent();
-        if (null === $agent) {
-            return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
-        }
-
-        $activeWorkspace = $agent->getActiveWorkspace();
-        if (null === $activeWorkspace) {
-            return new JsonResponse(
-                ['workspace_id' => null, 'phone_number_id' => null, 'display_name' => null],
-                Response::HTTP_NOT_FOUND,
-            );
-        }
-
-        return new JsonResponse(ActiveWorkspaceDTO::fromEntity($activeWorkspace)->toArray());
-    }
-
-    #[Route('/api/me/workspace', name: 'app_me_workspace_set', methods: ['PUT'])]
-    public function setActiveWorkspace(Request $request): JsonResponse
-    {
-        try {
-            $data = json_decode($request->getContent(), true);
-
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                return new JsonResponse(['error' => 'Invalid JSON body'], Response::HTTP_BAD_REQUEST);
-            }
-
-            $workspaceId = $data['workspaceId'] ?? null;
-
-            if (null === $workspaceId || !\is_int($workspaceId)) {
-                return new JsonResponse(['error' => 'workspaceId is required and must be an integer'], Response::HTTP_BAD_REQUEST);
-            }
-
-            $workspace = $this->entityManager->getRepository(Workspace::class)->find($workspaceId);
-
-            if (null === $workspace) {
-                return new JsonResponse(['error' => 'Workspace not found'], Response::HTTP_NOT_FOUND);
-            }
-
-            if (!$workspace->isActive()) {
-                return new JsonResponse(['error' => 'Workspace is not active'], Response::HTTP_BAD_REQUEST);
-            }
-
-            $user = $this->security->getUser();
-            if (!$user instanceof User) {
-                return new JsonResponse(['error' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
-            }
-
-            // Admin/Supervisor: can switch to any workspace
-            if ($this->security->isGranted('ROLE_ADMIN') || $this->security->isGranted('ROLE_SUPERVISOR')) {
-                $agent = $this->ensureAgent($user);
-                $agent->setActiveWorkspace($workspace);
-                $this->entityManager->flush();
-                return new JsonResponse(ActiveWorkspaceDTO::fromEntity($workspace)->toArray());
-            }
-
-            // Agent: must be assigned to the workspace
-            $agent = $user->getAgent();
-            if (null === $agent) {
-                return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
-            }
-
-            if (!$agent->getWorkspaces()->contains($workspace)) {
-                return new JsonResponse(['error' => 'Agent is not assigned to this workspace'], Response::HTTP_FORBIDDEN);
-            }
-
-            $agent->setActiveWorkspace($workspace);
-            $this->entityManager->flush();
-
-            return new JsonResponse(ActiveWorkspaceDTO::fromEntity($workspace)->toArray());
-        } catch (\InvalidArgumentException $e) {
-            return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
-        }
-    }
-
-    private function ensureAgent(User $user): Agent
-    {
-        $agent = $user->getAgent();
-        if ($agent === null) {
-            $agent = $this->entityManager->getRepository(Agent::class)
-                ->findOneBy(['user' => $user]);
-            if ($agent === null) {
-                $agent = new Agent($user->getEmail() ?? 'Admin');
-                $agent->setUser($user);
-                $this->entityManager->persist($agent);
-                $this->entityManager->flush();
-            }
-        }
-        return $agent;
-    }
-
-    #[Route('/api/me/workspaces', name: 'app_me_workspaces', methods: ['GET'])]
-    public function listMyWorkspaces(): JsonResponse
-    {
-        $user = $this->security->getUser();
-        if (!$user instanceof User) {
-            return new JsonResponse(['error' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
-        }
-
-        // Admin/Supervisor: see ALL workspaces
-        if ($this->security->isGranted('ROLE_ADMIN') || $this->security->isGranted('ROLE_SUPERVISOR')) {
-            $workspaces = $this->entityManager->getRepository(Workspace::class)->findBy(['isActive' => true]);
-            $items = array_map(fn(Workspace $w) => WorkspaceDTO::fromEntity($w)->toArray(), $workspaces);
-            return new JsonResponse($items);
-        }
-
-        // Agent: only assigned workspaces
-        $agent = $user->getAgent();
-        if (null === $agent) {
-            return new JsonResponse([], Response::HTTP_OK);
-        }
-
-        $workspaces = $agent->getWorkspaces()->toArray();
-        $agentId = (int) $agent->getId();
-
-        // Compute has_pending per workspace
-        $conn = $this->entityManager->getConnection();
-        $items = [];
-        foreach ($workspaces as $w) {
-            $phoneNumberId = $w->getPhoneNumberId();
-            $hasPending = (bool) $conn->executeQuery(
-                'SELECT EXISTS(
-                    SELECT 1 FROM tickets t
-                    JOIN conversations conv ON t.conversation_id = conv.id
-                    WHERE t.phone_number_id = :phone
-                    AND t.assigned_agent_id = :agentId
-                    AND t.status IN (:statuses)
-                    AND (
-                        t.last_read_at IS NULL
-                        OR EXISTS(
-                            SELECT 1 FROM messages m
-                            WHERE m.conversation_id = conv.id
-                            AND m.direction = :inbound
-                            AND m.created_at > t.last_read_at
-                        )
-                    )
-                ) as has_pending',
-                [
-                    'phone' => $phoneNumberId,
-                    'agentId' => $agentId,
-                    'statuses' => ['new', 'active', 'waiting'],
-                    'inbound' => 'inbound',
-                ],
-                [
-                    'statuses' => \Doctrine\DBAL\ArrayParameterType::STRING,
-                ],
-            )->fetchOne();
-
-            $dto = WorkspaceDTO::fromEntity($w);
-            $items[] = array_merge($dto->toArray(), ['has_pending' => $hasPending]);
-        }
-
-        return new JsonResponse($items);
     }
 
     private function getAgent(): ?Agent

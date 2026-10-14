@@ -269,7 +269,7 @@ stateDiagram-v2
 - Override y turnos escriben eventos `agent.*` en el outbox que el frontend no escucha.
 - **Seguridad:** cualquier agente puede llamar estos endpoints sobre cualquier otro ([R3](00-estado-y-pendientes.md#r3-cualquier-agente-modifica-disponibilidad-y-turnos-de-cualquier-agente)).
 
-**Si falla, revisar:** `AgentAvailabilityService.php` (qué criterio usa el caso concreto) → `agent_shifts` + `agents.timezone` + `agents.is_available_override/override_until` → `Disponibilidad/Controller/AgentAvailabilityController.php` / `Agente/Controller/MeController.php::replaceShifts`.
+**Si falla, revisar:** `AgentAvailabilityService.php` (qué criterio usa el caso concreto) → `agent_shifts` + `agents.timezone` + `agents.is_available_override/override_until` → `Disponibilidad/Controller/AgentAvailabilityController.php` / `Disponibilidad/Controller/MeShiftsController.php::replaceShifts`.
 
 ---
 
@@ -424,7 +424,7 @@ Un mensaje `failed` no afecta el estado del ticket.
 | 2 | Al recargar la app: `APP_INITIALIZER` → `POST /api/auth/refresh` (cookie) → token Mercure → `/me` → SSE. | `app.config.ts:16-23`; `auth.store.ts:175-202` |
 | 3 | Ante un 401: el interceptor deduplica refresh concurrentes y reintenta. Si el refresh falla, llama `logout()` (riesgo **no verificado** de bucle logout/refresh). | `core/auth/auth.interceptor.ts:81-133` |
 | 4 | Logout: `POST /api/auth/logout` (borra todos los refresh tokens), desconecta Mercure. **No limpia** los stores de tickets/conversación. | `auth.store.ts:136-148` |
-| 5 | Workspace: `GET /api/me/workspaces` (con `has_pending`) y `GET /api/me/workspace`; al elegir, `PUT /api/me/workspace` y `window.location.reload()`. Admin/supervisor pueden elegir cualquiera (y se les crea un agente); un agente solo los suyos. | `core/stores/workspace.store.ts:105-120`; `Agente/Controller/MeController.php:279-458` |
+| 5 | Workspace: `GET /api/me/workspaces` (con `has_pending`) y `GET /api/me/workspace`; al elegir, `PUT /api/me/workspace` y `window.location.reload()`. Admin/supervisor pueden elegir cualquiera (y se les crea un agente); un agente solo los suyos. | `core/stores/workspace.store.ts:105-120`; `Administracion/Controller/MeWorkspaceController.php`, `Administracion/UseCase/SetActiveWorkspaceUseCase.php` |
 | 6 | El backend filtra bandeja, contactos y reportes con `WorkspaceScope` (por `phone_number_id`). Sin workspace activo: **no filtra**. | `Compartido/Security/WorkspaceScope.php:43-64` |
 
 **Si falla, revisar:** 429 en login → rate limiter (5/min) → `security.yaml` → claves JWT (`config/jwt/*.pem`, `JWT_PASSPHRASE`) → `auth.store.ts` / `auth.interceptor.ts` → usuario inactivo (`UserChecker`).

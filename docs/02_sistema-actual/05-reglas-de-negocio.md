@@ -78,7 +78,7 @@ Estas son las preguntas que solo el desarrollador (o el cliente) puede responder
 | R-A9 | No se puede asignar manualmente un ticket resuelto/cerrado (409 para todos). | `TicketVoter.php:88-95` | Negocio | Regla no confirmada. |
 | R-A10 | Un agente solo puede reasignar tickets que ya son suyos; no puede tomar uno sin dueño desde el desplegable. | `TicketVoter.php:102-118` | Negocio | Regla no confirmada. |
 | R-A11 | El campo "asignado por" lo envía el cliente y se guarda tal cual. | `Asignacion/Controller/AssignTicketRequest.php:13-15` | Accidental | Regla no confirmada. |
-| R-A12 | Un usuario sin agente obtiene uno creado automáticamente (nombre = email) al enviar un mensaje o al cambiar de workspace (admin/supervisor). | `ProviderProxyController.php:205-225`; `Agente/Controller/MeController.php:371-385` | Técnica | Regla no confirmada. Efecto: aparecen "agentes" con nombre de email en reportes. |
+| R-A12 | Un usuario sin agente obtiene uno creado automáticamente (nombre = email) al enviar un mensaje o al cambiar de workspace (admin/supervisor). | `ProviderProxyController.php:205-225`; `Administracion/UseCase/SetActiveWorkspaceUseCase.php` (`ensureAgent`) | Técnica | Regla no confirmada. Efecto: aparecen "agentes" con nombre de email en reportes. |
 
 ## Visibilidad y permisos
 

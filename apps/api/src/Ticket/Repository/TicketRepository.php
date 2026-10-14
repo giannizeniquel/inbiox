@@ -386,6 +386,29 @@ class TicketRepository extends ServiceEntityRepository
     }
 
     /**
+     * Whether the agent has a new, active or waiting ticket in the workspace
+     * that was never read or has an inbound message newer than its last read
+     * (`has_pending` in `GET /api/me/workspaces`).
+     */
+    public function hasPendingForAgent(string $phoneNumberId, int $agentId): bool
+    {
+        return false !== $this->getEntityManager()->getConnection()->createQueryBuilder()
+            ->select('1')
+            ->from('tickets', 't')
+            ->innerJoin('t', 'conversations', 'conv', 't.conversation_id = conv.id')
+            ->where('t.phone_number_id = :phone')
+            ->andWhere('t.assigned_agent_id = :agentId')
+            ->andWhere('t.status IN (:statuses)')
+            ->andWhere('t.last_read_at IS NULL OR EXISTS (SELECT 1 FROM messages m WHERE m.conversation_id = conv.id AND m.direction = :inbound AND m.created_at > t.last_read_at)')
+            ->setParameter('phone', $phoneNumberId)
+            ->setParameter('agentId', $agentId)
+            ->setParameter('statuses', ['new', 'active', 'waiting'], ArrayParameterType::STRING)
+            ->setParameter('inbound', 'inbound')
+            ->setMaxResults(1)
+            ->fetchOne();
+    }
+
+    /**
      * The ticket detail row (`GetTicketDetailQuery`): ticket, contact, the
      * unread inbound count and the content of the latest message, or false
      * when the ticket does not exist.

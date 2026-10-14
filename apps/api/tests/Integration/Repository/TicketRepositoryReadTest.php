@@ -210,4 +210,32 @@ class TicketRepositoryReadTest extends KernelTestCase
         self::assertSame(1, $this->repo->countActiveForAgent(880002));
         self::assertSame(0, $this->repo->countActiveForAgent(880003), 'closed tickets do not count');
     }
+
+    public function testHasPendingWhenAnInboundMessageIsNewerThanLastRead(): void
+    {
+        // Leave only 880001 (read at 10:00, inbound at 10:30) open for agent 880001 in p1.
+        $this->conn->executeStatement("UPDATE tickets SET status = 'resolved' WHERE id = 880006");
+
+        self::assertTrue($this->repo->hasPendingForAgent('repo-read-p1', 880001));
+    }
+
+    public function testNoPendingWhenEveryInboundMessageWasRead(): void
+    {
+        $this->conn->executeStatement("UPDATE tickets SET status = 'resolved' WHERE id = 880006");
+        $this->conn->executeStatement("UPDATE tickets SET last_read_at = '2026-01-02 00:00:00' WHERE id = 880001");
+
+        self::assertFalse($this->repo->hasPendingForAgent('repo-read-p1', 880001));
+    }
+
+    public function testANeverReadOpenTicketIsPending(): void
+    {
+        // 880003: waiting, last_read_at NULL.
+        self::assertTrue($this->repo->hasPendingForAgent('repo-read-p2', 880002));
+    }
+
+    public function testOnlyNewActiveAndWaitingTicketsCount(): void
+    {
+        // Agent 880001 in p2 only has 880004, which is resolved.
+        self::assertFalse($this->repo->hasPendingForAgent('repo-read-p2', 880001));
+    }
 }

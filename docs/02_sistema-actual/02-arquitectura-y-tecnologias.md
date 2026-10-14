@@ -72,7 +72,7 @@ Todo en `apps/api/src/`, organizado **por módulo de negocio** desde la fase 2 d
 | `Ticket/` | Ticket, estados, máquina de estados, etiquetas, bandeja. | `Ticket.php`, `TicketStateMachine.php`, `Controller/InboxController`, `Controller/TicketWorkflowController`, `Query/ListTicketsQuery`, `Query/TicketFilterBuilder` |
 | `Conversacion/` | Conversación, mensajes, media, ventana de 24 h, webhook de Meta, envío. | `Controller/WebhookController`, `Controller/ProviderProxyController`, `UseCase/HandleInboundMessageUseCase`, `ConversationWindowPolicy.php`, `MediaValidator.php` |
 | `Contacto/` | Contactos, importación, línea de tiempo. | `Controller/ContactController`, `Query/GetContactTimelineQuery`, `UseCase/ImportContactsFromCsvUseCase` |
-| `Agente/` | Agentes, equipos, perfil propio (`/api/me`). | `Agent.php`, `Team.php`, `Controller/MeController` |
+| `Agente/` | Agentes, equipos, perfil propio (`/api/me`). | `Agent.php`, `Team.php`, `Controller/MeController` (configuración, perfil y notificaciones; auto-respuesta, turnos y workspaces propios viven en Automatizacion, Disponibilidad y Administracion) |
 | `Disponibilidad/` | Turnos, disponibilidad manual. | `AgentShift.php`, `AgentAvailabilityService.php`, `UseCase/SetAgentAvailabilityUseCase` |
 | `Asignacion/` | Asignación manual y automática. | `AssignmentService.php`, `UseCase/AssignTicketUseCase`, `UseCase/AutoAssignTicketUseCase`, `EventListener/TicketAutoAssignmentRequestedListener` |
 | `Reporte/` | Métricas y exportación. | `Controller/ReportingController`, `Query/ReportingService`, `Repository/ReportingRepository` |
@@ -129,7 +129,7 @@ Todo en `apps/web/src/app/`. Detalle por pantalla en [07-frontend.md](07-fronten
 | Jerarquía de roles | `security.yaml:2-4` | `ROLE_ADMIN` ⊃ `ROLE_SUPERVISOR` ⊃ `ROLE_AGENT`. En el frontend los roles **no** son jerárquicos (se compensa en `roleGuard`). |
 | Voters | `Ticket/Security/TicketVoter.php` (usado: `ASSIGN`, `CLOSE`), `src/Conversacion/Security/MessageVoter.php` (solo URL de adjuntos) | Ver [06](06-api-y-permisos.md). |
 | Scopes | `OwnershipScope` (siempre `null`: bandeja compartida, decisión Sprint 16) y `WorkspaceScope` (filtra por el `phone_number_id` del workspace activo; si no hay, **no filtra**) | El primero se reutiliza mal como autorización ([R3](00-estado-y-pendientes.md#r3-cualquier-agente-modifica-disponibilidad-y-turnos-de-cualquier-agente)). |
-| Usuario ↔ Agente | `Agent.user` (1:1 opcional) | Si un usuario sin agente envía un mensaje o cambia de workspace (admin/supervisor), **se le crea un agente** con nombre = email (`ProviderProxyController.php:205-225`, `MeController.php:371-385`). |
+| Usuario ↔ Agente | `Agent.user` (1:1 opcional) | Si un usuario sin agente envía un mensaje o cambia de workspace (admin/supervisor), **se le crea un agente** con nombre = email (`ProviderProxyController.php:205-225`, `Administracion/UseCase/SetActiveWorkspaceUseCase.php` (`ensureAgent`)). |
 
 ---
 
@@ -267,7 +267,7 @@ Archivos: `apps/api/.env` (no versionado), `.env.dev` (**versionado, con credenc
 
 | # | Violación | Evidencia | Efecto observado |
 |---|---|---|---|
-| B1 | Controladores con lógica de negocio, SQL o `EntityManager` directo. | `InboxController::markRead` (escribe `last_read_at` e inserta en `outbox_events` por SQL); `MeController::listMyWorkspaces` (SQL embebido); `TicketController::setTeam`; `Admin/*Controller` (CRUD con EM); `ProviderProxyController` (crea agentes, persiste el mensaje de plantilla, llama a Graph); `TicketWorkflowController` (clasifica y guarda la auditoría). | La regla queda repartida; es difícil saber "dónde está" una operación. |
+| B1 | Controladores con lógica de negocio, SQL o `EntityManager` directo. | `InboxController::markRead` (escribe `last_read_at` e inserta en `outbox_events` por SQL); `TicketController::setTeam`; `ProviderProxyController` (crea agentes, persiste el mensaje de plantilla, llama a Graph); `TicketWorkflowController` (clasifica y guarda la auditoría). | La regla queda repartida; es difícil saber "dónde está" una operación. Fase 3d: Administracion y `/api/me` ya pasan por casos de uso. |
 | B2 | El dominio depende de aplicación e infraestructura. | `Automatizacion/AutoReopenRule.php:12-13` usa `TransitionTicketStatusUseCase` y el `EntityManager`. | Dirección de dependencias invertida. |
 | B3 | Implementación concreta dentro de `Domain`. | `Disponibilidad/Repository/AgentShiftRepository.php` | Inconsistencia con `Repository/`. |
 | B4 | ~~Interfaces con una sola implementación.~~ **Resuelto en la fase 2.** | Se borraron 8 interfaces (7 de repositorio y `EventCollector`); se inyecta la clase concreta. | — |

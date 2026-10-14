@@ -60,7 +60,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T15 | S8 | delegated (context backstop) | done | 3a: 82 characterization tests in `tests/Characterization/` (L25) |
 | T16 | S8 | delegated (context backstop) | done | 3b: `InternalServerErrorListener`, 71 catch-alls removed (L26) |
 | T17 | S8, S3 | delegated (context backstop) | done | 3c-1 (L28) and 3c-2 (L29) |
-| T18 | S8 | inline | in progress | 3d thin controllers, per module. 3d-1 Administracion (L32) |
+| T18 | S8 | inline | in progress | 3d thin controllers, per module. 3d-1 Administracion (L32), 3d-2 `MeController` split (L33) |
 | T19 | S8 | inline | pending | 3e single outbox writer (needs 2 user decisions) |
 
 ### Baseline of failing tests (phase 0, after `1afba20`)
@@ -266,3 +266,10 @@ Later phases, each with its own branch and task list when it starts:
   - Checks: `lint:container` OK; route and `#[IsGranted]` lines unchanged in the diff; PHPStan level 0 identical (29 lines, base vs new); admin + characterization tests 167/167; full suite 837 tests with the 6 baseline failures plus `AutoReplyServiceTest::testDoesNotSendWhenAgentIsAvailable`.
   - That extra failure is a pre-existing time-of-day bug, not a regression: `makeAgentAvailable` builds a shift from `hour-1` to `min(23, hour+2)`, so between 23:00 and 23:59 (container time) the shift ends at 23:00 and the agent is unavailable. The run was at 23:24 UTC. Added to the known flakes.
   - Commits: `cbaed47` (rule 7), `7f5601d` (3d-1), `4ee34c7` (flake note in `AGENTS.md`). RDD assess on `db54c40..HEAD`: medium, `under_budget`. Next: 3d-2, `MeController` split.
+- **L33 (2026-10-14), T18 3d-2 `MeController` split (route: inline):** following the map the frontend already uses.
+  - `Agente/Controller/MeController` keeps settings, profile and notifications (new `UpdateAgentProfileUseCase`, `UpdateNotificationPreferencesUseCase`).
+  - `Automatizacion/Controller/MeAutoReplyController` (new `UpdateAutoReplySettingsUseCase`), `Disponibilidad/Controller/MeShiftsController` (existing `ReplaceAgentShiftsUseCase`), `Administracion/Controller/MeWorkspaceController` (new `SetActiveWorkspaceUseCase` with the `ensureAgent` side write, and `WorkspaceNotAssignedException` → 403).
+  - The embedded `has_pending` SQL moved to `TicketRepository::hasPendingForAgent` (DBAL QueryBuilder, same predicates, `LIMIT 1` instead of `SELECT EXISTS`). 4 new repository tests, RED before the method.
+  - Route names, paths, methods and every `#[IsGranted]` are unchanged: the removed attribute lines reappear verbatim, plus one class-level `IS_AUTHENTICATED_FULLY` per new controller, as on the old class. 91 routes.
+  - One order change, not observable: in `PUT /api/me/workspace` the `Unauthorized` 401 guard now runs before the workspace checks. It is unreachable, because the only user provider is the `User` entity and the class requires `IS_AUTHENTICATED_FULLY`.
+  - Checks: `lint:container` OK; PHPStan level 0 identical; `/api/me` tests (`SettingsPageTest`, `MeWorkspaceControllerCharacterizationTest`) 24/24; full suite 841 tests, the 6 baseline failures plus the time-of-day `AutoReplyServiceTest` failure (run at 23:34 UTC, see L32).
