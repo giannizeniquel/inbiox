@@ -9,9 +9,11 @@ use App\Domain\Agent\AgentShift;
 use App\Domain\Contact\Contact;
 use App\Domain\Event\TicketEvent;
 use App\Domain\Ticket\Ticket;
+use App\Domain\User\User;
 use App\Repository\ReportingRepository;
 use App\Application\Service\ReportingService;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Input\ArrayInput;
@@ -31,10 +33,14 @@ class ReportingV2Test extends WebTestCase
     private ?EntityManagerInterface $em = null;
     private ?ReportingRepository $reportingRepo = null;
     private ?ReportingService $reportingService = null;
+    private ?KernelBrowser $client = null;
+
+    private const ADMIN_EMAIL = 'reporting-v2-admin@test.local';
+    private const ADMIN_PASSWORD = 'reporting-v2-password';
 
     protected function setUp(): void
     {
-        self::bootKernel();
+        $this->client = static::createClient();
         $this->em = static::getContainer()->get(EntityManagerInterface::class);
         $this->reportingRepo = static::getContainer()->get(ReportingRepository::class);
         $this->reportingService = static::getContainer()->get(ReportingService::class);
@@ -259,7 +265,7 @@ class ReportingV2Test extends WebTestCase
 
     public function testHttpAgentLoad(): void
     {
-        $client = static::createClient();
+        $client = $this->authenticatedClient();
         $client->request('GET', '/api/reports/agent-load');
         $this->assertResponseStatusCodeSame(200);
         $data = json_decode($client->getResponse()->getContent(), true);
@@ -268,7 +274,7 @@ class ReportingV2Test extends WebTestCase
 
     public function testHttpUnassigned(): void
     {
-        $client = static::createClient();
+        $client = $this->authenticatedClient();
         $client->request('GET', '/api/reports/unassigned');
         $response = $client->getResponse();
 
@@ -280,7 +286,7 @@ class ReportingV2Test extends WebTestCase
 
     public function testHttpAvailableAgents(): void
     {
-        $client = static::createClient();
+        $client = $this->authenticatedClient();
         $client->request('GET', '/api/reports/available-agents');
         $response = $client->getResponse();
 
@@ -291,7 +297,7 @@ class ReportingV2Test extends WebTestCase
 
     public function testHttpFrtTrend(): void
     {
-        $client = static::getContainer()->get('test.service_container')->get('test.client');
+        $client = $this->authenticatedClient();
         $from = (new \DateTimeImmutable('-30 days'))->format('Y-m-d\TH:i:s\Z');
         $to = (new \DateTimeImmutable('now'))->format('Y-m-d\TH:i:s\Z');
         $client->request('GET', "/api/reports/frt-trend?from={$from}&to={$to}");
@@ -304,7 +310,7 @@ class ReportingV2Test extends WebTestCase
 
     public function testHttpHeatmap(): void
     {
-        $client = static::getContainer()->get('test.service_container')->get('test.client');
+        $client = $this->authenticatedClient();
         $from = (new \DateTimeImmutable('-30 days'))->format('Y-m-d\TH:i:s\Z');
         $to = (new \DateTimeImmutable('now'))->format('Y-m-d\TH:i:s\Z');
         $client->request('GET', "/api/reports/heatmap?from={$from}&to={$to}");
@@ -317,7 +323,7 @@ class ReportingV2Test extends WebTestCase
 
     public function testHttpRecurringCustomers(): void
     {
-        $client = static::createClient();
+        $client = $this->authenticatedClient();
         $client->request('GET', '/api/reports/recurring-customers?threshold=2');
         $response = $client->getResponse();
 
@@ -328,7 +334,7 @@ class ReportingV2Test extends WebTestCase
 
     public function testHttpReopened(): void
     {
-        $client = static::getContainer()->get('test.service_container')->get('test.client');
+        $client = $this->authenticatedClient();
         $from = (new \DateTimeImmutable('-30 days'))->format('Y-m-d\TH:i:s\Z');
         $to = (new \DateTimeImmutable('now'))->format('Y-m-d\TH:i:s\Z');
         $client->request('GET', "/api/reports/reopened?from={$from}&to={$to}");
@@ -337,6 +343,33 @@ class ReportingV2Test extends WebTestCase
         $this->assertResponseStatusCodeSame(200);
         $data = json_decode($client->getResponse()->getContent(), true);
         $this->assertIsArray($data);
+    }
+
+    /**
+     * Logs in an admin through the real login endpoint and returns the client
+     * with the bearer token set (the API firewall is stateless JWT).
+     */
+    private function authenticatedClient(): KernelBrowser
+    {
+        $user = $this->em->getRepository(User::class)->findOneBy(['email' => self::ADMIN_EMAIL]);
+        if (null === $user) {
+            $user = new User();
+            $user->setEmail(self::ADMIN_EMAIL);
+            $user->setRoles(['ROLE_ADMIN']);
+        }
+        $user->setPassword(\password_hash(self::ADMIN_PASSWORD, \PASSWORD_BCRYPT));
+        $this->em->persist($user);
+        $this->em->flush();
+
+        $this->client->request('POST', '/api/auth/login', [], [], [
+            'CONTENT_TYPE' => 'application/json',
+        ], \json_encode(['email' => self::ADMIN_EMAIL, 'password' => self::ADMIN_PASSWORD]));
+        $this->assertResponseStatusCodeSame(200);
+
+        $token = \json_decode($this->client->getResponse()->getContent(), true)['access_token'];
+        $this->client->setServerParameter('HTTP_AUTHORIZATION', 'Bearer ' . $token);
+
+        return $this->client;
     }
 
     // ============================================

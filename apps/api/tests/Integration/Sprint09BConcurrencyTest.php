@@ -39,14 +39,22 @@ class Sprint09BConcurrencyTest extends KernelTestCase
         $conn->executeStatement('DELETE FROM agents');
         for ($i = 1; $i <= 10; $i++) {
             $conn->executeStatement(
-                'INSERT INTO agents (id, name, email, active, is_available, max_active_tickets, created_at, updated_at) VALUES (?, ?, ?, 1, 1, 10, NOW(), NOW())',
-                [$i, "Agent $i", "agent$i@example.com"]
+                // Override = available, so manual assignment's "active now" guard passes without shifts.
+                'INSERT INTO agents (id, name, active, is_available, is_available_override, max_active_tickets, created_at, updated_at) VALUES (?, ?, 1, 1, 1, 10, NOW(), NOW())',
+                [$i, "Agent $i"]
             );
         }
     }
 
     protected function tearDown(): void
     {
+        // Remove the rows this test seeded; leftover assignments reference the
+        // fixed-id agents and break other tests that delete from `agents`.
+        $conn = $this->em->getConnection();
+        foreach (['outbox_events', 'ticket_tags', 'messages', 'assignments', 'tickets', 'conversations', 'contacts', 'agents'] as $table) {
+            $conn->executeStatement('DELETE FROM ' . $table);
+        }
+
         parent::tearDown();
         $this->em = null;
     }

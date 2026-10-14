@@ -173,7 +173,7 @@ class Sprint10ControllerTest extends WebTestCase
     {
         $agentId = $this->createAgent();
 
-        $data = $this->postJson("/agents/{$agentId}/availability", [
+        $data = $this->postJson("/api/agents/{$agentId}/availability", [
             'isAvailable' => false,
             'ttlMinutes' => 120,
         ]);
@@ -185,7 +185,7 @@ class Sprint10ControllerTest extends WebTestCase
 
     public function testSetAvailabilityInvalidAgent(): void
     {
-        $this->postJson('/agents/99999/availability', [
+        $this->postJson('/api/agents/99999/availability', [
             'isAvailable' => false,
         ]);
 
@@ -197,7 +197,7 @@ class Sprint10ControllerTest extends WebTestCase
     {
         $agentId = $this->createAgent();
 
-        $this->postJson("/agents/{$agentId}/availability", []);
+        $this->postJson("/api/agents/{$agentId}/availability", []);
 
         // Missing required 'isAvailable' should be caught by MapRequestPayload validation
         $this->assertResponseStatusCodeSame(422);
@@ -212,12 +212,12 @@ class Sprint10ControllerTest extends WebTestCase
         $agentId = $this->createAgent();
 
         // First set an override so there's something to clear
-        $this->postJson("/agents/{$agentId}/availability", [
+        $this->postJson("/api/agents/{$agentId}/availability", [
             'isAvailable' => false,
             'ttlMinutes' => 120,
         ]);
 
-        $this->deleteRequest("/agents/{$agentId}/availability");
+        $this->deleteRequest("/api/agents/{$agentId}/availability");
         $this->assertResponseStatusCodeSame(204);
     }
 
@@ -226,11 +226,11 @@ class Sprint10ControllerTest extends WebTestCase
         $agentId = $this->createAgent();
 
         // First call — no override exists, but should still succeed (idempotent)
-        $this->deleteRequest("/agents/{$agentId}/availability");
+        $this->deleteRequest("/api/agents/{$agentId}/availability");
         $this->assertResponseStatusCodeSame(204);
 
         // Second call
-        $this->deleteRequest("/agents/{$agentId}/availability");
+        $this->deleteRequest("/api/agents/{$agentId}/availability");
         $this->assertResponseStatusCodeSame(204);
     }
 
@@ -242,7 +242,7 @@ class Sprint10ControllerTest extends WebTestCase
     {
         $agentId = $this->createAgent(timezone: 'America/Argentina/Buenos_Aires');
 
-        $data = $this->getJson("/agents/{$agentId}/availability");
+        $data = $this->getJson("/api/agents/{$agentId}/availability");
 
         $this->assertResponseStatusCodeSame(200);
 
@@ -275,12 +275,12 @@ class Sprint10ControllerTest extends WebTestCase
         $agentId = $this->createAgent(timezone: 'UTC');
 
         // Set an override (camelCase keys match DTO properties)
-        $this->postJson("/agents/{$agentId}/availability", [
+        $this->postJson("/api/agents/{$agentId}/availability", [
             'isAvailable' => false,
             'ttlMinutes' => 120,
         ]);
 
-        $data = $this->getJson("/agents/{$agentId}/availability");
+        $data = $this->getJson("/api/agents/{$agentId}/availability");
 
         $this->assertResponseStatusCodeSame(200);
 
@@ -302,7 +302,7 @@ class Sprint10ControllerTest extends WebTestCase
 
     public function testGetAvailabilityAgentNotFound(): void
     {
-        $this->getJson('/agents/99999/availability');
+        $this->getJson('/api/agents/99999/availability');
 
         $this->assertResponseStatusCodeSame(404);
     }
@@ -315,7 +315,7 @@ class Sprint10ControllerTest extends WebTestCase
     {
         $agentId = $this->createAgent();
 
-        $data = $this->postJson("/agents/{$agentId}/shifts", [
+        $data = $this->postJson("/api/agents/{$agentId}/shifts", [
             'dayOfWeek' => 1,
             'startTime' => '08:00',
             'endTime' => '16:00',
@@ -334,7 +334,7 @@ class Sprint10ControllerTest extends WebTestCase
         $agentId = $this->createAgent();
 
         // First shift — should succeed
-        $this->postJson("/agents/{$agentId}/shifts", [
+        $this->postJson("/api/agents/{$agentId}/shifts", [
             'dayOfWeek' => 1,
             'startTime' => '08:00',
             'endTime' => '16:00',
@@ -342,7 +342,7 @@ class Sprint10ControllerTest extends WebTestCase
         $this->assertResponseStatusCodeSame(201);
 
         // Duplicate shift — should return 409, NOT 500
-        $this->postJson("/agents/{$agentId}/shifts", [
+        $this->postJson("/api/agents/{$agentId}/shifts", [
             'dayOfWeek' => 1,
             'startTime' => '08:00',
             'endTime' => '16:00',
@@ -356,7 +356,7 @@ class Sprint10ControllerTest extends WebTestCase
         $agent2 = $this->createAgent('Agent 2');
 
         // Create shift for agent 1
-        $this->postJson("/agents/{$agent1}/shifts", [
+        $this->postJson("/api/agents/{$agent1}/shifts", [
             'dayOfWeek' => 1,
             'startTime' => '08:00',
             'endTime' => '16:00',
@@ -364,7 +364,7 @@ class Sprint10ControllerTest extends WebTestCase
         $this->assertResponseStatusCodeSame(201);
 
         // Same shift for agent 2 — should succeed (different agent)
-        $this->postJson("/agents/{$agent2}/shifts", [
+        $this->postJson("/api/agents/{$agent2}/shifts", [
             'dayOfWeek' => 1,
             'startTime' => '08:00',
             'endTime' => '16:00',
@@ -377,7 +377,7 @@ class Sprint10ControllerTest extends WebTestCase
         $agentId = $this->createAgent();
 
         // dayOfWeek = 0 is out of range
-        $this->postJson("/agents/{$agentId}/shifts", [
+        $this->postJson("/api/agents/{$agentId}/shifts", [
             'dayOfWeek' => 0,
             'startTime' => '08:00',
             'endTime' => '16:00',
@@ -390,7 +390,7 @@ class Sprint10ControllerTest extends WebTestCase
     {
         $agentId = $this->createAgent();
 
-        $this->postJson("/agents/{$agentId}/shifts", [
+        $this->postJson("/api/agents/{$agentId}/shifts", [
             'dayOfWeek' => 1,
             'startTime' => '08:00',
             'endTime' => '08:00',
@@ -401,7 +401,7 @@ class Sprint10ControllerTest extends WebTestCase
 
     public function testCreateShiftInvalidAgent(): void
     {
-        $this->postJson('/agents/99999/shifts', [
+        $this->postJson('/api/agents/99999/shifts', [
             'dayOfWeek' => 1,
             'startTime' => '08:00',
             'endTime' => '16:00',
@@ -419,7 +419,7 @@ class Sprint10ControllerTest extends WebTestCase
         $agentId = $this->createAgent();
 
         // Create a shift
-        $created = $this->postJson("/agents/{$agentId}/shifts", [
+        $created = $this->postJson("/api/agents/{$agentId}/shifts", [
             'dayOfWeek' => 1,
             'startTime' => '08:00',
             'endTime' => '16:00',
@@ -427,7 +427,7 @@ class Sprint10ControllerTest extends WebTestCase
         $shiftId = $created['shift_id'];
 
         // Delete it
-        $this->deleteRequest("/agents/{$agentId}/shifts/{$shiftId}");
+        $this->deleteRequest("/api/agents/{$agentId}/shifts/{$shiftId}");
         $this->assertResponseStatusCodeSame(204);
     }
 
@@ -435,7 +435,7 @@ class Sprint10ControllerTest extends WebTestCase
     {
         $agentId = $this->createAgent();
 
-        $this->deleteRequest("/agents/{$agentId}/shifts/99999");
+        $this->deleteRequest("/api/agents/{$agentId}/shifts/99999");
         $this->assertResponseStatusCodeSame(404);
     }
 
@@ -445,7 +445,7 @@ class Sprint10ControllerTest extends WebTestCase
         $agent2 = $this->createAgent('Agent 2');
 
         // Create shift for agent 1
-        $created = $this->postJson("/agents/{$agent1}/shifts", [
+        $created = $this->postJson("/api/agents/{$agent1}/shifts", [
             'dayOfWeek' => 1,
             'startTime' => '08:00',
             'endTime' => '16:00',
@@ -453,7 +453,7 @@ class Sprint10ControllerTest extends WebTestCase
         $shiftId = $created['shift_id'];
 
         // Try to delete from agent 2
-        $this->deleteRequest("/agents/{$agent2}/shifts/{$shiftId}");
+        $this->deleteRequest("/api/agents/{$agent2}/shifts/{$shiftId}");
         // Shift doesn't belong to agent2 — returns 404
         $this->assertResponseStatusCodeSame(404);
     }

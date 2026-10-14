@@ -391,8 +391,8 @@ class Sprint10ConcurrencyTest extends KernelTestCase
 
         for ($i = 1; $i <= $count; $i++) {
             $conn->executeStatement(
-                'INSERT INTO agents (name, email, active, is_available, max_active_tickets, timezone, created_at, updated_at) VALUES (?, ?, 1, 1, ?, \'UTC\', NOW(), NOW())',
-                ["Agent $i", "agent$i@example.com", $maxActive],
+                'INSERT INTO agents (name, active, is_available, max_active_tickets, timezone, created_at, updated_at) VALUES (?, 1, 1, ?, \'UTC\', NOW(), NOW())',
+                ["Agent $i", $maxActive],
             );
 
             // Add 24/7 shift for each agent

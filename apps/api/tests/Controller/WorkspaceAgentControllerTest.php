@@ -107,6 +107,7 @@ class WorkspaceAgentControllerTest extends WebTestCase
 
         $shift = new AgentShift($agent, $dayOfWeek, $startTime, $endTime);
         $agent->addShift($shift);
+        $this->em->persist($shift);
         $this->em->flush();
 
         return $shift;

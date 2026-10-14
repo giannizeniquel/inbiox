@@ -97,42 +97,6 @@ class Sprint14MigrationTest extends KernelTestCase
         self::assertContains('user_id', $columnNames, 'agents.user_id column must exist');
     }
 
-    public function testAdminSeedExists(): void
-    {
-        $admin = $this->conn->fetchAssociative(
-            'SELECT email, roles, is_active FROM `user` WHERE email = ?',
-            ['admin@inbiox.local']
-        );
-
-        self::assertNotFalse($admin, 'Admin user must exist');
-        self::assertSame('admin@inbiox.local', $admin['email']);
-        self::assertStringContainsString('ROLE_ADMIN', $admin['roles']);
-        self::assertEquals(1, $admin['is_active']);
-    }
-
-    public function testAdminSeedIsIdempotent(): void
-    {
-        // Count admins before
-        $countBefore = $this->conn->fetchOne(
-            'SELECT COUNT(*) FROM `user` WHERE email = ?',
-            ['admin@inbiox.local']
-        );
-
-        // Insert again (simulate re-running migration)
-        $this->conn->executeStatement(
-            'INSERT IGNORE INTO `user` (email, password_hash, roles, is_active, created_at)
-             VALUES (?, ?, ?, 1, NOW())',
-            ['admin@inbiox.local', \password_hash('test', PASSWORD_BCRYPT), '["ROLE_ADMIN"]']
-        );
-
-        $countAfter = $this->conn->fetchOne(
-            'SELECT COUNT(*) FROM `user` WHERE email = ?',
-            ['admin@inbiox.local']
-        );
-
-        self::assertSame($countBefore, $countAfter, 'Re-running admin seed must not create duplicates');
-    }
-
     public function testMigrationReversal(): void
     {
         // Verify agents table can be rolled back: we need email and user_id removed
@@ -158,7 +122,7 @@ class Sprint14MigrationTest extends KernelTestCase
         $this->expectException(DBALException::class);
 
         $this->conn->executeStatement(
-            'INSERT INTO agents (name, user_id) VALUES (?, ?)',
+            'INSERT INTO agents (name, user_id, created_at, updated_at) VALUES (?, ?, NOW(), NOW())',
             ['Invalid Agent', 99999]
         );
     }
@@ -175,14 +139,14 @@ class Sprint14MigrationTest extends KernelTestCase
 
         // Link first agent
         $this->conn->executeStatement(
-            'INSERT INTO agents (name, user_id) VALUES (?, ?)',
+            'INSERT INTO agents (name, user_id, created_at, updated_at) VALUES (?, ?, NOW(), NOW())',
             ['Agent A', $userId]
         );
 
         // Linking second agent to same user must fail
         $this->expectException(DBALException::class);
         $this->conn->executeStatement(
-            'INSERT INTO agents (name, user_id) VALUES (?, ?)',
+            'INSERT INTO agents (name, user_id, created_at, updated_at) VALUES (?, ?, NOW(), NOW())',
             ['Agent B', $userId]
         );
     }

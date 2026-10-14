@@ -112,19 +112,19 @@ class AuthorizationTest extends WebTestCase
 
     public function testUnauthenticatedRequestReturns401(): void
     {
-        $this->client->request('GET', '/tickets');
+        $this->client->request('GET', '/api/tickets');
         self::assertSame(401, $this->client->getResponse()->getStatusCode());
     }
 
     public function testUnauthenticatedRequestToContactsReturns401(): void
     {
-        $this->client->request('GET', '/contacts');
+        $this->client->request('GET', '/api/contacts');
         self::assertSame(401, $this->client->getResponse()->getStatusCode());
     }
 
     public function testUnauthenticatedRequestToReportsReturns401(): void
     {
-        $this->client->request('GET', '/reports/frt?from=2026-01-01T00:00:00Z&to=2026-01-02T00:00:00Z');
+        $this->client->request('GET', '/api/reports/frt?from=2026-01-01T00:00:00Z&to=2026-01-02T00:00:00Z');
         self::assertSame(401, $this->client->getResponse()->getStatusCode());
     }
 
@@ -134,7 +134,7 @@ class AuthorizationTest extends WebTestCase
         $this->createUser('agent@test.local', ['ROLE_AGENT'], $agent);
         $token = $this->login('agent@test.local');
 
-        $this->client->request('GET', '/tickets', [], [], $this->authHeaders($token));
+        $this->client->request('GET', '/api/tickets', [], [], $this->authHeaders($token));
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
     }
 
@@ -143,7 +143,7 @@ class AuthorizationTest extends WebTestCase
         $this->createUser('admin@test.local', ['ROLE_ADMIN']);
         $token = $this->login('admin@test.local');
 
-        $this->client->request('GET', '/tickets', [], [], $this->authHeaders($token));
+        $this->client->request('GET', '/api/tickets', [], [], $this->authHeaders($token));
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
     }
 
@@ -153,7 +153,7 @@ class AuthorizationTest extends WebTestCase
         $this->createUser('agent2@test.local', ['ROLE_AGENT'], $agent);
         $token = $this->login('agent2@test.local');
 
-        $this->client->request('GET', '/contacts', [], [], $this->authHeaders($token));
+        $this->client->request('GET', '/api/contacts', [], [], $this->authHeaders($token));
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
     }
 
@@ -261,7 +261,7 @@ class AuthorizationTest extends WebTestCase
 
         // Access /tickets — AGENT without agent should still be able to list (scope is null, returns empty)
         // But specific ticket actions may be denied
-        $this->client->request('GET', '/tickets', [], [], $this->authHeaders($token));
+        $this->client->request('GET', '/api/tickets', [], [], $this->authHeaders($token));
         // Should still be 200 (they can list — returns empty results)
         // The R1 403 is enforced at the voter level when voting on a specific ticket
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
