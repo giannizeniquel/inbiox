@@ -26,7 +26,7 @@ Ordenadas por severidad (impacto en el comportamiento del producto).
 | C-13 | Media | **Visibilidad de adjuntos vs bandeja compartida.** Cualquier agente lee el texto de cualquier ticket, pero solo el asignado obtiene la URL del adjunto; a la vez, `GET /api/provider/media/{mediaId}` entrega el binario a cualquiera. | `src/Security/Voter/MessageVoter.php`; `ProviderProxyController.php:414-430` |
 | C-14 | Baja | **Rate-limit de auto-respuesta:** 2 h en el código, 4 h en el docblock y en el análisis de brecha. | `AutoReplyService.php:31, 38` |
 | C-15 | Baja | **Equipos inactivos:** la spec exige excluirlos de nuevas asignaciones; el backend lo permite (solo el frontend los oculta). | `Controller/TicketController.php:113-122` |
-| C-16 | Baja | **`new → active` tiene tres disparadores:** asignación (backend), primera respuesta (backend) y asignación optimista (frontend). El docblock de la FSM solo menciona la primera respuesta. | `AssignmentService.php:71-75`; `TicketStateMachine.php:9`; `apps/web/src/app/core/stores/ticket.store.ts:163` |
+| C-16 | Baja | **`new → active` tiene tres disparadores:** asignación (backend), primera respuesta (backend) y asignación optimista (frontend). El docblock de la FSM solo menciona la primera respuesta. | `AssignmentService.php:71-75`; `TicketStateMachine.php:9`; `apps/web/src/app/data-access/ticket/ticket.store.ts:163` |
 | C-17 | Baja | **`is_available` significa cuatro cosas** según el endpoint: columna legacy (admin), cascada con capacidad (`GET /api/agents/{id}/availability`), override (`SetAgentAvailabilityUseCase`), y `false` fijo en `ClearAgentAvailabilityUseCase:69`. El roster usa otro nombre (`is_active_now`). | archivos citados |
 | C-18 | Baja | **`contact.id` cambia de significado** entre el listado (id de conversación, con respaldo `1` inventado) y el detalle (id del contacto). | `Application/Query/ListTicketsQuery.php:164`; `GetTicketDetailQuery.php:57` |
 | C-19 | Baja | **Mapeo Doctrine inválido:** `TicketTag` declara `inversedBy: 'ticketTags'` en entidades que no tienen esa propiedad; `tickets.team_id` tiene FK en la base pero no está mapeada como relación. | `Domain/Tag/TicketTag.php:18, 22`; `Domain/Ticket/Ticket.php:65-66` |
@@ -59,7 +59,7 @@ Ordenadas por severidad (impacto en el comportamiento del producto).
 | Evento de auto-asignación | 2 clases | `Application/Event/TicketNeedsAutoAssignmentEvent` (vivo) y `Domain/Event/TicketAutoAssignmentRequestedEvent` (sin uso). |
 | Turnos | 2 APIs | `PUT /api/me/shifts` (reemplaza todo, usada) y `/api/agents/{id}/shifts` (alta/baja individual, UI rota). Validaciones duplicadas con nombres de campo distintos. |
 | Publicador del outbox | 2 procesos posibles | Servicio docker `publisher` y `inbiox-outbox-publisher.service` (systemd). |
-| DTOs del frontend | 2 lugares | `core/dto/`, `features/contacts/models/dto/`. |
+| DTOs del frontend | 1 lugar por módulo | `data-access/<modulo>/` (la fase 2 de la limpieza frontend borró la reexportación de `features/contacts/models/dto/`). |
 | "Abrir ticket y cargar mensajes" (frontend) | 2 | `TicketListComponent`, `AppShellComponent`. |
 | Locking de tickets | 2 patrones | `findByIdForUpdate()` (correcto, en la respuesta) y `findById()` + `lock()` (rechazado por el propio repositorio, sigue en asignación manual y mensaje entrante). |
 

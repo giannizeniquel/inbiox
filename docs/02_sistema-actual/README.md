@@ -30,7 +30,7 @@ Una bandeja de atención compartida: los mensajes que llegan por **WhatsApp Clou
 | Convención | Significado |
 |---|---|
 | `apps/api/src/...` | Rutas del backend. Dentro de las tablas se abrevia a partir de `src/` cuando el contexto es claro. |
-| `apps/web/src/app/...` | Rutas del frontend. Se abrevia a partir de `core/`, `features/`, `shell/`. |
+| `apps/web/src/app/...` | Rutas del frontend. Se abrevia a partir de `core/`, `data-access/`, `features/`, `shell/`. |
 | `archivo.php:120` | Archivo y línea en el commit `239ee15`. Las líneas pueden moverse con cambios futuros; el nombre del método es más estable. |
 | **Confirmada** | Existe evidencia escrita del motivo de negocio (spec en `openspec/specs/`, análisis de brecha o decisión documentada). Se cita la fuente. |
 | **Regla no confirmada** | El código lo hace, pero no se encontró el motivo. **No se inventó una explicación.** |
@@ -67,10 +67,10 @@ Una bandeja de atención compartida: los mensajes que llegan por **WhatsApp Clou
 | **Dead letter** | Evento del outbox que falló 5 veces y ya no se reintenta. | `OutboxPublisherService.php` |
 | **Mercure** | Servidor (hub) de Server-Sent Events (SSE). El navegador queda suscripto y recibe eventos sin recargar. | servicio `mercure` en `docker-compose.yml` |
 | **Topic** | "Canal" de Mercure. Hoy casi todo se publica en un único topic: `tickets`. | `MercureJwtService.php` |
-| **Caso de uso (use case)** | Clase que implementa una operación de negocio completa (backend `Application/UseCase/`, frontend `core/application/`). | — |
+| **Caso de uso (use case)** | Clase que implementa una operación de negocio completa (backend `Application/UseCase/`, frontend `data-access/<modulo>/*.use-case.ts`). | — |
 | **Voter** | Clase de Symfony que decide si un usuario puede hacer algo sobre un objeto concreto (p. ej. resolver un ticket). Están repartidos en **dos carpetas**: `Application/Security/Voter/` (tickets, agentes, reportes) y `Security/Voter/` (solo `MessageVoter`). | `Application/Security/Voter/`, `Security/Voter/` |
 | **FSM** | *Finite State Machine*: tabla de transiciones de estado permitidas. | `TicketStateMachine.php` |
-| **Store** | En Angular, servicio con *signals* que guarda el estado compartido de la pantalla. | `apps/web/src/app/core/stores/` |
+| **Store** | En Angular, servicio con *signals* que guarda el estado compartido de la pantalla. | `apps/web/src/app/data-access/<modulo>/*.store.ts` |
 | **Tier 1 / Tier 2** | Prioridades del backlog definidas en el análisis de brecha. | [`analisis-brecha-requerimientos.md`](../../analisis-brecha-requerimientos.md) |
 
 ## Qué otros documentos del repositorio usar y cuáles ignorar

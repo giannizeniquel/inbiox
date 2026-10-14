@@ -146,11 +146,11 @@ Detalle en [07](07-frontend.md#lógica-de-negocio-que-vive-en-el-frontend).
 
 | Regla | Dónde (`apps/web/src/app/`) | ¿Coincide con el backend? |
 |---|---|---|
-| Un mensaje entrante entre corchetes `[...]` se muestra como "mensaje de sistema". | `features/inbox/components/message-bubble/message-bubble.component.ts:44` | **Inventada**: el backend ya expone `sender_type` y no produce mensajes entre corchetes. Regla no confirmada. |
+| Un mensaje entrante entre corchetes `[...]` se muestra como "mensaje de sistema". | `features/bandeja/ui/message-bubble/message-bubble.component.ts:44` | **Inventada**: el backend ya expone `sender_type` y no produce mensajes entre corchetes. Regla no confirmada. |
 | No puede asignarse a uno mismo desde el desplegable. | `ticket-list.component.ts:130-135` | Solo frontend. Regla no confirmada. |
-| `loadPercentage = asignados × 20` (capacidad asumida de 5). | `core/application/reports/get-reports-dashboard.use-case.ts:162` | **Inventada**: la capacidad real por defecto es 10. |
+| `loadPercentage = asignados × 20` (capacidad asumida de 5). | `data-access/reporte/get-reports-dashboard.use-case.ts:162` | **Inventada**: la capacidad real por defecto es 10. |
 | "Abierto" = `new`+`active`+`waiting`; "cerrado" = `resolved`+`closed`. | `get-reports-dashboard.use-case.ts:148-151` | Coincide con "tickets activos" del backend. |
-| Roles por defecto `['ROLE_AGENT']` si no se elige ninguno. | `core/application/admin/users/create-user.use-case.ts:66` | Solo frontend. |
+| Roles por defecto `['ROLE_AGENT']` si no se elige ninguno. | `data-access/administracion/create-user.use-case.ts:66` | Solo frontend. |
 
 ## Reglas aplicadas en más de un lugar
 

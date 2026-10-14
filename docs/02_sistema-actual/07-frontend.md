@@ -24,7 +24,7 @@
 | `/settings` | `SettingsPageComponent` | — | Autenticado | "Configuración" |
 | `**` | redirect `/inbox` | — | — | — |
 
-Roles: `AuthStore.isAdmin()` / `isSupervisor()` (no jerárquicos; no existe `isAgent`) en `core/stores/auth.store.ts:40-52`. `roleGuard` siempre deja pasar al admin (`core/auth/auth.guard.ts:35-38`).
+Roles: `AuthStore.isAdmin()` / `isSupervisor()` (no jerárquicos; no existe `isAgent`) en `core/auth/auth.store.ts:40-52`. `roleGuard` siempre deja pasar al admin (`core/auth/auth.guard.ts:35-38`).
 
 ---
 
@@ -49,13 +49,13 @@ Roles: `AuthStore.isAdmin()` / `isSupervisor()` (no jerárquicos; no existe `isA
 | Campana de notificaciones, botón "Ayuda" | `topbar.component.html:61-69`; `shell/sidebar/sidebar-footer.component.html:4-13` | — | **Decorativos.** |
 | Indicador de conexión | `shell/sidebar/sidebar.component.ts:30-37` | — | Dice "Conectado" también en `permanent_failure`. |
 | Banner de conexión | `shell/connection-banner/` | — | "Reconectando…" / "Sin conexión"; sin botón de reintento. |
-| Selector de workspace | `WorkspaceSwitcherComponent` → `WorkspaceStore.setActiveWorkspace()` (`core/stores/workspace.store.ts:93-108`) | `GET /api/me/workspaces`, `GET/PUT /api/me/workspace` | Recarga la página completa. Marca "pendiente" en otros workspaces con `has_pending` y con eventos entrantes de otro `phoneNumberId`. |
+| Selector de workspace | `WorkspaceSwitcherComponent` → `WorkspaceStore.setActiveWorkspace()` (`data-access/administracion/workspace.store.ts:93-108`) | `GET /api/me/workspaces`, `GET/PUT /api/me/workspace` | Recarga la página completa. Marca "pendiente" en otros workspaces con `has_pending` y con eventos entrantes de otro `phoneNumberId`. |
 | Autoselección inicial de workspace | `shell/app-shell.component.ts:84-86` | — | `setTimeout(…, 500)` asumiendo que dos peticiones terminaron: posible condición de carrera. |
 | Deep link `/inbox?ticketId=X` | `app-shell.component.ts:90-106` | `GET /api/tickets/{id}`, mensajes | |
 
 ## Bandeja: lista de tickets
 
-Contenedor: `features/inbox/containers/ticket-list/ticket-list.component.ts`. Store: `core/stores/ticket.store.ts`.
+Contenedor: `features/bandeja/pages/ticket-list/ticket-list.component.ts`. Store: `data-access/ticket/ticket.store.ts`.
 
 | Acción | Código | Endpoint | ¿Servidor o navegador? |
 |---|---|---|---|
@@ -74,7 +74,7 @@ Contenedor: `features/inbox/containers/ticket-list/ticket-list.component.ts`. St
 
 ## Conversación y composer
 
-Contenedor: `features/inbox/containers/conversation/conversation.component.ts`. Store: `core/stores/conversation.store.ts`.
+Contenedor: `features/bandeja/pages/conversation/conversation.component.ts`. Store: `data-access/conversacion/conversation.store.ts`.
 
 | Elemento / acción | Código | Endpoint | Nota |
 |---|---|---|---|
@@ -92,12 +92,12 @@ Contenedor: `features/inbox/containers/conversation/conversation.component.ts`. 
 
 ## Contactos
 
-`features/contacts/` (con su propia estructura `application/`, `models/`, `stores/`, `components/`, `pages/`).
+`features/contactos/` (`pages/`, `ui/`) y `data-access/contacto/` (API, stores, modelos, casos de uso).
 
 | Acción | Código | Endpoint | Servidor / navegador | Rol |
 |---|---|---|---|---|
 | Listar (20 por página, "cargar más") | `GetContactsUseCase` (`contacts-page.component.ts:171-195`) | `GET /api/contacts?page&limit` | Servidor | Todos |
-| Buscar, filtrar por estado/canal | `ContactsStore.filteredContacts` (`stores/contacts.store.ts:51-85`) | — | **Navegador** (solo lo cargado) | Todos |
+| Buscar, filtrar por estado/canal | `ContactsStore.filteredContacts` (`data-access/contacto/contacts.store.ts:51-85`) | — | **Navegador** (solo lo cargado) | Todos |
 | Detalle | `ContactDetailComponent`; si no está en caché, API directa | `GET /api/contacts/{id}` | — | Todos |
 | Línea de tiempo | `ContactTimelineComponent` → `ContactTimelineStore` (hace HTTP) | `GET /api/contacts/{id}/timeline?before&limit=20` | Servidor | Todos |
 | Abrir ticket desde el contacto | navega a `/inbox?ticketId=…`; sin ticket activo, solo a `/inbox` (`TODO`) | — | — | Todos |
@@ -107,7 +107,7 @@ Contenedor: `features/inbox/containers/conversation/conversation.component.ts`. 
 
 ## Informes
 
-`features/reports/`. Orquestación: `core/application/reports/get-reports-dashboard.use-case.ts` (tres bloques `forkJoin` en secuencia; cada error se convierte en 0/vacío sin aviso).
+`features/reportes/`. Orquestación: `data-access/reporte/get-reports-dashboard.use-case.ts` (tres bloques `forkJoin` en secuencia; cada error se convierte en 0/vacío sin aviso).
 
 | Tarjeta | Endpoint | ¿Envía filtros de fecha/equipo? |
 |---|---|---|
@@ -118,16 +118,16 @@ Contenedor: `features/inbox/containers/conversation/conversation.component.ts`. 
 | Carga por agente, agentes disponibles, clientes recurrentes | `agent-load`, `available-agents`, `recurring-customers` | **No** |
 | Exportar CSV | `ExportTicketsCsvUseCase` → `GET /api/reports/export` (blob) | Sí; botón solo admin/supervisor |
 
-Lógica inventada: nombres `Agent {id}` y `loadPercentage = asignados × 20` (`:158-162`). Fechas locales del navegador enviadas como UTC (`core/api/reports-api.service.ts:131-143`): rango desplazado fuera de UTC.
+Lógica inventada: nombres `Agent {id}` y `loadPercentage = asignados × 20` (`:158-162`). Fechas locales del navegador enviadas como UTC (`data-access/reporte/reports-api.service.ts:131-143`): rango desplazado fuera de UTC.
 
 ## Administración
 
 | Pantalla | Acciones | Casos de uso | Endpoints | Rol frontend / backend |
 |---|---|---|---|---|
-| Usuarios | listar, crear (roles + agente opcional), editar, desactivar, reactivar | `core/application/admin/users/*` | `/api/admin/users[/{id}]` | Admin / Admin |
-| Agentes | listar, crear, editar (incl. zona horaria con `Intl.supportedValuesOf('timeZone')`), desactivar, reactivar, vincular usuario | `core/application/admin/agents/*`, `linking/*` | `/api/admin/agents[/{id}]`, `/link-user`, `GET /api/admin/users` | Supervisor+ / Supervisor (vincular: **Admin**) |
-| Workspaces | listar, crear, editar, desactivar, asignar agentes | `core/application/admin/workspaces/*` + API directa | `/api/admin/workspaces[/{id}]`, `/agents`, `GET /api/admin/agents?limit=100` | Admin / Admin |
-| Equipos | listar, crear (workspace fijo después), editar, desactivar, asignar agentes | `core/application/admin/teams/*` + API directa | `/api/admin/teams[/{id}]`, `/agents`, `GET /api/admin/workspaces` (**Admin**), `GET /api/admin/agents?limit=100` | Supervisor+ / Supervisor |
+| Usuarios | listar, crear (roles + agente opcional), editar, desactivar, reactivar | `data-access/administracion/*-user.use-case.ts` | `/api/admin/users[/{id}]` | Admin / Admin |
+| Agentes | listar, crear, editar (incl. zona horaria con `Intl.supportedValuesOf('timeZone')`), desactivar, reactivar, vincular usuario | `data-access/administracion/*-agent.use-case.ts`, `manage-agent-user-linking.use-case.ts` | `/api/admin/agents[/{id}]`, `/link-user`, `GET /api/admin/users` | Supervisor+ / Supervisor (vincular: **Admin**) |
+| Workspaces | listar, crear, editar, desactivar, asignar agentes | `data-access/administracion/*-workspace.use-case.ts` + API directa | `/api/admin/workspaces[/{id}]`, `/agents`, `GET /api/admin/agents?limit=100` | Admin / Admin |
+| Equipos | listar, crear (workspace fijo después), editar, desactivar, asignar agentes | `data-access/administracion/*-team.use-case.ts` + API directa | `/api/admin/teams[/{id}]`, `/agents`, `GET /api/admin/workspaces` (**Admin**), `GET /api/admin/agents?limit=100` | Supervisor+ / Supervisor |
 
 Con más de 100 agentes, los modales no muestran el resto.
 
@@ -141,12 +141,12 @@ Con más de 100 agentes, los modales no muestran el resto.
 | Respuesta automática | `PUT /api/me/auto-reply` | |
 | Workspace | de `GET /api/me/settings` | Solo lectura; enlace roto "Gestionar horarios". |
 
-El store (`core/stores/settings.store.ts`) hace HTTP sin esperar el resultado: el mensaje de éxito aparece aunque el backend falle.
+El store (`data-access/agente/settings.store.ts`) hace HTTP sin esperar el resultado: el mensaje de éxito aparece aunque el backend falle.
 
 ## Disponibilidad y turnos (`/agents/:agentId/...`)
 
 - No existe un interruptor de disponibilidad en la UI.
-- `core/services/agent.service.ts:47-108` llama `${apiUrl}/agents/{id}/…` **sin `/api`**: esas URLs no existen y además el interceptor no agrega el token.
+- `data-access/disponibilidad/agent.service.ts:47-108` llama `${apiUrl}/agents/{id}/…` **sin `/api`**: esas URLs no existen y además el interceptor no agrega el token.
 - Las páginas ignoran `:agentId` y leen `AgentStore.currentAgent()`, que nadie asigna (siempre `null`). `AgentStore.loadShifts()` no hace nada.
 - Resultado: ambas páginas no funcionan. Los turnos solo se gestionan desde `/settings`.
 
@@ -178,14 +178,14 @@ Limitaciones: detección de huecos desactivada (`:282-286`); `resyncAllTickets()
 
 | Regla | Ubicación | ¿Duplica o contradice al backend? |
 |---|---|---|
-| Mensaje "sistema" si es entrante y el texto está entre `[` y `]` | `features/inbox/components/message-bubble/message-bubble.component.ts:44` | **Inventada**; ignora `sender_type`. Un cliente que escribe `[hola]` se ve como sistema; las auto-respuestas se ven como del agente. |
-| Remitente: entrante = cliente, resto = agente | `core/utils/message-mapper.util.ts:33` | Ignora `sender_type` y `sender_agent_id`. |
+| Mensaje "sistema" si es entrante y el texto está entre `[` y `]` | `features/bandeja/ui/message-bubble/message-bubble.component.ts:44` | **Inventada**; ignora `sender_type`. Un cliente que escribe `[hola]` se ve como sistema; las auto-respuestas se ven como del agente. |
+| Remitente: entrante = cliente, resto = agente | `data-access/conversacion/message-mapper.util.ts:33` | Ignora `sender_type` y `sender_agent_id`. |
 | Filtros Míos / Sin asignar / Todos | `ticket.store.ts:192-213` | Duplica filtros que el backend tiene (`filter`, `agent_id`). |
 | `new → active` al asignar | `ticket.store.ts:163-168` | Duplica R-T4. |
 | FSM de tickets | `status-actions.component.ts:21-27` | Componente sin uso. |
 | Ventana de 24 h | `composer.component.ts:7, 70-76` | Duplica R-W1 con el reloj del navegador; el backend manda. |
 | Quién puede asignar; no asignarse a uno mismo; estados asignables; agentes inactivos no elegibles | `ticket-list.component.ts:130-135, 219-236`; `ticket-card.component.ts:51-59, 142-146` | Duplica el voter y el guard "Activo"; "no asignarse a uno mismo" solo existe aquí. |
-| Validación de archivos | `message-sender.service.ts:48-53, 226-252` | Duplica `MediaValidator`; los límites pueden divergir. |
+| Validación de archivos | `message-sender.service.ts:49-54, 227-253` | Duplica `MediaValidator`; los límites pueden divergir. |
 | Roles por defecto `ROLE_AGENT` | `create-user.use-case.ts:66`, `update-user.use-case.ts:49` | Solo frontend. |
 | `loadPercentage`, nombres `Agent {id}` | `get-reports-dashboard.use-case.ts:158-162` | **Inventados.** |
 | Abiertos / cerrados agregados | `get-reports-dashboard.use-case.ts:148-151` | Coincide con el backend. |
@@ -211,17 +211,17 @@ El código sin uso listado aquí se borró en la fase 1 de la limpieza (ver `odd
 
 | Síntoma | Primer lugar |
 |---|---|
-| No puedo iniciar sesión / me expulsa | `core/stores/auth.store.ts`, `core/auth/auth.interceptor.ts` |
-| Faltan tickets | `core/api/ticket-api.service.ts:20` (sin `limit`), `ticket.store.ts:192` |
+| No puedo iniciar sesión / me expulsa | `core/auth/auth.store.ts`, `core/auth/auth.interceptor.ts` |
+| Faltan tickets | `data-access/ticket/ticket-api.service.ts:20` (sin `limit`), `ticket.store.ts:192` |
 | Badge de no leídos incorrecto | `ticket.store.ts:95-110, 173-186`, `conversation.component.ts:193-206` |
 | No llegan mensajes en tiempo real | `core/realtime/mercure.service.ts`, `conversation.store.ts:65-96` |
 | Mensaje duplicado en pantalla | `conversation.store.ts:76-82, 176-199` |
-| El **cliente** recibe un mensaje repetido | Causa en el backend: `apps/api/src/Controller/ProviderProxyController.php:97-155` envía a WhatsApp aunque el mensaje sea `duplicate_skipped`, y `message-sender.service.ts:71-74` reintenta el POST. Ver [04 § F2](04-flujos.md#f2-respuesta-del-agente). |
-| Mensaje fallido no se reintenta | `conversation.component.ts:279-284` vs `message-sender.service.ts:184-212` |
+| El **cliente** recibe un mensaje repetido | Causa en el backend: `apps/api/src/Controller/ProviderProxyController.php:97-155` envía a WhatsApp aunque el mensaje sea `duplicate_skipped`, y `message-sender.service.ts:72-75` reintenta el POST. Ver [04 § F2](04-flujos.md#f2-respuesta-del-agente). |
+| Mensaje fallido no se reintenta | `conversation.component.ts:279-284` vs `message-sender.service.ts:185-213` |
 | No puedo asignar | `ticket-list.component.ts:219-277`, `ticket-card.component.ts`, roster `available-agents` |
-| "Resolver" da error | `conversation.component.ts:293-320`, `core/api/workflow-api.service.ts:32-37` |
+| "Resolver" da error | `conversation.component.ts:293-320`, `data-access/ticket/workflow-api.service.ts:32-37` |
 | Mensaje del cliente se ve como "sistema" | `message-bubble.component.ts:44` |
 | No se puede escribir al cliente | `composer.component.ts:70-76` (ventana 24 h) |
 | Informes en cero | `get-reports-dashboard.use-case.ts` (errores degradados a 0) |
 | Supervisor no puede crear equipos / vincular usuarios | `teams-page.component.ts:88-95`, `agents-page.component.html:67-71` |
-| Horarios / disponibilidad | `/settings` funciona; `features/agents/*` y `core/services/agent.service.ts` no |
+| Horarios / disponibilidad | `/settings` funciona; `features/disponibilidad/*` y `data-access/disponibilidad/agent.service.ts` no |
