@@ -1,7 +1,7 @@
 # Backend cleanup (apps/api)
 
 Objective: regain control of the backend. Make it minimal, with an honest architecture and written development rules, and add no new features.
-Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `test` at `b543593`). Delivery: one PR per phase; push, PR and merge are user decisions. Test runner: PHPUnit (see `AGENTS.md` § Testing).
+Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `test` at `b543593`). Delivery: one PR per phase into the integration branch `test-refactor` (created from `test` at `b543593`; `test` keeps the working app and is not merged into); push, PR and merge are user decisions. Test runner: PHPUnit (see `AGENTS.md` § Testing).
 
 ## Specs
 
@@ -39,6 +39,13 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T2 | S2, S3, S4 | inline | done | `0150477` |
 | T3 | S6 | inline | done | `1afba20`. Fixed groups A–E and K, plus a leaking concurrency fixture; deleted groups I and J (3 tests). 46 → 6 stable failures |
 | T4 | S6, S7 | inline | done | Baseline below; `00` and `AGENTS.md` updated (T4 commit) |
+
+| T5 | S1 | inline | done | Phase 1, block 1: unreferenced classes and methods |
+| T6 | S1 | inline | done | Phase 1, block 2: dead code exercised only by tests (tests removed or retargeted) |
+| T7 | S1 | inline | done | Phase 1, block 3: inert `ActiveUserListener` and the unreachable `'supersecret'` JWT fallback |
+| T8 | S1 | inline | done | Phase 1, block 4: obsolete root tooling and `bin/outbox-direct.php` |
+| T9 | S1, S7 | inline | done | Phase 1: docs in `02_sistema-actual` updated for the deletions |
+| T10 | S1 | inline | done | Phase 1 items that change a contract or the environment (see L9): L11–L16 |
 
 ### Baseline of failing tests (phase 0, after `1afba20`)
 
@@ -91,3 +98,42 @@ Later phases, each with its own branch and task list when it starts:
   - Routes are switched to attributes as the single source: `routes.yaml` is already 466 lines with 98 routes, and Symfony 7.4 `resource: routing.controllers` loads every controller.
   - The existing 94 attributes are stale, so phase 1 does not touch them. Phase 2 regenerates them from the YAML and diffs `debug:router`.
   - User: "si, ajustalo con un commit más".
+- **L8 (2026-10-13), phase 1 start:**
+  - User: "ya revisé, pusheá y arrancá la fase 1". Pushed `chore/limpieza-backend-fase-0` (4 commits up to `4d6a972`).
+  - Branch `chore/limpieza-backend-fase-1` stacked on it, because phase 0 is not merged into `test` yet.
+  - Phase 1 gates: the failing-names baseline, plus `debug:router` identical to the 91-route snapshot. Deleting dead code must not add or remove routes.
+- **L9 (2026-10-13), phase 1 evidence:**
+  - A read-only explorer verified 23 candidates.
+  - Parent spot check: the User, Workspace and Outbox repositories have 0 references, and their entities declare no `repositoryClass`.
+  - After each block: `lint:container` OK and `debug:router` identical. After block 3, the `publisher` container was restarted and runs clean.
+  - Finding: inactive users ARE rejected with a valid JWT, by `UserChecker::checkPostAuth()` (`AuthControllerTest::testDeactivatedUserGets403OnAuthenticatedRequest` passes). The explorer's "A5 gap" warning was wrong; the old docblock was what was misleading.
+  - The `TicketVoter` docblock said VIEW/EDIT were "kept intentionally — do not remove". They were removed anyway under the minimalism rule (reserved for the future, no current use). This is flagged to the user.
+  - Kept, with live wiring: `DefaultEventCollector`, `AddTagToTicketUseCase` (used by `KeywordTaggingRule`), `AutoAssignTicketUseCase::executeInTransaction()` (used by the listener).
+  - `config/packages/test.yaml` loads in ALL environments: it supplies the `MERCURE_JWT_SECRET` parameter that `MercureJwtService` reads. Do not delete it.
+  - `OutboxPublisherService` publishes to a hardcoded Mercure URL and ignores `MERCURE_URL`.
+  - **Needs user decision (T10)**, because each changes a contract or the environment:
+    1. `OutboxPublishCommand --status`: read and ignored, but passed by `docker-compose.yml` and the systemd unit.
+    2. `inbiox-outbox-publisher.service`: an alternative deploy of the publisher; which one runs in each environment is unknown.
+    3. `symfony/mercure-bundle`: configured, no service used (dependency removal).
+    4. `league/flysystem-aws-s3-v3`: unused after `FlysystemFactory` was deleted (dependency removal).
+    5. docker `redis` and `mailhog`: unused by the app; `php` depends on `redis`.
+    6. env vars `MEDIA_ENABLED` and `JWT_COOKIE_NAME`: never read, but they live in `.env*` files, which Claude must not read.
+- **L10 (2026-10-14), phase 1 review:** RDD assess high (`hot_path`); the user granted review with lenses risk + reliability. Result: approved, acknowledged (lineage `review-3f503f4a969f9e93`, authority burned). The reviewed boundary advances to `4f28857`. Phase 1 is still unpushed; push is the user's decision.
+- **L11 (2026-10-14), T10 item 1:**
+  - User rule: "siempre mirar dos veces antes de eliminar codigo que se considere muerto, ya paso en el front que casi borran codigo vivo pensando que era muerto." Added to `AGENTS.md` § Development Rules.
+  - Re-verified: `--status` was only echoed. `publishPending()` takes no argument and hardcodes `status = 'pending'`. The only callers were `docker-compose.yml` and `inbiox-outbox-publisher.service`, both passing the default.
+  - User: "si, agregala y borrá el --status". Removed the option and updated both callers and docs 02/08.
+  - Checks: the command runs; `--status` now fails with "option does not exist"; the publisher was recreated and runs clean; `lint:container` OK; full suite 692 tests, exactly the 6 baseline failures, no flake.
+- **L12 (2026-10-14), T10 item 2:** the unit is installed on the dev machine but disabled and inactive; nothing in the repo references it except docs. User: "no, solo docker. borralo". Deleted `inbiox-outbox-publisher.service` and updated docs README/02/08. P-9 was rewritten, not removed, because the publisher still reads without row locks. The user must remove the installed copy (`/etc/systemd/system/`), which needs sudo.
+- **L13 (2026-10-14), T10 item 3:** the user asked "pero mercure no lo usamos para notificaciones en tiempo real y SSE?". Answer: the Mercure hub (docker `mercure`) stays; only the PHP bundle goes. The publisher POSTs with `curl`, and `MercureJwtService` signs with `lcobucci/jwt`. User: "si, sacalo".
+  - `composer remove symfony/mercure-bundle` also removed `symfony/mercure`, `symfony/web-link`, `psr/link`, `symfony/http-client` and its contracts. `cache:clear` then failed: `GraphClient` needs `HttpClientInterface`, which only arrived transitively. Fixed by requiring `symfony/http-client:7.4.*` explicitly. This is the case the "check twice" rule warns about.
+  - Flex also unconfigured the recipe: it deleted `config/packages/mercure.yaml`, removed the bundle from `bundles.php` (reformatted), and removed the Mercure blocks from `apps/api/compose.yaml` and `compose.override.yaml`. It also edited `apps/api/.env` (gitignored, mtime changed; not read by Claude).
+  - Checks: `lint:container` OK. A real outbox event (`ticket.read`, test row deleted afterwards) reached the hub with HTTP 200 and status `published`. Full suite: 692 tests, exactly the 6 baseline failures.
+- **L14 (2026-10-14), T10 item 4:** re-verified that nothing in src/config/tests uses Flysystem (all `League\` hits are `league/csv`). `aws/aws-sdk-php` is required directly, not only through Flysystem. User: "ok". `composer remove league/flysystem-aws-s3-v3` removed it plus `league/flysystem`, `league/flysystem-local` and `league/mime-type-detection`. There was no recipe, so no `.env` was touched. Checks: `lint:container` OK; full suite 692 tests, exactly the 6 baseline failures.
+- **L15 (2026-10-14), T10 item 5:** the user asked "redis estaba pensado para cache y mailer para enviar mails eventualmente aunque ahora no lo hagamos, conviene quitarlos y agregarlos de nuevo cuando realmente los usemos?". Recommendation: remove them under the minimalism rule; re-adding is cheap, and the container alone is not the real cost. The intent is recorded in the docs as planned. User: "si, avanzá".
+  - Re-verified: no Redis usage (only the commented recipe lines in `cache.yaml`); no mailer package or config.
+  - Removed both services and the `php` → `redis` dependency from `docker-compose.yml`, and the commented Redis block from `cache.yaml`. Updated `AGENTS.md` and docs 02/08 to say Redis (cache) and a mailer are planned.
+  - `docker compose up -d --remove-orphans` removed both containers; no others changed.
+  - Checks: `docker compose config` OK; `lint:container` OK; full suite 692 tests, exactly the 6 baseline failures.
+- **L16 (2026-10-14), T10 item 6:** re-verified that no code or config reads `MEDIA_ENABLED` or `JWT_COOKIE_NAME`. The refresh cookie name is hardcoded as `token_parameter_name: inbiox_refresh` in `gesdinet_jwt_refresh_token.yaml`, so the `api-contracts.md` row saying it was required was wrong. Claude must not read `.env*`, so the user removed the lines by hand (`.env` lines 18 and 30, `.env.example` 32, `.env.test` 10); a first `sd` attempt matched nothing, for an unknown reason. Docs 02/08/api-contracts updated. Checks: `lint:container` OK; full suite 692 tests, exactly the 6 baseline failures.
+- **L17 (2026-10-14), integration branch:** user: "no vamos a mergear a test, ahi vive la app funcionando (con errores pero anda). Podemos crear una rama nueva test-refactor o algo asi a donde ir mergeando lo que estamos haciendo". Created and pushed `test-refactor` from `origin/test` (`b543593`). Phase PRs target it in order (0, then 1); the frontend phases also target it. If `test` gets fixes, merge `test` into `test-refactor`.

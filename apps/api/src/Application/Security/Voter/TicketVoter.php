@@ -27,15 +27,10 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
  * (e.g. reassigning/taking over a ticket, or resolving/closing it). It does
  * NOT reflect a VIEW restriction.
  *
- * The VIEW and EDIT constants are defined for future use but are currently
- * never checked by any controller (reserved/dead code, kept intentionally —
- * do not remove). If they are wired up in the future, revisit the logic
- * below since it was written under the (incorrect, for VIEW) assumption
- * that unassigned/other-agent tickets should be hidden.
+ * There is deliberately no VIEW/EDIT attribute: visibility is unrestricted.
+ * If one is ever added, do not reuse the "own tickets only" logic below.
  *
- * Real attribute matrix (as actually enforced today):
- *   - VIEW / EDIT: not checked by any controller — reserved for future use,
- *     currently a no-op if ever called.
+ * Attribute matrix:
  *   - ASSIGN: invoked by TicketController::assign(). Rejects with a 409
  *     `StateConflictException` when the ticket is already resolved/closed,
  *     for every role, before the role checks below even run.
@@ -58,8 +53,6 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
  */
 final class TicketVoter extends Voter
 {
-    public const VIEW = 'VIEW';
-    public const EDIT = 'EDIT';
     public const ASSIGN = 'ASSIGN';
     public const CLOSE = 'CLOSE';
 
@@ -69,7 +62,7 @@ final class TicketVoter extends Voter
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        return \in_array($attribute, [self::VIEW, self::EDIT, self::ASSIGN, self::CLOSE], true)
+        return \in_array($attribute, [self::ASSIGN, self::CLOSE], true)
             && $subject instanceof Ticket;
     }
 

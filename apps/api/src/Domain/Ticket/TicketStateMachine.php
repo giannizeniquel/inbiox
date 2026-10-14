@@ -91,17 +91,6 @@ class TicketStateMachine
     }
 
     /**
-     * Get valid target statuses for a given status
-     *
-     * @param string $currentStatus
-     * @return array<string>
-     */
-    public function getValidTransitions(string $currentStatus): array
-    {
-        return array_keys(self::TRANSITIONS[$currentStatus] ?? []);
-    }
-
-    /**
      * Check if status is terminal (no more transitions)
      *
      * @param string $status
@@ -110,21 +99,6 @@ class TicketStateMachine
     public function isTerminal(string $status): bool
     {
         return $status === TicketStatus::CLOSED->value;
-    }
-
-    /**
-     * Check if status allows SLA (active tracking)
-     *
-     * @param string $status
-     * @return bool
-     */
-    public function isActiveForSLA(string $status): bool
-    {
-        return in_array($status, [
-            TicketStatus::NEW->value,
-            TicketStatus::ACTIVE->value,
-            TicketStatus::WAITING->value,
-        ], true);
     }
 }
 

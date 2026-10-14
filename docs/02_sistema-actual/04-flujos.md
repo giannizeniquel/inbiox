@@ -188,7 +188,7 @@ stateDiagram-v2
 | 4 | El controlador clasifica el cierre (`owner`/`override`/`unowned`) y guarda un `TicketEvent` con `source = u:{userId}`. Si falla, solo se loguea. | `Domain/Event/ClosureAuditClassifier.php:26-39`; `TicketWorkflowController.php:193-213` | R-T15 |
 | 5 | **No se escribe nada en el outbox**: los demás navegadores no se enteran hasta recargar. | — | P-5 |
 
-**Quién más cambia `tickets.status`** (fuera de este flujo): `AssignmentService` (`new → active` al asignar), `HandleInboundMessageUseCase` (`waiting → active`), `HandleOutboundMessageUseCase` (`new → active`, `active → waiting`), `AutoReopenRule` (`resolved → waiting`), `closeDueToWindowExpiry` y `reopenDueToInboundMessage` (F8), `DebugController::status` (dev). `AutoCloseTicketUseCase` y `AutoCloseRule` también lo harían, pero son inalcanzables.
+**Quién más cambia `tickets.status`** (fuera de este flujo): `AssignmentService` (`new → active` al asignar), `HandleInboundMessageUseCase` (`waiting → active`), `HandleOutboundMessageUseCase` (`new → active`, `active → waiting`), `AutoReopenRule` (`resolved → waiting`), `closeDueToWindowExpiry` y `reopenDueToInboundMessage` (F8), `DebugController::status` (dev).
 
 **Si falla, revisar:**
 1. 403 → voter: `TicketVoter.php` (¿el usuario tiene agente vinculado? ¿es el dueño?).
@@ -236,7 +236,7 @@ stateDiagram-v2
 | 7 | Vía endpoint escribe eventos; vía mensaje entrante los deja en el colector (se publican sin `assignee_id`, P-4). | `:216-252` | |
 
 - **Razones de no asignación:** `ticket_not_found`, `already_assigned`, `no_agents_available`, `all_agents_at_capacity`.
-- **No hay rebalanceo**: si nadie estaba disponible, el ticket queda sin dueño hasta que el cliente vuelva a escribir o alguien lo asigne. `RebalanceUnassignedTicketsUseCase` existe pero no tiene llamadores. Regla no confirmada.
+- **No hay rebalanceo**: si nadie estaba disponible, el ticket queda sin dueño hasta que el cliente vuelva a escribir o alguien lo asigne. Existía `RebalanceUnassignedTicketsUseCase`, sin llamadores; se borró en la fase 1. Regla no confirmada.
 
 **Si falla, revisar:** `AutoAssignTicketUseCase.php` → `AgentAvailabilityService::listAvailableAgents()` → turnos y zona horaria de los agentes (`agent_shifts`, `agents.timezone`) → `max_active_tickets`.
 
@@ -299,7 +299,7 @@ stateDiagram-v2
 |---|---|---|---|
 | `Domain/Rule/KeywordTaggingRule.php` | `inbound` | Si el texto contiene "error" (subcadena) → tag `error`. | **Sí** (demo hardcodeada). |
 | `Domain/Rule/AutoReopenRule.php` | `inbound` | `resolved → waiting` + `TicketEvent(auto_reopened)`. | **Sí.** |
-| `Domain/Rule/AutoCloseRule.php` | `manual` | `resolved → closed` si `updated_at` ≥ 24 h. | **No** (su disparador, `AutoCloseController`, no tiene ruta). |
+| ~~`Domain/Rule/AutoCloseRule.php`~~ | `manual` | `resolved → closed` si `updated_at` ≥ 24 h. | **Borrado en la fase 1 de la limpieza.** Nunca se disparaba. |
 
 **Auto-respuesta** (`Application/Service/AutoReplyService.php`, post-commit del mensaje entrante):
 
@@ -316,7 +316,7 @@ stateDiagram-v2
 ## F10. Etiquetas
 
 - **Productor único hoy:** `KeywordTaggingRule` (tag `error`).
-- `AddTagToTicketUseCase` / `RemoveTagFromTicketUseCase` existen (normalizan a minúsculas, idempotentes, auditan en `ticket_events`), pero **`TagController` no tiene ruta**: no hay forma HTTP de etiquetar a mano.
+- `AddTagToTicketUseCase` existe (normaliza a minúsculas, es idempotente, audita en `ticket_events`) y solo lo usa `KeywordTaggingRule`. **No hay forma HTTP de etiquetar a mano**: `TagController` (sin ruta) y `RemoveTagFromTicketUseCase` se borraron en la fase 1.
 - **Filtro:** `GET /api/tickets?tag=a,b` (AND, máximo 5) en `Application/Query/TicketFilterBuilder.php:77-85`, y columna `tags` del export CSV. **Sin UI.**
 
 **Si falla, revisar:** `config/routes.yaml` (no hay ruta) → `TicketFilterBuilder.php` → `ticket_tags`.

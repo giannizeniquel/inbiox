@@ -142,10 +142,10 @@ Inbiox
 | Funcionalidad | Qué problema resuelve | Rol | Estado | Flujo · Prueba |
 |---|---|---|---|---|
 | Etiqueta automática "error" | Demo de etiquetado por palabra clave. | Sistema | **Funciona** (hardcodeada: también etiqueta "errores", "terror"). | [F9](04-flujos.md#f9-reglas-automáticas-y-auto-respuesta) |
-| Agregar/quitar etiquetas a mano | Clasificar casos. | — | **Inalcanzable** (`TagController` sin ruta). | [F10](04-flujos.md#f10-etiquetas) |
+| Agregar/quitar etiquetas a mano | Clasificar casos. | — | **No existe** (`TagController`, sin ruta, se borró en la fase 1). | [F10](04-flujos.md#f10-etiquetas) |
 | Filtro por etiqueta | Encontrar casos por etiqueta. | Agente+ | **Solo backend sin UI** · **No verificado manualmente.** | [F10](04-flujos.md#f10-etiquetas) · [P-14](09-guia-de-pruebas-manuales.md#p-14-filtro-por-etiqueta-solo-api) |
-| Cierre automático de resueltos por inactividad (`AutoCloseRule`, `AutoCloseTicketUseCase`) | — | — | **Inalcanzable** (sin ruta / sin llamador). | [08](08-riesgos-contradicciones-y-complejidad.md#código-muerto-inalcanzable-o-de-propósito-no-claro) |
-| Rebalanceo de no asignados | — | — | **Inalcanzable** (solo registrado para tests). | [08](08-riesgos-contradicciones-y-complejidad.md#código-muerto-inalcanzable-o-de-propósito-no-claro) |
+| Cierre automático de resueltos por inactividad | — | — | **No existe** (`AutoCloseRule` y `AutoCloseTicketUseCase`, inalcanzables, se borraron en la fase 1). | [08](08-riesgos-contradicciones-y-complejidad.md#código-muerto-inalcanzable-o-de-propósito-no-claro) |
+| Rebalanceo de no asignados | — | — | **No existe** (el caso de uso, solo registrado para tests, se borró en la fase 1). | [08](08-riesgos-contradicciones-y-complejidad.md#código-muerto-inalcanzable-o-de-propósito-no-claro) |
 
 ## Contactos
 

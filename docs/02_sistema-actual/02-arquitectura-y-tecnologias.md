@@ -50,14 +50,13 @@ flowchart LR
 | **Mercure** (`dunglas/mercure`) + SSE | Tiempo real hacia el navegador. | Especificación de producto §7 ("Mercure / WebSockets") y `0-documento-tecnico.md` §13. |
 | **Patrón outbox transaccional** | Garantizar que un evento no se pierda si la operación se confirma. | `docs/04_sprints/sprint_9B (Realtime con Mercure).md`: "Outbox pattern is MANDATORY (no direct publish)", "Outbox INSERT MUST be in SAME transaction", objetivo "No lost events". **Hoy no se cumple del todo**: ver [problemas del pipeline](#problemas-conocidos-del-pipeline). |
 | `lcobucci/jwt` | Firmar/verificar los JWT de Mercure (HS256). | **Justificación no documentada.** |
-| `symfony/mercure-bundle` | Configurado (`config/packages/mercure.yaml`) pero **sin uso**: el publicador hace `curl` directo. | — |
+| `symfony/http-client` | Cliente HTTP de `GraphClient` (WhatsApp). Hasta la fase 1 llegaba solo como dependencia de `symfony/mercure-bundle` (sin uso, se borró); ahora está declarado. | — |
 | **Angular 21** (standalone + signals), RxJS 7.8, Angular CDK (scroll virtual) | Aplicación web. | Especificación de producto §7. Uso de signals y CDK: **Justificación no documentada.** |
 | **WhatsApp Cloud API** (Graph API v25.0) | Canal de mensajería. | Producto: "atención principalmente sobre WhatsApp" (`retomar-proyecto-inbiox.md`). |
 | **S3 / MinIO** (`aws/aws-sdk-php`) | Guardar adjuntos y servirlos con URL prefirmada. | Especificación de producto §7: "AWS (objetivo)". MinIO como sustituto local: **Justificación no documentada.** |
-| `league/flysystem-aws-s3-v3` | Instalado; `Infrastructure/Storage/FlysystemFactory.php` **no se usa**. | — |
 | `league/csv` | Export CSV en streaming con protección anti CSV-injection. | Spec `openspec/specs/reports-export`. |
 | **Docker Compose** + nginx | Entorno local. No hay manifiestos de producción en el repo. | **Justificación no documentada.** |
-| Redis, MailHog | Servicios en `docker-compose.yml` **sin uso** por la aplicación. | — |
+| Redis, MailHog | Se borraron de `docker-compose.yml` en la fase 1 porque la app no los usaba. Quedan **previstos**: Redis para cache y un mailer para enviar mails; se agregan cuando haya un caso de uso real. | — |
 | PHPUnit 11 / Karma + Jasmine | Tests backend / frontend. | — |
 | Contenedor/presentacional, casos de uso, stores (frontend) | Organización del código Angular. | Comentarios en el código (p. ej. `features/inbox/components/ticket-participation/ticket-participation.component.ts:6-14`). Aplicado de forma parcial. |
 | "Bounded contexts" y WhatsApp como adaptador de canal | Mantener el motor (asignación, capacidad, disponibilidad) independiente de WhatsApp. | `docs/03_architecture/ADR-004-platform-ready-bounded-contexts.md` (Accepted, 2026-08-11). Parcialmente aplicado (ver [violaciones](#separación-de-responsabilidades-reglas-del-proyecto-y-dónde-se-violan-hoy)). |
@@ -81,7 +80,7 @@ Todo en `apps/api/src/`.
 | `Domain/` | **Entidades Doctrine**, enums, value objects, interfaces de repositorio, reglas, eventos de dominio, políticas. | `Ticket/Ticket.php`, `Ticket/TicketStateMachine.php`, `Ticket/ConversationWindowPolicy.php`, `Rule/*` |
 | `Repository/` | Implementaciones Doctrine de los repositorios (14). | `TicketRepository`, `ReportingRepository` |
 | `Infrastructure/Storage/` | Única subcarpeta de infraestructura: media en S3. | `MediaStorageService`, `MediaValidator`, `MediaDownloadService` |
-| `EventListener/` | Listeners de Symfony. | `TicketAutoAssignmentRequestedListener`, `AuthenticationSuccessListener`, `ActiveUserListener` (**no hace nada**: corre antes del firewall) |
+| `EventListener/` | Listeners de Symfony. | `TicketAutoAssignmentRequestedListener`, `AuthenticationSuccessListener` |
 | `Security/` | `UserChecker` (rechaza usuarios inactivos) y `Voter/MessageVoter`. | — |
 | `Command/` | Comandos de consola. | ver [procesos](#procesos-en-segundo-plano) |
 | `DependencyInjection/` | `RulePass`: registra **a mano** las 3 reglas automáticas. | — |
@@ -98,7 +97,7 @@ Todo en `apps/api/src/`.
 ### Ruteo: `routes.yaml` es la única fuente
 
 - `config/routes.yaml` define las **90 rutas** con `path`, `methods` y `controller`. No importa atributos (`config/routes/` solo tiene `framework.yaml` y `security.yaml`). Verificado con `debug:router`.
-- Los `#[Route]` de los controladores son **código muerto y engañoso**. Por eso `TagController` y `AutoCloseController`, que solo tienen atributos, son inalcanzables.
+- Los `#[Route]` de los controladores son **código muerto y engañoso**. Por eso `TagController` y `AutoCloseController`, que solo tenían atributos, eran inalcanzables (se borraron en la fase 1).
 - `src/Kernel.php` define un método `configure()` que `MicroKernelTrait` nunca llama (código muerto, propósito no confirmado).
 
 ## Frontend: capas y carpetas
@@ -130,9 +129,9 @@ Todo en `apps/web/src/app/`. Detalle por pantalla en [07-frontend.md](07-fronten
 | Refresh | `refresh_jwt` en `/api/auth/refresh` | Lee la cookie, rota el refresh token (un solo uso). |
 | Logout | `AuthController::logout` | Borra **todos** los refresh tokens del usuario. El access token sigue válido hasta 15 min (no hay lista negra). |
 | Rate limit de login | `security.yaml:40-42` | 5 intentos/minuto; estado en filesystem (por eso hay que limpiarlo antes de correr tests). |
-| Usuarios inactivos | `src/Security/UserChecker.php` | Los rechaza (también con JWT, aunque su comentario diga lo contrario). `ActiveUserListener` no aporta nada. |
+| Usuarios inactivos | `src/Security/UserChecker.php` | Los rechaza en `checkPostAuth()`, también con JWT. |
 | Jerarquía de roles | `security.yaml:2-4` | `ROLE_ADMIN` ⊃ `ROLE_SUPERVISOR` ⊃ `ROLE_AGENT`. En el frontend los roles **no** son jerárquicos (se compensa en `roleGuard`). |
-| Voters | `Application/Security/Voter/TicketVoter.php` (usado: `ASSIGN`, `CLOSE`), `AgentVoter.php` (**sin uso**), `ReportVoter.php` (**sin uso**, deliberado), `src/Security/Voter/MessageVoter.php` (solo URL de adjuntos) | Ver [06](06-api-y-permisos.md). |
+| Voters | `Application/Security/Voter/TicketVoter.php` (usado: `ASSIGN`, `CLOSE`), `src/Security/Voter/MessageVoter.php` (solo URL de adjuntos) | Ver [06](06-api-y-permisos.md). |
 | Scopes | `OwnershipScope` (siempre `null`: bandeja compartida, decisión Sprint 16) y `WorkspaceScope` (filtra por el `phone_number_id` del workspace activo; si no hay, **no filtra**) | El primero se reutiliza mal como autorización ([R3](00-estado-y-pendientes.md#r3-cualquier-agente-modifica-disponibilidad-y-turnos-de-cualquier-agente)). |
 | Usuario ↔ Agente | `Agent.user` (1:1 opcional) | Si un usuario sin agente envía un mensaje o cambia de workspace (admin/supervisor), **se le crea un agente** con nombre = email (`ProviderProxyController.php:206-226`, `MeController.php:374-388`). |
 
@@ -182,10 +181,10 @@ Deducidos de la lectura; confirmar con `SELECT event_type, status, COUNT(*) FROM
 | P-3 | El resync filtra por `aggregate_id` sin `aggregate_type` (mezcla eventos de agente y de ticket). Además es inalcanzable (401 del firewall). | `TicketEventsController.php:55-63` |
 | P-4 | En el mensaje entrante, la auto-asignación se publica como `ticket.status_changed` vacío, no como `ticket.assigned`. | `HandleInboundMessageUseCase.php:124-142` |
 | P-5 | Resolver, cerrar, transicionar y el cierre por ventana **no escriben nada** en el outbox. | `TransitionTicketStatusUseCase.php` (no tiene `EventCollector`) |
-| P-6 | `ConversationUpdatedEvent` existe en el contrato pero ningún código lo emite. (`ticket.read` sí se emite: lo inserta `InboxController::markRead` por SQL con el tipo ya en formato de contrato, que `RealtimeEventFactory::resolveEnum()` acepta.) | `InboxController.php:189-202`; `RealtimeEventFactory.php:42-53` |
+| P-6 | `ConversationUpdatedEvent` existía en el contrato sin que nadie lo emitiera; se borró en la fase 1 (el frontend todavía declara `conversation.updated`). (`ticket.read` sí se emite: lo inserta `InboxController::markRead` por SQL con el tipo ya en formato de contrato, que `RealtimeEventFactory::resolveEnum()` acepta.) | `InboxController.php:189-202`; `RealtimeEventFactory.php:42-53` |
 | P-7 | Plantillas y reaperturas por ventana no emiten eventos (la segunda es una limitación aceptada y documentada en `HandleInboundMessageUseCase.php:275-283`). | — |
 | P-8 | Topics `agent/{id}/availability`, `agent/{id}/shifts`, `agents`: se publican o conceden, pero el frontend no los escucha. | `MercureJwtService.php:28-32` |
-| P-9 | Dos publicadores posibles en paralelo (servicio docker `publisher` y la unidad systemd `inbiox-outbox-publisher.service` de la raíz) sin bloqueo de filas → eventos duplicados (el frontend deduplica por `eventId`). En la máquina de desarrollo la unidad systemd está instalada pero deshabilitada. | `OutboxPublisherService.php:64-77` |
+| P-9 | El publicador lee el outbox sin bloqueo de filas: si corren dos a la vez (por ejemplo el servicio docker `publisher` y `POST /admin/outbox/publish`), se duplican eventos (el frontend deduplica por `eventId`). La unidad systemd alternativa se borró en la fase 1; el publicador solo corre en docker. | `OutboxPublisherService.php:64-77` |
 | P-10 | Frontend: la detección de huecos está desactivada, `resyncAllTickets()` nunca se llama, si el stream cierra limpio no reconecta, tras 10 fallos deja de reintentar y el menú lateral sigue diciendo "Conectado". | `mercure.service.ts:110-113, 282-286, 403-424` |
 | P-11 | Seguridad: hub anónimo, eventos públicos, topic único ([R4](00-estado-y-pendientes.md#r4-tiempo-real-sin-aislamiento-entre-workspaces)). El secreto JWT efectivo sale de `config/packages/test.yaml`, cargado en todos los entornos; `MERCURE_URL`, `MERCURE_PUBLIC_URL` y `MERCURE_JWT_SECRET` del `.env` no tienen efecto real (la URL del hub está fija en el constructor de `OutboxPublisherService`). | `OutboxPublisherService.php:26`; `MercureJwtService.php:198-201` |
 
@@ -195,7 +194,7 @@ Deducidos de la lectura; confirmar con `SELECT event_type, status, COUNT(*) FROM
 
 | Comando | Qué hace | Cómo corre |
 |---|---|---|
-| `app:outbox:publish` | Publica eventos pendientes en Mercure. La opción `--status` se lee pero se ignora. | Servicio docker `publisher`, bucle cada 2 s, `restart: always`. Alternativa manual: `POST /admin/outbox/publish` (admin). |
+| `app:outbox:publish` | Publica eventos pendientes en Mercure. No tiene opciones (`--status`, que se ignoraba, se borró en la fase 1). | Servicio docker `publisher`, bucle cada 2 s, `restart: always`. Alternativa manual: `POST /admin/outbox/publish` (admin). |
 | `app:outbox:dead-letter` | `list`, `retry <id>`, `purge [días]` de eventos fallidos. | Manual. |
 | `app:conversation-window:close-expired` | Cierra tickets con la ventana de 24 h vencida. Opciones `--dry-run`, `--limit=200`, `--safety-margin`. | Servicio docker `window-closer` (**profile opcional**), cada 900 s. El comentario del compose pide revisar antes con `--dry-run`. |
 | `app:seed-users` | Crea 2 admins, 2 supervisores y 6 agentes (`@inbiox.local`) repartidos en los dos primeros workspaces. Contraseña fija en `src/Command/SeedUsersCommand.php:31`. | Manual (dev). Requiere workspaces existentes. |
@@ -216,7 +215,6 @@ No hay cron ni Symfony Scheduler. El `Makefile` tiene un target `seed` que llama
 | `web` | `inbiox_web` | 4200 | `ng serve` con `proxy.conf.docker.json` | |
 | `minio` / `minio-init` | `inbiox_minio` | 9000, 9001 | S3 local y creación del bucket privado `inbiox-media` | Credenciales literales. |
 | `adminer` | `inbiox_adminer` | 8080 | UI de base de datos | Dev. |
-| `redis`, `mailhog` | — | 6379, 8025 | **Sin uso** por la app | |
 
 `infra/` solo tiene el `Dockerfile` de PHP, `uploads.ini` y la config de nginx. **No se sabe cómo se despliega a producción.**
 
@@ -238,8 +236,7 @@ Archivos: `apps/api/.env` (no versionado), `.env.dev` (**versionado, con credenc
 | `APP_SECRET`, `APP_ENV`, `DEFAULT_URI`, `CORS_ALLOW_ORIGIN`, `DATABASE_URL` | Framework | Sí (`APP_ENV` no está definida: el default es `dev`). |
 | `JWT_SECRET_KEY`, `JWT_PUBLIC_KEY`, `JWT_PASSPHRASE` | Claves RS256 de Lexik (`config/jwt/*.pem`, no versionadas) | Sí. |
 | `REFRESH_COOKIE_SECURE` | Flag `secure` de la cookie de refresh | Sí. |
-| `JWT_COOKIE_NAME`, `MEDIA_ENABLED` | — | **No se usan.** |
-| `MERCURE_URL`, `MERCURE_PUBLIC_URL`, `MERCURE_JWT_SECRET` | MercureBundle | **Sin efecto real.** |
+| `MERCURE_URL`, `MERCURE_PUBLIC_URL`, `MERCURE_JWT_SECRET` | Las leía MercureBundle, borrado en la fase 1 (Flex sacó su bloque de `apps/api/.env`; puede quedar en otros `.env*`). | **No se usan.** El secreto real es el parámetro de `config/packages/test.yaml`. |
 | `META_ACCESS_TOKEN`, `META_PHONE_NUMBER_ID`, `META_APP_SECRET`, `META_WEBHOOK_VERIFY_TOKEN` | WhatsApp | Sí. |
 | `S3_ENDPOINT`, `S3_PUBLIC_ENDPOINT`, `S3_REGION`, `S3_KEY`, `S3_SECRET`, `S3_BUCKET`, `MEDIA_URL_TTL` | Media | Sí. |
 | `CONVERSATION_WINDOW_SAFETY_MARGIN_MINUTES` | Margen de la ventana de 24 h (5 min) | Sí. |
@@ -275,7 +272,7 @@ Archivos: `apps/api/.env` (no versionado), `.env.dev` (**versionado, con credenc
 | # | Violación | Evidencia | Efecto observado |
 |---|---|---|---|
 | B1 | Controladores con lógica de negocio, SQL o `EntityManager` directo. | `InboxController::markRead` (escribe `last_read_at` e inserta en `outbox_events` por SQL); `MeController::listMyWorkspaces` (SQL embebido); `TicketController::setTeam`; `Admin/*Controller` (CRUD con EM); `ProviderProxyController` (crea agentes, persiste el mensaje de plantilla, llama a Graph); `TicketWorkflowController` (clasifica y guarda la auditoría). | La regla queda repartida; es difícil saber "dónde está" una operación. |
-| B2 | El dominio depende de aplicación e infraestructura. | `Domain/Rule/AutoReopenRule.php:12-13` y `AutoCloseRule.php:14-15` usan `TransitionTicketStatusUseCase` y el `EntityManager`. | Dirección de dependencias invertida. |
+| B2 | El dominio depende de aplicación e infraestructura. | `Domain/Rule/AutoReopenRule.php:12-13` usa `TransitionTicketStatusUseCase` y el `EntityManager`. | Dirección de dependencias invertida. |
 | B3 | Implementación concreta dentro de `Domain`. | `Domain/Agent/AgentShiftRepository.php` | Inconsistencia con `Repository/`. |
 | B4 | Interfaces de repositorio usadas a medias. | 8 interfaces en `Domain/*/…RepositoryInterface.php`; la mayoría de los casos de uso inyecta la clase concreta (p. ej. `HandleInboundMessageUseCase.php:16-19`). | Arquitectura hexagonal a medio aplicar. |
 | B5 | WhatsApp no está detrás de un puerto (contradice ADR-004). | `GraphClient` concreto inyectado en un controlador y en dos servicios. | Cambiar de proveedor implica tocar varios lugares. |

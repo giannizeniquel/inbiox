@@ -114,11 +114,6 @@ final readonly class RealtimeEventFactory
                 'failedReason' => $s['failed_reason'] ?? null,
                 'updatedAt'    => $s['occurred_at'] ?? '',
             ],
-            RealtimeEventType::ConversationUpdated => [
-                'conversationId' => (int) ($s['conversation_id'] ?? 0),
-                'ticketId'       => $ticketId,
-                'lastMessageAt'  => $s['last_message_at'] ?? null,
-            ],
             RealtimeEventType::TicketRead => [
                 'ticketId' => $ticketId,
             ],

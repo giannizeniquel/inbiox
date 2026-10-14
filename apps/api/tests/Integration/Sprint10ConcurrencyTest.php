@@ -308,46 +308,8 @@ class Sprint10ConcurrencyTest extends KernelTestCase
     }
 
     // ============================================
-    // Rebalance Safety
+    // Eligibility
     // ============================================
-
-    /**
-     * Rebalance only targets unassigned tickets — never touches resolved/closed.
-     */
-    public function testRebalanceSkipsResolvedAndClosed(): void
-    {
-        $this->seedAgents(2, 5);
-
-        // Create a mix: 3 unassigned (new), 1 unassigned resolved (should NOT be assigned)
-        $tickets = [];
-        $statusesToCreate = [
-            TicketStatus::NEW->value,
-            TicketStatus::NEW->value,
-            TicketStatus::NEW->value,
-            TicketStatus::RESOLVED->value,
-            TicketStatus::CLOSED->value,
-        ];
-
-        foreach ($statusesToCreate as $status) {
-            $ticket = new Ticket();
-            $ticket->setStatus($status);
-            $ticket->setCreatedAt(new \DateTimeImmutable());
-            $ticket->setUpdatedAt(new \DateTimeImmutable());
-            $this->em->persist($ticket);
-            $tickets[] = $ticket;
-        }
-        $this->em->flush();
-
-        // Run rebalance
-        $rebalanceUseCase = static::getContainer()->get(\App\Application\UseCase\RebalanceUnassignedTicketsUseCase::class);
-        $result = $rebalanceUseCase->execute();
-
-        // Only 3 new tickets should be attemptable (resolved/closed have assigned_agent_id = null
-        // but status = resolved/closed — rebalance excludes them by status)
-        $this->assertEquals(3, $result['attempted'], 'Should attempt 3 new tickets only');
-        $this->assertEquals(3, $result['assigned'], 'Should assign all 3 new tickets');
-        $this->assertEquals(0, $result['skipped']);
-    }
 
     /**
      * Override blocks eligibility even when agent is in-shift.

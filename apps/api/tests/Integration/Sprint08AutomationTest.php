@@ -6,7 +6,6 @@ use App\Domain\Tag\Tag;
 use App\Domain\Rule\RuleInterface;
 use App\Domain\Rule\RuleContext;
 use App\Domain\Rule\AutoReopenRule;
-use App\Domain\Rule\AutoCloseRule;
 use App\Domain\Rule\KeywordTaggingRule;
 use App\Application\UseCase\AddTagToTicketUseCase;
 use App\Application\UseCase\HandleInboundMessageUseCase;
@@ -28,7 +27,6 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
  * - AddTagToTicket idempotency
  * - RuleInterface contract
  * - AutoReopenRule (resolved → waiting, closed NOT reopened)
- * - AutoCloseRule (threshold check)
  * - KeywordTaggingRule (error keyword detection)
  * - RuleExecutorService (execution key prevents duplicates)
  * - HandleInboundMessageUseCase integration with rules
@@ -245,18 +243,6 @@ class Sprint08AutomationTest extends KernelTestCase
         $this->assertEquals('auto_reopen', $rule->getName());
     }
 
-    /**
-     * Test AutoCloseRule getName returns correct identifier.
-     */
-    public function testAutoCloseRuleGetName(): void
-    {
-        // Arrange
-        $rule = $this->createMockAutoCloseRule();
-
-        // Assert
-        $this->assertEquals('auto_close', $rule->getName());
-    }
-
     // ============================================
     // AUTO REOPEN RULE TESTS
     // ============================================
@@ -339,71 +325,6 @@ class Sprint08AutomationTest extends KernelTestCase
     // ============================================
     // AUTO CLOSE RULE TESTS
     // ============================================
-
-    /**
-     * Test AutoCloseRule supports resolved ticket with manual trigger after threshold.
-     * With >= logic: ticket is 48 hours old, threshold is 24 hours.
-     * 48 >= 24 = TRUE - ticket has been unresolved for at least the threshold hours.
-     */
-    public function testAutoCloseRuleSupportsResolvedTicketAfterThreshold(): void
-    {
-        // Arrange - create ticket with old updatedAt (past threshold)
-        $rule = $this->createMockAutoCloseRule(24);
-        $ticket = $this->createTestTicket(TicketStatus::RESOLVED->value);
-        $ticket->setUpdatedAt(new \DateTimeImmutable('-48 hours'));
-        $context = new RuleContext($ticket, null, 'manual');
-
-        // Assert - 48 hours old >= 24 hour threshold = TRUE
-        $this->assertTrue($rule->supports($context));
-    }
-
-    /**
-     * Test AutoCloseRule does NOT support before threshold.
-     * With >= logic: ticket is 12 hours old, threshold is 24 hours.
-     * 12 >= 24 = FALSE - ticket hasn't reached the threshold yet.
-     */
-    public function testAutoCloseRuleDoesNotSupportBeforeThreshold(): void
-    {
-        // Arrange - create ticket with recent updatedAt
-        $rule = $this->createMockAutoCloseRule(24);
-        $ticket = $this->createTestTicket(TicketStatus::RESOLVED->value);
-        $ticket->setUpdatedAt(new \DateTimeImmutable('-12 hours'));
-        $context = new RuleContext($ticket, null, 'manual');
-
-        // Assert - 12 hours old < 24 hour threshold = FALSE
-        $this->assertFalse($rule->supports($context));
-    }
-
-    /**
-     * Test AutoCloseRule does NOT support active tickets.
-     */
-    public function testAutoCloseRuleDoesNotSupportActiveTickets(): void
-    {
-        // Arrange
-        $rule = $this->createMockAutoCloseRule();
-        $ticket = $this->createTestTicket(TicketStatus::ACTIVE->value);
-        $context = new RuleContext($ticket, null, 'manual');
-
-        // Assert
-        $this->assertFalse($rule->supports($context));
-    }
-
-    /**
-     * Test AutoCloseRule threshold is configurable.
-     * With corrected logic: ticket must be at least threshold hours old to support.
-     * 36 hours < 48 hour threshold = should NOT support.
-     */
-    public function testAutoCloseRuleThresholdIsConfigurable(): void
-    {
-        // Arrange - 48 hour threshold, ticket is 36 hours old (should NOT pass)
-        $rule = $this->createMockAutoCloseRule(48);
-        $ticket = $this->createTestTicket(TicketStatus::RESOLVED->value);
-        $ticket->setUpdatedAt(new \DateTimeImmutable('-36 hours'));
-        $context = new RuleContext($ticket, null, 'manual');
-
-        // Assert - 36 hours is less than 48 hour threshold, so rule should NOT support
-        $this->assertFalse($rule->supports($context));
-    }
 
     // ============================================
     // KEYWORD TAGGING RULE TESTS
@@ -631,13 +552,5 @@ class Sprint08AutomationTest extends KernelTestCase
         $em = $this->createMock(EntityManagerInterface::class);
 
         return new AutoReopenRule($transitionUseCase, $em);
-    }
-
-    private function createMockAutoCloseRule(int $thresholdHours = 24): AutoCloseRule
-    {
-        $transitionUseCase = $this->createMock(\App\Application\UseCase\TransitionTicketStatusUseCase::class);
-        $em = $this->createMock(EntityManagerInterface::class);
-
-        return new AutoCloseRule($transitionUseCase, $em, $thresholdHours);
     }
 }

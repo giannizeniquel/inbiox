@@ -25,6 +25,7 @@ Full rules and glossary in `docs/arquitectura.md`. New code follows them; existi
   - Business vocabulary in Spanish; technical vocabulary in English (layer folders, technical suffixes, jargon like webhook/outbox/token). Framework contracts are never translated.
   - No accents or `ñ` in identifiers.
 - **Minimalism:** every class, layer, or dependency needs a concrete current use.
+- **Check twice before deleting "dead" code.** Before removing anything that looks unused, (1) search every reference, including config, docker, systemd, scripts, and the frontend, and (2) read the code that uses it to confirm what it really does. Live code has nearly been deleted this way before.
 
 ---
 
@@ -72,7 +73,7 @@ cd apps/web && ./node_modules/.bin/ng build --configuration production
 
 - **Location:** always work inside WSL2 (`/home/...`), never in `/mnt/c`.
 - **Setup:** see `docs/02_sistema-actual/09-guia-de-pruebas-manuales.md` section 1 (`docs/07_dev/setup_local.md` is a generic template and does not apply).
-- **Services (docker-compose):** `php`, `nginx` (API on :8000), `db` (MySQL), `mercure` (:3000), `publisher` (outbox → Mercure), `web` (`ng serve` on :4200), `minio`, `adminer`. `window-closer` (24 h window auto-close) only runs with `--profile window-closer`. `redis` and `mailhog` are not used by the app.
+- **Services (docker-compose):** `php`, `nginx` (API on :8000), `db` (MySQL), `mercure` (:3000), `publisher` (outbox → Mercure), `web` (`ng serve` on :4200), `minio`, `adminer`. `window-closer` (24 h window auto-close) only runs with `--profile window-closer`. Redis (cache) and a mailer are planned but not installed; add them when there is a real use case.
 - **Commands:** `make up`, `make bash`, `make migrate`. `make seed` calls a command that does not exist; seed users with `docker exec inbiox_php php bin/console app:seed-users`.
 
 ---

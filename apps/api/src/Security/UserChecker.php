@@ -12,9 +12,9 @@ use Symfony\Component\Security\Core\User\UserInterface;
 /**
  * Validates user account status on every authentication attempt.
  *
- * For json_login (login): called during credentials validation → 401 if inactive.
- * For JWT/refresh_jwt: NOT called (SelfValidatingPassport skips user checker),
- * so the ActiveUserListener handles inactive user rejection → 403.
+ * checkPostAuth() runs after every successful authentication (json_login and
+ * JWT alike), so an inactive user is rejected even with a still-valid token
+ * (covered by AuthControllerTest::testDeactivatedUserGets403OnAuthenticatedRequest).
  */
 final class UserChecker implements UserCheckerInterface
 {

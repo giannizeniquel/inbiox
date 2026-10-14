@@ -22,7 +22,7 @@ class OutboxPublisherService
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly RealtimeEventFactory $factory,
-        private readonly ?\App\Application\Service\MercureJwtService $jwtService = null,
+        private readonly MercureJwtService $jwtService,
         private readonly string $mercureUrl = 'http://mercure:80/.well-known/mercure'
     ) {}
 
@@ -215,25 +215,8 @@ class OutboxPublisherService
      */
     private function getJwtToken(): string
     {
-        // Generate a publisher token with wildcard publish permission
-        // Use agent ID 0 and empty ticket list for system publisher
-        if ($this->jwtService) {
-            return $this->jwtService->generateToken(0, ['*']);
-        }
-        
-        // Fallback: generate manually using the secret
-        $secret = getenv('MERCURE_JWT_SECRET') ?: 'supersecret';
-        $payload = base64_encode(json_encode([
-            'mercure' => ['publish' => ['*']],
-            'exp' => time() + 3600,
-        ]));
-        
-        // Simple JWT structure (not cryptographically valid but may work for testing)
-        $header = base64_encode(json_encode(['typ' => 'JWT', 'alg' => 'HS256']));
-        $signature = hash_hmac('sha256', "{$header}.{$payload}", $secret);
-        $signature = base64_encode(pack('H*', $signature));
-        
-        return "{$header}.{$payload}.{$signature}";
+        // Publisher token with wildcard publish permission (agent ID 0 = system publisher)
+        return $this->jwtService->generateToken(0, ['*']);
     }
 
     /**

@@ -227,4 +227,3 @@ Requires valid JWT (`IS_AUTHENTICATED_FULLY`).
 | `JWT_PUBLIC_KEY` | Lexik JWT public key path | Yes (PR2) |
 | `JWT_PASSPHRASE` | Key passphrase | Yes (PR2) |
 | `INITIAL_ADMIN_PASSWORD` | Admin seed password | Yes (migration fails without) |
-| `JWT_COOKIE_NAME` | Refresh cookie name | Yes (default: `inbiox_refresh`) |

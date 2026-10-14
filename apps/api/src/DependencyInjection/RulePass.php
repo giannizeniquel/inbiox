@@ -27,7 +27,6 @@ class RulePass implements CompilerPassInterface
 
         // Rule classes we know implement RuleInterface
         $knownRuleClasses = [
-            'App\Domain\Rule\AutoCloseRule',
             'App\Domain\Rule\AutoReopenRule',
             'App\Domain\Rule\KeywordTaggingRule',
         ];
