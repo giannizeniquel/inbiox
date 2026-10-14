@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy, input, inject, computed, signal, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { WorkspaceStore } from '../../core/stores/workspace.store';
+import { WorkspaceStore } from '../../data-access/administracion/workspace.store';
 
 @Component({
   selector: 'app-workspace-switcher',

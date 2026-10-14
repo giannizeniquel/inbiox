@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ThemeStore } from '../../core/stores/theme.store';
-import { AuthStore } from '../../core/stores/auth.store';
+import { ThemeStore } from '../../core/layout/theme.store';
+import { AuthStore } from '../../core/auth/auth.store';
 
 @Component({
   selector: 'app-sidebar-footer',

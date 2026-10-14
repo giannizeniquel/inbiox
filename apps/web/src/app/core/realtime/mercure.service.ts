@@ -1,9 +1,9 @@
 import { Injectable, signal, inject, NgZone } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { RealtimeEvent } from '../models/realtime-event.model';
+import { RealtimeEvent } from './realtime-event.model';
 import { environment } from '../../../environments/environment';
-import { ConnectionStore } from '../stores/connection.store';
-import { MetricsService } from '../metrics/metrics.service';
+import { ConnectionStore } from './connection.store';
+import { MetricsService } from './metrics.service';
 import { EventBusService } from './event-bus.service';
 
 /** Response shape from the resync endpoint */

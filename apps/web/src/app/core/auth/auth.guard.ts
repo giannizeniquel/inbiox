@@ -1,6 +1,6 @@
 import { inject } from '@angular/core';
 import { Router, CanActivateFn } from '@angular/router';
-import { AuthStore } from '../stores/auth.store';
+import { AuthStore } from './auth.store';
 
 /**
  * authGuard — redirects to /login if the user is not authenticated.

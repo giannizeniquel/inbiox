@@ -1,9 +1,9 @@
 import { Component, ChangeDetectionStrategy, input, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { ConnectionStore } from '../../core/stores/connection.store';
-import { AuthStore } from '../../core/stores/auth.store';
-import { TicketStore } from '../../core/stores/ticket.store';
+import { ConnectionStore } from '../../core/realtime/connection.store';
+import { AuthStore } from '../../core/auth/auth.store';
+import { TicketStore } from '../../data-access/ticket/ticket.store';
 import { WorkspaceSwitcherComponent } from './workspace-switcher.component';
 
 @Component({

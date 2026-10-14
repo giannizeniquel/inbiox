@@ -6,14 +6,14 @@ import { TopbarComponent } from './topbar/topbar.component';
 import { SidebarComponent } from './sidebar/sidebar.component';
 import { SidebarFooterComponent } from './sidebar/sidebar-footer.component';
 import { ConnectionBannerComponent } from './components/connection-banner.component';
-import { TicketListComponent } from '../features/inbox/containers/ticket-list/ticket-list.component';
-import { ConversationComponent } from '../features/inbox/containers/conversation/conversation.component';
-import { WorkspaceStore } from '../core/stores/workspace.store';
-import { TicketStore } from '../core/stores/ticket.store';
-import { ConversationStore } from '../core/stores/conversation.store';
-import { TicketApiService } from '../core/api/ticket-api.service';
-import { MessageApiService, GetMessagesResponse } from '../core/api/message-api.service';
-import { mapApiMessagesToCanonical } from '../core/utils/message-mapper.util';
+import { TicketListComponent } from '../features/bandeja/pages/ticket-list/ticket-list.component';
+import { ConversationComponent } from '../features/bandeja/pages/conversation/conversation.component';
+import { WorkspaceStore } from '../data-access/administracion/workspace.store';
+import { TicketStore } from '../data-access/ticket/ticket.store';
+import { ConversationStore } from '../data-access/conversacion/conversation.store';
+import { TicketApiService } from '../data-access/ticket/ticket-api.service';
+import { MessageApiService, GetMessagesResponse } from '../data-access/conversacion/message-api.service';
+import { mapApiMessagesToCanonical } from '../data-access/conversacion/message-mapper.util';
 
 @Component({
   selector: 'app-shell',

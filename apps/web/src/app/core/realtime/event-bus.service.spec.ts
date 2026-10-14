@@ -1,5 +1,5 @@
 import { EventBusService } from './event-bus.service';
-import { RealtimeEvent, RealtimeEventType } from '../models/realtime-event.model';
+import { RealtimeEvent, RealtimeEventType } from './realtime-event.model';
 
 describe('EventBusService', () => {
   let bus: EventBusService;

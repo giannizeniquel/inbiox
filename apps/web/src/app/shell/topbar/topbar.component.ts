@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy, output, signal, HostListener, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { AuthStore } from '../../core/stores/auth.store';
+import { AuthStore } from '../../core/auth/auth.store';
 
 @Component({
   selector: 'app-topbar',

@@ -3,11 +3,13 @@ import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptorsFromDi, withInterceptors } from '@angular/common/http';
 
 import { routes } from './app.routes';
-import { ProviderInterface, PROVIDER_INTERFACE, WhatsAppCloudProvider } from './core/providers';
-import { SendMessageUseCase, RetryMessageUseCase } from './core/application/messaging';
+import { ProviderInterface, PROVIDER_INTERFACE } from './data-access/conversacion/provider.interface';
+import { WhatsAppCloudProvider } from './data-access/conversacion/whatsapp-cloud.provider';
+import { SendMessageUseCase } from './data-access/conversacion/send-message.use-case';
+import { RetryMessageUseCase } from './data-access/conversacion/retry-message.use-case';
 import { HttpClient } from '@angular/common/http';
 import { authInterceptor } from './core/auth/auth.interceptor';
-import { AuthStore } from './core/stores/auth.store';
+import { AuthStore } from './core/auth/auth.store';
 
 // APP_INITIALIZER to resolve authentication state on startup.
 // 1. Tries to refresh the access token using the httpOnly cookie

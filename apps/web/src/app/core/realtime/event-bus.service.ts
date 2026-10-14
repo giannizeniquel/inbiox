@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Subject, Observable } from 'rxjs';
-import { RealtimeEvent } from '../models/realtime-event.model';
+import { RealtimeEvent } from './realtime-event.model';
 
 @Injectable({ providedIn: 'root' })
 export class EventBusService {
