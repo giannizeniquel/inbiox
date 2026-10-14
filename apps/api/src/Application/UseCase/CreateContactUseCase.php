@@ -4,7 +4,7 @@ namespace App\Application\UseCase;
 
 use App\Application\DTO\ContactDetailDTO;
 use App\Domain\Contact\Contact;
-use App\Domain\Contact\ContactRepositoryInterface;
+use App\Repository\ContactRepository;
 use App\Domain\Contact\PhoneNormalizer;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
@@ -13,7 +13,7 @@ class CreateContactUseCase
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
-        private ContactRepositoryInterface $contactRepository,
+        private ContactRepository $contactRepository,
     ) {}
 
     public function execute(array $data): ContactDetailDTO

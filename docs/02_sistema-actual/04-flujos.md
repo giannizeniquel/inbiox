@@ -361,7 +361,7 @@ El equipo **no participa en la asignación** (ni manual ni automática).
 
 Ver el diagrama y la tabla de archivos en [02 § Tiempo real](02-arquitectura-y-tecnologias.md#tiempo-real-outbox--publicador--mercure--sse). Resumen del recorrido:
 
-1. Un caso de uso recolecta eventos en `DefaultEventCollector` (en memoria).
+1. Un caso de uso recolecta eventos en `EventCollector` (en memoria).
 2. Tras el commit, su `persistEventsToOutbox()` escribe filas `pending` en `outbox_events` (topic `tickets`).
 3. El servicio `publisher` (`app:outbox:publish`, cada 2 s) toma hasta 100, arma el JSON con `RealtimeEventFactory` y hace `POST` al hub.
 4. El navegador recibe el evento por SSE (`core/realtime/mercure.service.ts`), lo deduplica por `eventId` y lo emite por `EventBusService`.

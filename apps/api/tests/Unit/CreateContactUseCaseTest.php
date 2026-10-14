@@ -7,7 +7,7 @@ namespace App\Tests\Unit;
 use App\Application\DTO\ContactDetailDTO;
 use App\Application\UseCase\CreateContactUseCase;
 use App\Domain\Contact\Contact;
-use App\Domain\Contact\ContactRepositoryInterface;
+use App\Repository\ContactRepository;
 use Doctrine\DBAL\Driver\Exception as DriverException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
@@ -26,13 +26,13 @@ use PHPUnit\Framework\TestCase;
 class CreateContactUseCaseTest extends TestCase
 {
     private EntityManagerInterface|MockObject $entityManager;
-    private ContactRepositoryInterface|MockObject $contactRepository;
+    private ContactRepository|MockObject $contactRepository;
     private CreateContactUseCase $useCase;
 
     protected function setUp(): void
     {
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
-        $this->contactRepository = $this->createMock(ContactRepositoryInterface::class);
+        $this->contactRepository = $this->createMock(ContactRepository::class);
 
         $this->useCase = new CreateContactUseCase(
             $this->entityManager,

@@ -4,12 +4,11 @@ namespace App\Repository;
 
 use App\Domain\Contact\Contact;
 use App\Domain\Conversation\Conversation;
-use App\Domain\Conversation\ConversationRepositoryInterface;
 use App\Domain\Conversation\ConversationStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
-class ConversationRepository extends ServiceEntityRepository implements ConversationRepositoryInterface
+class ConversationRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {

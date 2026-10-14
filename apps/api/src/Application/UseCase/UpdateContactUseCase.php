@@ -4,14 +4,14 @@ namespace App\Application\UseCase;
 
 use App\Application\DTO\ContactDetailDTO;
 use App\Domain\Contact\Contact;
-use App\Domain\Contact\ContactRepositoryInterface;
+use App\Repository\ContactRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 class UpdateContactUseCase
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
-        private ContactRepositoryInterface $contactRepository,
+        private ContactRepository $contactRepository,
     ) {}
 
     public function execute(int $id, array $data): ContactDetailDTO

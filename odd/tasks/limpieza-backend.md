@@ -47,7 +47,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T9 | S1, S7 | inline | done | Phase 1: docs in `02_sistema-actual` updated for the deletions |
 | T10 | S1 | inline | done | Phase 1 items that change a contract or the environment (see L9): L11–L16 |
 | T11 | S2 | inline | done | Phase 2: routes regenerated as `#[Route]` attributes from the YAML; `routes.yaml` = `routing.controllers` (L19) |
-| T12 | S2 | inline | pending | Phase 2: remove single-implementation interfaces (8, from the explorer map) |
+| T12 | S2 | inline | done | Phase 2: removed 8 single-implementation interfaces (L20) |
 | T13 | S2 | inline | pending | Phase 2: move classes into modules (map in L19), one commit per module; event-class rename blocker first |
 | T14 | S2, S7 | inline | pending | Phase 2: docs paths (`02_sistema-actual`) after the moves |
 
@@ -151,3 +151,4 @@ Later phases, each with its own branch and task list when it starts:
     3. The Doctrine mapping only scans `src/Domain`, with prefix `App\Domain`.
     4. The service config hardcodes FQCNs (`services.yaml`, `services_test.yaml`, `packages/test.yaml`, `security.yaml`, `gesdinet_jwt_refresh_token.yaml`, `bin/outbox-publish.php`).
   - Single-implementation interfaces: Assignment, Contact, Conversation, Message, Tag, Ticket and RuleExecutionLog repository interfaces, plus `EventCollector`. The only test doubles are PHPUnit mocks, which also work on concrete classes.
+- **L20 (2026-10-14), T12:** removed the 7 repository interfaces and `EventCollector`. Type hints now use the concrete repositories; `DefaultEventCollector` became `EventCollector` and is no longer `final`, so the existing PHPUnit mocks still work. Gesdinet's `RefreshTokenRepositoryInterface` is a framework contract and stays. User decision on the event blocker: "si, vamos con la migración" (rewrite `outbox_events.event_type` when the event classes move). Checks: `php -l` on every touched file; `lint:container` OK; full suite 692 tests, exactly the 6 baseline failures.

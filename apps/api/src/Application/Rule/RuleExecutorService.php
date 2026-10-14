@@ -4,7 +4,7 @@ namespace App\Application\Rule;
 
 use App\Domain\Rule\RuleContext;
 use App\Domain\Rule\RuleExecutionLog;
-use App\Domain\Rule\RuleExecutionLogRepositoryInterface;
+use App\Repository\RuleExecutionLogRepository;
 use App\Domain\Rule\RuleInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
@@ -16,7 +16,7 @@ class RuleExecutorService
     private array $rules = [];
 
     public function __construct(
-        private RuleExecutionLogRepositoryInterface $executionLogRepo,
+        private RuleExecutionLogRepository $executionLogRepo,
         private EventDispatcherInterface $eventDispatcher,
         iterable $rules = [],
     ) {

@@ -2,14 +2,28 @@
 
 namespace App\Domain\Event;
 
-interface EventCollector
+use Symfony\Contracts\Service\Attribute\AsService;
+
+#[AsService]
+class EventCollector
 {
-    public function collect(DomainEvent $event): void;
-
     /**
-     * @return DomainEvent[]
+     * @var DomainEvent[]
      */
-    public function getEvents(): array;
+    private array $events = [];
 
-    public function clear(): void;
+    public function collect(DomainEvent $event): void
+    {
+        $this->events[] = $event;
+    }
+
+    public function getEvents(): array
+    {
+        return $this->events;
+    }
+
+    public function clear(): void
+    {
+        $this->events = [];
+    }
 }

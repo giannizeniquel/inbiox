@@ -3,14 +3,13 @@
 namespace App\Repository;
 
 use App\Domain\Rule\RuleExecutionLog;
-use App\Domain\Rule\RuleExecutionLogRepositoryInterface;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
  * @extends ServiceEntityRepository<RuleExecutionLog>
  */
-class RuleExecutionLogRepository extends ServiceEntityRepository implements RuleExecutionLogRepositoryInterface
+class RuleExecutionLogRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {

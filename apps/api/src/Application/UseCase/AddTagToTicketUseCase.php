@@ -3,12 +3,10 @@
 namespace App\Application\UseCase;
 
 use App\Domain\Tag\Tag;
-use App\Domain\Tag\TagRepositoryInterface;
+use App\Repository\TagRepository;
 use App\Domain\Tag\TicketTag;
 use App\Domain\Event\TicketEvent;
 use App\Domain\Ticket\Ticket;
-use App\Domain\Ticket\TicketRepositoryInterface;
-use App\Repository\TagRepository;
 use App\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -17,8 +15,8 @@ class AddTagToTicketUseCase
 {
     public function __construct(
         private EntityManagerInterface $em,
-        private TagRepositoryInterface $tagRepo,
-        private TicketRepositoryInterface $ticketRepo,
+        private TagRepository $tagRepo,
+        private TicketRepository $ticketRepo,
         private EventDispatcherInterface $eventDispatcher,
     ) {}
 

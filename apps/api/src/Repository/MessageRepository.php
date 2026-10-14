@@ -4,11 +4,10 @@ namespace App\Repository;
 
 use App\Domain\Conversation\Conversation;
 use App\Domain\Message\Message;
-use App\Domain\Message\MessageRepositoryInterface;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
-class MessageRepository extends ServiceEntityRepository implements MessageRepositoryInterface
+class MessageRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {

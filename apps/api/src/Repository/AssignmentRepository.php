@@ -3,13 +3,12 @@
 namespace App\Repository;
 
 use App\Domain\Assignment\Assignment;
-use App\Domain\Assignment\AssignmentRepositoryInterface;
 use App\Domain\Assignment\AssignmentType;
 use App\Domain\Ticket\Ticket;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
-class AssignmentRepository extends ServiceEntityRepository implements AssignmentRepositoryInterface
+class AssignmentRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {

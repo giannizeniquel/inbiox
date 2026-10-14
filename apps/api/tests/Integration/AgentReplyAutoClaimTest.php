@@ -154,7 +154,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
         $ticketId = $this->seedTicket(TicketStatus::ACTIVE->value, null);
 
         $explodingRuleExecutor = new class(
-            static::getContainer()->get(\App\Domain\Rule\RuleExecutionLogRepositoryInterface::class),
+            static::getContainer()->get(\App\Repository\RuleExecutionLogRepository::class),
             static::getContainer()->get(\Symfony\Component\EventDispatcher\EventDispatcherInterface::class),
         ) extends RuleExecutorService {
             public function execute(RuleContext $context): void

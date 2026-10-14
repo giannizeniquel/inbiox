@@ -4,7 +4,6 @@ namespace App\Repository;
 
 use App\Domain\Event\TicketEventType;
 use App\Domain\Ticket\Ticket;
-use App\Domain\Ticket\TicketRepositoryInterface;
 use App\Domain\Ticket\TicketStatus;
 use App\Domain\Contact\Contact;
 use App\Domain\Conversation\Conversation;
@@ -13,7 +12,7 @@ use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\Query;
 use Doctrine\Persistence\ManagerRegistry;
 
-class TicketRepository extends ServiceEntityRepository implements TicketRepositoryInterface
+class TicketRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {

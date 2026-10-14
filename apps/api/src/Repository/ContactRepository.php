@@ -3,11 +3,10 @@
 namespace App\Repository;
 
 use App\Domain\Contact\Contact;
-use App\Domain\Contact\ContactRepositoryInterface;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
-class ContactRepository extends ServiceEntityRepository implements ContactRepositoryInterface
+class ContactRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
