@@ -1,7 +1,7 @@
 # Frontend cleanup (apps/web)
 
 Objective: regain control of the frontend. Remove overengineering and dead code, put every file where `docs/arquitectura.md` § Frontend says, and add no new features.
-Branch: one branch per phase in the worktree `/home/gianni/projects/inbiox-worktrees/front` (phase 0: `chore/limpieza-frontend-fase-0`, from `chore/limpieza-backend-fase-0` at `6fcefec`, so it carries the shared rules and glossary). Delivery: one PR per phase; push, PR and merge are user decisions. Test runner: none runnable for Karma specs in WSL2; gates are listed in S3.
+Branch: one branch per phase in the worktree `/home/gianni/projects/inbiox-worktrees/front` (phase 0: `chore/limpieza-frontend-fase-0`, from `chore/limpieza-backend-fase-0` at `6fcefec`, so it carries the shared rules and glossary). Delivery: one PR per phase into the integration branch `test-refactor` (from `test` at `b543593`), after the backend PRs it builds on; `test` keeps the working app and receives no cleanup PR. Push, PR and merge are user decisions. Test runner: none runnable for Karma specs in WSL2; gates are listed in S3.
 
 ## Specs
 
