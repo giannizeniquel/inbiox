@@ -60,7 +60,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T15 | S8 | delegated (context backstop) | done | 3a: 82 characterization tests in `tests/Characterization/` (L25) |
 | T16 | S8 | delegated (context backstop) | done | 3b: `InternalServerErrorListener`, 71 catch-alls removed (L26) |
 | T17 | S8, S3 | delegated (context backstop) | done | 3c-1 (L28) and 3c-2 (L29) |
-| T18 | S8 | inline | pending | 3d thin controllers, per module |
+| T18 | S8 | inline | in progress | 3d thin controllers, per module. 3d-1 Administracion (L32) |
 | T19 | S8 | inline | pending | 3e single outbox writer (needs 2 user decisions) |
 
 ### Baseline of failing tests (phase 0, after `1afba20`)
@@ -258,3 +258,10 @@ Later phases, each with its own branch and task list when it starts:
   - New rule 7 in `docs/arquitectura.md`: a module may use another module's use cases, queries and repositories. The SQL on a table lives only in its owner module's repository, and other modules call its methods. Importing another module's controllers stays forbidden.
   - Existing cross-module calls to write or lock methods (`Conversacion` → `TicketRepository::markFirstResponse`, `Asignacion` → `AgentRepository::lockRowsForUpdate`) comply, because the SQL stays in the owner's repository.
   - The L29 advisory 4 (Query classes reading another module's repository) is closed by this rule.
+- **L32 (2026-10-14), T18 3d-1 Administracion (route: inline, fresh context after compact; no writer reason):** the 5 Administracion controllers no longer use `EntityManager`.
+  - 16 use cases in `Administracion/UseCase/` (create, update and deactivate for users, agents, teams and workspaces; link and unlink; team and workspace agent assignment). Each keeps the old check order and messages. Repositories: new `UserRepository`, `WorkspaceRepository`, `Agente/Repository/TeamRepository`; `AgentRepository::findPageWithUser`. Lists use `count([])` and the same fetch joins.
+  - Error mapping stays in the controller: `InvalidArgumentException` → 400, new `Compartido/NotFoundException` → 404, `StateConflictException` → 409, all with `{"error": message}`. The controller loads the route entity first (404) and then decodes JSON (400), as before. A non-object JSON body becomes `[]`, which matches the old `??`/`isset` reads.
+  - `UpdateAgentUseCase` keeps the reflection write of `name` (it does not bump `updated_at`), so behavior stays the same; candidate for phase 4.
+  - 11 new characterization tests (`AdministracionEdgeCasesCharacterizationTest`), green before the change: check order (409 before 404/400), JSON `null` body, 404 before invalid JSON, rollback of team agent assignment, unknown ids skipped.
+  - Checks: `lint:container` OK; route and `#[IsGranted]` lines unchanged in the diff; PHPStan level 0 identical (29 lines, base vs new); admin + characterization tests 167/167; full suite 837 tests with the 6 baseline failures plus `AutoReplyServiceTest::testDoesNotSendWhenAgentIsAvailable`.
+  - That extra failure is a pre-existing time-of-day bug, not a regression: `makeAgentAvailable` builds a shift from `hour-1` to `min(23, hour+2)`, so between 23:00 and 23:59 (container time) the shift ends at 23:00 and the agent is unavailable. The run was at 23:24 UTC. Added to the known flakes.

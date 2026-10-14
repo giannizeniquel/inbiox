@@ -95,4 +95,21 @@ class AgentRepository extends ServiceEntityRepository
             [ArrayParameterType::INTEGER],
         );
     }
+
+    /**
+     * Newest first, with the linked user fetched in the same query.
+     *
+     * @return Agent[]
+     */
+    public function findPageWithUser(int $offset, int $limit): array
+    {
+        return $this->createQueryBuilder('a')
+            ->leftJoin('a.user', 'u')
+            ->addSelect('u')
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
+            ->orderBy('a.id', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }

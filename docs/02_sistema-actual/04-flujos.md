@@ -248,7 +248,7 @@ stateDiagram-v2
 
 | Criterio | Qué mira | Dónde | Lo usa |
 |---|---|---|---|
-| Columna `agents.is_available` | Nada (nadie la escribe; siempre `true`) | `Agente/Agent.php:36-37` | Solo se muestra en la API admin (`Administracion/Controller/AgentController.php:228`). **Legacy.** |
+| Columna `agents.is_available` | Nada (nadie la escribe; siempre `true`) | `Agente/Agent.php:36-37` | Solo se muestra en la API admin (`Administracion/Controller/AgentController.php:136`). **Legacy.** |
 | `isAvailable()` / `listAvailableAgents()` | activo → override → turno → **capacidad** | `:40-68`, `:112-167` | Auto-asignación, auto-respuesta, `GET /api/agents/{id}/availability`, reporte de disponibles |
 | `isActiveNow()` ("Activo/Inactivo") | activo → override → turno (**sin capacidad**) | `:84-102` | Guard de asignación manual y roster del desplegable |
 | `isInShift()` | activo → turno (sin override ni capacidad) | `:233-242` | Listado de tickets y reporte de rendimiento |

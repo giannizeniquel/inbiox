@@ -77,7 +77,7 @@ Todo en `apps/api/src/`, organizado **por módulo de negocio** desde la fase 2 d
 | `Asignacion/` | Asignación manual y automática. | `AssignmentService.php`, `UseCase/AssignTicketUseCase`, `UseCase/AutoAssignTicketUseCase`, `EventListener/TicketAutoAssignmentRequestedListener` |
 | `Reporte/` | Métricas y exportación. | `Controller/ReportingController`, `Query/ReportingService`, `Repository/ReportingRepository` |
 | `Automatizacion/` | Reglas y respuesta automática. | `RuleExecutorService.php`, `AutoReopenRule.php`, `KeywordTaggingRule.php`, `AutoReplyService.php`, `DependencyInjection/RulePass` (registra **a mano** las reglas) |
-| `Administracion/` | Espacios de trabajo, usuarios y el ABM de administración (`/api/admin/*`). | `User.php`, `Workspace.php`, `Controller/UserController`, `Controller/AgentController` |
+| `Administracion/` | Espacios de trabajo, usuarios y el ABM de administración (`/api/admin/*`). | `User.php`, `Workspace.php`, `Controller/UserController`, `Controller/AgentController`, `UseCase/` (un caso de uso por cada escritura de administración) |
 | `Autenticacion/` | Login, refresh token, chequeo de usuarios inactivos. | `Controller/AuthController`, `Security/UserChecker`, `RefreshToken.php` |
 | `Compartido/` | Outbox, tiempo real, cliente de Graph, storage, scopes de seguridad, excepciones comunes. | `Outbox/OutboxPublisherService`, `Realtime/RealtimeEventFactory`, `Graph/GraphClient`, `Storage/MediaStorageService`, `Security/OwnershipScope` |
 

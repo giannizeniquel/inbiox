@@ -98,7 +98,7 @@ Estas son las preguntas que solo el desarrollador (o el cliente) puede responder
 | R-D3 | Los turnos son semanales, en hora local del agente, semiabiertos `[inicio, fin)` y admiten cruce de medianoche. | `AgentAvailabilityService.php:261-289`; `Disponibilidad/AgentShift.php:15-23` | Negocio | **Confirmada** — fila #6a. |
 | R-D4 | Un agente solo gestiona su propio override/turnos; supervisor/admin, los de cualquiera. | Intención en el docblock de `Disponibilidad/Controller/AgentAvailabilityController.php:29-33, 314-318`; **no se aplica** (`:321-333`) | Negocio | Regla no confirmada, y hoy **no se cumple** ([R3](00-estado-y-pendientes.md#r3-cualquier-agente-modifica-disponibilidad-y-turnos-de-cualquier-agente)). |
 | R-D5 | `max_active_tickets ≥ 1`; la zona horaria debe ser válida. | `Agente/Agent.php:152-177` | Técnica | Regla no confirmada. |
-| R-D6 | Desactivar un agente no le quita sus tickets. | `Administracion/Controller/AgentController.php:191-201` | Técnica (omisión) | Regla no confirmada. |
+| R-D6 | Desactivar un agente no le quita sus tickets. | `Administracion/UseCase/DeactivateAgentUseCase.php` | Técnica (omisión) | Regla no confirmada. |
 | R-D7 | El override domina sobre el turno y la capacidad. | `AgentAvailabilityService.php:39-67` | Negocio | **Confirmada** en la cascada; **no se cumple del todo**: la auto-asignación vuelve a filtrar por capacidad dentro del lock (`AutoAssignTicketUseCase.php:135-139`). |
 
 ## Mensajería
@@ -134,10 +134,10 @@ Estas son las preguntas que solo el desarrollador (o el cliente) puede responder
 | R-C4 | Importación CSV: 2 MB / 1000 filas, duplicados se saltean sin actualizar, solo supervisor/admin. | `ImportContactsFromCsvUseCase.php:25-27, 162-165`; `ContactController::import` | Negocio | **Confirmada** — spec `contact-import`. |
 | R-C5 | `contacts.owner_id` existe y se puede filtrar, sin destino conocido. | `Contact.php:33-34`; `ListContactsQuery.php:54` | ? | Regla no confirmada. |
 | R-G1 | Las etiquetas son globales y se normalizan en minúsculas. | `Ticket/Tag.php:17, 53-56` | Técnica | Regla no confirmada. |
-| R-E1 | Un equipo pertenece a un workspace; su nombre es único dentro de él. | `Agente/Team.php:15, 23-25`; `Administracion/Controller/TeamController.php:115-120` | Negocio | **Confirmada** — spec `team-management`. |
+| R-E1 | Un equipo pertenece a un workspace; su nombre es único dentro de él. | `Agente/Team.php:15, 23-25`; `Administracion/UseCase/CreateTeamUseCase.php`, `UpdateTeamUseCase.php` | Negocio | **Confirmada** — spec `team-management`. |
 | R-E2 | Solo se agregan a un equipo agentes del mismo workspace. | `Team.php:115-124` | Negocio | **Confirmada** — spec "Agent Team Membership Requires Workspace Membership". |
 | R-E3 | El equipo de un ticket debe ser del mismo workspace; cualquier agente puede asignarlo o quitarlo. | `TicketController.php:88-122` | Negocio | **Confirmada** — spec "Ticket Team Assignment". |
-| R-E4 | Desactivar un equipo no borra su referencia en los tickets. | `Administracion/Controller/TeamController.php:227-232` | Negocio | **Confirmada** — spec "Team Deactivation Retains Historical Ticket Attribution". |
+| R-E4 | Desactivar un equipo no borra su referencia en los tickets. | `Administracion/UseCase/DeactivateTeamUseCase.php` | Negocio | **Confirmada** — spec "Team Deactivation Retains Historical Ticket Attribution". |
 | R-E5 | Equipos inactivos no se ofrecen para nuevas asignaciones. | **Solo en el frontend** (el backend no lo valida en `setTeam`) | Negocio | **Confirmada** en la spec; **no aplicada en el backend**. |
 
 ## Reglas que viven solo en el frontend

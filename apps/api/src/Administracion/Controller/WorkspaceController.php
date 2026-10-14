@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace App\Administracion\Controller;
 
-use App\Administracion\Query\WorkspaceDTO;
-use App\Agente\Agent;
+use App\Administracion\Repository\WorkspaceRepository;
+use App\Administracion\UseCase\AssignWorkspaceAgentsUseCase;
+use App\Administracion\UseCase\CreateWorkspaceUseCase;
+use App\Administracion\UseCase\DeactivateWorkspaceUseCase;
+use App\Administracion\UseCase\UpdateWorkspaceUseCase;
 use App\Administracion\Workspace;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Agente\Agent;
+use App\Compartido\StateConflictException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,7 +27,11 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class WorkspaceController
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly WorkspaceRepository $workspaceRepository,
+        private readonly CreateWorkspaceUseCase $createWorkspaceUseCase,
+        private readonly UpdateWorkspaceUseCase $updateWorkspaceUseCase,
+        private readonly DeactivateWorkspaceUseCase $deactivateWorkspaceUseCase,
+        private readonly AssignWorkspaceAgentsUseCase $assignWorkspaceAgentsUseCase,
     ) {}
 
     #[Route('/api/admin/workspaces', name: 'app_admin_workspaces_list', methods: ['GET'])]
@@ -33,19 +41,8 @@ final class WorkspaceController
         $limit = min(100, max(1, (int) $request->query->get('limit', 20)));
         $offset = ($page - 1) * $limit;
 
-        $repo = $this->entityManager->getRepository(Workspace::class);
-
-        $total = (int) $repo->createQueryBuilder('w')
-            ->select('COUNT(w.id)')
-            ->getQuery()
-            ->getSingleScalarResult();
-
-        $workspaces = $repo->createQueryBuilder('w')
-            ->setFirstResult($offset)
-            ->setMaxResults($limit)
-            ->orderBy('w.id', 'DESC')
-            ->getQuery()
-            ->getResult();
+        $total = $this->workspaceRepository->count([]);
+        $workspaces = $this->workspaceRepository->findBy([], ['id' => 'DESC'], $limit, $offset);
 
         $items = array_map(fn(Workspace $w) => $this->serializeWorkspace($w), $workspaces);
 
@@ -63,51 +60,27 @@ final class WorkspaceController
     #[Route('/api/admin/workspaces', name: 'app_admin_workspaces_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
+        $data = json_decode($request->getContent(), true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return new JsonResponse(['error' => 'Invalid JSON body'], 400);
+        }
+
         try {
-            $data = json_decode($request->getContent(), true);
-
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                return new JsonResponse(['error' => 'Invalid JSON body'], 400);
-            }
-
-            $phoneNumberId = $data['phoneNumberId'] ?? null;
-            $displayName = $data['displayName'] ?? null;
-
-            if (empty($phoneNumberId) || !\is_string($phoneNumberId)) {
-                return new JsonResponse(['error' => 'phoneNumberId is required and must be a string'], 400);
-            }
-
-            if (empty($displayName) || !\is_string($displayName)) {
-                return new JsonResponse(['error' => 'displayName is required and must be a string'], 400);
-            }
-
-            // Check for duplicate phone_number_id
-            $existing = $this->entityManager->getRepository(Workspace::class)
-                ->findOneBy(['phoneNumberId' => $phoneNumberId]);
-
-            if (null !== $existing) {
-                return new JsonResponse(['error' => 'A workspace with this phone number ID already exists'], 409);
-            }
-
-            $workspace = new Workspace($phoneNumberId, $displayName);
-
-            if (isset($data['isActive'])) {
-                $workspace->setActive((bool) $data['isActive']);
-            }
-
-            $this->entityManager->persist($workspace);
-            $this->entityManager->flush();
-
-            return new JsonResponse($this->serializeWorkspace($workspace), Response::HTTP_CREATED);
+            $workspace = $this->createWorkspaceUseCase->execute(\is_array($data) ? $data : []);
+        } catch (StateConflictException $e) {
+            return new JsonResponse(['error' => $e->getMessage()], 409);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }
+
+        return new JsonResponse($this->serializeWorkspace($workspace), Response::HTTP_CREATED);
     }
 
     #[Route('/api/admin/workspaces/{id}', name: 'app_admin_workspaces_get', methods: ['GET'])]
     public function get(int $id): JsonResponse
     {
-        $workspace = $this->entityManager->getRepository(Workspace::class)->find($id);
+        $workspace = $this->workspaceRepository->find($id);
 
         if (null === $workspace) {
             return new JsonResponse(['error' => 'Workspace not found'], 404);
@@ -119,57 +92,37 @@ final class WorkspaceController
     #[Route('/api/admin/workspaces/{id}', name: 'app_admin_workspaces_update', methods: ['PUT'])]
     public function update(int $id, Request $request): JsonResponse
     {
-        try {
-            $workspace = $this->entityManager->getRepository(Workspace::class)->find($id);
-
-            if (null === $workspace) {
-                return new JsonResponse(['error' => 'Workspace not found'], 404);
-            }
-
-            $data = json_decode($request->getContent(), true);
-
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                return new JsonResponse(['error' => 'Invalid JSON body'], 400);
-            }
-
-            if (isset($data['phoneNumberId'])) {
-                if (!\is_string($data['phoneNumberId']) || empty($data['phoneNumberId'])) {
-                    return new JsonResponse(['error' => 'phoneNumberId must be a non-empty string'], 400);
-                }
-                $workspace->setPhoneNumberId($data['phoneNumberId']);
-            }
-
-            if (isset($data['displayName'])) {
-                if (!\is_string($data['displayName']) || empty($data['displayName'])) {
-                    return new JsonResponse(['error' => 'displayName must be a non-empty string'], 400);
-                }
-                $workspace->setDisplayName($data['displayName']);
-            }
-
-            if (isset($data['isActive'])) {
-                $workspace->setActive((bool) $data['isActive']);
-            }
-
-            $this->entityManager->flush();
-
-            return new JsonResponse($this->serializeWorkspace($workspace));
-        } catch (\InvalidArgumentException $e) {
-            return new JsonResponse(['error' => $e->getMessage()], 400);
-        }
-    }
-
-    #[Route('/api/admin/workspaces/{id}', name: 'app_admin_workspaces_delete', methods: ['DELETE'])]
-    public function delete(int $id): JsonResponse
-    {
-        $workspace = $this->entityManager->getRepository(Workspace::class)->find($id);
+        $workspace = $this->workspaceRepository->find($id);
 
         if (null === $workspace) {
             return new JsonResponse(['error' => 'Workspace not found'], 404);
         }
 
-        // Soft delete: set isActive = false
-        $workspace->setActive(false);
-        $this->entityManager->flush();
+        $data = json_decode($request->getContent(), true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return new JsonResponse(['error' => 'Invalid JSON body'], 400);
+        }
+
+        try {
+            $this->updateWorkspaceUseCase->execute($workspace, \is_array($data) ? $data : []);
+        } catch (\InvalidArgumentException $e) {
+            return new JsonResponse(['error' => $e->getMessage()], 400);
+        }
+
+        return new JsonResponse($this->serializeWorkspace($workspace));
+    }
+
+    #[Route('/api/admin/workspaces/{id}', name: 'app_admin_workspaces_delete', methods: ['DELETE'])]
+    public function delete(int $id): JsonResponse
+    {
+        $workspace = $this->workspaceRepository->find($id);
+
+        if (null === $workspace) {
+            return new JsonResponse(['error' => 'Workspace not found'], 404);
+        }
+
+        $this->deactivateWorkspaceUseCase->execute($workspace);
 
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
@@ -177,57 +130,33 @@ final class WorkspaceController
     #[Route('/api/admin/workspaces/{id}/agents', name: 'app_admin_workspaces_assign_agents', methods: ['PUT'])]
     public function assignAgents(int $id, Request $request): JsonResponse
     {
+        $workspace = $this->workspaceRepository->find($id);
+
+        if (null === $workspace) {
+            return new JsonResponse(['error' => 'Workspace not found'], 404);
+        }
+
+        $data = json_decode($request->getContent(), true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return new JsonResponse(['error' => 'Invalid JSON body'], 400);
+        }
+
         try {
-            $workspace = $this->entityManager->getRepository(Workspace::class)->find($id);
-
-            if (null === $workspace) {
-                return new JsonResponse(['error' => 'Workspace not found'], 404);
-            }
-
-            $data = json_decode($request->getContent(), true);
-
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                return new JsonResponse(['error' => 'Invalid JSON body'], 400);
-            }
-
-            $agentIds = $data['agentIds'] ?? [];
-
-            if (!\is_array($agentIds)) {
-                return new JsonResponse(['error' => 'agentIds must be an array of integers'], 400);
-            }
-
-            // Run in transaction for atomicity
-            $this->entityManager->wrapInTransaction(function () use ($workspace, $agentIds): void {
-                // Clear existing assignments
-                foreach ($workspace->getAgents() as $existingAgent) {
-                    $workspace->removeAgent($existingAgent);
-                }
-
-                // Add new assignments
-                $agentRepo = $this->entityManager->getRepository(Agent::class);
-                foreach ($agentIds as $agentId) {
-                    if (!\is_int($agentId)) {
-                        throw new \InvalidArgumentException('agentIds must contain only integers');
-                    }
-                    $agent = $agentRepo->find($agentId);
-                    if (null !== $agent) {
-                        $workspace->addAgent($agent);
-                    }
-                }
-            });
-
-            $assignedIds = array_map(
-                fn(Agent $a) => (int) $a->getId(),
-                $workspace->getAgents()->toArray()
-            );
-
-            return new JsonResponse([
-                'workspace_id' => (int) $workspace->getId(),
-                'agent_ids' => array_values($assignedIds),
-            ]);
+            $this->assignWorkspaceAgentsUseCase->execute($workspace, \is_array($data) ? $data : []);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }
+
+        $assignedIds = array_map(
+            fn(Agent $a) => (int) $a->getId(),
+            $workspace->getAgents()->toArray()
+        );
+
+        return new JsonResponse([
+            'workspace_id' => (int) $workspace->getId(),
+            'agent_ids' => array_values($assignedIds),
+        ]);
     }
 
     /**

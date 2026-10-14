@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Administracion\Controller;
 
-use App\Agente\Agent;
-use App\Administracion\User;
-use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Administracion\UseCase\LinkUserToAgentUseCase;
+use App\Administracion\UseCase\UnlinkUserFromAgentUseCase;
+use App\Agente\Repository\AgentRepository;
+use App\Compartido\NotFoundException;
+use App\Compartido\StateConflictException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -24,7 +25,9 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class AgentLinkController
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly AgentRepository $agentRepository,
+        private readonly LinkUserToAgentUseCase $linkUserToAgentUseCase,
+        private readonly UnlinkUserFromAgentUseCase $unlinkUserFromAgentUseCase,
     ) {}
 
     /**
@@ -39,64 +42,33 @@ final class AgentLinkController
     #[Route('/api/admin/agents/{id}/link-user', name: 'admin_agents_link_user', methods: ['POST'])]
     public function linkUser(int $id, Request $request): JsonResponse
     {
+        $agent = $this->agentRepository->find($id);
+
+        if (null === $agent) {
+            return new JsonResponse(['error' => 'Agent not found'], 404);
+        }
+
+        $data = json_decode($request->getContent(), true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return new JsonResponse(['error' => 'Invalid JSON body'], 400);
+        }
+
         try {
-            $agent = $this->entityManager->getRepository(Agent::class)->find($id);
-
-            if (null === $agent) {
-                return new JsonResponse(['error' => 'Agent not found'], 404);
-            }
-
-            $data = json_decode($request->getContent(), true);
-
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                return new JsonResponse(['error' => 'Invalid JSON body'], 400);
-            }
-
-            $userId = $data['user_id'] ?? null;
-
-            if (null === $userId || !\is_int($userId)) {
-                return new JsonResponse(['error' => 'user_id is required and must be an integer'], 400);
-            }
-
-            $user = $this->entityManager->getRepository(User::class)->find($userId);
-
-            if (null === $user) {
-                return new JsonResponse(['error' => 'User not found'], 404);
-            }
-
-            // Q3: Deny linking deactivated user to agent
-            if (!$user->isActive()) {
-                return new JsonResponse(['error' => 'Cannot link a deactivated user to an agent'], 400);
-            }
-
-            // Check if agent already has a user
-            if (null !== $agent->getUser()) {
-                return new JsonResponse(['error' => 'Agent already linked to a user'], 400);
-            }
-
-            // Check if user already has an agent (UNIQUE constraint)
-            if (null !== $user->getAgent()) {
-                return new JsonResponse(['error' => 'User already linked to an agent'], 400);
-            }
-
-            $agent->setUser($user);
-            $user->setAgent($agent);
-
-            try {
-                $this->entityManager->flush();
-            } catch (UniqueConstraintViolationException $e) {
-                // 409 on UNIQUE conflict (defensive - should not happen with checks above)
-                return new JsonResponse(['error' => 'Link conflict: agent or user already linked'], 409);
-            }
-
-            return new JsonResponse([
-                'id' => (int) $agent->getId(),
-                'user_id' => (int) $user->getId(),
-                'user_email' => $user->getEmail(),
-            ]);
+            $user = $this->linkUserToAgentUseCase->execute($agent, \is_array($data) ? $data : []);
+        } catch (NotFoundException $e) {
+            return new JsonResponse(['error' => $e->getMessage()], 404);
+        } catch (StateConflictException $e) {
+            return new JsonResponse(['error' => $e->getMessage()], 409);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }
+
+        return new JsonResponse([
+            'id' => (int) $agent->getId(),
+            'user_id' => (int) $user->getId(),
+            'user_email' => $user->getEmail(),
+        ]);
     }
 
     /**
@@ -107,22 +79,17 @@ final class AgentLinkController
     #[Route('/api/admin/agents/{id}/link-user', name: 'admin_agents_unlink_user', methods: ['DELETE'])]
     public function unlinkUser(int $id): JsonResponse
     {
-        $agent = $this->entityManager->getRepository(Agent::class)->find($id);
+        $agent = $this->agentRepository->find($id);
 
         if (null === $agent) {
             return new JsonResponse(['error' => 'Agent not found'], 404);
         }
 
-        if (null === $agent->getUser()) {
-            return new JsonResponse(['error' => 'Agent has no linked user'], 400);
+        try {
+            $this->unlinkUserFromAgentUseCase->execute($agent);
+        } catch (\InvalidArgumentException $e) {
+            return new JsonResponse(['error' => $e->getMessage()], 400);
         }
-
-        $user = $agent->getUser();
-        $agent->setUser(null);
-        if (null !== $user) {
-            $user->setAgent(null);
-        }
-        $this->entityManager->flush();
 
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
