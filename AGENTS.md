@@ -5,6 +5,26 @@
 - **Type:** SaaS customer support platform. WhatsApp conversations become tickets that are assigned to agents.
 - **Stack:** Symfony 7.4 API (`apps/api`), Angular 21 (`apps/web`), MySQL 8, Mercure (SSE realtime via a transactional outbox), WhatsApp Cloud API, MinIO/S3 for media.
 - **Current-system knowledge base:** start at `docs/02_sistema-actual/README.md`. It maps features, flows, business rules, API permissions, known risks, and the manual test guide, all verified against the code. Most other docs under `docs/` are partially stale; that README lists which ones to trust.
+- **Target architecture, rules, and glossary:** `docs/arquitectura.md` (backend and frontend). The code does not follow it yet; the cleanup runs in phases tracked in `odd/tasks/limpieza-backend.md`.
+
+---
+
+## Development Rules
+
+Full rules and glossary in `docs/arquitectura.md`. New code follows them; existing code is adapted in its cleanup phase.
+
+- **No new features** until the backend cleanup is finished. Cleanup phases never change behavior; product contradictions are decided separately.
+- **Organize by business module** (`src/Ticket/`, `src/Conversacion/`…), each with `Controller/`, `UseCase/`, `Query/`, `Repository/`. Doctrine entities are the domain model.
+- **Controllers only handle HTTP**: no `EntityManager`, `flush()`, or SQL. Every write goes through a use case; the outbox is written in one place; errors are handled by one exception listener.
+- **No interface without two real implementations.**
+- **SQL:**
+  - Use the Doctrine QueryBuilder by default.
+  - Native SQL is allowed only inside a repository: in a named method, with bound parameters, a comment saying why DQL is not enough, and its own test.
+  - Never put SQL in use cases, controllers, or commands; never concatenate SQL fragments; no stored procedures or views.
+- **Naming:**
+  - Business vocabulary in Spanish; technical vocabulary in English (layer folders, technical suffixes, jargon like webhook/outbox/token). Framework contracts are never translated.
+  - No accents or `ñ` in identifiers.
+- **Minimalism:** every class, layer, or dependency needs a concrete current use.
 
 ---
 
