@@ -58,7 +58,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T13 | S2 | inline | done | Phase 2: moved 162 classes into 11 modules in one commit, plus the event_type migration (L21) |
 | T14 | S2, S7 | inline | done | Phase 2: docs paths and line refs updated after the moves (L22) |
 | T15 | S8 | delegated (context backstop) | done | 3a: 82 characterization tests in `tests/Characterization/` (L25) |
-| T16 | S8 | inline | pending | 3b generic 500 listener |
+| T16 | S8 | delegated (context backstop) | done | 3b: `InternalServerErrorListener`, 71 catch-alls removed (L26) |
 | T17 | S8, S3 | inline | pending | 3c SQL into repositories |
 | T18 | S8 | inline | pending | 3d thin controllers, per module |
 | T19 | S8 | inline | pending | 3e single outbox writer (needs 2 user decisions) |
@@ -208,3 +208,12 @@ Later phases, each with its own branch and task list when it starts:
     - resync filters by `aggregate_id` only, has an unreachable header branch, and `verifyToken` skips the expiry check;
     - resolve and close return a 500 on an invalid transition.
   - **Parent spot check:** `phpunit tests/Characterization` gives OK (82 tests, 485 assertions). The full suite has 774 tests and exactly the 6 baseline failures.
+- **L26 (2026-10-14), T16 (3b):** a bounded writer added `Compartido/EventListener/InternalServerErrorListener`. It acts only on `/api` paths and only on throwables that are neither HTTP nor security exceptions. It returns S1 `{"error":"Internal server error","reference":<16 hex>}` and logs `Unhandled exception` with the reference and the trace. The writer removed 71 controller catch-alls in 15 controllers (`git diff -w`: +6/−639). Kept:
+  - TicketWorkflow's audit swallow;
+  - ProviderProxy's storage swallow;
+  - the 3 Webhook catches (it must keep returning 200);
+  - the 4 Debug catches;
+  - every specific arm, and every catch in use cases and services.
+  - **Intended visible changes, approved by the user as the "500 genérico" unification:** S2 `"Internal error"` becomes S1, and uncaught non-HTTP exceptions on `/api` return S1 instead of Symfony's problem+json, which leaked the exception message. Per-action log messages were replaced by one log format.
+  - **Tests:** 4 new listener tests. They pin the 404, 401 and 403 bodies as unchanged, and the forced uncaught exception now returns S1 (RED before the listener). The 3 S2 characterization tests now assert S1.
+  - **Parent checks:** `lint:container` OK; full suite 778 tests, exactly the 6 baseline failures.

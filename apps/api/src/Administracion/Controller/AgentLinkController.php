@@ -8,7 +8,6 @@ use App\Agente\Agent;
 use App\Administracion\User;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,7 +25,6 @@ final class AgentLinkController
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly LoggerInterface $logger,
     ) {}
 
     /**
@@ -98,14 +96,6 @@ final class AgentLinkController
             ]);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
-        } catch (\Exception $e) {
-            $referenceId = bin2hex(random_bytes(8));
-            $this->logger->error('Error linking user to agent: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
         }
     }
 
@@ -117,33 +107,23 @@ final class AgentLinkController
     #[Route('/api/admin/agents/{id}/link-user', name: 'admin_agents_unlink_user', methods: ['DELETE'])]
     public function unlinkUser(int $id): JsonResponse
     {
-        try {
-            $agent = $this->entityManager->getRepository(Agent::class)->find($id);
+        $agent = $this->entityManager->getRepository(Agent::class)->find($id);
 
-            if (null === $agent) {
-                return new JsonResponse(['error' => 'Agent not found'], 404);
-            }
-
-            if (null === $agent->getUser()) {
-                return new JsonResponse(['error' => 'Agent has no linked user'], 400);
-            }
-
-            $user = $agent->getUser();
-            $agent->setUser(null);
-            if (null !== $user) {
-                $user->setAgent(null);
-            }
-            $this->entityManager->flush();
-
-            return new JsonResponse(null, Response::HTTP_NO_CONTENT);
-        } catch (\Exception $e) {
-            $referenceId = bin2hex(random_bytes(8));
-            $this->logger->error('Error unlinking user from agent: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
+        if (null === $agent) {
+            return new JsonResponse(['error' => 'Agent not found'], 404);
         }
+
+        if (null === $agent->getUser()) {
+            return new JsonResponse(['error' => 'Agent has no linked user'], 400);
+        }
+
+        $user = $agent->getUser();
+        $agent->setUser(null);
+        if (null !== $user) {
+            $user->setAgent(null);
+        }
+        $this->entityManager->flush();
+
+        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
 }

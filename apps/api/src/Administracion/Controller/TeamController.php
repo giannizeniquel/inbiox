@@ -8,7 +8,6 @@ use App\Agente\Agent;
 use App\Agente\Team;
 use App\Administracion\Workspace;
 use Doctrine\ORM\EntityManagerInterface;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -37,51 +36,40 @@ final class TeamController
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly LoggerInterface $logger,
     ) {}
 
     #[Route('/api/admin/teams', name: 'app_admin_teams_list', methods: ['GET'])]
     public function list(Request $request): JsonResponse
     {
-        try {
-            $page = max(1, (int) $request->query->get('page', 1));
-            $limit = min(100, max(1, (int) $request->query->get('limit', 20)));
-            $offset = ($page - 1) * $limit;
+        $page = max(1, (int) $request->query->get('page', 1));
+        $limit = min(100, max(1, (int) $request->query->get('limit', 20)));
+        $offset = ($page - 1) * $limit;
 
-            $repo = $this->entityManager->getRepository(Team::class);
+        $repo = $this->entityManager->getRepository(Team::class);
 
-            $total = (int) $repo->createQueryBuilder('t')
-                ->select('COUNT(t.id)')
-                ->getQuery()
-                ->getSingleScalarResult();
+        $total = (int) $repo->createQueryBuilder('t')
+            ->select('COUNT(t.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
 
-            $teams = $repo->createQueryBuilder('t')
-                ->setFirstResult($offset)
-                ->setMaxResults($limit)
-                ->orderBy('t.id', 'DESC')
-                ->getQuery()
-                ->getResult();
+        $teams = $repo->createQueryBuilder('t')
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
+            ->orderBy('t.id', 'DESC')
+            ->getQuery()
+            ->getResult();
 
-            $items = array_map(fn(Team $t) => $this->serializeTeam($t), $teams);
+        $items = array_map(fn(Team $t) => $this->serializeTeam($t), $teams);
 
-            return new JsonResponse([
-                'data' => $items,
-                'meta' => [
-                    'page' => $page,
-                    'limit' => $limit,
-                    'total' => $total,
-                    'has_next' => ($page * $limit) < $total,
-                ],
-            ]);
-        } catch (\Exception $e) {
-            $referenceId = bin2hex(random_bytes(8));
-            $this->logger->error('Error listing teams: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
-        }
+        return new JsonResponse([
+            'data' => $items,
+            'meta' => [
+                'page' => $page,
+                'limit' => $limit,
+                'total' => $total,
+                'has_next' => ($page * $limit) < $total,
+            ],
+        ]);
     }
 
     #[Route('/api/admin/teams', name: 'app_admin_teams_create', methods: ['POST'])]
@@ -131,37 +119,19 @@ final class TeamController
             return new JsonResponse($this->serializeTeam($team), Response::HTTP_CREATED);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
-        } catch (\Exception $e) {
-            $referenceId = bin2hex(random_bytes(8));
-            $this->logger->error('Error creating team: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
         }
     }
 
     #[Route('/api/admin/teams/{id}', name: 'app_admin_teams_get', methods: ['GET'])]
     public function get(int $id): JsonResponse
     {
-        try {
-            $team = $this->entityManager->getRepository(Team::class)->find($id);
+        $team = $this->entityManager->getRepository(Team::class)->find($id);
 
-            if (null === $team) {
-                return new JsonResponse(['error' => 'Team not found'], 404);
-            }
-
-            return new JsonResponse($this->serializeTeam($team));
-        } catch (\Exception $e) {
-            $referenceId = bin2hex(random_bytes(8));
-            $this->logger->error('Error fetching team: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
+        if (null === $team) {
+            return new JsonResponse(['error' => 'Team not found'], 404);
         }
+
+        return new JsonResponse($this->serializeTeam($team));
     }
 
     #[Route('/api/admin/teams/{id}', name: 'app_admin_teams_update', methods: ['PUT'])]
@@ -203,43 +173,25 @@ final class TeamController
             return new JsonResponse($this->serializeTeam($team));
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
-        } catch (\Exception $e) {
-            $referenceId = bin2hex(random_bytes(8));
-            $this->logger->error('Error updating team: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
         }
     }
 
     #[Route('/api/admin/teams/{id}', name: 'app_admin_teams_delete', methods: ['DELETE'])]
     public function delete(int $id): JsonResponse
     {
-        try {
-            $team = $this->entityManager->getRepository(Team::class)->find($id);
+        $team = $this->entityManager->getRepository(Team::class)->find($id);
 
-            if (null === $team) {
-                return new JsonResponse(['error' => 'Team not found'], 404);
-            }
-
-            // Soft delete: set isActive = false. MUST NOT clear tickets.team_id
-            // on referencing tickets (spec: Team Deactivation Retains Historical
-            // Ticket Attribution) — no cascading update is performed here.
-            $team->setActive(false);
-            $this->entityManager->flush();
-
-            return new JsonResponse(null, Response::HTTP_NO_CONTENT);
-        } catch (\Exception $e) {
-            $referenceId = bin2hex(random_bytes(8));
-            $this->logger->error('Error deactivating team: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
+        if (null === $team) {
+            return new JsonResponse(['error' => 'Team not found'], 404);
         }
+
+        // Soft delete: set isActive = false. MUST NOT clear tickets.team_id
+        // on referencing tickets (spec: Team Deactivation Retains Historical
+        // Ticket Attribution) — no cascading update is performed here.
+        $team->setActive(false);
+        $this->entityManager->flush();
+
+        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
 
     #[Route('/api/admin/teams/{id}/agents', name: 'app_admin_teams_assign_agents', methods: ['PUT'])]
@@ -296,14 +248,6 @@ final class TeamController
             ]);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
-        } catch (\Exception $e) {
-            $referenceId = bin2hex(random_bytes(8));
-            $this->logger->error('Error assigning agents to team: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
         }
     }
 

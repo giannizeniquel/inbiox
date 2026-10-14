@@ -9,8 +9,8 @@ use App\Ticket\UseCase\ResolveTicketUseCase;
 use App\Ticket\UseCase\TransitionTicketStatusUseCase;
 
 /**
- * Characterization of the 500 envelope of App\Ticket\Controller\TicketWorkflowController
- * (shape S2 in odd/fase-3/errores.md): it differs from S1 only in the error text.
+ * Characterization of the 500 envelope of App\Ticket\Controller\TicketWorkflowController.
+ * It was shape S2 in odd/fase-3/errores.md until phase 3b, which unified it into S1.
  * The other paths of this controller already have HTTP tests.
  */
 final class TicketWorkflowControllerCharacterizationTest extends CharacterizationTestCase
@@ -20,11 +20,8 @@ final class TicketWorkflowControllerCharacterizationTest extends Characterizatio
 
     private function assertInternalErrorEnvelope(\Symfony\Component\HttpFoundation\Response $response): void
     {
-        self::assertSame(500, $response->getStatusCode(), (string) $response->getContent());
-        $body = $this->json($response);
-        self::assertSame(['error', 'reference'], \array_keys($body));
-        self::assertSame('Internal error', $body['error']);
-        self::assertMatchesRegularExpression(self::REFERENCE_PATTERN, $body['reference']);
+        // Phase 3b: S2 unified into S1.
+        $this->assertInternalServerErrorEnvelope($response);
         self::assertStringNotContainsString('workflow exploded', (string) $response->getContent());
     }
 
@@ -84,7 +81,7 @@ final class TicketWorkflowControllerCharacterizationTest extends Characterizatio
         // Characterization: current behavior, not necessarily desired.
         // resolve() has no InvalidTransitionException arm, so it falls into the 500.
         $response = $this->request('POST', '/api/tickets/' . self::MISSING_TICKET_ID . '/resolve', $token);
-        self::assertSame(500, $response->getStatusCode());
-        self::assertSame('Internal error', $this->json($response)['error']);
+        // Phase 3b: S2 unified into S1.
+        $this->assertInternalServerErrorEnvelope($response);
     }
 }

@@ -88,7 +88,7 @@ Dentro de cada módulo, las carpetas de capa son `Controller/`, `UseCase/`, `Que
 1. Buscar el path con `php bin/console debug:router --show-controllers` o con `rg "#\[Route\('/api/…"` → da el controlador.
 2. Ver permisos: `config/packages/security.yaml` (`access_control`, la primera regla que coincide) + `#[IsGranted]` de clase + `#[IsGranted]` de método + voters dentro de la acción. **Todas** deben pasar.
 3. Seguir la llamada al caso de uso o consulta del módulo (`<Modulo>/UseCase/`, `<Modulo>/Query/`).
-4. Ante un 500 con `reference`, buscar ese valor en los logs: es el patrón de manejo de errores de casi todos los controladores.
+4. Ante un 500 con `reference`, buscar ese valor en los logs (`Unhandled exception …`). Desde la fase 3b, todo 500 inesperado de `/api` lo arma un único listener, `Compartido/EventListener/InternalServerErrorListener`. Los errores específicos (400, 404, 409, 422…) siguen en cada controlador hasta la fase 5.
 
 ### Ruteo: los atributos `#[Route]` son la única fuente
 

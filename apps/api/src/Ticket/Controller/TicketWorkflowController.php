@@ -77,10 +77,6 @@ class TicketWorkflowController
             return new JsonResponse(['error' => $e->getMessage()], 400);
         } catch (\App\Ticket\InvalidTransitionException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 422);
-        } catch (\Exception $e) {
-            $refId = bin2hex(random_bytes(8));
-            $this->logger->error('Transition error: ' . $e->getMessage(), ['ref' => $refId]);
-            return new JsonResponse(['error' => 'Internal error', 'reference' => $refId], 500);
         }
     }
 
@@ -105,10 +101,6 @@ class TicketWorkflowController
             return new JsonResponse($result);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
-        } catch (\Exception $e) {
-            $refId = bin2hex(random_bytes(8));
-            $this->logger->error('Resolve error: ' . $e->getMessage(), ['ref' => $refId]);
-            return new JsonResponse(['error' => 'Internal error', 'reference' => $refId], 500);
         }
     }
 
@@ -133,10 +125,6 @@ class TicketWorkflowController
             return new JsonResponse($result);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
-        } catch (\Exception $e) {
-            $refId = bin2hex(random_bytes(8));
-            $this->logger->error('Close error: ' . $e->getMessage(), ['ref' => $refId]);
-            return new JsonResponse(['error' => 'Internal error', 'reference' => $refId], 500);
         }
     }
 

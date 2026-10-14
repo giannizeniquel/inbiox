@@ -15,7 +15,6 @@ use App\Agente\Repository\AgentRepository;
 use App\Ticket\Repository\TicketRepository;
 use Doctrine\DBAL\Exception\LockWaitTimeoutException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
@@ -45,7 +44,6 @@ class AgentAvailabilityController
         private AgentShiftRepository $agentShiftRepo,
         private TicketRepository $ticketRepo,
         private OwnershipScope $ownershipScope,
-        private LoggerInterface $logger,
     ) {}
 
     /**
@@ -85,15 +83,6 @@ class AgentAvailabilityController
             return new JsonResponse(['error' => 'Resource locked, try again'], 409);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 422);
-        } catch (\Exception $e) {
-            $referenceId = \bin2hex(\random_bytes(8));
-            $this->logger->error('Error setting agent availability: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
         }
     }
 
@@ -124,15 +113,6 @@ class AgentAvailabilityController
             return new JsonResponse(['error' => 'Resource locked, try again'], 409);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 422);
-        } catch (\Exception $e) {
-            $referenceId = \bin2hex(\random_bytes(8));
-            $this->logger->error('Error clearing agent availability: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
         }
     }
 
@@ -155,53 +135,42 @@ class AgentAvailabilityController
             return new JsonResponse(['error' => 'Agent not found'], 404);
         }
 
-        try {
-            $nowUtc = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-            $localTz = new \DateTimeZone($agent->getTimezone());
-            $localNow = $nowUtc->setTimezone($localTz);
+        $nowUtc = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $localTz = new \DateTimeZone($agent->getTimezone());
+        $localNow = $nowUtc->setTimezone($localTz);
 
-            $isAvailable = $this->agentAvailabilityService->isAvailable($agent, $nowUtc);
-            $currentLoad = $this->ticketRepo->countActiveForAgent($id);
+        $isAvailable = $this->agentAvailabilityService->isAvailable($agent, $nowUtc);
+        $currentLoad = $this->ticketRepo->countActiveForAgent($id);
 
-            // Compute is_in_shift by checking schedule only (no override, no capacity)
-            $isInShift = $this->isAgentInShift($agent, $localNow);
+        // Compute is_in_shift by checking schedule only (no override, no capacity)
+        $isInShift = $this->isAgentInShift($agent, $localNow);
 
-            // Compute override info
-            $overrideActive = false;
-            $overrideAvailable = null;
-            $overrideExpiresAt = null;
+        // Compute override info
+        $overrideActive = false;
+        $overrideAvailable = null;
+        $overrideExpiresAt = null;
 
-            if ($agent->getIsAvailableOverride() !== null) {
-                if ($agent->getOverrideUntil() === null || $agent->getOverrideUntil() >= $nowUtc) {
-                    $overrideActive = true;
-                    $overrideAvailable = $agent->getIsAvailableOverride();
-                    $overrideExpiresAt = $agent->getOverrideUntil()?->format('Y-m-d\TH:i:s\Z');
-                }
+        if ($agent->getIsAvailableOverride() !== null) {
+            if ($agent->getOverrideUntil() === null || $agent->getOverrideUntil() >= $nowUtc) {
+                $overrideActive = true;
+                $overrideAvailable = $agent->getIsAvailableOverride();
+                $overrideExpiresAt = $agent->getOverrideUntil()?->format('Y-m-d\TH:i:s\Z');
             }
-
-            return new JsonResponse([
-                'agent_id'     => $id,
-                'is_available' => $isAvailable,
-                'is_in_shift'  => $isInShift,
-                'timezone'     => $agent->getTimezone(),
-                'current_load' => $currentLoad,
-                'max_capacity' => $agent->getMaxActiveTickets(),
-                'override'     => [
-                    'active'       => $overrideActive,
-                    'is_available' => $overrideAvailable,
-                    'expires_at'   => $overrideExpiresAt,
-                ],
-            ]);
-        } catch (\Exception $e) {
-            $referenceId = \bin2hex(\random_bytes(8));
-            $this->logger->error('Error getting agent availability: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
         }
+
+        return new JsonResponse([
+            'agent_id'     => $id,
+            'is_available' => $isAvailable,
+            'is_in_shift'  => $isInShift,
+            'timezone'     => $agent->getTimezone(),
+            'current_load' => $currentLoad,
+            'max_capacity' => $agent->getMaxActiveTickets(),
+            'override'     => [
+                'active'       => $overrideActive,
+                'is_available' => $overrideAvailable,
+                'expires_at'   => $overrideExpiresAt,
+            ],
+        ]);
     }
 
     /**
@@ -249,15 +218,6 @@ class AgentAvailabilityController
             return new JsonResponse(['error' => 'Duplicate shift: this shift already exists for this agent'], 409);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 422);
-        } catch (\Exception $e) {
-            $referenceId = \bin2hex(\random_bytes(8));
-            $this->logger->error('Error creating agent shift: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
         }
     }
 
@@ -298,15 +258,6 @@ class AgentAvailabilityController
             return new JsonResponse(['error' => 'Resource locked, try again'], 409);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 422);
-        } catch (\Exception $e) {
-            $referenceId = \bin2hex(\random_bytes(8));
-            $this->logger->error('Error deleting agent shift: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
         }
     }
 

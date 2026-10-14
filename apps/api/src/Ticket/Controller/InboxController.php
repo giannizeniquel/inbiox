@@ -14,7 +14,6 @@ use App\Compartido\Security\WorkspaceScope;
 use App\Ticket\Ticket;
 use App\Administracion\User;
 use Doctrine\ORM\EntityManagerInterface;
-use Psr\Log\LoggerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -34,7 +33,6 @@ class InboxController
         private WorkspaceScope $workspaceScope,
         private Security $security,
         private EntityManagerInterface $em,
-        private LoggerInterface $logger,
     ) {}
 
     #[Route('/api/tickets', name: 'app_inbox_tickets', methods: ['GET'])]
@@ -87,37 +85,19 @@ class InboxController
             ]);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
-        } catch (\Exception $e) {
-            $referenceId = bin2hex(random_bytes(8));
-            $this->logger->error('Error listing tickets: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
         }
     }
 
     #[Route('/api/tickets/{id}', name: 'app_inbox_ticket_detail', methods: ['GET'])]
     public function getTicket(int $id): JsonResponse
     {
-        try {
-            $dto = $this->getTicketDetailQuery->execute($id);
+        $dto = $this->getTicketDetailQuery->execute($id);
 
-            if ($dto === null) {
-                return new JsonResponse(['error' => 'Ticket not found'], 404);
-            }
-
-            return new JsonResponse($dto->toArray());
-        } catch (\Exception $e) {
-            $referenceId = bin2hex(random_bytes(8));
-            $this->logger->error('Error fetching ticket detail: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
+        if ($dto === null) {
+            return new JsonResponse(['error' => 'Ticket not found'], 404);
         }
+
+        return new JsonResponse($dto->toArray());
     }
 
     #[Route('/api/tickets/{id}/messages', name: 'app_inbox_ticket_messages', methods: ['GET'])]
@@ -153,63 +133,46 @@ class InboxController
             return new JsonResponse($response);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
-        } catch (\Exception $e) {
-            $referenceId = bin2hex(random_bytes(8));
-            $this->logger->error('Error fetching ticket messages: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
         }
     }
 
     #[Route('/api/tickets/{id}/mark-read', name: 'app_ticket_mark_read', methods: ['PUT'])]
     public function markRead(int $id): JsonResponse
     {
-        try {
-            $ticket = $this->em->getRepository(Ticket::class)->find($id);
-            if (!$ticket) {
-                return new JsonResponse(['error' => 'Ticket not found'], Response::HTTP_NOT_FOUND);
-            }
-
-            // Only the assigned agent marks the ticket as read.
-            // Other users can view but don't affect the read state.
-            $user = $this->security->getUser();
-            $currentAgentId = $user instanceof User ? $user->getAgent()?->getId() : null;
-            $ownerAgentId = $ticket->getAssignedAgentId();
-
-            if ($currentAgentId === null || $ownerAgentId === null || $currentAgentId !== $ownerAgentId) {
-                return new JsonResponse(null, Response::HTTP_NO_CONTENT);
-            }
-
-            $ticket->setLastReadAt(new \DateTimeImmutable());
-            $this->em->flush();
-
-            // Emit real-time event so other clients clear their unread badge
-            $this->em->getConnection()->insert('outbox_events', [
-                'id' => (string) (new Ulid()),
-                'aggregate_type' => 'ticket',
-                'aggregate_id' => $id,
-                'topic' => 'tickets',
-                'event_type' => RealtimeEventType::TicketRead->value,
-                'payload' => json_encode([
-                    'eventType' => RealtimeEventType::TicketRead->value,
-                    'ticketId' => $id,
-                ]),
-                'created_at' => (new \DateTimeImmutable())->format('Y-m-d H:i:s'),
-                'status' => 'pending',
-                'sequence' => 0,
-            ]);
-
-            return new JsonResponse(null, Response::HTTP_NO_CONTENT);
-        } catch (\Exception $e) {
-            $referenceId = bin2hex(random_bytes(8));
-            $this->logger->error('Error marking ticket as read: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-            ]);
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
+        $ticket = $this->em->getRepository(Ticket::class)->find($id);
+        if (!$ticket) {
+            return new JsonResponse(['error' => 'Ticket not found'], Response::HTTP_NOT_FOUND);
         }
+
+        // Only the assigned agent marks the ticket as read.
+        // Other users can view but don't affect the read state.
+        $user = $this->security->getUser();
+        $currentAgentId = $user instanceof User ? $user->getAgent()?->getId() : null;
+        $ownerAgentId = $ticket->getAssignedAgentId();
+
+        if ($currentAgentId === null || $ownerAgentId === null || $currentAgentId !== $ownerAgentId) {
+            return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+        }
+
+        $ticket->setLastReadAt(new \DateTimeImmutable());
+        $this->em->flush();
+
+        // Emit real-time event so other clients clear their unread badge
+        $this->em->getConnection()->insert('outbox_events', [
+            'id' => (string) (new Ulid()),
+            'aggregate_type' => 'ticket',
+            'aggregate_id' => $id,
+            'topic' => 'tickets',
+            'event_type' => RealtimeEventType::TicketRead->value,
+            'payload' => json_encode([
+                'eventType' => RealtimeEventType::TicketRead->value,
+                'ticketId' => $id,
+            ]),
+            'created_at' => (new \DateTimeImmutable())->format('Y-m-d H:i:s'),
+            'status' => 'pending',
+            'sequence' => 0,
+        ]);
+
+        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
 }
