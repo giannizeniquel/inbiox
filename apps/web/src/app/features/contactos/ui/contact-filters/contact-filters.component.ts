@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
-import { ContactFilters } from '../../../../data-access/contacto/contact-ui.model';
+import { ContactFilters } from '../../contacts-screen.store';
 
 /**
  * ContactFiltersComponent — standalone filter chips for status and channel.

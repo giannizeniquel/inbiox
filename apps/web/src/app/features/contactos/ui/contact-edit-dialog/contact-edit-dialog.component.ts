@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy, inject, input, output, HostListener, viewChild, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ContactFormComponent } from '../contact-form/contact-form.component';
-import { UpdateContactUseCase, UpdateContactInput } from '../../../../data-access/contacto/update-contact.use-case';
+import { ContactsApiService, UpdateContactInput } from '../../../../data-access/contacto/contacts-api.service';
 import { UIContact } from '../../../../data-access/contacto/contact-ui.model';
 
 /**
@@ -11,7 +11,7 @@ import { UIContact } from '../../../../data-access/contacto/contact-ui.model';
  * - Title: "Editar Contacto"
  * - Pre-fills form with selectedContact data (phone, name, email)
  * - Buttons: "Guardar" (primary), "Cancelar" (secondary)
- * - Calls UpdateContactUseCase.execute() on submit
+ * - Calls ContactsApiService.updateContact() on submit
  * - Handles loading/error states
  * - Emits close with updated contact on success, or without data on cancel
  * - OnPush, standalone
@@ -26,7 +26,7 @@ import { UIContact } from '../../../../data-access/contacto/contact-ui.model';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ContactEditDialogComponent implements AfterViewInit {
-  private readonly updateContact = inject(UpdateContactUseCase);
+  private readonly contactsApi = inject(ContactsApiService);
 
   /** The contact to edit (required) */
   readonly contact = input.required<UIContact>();
@@ -53,7 +53,7 @@ export class ContactEditDialogComponent implements AfterViewInit {
   /** Loading state */
   loading = false;
 
-  /** Error message from use case */
+  /** Error message from the API service */
   errorMessage: string | null = null;
 
   /** Form dirty state */
@@ -68,15 +68,15 @@ export class ContactEditDialogComponent implements AfterViewInit {
   onFormSubmit(formValue: { phone: string; name: string | null; email: string | null }): void {
     if (this.loading) return;
 
-    this.submitToUseCase({
+    this.submit({
       id: this.contact().id,
       name: formValue.name,
       email: formValue.email,
     });
   }
 
-  /** Submit data to UpdateContactUseCase */
-  private submitToUseCase(data: { id: string; name: string | null; email: string | null }): void {
+  /** Submit data to ContactsApiService.updateContact */
+  private submit(data: { id: string; name: string | null; email: string | null }): void {
     this.loading = true;
     this.errorMessage = null;
 
@@ -86,10 +86,10 @@ export class ContactEditDialogComponent implements AfterViewInit {
       email: data.email ?? undefined,
     };
 
-    this.updateContact.execute(input).subscribe({
-      next: (output) => {
+    this.contactsApi.updateContact(input).subscribe({
+      next: (contact) => {
         this.loading = false;
-        this.close.emit(output.contact);
+        this.close.emit(contact);
       },
       error: (err: Error) => {
         this.loading = false;

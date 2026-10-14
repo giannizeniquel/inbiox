@@ -8,6 +8,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { ContactsStore } from '../../../../data-access/contacto/contacts.store';
+import { ContactsScreenStore } from '../../contacts-screen.store';
 import { ContactCardComponent } from '../contact-card/contact-card.component';
 import { ContactSkeletonComponent } from '../contact-skeleton/contact-skeleton.component';
 import { ContactEmptyComponent } from '../contact-empty/contact-empty.component';
@@ -45,6 +46,7 @@ import { VirtualListCoordinatorDirective } from '../../../../shared/directives/v
 })
 export class ContactsListComponent {
   protected readonly store = inject(ContactsStore);
+  protected readonly screen = inject(ContactsScreenStore);
 
   /** Reference to the coordinator directive on the viewport */
   protected readonly coordinator = viewChild.required(VirtualListCoordinatorDirective<UIContact>);
@@ -69,7 +71,7 @@ export class ContactsListComponent {
 
   /** Computed variant for empty state */
   protected readonly emptyVariant = computed(() =>
-    this.store.searchTerm() ? 'search' : 'global'
+    this.screen.searchTerm() ? 'search' : 'global'
   );
 
   /** Emit selection event */
@@ -90,7 +92,7 @@ export class ContactsListComponent {
 
   /** Handle clear search click from empty state (search variant) */
   onClearSearch(): void {
-    this.store.setSearchTerm('');
+    this.screen.setSearchTerm('');
   }
 
   /** Handle create contact click from empty state */

@@ -8,7 +8,7 @@
     <app-contact-error [errorMessage]="store.error()!" (retry)="onRetry()" />
   }
   <!-- Empty state: no contacts at all -->
-  @else if (store.filteredContacts().length === 0) {
+  @else if (screen.filteredContacts().length === 0) {
     <app-contact-empty
       [variant]="emptyVariant()"
       (create)="onCreateContact()"
@@ -19,7 +19,7 @@
   @else {
     <app-virtual-scroll-viewport
       appVirtualListCoordinator
-      [items]="store.filteredContacts()"
+      [items]="screen.filteredContacts()"
       [idOf]="idOfContact"
       [infiniteScrollThreshold]="200"
       [itemHeight]="72"
@@ -32,7 +32,7 @@
       @for (contact of coordinator().visibleItems(); track contact.id) {
         <app-contact-card
           [contact]="contact"
-          [selected]="store.selectedContactId() === contact.id"
+          [selected]="screen.selectedContactId() === contact.id"
           (select)="onContactSelect($event)"
           [class.focused]="coordinator().isFocused(contact.id)"
           (mouseenter)="coordinator().onCardFocus($index)"

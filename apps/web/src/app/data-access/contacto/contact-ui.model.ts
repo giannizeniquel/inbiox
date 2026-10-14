@@ -24,18 +24,6 @@ export interface UIContact {
 }
 
 /**
- * ContactFilters — filter state for the contacts list.
- * Tags: optional, not implemented yet (UI placeholder only).
- */
-export interface ContactFilters {
-  status?: 'active' | 'inactive' | 'all';
-  ownerId?: number | null;
-  /** Reserved for future tag filtering. Not implemented. */
-  tags?: string[];
-  channel?: 'whatsapp' | 'other' | 'all';
-}
-
-/**
  * Pagination state for contact list.
  */
 export interface ContactPagination {

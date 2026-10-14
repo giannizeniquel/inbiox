@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, throwError } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import {
   ContactListItemDTO,
@@ -11,6 +11,37 @@ import {
   UpdateContactRequest
 } from './contact-transport.dto';
 import { TimelineEventResponse } from './timeline-transport.dto';
+import { UIContact } from './contact-ui.model';
+import { mapDetailToUIContact, mapListItemToUIContact } from './mappers';
+
+/** Input of ContactsApiService.getContacts */
+export interface GetContactsInput {
+  page?: number;
+  limit?: number;
+}
+
+/** Paginated contacts mapped to UIContact */
+export interface GetContactsOutput {
+  contacts: UIContact[];
+  total: number;
+  page: number;
+  hasMore: boolean;
+}
+
+/** Input of ContactsApiService.createContact */
+export interface CreateContactInput {
+  phone: string;
+  name?: string;
+  email?: string;
+}
+
+/** Input of ContactsApiService.updateContact */
+export interface UpdateContactInput {
+  id: string;
+  name?: string;
+  email?: string;
+  tags?: string[];
+}
 
 /** Per-row import failure, as returned by POST /api/contacts/import */
 export interface ImportContactsErrorEntry {
@@ -94,11 +125,15 @@ export class ContactsApiService {
   }
 
   /**
-   * GET /api/contacts - Paginated list with optional filters
+   * GET /api/contacts - Paginated list, mapped to UIContact.
+   * Errors keep the original message when it is an Error; otherwise a generic one.
    */
-  getContacts(page = 1, limit = 20, search?: string): Observable<ContactsListResponse> {
+  getContacts(input: GetContactsInput = {}): Observable<GetContactsOutput> {
+    const page = input.page ?? 1;
+    const limit = input.limit ?? 20;
+
     return this.http.get<any>(`${this.baseUrl}/api/contacts`, {
-      params: this.buildListParams(page, limit, search)
+      params: this.buildListParams(page, limit)
     }).pipe(
       // Map response to frontend format
       map((response: any) => ({
@@ -108,7 +143,19 @@ export class ContactsApiService {
           page: response.meta?.page || 1,
           limit: response.meta?.limit || limit,
         }
-      }))
+      })),
+      map((response: ContactsListResponse) => ({
+        contacts: response.data.map(mapListItemToUIContact),
+        total: response.meta.total,
+        page: response.meta.page,
+        hasMore: response.meta.page * response.meta.limit < response.meta.total,
+      })),
+      catchError(err => {
+        console.error('[ContactsApiService] Failed to fetch contacts:', err);
+        return throwError(() => new Error(
+          err instanceof Error ? err.message : 'Failed to fetch contacts'
+        ));
+      })
     );
   }
 
@@ -127,16 +174,33 @@ export class ContactsApiService {
   }
 
   /**
-   * POST /api/contacts - Create contact
+   * POST /api/contacts - Create contact (phone required; fields trimmed), mapped to UIContact.
    */
-  createContact(request: CreateContactRequest): Observable<ContactDetailDTO> {
+  createContact(input: CreateContactInput): Observable<UIContact> {
+    if (!input.phone || input.phone.trim().length === 0) {
+      return throwError(() => new Error('Phone is required'));
+    }
+
+    const request: CreateContactRequest = {
+      phone: input.phone.trim(),
+      name: input.name?.trim(),
+      email: input.email?.trim(),
+    };
+
     return this.http.post<any>(`${this.baseUrl}/api/contacts`, request).pipe(
-      map((response: any) => ({
+      map((response: any): ContactDetailDTO => ({
         ...this.mapToContactListItem(response),
         createdAt: response.timestamps?.created_at || new Date().toISOString(),
         recentTickets: [],
         email: response.email || null,
-      }))
+      })),
+      map(dto => mapDetailToUIContact(dto)),
+      catchError(err => {
+        console.error('[ContactsApiService] Failed to create contact:', err);
+        return throwError(() => new Error(
+          err instanceof Error ? err.message : 'Failed to create contact'
+        ));
+      })
     );
   }
 
@@ -151,16 +215,33 @@ export class ContactsApiService {
   }
 
   /**
-   * PUT /api/contacts/{id} - Update contact
+   * PUT /api/contacts/{id} - Update contact (id required; fields trimmed), mapped to UIContact.
    */
-  updateContact(id: string, request: UpdateContactRequest): Observable<ContactDetailDTO> {
-    return this.http.put<any>(`${this.baseUrl}/api/contacts/${id}`, request).pipe(
-      map((response: any) => ({
+  updateContact(input: UpdateContactInput): Observable<UIContact> {
+    if (!input.id) {
+      return throwError(() => new Error('Contact ID is required'));
+    }
+
+    const request: UpdateContactRequest = {
+      name: input.name?.trim(),
+      email: input.email?.trim(),
+      tags: input.tags,
+    };
+
+    return this.http.put<any>(`${this.baseUrl}/api/contacts/${input.id}`, request).pipe(
+      map((response: any): ContactDetailDTO => ({
         ...this.mapToContactListItem(response),
         createdAt: response.timestamps?.created_at || new Date().toISOString(),
         recentTickets: [],
         email: response.email || null,
-      }))
+      })),
+      map(dto => mapDetailToUIContact(dto)),
+      catchError(err => {
+        console.error('[ContactsApiService] Failed to update contact:', err);
+        return throwError(() => new Error(
+          err instanceof Error ? err.message : 'Failed to update contact'
+        ));
+      })
     );
   }
 

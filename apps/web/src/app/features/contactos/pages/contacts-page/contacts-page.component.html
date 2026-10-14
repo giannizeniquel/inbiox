@@ -2,7 +2,7 @@
   <div class="contacts-list-panel">
     <div class="contacts-header">
       <app-contact-search
-        [searchTerm]="store.searchTerm()"
+        [searchTerm]="screen.searchTerm()"
         (searchChange)="onSearchChange($event)"
       />
       <button type="button" class="btn-add" (click)="onAddContact()">
@@ -15,7 +15,7 @@
       }
     </div>
     <app-contact-filters
-      [filters]="store.filters()"
+      [filters]="screen.filters()"
       (filterChange)="onFilterChange($event)"
     />
     <app-contacts-list
@@ -26,9 +26,9 @@
       [loadingMore]="loadingMore()"
     />
   </div>
-  <div class="contacts-detail-panel" [class.visible]="store.selectedContact() !== null">
+  <div class="contacts-detail-panel" [class.visible]="screen.selectedContact() !== null">
     <app-contact-detail
-      [contact]="store.selectedContact()"
+      [contact]="screen.selectedContact()"
       [loading]="store.loading()"
       (openConversation)="onOpenConversation($event)"
       (openTicket)="onOpenTicketFromTimeline($event)"

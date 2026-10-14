@@ -4,8 +4,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ContactsApiService, ImportContactsResult } from '../../../../data-access/contacto/contacts-api.service';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { ContactsStore } from '../../../../data-access/contacto/contacts.store';
-import { GetContactsUseCase } from '../../../../data-access/contacto/get-contacts.use-case';
-import { ContactFilters, UIContact } from '../../../../data-access/contacto/contact-ui.model';
+import { UIContact } from '../../../../data-access/contacto/contact-ui.model';
+import { ContactFilters, ContactsScreenStore } from '../../contacts-screen.store';
 import { ContactsListComponent } from '../../ui/contacts-list/contacts-list.component';
 import { ContactDetailComponent } from '../../ui/contact-detail/contact-detail.component';
 import { ContactSearchComponent } from '../../ui/contact-search/contact-search.component';
@@ -23,7 +23,7 @@ let updatingFromUrl = false;
  * Per spec:
  * - Two-column layout (list + detail) on desktop (>1024px)
  * - Single panel on mobile
- * - Loads contacts on init via GetContactsUseCase
+ * - Loads contacts on init via ContactsApiService.getContacts
  * - NO realtime in Fase 2A (deterministic only)
  * - Supports /contacts/:contactId deep links
  * - Create/Edit dialogs for CRUD operations
@@ -46,7 +46,7 @@ let updatingFromUrl = false;
 })
 export class ContactsPageComponent implements OnInit, OnDestroy {
   protected readonly store = inject(ContactsStore);
-  private readonly getContacts = inject(GetContactsUseCase);
+  protected readonly screen = inject(ContactsScreenStore);
   private readonly contactsApi = inject(ContactsApiService);
   protected readonly authStore = inject(AuthStore);
   private readonly route = inject(ActivatedRoute);
@@ -72,7 +72,7 @@ export class ContactsPageComponent implements OnInit, OnDestroy {
         // Check if contact is already in the cached list
         const cached = this.store.contactById(contactId);
         if (cached) {
-          this.store.selectContact(contactId);
+          this.screen.selectContact(contactId);
         } else {
           // Fetch from API if not cached
           this.contactsApi.getContact(contactId).subscribe({
@@ -93,15 +93,15 @@ export class ContactsPageComponent implements OnInit, OnDestroy {
                   : null,
               };
               this.store.addContact(uiContact);
-              this.store.selectContact(contactId);
+              this.screen.selectContact(contactId);
             },
             error: () => {
-              this.store.clearSelection();
+              this.screen.clearSelection();
             },
           });
         }
       } else {
-        this.store.clearSelection();
+        this.screen.clearSelection();
       }
     });
 
@@ -110,11 +110,11 @@ export class ContactsPageComponent implements OnInit, OnDestroy {
     const status = this.route.snapshot.queryParams['status'];
     const channel = this.route.snapshot.queryParams['channel'];
     if (q !== undefined || status !== undefined || channel !== undefined) {
-      if (q !== undefined) this.store.setSearchTerm(q);
+      if (q !== undefined) this.screen.setSearchTerm(q);
       const filters: ContactFilters = {};
       if (status !== undefined) filters.status = status as 'active' | 'inactive' | 'all';
       if (channel !== undefined) filters.channel = channel as 'whatsapp' | 'other' | 'all';
-      if (Object.keys(filters).length > 0) this.store.setFilters(filters);
+      if (Object.keys(filters).length > 0) this.screen.setFilters(filters);
     }
 
     // Sync URL → store when query params change (browser back/forward)
@@ -123,11 +123,11 @@ export class ContactsPageComponent implements OnInit, OnDestroy {
       const q = params['q'];
       const status = params['status'];
       const channel = params['channel'];
-      if (q !== undefined) this.store.setSearchTerm(q);
+      if (q !== undefined) this.screen.setSearchTerm(q);
       const filters: ContactFilters = {};
       if (status !== undefined) filters.status = status as 'active' | 'inactive' | 'all';
       if (channel !== undefined) filters.channel = channel as 'whatsapp' | 'other' | 'all';
-      if (Object.keys(filters).length > 0) this.store.setFilters(filters);
+      if (Object.keys(filters).length > 0) this.screen.setFilters(filters);
       updatingFromUrl = false;
     });
   }
@@ -137,13 +137,13 @@ export class ContactsPageComponent implements OnInit, OnDestroy {
   }
 
   onContactSelect(contactId: string): void {
-    this.store.selectContact(contactId);
+    this.screen.selectContact(contactId);
     // Update URL to /contacts/:contactId
     this.router.navigate(['/contacts', contactId], { replaceUrl: true });
   }
 
   onSearchChange(term: string): void {
-    this.store.setSearchTerm(term);
+    this.screen.setSearchTerm(term);
     if (!updatingFromUrl) {
       this.router.navigate([], {
         queryParams: { q: term || null },
@@ -154,13 +154,13 @@ export class ContactsPageComponent implements OnInit, OnDestroy {
   }
 
   onFilterChange(change: Partial<ContactFilters>): void {
-    const current = this.store.filters();
-    this.store.setFilters({ ...current, ...change });
+    const current = this.screen.filters();
+    this.screen.setFilters({ ...current, ...change });
     if (!updatingFromUrl) {
       this.router.navigate([], {
         queryParams: {
-          status: change.status ?? this.store.filters().status ?? null,
-          channel: change.channel ?? this.store.filters().channel ?? null,
+          status: change.status ?? this.screen.filters().status ?? null,
+          channel: change.channel ?? this.screen.filters().channel ?? null,
         },
         queryParamsHandling: 'merge',
         replaceUrl: true,
@@ -172,7 +172,7 @@ export class ContactsPageComponent implements OnInit, OnDestroy {
     const nextPage = this.store.pagination().page + 1;
     this.loadingMore.set(true);
 
-    this.getContacts.execute({ page: nextPage, limit: 20 }).subscribe({
+    this.contactsApi.getContacts({ page: nextPage, limit: 20 }).subscribe({
       next: (output) => {
         // Append new contacts to existing list
         this.store.contacts.update(list => {
@@ -264,7 +264,7 @@ export class ContactsPageComponent implements OnInit, OnDestroy {
     this.store.setLoading(true);
     this.store.setError(null);
 
-    return this.getContacts.execute({ page: 1, limit: 20 }).subscribe({
+    return this.contactsApi.getContacts({ page: 1, limit: 20 }).subscribe({
       next: (output) => {
         this.store.loadContacts(output.contacts, {
           page: output.page,

@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy, inject, output, HostListener, ElementRef, viewChild, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ContactFormComponent } from '../contact-form/contact-form.component';
-import { CreateContactUseCase, CreateContactInput } from '../../../../data-access/contacto/create-contact.use-case';
+import { ContactsApiService, CreateContactInput } from '../../../../data-access/contacto/contacts-api.service';
 import { UIContact } from '../../../../data-access/contacto/contact-ui.model';
 
 /**
@@ -10,7 +10,7 @@ import { UIContact } from '../../../../data-access/contacto/contact-ui.model';
  * Per spec:
  * - Title: "Crear Contacto"
  * - Buttons: "Guardar" (primary), "Cancelar" (secondary)
- * - Calls CreateContactUseCase.execute() on submit
+ * - Calls ContactsApiService.createContact() on submit
  * - Handles loading/error states
  * - Emits close with created contact on success, or without data on cancel
  * - OnPush, standalone
@@ -25,7 +25,7 @@ import { UIContact } from '../../../../data-access/contacto/contact-ui.model';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ContactCreateDialogComponent implements AfterViewInit {
-  private readonly createContact = inject(CreateContactUseCase);
+  private readonly contactsApi = inject(ContactsApiService);
 
   /** Reference to the form component for accessing phone input */
   private readonly formComponent = viewChild<ContactFormComponent>('contactForm');
@@ -49,7 +49,7 @@ export class ContactCreateDialogComponent implements AfterViewInit {
   /** Loading state */
   loading = false;
 
-  /** Error message from use case */
+  /** Error message from the API service */
   errorMessage: string | null = null;
 
   /** Form dirty state */
@@ -64,15 +64,15 @@ export class ContactCreateDialogComponent implements AfterViewInit {
   onFormSubmit(formValue: { phone: string; name: string | null; email: string | null }): void {
     if (this.loading) return;
 
-    this.submitToUseCase({
+    this.submit({
       phone: formValue.phone,
       name: formValue.name,
       email: formValue.email,
     });
   }
 
-  /** Submit data to CreateContactUseCase */
-  private submitToUseCase(data: { phone: string; name: string | null; email: string | null }): void {
+  /** Submit data to ContactsApiService.createContact */
+  private submit(data: { phone: string; name: string | null; email: string | null }): void {
     this.loading = true;
     this.errorMessage = null;
 
@@ -82,10 +82,10 @@ export class ContactCreateDialogComponent implements AfterViewInit {
       email: data.email ?? undefined,
     };
 
-    this.createContact.execute(input).subscribe({
-      next: (output) => {
+    this.contactsApi.createContact(input).subscribe({
+      next: (contact) => {
         this.loading = false;
-        this.close.emit(output.contact);
+        this.close.emit(contact);
       },
       error: (err: Error) => {
         this.loading = false;
