@@ -2,20 +2,20 @@
 
 namespace App\Tests\Integration;
 
-use App\Domain\Tag\Tag;
-use App\Domain\Rule\RuleInterface;
-use App\Domain\Rule\RuleContext;
-use App\Domain\Rule\AutoReopenRule;
-use App\Domain\Rule\KeywordTaggingRule;
-use App\Application\UseCase\AddTagToTicketUseCase;
-use App\Application\UseCase\HandleInboundMessageUseCase;
-use App\Domain\Ticket\Ticket;
-use App\Domain\Ticket\TicketStatus;
-use App\Domain\Message\Message;
-use App\Repository\TagRepository;
-use App\Repository\TicketRepository;
-use App\Domain\Contact\Contact;
-use App\Domain\Conversation\Conversation;
+use App\Ticket\Tag;
+use App\Automatizacion\RuleInterface;
+use App\Automatizacion\RuleContext;
+use App\Automatizacion\AutoReopenRule;
+use App\Automatizacion\KeywordTaggingRule;
+use App\Ticket\UseCase\AddTagToTicketUseCase;
+use App\Conversacion\UseCase\HandleInboundMessageUseCase;
+use App\Ticket\Ticket;
+use App\Ticket\TicketStatus;
+use App\Conversacion\Message;
+use App\Ticket\Repository\TagRepository;
+use App\Ticket\Repository\TicketRepository;
+use App\Contacto\Contact;
+use App\Conversacion\Conversation;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -434,7 +434,7 @@ class Sprint08AutomationTest extends KernelTestCase
         );
 
         // Get rule executor service
-        $ruleExecutor = static::getContainer()->get(\App\Application\Rule\RuleExecutorService::class);
+        $ruleExecutor = static::getContainer()->get(\App\Automatizacion\RuleExecutorService::class);
         $context = new RuleContext($ticket, null, 'inbound');
 
         // Act - execute rules (should skip due to idempotency)
@@ -548,7 +548,7 @@ class Sprint08AutomationTest extends KernelTestCase
 
     private function createMockAutoReopenRule(): AutoReopenRule
     {
-        $transitionUseCase = $this->createMock(\App\Application\UseCase\TransitionTicketStatusUseCase::class);
+        $transitionUseCase = $this->createMock(\App\Ticket\UseCase\TransitionTicketStatusUseCase::class);
         $em = $this->createMock(EntityManagerInterface::class);
 
         return new AutoReopenRule($transitionUseCase, $em);

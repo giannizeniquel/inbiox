@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Application\UseCase\AutoAssignTicketUseCase;
-use App\Domain\Agent\Agent;
-use App\Domain\Agent\AgentShift;
-use App\Domain\Assignment\Assignment;
-use App\Domain\Outbox\OutboxEvent;
-use App\Domain\Ticket\Ticket;
-use App\Domain\Ticket\TicketStatus;
-use App\Domain\User\User;
+use App\Asignacion\UseCase\AutoAssignTicketUseCase;
+use App\Agente\Agent;
+use App\Disponibilidad\AgentShift;
+use App\Asignacion\Assignment;
+use App\Compartido\Outbox\OutboxEvent;
+use App\Ticket\Ticket;
+use App\Ticket\TicketStatus;
+use App\Administracion\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;

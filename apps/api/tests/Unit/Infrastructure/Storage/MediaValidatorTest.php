@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Infrastructure\Storage;
 
-use App\Domain\Media\MediaKind;
-use App\Exception\MediaTooLargeException;
-use App\Exception\MediaTypeNotAllowedException;
-use App\Infrastructure\Storage\MediaValidator;
+use App\Conversacion\MediaKind;
+use App\Conversacion\MediaTooLargeException;
+use App\Conversacion\MediaTypeNotAllowedException;
+use App\Conversacion\MediaValidator;
 use PHPUnit\Framework\TestCase;
 
 class MediaValidatorTest extends TestCase

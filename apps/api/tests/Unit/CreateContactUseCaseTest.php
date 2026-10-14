@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit;
 
-use App\Application\DTO\ContactDetailDTO;
-use App\Application\UseCase\CreateContactUseCase;
-use App\Domain\Contact\Contact;
-use App\Repository\ContactRepository;
+use App\Contacto\Query\ContactDetailDTO;
+use App\Contacto\UseCase\CreateContactUseCase;
+use App\Contacto\Contact;
+use App\Contacto\Repository\ContactRepository;
 use Doctrine\DBAL\Driver\Exception as DriverException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;

@@ -1,5 +1,5 @@
 gesdinet_jwt_refresh_token:
-    refresh_token_class: App\Domain\RefreshToken\RefreshToken
+    refresh_token_class: App\Autenticacion\RefreshToken
     ttl: 2592000
     token_parameter_name: inbiox_refresh
     single_use: true

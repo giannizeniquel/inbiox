@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Domain\Ticket;
 
-use App\Domain\Ticket\ConversationWindowPolicy;
+use App\Conversacion\ConversationWindowPolicy;
 use PHPUnit\Framework\TestCase;
 
 /**

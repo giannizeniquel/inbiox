@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit;
 
-use App\Application\Security\OwnershipScope;
-use App\Domain\User\User;
+use App\Compartido\Security\OwnershipScope;
+use App\Administracion\User;
 use PHPUnit\Framework\TestCase;
 use Symfony\Bundle\SecurityBundle\Security;
 

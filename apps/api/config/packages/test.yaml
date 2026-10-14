@@ -9,7 +9,7 @@ imports:
 
 services:
     # Make services public for tests to access via container
-    App\Application\Service\OutboxPublisherService:
+    App\Compartido\Outbox\OutboxPublisherService:
         public: true
-    App\Application\Service\MercureJwtService:
+    App\Compartido\Realtime\MercureJwtService:
         public: true

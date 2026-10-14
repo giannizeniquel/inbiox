@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Controller;
 
-use App\Application\Service\GraphClient;
-use App\Application\UseCase\HandleOutboundMessageUseCase;
-use App\Controller\ProviderProxyController;
-use App\Domain\Agent\Agent;
-use App\Domain\User\User;
-use App\Infrastructure\Storage\MediaStorageService;
-use App\Infrastructure\Storage\MediaValidator;
-use App\Repository\TicketRepository;
+use App\Compartido\Graph\GraphClient;
+use App\Conversacion\UseCase\HandleOutboundMessageUseCase;
+use App\Conversacion\Controller\ProviderProxyController;
+use App\Agente\Agent;
+use App\Administracion\User;
+use App\Compartido\Storage\MediaStorageService;
+use App\Conversacion\MediaValidator;
+use App\Ticket\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 use PHPUnit\Framework\TestCase;

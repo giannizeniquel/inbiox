@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Application\Query;
 
-use App\Application\Query\TicketFilterBuilder;
+use App\Ticket\Query\TicketFilterBuilder;
 use PHPUnit\Framework\TestCase;
 
 /**

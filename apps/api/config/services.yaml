@@ -23,24 +23,24 @@ services:
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
 
-    App\Application\Service\GraphClient:
+    App\Compartido\Graph\GraphClient:
         arguments:
             $accessToken: '%env(META_ACCESS_TOKEN)%'
             $phoneNumberId: '%env(META_PHONE_NUMBER_ID)%'
 
-    App\Controller\WebhookController:
+    App\Conversacion\Controller\WebhookController:
         arguments:
             $verifyToken: '%env(META_WEBHOOK_VERIFY_TOKEN)%'
             $appSecret: '%env(META_APP_SECRET)%'
 
-    App\EventListener\AuthenticationSuccessListener:
+    App\Autenticacion\EventListener\AuthenticationSuccessListener:
         arguments:
             $tokenTtl: '%lexik_jwt_authentication.token_ttl%'
         tags:
             - { name: kernel.event_listener, event: lexik_jwt_authentication.on_authentication_success, method: onAuthenticationSuccess, priority: -10 }
 
     Aws\S3\S3Client:
-        factory: ['App\Infrastructure\Storage\S3ClientFactory', 'create']
+        factory: ['App\Compartido\Storage\S3ClientFactory', 'create']
         arguments:
             $endpoint: '%env(S3_ENDPOINT)%'
             $region: '%env(S3_REGION)%'
@@ -49,25 +49,25 @@ services:
 
     media.public_s3_client:
         class: Aws\S3\S3Client
-        factory: ['App\Infrastructure\Storage\S3ClientFactory', 'create']
+        factory: ['App\Compartido\Storage\S3ClientFactory', 'create']
         arguments:
             $endpoint: '%env(S3_PUBLIC_ENDPOINT)%'
             $region: '%env(S3_REGION)%'
             $accessKey: '%env(S3_KEY)%'
             $secretKey: '%env(S3_SECRET)%'
 
-    App\Infrastructure\Storage\MediaStorageService:
+    App\Compartido\Storage\MediaStorageService:
         arguments:
             $s3Client: '@Aws\S3\S3Client'
             $publicS3Client: '@media.public_s3_client'
             $bucket: '%env(S3_BUCKET)%'
             $urlTtl: '%env(int:MEDIA_URL_TTL)%'
 
-    App\Domain\Ticket\ConversationWindowPolicy:
+    App\Conversacion\ConversationWindowPolicy:
         arguments:
             $safetyMarginMinutes: '%env(int:CONVERSATION_WINDOW_SAFETY_MARGIN_MINUTES)%'
 
-    App\Application\Service\ConversationWindowExpiryService:
+    App\Conversacion\UseCase\ConversationWindowExpiryService:
         # Kept public: no other service injects this yet (only the Console
         # Command does), so Symfony's "remove unused private services" pass
         # would otherwise optimize it away entirely, including in tests.

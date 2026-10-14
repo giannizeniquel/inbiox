@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
-use App\Domain\Agent\Agent;
-use App\Domain\Team\Team;
-use App\Domain\User\User;
-use App\Domain\Workspace\Workspace;
+use App\Agente\Agent;
+use App\Agente\Team;
+use App\Administracion\User;
+use App\Administracion\Workspace;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;

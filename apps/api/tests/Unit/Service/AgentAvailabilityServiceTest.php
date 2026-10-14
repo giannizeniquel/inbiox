@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Service;
 
-use App\Application\DTO\AgentAvailabilityDTO;
-use App\Application\Service\AgentAvailabilityService;
-use App\Domain\Agent\Agent;
-use App\Domain\Agent\AgentShift;
-use App\Domain\Agent\AgentShiftRepository;
-use App\Domain\Ticket\TicketStatus;
-use App\Domain\Workspace\Workspace;
-use App\Repository\AgentRepository;
+use App\Disponibilidad\Query\AgentAvailabilityDTO;
+use App\Disponibilidad\AgentAvailabilityService;
+use App\Agente\Agent;
+use App\Disponibilidad\AgentShift;
+use App\Disponibilidad\Repository\AgentShiftRepository;
+use App\Ticket\TicketStatus;
+use App\Administracion\Workspace;
+use App\Agente\Repository\AgentRepository;
 use Doctrine\ORM\AbstractQuery;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Query;

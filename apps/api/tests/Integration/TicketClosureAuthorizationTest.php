@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Domain\Agent\Agent;
-use App\Domain\Contact\Contact;
-use App\Domain\Conversation\Conversation;
-use App\Domain\Ticket\Ticket;
-use App\Domain\Ticket\TicketStatus;
-use App\Domain\User\User;
+use App\Agente\Agent;
+use App\Contacto\Contact;
+use App\Conversacion\Conversation;
+use App\Ticket\Ticket;
+use App\Ticket\TicketStatus;
+use App\Administracion\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;

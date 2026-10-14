@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit;
 
-use App\Application\DTO\ContactDetailDTO;
-use App\Application\DTO\ImportContactsResultDTO;
-use App\Application\UseCase\CreateContactUseCase;
-use App\Application\UseCase\ImportContactsFromCsvUseCase;
-use App\Exception\ImportRejectedException;
+use App\Contacto\Query\ContactDetailDTO;
+use App\Contacto\UseCase\ImportContactsResultDTO;
+use App\Contacto\UseCase\CreateContactUseCase;
+use App\Contacto\UseCase\ImportContactsFromCsvUseCase;
+use App\Contacto\ImportRejectedException;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
 use PHPUnit\Framework\MockObject\MockObject;

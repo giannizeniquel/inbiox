@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Security;
 
-use App\Application\Security\Voter\TicketVoter;
-use App\Domain\Agent\Agent;
-use App\Domain\Ticket\Ticket;
-use App\Domain\User\User;
+use App\Ticket\Security\TicketVoter;
+use App\Agente\Agent;
+use App\Ticket\Ticket;
+use App\Administracion\User;
 use PHPUnit\Framework\TestCase;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
@@ -140,7 +140,7 @@ class VoterTest extends TestCase
         $user->setRoles(['ROLE_SUPERVISOR']);
 
         $ticket = $this->createMock(Ticket::class);
-        $ticket->method('getStatus')->willReturn(\App\Domain\Ticket\TicketStatus::RESOLVED->value);
+        $ticket->method('getStatus')->willReturn(\App\Ticket\TicketStatus::RESOLVED->value);
         $ticket->method('getAssignedAgentId')->willReturn(null);
 
         $token = $this->createMock(TokenInterface::class);
@@ -154,7 +154,7 @@ class VoterTest extends TestCase
             'CLOSE on a resolved ticket must be granted for a supervisor, no exception'
         );
 
-        $this->expectException(\App\Exception\StateConflictException::class);
+        $this->expectException(\App\Compartido\StateConflictException::class);
         $voter->vote($token, $ticket, [TicketVoter::ASSIGN]);
     }
 }

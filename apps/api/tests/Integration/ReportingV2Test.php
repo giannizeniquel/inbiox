@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Domain\Agent\Agent;
-use App\Domain\Agent\AgentShift;
-use App\Domain\Contact\Contact;
-use App\Domain\Event\TicketEvent;
-use App\Domain\Ticket\Ticket;
-use App\Domain\User\User;
-use App\Repository\ReportingRepository;
-use App\Application\Service\ReportingService;
+use App\Agente\Agent;
+use App\Disponibilidad\AgentShift;
+use App\Contacto\Contact;
+use App\Ticket\TicketEvent;
+use App\Ticket\Ticket;
+use App\Administracion\User;
+use App\Reporte\Repository\ReportingRepository;
+use App\Reporte\Query\ReportingService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -387,7 +387,7 @@ class ReportingV2Test extends WebTestCase
         }
 
         // Load workspaces
-        $wsRepo = $this->em->getRepository(\App\Domain\Workspace\Workspace::class);
+        $wsRepo = $this->em->getRepository(\App\Administracion\Workspace::class);
         $workspaces = $wsRepo->findBy([], ['id' => 'ASC']);
         if (empty($workspaces)) {
             $this->markTestSkipped('No workspaces found. Run app:seed-users first.');

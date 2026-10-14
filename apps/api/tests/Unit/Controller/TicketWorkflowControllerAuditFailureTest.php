@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Controller;
 
-use App\Application\UseCase\ResolveTicketUseCase;
-use App\Application\UseCase\TransitionTicketStatusUseCase;
-use App\Controller\TicketWorkflowController;
-use App\Domain\Agent\Agent;
-use App\Domain\Event\ClosureAuditClassifier;
-use App\Domain\Ticket\Ticket;
-use App\Domain\Ticket\TicketStatus;
-use App\Domain\User\User;
-use App\Repository\TicketRepository;
+use App\Ticket\UseCase\ResolveTicketUseCase;
+use App\Ticket\UseCase\TransitionTicketStatusUseCase;
+use App\Ticket\Controller\TicketWorkflowController;
+use App\Agente\Agent;
+use App\Ticket\ClosureAuditClassifier;
+use App\Ticket\Ticket;
+use App\Ticket\TicketStatus;
+use App\Administracion\User;
+use App\Ticket\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;

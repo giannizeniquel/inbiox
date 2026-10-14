@@ -2,7 +2,7 @@
 
 namespace App\Tests\Integration;
 
-use App\Application\Service\MercureJwtService;
+use App\Compartido\Realtime\MercureJwtService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;

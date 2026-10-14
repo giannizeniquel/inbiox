@@ -48,7 +48,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T10 | S1 | inline | done | Phase 1 items that change a contract or the environment (see L9): L11–L16 |
 | T11 | S2 | inline | done | Phase 2: routes regenerated as `#[Route]` attributes from the YAML; `routes.yaml` = `routing.controllers` (L19) |
 | T12 | S2 | inline | done | Phase 2: removed 8 single-implementation interfaces (L20) |
-| T13 | S2 | inline | pending | Phase 2: move classes into modules (map in L19), one commit per module; event-class rename blocker first |
+| T13 | S2 | inline | done | Phase 2: moved 162 classes into 11 modules in one commit, plus the event_type migration (L21) |
 | T14 | S2, S7 | inline | pending | Phase 2: docs paths (`02_sistema-actual`) after the moves |
 
 ### Baseline of failing tests (phase 0, after `1afba20`)
@@ -152,3 +152,17 @@ Later phases, each with its own branch and task list when it starts:
     4. The service config hardcodes FQCNs (`services.yaml`, `services_test.yaml`, `packages/test.yaml`, `security.yaml`, `gesdinet_jwt_refresh_token.yaml`, `bin/outbox-publish.php`).
   - Single-implementation interfaces: Assignment, Contact, Conversation, Message, Tag, Ticket and RuleExecutionLog repository interfaces, plus `EventCollector`. The only test doubles are PHPUnit mocks, which also work on concrete classes.
 - **L20 (2026-10-14), T12:** removed the 7 repository interfaces and `EventCollector`. Type hints now use the concrete repositories; `DefaultEventCollector` became `EventCollector` and is no longer `final`, so the existing PHPUnit mocks still work. Gesdinet's `RefreshTokenRepositoryInterface` is a framework contract and stays. User decision on the event blocker: "si, vamos con la migración" (rewrite `outbox_events.event_type` when the event classes move). Checks: `php -l` on every touched file; `lint:container` OK; full suite 692 tests, exactly the 6 baseline failures.
+- **L21 (2026-10-14), T13 (module move):** a script did the move in one commit instead of one per module, because the cross-references only compile once every class is in place.
+  - Script steps: map old→new FQCN from the explorer CSV. Add an explicit `use` wherever a class referenced a same-namespace neighbour by its short name and the two end up apart (26 imports). Rewrite every plain and double-escaped FQCN in src, tests, config and bin (193 files). `git mv` 162 files and fix their `namespace` lines. Drop imports that became same-namespace, and delete the emptied folders (including `Controller/`, `Entity/` and `Repository/`, which only held `.gitignore`).
+  - Placement changes vs the explorer map: `StateConflictException` goes to `Compartido`, because several modules use it. All `Controller/Admin/*` controllers go to `Administracion/Controller`.
+  - Manual fix: `InvalidTransitionException` is declared inside `TicketStateMachine.php`, so its two references were rewritten by hand.
+  - Doctrine mapping changed to `dir: src`, `prefix: App`.
+  - Migration `Version20261014000000` rewrites `outbox_events.event_type` and `payload.type` (old→new event FQCN), with bound parameters and a reversible `down()`. It was executed alone on the dev DB, because that DB already had an unrelated problem: `Version20260912000002` is pending but its `teams` table exists. 309 rows rewritten; down→up round trip verified.
+  - Checks:
+    - `lint:container` OK; `doctrine:mapping:info` finds 19 entities.
+    - `schema:validate` reports `TicketTag` inverse sides (`ticketTags`) missing. This is pre-existing: the same `inversedBy` was there at HEAD.
+    - `debug:router`: same 91 routes, only the controller FQCNs changed; route-match probe identical.
+    - PHPStan level 0 (docker image, not a project dependency): the same 29 messages before and after. They are pre-existing: Validator constraint attributes whose package is not installed, so those validations never run, plus `AsService`.
+    - `RulePass` still registers both rules (2× `addRule`).
+    - A live outbox event with the new class name was published with HTTP 200; the test row was deleted.
+    - Full suite: 692 tests, exactly the 6 baseline failures.

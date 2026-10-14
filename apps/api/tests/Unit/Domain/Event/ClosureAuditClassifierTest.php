@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Domain\Event;
 
-use App\Domain\Event\ClosureAuditClassifier;
-use App\Domain\Event\TicketEventType;
-use App\Domain\User\User;
+use App\Ticket\ClosureAuditClassifier;
+use App\Ticket\TicketEventType;
+use App\Administracion\User;
 use PHPUnit\Framework\TestCase;
 
 /**

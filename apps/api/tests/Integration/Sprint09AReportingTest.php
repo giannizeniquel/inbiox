@@ -2,12 +2,12 @@
 
 namespace App\Tests\Integration;
 
-use App\Domain\Ticket\Ticket;
-use App\Domain\Ticket\TicketStatus;
-use App\Domain\Contact\Contact;
-use App\Domain\Conversation\Conversation;
-use App\Repository\ReportingRepository;
-use App\Application\Service\ReportingService;
+use App\Ticket\Ticket;
+use App\Ticket\TicketStatus;
+use App\Contacto\Contact;
+use App\Conversacion\Conversation;
+use App\Reporte\Repository\ReportingRepository;
+use App\Reporte\Query\ReportingService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -683,7 +683,7 @@ class Sprint09AReportingTest extends KernelTestCase
 
     private function createTestAgent(string $name = 'Test Agent'): int
     {
-        $agent = new \App\Domain\Agent\Agent($name);
+        $agent = new \App\Agente\Agent($name);
         $this->em->persist($agent);
         $this->em->flush();
         return $agent->getId();

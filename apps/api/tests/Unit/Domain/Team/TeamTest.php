@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Domain\Team;
 
-use App\Domain\Agent\Agent;
-use App\Domain\Team\Team;
-use App\Domain\Workspace\Workspace;
+use App\Agente\Agent;
+use App\Agente\Team;
+use App\Administracion\Workspace;
 use PHPUnit\Framework\TestCase;
 
 /**

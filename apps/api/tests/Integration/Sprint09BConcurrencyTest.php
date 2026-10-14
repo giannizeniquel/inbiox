@@ -2,10 +2,10 @@
 
 namespace App\Tests\Integration;
 
-use App\Application\UseCase\HandleInboundMessageUseCase;
-use App\Application\UseCase\AssignTicketUseCase;
-use App\Domain\Ticket\Ticket;
-use App\Domain\Outbox\OutboxEvent;
+use App\Conversacion\UseCase\HandleInboundMessageUseCase;
+use App\Asignacion\UseCase\AssignTicketUseCase;
+use App\Ticket\Ticket;
+use App\Compartido\Outbox\OutboxEvent;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;

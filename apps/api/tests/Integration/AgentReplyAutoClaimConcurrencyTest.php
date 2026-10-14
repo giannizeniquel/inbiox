@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Application\UseCase\HandleOutboundMessageUseCase;
-use App\Domain\Contact\Contact;
-use App\Domain\Conversation\Conversation;
-use App\Domain\Ticket\Ticket;
-use App\Domain\Ticket\TicketStatus;
-use App\Exception\ConcurrencyException;
+use App\Conversacion\UseCase\HandleOutboundMessageUseCase;
+use App\Contacto\Contact;
+use App\Conversacion\Conversation;
+use App\Ticket\Ticket;
+use App\Ticket\TicketStatus;
+use App\Compartido\ConcurrencyException;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -85,8 +85,8 @@ class AgentReplyAutoClaimConcurrencyTest extends KernelTestCase
 
         $this->em->getConnection()->executeStatement('SET SESSION innodb_lock_wait_timeout = 1');
 
-        /** @var \App\Repository\TicketRepository $ticketRepo */
-        $ticketRepo = static::getContainer()->get(\App\Repository\TicketRepository::class);
+        /** @var \App\Ticket\Repository\TicketRepository $ticketRepo */
+        $ticketRepo = static::getContainer()->get(\App\Ticket\Repository\TicketRepository::class);
 
         try {
             // Baseline: the OLD, still-used-elsewhere plain read never contends

@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Application\UseCase\ResolveTicketUseCase;
-use App\Application\UseCase\TransitionTicketStatusUseCase;
-use App\Domain\Agent\Agent;
-use App\Domain\Contact\Contact;
-use App\Domain\Conversation\Conversation;
-use App\Domain\Event\TicketEventType;
-use App\Domain\Ticket\Ticket;
-use App\Domain\Ticket\TicketStatus;
+use App\Ticket\UseCase\ResolveTicketUseCase;
+use App\Ticket\UseCase\TransitionTicketStatusUseCase;
+use App\Agente\Agent;
+use App\Contacto\Contact;
+use App\Conversacion\Conversation;
+use App\Ticket\TicketEventType;
+use App\Ticket\Ticket;
+use App\Ticket\TicketStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -116,7 +116,7 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
 
         $useCase = static::getContainer()->get(TransitionTicketStatusUseCase::class);
 
-        $this->expectException(\App\Domain\Ticket\InvalidTransitionException::class);
+        $this->expectException(\App\Ticket\InvalidTransitionException::class);
         $useCase->closeDueToWindowExpiry($ticketId);
     }
 
@@ -182,7 +182,7 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
      */
     public function testReopenSucceedsEvenThoughClosedToActiveIsNotInTheSharedFsmTable(): void
     {
-        $fsm = new \App\Domain\Ticket\TicketStateMachine();
+        $fsm = new \App\Ticket\TicketStateMachine();
         self::assertFalse($fsm->canTransition(TicketStatus::CLOSED->value, TicketStatus::ACTIVE->value));
 
         $ticketId = $this->createTicket(TicketStatus::CLOSED->value);

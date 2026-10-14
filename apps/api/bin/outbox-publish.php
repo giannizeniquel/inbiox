@@ -17,8 +17,8 @@ $kernel->boot();
 
 $container = $kernel->getContainer();
 
-/** @var \App\Application\Service\OutboxPublisherService $publisher */
-$publisher = $container->get(\App\Application\Service\OutboxPublisherService::class);
+/** @var \App\Compartido\Outbox\OutboxPublisherService $publisher */
+$publisher = $container->get(\App\Compartido\Outbox\OutboxPublisherService::class);
 
 $count = $publisher->publishPending();
 
