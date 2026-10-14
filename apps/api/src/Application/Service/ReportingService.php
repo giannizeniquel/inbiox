@@ -135,21 +135,6 @@ class ReportingService
     }
 
     /**
-     * Get agents currently available (in-shift and under capacity).
-     *
-     * Delegates to AgentAvailabilityService::listAvailableAgents().
-     *
-     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
-     * @return array<int, array{agent_id: int, agent_name: string, in_shift: bool, active_tickets: int}>
-     */
-    public function getAvailableAgents(?string $phoneNumberId = null): array
-    {
-        // This will be called from the controller, which injects AgentAvailabilityService
-        // Service method is a thin pass-through
-        return [];
-    }
-
-    /**
      * Get FRT aggregated by day within a date range.
      *
      * @param \DateTimeImmutable $from Start of date range (UTC)

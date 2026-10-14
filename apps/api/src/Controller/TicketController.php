@@ -77,8 +77,7 @@ class TicketController
     /**
      * Set or clear a ticket's team (Tier 2 #7 — Team/Area Entity, Slice 1).
      *
-     * Any authenticated agent may call this — same permission level as
-     * TagController, no Supervisor/Admin restriction and no ownership voter
+     * Any authenticated agent may call this — no Supervisor/Admin restriction and no ownership voter
      * (design.md D5). `teamId: null` clears the assignment. Enforces the
      * cross-workspace invariant: the team's workspace phone_number_id must
      * match the ticket's phone_number_id, otherwise 400 and team_id is left
