@@ -29,6 +29,13 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
   - The renaming happens in phase 5. The glossary is fixed in phase 0.
 - **S5 — Glossary shared with the frontend.** The module names and the naming rule are the same in `apps/web`. The API JSON contract is redefined jointly in phase 5.
 - **S6 — Safety net (phase 0).** Repair the tests that are broken by themselves, delete obsolete ones, and keep the tests that expose real bugs or code drift failing and documented. Record the baseline of failing test names.
+- **S8 — Phase 3, split by the user.** User: "si, y si crees necesario dividirlo en mas partes hazlo, esta es la parte mas critica." (answering whether rule 4 should be split: one listener only for the generic 500 now, with error formats and exception→status mapping unified with the new contract in phase 5).
+  - 3a: characterization tests for uncovered actions that will be touched; no production change.
+  - 3b: one `kernel.exception` listener for the generic 500 only; specific error arms and the 13 error shapes stay until phase 5.
+  - 3c: SQL into repositories; locking reads keep their statement order and transaction.
+  - 3d: controllers only do HTTP, module by module, Administracion first.
+  - 3e: single outbox writer. Open decisions for 3e: outbox timing (today post-commit) and the `EventCollector` leak (events collected but never published).
+  - Inventory (from the explorer): `odd/fase-3/violaciones.csv`, `errores.md`, `cobertura.md`.
 - **S7 — Docs policy (assumption, not explicitly confirmed by the user).** Each phase fixes the docs it invalidates in the same PR. A full docs pass happens in phase 6, after the renaming.
 
 ## Tasks
@@ -50,6 +57,11 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T12 | S2 | inline | done | Phase 2: removed 8 single-implementation interfaces (7 repository interfaces + `EventCollector`) (L20) |
 | T13 | S2 | inline | done | Phase 2: moved 162 classes into 11 modules in one commit, plus the event_type migration (L21) |
 | T14 | S2, S7 | inline | done | Phase 2: docs paths and line refs updated after the moves (L22) |
+| T15 | S8 | inline | pending | 3a characterization tests |
+| T16 | S8 | inline | pending | 3b generic 500 listener |
+| T17 | S8, S3 | inline | pending | 3c SQL into repositories |
+| T18 | S8 | inline | pending | 3d thin controllers, per module |
+| T19 | S8 | inline | pending | 3e single outbox writer (needs 2 user decisions) |
 
 ### Baseline of failing tests (phase 0, after `1afba20`)
 
@@ -173,3 +185,11 @@ Later phases, each with its own branch and task list when it starts:
   - Interfaces (`b971b31..e2d847f`): reliability + readability.
   - Outcome: all three approved and acknowledged (authority burned), with 0 blocking findings. Readability advisories: R2-001 (the B4 doc row was stale and the 7+1 vs 8 counts confusing) is fixed here; R2-002 (import order in `AddTagToTicketUseCase`) is not applied, because the project has no import-order rule or formatter.
   - The module move `3f70628` and the docs commit `a73adc1` are not reviewed: the move is too large for the reviewer, so it relies on the mechanical checks in L21. The temporary worktrees were removed.
+- **L24 (2026-10-14), phase 3 start:** user: "ok, arrancá la fase 3". Branch `chore/limpieza-backend-fase-3` from `db54c40`. A read-only explorer found 389 violations: rule 1: 95, rule 2: 56, rule 3: 12 outbox writers, rule 4: 174, rule 5: 52. The worst module is Administracion (120). Risks:
+  - There is no exception listener and there are 13 error shapes.
+  - Every use case writes the outbox after commit, in its own flush, with payload casing that differs per use case.
+  - `EventCollector` leaks events.
+  - There are raw `FOR UPDATE` reads, nested transactions, and repositories that flush inside `save()`.
+  - Many actions have no tests.
+
+  Split decided with the user (S8).

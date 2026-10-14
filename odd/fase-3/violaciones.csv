@@ -1,0 +1,390 @@
+file,line,rule,kind,detail
+src/Administracion/Controller/UserController.php,28,1,em-injected,EntityManagerInterface in controller ctor
+src/Administracion/Controller/UserController.php,41-55,5,querybuilder,list(): COUNT + paged QB built in controller (admin_users_list)
+src/Administracion/Controller/UserController.php,68,4,try-catch,list(): catch \Exception -> 500 {error:'Internal server error';reference} + logger->error w/ trace
+src/Administracion/Controller/UserController.php,80,2,no-use-case,create() writes User (+Agent link) directly; no use case/no outbox (admin_users_create)
+src/Administracion/Controller/UserController.php,85-119,4,error-json,create(): inline 400/404/409 {error}
+src/Administracion/Controller/UserController.php,102,1,repo-read,getRepository(User)->findOneBy(email) uniqueness check
+src/Administracion/Controller/UserController.php,114,1,repo-read,getRepository(Agent)->find
+src/Administracion/Controller/UserController.php,125-126,1,persist-flush,persist(User)+flush in controller
+src/Administracion/Controller/UserController.php,129,4,catch-map,\InvalidArgumentException -> 400 {error:msg}
+src/Administracion/Controller/UserController.php,131,4,try-catch,catch \Exception -> 500 reference
+src/Administracion/Controller/UserController.php,146,1,repo-read,get(): getRepository(User)->find
+src/Administracion/Controller/UserController.php,148-150,4,error-json,get(): 404 {error:'User not found'}
+src/Administracion/Controller/UserController.php,153,4,try-catch,catch \Exception -> 500 reference
+src/Administracion/Controller/UserController.php,165,2,no-use-case,update() mutates User directly (admin_users_update)
+src/Administracion/Controller/UserController.php,168,1,repo-read,getRepository(User)->find
+src/Administracion/Controller/UserController.php,170-208,4,error-json,update(): inline 400/404/409 {error}
+src/Administracion/Controller/UserController.php,185-192,5,querybuilder,email-in-use QB in controller
+src/Administracion/Controller/UserController.php,217,1,flush,flush in controller
+src/Administracion/Controller/UserController.php,220,4,catch-map,\InvalidArgumentException -> 400
+src/Administracion/Controller/UserController.php,222,4,try-catch,catch \Exception -> 500 reference
+src/Administracion/Controller/UserController.php,234,2,no-use-case,delete() soft-delete in controller (admin_users_delete)
+src/Administracion/Controller/UserController.php,237,1,repo-read,getRepository(User)->find
+src/Administracion/Controller/UserController.php,245,1,flush,flush in controller
+src/Administracion/Controller/UserController.php,248,4,try-catch,catch \Exception -> 500 reference
+src/Administracion/Controller/AgentController.php,25,1,em-injected,EntityManagerInterface in controller ctor
+src/Administracion/Controller/AgentController.php,37-51,5,querybuilder,list(): COUNT + paged QB in controller (admin_agents_list)
+src/Administracion/Controller/AgentController.php,64,4,try-catch,catch \Exception -> 500 reference
+src/Administracion/Controller/AgentController.php,76,2,no-use-case,create() persists Agent in controller (admin_agents_create)
+src/Administracion/Controller/AgentController.php,81-95,4,error-json,create(): inline 400 {error}
+src/Administracion/Controller/AgentController.php,99-100,1,persist-flush,persist(Agent)+flush
+src/Administracion/Controller/AgentController.php,103,4,catch-map,\InvalidArgumentException -> 400
+src/Administracion/Controller/AgentController.php,105,4,try-catch,catch \Exception -> 500 reference
+src/Administracion/Controller/AgentController.php,120,1,repo-read,get(): getRepository(Agent)->find
+src/Administracion/Controller/AgentController.php,122-123,4,error-json,404 {error:'Agent not found'}
+src/Administracion/Controller/AgentController.php,127,4,try-catch,catch \Exception -> 500 reference
+src/Administracion/Controller/AgentController.php,139,2,no-use-case,update() mutates Agent (name via ReflectionProperty at 158-160) (admin_agents_update)
+src/Administracion/Controller/AgentController.php,142,1,repo-read,getRepository(Agent)->find
+src/Administracion/Controller/AgentController.php,144-170,4,error-json,update(): inline 400/404
+src/Administracion/Controller/AgentController.php,174,1,flush,flush in controller
+src/Administracion/Controller/AgentController.php,177,4,catch-map,\InvalidArgumentException -> 400
+src/Administracion/Controller/AgentController.php,179,4,try-catch,catch \Exception -> 500 reference
+src/Administracion/Controller/AgentController.php,191,2,no-use-case,delete() soft-delete in controller (admin_agents_delete)
+src/Administracion/Controller/AgentController.php,194,1,repo-read,getRepository(Agent)->find
+src/Administracion/Controller/AgentController.php,202,1,flush,flush in controller
+src/Administracion/Controller/AgentController.php,205,4,try-catch,catch \Exception -> 500 reference
+src/Administracion/Controller/WorkspaceController.php,27,1,em-injected,EntityManagerInterface in controller ctor
+src/Administracion/Controller/WorkspaceController.php,39-51,5,querybuilder,list(): COUNT + paged QB in controller
+src/Administracion/Controller/WorkspaceController.php,64,4,try-catch,catch \Exception -> 500 reference
+src/Administracion/Controller/WorkspaceController.php,76,2,no-use-case,create() persists Workspace (app_admin_workspaces_create)
+src/Administracion/Controller/WorkspaceController.php,81-101,4,error-json,create(): inline 400/409 {error}
+src/Administracion/Controller/WorkspaceController.php,97-98,1,repo-read,findOneBy(phoneNumberId)
+src/Administracion/Controller/WorkspaceController.php,110-111,1,persist-flush,persist(Workspace)+flush
+src/Administracion/Controller/WorkspaceController.php,114,4,catch-map,\InvalidArgumentException -> 400
+src/Administracion/Controller/WorkspaceController.php,116,4,try-catch,catch \Exception -> 500 reference
+src/Administracion/Controller/WorkspaceController.php,131,1,repo-read,get(): find
+src/Administracion/Controller/WorkspaceController.php,133-134,4,error-json,404 {error:'Workspace not found'}
+src/Administracion/Controller/WorkspaceController.php,138,4,try-catch,catch \Exception -> 500 reference
+src/Administracion/Controller/WorkspaceController.php,150,2,no-use-case,update() mutates Workspace (app_admin_workspaces_update)
+src/Administracion/Controller/WorkspaceController.php,153,1,repo-read,find
+src/Administracion/Controller/WorkspaceController.php,155-174,4,error-json,update(): inline 400/404
+src/Administracion/Controller/WorkspaceController.php,183,1,flush,flush in controller
+src/Administracion/Controller/WorkspaceController.php,186,4,catch-map,\InvalidArgumentException -> 400
+src/Administracion/Controller/WorkspaceController.php,188,4,try-catch,catch \Exception -> 500 reference
+src/Administracion/Controller/WorkspaceController.php,200,2,no-use-case,delete() soft-delete (app_admin_workspaces_delete)
+src/Administracion/Controller/WorkspaceController.php,203,1,repo-read,find
+src/Administracion/Controller/WorkspaceController.php,211,1,flush,flush in controller
+src/Administracion/Controller/WorkspaceController.php,214,4,try-catch,catch \Exception -> 500 reference
+src/Administracion/Controller/WorkspaceController.php,226,2,no-use-case,assignAgents() replaces membership in controller (app_admin_workspaces_assign_agents)
+src/Administracion/Controller/WorkspaceController.php,229,1,repo-read,find
+src/Administracion/Controller/WorkspaceController.php,231-244,4,error-json,assignAgents(): inline 400/404
+src/Administracion/Controller/WorkspaceController.php,248-265,2,tx-in-controller,em->wrapInTransaction in controller; throws \InvalidArgumentException inside (closes EM on rollback in ORM3)
+src/Administracion/Controller/WorkspaceController.php,255-260,1,repo-read,getRepository(Agent)->find in loop
+src/Administracion/Controller/WorkspaceController.php,276,4,catch-map,\InvalidArgumentException -> 400 (incl. thrown inside tx)
+src/Administracion/Controller/WorkspaceController.php,278,4,try-catch,catch \Exception -> 500 reference
+src/Administracion/Controller/TeamController.php,39,1,em-injected,EntityManagerInterface in controller ctor
+src/Administracion/Controller/TeamController.php,51-63,5,querybuilder,list(): COUNT + paged QB in controller
+src/Administracion/Controller/TeamController.php,76,4,try-catch,catch \Exception -> 500 reference
+src/Administracion/Controller/TeamController.php,88,2,no-use-case,create() persists Team (app_admin_teams_create)
+src/Administracion/Controller/TeamController.php,93-119,4,error-json,create(): inline 400 (incl. 'Workspace not found' as 400)/409
+src/Administracion/Controller/TeamController.php,108,1,repo-read,getRepository(Workspace)->find
+src/Administracion/Controller/TeamController.php,115-116,1,repo-read,findOneBy(workspace;name)
+src/Administracion/Controller/TeamController.php,128-129,1,persist-flush,persist(Team)+flush
+src/Administracion/Controller/TeamController.php,132,4,catch-map,\InvalidArgumentException -> 400
+src/Administracion/Controller/TeamController.php,134,4,try-catch,catch \Exception -> 500 reference
+src/Administracion/Controller/TeamController.php,149,1,repo-read,get(): find
+src/Administracion/Controller/TeamController.php,151-152,4,error-json,404 {error:'Team not found'}
+src/Administracion/Controller/TeamController.php,156,4,try-catch,catch \Exception -> 500 reference
+src/Administracion/Controller/TeamController.php,168,2,no-use-case,update() mutates Team (app_admin_teams_update)
+src/Administracion/Controller/TeamController.php,171,1,repo-read,find
+src/Administracion/Controller/TeamController.php,173-191,4,error-json,update(): inline 400/404/409
+src/Administracion/Controller/TeamController.php,188-189,1,repo-read,duplicate check findOneBy
+src/Administracion/Controller/TeamController.php,201,1,flush,flush in controller
+src/Administracion/Controller/TeamController.php,204,4,catch-map,\InvalidArgumentException -> 400
+src/Administracion/Controller/TeamController.php,206,4,try-catch,catch \Exception -> 500 reference
+src/Administracion/Controller/TeamController.php,218,2,no-use-case,delete() soft-delete (app_admin_teams_delete)
+src/Administracion/Controller/TeamController.php,221,1,repo-read,find
+src/Administracion/Controller/TeamController.php,231,1,flush,flush in controller
+src/Administracion/Controller/TeamController.php,234,4,try-catch,catch \Exception -> 500 reference
+src/Administracion/Controller/TeamController.php,246,2,no-use-case,assignAgents() in controller (app_admin_teams_assign_agents)
+src/Administracion/Controller/TeamController.php,249,1,repo-read,find
+src/Administracion/Controller/TeamController.php,251-264,4,error-json,inline 400/404
+src/Administracion/Controller/TeamController.php,271-286,2,tx-in-controller,wrapInTransaction in controller; Team::addAgent throws \InvalidArgumentException -> rollback -> 400
+src/Administracion/Controller/TeamController.php,276-281,1,repo-read,getRepository(Agent)->find in loop
+src/Administracion/Controller/TeamController.php,297,4,catch-map,\InvalidArgumentException -> 400
+src/Administracion/Controller/TeamController.php,299,4,try-catch,catch \Exception -> 500 reference
+src/Administracion/Controller/AgentLinkController.php,28,1,em-injected,EntityManagerInterface in controller ctor
+src/Administracion/Controller/AgentLinkController.php,42,2,no-use-case,linkUser() writes Agent<->User link (admin_agents_link_user)
+src/Administracion/Controller/AgentLinkController.php,45,1,repo-read,getRepository(Agent)->find
+src/Administracion/Controller/AgentLinkController.php,47-81,4,error-json,inline 400/404 {error}
+src/Administracion/Controller/AgentLinkController.php,63,1,repo-read,getRepository(User)->find
+src/Administracion/Controller/AgentLinkController.php,87-92,4,catch-map,nested try: flush + catch UniqueConstraintViolationException -> 409 {error:'Link conflict...'}
+src/Administracion/Controller/AgentLinkController.php,88,1,flush,flush in controller
+src/Administracion/Controller/AgentLinkController.php,99,4,catch-map,\InvalidArgumentException -> 400
+src/Administracion/Controller/AgentLinkController.php,101,4,try-catch,catch \Exception -> 500 reference
+src/Administracion/Controller/AgentLinkController.php,118,2,no-use-case,unlinkUser() (admin_agents_unlink_user)
+src/Administracion/Controller/AgentLinkController.php,121,1,repo-read,find
+src/Administracion/Controller/AgentLinkController.php,123-128,4,error-json,404/400 {error}
+src/Administracion/Controller/AgentLinkController.php,136,1,flush,flush in controller
+src/Administracion/Controller/AgentLinkController.php,139,4,try-catch,catch \Exception -> 500 reference
+src/Autenticacion/Controller/AuthController.php,31,1,em-injected,EntityManagerInterface in controller ctor
+src/Autenticacion/Controller/AuthController.php,70,2,no-use-case,logout() deletes refresh tokens in controller (api_auth_logout)
+src/Autenticacion/Controller/AuthController.php,72,1,repo-read,getRepository(RefreshToken) findOneBy/findBy
+src/Autenticacion/Controller/AuthController.php,79,1,remove,em->remove(token)
+src/Autenticacion/Controller/AuthController.php,88,1,remove,em->remove(userToken) loop
+src/Autenticacion/Controller/AuthController.php,92,1,flush,flush in controller
+src/Autenticacion/Controller/AuthController.php,120,4,error-json,me(): 401 {error:'Not authenticated'} via $this->json
+src/Agente/Controller/MeController.php,43,1,em-injected,EntityManagerInterface in controller ctor
+src/Agente/Controller/MeController.php,55-56,4,error-json,404 {error:'Agent not found'} (repeated in every action)
+src/Agente/Controller/MeController.php,113,4,try-catch,catch \Exception -> 500 reference (logs WITHOUT trace)
+src/Agente/Controller/MeController.php,125,2,no-use-case,updateProfile() (app_me_profile)
+src/Agente/Controller/MeController.php,135,1,flush,flush in controller
+src/Agente/Controller/MeController.php,142,4,try-catch,catch \Exception -> 500 reference
+src/Agente/Controller/MeController.php,154,2,no-use-case,updateNotifications() (app_me_notifications)
+src/Agente/Controller/MeController.php,169,1,flush,flush in controller
+src/Agente/Controller/MeController.php,175,4,try-catch,catch \Exception -> 500 reference
+src/Agente/Controller/MeController.php,187,2,no-use-case,updateAutoReply() (app_me_auto_reply)
+src/Agente/Controller/MeController.php,201,1,flush,flush in controller
+src/Agente/Controller/MeController.php,207,4,try-catch,catch \Exception -> 500 reference
+src/Agente/Controller/MeController.php,242,4,try-catch,getShifts catch \Exception -> 500
+src/Agente/Controller/MeController.php,266,4,catch-map,replaceShifts \InvalidArgumentException -> 400
+src/Agente/Controller/MeController.php,268,4,try-catch,catch \Exception -> 500 reference
+src/Agente/Controller/MeController.php,289-292,4,error-json,getActiveWorkspace: 404 with data-shaped body {workspace_id:null;phone_number_id:null;display_name:null}
+src/Agente/Controller/MeController.php,296,4,try-catch,catch \Exception -> 500 reference
+src/Agente/Controller/MeController.php,307,2,no-use-case,setActiveWorkspace() (app_me_workspace_set)
+src/Agente/Controller/MeController.php,312-352,4,error-json,inline 400/401/403/404 {error}
+src/Agente/Controller/MeController.php,322,1,repo-read,getRepository(Workspace)->find
+src/Agente/Controller/MeController.php,341,1,flush,flush (admin/supervisor branch)
+src/Agente/Controller/MeController.php,356,1,flush,flush (agent branch)
+src/Agente/Controller/MeController.php,359,4,catch-map,\InvalidArgumentException -> 400
+src/Agente/Controller/MeController.php,361,4,try-catch,catch \Exception -> 500 reference
+src/Agente/Controller/MeController.php,375-381,1,persist-flush,ensureAgent(): findOneBy + persist(new Agent) + flush (side-effect write; flush BEFORE setActiveWorkspace flush)
+src/Agente/Controller/MeController.php,393,4,error-json,listMyWorkspaces 401 {error:'Unauthorized'}
+src/Agente/Controller/MeController.php,398,1,repo-read,getRepository(Workspace)->findBy(isActive)
+src/Agente/Controller/MeController.php,413-443,5,raw-sql,has_pending EXISTS query via em->getConnection()->executeQuery in controller (N+1 per workspace)
+src/Agente/Controller/MeController.php,450,4,try-catch,catch \Exception -> 500 reference
+src/Agente/Controller/TeamController.php,33,1,em-injected,EntityManagerInterface in controller ctor
+src/Agente/Controller/TeamController.php,42,4,error-json,401 {error:'Unauthorized'}
+src/Agente/Controller/TeamController.php,55-61,5,querybuilder,team IN workspaces QB in controller
+src/Asignacion/Controller/AutoAssignController.php,26,4,error-json,400 {error:'Invalid ticket ID'}
+src/Asignacion/Controller/AutoAssignController.php,32,4,try-catch,catch \Exception -> 500 reference (all use-case errors incl. IAE become 500)
+src/Asignacion/Controller/TicketController.php,27-28,1,repo-injected,TicketRepository + AssignmentRepository injected for reads
+src/Asignacion/Controller/TicketController.php,31,1,em-injected,EntityManagerInterface in controller ctor
+src/Asignacion/Controller/TicketController.php,41-48,4,error-json,assign: 404 {error} / 403 {error:'Forbidden'} (voter in controller)
+src/Asignacion/Controller/TicketController.php,58,4,catch-map,AgentNotActiveException -> 409 {type:'AGENT_NOT_ACTIVE';error} (must precede StateConflict)
+src/Asignacion/Controller/TicketController.php,62,4,catch-map,StateConflictException -> 409 {error}
+src/Asignacion/Controller/TicketController.php,64,4,catch-map,\InvalidArgumentException -> 400
+src/Asignacion/Controller/TicketController.php,66,4,try-catch,catch \Exception -> 500 reference
+src/Asignacion/Controller/TicketController.php,87,2,no-use-case,setTeam() writes ticket.team_id in controller; no outbox event (app_ticket_set_team)
+src/Asignacion/Controller/TicketController.php,90,1,repo-read,ticketRepo->findById
+src/Asignacion/Controller/TicketController.php,92-118,4,error-json,inline 400/404 ('Team not found' is 400)
+src/Asignacion/Controller/TicketController.php,104,1,flush,flush (clear team)
+src/Asignacion/Controller/TicketController.php,112,1,repo-read,getRepository(Team)->find
+src/Asignacion/Controller/TicketController.php,122,1,flush,flush (set team)
+src/Asignacion/Controller/TicketController.php,125,4,catch-map,\InvalidArgumentException -> 400
+src/Asignacion/Controller/TicketController.php,127,4,try-catch,catch \Exception -> 500 reference
+src/Asignacion/Controller/TicketController.php,143-149,1,repo-read,getAssignment(): ticketRepo + assignmentRepo reads (no Query)
+src/Asignacion/Controller/TicketController.php,176,4,try-catch,catch \Exception -> 500 reference
+src/Ticket/Controller/InboxController.php,36,1,em-injected,EntityManagerInterface in controller ctor
+src/Ticket/Controller/InboxController.php,88,4,catch-map,listTickets \InvalidArgumentException -> 400
+src/Ticket/Controller/InboxController.php,90,4,try-catch,catch \Exception -> 500 reference
+src/Ticket/Controller/InboxController.php,108,4,error-json,404 {error:'Ticket not found'}
+src/Ticket/Controller/InboxController.php,112,4,try-catch,catch \Exception -> 500 reference
+src/Ticket/Controller/InboxController.php,154,4,catch-map,getMessages \InvalidArgumentException -> 400
+src/Ticket/Controller/InboxController.php,156,4,try-catch,catch \Exception -> 500 reference
+src/Ticket/Controller/InboxController.php,168,2,no-use-case,markRead() writes last_read_at + outbox in controller (app_ticket_mark_read)
+src/Ticket/Controller/InboxController.php,171,1,repo-read,getRepository(Ticket)->find
+src/Ticket/Controller/InboxController.php,173,4,error-json,404 {error}
+src/Ticket/Controller/InboxController.php,187,1,flush,flush last_read_at (NOT in a transaction with the outbox insert)
+src/Ticket/Controller/InboxController.php,190-203,3,outbox-write,DBAL insert('outbox_events') in controller: aggregate_type 'ticket'; event TicketRead; created_at second precision string; status pending; sequence 0
+src/Ticket/Controller/InboxController.php,190-203,5,dbal-connection,em->getConnection()->insert raw table write in controller
+src/Ticket/Controller/InboxController.php,206,4,try-catch,catch \Exception -> 500 reference (no trace)
+src/Ticket/Controller/TicketWorkflowController.php,32,1,repo-injected,TicketRepository injected (read for voter)
+src/Ticket/Controller/TicketWorkflowController.php,34,1,em-injected,EntityManagerInterface in controller ctor
+src/Ticket/Controller/TicketWorkflowController.php,45-46,4,error-json,400 {error:'status is required'}
+src/Ticket/Controller/TicketWorkflowController.php,70,2,write-outside-tx,transition(): recordClosureAuditEvent AFTER use case commit (app_ticket_transition)
+src/Ticket/Controller/TicketWorkflowController.php,76,4,catch-map,\InvalidArgumentException -> 400 (also 'Ticket not found' from use case)
+src/Ticket/Controller/TicketWorkflowController.php,78,4,catch-map,InvalidTransitionException -> 422 {error}
+src/Ticket/Controller/TicketWorkflowController.php,80,4,try-catch,catch \Exception -> 500 {error:'Internal error';reference} log key 'ref'
+src/Ticket/Controller/TicketWorkflowController.php,100,2,write-outside-tx,resolve(): audit TicketEvent after commit (app_ticket_resolve)
+src/Ticket/Controller/TicketWorkflowController.php,106,4,catch-map,\InvalidArgumentException -> 400
+src/Ticket/Controller/TicketWorkflowController.php,108,4,try-catch,catch \Exception -> 500 'Internal error'
+src/Ticket/Controller/TicketWorkflowController.php,128,2,write-outside-tx,close(): audit TicketEvent after commit (app_ticket_close)
+src/Ticket/Controller/TicketWorkflowController.php,134,4,catch-map,\InvalidArgumentException -> 400
+src/Ticket/Controller/TicketWorkflowController.php,136,4,try-catch,catch \Exception -> 500 'Internal error'
+src/Ticket/Controller/TicketWorkflowController.php,153,1,repo-read,ticketRepo->findById for voter
+src/Ticket/Controller/TicketWorkflowController.php,159-166,4,error-json,403 {error:'Forbidden';code:'TICKET_CLOSURE_FORBIDDEN';reason;action;ticket_id;message}
+src/Ticket/Controller/TicketWorkflowController.php,201-212,1,persist-flush,persist(TicketEvent)+flush in controller wrapped in catch \Throwable (swallow; D8 'audit failure must not fail response')
+src/Conversacion/Controller/ProviderProxyController.php,40,1,repo-injected,TicketRepository injected
+src/Conversacion/Controller/ProviderProxyController.php,42,1,em-injected,EntityManagerInterface in controller ctor
+src/Conversacion/Controller/ProviderProxyController.php,53-57,4,error-json,400 {error:'Missing required fields...'}
+src/Conversacion/Controller/ProviderProxyController.php,103-110,4,catch-map,ConversationWindowExpiredException -> 422 {type:'CONVERSATION_WINDOW_EXPIRED';message}
+src/Conversacion/Controller/ProviderProxyController.php,111-118,4,catch-map,StateConflictException -> 409 {type:'TICKET_NOT_OWNED';message}
+src/Conversacion/Controller/ProviderProxyController.php,122,1,repo-read,ticketRepository->find AFTER the use case committed
+src/Conversacion/Controller/ProviderProxyController.php,124-147,4,error-json,404 {error} / 422 {type:'PHONE_NOT_FOUND';message} (returned after message already persisted)
+src/Conversacion/Controller/ProviderProxyController.php,153-171,4,catch-map,GraphApiException -> 422/429/502 {type;code;message} via mapGraphErrorCode/Type (434-456)
+src/Conversacion/Controller/ProviderProxyController.php,177-182,1,flush,send(): find Message + setExternalId/deliveryStatus + flush after Graph call (second write; outside use case tx)
+src/Conversacion/Controller/ProviderProxyController.php,177-182,2,write-outside-tx,WAMID update not in use case; no MessageUpdated outbox event
+src/Conversacion/Controller/ProviderProxyController.php,205-225,1,persist-flush,resolveActingAgentId(): findOneBy + persist(new Agent) + flush; catch \Throwable -> null
+src/Conversacion/Controller/ProviderProxyController.php,228,2,no-use-case,sendTemplate(): creates outbound Message in controller; no outbox event (app_provider_template_send)
+src/Conversacion/Controller/ProviderProxyController.php,237-280,4,error-json,400 {error} / 404 / 422 PHONE_NOT_FOUND
+src/Conversacion/Controller/ProviderProxyController.php,256,1,repo-read,ticketRepository->find
+src/Conversacion/Controller/ProviderProxyController.php,287-301,4,catch-map,GraphApiException -> mapped status {type;code;message}
+src/Conversacion/Controller/ProviderProxyController.php,308-320,1,persist-flush,new Message persist+flush in controller
+src/Conversacion/Controller/ProviderProxyController.php,338-342,4,error-json,uploadMedia 400 {error}
+src/Conversacion/Controller/ProviderProxyController.php,351-370,4,catch-map,MediaTooLargeException -> 413 {error:'FILE_TOO_LARGE';maxSize;kind}; MediaTypeNotAllowedException -> 415 {error:'UNSUPPORTED_TYPE';mimeType}
+src/Conversacion/Controller/ProviderProxyController.php,373-384,4,catch-map,GraphApiException -> 502 {type:'GRAPH_API_ERROR';code;message}
+src/Conversacion/Controller/ProviderProxyController.php,390-401,4,try-catch,catch \Throwable swallow (S3 best-effort)
+src/Conversacion/Controller/ProviderProxyController.php,415-428,4,catch-map,downloadMedia GraphApiException -> mapped status {type:'GRAPH_API_ERROR';code;message}
+src/Conversacion/Controller/MediaUrlController.php,37-41,4,error-json,404 {error:'No media attached to this message'}
+src/Conversacion/Controller/WebhookController.php,33,1,em-injected,EntityManagerInterface in controller ctor
+src/Conversacion/Controller/WebhookController.php,65-121,4,error-json,raw Response strings '{"error":"missing params"}' 400 / 'invalid token' 403 / 'invalid signature' 401 / 'malformed payload' 400
+src/Conversacion/Controller/WebhookController.php,126-133,4,try-catch,catch \Throwable around logRawPayload (log + continue)
+src/Conversacion/Controller/WebhookController.php,136-144,4,try-catch,catch \Throwable around dispatch -> always 200 {"ok":true}
+src/Conversacion/Controller/WebhookController.php,197-205,1,persist-flush,persist(WebhookPayload)+flush in controller
+src/Conversacion/Controller/WebhookController.php,197-205,2,no-use-case,raw webhook log write not in a use case
+src/Conversacion/Controller/WebhookController.php,224-344,1,business-logic,payload parsing/routing + per-message use case calls in controller
+src/Conversacion/Controller/WebhookController.php,309-332,4,try-catch,catch \Throwable per inbound message (log; continue loop with possibly-closed EM)
+src/Contacto/Controller/ContactController.php,76,4,try-catch,list catch \Exception -> 500 reference
+src/Contacto/Controller/ContactController.php,94,4,error-json,404 {error:'Contact not found'}
+src/Contacto/Controller/ContactController.php,98,4,try-catch,catch \Exception -> 500 reference
+src/Contacto/Controller/ContactController.php,115-116,4,error-json,400 {error:'Invalid JSON body'}
+src/Contacto/Controller/ContactController.php,122,4,catch-map,\InvalidArgumentException -> 400
+src/Contacto/Controller/ContactController.php,124,4,try-catch,catch \Exception -> 500 reference
+src/Contacto/Controller/ContactController.php,141-142,4,error-json,400 {error:'Invalid JSON body'}
+src/Contacto/Controller/ContactController.php,148,4,catch-map,\InvalidArgumentException -> 400
+src/Contacto/Controller/ContactController.php,150,4,try-catch,catch \Exception -> 500 reference
+src/Contacto/Controller/ContactController.php,175-180,4,error-json,400 {error:'file_missing';message}
+src/Contacto/Controller/ContactController.php,189,4,catch-map,ImportRejectedException -> 400 {error:reason;message}
+src/Contacto/Controller/ContactController.php,191,4,try-catch,catch \Exception -> 500 reference
+src/Contacto/Controller/ContactController.php,209,4,catch-map,\InvalidArgumentException -> 404 (!) {error:msg} on delete
+src/Contacto/Controller/ContactController.php,211,4,try-catch,catch \Exception -> 500 reference
+src/Contacto/Controller/ContactTimelineController.php,50,4,try-catch,catch \Exception -> 500 reference
+src/Disponibilidad/Controller/WorkspaceAgentController.php,26,1,em-injected,EntityManagerInterface in controller ctor
+src/Disponibilidad/Controller/WorkspaceAgentController.php,34,1,repo-read,getRepository(Workspace)->find
+src/Disponibilidad/Controller/WorkspaceAgentController.php,37-41,4,error-json,404 / 400 {error}
+src/Disponibilidad/Controller/WorkspaceAgentController.php,50,4,try-catch,catch \Exception -> 500 reference (no trace)
+src/Disponibilidad/Controller/AgentAvailabilityController.php,44-46,1,repo-injected,AgentRepository/AgentShiftRepository/TicketRepository injected for reads
+src/Disponibilidad/Controller/AgentAvailabilityController.php,63-74,4,error-json,403 {error:'Forbidden'} / 404 / 422 'is_available is required'
+src/Disponibilidad/Controller/AgentAvailabilityController.php,67,1,repo-read,agentRepo->findById
+src/Disponibilidad/Controller/AgentAvailabilityController.php,84,4,catch-map,LockWaitTimeoutException -> 409 {error:'Resource locked; try again'}
+src/Disponibilidad/Controller/AgentAvailabilityController.php,86,4,catch-map,\InvalidArgumentException -> 422 (differs from 400 elsewhere)
+src/Disponibilidad/Controller/AgentAvailabilityController.php,88,4,try-catch,catch \Exception -> 500 reference
+src/Disponibilidad/Controller/AgentAvailabilityController.php,110-116,4,error-json,403/404
+src/Disponibilidad/Controller/AgentAvailabilityController.php,114,1,repo-read,agentRepo->findById
+src/Disponibilidad/Controller/AgentAvailabilityController.php,123,4,catch-map,LockWaitTimeoutException -> 409
+src/Disponibilidad/Controller/AgentAvailabilityController.php,125,4,catch-map,\InvalidArgumentException -> 422
+src/Disponibilidad/Controller/AgentAvailabilityController.php,127,4,try-catch,catch \Exception -> 500 reference
+src/Disponibilidad/Controller/AgentAvailabilityController.php,149-155,4,error-json,403/404
+src/Disponibilidad/Controller/AgentAvailabilityController.php,153-167,1,repo-read,agent + ticketRepo->countActiveForAgent + isAgentInShift logic in controller (no Query)
+src/Disponibilidad/Controller/AgentAvailabilityController.php,195,4,try-catch,catch \Exception -> 500 reference
+src/Disponibilidad/Controller/AgentAvailabilityController.php,219-234,4,error-json,403/404/422 'start_time and end_time must differ'
+src/Disponibilidad/Controller/AgentAvailabilityController.php,223,1,repo-read,agentRepo->findById
+src/Disponibilidad/Controller/AgentAvailabilityController.php,246,4,catch-map,LockWaitTimeoutException -> 409
+src/Disponibilidad/Controller/AgentAvailabilityController.php,248,4,catch-map,UniqueConstraintViolationException -> 409 'Duplicate shift...'
+src/Disponibilidad/Controller/AgentAvailabilityController.php,250,4,catch-map,\InvalidArgumentException -> 422
+src/Disponibilidad/Controller/AgentAvailabilityController.php,252,4,try-catch,catch \Exception -> 500 reference
+src/Disponibilidad/Controller/AgentAvailabilityController.php,274-290,4,error-json,403/404 ('Shift does not belong to this agent' as 404)
+src/Disponibilidad/Controller/AgentAvailabilityController.php,278-283,1,repo-read,agentRepo + agentShiftRepo->find
+src/Disponibilidad/Controller/AgentAvailabilityController.php,297,4,catch-map,LockWaitTimeoutException -> 409
+src/Disponibilidad/Controller/AgentAvailabilityController.php,299,4,catch-map,\InvalidArgumentException -> 422
+src/Disponibilidad/Controller/AgentAvailabilityController.php,301,4,try-catch,catch \Exception -> 500 reference
+src/Reporte/Controller/ReportingController.php,44,1,em-injected,EntityManagerInterface in controller ctor
+src/Reporte/Controller/ReportingController.php,123-125,4,try-catch,frt: IAE->400 + \Exception->500 reference (no trace)
+src/Reporte/Controller/ReportingController.php,153-155,4,try-catch,rt: IAE->400 + \Exception->500
+src/Reporte/Controller/ReportingController.php,183-185,4,try-catch,counts: IAE->400 + \Exception->500
+src/Reporte/Controller/ReportingController.php,213-215,4,try-catch,volume: IAE->400 + \Exception->500
+src/Reporte/Controller/ReportingController.php,248-250,4,try-catch,agents: IAE->400 + \Exception->500
+src/Reporte/Controller/ReportingController.php,280,4,try-catch,agentLoad: \Exception->500
+src/Reporte/Controller/ReportingController.php,306-308,4,try-catch,unassigned: IAE->400 + \Exception->500
+src/Reporte/Controller/ReportingController.php,330-354,1,business-logic,availableAgents: workspace filtering + per-agent count in controller
+src/Reporte/Controller/ReportingController.php,357,4,try-catch,availableAgents: \Exception->500
+src/Reporte/Controller/ReportingController.php,383-385,4,try-catch,frtTrend: IAE->400 + \Exception->500
+src/Reporte/Controller/ReportingController.php,411-413,4,try-catch,heatmap: IAE->400 + \Exception->500
+src/Reporte/Controller/ReportingController.php,438,4,try-catch,recurringCustomers: \Exception->500
+src/Reporte/Controller/ReportingController.php,464-466,4,try-catch,reopened: IAE->400 + \Exception->500
+src/Reporte/Controller/ReportingController.php,490-495,4,catch-map,export: IAE->400 before streaming
+src/Reporte/Controller/ReportingController.php,506-517,4,catch-map,export: filter-builder IAE->400 before headers
+src/Reporte/Controller/ReportingController.php,561-563,4,try-catch,responseDelay: IAE->400 + \Exception->500
+src/Reporte/Controller/ReportingController.php,585,4,error-json,404 {error:'Ticket not found'}
+src/Reporte/Controller/ReportingController.php,589,4,try-catch,ticketParticipation: \Exception->500
+src/Reporte/Controller/ReportingController.php,604-611,5,dql,countActiveTicketsForAgent(): em->createQuery DQL in controller (duplicates TicketRepository::countActiveForAgent)
+src/Compartido/Controller/DebugController.php,33,4,error-json,404 {error:'Not found'} outside dev/test
+src/Compartido/Controller/DebugController.php,67,4,try-catch,catch \Exception -> 500 {success:false;error:msg} (leaks message)
+src/Compartido/Controller/DebugController.php,104,4,try-catch,catch \Exception -> 500 {success:false;error}
+src/Compartido/Controller/DebugController.php,132,4,try-catch,catch \Exception -> 500 {success:false;error}
+src/Compartido/Controller/DebugController.php,163,4,try-catch,catch \Exception -> 500 {success:false;error}
+src/Compartido/Controller/MercureTokenController.php,27,4,error-json,401 {error:'Unauthorized'}
+src/Compartido/Controller/TicketEventsController.php,28,1,dbal-connection,Doctrine\DBAL\Connection injected in controller
+src/Compartido/Controller/TicketEventsController.php,39-51,4,error-json,401/403/400 {error}
+src/Compartido/Controller/TicketEventsController.php,55-64,5,raw-sql,SELECT ... FROM outbox_events in controller (bound params)
+src/Compartido/Controller/TicketEventsController.php,113-142,1,business-logic,OutboxEvent hydration via reflection (duplicate of OutboxPublisherService::hydrateEvent)
+src/Compartido/Outbox/OutboxPublisherService.php,24,5,em-injected,EM used for raw SQL in service
+src/Compartido/Outbox/OutboxPublisherService.php,67-78,5,raw-sql,SELECT pending outbox_events (no params) in service
+src/Compartido/Outbox/OutboxPublisherService.php,228-237,5,raw-sql,UPDATE outbox_events (mark published)
+src/Compartido/Outbox/OutboxPublisherService.php,252-261,5,raw-sql,UPDATE outbox_events (retry)
+src/Compartido/Outbox/OutboxPublisherService.php,275-283,5,raw-sql,UPDATE outbox_events (dead-letter)
+src/Compartido/Command/OutboxDeadLetterCommand.php,20,5,dbal-connection,DBAL Connection in command
+src/Compartido/Command/OutboxDeadLetterCommand.php,51-53,5,raw-sql,SELECT dead-lettered outbox_events
+src/Compartido/Command/OutboxDeadLetterCommand.php,94-95,3,outbox-write,UPDATE outbox_events (retry) - second outbox mutator besides OutboxPublisherService
+src/Compartido/Command/OutboxDeadLetterCommand.php,94-95,5,raw-sql,UPDATE in command
+src/Compartido/Command/OutboxDeadLetterCommand.php,125-126,3,outbox-write,DELETE FROM outbox_events (purge)
+src/Compartido/Command/OutboxDeadLetterCommand.php,125-126,5,raw-sql,DELETE in command
+src/Compartido/Repository/ProcessedEventRepository.php,40-41,2,repo-flush,save() persist+flush inside repository (flush not owned by use case)
+src/Asignacion/Repository/AssignmentRepository.php,35-36,2,repo-flush,save() persist+flush in repository
+src/Automatizacion/Repository/RuleExecutionLogRepository.php,26-27,2,repo-flush,save() persist+flush in repository
+src/Agente/Repository/AgentRepository.php,19-20,2,repo-flush,save() _em->persist+flush in repository
+src/Ticket/Repository/TagRepository.php,36-37,2,repo-flush,save() persist+flush in repository
+src/Reporte/Repository/ReportingRepository.php,1093-1094,5,raw-sql-unbound,IN list built with intval() interpolation instead of bound params
+src/Asignacion/AssignmentService.php,62,2,persist,domain service persists Assignment and collects events (relies on caller's tx + outbox flush)
+src/Asignacion/UseCase/AssignTicketUseCase.php,135,2,outbox-after-commit,persistEventsToOutbox() runs AFTER transactional() commit (separate flush; non-atomic)
+src/Asignacion/UseCase/AssignTicketUseCase.php,143-179,3,outbox-write,new OutboxEvent + persist + flush (camelCase payload eventId/ticketId/occurredAt + assignment_type)
+src/Asignacion/UseCase/AutoAssignTicketUseCase.php,60,2,outbox-after-commit,persistEventsToOutbox() after commit; executeInTransaction() (72-75) path writes NO outbox itself
+src/Asignacion/UseCase/AutoAssignTicketUseCase.php,82-88,5,raw-sql,SELECT * FROM tickets WHERE id=? FOR UPDATE in use case
+src/Asignacion/UseCase/AutoAssignTicketUseCase.php,126-128,5,raw-sql,SELECT id FROM agents WHERE id IN (...) FOR UPDATE in use case
+src/Asignacion/UseCase/AutoAssignTicketUseCase.php,216-252,3,outbox-write,new OutboxEvent + persist + flush (camelCase payload)
+src/Conversacion/UseCase/HandleInboundMessageUseCase.php,83-99,2,outbox-after-commit,auto-reply (writes Message) then persistEventsToOutbox after commit
+src/Conversacion/UseCase/HandleInboundMessageUseCase.php,107-156,3,outbox-write,new OutboxEvent + persist + flush (snake_case payload event_id/ticket_id/occurred_at; also flushes AutoAssign/AutoReply/Transition events left in EventCollector)
+src/Conversacion/UseCase/HandleInboundMessageUseCase.php,132-135,5,raw-sql,SELECT phone_number_id FROM tickets in use case (per event)
+src/Conversacion/UseCase/HandleInboundMessageUseCase.php,383,2,nested-usecase,dispatches TicketNeedsAutoAssignmentEvent inside tx -> AutoAssignTicketUseCase::executeInTransaction
+src/Conversacion/UseCase/HandleOutboundMessageUseCase.php,164,2,outbox-after-commit,persistEventsToOutbox after commit (outside retry loop)
+src/Conversacion/UseCase/HandleOutboundMessageUseCase.php,297-302,2,nested-usecase,calls TransitionTicketStatusUseCase::execute (nested transactional) inside own tx
+src/Conversacion/UseCase/HandleOutboundMessageUseCase.php,305-308,5,raw-sql,UPDATE tickets SET first_response_at in use case
+src/Conversacion/UseCase/HandleOutboundMessageUseCase.php,372-430,3,outbox-write,new OutboxEvent + persist + flush
+src/Conversacion/UseCase/HandleOutboundMessageUseCase.php,409-412,5,raw-sql,SELECT phone_number_id in use case
+src/Conversacion/UseCase/HandleStatusUpdateUseCase.php,128,2,no-transaction,flush without explicit transaction
+src/Conversacion/UseCase/HandleStatusUpdateUseCase.php,206-252,3,outbox-write,persistEventsToOutbox: new OutboxEvent + persist + flush
+src/Conversacion/UseCase/ConversationWindowExpiryService.php,62-71,5,raw-sql,SELECT id FROM tickets ... LIMIT interpolated (int) in service
+src/Disponibilidad/UseCase/SetAgentAvailabilityUseCase.php,88-116,3,outbox-write,post-commit new OutboxEvent(aggregate 'agent'; topic agent/{id}/availability)
+src/Disponibilidad/UseCase/ClearAgentAvailabilityUseCase.php,85-113,3,outbox-write,post-commit new OutboxEvent (agent availability)
+src/Disponibilidad/UseCase/CreateAgentShiftUseCase.php,97-163,3,outbox-write,post-commit new OutboxEvent (AgentShiftChanged)
+src/Disponibilidad/UseCase/DeleteAgentShiftUseCase.php,98-125,3,outbox-write,post-commit new OutboxEvent (AgentShiftChanged)
+src/Disponibilidad/UseCase/ReplaceAgentShiftsUseCase.php,37-68,2,no-outbox-event,replaces shifts with no realtime event (unlike Create/DeleteAgentShift)
+src/Ticket/UseCase/TransitionTicketStatusUseCase.php,81-84,5,raw-sql,SELECT * FROM tickets ... FOR UPDATE (execute)
+src/Ticket/UseCase/TransitionTicketStatusUseCase.php,99-102,2,events-dropped,recordUnassignIfOwner collects TicketUpdated/InboxUpdated in EventCollector but use case never writes outbox
+src/Ticket/UseCase/TransitionTicketStatusUseCase.php,127-128,5,raw-sql,dynamic UPDATE tickets SET ... (bound values)
+src/Ticket/UseCase/TransitionTicketStatusUseCase.php,155-158,5,raw-sql,SELECT ... FOR UPDATE (closeDueToWindowExpiry)
+src/Ticket/UseCase/TransitionTicketStatusUseCase.php,171-173,2,events-dropped,UNASSIGN events collected; not persisted
+src/Ticket/UseCase/TransitionTicketStatusUseCase.php,176-179,5,raw-sql,UPDATE tickets SET status/closed_at
+src/Ticket/UseCase/TransitionTicketStatusUseCase.php,213-216,5,raw-sql,SELECT ... FOR UPDATE (reopenDueToInboundMessage)
+src/Ticket/UseCase/TransitionTicketStatusUseCase.php,230-233,5,raw-sql,SELECT type FROM ticket_events
+src/Ticket/UseCase/TransitionTicketStatusUseCase.php,242-245,5,raw-sql,UPDATE tickets reopen
+src/Ticket/UseCase/TransitionTicketStatusUseCase.php,274-277,5,raw-sql,SELECT ... FOR UPDATE (close)
+src/Ticket/UseCase/TransitionTicketStatusUseCase.php,288-290,2,events-dropped,UNASSIGN events collected; not persisted
+src/Ticket/UseCase/TransitionTicketStatusUseCase.php,293-296,5,raw-sql,UPDATE tickets SET status closed
+src/Ticket/UseCase/AddTagToTicketUseCase.php,46-49,5,raw-sql,SELECT 1 FROM ticket_tags in use case
+src/Ticket/UseCase/AddTagToTicketUseCase.php,30-70,2,no-outbox-event,tag add writes ticket_tags/TicketEvent with no realtime outbox event
+src/Contacto/UseCase/CreateContactUseCase.php,55-58,2,no-transaction,persist+flush without explicit tx; catches UniqueConstraintViolation
+src/Contacto/UseCase/UpdateContactUseCase.php,70,2,no-transaction,flush without explicit tx
+src/Contacto/UseCase/DeleteContactUseCase.php,28,2,no-transaction,flush without explicit tx
+src/Contacto/Query/GetContactDetailQuery.php,17-24,5,raw-sql,native SELECT contacts in Query
+src/Contacto/Query/GetContactTimelineQuery.php,21-31,5,raw-sql,native UNION over outbox_events/assignments/ticket_events (SQL text 109-177)
+src/Contacto/Query/ListContactsQuery.php,27-80,5,raw-sql,native list + count; LIMIT/OFFSET interpolated (73)
+src/Contacto/Query/ListContactsQuery.php,121-141,5,raw-sql,native latest-ticket-per-contact
+src/Conversacion/Query/GetTicketMessagesQuery.php,23-25,5,raw-sql,SELECT conversation_id FROM tickets
+src/Conversacion/Query/GetTicketMessagesQuery.php,61-68,5,raw-sql,messages page; LIMIT concatenated
+src/Conversacion/Query/GetTicketMessagesQuery.php,109-120,5,raw-sql,messages page; LIMIT/OFFSET concatenated
+src/Ticket/Query/ListTicketsQuery.php,55-89,5,raw-sql,native list + count; LIMIT/OFFSET interpolated (82)
+src/Ticket/Query/ListTicketsQuery.php,98-108,5,raw-sql,unread counts
+src/Ticket/Query/ListTicketsQuery.php,120-127,5,querybuilder,DQL QB on Agent in Query
+src/Ticket/Query/GetTicketDetailQuery.php,16-49,5,raw-sql,native ticket detail
+src/Ticket/Query/TicketFilterBuilder.php,87-88,5,sql-fragment,builds WHERE/EXISTS SQL fragments outside repository
+src/Reporte/Query/ExportTicketsCsvQuery.php,90-116,5,raw-sql,chunked native export
+src/Reporte/Query/ExportTicketsCsvQuery.php,166-179,5,raw-sql,tags by ticket
+src/Disponibilidad/AgentAvailabilityService.php,303-311,5,dql,em->createQuery COUNT in service
+src/Automatizacion/AutoReopenRule.php,44-46,2,write-outside-usecase,rule persists TicketEvent + own flush (runs inside inbound tx)
+src/Automatizacion/AutoReplyService.php,154-179,2,write-outside-usecase,persists Message/ProcessedEvent + flush AFTER inbound commit (own implicit tx); Graph call at 138
+src/Administracion/Command/SeedUsersCommand.php,66-125,2,no-use-case,seed command persist/flush (dev tooling)
+src/Reporte/Command/SeedReportsCommand.php,48-65,5,raw-sql,SET FOREIGN_KEY_CHECKS/TRUNCATE in command
+src/Reporte/Command/SeedReportsCommand.php,94-196,2,no-use-case,seed command persist/flush (dev tooling)
