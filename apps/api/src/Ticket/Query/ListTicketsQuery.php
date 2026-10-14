@@ -4,16 +4,15 @@ namespace App\Ticket\Query;
 
 use App\Disponibilidad\AgentAvailabilityService;
 use App\Agente\Agent;
+use App\Agente\Repository\AgentRepository;
 use App\Ticket\Repository\TicketRepository;
-use Doctrine\ORM\EntityManagerInterface;
-use Psr\Log\LoggerInterface;
 
 class ListTicketsQuery
 {
     public function __construct(
-        private EntityManagerInterface $entityManager,
         private AgentAvailabilityService $agentAvailabilityService,
         private TicketRepository $ticketRepository,
+        private AgentRepository $agentRepository,
         private TicketFilterBuilder $ticketFilterBuilder = new TicketFilterBuilder(),
     ) {}
 
@@ -52,9 +51,7 @@ class ListTicketsQuery
         $limit = min(100, max(1, $limit));
         $offset = ($page - 1) * $limit;
         
-        $conn = $this->entityManager->getConnection();
-
-        [$where, $params] = $this->ticketFilterBuilder->build(
+        $filters = $this->ticketFilterBuilder->build(
             filter: $filter,
             agentId: $agentId,
             status: $status,
@@ -64,48 +61,17 @@ class ListTicketsQuery
             teamId: $teamId,
         );
 
-        $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
-        
-        $sql = "SELECT t.id, t.status, t.priority, t.assigned_agent_id, t.created_at, t.updated_at,
-                       t.last_inbound_message_at,
-                       c.phone, c.name as contact_name, conv.id as conv_id,
-                       a.name as agent_name, a.max_active_tickets,
-                       (SELECT COUNT(*) FROM tickets t2
-                        WHERE t2.assigned_agent_id = a.id
-                        AND t2.status IN ('new', 'active', 'waiting')) as current_active_tickets
-                FROM tickets t
-                JOIN conversations conv ON t.conversation_id = conv.id
-                JOIN contacts c ON conv.contact_id = c.id
-                LEFT JOIN agents a ON t.assigned_agent_id = a.id
-                $whereClause
-                ORDER BY t.updated_at DESC, t.id DESC
-                LIMIT $limit OFFSET $offset";
-        
-        $stmt = $conn->executeQuery($sql, $params);
-        $results = $stmt->fetchAllAssociative();
-        
-        $countSql = "SELECT COUNT(*) FROM tickets t $whereClause";
-        $countStmt = $conn->executeQuery($countSql, $params);
-        $total = (int) $countStmt->fetchOne();
+        $results = $this->ticketRepository->findListPage($filters, $limit, $offset);
+        $total = $this->ticketRepository->countList($filters);
 
         // Compute unread counts post-query: count inbound messages after ticket.last_read_at
         $unreadCounts = [];
         if (!empty($results)) {
             $convIds = array_unique(array_column($results, 'conv_id'));
             if (!empty($convIds)) {
-                $convPlaceholders = implode(',', array_fill(0, count($convIds), '?'));
-
-                $unreadSql = "SELECT m2.conversation_id, COUNT(*) as cnt
-                    FROM messages m2
-                    JOIN tickets t2 ON t2.conversation_id = m2.conversation_id
-                    WHERE m2.conversation_id IN ($convPlaceholders)
-                    AND m2.direction = 'inbound'
-                    AND m2.created_at > COALESCE(t2.last_read_at, '1970-01-01 00:00:00')
-                    GROUP BY m2.conversation_id";
-
-                $unreadParams = array_map(fn($id) => (int) $id, array_values($convIds));
-
-                $unreadRows = $conn->executeQuery($unreadSql, $unreadParams)->fetchAllAssociative();
+                $unreadRows = $this->ticketRepository->countUnreadInboundByConversation(
+                    array_map(fn($id) => (int) $id, array_values($convIds)),
+                );
                 foreach ($unreadRows as $row) {
                     $unreadCounts[(int) $row['conversation_id']] = (int) $row['cnt'];
                 }
@@ -117,14 +83,7 @@ class ListTicketsQuery
         $agentIds = array_unique(array_filter(array_map(fn($r) => $r['assigned_agent_id'] ? (int) $r['assigned_agent_id'] : null, $results)));
         $agentEntities = [];
         if (!empty($agentIds)) {
-            $agentEntities = $this->entityManager
-                ->createQueryBuilder()
-                ->select('a')
-                ->from(Agent::class, 'a')
-                ->where('a.id IN (:ids)')
-                ->setParameter('ids', $agentIds)
-                ->getQuery()
-                ->getResult();
+            $agentEntities = $this->agentRepository->findByIds($agentIds);
         }
         /** @var array<int, Agent> $agentMap */
         $agentMap = [];

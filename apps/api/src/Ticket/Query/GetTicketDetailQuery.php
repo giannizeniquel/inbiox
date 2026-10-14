@@ -2,51 +2,17 @@
 
 namespace App\Ticket\Query;
 
-use Doctrine\ORM\EntityManagerInterface;
+use App\Ticket\Repository\TicketRepository;
 
 class GetTicketDetailQuery
 {
     public function __construct(
-        private EntityManagerInterface $entityManager,
+        private TicketRepository $ticketRepository,
     ) {}
 
     public function execute(int $ticketId): ?TicketDetailDTO
     {
-        $sql = <<<SQL
-            SELECT 
-                t.id as ticket_id,
-                t.status,
-                t.priority,
-                t.assigned_agent_id as owner_id,
-                t.created_at as opened_at,
-                t.first_response_at,
-                t.resolved_at,
-                t.updated_at,
-                t.last_inbound_message_at,
-                c.id as contact_id,
-                c.phone as contact_phone,
-                c.name as contact_name,
-                conv.id as conv_id,
-                (SELECT COUNT(*) FROM messages m2
-                 WHERE m2.conversation_id = conv.id
-                 AND m2.direction = 'inbound'
-                 AND m2.created_at > COALESCE(t.last_read_at, '1970-01-01 00:00:00')
-                ) as unread_count,
-                (SELECT m3.content FROM messages m3
-                 WHERE m3.conversation_id = conv.id
-                 ORDER BY m3.created_at DESC LIMIT 1
-                ) as last_message
-            FROM tickets t
-            INNER JOIN conversations conv ON t.conversation_id = conv.id
-            INNER JOIN contacts c ON conv.contact_id = c.id
-            WHERE t.id = :ticketId
-        SQL;
-
-        $stmt = $this->entityManager->getConnection()->executeQuery($sql, [
-            'ticketId' => $ticketId,
-        ]);
-
-        $row = $stmt->fetchAssociative();
+        $row = $this->ticketRepository->findDetailRow($ticketId);
 
         if (!$row) {
             return null;

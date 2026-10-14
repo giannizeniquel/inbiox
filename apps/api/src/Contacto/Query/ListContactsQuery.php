@@ -2,12 +2,14 @@
 
 namespace App\Contacto\Query;
 
-use Doctrine\ORM\EntityManagerInterface;
+use App\Contacto\Repository\ContactRepository;
+use App\Ticket\Repository\TicketRepository;
 
 class ListContactsQuery
 {
     public function __construct(
-        private EntityManagerInterface $entityManager,
+        private ContactRepository $contactRepository,
+        private TicketRepository $ticketRepository,
     ) {}
 
     public function execute(
@@ -24,60 +26,10 @@ class ListContactsQuery
         $limit = min(100, max(1, $limit));
         $offset = ($page - 1) * $limit;
 
-        $conn = $this->entityManager->getConnection();
-
-        $where = [];
-        $params = [];
-
-        if ($search) {
-            $where[] = '(c.name LIKE ? OR c.phone LIKE ?)';
-            $params[] = "%{$search}%";
-            $params[] = "%{$search}%";
-        }
-
-        if ($status) {
-            $validStatuses = ['active', 'inactive'];
-            if (in_array($status, $validStatuses)) {
-                $where[] = 'c.status = ?';
-                $params[] = $status;
-            }
-        }
-
-        if ($channel) {
-            $validChannels = ['whatsapp', 'other'];
-            if (in_array($channel, $validChannels)) {
-                $where[] = 'c.channel = ?';
-                $params[] = $channel;
-            }
-        }
-
-        if ($ownerId) {
-            $where[] = 'c.owner_id = ?';
-            $params[] = $ownerId;
-        }
-
-        if ($email) {
-            $where[] = 'c.email = ?';
-            $params[] = $email;
-        }
-
         // Contacts are shared across workspaces — only conversations/tickets
         // are segregated. No phone_number_id filter on the contact list.
-
-        $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
-
-        $sql = "SELECT c.id, c.phone, c.name, c.status, c.channel, c.owner_id, c.email, c.created_at, c.updated_at
-                FROM contacts c
-                $whereClause
-                ORDER BY c.updated_at DESC, c.id DESC
-                LIMIT $limit OFFSET $offset";
-
-        $stmt = $conn->executeQuery($sql, $params);
-        $results = $stmt->fetchAllAssociative();
-
-        $countSql = "SELECT COUNT(*) FROM contacts c $whereClause";
-        $countStmt = $conn->executeQuery($countSql, $params);
-        $total = (int) $countStmt->fetchOne();
+        $results = $this->contactRepository->findListPage($search, $status, $channel, $ownerId, $email, $limit, $offset);
+        $total = $this->contactRepository->countList($search, $status, $channel, $ownerId, $email);
 
         $items = array_map(function ($row) {
             return new ContactListItemDTO(
@@ -111,34 +63,13 @@ class ListContactsQuery
 
     /**
      * Resolve the active (non-closed) ticket ID for each contact.
-     * Done in a separate query to avoid SQL positional-parameter ordering issues
-     * with the main query's dynamic WHERE clause.
+     * Done in a separate query after the contact page is known.
      */
     private function resolveActiveTicketIds(array $items, array $contactIds, ?string $phoneNumberId): void
     {
         if (empty($contactIds)) return;
 
-        $conn = $this->entityManager->getConnection();
-        $placeholders = implode(',', array_fill(0, count($contactIds), '?'));
-
-        $params = $contactIds;
-        $types = array_fill(0, count($contactIds), \Doctrine\DBAL\Types\Types::INTEGER);
-
-        $phoneFilter = '';
-        if ($phoneNumberId !== null) {
-            $phoneFilter = 'AND t.phone_number_id = ?';
-            $params[] = $phoneNumberId;
-            $types[] = \Doctrine\DBAL\Types\Types::STRING;
-        }
-
-        $sql = "SELECT t.contact_id, MAX(t.id) as ticket_id
-                FROM tickets t
-                WHERE t.contact_id IN ($placeholders)
-                  AND t.status NOT IN ('closed', 'resolved')
-                  $phoneFilter
-                GROUP BY t.contact_id";
-
-        $rows = $conn->executeQuery($sql, $params, $types)->fetchAllAssociative();
+        $rows = $this->ticketRepository->findLatestOpenTicketIdsByContact($contactIds, $phoneNumberId);
 
         // Build lookup: contact_id → ticket_id
         $ticketMap = [];

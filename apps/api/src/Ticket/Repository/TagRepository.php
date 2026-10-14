@@ -4,6 +4,7 @@ namespace App\Ticket\Repository;
 
 use App\Ticket\Tag;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\Persistence\ManagerRegistry;
 
 class TagRepository extends ServiceEntityRepository
@@ -50,5 +51,25 @@ class TagRepository extends ServiceEntityRepository
             ->setParameter('ticketId', $ticketId)
             ->setParameter('tagId', $tagId)
             ->fetchOne();
+    }
+
+    /**
+     * Tag names attached to each of these tickets, ordered by ticket id and
+     * then by the order the tags were attached (`ticket_tags.id`).
+     *
+     * @param int[] $ticketIds
+     * @return list<array{ticket_id: mixed, name: string}>
+     */
+    public function findNamesByTicketIds(array $ticketIds): array
+    {
+        return $this->getEntityManager()->getConnection()->createQueryBuilder()
+            ->select('tt.ticket_id', 'tg.name')
+            ->from('ticket_tags', 'tt')
+            ->innerJoin('tt', 'tags', 'tg', 'tg.id = tt.tag_id')
+            ->where('tt.ticket_id IN (:ticketIds)')
+            ->orderBy('tt.ticket_id', 'ASC')
+            ->addOrderBy('tt.id', 'ASC')
+            ->setParameter('ticketIds', $ticketIds, ArrayParameterType::INTEGER)
+            ->fetchAllAssociative();
     }
 }

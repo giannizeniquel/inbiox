@@ -59,7 +59,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T14 | S2, S7 | inline | done | Phase 2: docs paths and line refs updated after the moves (L22) |
 | T15 | S8 | delegated (context backstop) | done | 3a: 82 characterization tests in `tests/Characterization/` (L25) |
 | T16 | S8 | delegated (context backstop) | done | 3b: `InternalServerErrorListener`, 71 catch-alls removed (L26) |
-| T17 | S8, S3 | delegated (context backstop) | in progress | 3c-1 done (L28); 3c-2 pending: Query classes and `TicketFilterBuilder` |
+| T17 | S8, S3 | delegated (context backstop) | done | 3c-1 (L28) and 3c-2 (L29) |
 | T18 | S8 | inline | pending | 3d thin controllers, per module |
 | T19 | S8 | inline | pending | 3e single outbox writer (needs 2 user decisions) |
 
@@ -233,3 +233,19 @@ Later phases, each with its own branch and task list when it starts:
     1. `InvalidTransitionException` is declared inside `TicketStateMachine.php`, so a test that builds it first fails when run alone.
     2. The existing native `ReportingRepository::getTicketParticipation` has no why-comment and no test.
     3. `countActiveForAgent` has no test of its own.
+- **L29 (2026-10-14), T17 3c-2:** a bounded writer moved the read-side SQL out of `src/*/Query/*` and into repository methods.
+  - **DBAL QueryBuilder:**
+    - `TicketRepository`: `findListPage`, `countList`, `countUnreadInboundByConversation`, `findDetailRow`, `findConversationId`, `findExportChunk`, `findLatestOpenTicketIdsByContact`.
+    - `MessageRepository`: page asc/desc.
+    - `ContactRepository`: list, count and detail.
+    - `TagRepository::findNamesByTicketIds`, `AgentRepository::findByIds`.
+  - **Native:** `ContactRepository::findTimelineRows` (UNION ALL in a derived table). Its SQL is now one fixed string with `(:p IS NULL OR …)` and bound type lists, where it used to concatenate fragments.
+  - `TicketFilterBuilder` now returns a `Ticket/Repository/TicketFilters` value object (same normalization), and the private `TicketRepository::applyListFilters` applies it in the old clause order. `InvalidTransitionException` moved into its own file (same FQCN).
+  - `getTicketParticipation` got its why-comment. It already had 5 direct tests in `ReportingResponseDelayTest`, so the L28 "no test" advisory was wrong. `countActiveForAgent` got a test.
+  - **Writer's proof:** 61 old-vs-new cases with 0 result differences; 29 new repository tests.
+  - **Independent verifier:** PASS, no blockers. It ran the old classes from `e1425d3` under a renamed namespace next to the new services in one rolled-back transaction, plus edge rows (timestamp ties, an out-of-allow-list event, an unknown source user, a phone with `+`, 1001 export tickets). 9,597 cases, 0 differences, including identical exceptions, the export keyset at 499/500/501/1000/1001 rows, and the timeline `before` equal to a row timestamp. Full suite: 826 tests, exactly the 6 baseline failures.
+  - **Advisories:**
+    1. Timeline tie order is unstable, and the strict `before <` cursor drops ties at page edges. Already at baseline; contradiction track.
+    2. `(:p IS NULL OR …)` may hurt index use; not measured.
+    3. The `TimelineEventDTO` deprecation is pre-existing.
+    4. Rule-7 tension: some Query classes read another module's repository. Revisit in 3d.

@@ -26,6 +26,22 @@ class AgentRepository extends ServiceEntityRepository
         return $this->find($id);
     }
 
+    /**
+     * @param int[] $ids
+     * @return Agent[]
+     */
+    public function findByIds(array $ids): array
+    {
+        return $this->getEntityManager()
+            ->createQueryBuilder()
+            ->select('a')
+            ->from(Agent::class, 'a')
+            ->where('a.id IN (:ids)')
+            ->setParameter('ids', $ids)
+            ->getQuery()
+            ->getResult();
+    }
+
     public function findAllActive(): array
     {
         return $this->findBy(['active' => true]);

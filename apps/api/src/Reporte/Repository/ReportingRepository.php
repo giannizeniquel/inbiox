@@ -942,6 +942,12 @@ class ReportingRepository extends ServiceEntityRepository
      * ticket's own episode. Reuses the same burst-based sampling and
      * clock start/stop rules as {@see getResponseDelayMetrics()}.
      *
+     * Native SQL because the burst pairing needs CTEs and window functions
+     * (`SUM() OVER`, `ROW_NUMBER() OVER`, `COUNT() OVER`), which neither DQL
+     * nor DBAL's QueryBuilder can express. Parameters are bound. Tested
+     * directly by the `testGetTicketParticipation*` and degenerate-tie cases
+     * in `tests/Integration/ReportingResponseDelayTest.php`.
+     *
      * @return array{ticket_id: int, data_available_from: \DateTimeImmutable|null, partial_data: bool, participants: array<int, array{agent_id: int, agent_name: string|null, message_count: int, sample_count: int, avg_delay_seconds: float|null}>, automatic_message_count: int, unanswered_inbound_count: int, pairs: array<int, array{run_start_at: string, reply_at: string|null, agent_id: int|null, delay_seconds: float|null}>}|null null when the ticket does not exist or has no conversation
      */
     public function getTicketParticipation(int $ticketId): ?array
