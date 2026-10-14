@@ -163,7 +163,7 @@ Detalle en [07](07-frontend.md#lógica-de-negocio-que-vive-en-el-frontend).
 | Cierre automático | `ConversationWindowExpiryService` (vivo), `AutoCloseRule` (inalcanzable), `AutoCloseTicketUseCase` (muerto y roto) | Tres criterios distintos. |
 | Validación de turnos | `CreateAgentShiftUseCase`, `ReplaceAgentShiftsUseCase`, `ShiftInputDTO`, CHECK de la tabla | Mismas reglas, distintos nombres de campo y mensajes. |
 | Ventana de 24 h | `HandleOutboundMessageUseCase.php:210`, `AutoReplyService.php:126`, frontend `composer.component.ts:70-76` | Sí (el frontend usa el reloj del navegador; el backend manda). |
-| FSM del ticket | `TicketStateMachine.php`; frontend `status-actions.component.ts:21-27` (componente sin uso) y `ticket.store.ts:182-187` (`new → active` al asignar) | La copia del frontend no se usa; la transición implícita sí. |
+| FSM del ticket | `TicketStateMachine.php`; frontend `status-actions.component.ts:21-27` (componente sin uso) y `ticket.store.ts:163-168` (`new → active` al asignar) | La copia del frontend no se usa; la transición implícita sí. |
 | Ticket resuelto/cerrado bloquea cambios de dueño | `TicketVoter` (asignación manual, 409 para todos) y `TicketOwnershipGuard` (respuesta, permite a privilegiados) | Distintos a propósito; documentado en cada lugar. |
 | Permiso para asignar | `TicketVoter::ASSIGN` y `ticket-list.component.ts:219-236` | Sí. |
 | `persistEventsToOutbox()` | 5 copias | **No** (formato del payload, eventos omitidos, `sequence`). |

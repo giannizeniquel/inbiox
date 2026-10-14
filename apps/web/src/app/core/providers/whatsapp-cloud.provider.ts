@@ -124,32 +124,6 @@ export class WhatsAppCloudProvider implements ProviderInterface {
   }
 
   // ──────────────────────────────────────────────
-  //  Template Support (CAP-8 — Sprint 13.4B)
-  // ──────────────────────────────────────────────
-
-  /**
-   * Send a template message via backend proxy.
-   *
-   * POST /api/provider/template/send { ticketId, templateName, language, parameters }
-   * Response: { messageId: string, status: string }
-   */
-  sendTemplate(ticketId: string, templateName: string, language: string, parameters: string[]): Observable<Message> {
-    return this.http.post<{ messageId: string; status: string }>(
-      '/api/provider/template/send',
-      { ticketId, templateName, language, parameters }
-    ).pipe(
-      map(response => ({
-        id: response.messageId,
-        ticketId,
-        content: `Template: ${templateName}`,
-        deliveryStatus: 'sent' as DeliveryStatus,
-        createdAt: new Date().toISOString(),
-        sender: 'agent' as MessageSender,
-      }))
-    );
-  }
-
-  // ──────────────────────────────────────────────
   //  Media Support (CAP-8 — Sprint 13.4)
   // ──────────────────────────────────────────────
 

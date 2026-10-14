@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-import { MessageDto, SendMessageRequest } from '../models/message.model';
+import { MessageDto } from '../models/message.model';
 import { environment } from '../../../environments/environment';
 import { retryWithBackoff } from '../utils/retry.util';
 import { createHttpErrorHandler } from '../utils/http-error.util';
@@ -25,16 +25,6 @@ export class MessageApiService {
     const call = this.http.get<GetMessagesResponse>(
       `${this.baseUrl}/api/tickets/${ticketId}/messages`,
       { params }
-    );
-    return retryWithBackoff(call).pipe(
-      catchError(createHttpErrorHandler('MessageApi'))
-    );
-  }
-
-  sendMessage(ticketId: string, request: SendMessageRequest): Observable<MessageDto> {
-    const call = this.http.post<MessageDto>(
-      `${this.baseUrl}/api/tickets/${ticketId}/messages`,
-      request
     );
     return retryWithBackoff(call).pipe(
       catchError(createHttpErrorHandler('MessageApi'))

@@ -203,7 +203,6 @@ export class ContactsPageComponent implements OnInit, OnDestroy {
       this.router.navigate(['/inbox'], { queryParams: { ticketId: contact.activeTicketId } });
     } else {
       console.log('[ContactsPage] No active ticket — open new conversation');
-      // TODO: use OpenConversationFromContactUseCase when ready
       this.router.navigate(['/inbox']);
     }
   }

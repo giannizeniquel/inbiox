@@ -112,7 +112,7 @@ Todo en `apps/web/src/app/`. Detalle por pantalla en [07-frontend.md](07-fronten
 | `core/application/` | Casos de uso (admin, mensajería, reportes, contactos). | No hay casos de uso para la bandeja, settings ni workspace. |
 | `core/stores/` | Estado compartido con signals (`auth`, `ticket`, `conversation`, `connection`, `ui`, `workspace`, `settings`, `agent`, `theme`). | Varios stores hacen HTTP directamente. |
 | `core/realtime/` | `MercureService` (SSE por `fetch`), `EventBusService`. | |
-| `core/providers/` | `ProviderInterface`, `WhatsAppCloudProvider` (proxy a `/api/provider/*`), `FakeWhatsAppProvider` (sin uso). | La "abstracción de proveedor" de ADR-004 existe **solo** aquí. |
+| `core/providers/` | `ProviderInterface`, `WhatsAppCloudProvider` (proxy a `/api/provider/*`). | La "abstracción de proveedor" de ADR-004 existe **solo** aquí. |
 | `core/dto/`, `core/models/`, `core/utils/`, `core/auth/`, `core/services/` | DTOs compartidos, modelos canónicos, utilidades, guards/interceptor, `agent.service.ts` (roto). | |
 | `features/` | `inbox`, `contacts` (con su propia mini-arquitectura), `reports`, `admin/*`, `agents/*`, `settings`, `login`. | |
 | `shell/` | Layout: barra superior, menú lateral, selector de workspace, banner de conexión. **El shell pinta directamente la bandeja.** | |
@@ -169,7 +169,7 @@ sequenceDiagram
 | Publicación | `Command/OutboxPublishCommand.php` → `Application/Service/OutboxPublisherService.php` |
 | Contrato | `Application/Realtime/RealtimeEventFactory.php`, `EventTypeMapper.php`, `RealtimeEventType.php` (`ticket.created`, `ticket.status_changed`, `ticket.assigned`, `message.added`, `message.updated`, `conversation.updated`, `agent.availability_changed`, `agent.shift_changed`) |
 | Token de suscripción | `GET /api/mercure/token` → `MercureJwtService::issueForUser()`; en la práctica el frontend **no lo usa para suscribirse** (el hub es anónimo), solo para el resync. |
-| Frontend | `core/realtime/mercure.service.ts`, `core/realtime/event-bus.service.ts`, `core/stores/ticket.store.ts:112-208`, `core/stores/conversation.store.ts:65-107` |
+| Frontend | `core/realtime/mercure.service.ts`, `core/realtime/event-bus.service.ts`, `core/stores/ticket.store.ts:93-189`, `core/stores/conversation.store.ts:65-107` |
 
 ### Problemas conocidos del pipeline
 
@@ -290,10 +290,10 @@ Archivos: `apps/api/.env` (no versionado), `.env.dev` (**versionado, con credenc
 
 | # | Violación | Evidencia |
 |---|---|---|
-| W1 | El núcleo de la bandeja no usa casos de uso: los contenedores llaman a `core/api` o a `HttpClient` y escriben en los stores. | `ticket-list.component.ts:51-53`, `conversation.component.ts:89,200`, `shell/app-shell.component.ts:60-61` |
+| W1 | El núcleo de la bandeja no usa casos de uso: los contenedores llaman a `core/api` o a `HttpClient` y escriben en los stores. | `ticket-list.component.ts:51-53`, `conversation.component.ts:87,198`, `shell/app-shell.component.ts:58-59` |
 | W2 | Stores que hacen HTTP. | `settings.store.ts`, `workspace.store.ts`, `auth.store.ts`, `agent.store.ts`, `features/contacts/stores/contact-timeline.store.ts` |
 | W3 | `core` importa de `features` (al revés de la regla escrita). | `core/application/reports/get-reports-dashboard.use-case.ts:7-16` importa `features/reports/models` |
 | W4 | Componente presentacional con acceso a API. | `TeamFilterComponent` llama `TeamApiService` |
 | W5 | Reglas de negocio duplicadas en el navegador. | ventana de 24 h, FSM, `new → active` al asignar, permisos de asignación (ver [07](07-frontend.md#lógica-de-negocio-que-vive-en-el-frontend)) |
-| W6 | DTOs en tres lugares y carpetas muertas. | `app/dto/`, `app/domain/` (muertas), `core/dto/` y `features/contacts/models/dto/` (duplicado de contacto) |
-| W7 | Flujo "abrir ticket y cargar mensajes" escrito tres veces. | `ticket-list.component.ts:176-192`, `app-shell.component.ts:96-112`, `inbox-page.component.ts:30-67` (este último nunca se renderiza) |
+| W6 | DTOs en dos lugares. | `core/dto/` y `features/contacts/models/dto/` (duplicado de contacto) |
+| W7 | Flujo "abrir ticket y cargar mensajes" escrito dos veces. | `ticket-list.component.ts:176-192`, `app-shell.component.ts:90-106` |

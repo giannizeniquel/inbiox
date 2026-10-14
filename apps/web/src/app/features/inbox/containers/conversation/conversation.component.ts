@@ -18,7 +18,6 @@ import { ConversationLoadingComponent } from '../../components/conversation-load
 import { NewMessagesIndicatorComponent } from '../../components/new-messages-indicator/new-messages-indicator.component';
 import { BannerWarningComponent } from '../../../../shared/components/banner-warning/banner-warning.component';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
-import { ConversationSkeletonComponent } from '../../components/conversation-skeleton/conversation-skeleton.component';
 import { MessageSenderService } from '../../services/message-sender.service';
 import { Message } from '../../../../core/models/message.model';
 import { mapApiMessagesToCanonical } from '../../../../core/utils/message-mapper.util';
@@ -71,7 +70,6 @@ const PAGINATION_THRESHOLD = 200;
     ComposerComponent,
     ConversationEmptyComponent,
     ConversationLoadingComponent,
-    ConversationSkeletonComponent,
     NewMessagesIndicatorComponent,
     BannerWarningComponent,
     LoadingSpinnerComponent,

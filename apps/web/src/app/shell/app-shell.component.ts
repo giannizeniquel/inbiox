@@ -11,7 +11,6 @@ import { ConversationComponent } from '../features/inbox/containers/conversation
 import { WorkspaceStore } from '../core/stores/workspace.store';
 import { TicketStore } from '../core/stores/ticket.store';
 import { ConversationStore } from '../core/stores/conversation.store';
-import { ContactsStore } from '../features/contacts/stores/contacts.store';
 import { TicketApiService } from '../core/api/ticket-api.service';
 import { MessageApiService, GetMessagesResponse } from '../core/api/message-api.service';
 import { mapApiMessagesToCanonical } from '../core/utils/message-mapper.util';
@@ -56,7 +55,6 @@ export class AppShellComponent implements OnDestroy {
   private readonly workspaceStore = inject(WorkspaceStore);
   private readonly ticketStore = inject(TicketStore);
   private readonly conversationStore = inject(ConversationStore);
-  private readonly contactsStore = inject(ContactsStore);
   private readonly ticketApi = inject(TicketApiService);
   private readonly messageApi = inject(MessageApiService);
   private readonly route = inject(ActivatedRoute);
@@ -78,10 +76,6 @@ export class AppShellComponent implements OnDestroy {
     if (typeof window !== 'undefined') {
       window.addEventListener('resize', this._resizeHandler);
     }
-
-    // Wire workspace change → store reloads
-    this.workspaceStore.onWorkspaceChange(() => this.ticketStore.reload());
-    this.workspaceStore.onWorkspaceChange(() => this.contactsStore.reload());
 
     // Initialize workspace state
     this.workspaceStore.loadMyWorkspaces();

@@ -22,9 +22,9 @@ export const routes: Routes = [
         pathMatch: 'full',
       },
       {
+        // The shell renders the inbox layout itself (no router-outlet on this route).
         path: 'inbox',
-        loadComponent: () =>
-          import('./features/inbox/pages/inbox-page/inbox-page.component').then(m => m.InboxPageComponent),
+        children: [],
       },
       {
         path: 'contacts',

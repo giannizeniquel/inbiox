@@ -10,8 +10,7 @@ import { WorkspaceApiService } from '../api/workspace-api.service';
  * - activeWorkspace: currently selected active workspace
  * - loading: loading state indicator
  * - activePhoneNumberId: computed from activeWorkspace
- * - setActiveWorkspace(id): persists preference and fires reload callbacks
- * - onWorkspaceChange(callback): register reload callbacks for dependent stores
+ * - setActiveWorkspace(id): persists preference and reloads the page
  */
 @Injectable({ providedIn: 'root' })
 export class WorkspaceStore {
@@ -39,17 +38,6 @@ export class WorkspaceStore {
 
   /** Computed: whether there are multiple workspaces to switch between */
   readonly hasMultipleWorkspaces = computed(() => this.workspaces().length > 1);
-
-  /** Registered reload callbacks for dependent stores */
-  private reloadCallbacks: Array<() => void> = [];
-
-  /**
-   * Register a reload callback.
-   * Called when active workspace changes.
-   */
-  onWorkspaceChange(callback: () => void): void {
-    this.reloadCallbacks.push(callback);
-  }
 
   /**
    * Load the agent's assigned workspaces and active workspace preference.
@@ -139,7 +127,6 @@ export class WorkspaceStore {
     this.loading.set(false);
     this.error.set(null);
     this.pendingWorkspaceIds.set(new Set());
-    this.reloadCallbacks = [];
   }
 
   /** Set pending state for a workspace */
@@ -158,12 +145,5 @@ export class WorkspaceStore {
   /** Check if a workspace has pending messages */
   hasPending(workspaceId: number): boolean {
     return this.pendingWorkspaceIds().has(workspaceId);
-  }
-
-  /** Fire all registered reload callbacks */
-  private fireReloadCallbacks(): void {
-    for (const cb of this.reloadCallbacks) {
-      cb();
-    }
   }
 }

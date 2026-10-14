@@ -1,6 +1,6 @@
 import { Injectable, signal, computed, inject, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Subject, filter } from 'rxjs';
+import { filter } from 'rxjs';
 import { Ticket, TicketStatus } from '../models/ticket.model';
 import { RealtimeEvent, RealtimeEventType,
   MessageAddedPayload, TicketCreatedPayload, TicketStatusChangedPayload,
@@ -55,12 +55,6 @@ export class TicketStore {
   /** Assignment errors with auto-dismiss timestamps */
   readonly assignmentErrors = signal<Map<number, AssignmentError>>(new Map());
 
-  /** Reload trigger Subject — emitted when workspace changes */
-  readonly reload$ = new Subject<void>();
-
-  /** Reload callback registered by the InboxPageComponent */
-  private reloadCallback: (() => void) | null = null;
-
   private readonly authStore = inject(AuthStore);
   private readonly workspaceStore = inject(WorkspaceStore);
 
@@ -71,19 +65,6 @@ export class TicketStore {
     this.initEventBus();
   }
 
-  /**
-   * Register a reload callback that is called when workspace changes.
-   * The InboxPageComponent should register its API fetch function here.
-   */
-  onReload(callback: () => void): void {
-    this.reloadCallback = callback;
-  }
-
-  /** Trigger reload of tickets from the API */
-  reload(): void {
-    this.reloadCallback?.();
-    this.reload$.next();
-  }
 
   /**
    * Set up EventBus subscription for realtime events.

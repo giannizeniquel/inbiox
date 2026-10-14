@@ -28,6 +28,7 @@ Branch: one branch per phase in the worktree `/home/gianni/projects/inbiox-workt
 | T1 | S2, S3 | inline | done | Baseline below (phase 0 commit) |
 | T2 | S3, S4 | inline | done | `AGENTS.md` § Frontend and `07-frontend.md` updated (phase 0 commit) |
 | T3 | S3 | delegated (browser) | done, 6 manual checks pending | Smoke baseline below |
+| T4 | S2 (phase 1), S3, S4 | inline | done | Branch `chore/limpieza-frontend-fase-1`; phase 1 commit. Gates: build exit 0 with 12 warnings (NG8113 gone), spec `tsc` 0 errors, initial bundle 593.13 → 579.41 kB; routes and inbox checked in the browser (L6) |
 
 ### Baseline (phase 0, at `6fcefec`, Node 20.19.5)
 
@@ -70,4 +71,14 @@ Environment at run time: `inbiox_window_closer` has an empty `/var/www/html` (st
 - **L3** Agreed with the backend session: structure `data-access/<modulo>` + `features/<pantalla>` with one-way dependencies and screen state in the screen (written in `docs/arquitectura.md` at `6fcefec`); `PROVIDER_INTERFACE` is in use, so removing it is phase 3, not phase 1; add the spec typecheck to the net; docs per phase.
 - **L4** (2026-10-13) User: "si, crea el worktree y arranca la fase 0". Worktree created, dependencies installed with `npm ci`, CodeGraph index initialized, baseline recorded.
 - **L5** (2026-10-14) Rebased onto `4d6a972` (backend's latest docs commit). User approved running the smoke baseline with browser automation ("ok"); results above. Two findings verified by hand: the missing `phone` in `UpdateContactRequest`, and the container state.
-- **Next:** phase 1 (dead code).
+- **L6** (2026-10-14) User: "entonces seguimos" (start phase 1). Deleted, each verified with zero references outside its own file and barrels:
+  - `FakeWhatsappProvider`, `core/application/providers/` (`ProviderRegistry`, `providerRegistry`, `ProviderFactory`, which always returned `null`), `ProviderConfig`/`PROVIDER_CONFIG`, `sendTemplate()` on the interface and `WhatsAppCloudProvider`.
+  - `app/dto/`, `app/domain/`.
+  - Components `status-actions`, `chat-skeleton`, `conversation-skeleton` (imported but unused in `conversation.component`), `conversation-error`, `inbox-error`.
+  - `InboxPageComponent` and `DebugPanelComponent`: on `/inbox` the shell renders the inbox itself and has no `<router-outlet>`, so the page was never instantiated. The `/inbox` route stays as `children: []` so the `**` and `''` redirects still land on it. (I first misread it as the live page; the doc was right.)
+  - `adminGuard`, `ContactsApiService.deleteContact()`/`getEmptyContacts()`, `MessageApiService.sendMessage()`, `SearchContactsUseCase`, `OpenConversationFromContactUseCase`.
+  - The workspace reload chain: `WorkspaceStore.onWorkspaceChange()`/`fireReloadCallbacks()` (never fired), `TicketStore`/`ContactsStore` `reload()`, `reload$` (no subscribers), `onReload()`, and the two registrations plus the now unused `ContactsStore` injection in `AppShellComponent` (`ContactsStore` has no constructor or subscriptions). Switching workspace works through `window.location.reload()` in `setActiveWorkspace()`.
+  - Kept: `MercureService.forceReconnect()` has no caller now, but it is the only way out of `permanent_failure`; whether a UI should call it is a product decision.
+  - Browser check from this worktree (`docker stop inbiox_web` + `ng serve` on :4200): login lands on `/inbox`; `/` and `/no-existe` redirect to `/inbox`; `/contacts`, `/reports`, `/settings` render; `/inbox?ticketId=448` opens the conversation; no console errors. `inbiox_web` restarted afterwards.
+  - Docs: 30 `file.ts:line` references in `docs/02_sistema-actual/` remapped from the diff (none pointed at deleted code); sentences about the deleted code updated in 02, 04, 07 and 08.
+- **Next:** phase 2 (move to `data-access/<modulo>` + `features/<pantalla>`). Run the guide 09 smoke for the screens it touches.

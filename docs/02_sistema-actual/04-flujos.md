@@ -137,7 +137,7 @@ flowchart TD
 
 ## F3. Envío de plantilla
 
-**Entrada:** `POST /api/provider/template/send` → `ProviderProxyController::sendTemplate` (`:229-331`), `ROLE_AGENT`. **No hay UI** (`WhatsAppCloudProvider.sendTemplate()` no se llama).
+**Entrada:** `POST /api/provider/template/send` → `ProviderProxyController::sendTemplate` (`:229-331`), `ROLE_AGENT`. **No hay UI** (el frontend no tiene cliente para este endpoint).
 
 1. Valida `ticketId`, `templateName`, `language`, `parameters` (array).
 2. Carga ticket → contacto → teléfono.
@@ -194,7 +194,7 @@ stateDiagram-v2
 1. 403 → voter: `TicketVoter.php` (¿el usuario tiene agente vinculado? ¿es el dueño?).
 2. 409 / error de transición → `TicketStateMachine.php`.
 3. `TransitionTicketStatusUseCase.php`.
-4. Frontend: `features/inbox/containers/conversation/conversation.component.ts:295-322`, `core/api/workflow-api.service.ts:32-37`.
+4. Frontend: `features/inbox/containers/conversation/conversation.component.ts:293-320`, `core/api/workflow-api.service.ts:32-37`.
 
 ---
 
@@ -374,7 +374,7 @@ Ver el diagrama y la tabla de archivos en [02 § Tiempo real](02-arquitectura-y-
 2. Tabla `outbox_events`: ¿quedan `pending`? ¿hay `dead_letter`? (`app:outbox:dead-letter list`).
 3. `Application/Service/OutboxPublisherService.php`, `Application/Realtime/EventTypeMapper.php`.
 4. Navegador: pestaña Red → petición a `/.well-known/mercure?topic=tickets`; `mercure.service.ts` (circuit breaker tras 10 fallos; recargar la página).
-5. `core/stores/ticket.store.ts:112-208`, `core/stores/conversation.store.ts:65-107` (el mensaje solo se agrega si es el ticket abierto).
+5. `core/stores/ticket.store.ts:93-189`, `core/stores/conversation.store.ts:65-107` (el mensaje solo se agrega si es el ticket abierto).
 
 ---
 
@@ -424,7 +424,7 @@ Un mensaje `failed` no afecta el estado del ticket.
 | 2 | Al recargar la app: `APP_INITIALIZER` → `POST /api/auth/refresh` (cookie) → token Mercure → `/me` → SSE. | `app.config.ts:16-23`; `auth.store.ts:175-202` |
 | 3 | Ante un 401: el interceptor deduplica refresh concurrentes y reintenta. Si el refresh falla, llama `logout()` (riesgo **no verificado** de bucle logout/refresh). | `core/auth/auth.interceptor.ts:81-133` |
 | 4 | Logout: `POST /api/auth/logout` (borra todos los refresh tokens), desconecta Mercure. **No limpia** los stores de tickets/conversación. | `auth.store.ts:136-148` |
-| 5 | Workspace: `GET /api/me/workspaces` (con `has_pending`) y `GET /api/me/workspace`; al elegir, `PUT /api/me/workspace` y `window.location.reload()`. Admin/supervisor pueden elegir cualquiera (y se les crea un agente); un agente solo los suyos. | `core/stores/workspace.store.ts:105-120`; `Controller/MeController.php:282-461` |
+| 5 | Workspace: `GET /api/me/workspaces` (con `has_pending`) y `GET /api/me/workspace`; al elegir, `PUT /api/me/workspace` y `window.location.reload()`. Admin/supervisor pueden elegir cualquiera (y se les crea un agente); un agente solo los suyos. | `core/stores/workspace.store.ts:93-108`; `Controller/MeController.php:282-461` |
 | 6 | El backend filtra bandeja, contactos y reportes con `WorkspaceScope` (por `phone_number_id`). Sin workspace activo: **no filtra**. | `Application/Security/WorkspaceScope.php:43-64` |
 
 **Si falla, revisar:** 429 en login → rate limiter (5/min) → `security.yaml` → claves JWT (`config/jwt/*.pem`, `JWT_PASSPHRASE`) → `auth.store.ts` / `auth.interceptor.ts` → usuario inactivo (`UserChecker`).
@@ -435,13 +435,13 @@ Un mensaje `failed` no afecta el estado del ticket.
 
 | # | Paso | Dónde |
 |---|---|---|
-| 1 | El shell, en la ruta `/inbox`, pinta directamente `TicketListComponent` + `ConversationComponent` (`InboxPageComponent` nunca se renderiza). | `shell/app-shell.component.html:24-37` |
+| 1 | El shell, en la ruta `/inbox`, pinta directamente `TicketListComponent` + `ConversationComponent` (la ruta `/inbox` no tiene componente propio). | `shell/app-shell.component.html:24-37` |
 | 2 | `GET /api/tickets[?teamId=N]` **sin `page`/`limit`** → el backend devuelve 20. | `core/api/ticket-api.service.ts:20-34`; `Controller/InboxController.php:44-45`; `Application/Query/ListTicketsQuery.php` |
-| 3 | Pestañas Míos / Sin asignar / Todos y contadores: en el navegador sobre lo cargado. | `core/stores/ticket.store.ts:211-232` |
-| 4 | Abrir ticket: `GET /api/tickets/{id}/messages?limit=20&offset=0` (mensajes de toda la conversación); scroll hacia arriba pide más. | `ticket-list.component.ts:176-192`; `conversation.component.ts:370-403`; `Application/Query/GetTicketMessagesQuery.php:23-53` |
-| 5 | Marcar leído: `PUT /api/tickets/{id}/mark-read` (HttpClient directo). Solo tiene efecto si el usuario es el dueño; emite `ticket.read`. | `conversation.component.ts:195-208`; `InboxController.php:168-214` |
-| 6 | No leídos: +1 por `message.added` entrante si no es el ticket abierto; 0 con `ticket.read` o `ticket.assigned`. | `ticket.store.ts:114-129, 192-205` |
-| 7 | Deep link `/inbox?ticketId=X` (desde Contactos): `GET /api/tickets/{id}` + mensajes. | `shell/app-shell.component.ts:96-112` |
+| 3 | Pestañas Míos / Sin asignar / Todos y contadores: en el navegador sobre lo cargado. | `core/stores/ticket.store.ts:192-213` |
+| 4 | Abrir ticket: `GET /api/tickets/{id}/messages?limit=20&offset=0` (mensajes de toda la conversación); scroll hacia arriba pide más. | `ticket-list.component.ts:176-192`; `conversation.component.ts:368-401`; `Application/Query/GetTicketMessagesQuery.php:23-53` |
+| 5 | Marcar leído: `PUT /api/tickets/{id}/mark-read` (HttpClient directo). Solo tiene efecto si el usuario es el dueño; emite `ticket.read`. | `conversation.component.ts:193-206`; `InboxController.php:168-214` |
+| 6 | No leídos: +1 por `message.added` entrante si no es el ticket abierto; 0 con `ticket.read` o `ticket.assigned`. | `ticket.store.ts:95-110, 173-186` |
+| 7 | Deep link `/inbox?ticketId=X` (desde Contactos): `GET /api/tickets/{id}` + mensajes. | `shell/app-shell.component.ts:90-106` |
 
 En la respuesta del listado, `contact.id` es el **id de la conversación** (`ListTicketsQuery.php:164`), mientras que el detalle devuelve el id real del contacto.
 

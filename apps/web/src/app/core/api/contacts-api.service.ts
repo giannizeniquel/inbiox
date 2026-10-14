@@ -177,18 +177,4 @@ export class ContactsApiService {
       { params }
     );
   }
-
-  /**
-   * DELETE /api/contacts/{id} - Soft delete (sets status to inactive)
-   */
-  deleteContact(id: string): Observable<{ success: boolean }> {
-    return this.http.delete<{ success: boolean }>(`${this.baseUrl}/api/contacts/${id}`);
-  }
-
-  /**
-   * Get empty contacts for testing empty state
-   */
-  getEmptyContacts(): Observable<ContactsListResponse> {
-    return this.getContacts(1, 20);
-  }
 }

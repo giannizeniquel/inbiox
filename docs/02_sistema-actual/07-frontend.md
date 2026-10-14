@@ -12,7 +12,7 @@
 |---|---|---|---|---|
 | `/login` | `LoginPageComponent` | — | Público | — |
 | `/` → `/inbox` | `AppShellComponent` (layout) | `authGuard` | Autenticado | — |
-| `/inbox` | `InboxPageComponent` (**nunca se renderiza**: el shell pinta la bandeja directamente) | — | Autenticado | "Chats" |
+| `/inbox` | Ruta sin componente: el shell pinta la bandeja directamente | — | Autenticado | "Chats" |
 | `/contacts`, `/contacts/:contactId` | `ContactsPageComponent` | — | Autenticado | "Contactos" |
 | `/reports` | `ReportsPageComponent` | — | Autenticado (también agentes) | "Informes" |
 | `/agents/:agentId/availability` | `AvailabilityPageComponent` | — | Autenticado | Ninguno (**rota**) |
@@ -24,7 +24,7 @@
 | `/settings` | `SettingsPageComponent` | — | Autenticado | "Configuración" |
 | `**` | redirect `/inbox` | — | — | — |
 
-Roles: `AuthStore.isAdmin()` / `isSupervisor()` (no jerárquicos; no existe `isAgent`) en `core/stores/auth.store.ts:40-52`. `roleGuard` siempre deja pasar al admin (`core/auth/auth.guard.ts:55-58`).
+Roles: `AuthStore.isAdmin()` / `isSupervisor()` (no jerárquicos; no existe `isAgent`) en `core/stores/auth.store.ts:40-52`. `roleGuard` siempre deja pasar al admin (`core/auth/auth.guard.ts:35-38`).
 
 ---
 
@@ -49,9 +49,9 @@ Roles: `AuthStore.isAdmin()` / `isSupervisor()` (no jerárquicos; no existe `isA
 | Campana de notificaciones, botón "Ayuda" | `topbar.component.html:61-69`; `shell/sidebar/sidebar-footer.component.html:4-13` | — | **Decorativos.** |
 | Indicador de conexión | `shell/sidebar/sidebar.component.ts:30-37` | — | Dice "Conectado" también en `permanent_failure`. |
 | Banner de conexión | `shell/connection-banner/` | — | "Reconectando…" / "Sin conexión"; sin botón de reintento. |
-| Selector de workspace | `WorkspaceSwitcherComponent` → `WorkspaceStore.setActiveWorkspace()` (`core/stores/workspace.store.ts:105-120`) | `GET /api/me/workspaces`, `GET/PUT /api/me/workspace` | Recarga la página completa. Marca "pendiente" en otros workspaces con `has_pending` y con eventos entrantes de otro `phoneNumberId`. |
-| Autoselección inicial de workspace | `shell/app-shell.component.ts:90-92` | — | `setTimeout(…, 500)` asumiendo que dos peticiones terminaron: posible condición de carrera. |
-| Deep link `/inbox?ticketId=X` | `app-shell.component.ts:96-112` | `GET /api/tickets/{id}`, mensajes | |
+| Selector de workspace | `WorkspaceSwitcherComponent` → `WorkspaceStore.setActiveWorkspace()` (`core/stores/workspace.store.ts:93-108`) | `GET /api/me/workspaces`, `GET/PUT /api/me/workspace` | Recarga la página completa. Marca "pendiente" en otros workspaces con `has_pending` y con eventos entrantes de otro `phoneNumberId`. |
+| Autoselección inicial de workspace | `shell/app-shell.component.ts:84-86` | — | `setTimeout(…, 500)` asumiendo que dos peticiones terminaron: posible condición de carrera. |
+| Deep link `/inbox?ticketId=X` | `app-shell.component.ts:90-106` | `GET /api/tickets/{id}`, mensajes | |
 
 ## Bandeja: lista de tickets
 
@@ -60,7 +60,7 @@ Contenedor: `features/inbox/containers/ticket-list/ticket-list.component.ts`. St
 | Acción | Código | Endpoint | ¿Servidor o navegador? |
 |---|---|---|---|
 | Cargar lista | `loadTickets()` (`:101-114`) → `TicketApiService.getTickets()` → `TicketStore.loadTickets()` | `GET /api/tickets[?teamId=N]` | Servidor, **sin `page`/`limit` → solo 20** |
-| Pestañas Míos / Sin asignar / Todos + contadores | `TicketFiltersComponent` → `TicketStore.filter` / `filteredTickets` / `filterCounts` (`ticket.store.ts:211-232`) | — | **Navegador** (sobre los 20) |
+| Pestañas Míos / Sin asignar / Todos + contadores | `TicketFiltersComponent` → `TicketStore.filter` / `filteredTickets` / `filterCounts` (`ticket.store.ts:192-213`) | — | **Navegador** (sobre los 20) |
 | Filtro por equipo | `TeamFilterComponent` → `onTeamFilterChange` | `GET /api/teams`, luego `GET /api/tickets?teamId=N` | **Servidor** |
 | Buscar | `TicketSearchComponent` → `onSearch()` hace `console.log` (`:209-213`) | — | **No implementado** |
 | Abrir ticket | `selectTicket()` (`:176-192`) | `GET /api/tickets/{id}/messages?limit=20&offset=0` | — |
@@ -97,7 +97,7 @@ Contenedor: `features/inbox/containers/conversation/conversation.component.ts`. 
 | Acción | Código | Endpoint | Servidor / navegador | Rol |
 |---|---|---|---|---|
 | Listar (20 por página, "cargar más") | `GetContactsUseCase` (`contacts-page.component.ts:171-195`) | `GET /api/contacts?page&limit` | Servidor | Todos |
-| Buscar, filtrar por estado/canal | `ContactsStore.filteredContacts` (`stores/contacts.store.ts:72-106`) | — | **Navegador** (solo lo cargado; `SearchContactsUseCase` existe y no se usa) | Todos |
+| Buscar, filtrar por estado/canal | `ContactsStore.filteredContacts` (`stores/contacts.store.ts:51-85`) | — | **Navegador** (solo lo cargado) | Todos |
 | Detalle | `ContactDetailComponent`; si no está en caché, API directa | `GET /api/contacts/{id}` | — | Todos |
 | Línea de tiempo | `ContactTimelineComponent` → `ContactTimelineStore` (hace HTTP) | `GET /api/contacts/{id}/timeline?before&limit=20` | Servidor | Todos |
 | Abrir ticket desde el contacto | navega a `/inbox?ticketId=…`; sin ticket activo, solo a `/inbox` (`TODO`) | — | — | Todos |
@@ -180,8 +180,8 @@ Limitaciones: detección de huecos desactivada (`:282-286`); `resyncAllTickets()
 |---|---|---|
 | Mensaje "sistema" si es entrante y el texto está entre `[` y `]` | `features/inbox/components/message-bubble/message-bubble.component.ts:44` | **Inventada**; ignora `sender_type`. Un cliente que escribe `[hola]` se ve como sistema; las auto-respuestas se ven como del agente. |
 | Remitente: entrante = cliente, resto = agente | `core/utils/message-mapper.util.ts:33` | Ignora `sender_type` y `sender_agent_id`. |
-| Filtros Míos / Sin asignar / Todos | `ticket.store.ts:211-232` | Duplica filtros que el backend tiene (`filter`, `agent_id`). |
-| `new → active` al asignar | `ticket.store.ts:182-187` | Duplica R-T4. |
+| Filtros Míos / Sin asignar / Todos | `ticket.store.ts:192-213` | Duplica filtros que el backend tiene (`filter`, `agent_id`). |
+| `new → active` al asignar | `ticket.store.ts:163-168` | Duplica R-T4. |
 | FSM de tickets | `status-actions.component.ts:21-27` | Componente sin uso. |
 | Ventana de 24 h | `composer.component.ts:7, 70-76` | Duplica R-W1 con el reloj del navegador; el backend manda. |
 | Quién puede asignar; no asignarse a uno mismo; estados asignables; agentes inactivos no elegibles | `ticket-list.component.ts:130-135, 219-236`; `ticket-card.component.ts:51-59, 142-146` | Duplica el voter y el guard "Activo"; "no asignarse a uno mismo" solo existe aquí. |
@@ -205,21 +205,21 @@ Limitaciones: detección de huecos desactivada (`:282-286`); `resyncAllTickets()
 
 ## Código sin uso en el frontend
 
-`app/domain/`, `app/dto/`, `InboxPageComponent` (y su `DebugPanelComponent`, único lugar con `forceReconnect()`), componentes `app-status-actions`, `app-chat-skeleton`, `app-conversation-skeleton`, `app-conversation-error`, `app-inbox-error`, `adminGuard`, `FakeWhatsAppProvider`, `ContactsApiService.deleteContact()` / `getEmptyContacts()`, `WhatsAppCloudProvider.sendTemplate()`, `MessageApiService.sendMessage()`, `SearchContactsUseCase`, `OpenConversationFromContactUseCase`, `TicketStore.onReload()`, `WorkspaceStore.fireReloadCallbacks()`. Una variable de módulo `let updatingFromUrl` en `contacts-page.component.ts:18` se comparte entre instancias (accidental).
+El código sin uso listado aquí se borró en la fase 1 de la limpieza (ver `odd/tasks/limpieza-frontend.md`). Queda `MercureService.forceReconnect()`: es la única forma de salir de `permanent_failure`, pero ninguna pantalla la llama (antes solo la usaba un panel de depuración que nunca se renderizaba). Una variable de módulo `let updatingFromUrl` en `contacts-page.component.ts:18` se comparte entre instancias (accidental).
 
 ## Si algo falla en el frontend, revisar
 
 | Síntoma | Primer lugar |
 |---|---|
 | No puedo iniciar sesión / me expulsa | `core/stores/auth.store.ts`, `core/auth/auth.interceptor.ts` |
-| Faltan tickets | `core/api/ticket-api.service.ts:20` (sin `limit`), `ticket.store.ts:211` |
-| Badge de no leídos incorrecto | `ticket.store.ts:114-129, 192-205`, `conversation.component.ts:195-208` |
+| Faltan tickets | `core/api/ticket-api.service.ts:20` (sin `limit`), `ticket.store.ts:192` |
+| Badge de no leídos incorrecto | `ticket.store.ts:95-110, 173-186`, `conversation.component.ts:193-206` |
 | No llegan mensajes en tiempo real | `core/realtime/mercure.service.ts`, `conversation.store.ts:65-96` |
 | Mensaje duplicado en pantalla | `conversation.store.ts:76-82, 176-199` |
 | El **cliente** recibe un mensaje repetido | Causa en el backend: `apps/api/src/Controller/ProviderProxyController.php:97-155` envía a WhatsApp aunque el mensaje sea `duplicate_skipped`, y `message-sender.service.ts:71-74` reintenta el POST. Ver [04 § F2](04-flujos.md#f2-respuesta-del-agente). |
-| Mensaje fallido no se reintenta | `conversation.component.ts:281-286` vs `message-sender.service.ts:184-212` |
+| Mensaje fallido no se reintenta | `conversation.component.ts:279-284` vs `message-sender.service.ts:184-212` |
 | No puedo asignar | `ticket-list.component.ts:219-277`, `ticket-card.component.ts`, roster `available-agents` |
-| "Resolver" da error | `conversation.component.ts:295-322`, `core/api/workflow-api.service.ts:32-37` |
+| "Resolver" da error | `conversation.component.ts:293-320`, `core/api/workflow-api.service.ts:32-37` |
 | Mensaje del cliente se ve como "sistema" | `message-bubble.component.ts:44` |
 | No se puede escribir al cliente | `composer.component.ts:70-76` (ventana 24 h) |
 | Informes en cero | `get-reports-dashboard.use-case.ts` (errores degradados a 0) |

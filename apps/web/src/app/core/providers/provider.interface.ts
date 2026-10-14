@@ -52,14 +52,6 @@ export interface Ticket {
 }
 
 /**
- * Configuration options for providers.
- */
-export interface ProviderConfig {
-  responseDelay: number;
-  failureRate: number;
-}
-
-/**
  * Callback for inbound message simulation (SSE integration).
  */
 export type InboundCallback = (message: Message) => void;
@@ -90,20 +82,6 @@ export interface ProviderInterface {
    * - Map WhatsApp status callbacks to these states
    */
   sendMessage(ticketId: string, content: string): Observable<Message>;
-
-  /**
-   * Send a template message to a ticket.
-   *
-   * Used for out-of-window conversations (outside the 24h customer service window).
-   * WhatsApp requires templates for initiating conversations beyond the 24h window.
-   *
-   * @param ticketId - The ticket ID to send the template to
-   * @param templateName - The template name (e.g. "hello_world")
-   * @param language - Language code (e.g. "en_US", "es_AR")
-   * @param parameters - Optional body text parameters (plain strings)
-   * @returns Observable that emits the sent message with deliveryStatus
-   */
-  sendTemplate(ticketId: string, templateName: string, language: string, parameters: string[]): Observable<Message>;
 
   /**
    * Get all messages for a specific ticket.
@@ -235,15 +213,7 @@ export interface ProviderInterface {
 }
 
 /**
- * Provider configuration injection token.
- * Note: This is defined as an alias - the actual token is exported from app.config.ts
- * to ensure it's a proper Angular InjectionToken.
- */
-export const PROVIDER_CONFIG = new InjectionToken<ProviderConfig>('PROVIDER_CONFIG');
-
-/**
  * Provider Interface injection token.
- * Allows the application to inject ProviderInterface implementations
- * (e.g., FakeWhatsappProvider, WhatsAppProvider) via the DI container.
+ * Allows the application to inject the ProviderInterface implementation via the DI container.
  */
 export const PROVIDER_INTERFACE = new InjectionToken<ProviderInterface>('PROVIDER_INTERFACE');
