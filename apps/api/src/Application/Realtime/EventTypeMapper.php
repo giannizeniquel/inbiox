@@ -13,7 +13,6 @@ final readonly class EventTypeMapper
         \App\Domain\Event\TicketUpdatedEvent::class              => RealtimeEventType::TicketStatusChanged,
         \App\Domain\Event\MessageCreatedEvent::class             => RealtimeEventType::MessageAdded,
         \App\Domain\Event\MessageUpdatedEvent::class             => RealtimeEventType::MessageUpdated,
-        \App\Domain\Event\ConversationUpdatedEvent::class        => RealtimeEventType::ConversationUpdated,
         \App\Domain\Event\AgentAvailabilityChangedEvent::class   => RealtimeEventType::AGENT_AVAILABILITY_CHANGED,
         \App\Domain\Event\AgentShiftChangedEvent::class          => RealtimeEventType::AGENT_SHIFT_CHANGED,
     ];

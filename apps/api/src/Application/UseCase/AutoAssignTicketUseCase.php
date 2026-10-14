@@ -64,7 +64,7 @@ final class AutoAssignTicketUseCase
 
     /**
      * Execute auto-assignment WITHOUT starting a new transaction.
-     * Use this when already inside a transaction (e.g., Rebalance).
+     * Use this when already inside a transaction (e.g., the inbound-message listener).
      *
      * @param int $ticketId
      * @return array{ticket_id: int, assigned: bool, agent_id: ?int, reason: string}

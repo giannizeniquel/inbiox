@@ -31,8 +31,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * is an intentional product decision (see docs/04_sprints/sprint_16
  * (Production Readiness).md), not a bug. `getScopeAgentId()` below always
  * returns null (see OwnershipScope), so no per-agent filtering is applied
- * to any query. `ReportVoter::VIEW_REPORT` exists but is not used by this
- * controller; it is reserved for a possible future access restriction.
+ * to any query.
  */
 #[IsGranted('ROLE_AGENT')]
 class ReportingController

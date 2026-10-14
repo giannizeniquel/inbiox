@@ -8,9 +8,6 @@ services:
     App\Application\Service\OutboxPublisherService:
         public: true
 
-    App\Application\UseCase\RebalanceUnassignedTicketsUseCase:
-        public: true
-
     App\Application\Service\AssignmentService:
         public: true
 
