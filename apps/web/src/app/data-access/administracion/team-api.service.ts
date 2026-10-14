@@ -1,22 +1,15 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { map } from 'rxjs/operators';
 import { CreateTeamRequest, TeamDTO, UpdateTeamRequest } from './team.dto';
 import { environment } from '../../../environments/environment';
-import { createHttpErrorHandler } from '../../core/http/http-error.util';
 import { Page, PaginatedResponse, rethrowApiError, toPage } from './admin-api.service';
 
 /**
- * TeamApiService — HTTP client for team endpoints (Tier 2 #7).
+ * TeamApiService — HTTP client for the admin team endpoints (Tier 2 #7).
+ * The non-admin `GET /api/teams` listing lives in `TeamListApiService` (agente).
  *
- * Non-admin (Slice 1):
- * - GET /api/teams — workspace-scoped listing for the inbox/reports team
- *   filter dropdowns (Slice 3). Includes deactivated teams — per spec, a
- *   deactivated team must remain selectable for historical filtering even
- *   though it's hidden from admin "new assignment" pickers.
- *
- * Admin (Slice 2):
  * - GET    /api/admin/teams — paginated list
  * - POST   /api/admin/teams — create
  * - PUT    /api/admin/teams/{id} — update
@@ -30,16 +23,6 @@ import { Page, PaginatedResponse, rethrowApiError, toPage } from './admin-api.se
 export class TeamApiService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiUrl;
-
-  // ── Non-admin (Slice 1/3) ──────────────────────────────
-
-  listTeams(): Observable<TeamDTO[]> {
-    return this.http.get<TeamDTO[]>(`${this.baseUrl}/api/teams`).pipe(
-      catchError(createHttpErrorHandler('TeamApi'))
-    );
-  }
-
-  // ── Admin (Slice 2) ────────────────────────────────────
 
   /** GET /api/admin/teams — one page of teams */
   listAll(page: number, limit = 20): Observable<Page<TeamDTO>> {

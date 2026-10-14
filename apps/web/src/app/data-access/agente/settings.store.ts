@@ -3,14 +3,16 @@ import { SettingsApiService } from './settings-api.service';
 import {
   SettingsProfile,
   SettingsNotifications,
-  SettingsAutoReply,
   SettingsWorkspace,
-  ShiftDTO,
   UpdateProfilePayload,
   UpdateNotificationsPayload,
-  UpdateAutoReplyPayload,
-  ShiftInput,
 } from './settings.dto';
+import {
+  AutoReplyApiService,
+  SettingsAutoReply,
+  UpdateAutoReplyPayload,
+} from '../automatizacion/auto-reply-api.service';
+import { AgentService, ShiftDTO, ShiftInput } from '../disponibilidad/agent.service';
 
 /**
  * SettingsStore — Signals-based state for agent self-service settings.
@@ -21,11 +23,17 @@ import {
  * - loadSettings(): GET /api/me/settings → hydrate all signals
  * - saveProfile / saveNotifications / saveAutoReply / saveShifts
  *
+ * Saves go through SettingsApiService (profile, notifications),
+ * AutoReplyApiService (PUT /api/me/auto-reply) and AgentService
+ * (PUT /api/me/shifts).
+ *
  * Follows the WorkspaceStore pattern (signals + injected API).
  */
 @Injectable({ providedIn: 'root' })
 export class SettingsStore {
   private readonly api = inject(SettingsApiService);
+  private readonly autoReplyApi = inject(AutoReplyApiService);
+  private readonly agentApi = inject(AgentService);
 
   // ── Settings section signals ──
 
@@ -113,7 +121,7 @@ export class SettingsStore {
     this.saving.set(true);
     this.error.set(null);
 
-    this.api.updateAutoReply(payload).subscribe({
+    this.autoReplyApi.updateAutoReply(payload).subscribe({
       next: (autoReply) => {
         this.autoReply.set(autoReply);
         this.saving.set(false);
@@ -133,7 +141,7 @@ export class SettingsStore {
     this.saving.set(true);
     this.error.set(null);
 
-    this.api.replaceShifts(shifts).subscribe({
+    this.agentApi.replaceShifts(shifts).subscribe({
       next: (result) => {
         this.businessHours.set(result);
         this.saving.set(false);

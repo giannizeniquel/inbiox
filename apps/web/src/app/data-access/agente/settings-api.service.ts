@@ -6,15 +6,18 @@ import {
   SettingsResponse,
   UpdateProfilePayload,
   UpdateNotificationsPayload,
-  UpdateAutoReplyPayload,
-  ShiftInput,
-  ShiftDTO,
 } from './settings.dto';
 
 /**
  * SettingsApiService — HTTP client for agent self-service settings endpoints.
  *
- * All endpoints require ROLE_AGENT.
+ * Endpoints (all require ROLE_AGENT):
+ * - GET /api/me/settings
+ * - PUT /api/me/profile
+ * - PUT /api/me/notifications
+ *
+ * `/api/me/auto-reply` lives in `AutoReplyApiService` (automatizacion) and
+ * `/api/me/shifts` in `AgentService` (disponibilidad).
  */
 @Injectable({ providedIn: 'root' })
 export class SettingsApiService {
@@ -39,27 +42,6 @@ export class SettingsApiService {
     return this.http.put<SettingsResponse['notifications']>(
       `${this.baseUrl}/api/me/notifications`,
       payload,
-    );
-  }
-
-  /** PUT /api/me/auto-reply — update auto-reply settings */
-  updateAutoReply(payload: UpdateAutoReplyPayload): Observable<SettingsResponse['autoReply']> {
-    return this.http.put<SettingsResponse['autoReply']>(
-      `${this.baseUrl}/api/me/auto-reply`,
-      payload,
-    );
-  }
-
-  /** GET /api/me/shifts — list agent's current shifts */
-  getShifts(): Observable<ShiftDTO[]> {
-    return this.http.get<ShiftDTO[]>(`${this.baseUrl}/api/me/shifts`);
-  }
-
-  /** PUT /api/me/shifts — replace ALL shifts */
-  replaceShifts(shifts: ShiftInput[]): Observable<ShiftDTO[]> {
-    return this.http.put<ShiftDTO[]>(
-      `${this.baseUrl}/api/me/shifts`,
-      { shifts },
     );
   }
 }

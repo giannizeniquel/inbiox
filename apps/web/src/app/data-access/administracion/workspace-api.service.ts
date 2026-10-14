@@ -4,7 +4,6 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { WorkspaceDTO, WorkspacePreferenceResponse } from './workspace.dto';
-import { AgentAvailabilityDTO } from '../disponibilidad/agent-availability.dto';
 import { Page, PaginatedResponse, rethrowApiError, toPage } from './admin-api.service';
 
 /**
@@ -13,6 +12,7 @@ import { Page, PaginatedResponse, rethrowApiError, toPage } from './admin-api.se
  * Agent-facing:
  * - GET  /api/me/workspace — active workspace preference
  * - PUT  /api/me/workspace — set active workspace
+ * - GET  /api/me/workspaces — agent's assigned workspaces
  *
  * Admin:
  * - GET    /api/admin/workspaces — paginated list
@@ -20,6 +20,8 @@ import { Page, PaginatedResponse, rethrowApiError, toPage } from './admin-api.se
  * - PUT    /api/admin/workspaces/{id} — update
  * - DELETE /api/admin/workspaces/{id} — soft delete
  * - PUT    /api/admin/workspaces/{id}/agents — assign agents
+ *
+ * `GET /api/workspaces/{id}/available-agents` lives in `AgentService` (disponibilidad).
  *
  * The list/create/update/deactivate admin methods fail with a plain `Error`
  * carrying the backend's message (see `rethrowApiError`).
@@ -111,13 +113,6 @@ export class WorkspaceApiService {
     return this.http.put<{ workspace_id: number; agent_ids: number[] }>(
       `${this.baseUrl}/api/admin/workspaces/${id}/agents`,
       { agentIds }
-    );
-  }
-
-  /** GET /api/workspaces/{id}/available-agents — get agents available for assignment */
-  getAvailableAgents(workspaceId: number): Observable<AgentAvailabilityDTO[]> {
-    return this.http.get<AgentAvailabilityDTO[]>(
-      `${this.baseUrl}/api/workspaces/${workspaceId}/available-agents`
     );
   }
 }

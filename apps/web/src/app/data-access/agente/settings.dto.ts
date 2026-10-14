@@ -1,3 +1,6 @@
+import { SettingsAutoReply } from '../automatizacion/auto-reply-api.service';
+import { ShiftDTO } from '../disponibilidad/agent.service';
+
 export interface SettingsProfile {
   name: string;
   email: string;
@@ -9,21 +12,10 @@ export interface SettingsNotifications {
   desktop: boolean;
 }
 
-export interface SettingsAutoReply {
-  enabled: boolean;
-  message: string | null;
-}
-
 export interface SettingsWorkspace {
   id: number;
   displayName: string;
   phoneNumberId: string;
-}
-
-export interface ShiftDTO {
-  dayOfWeek: number;
-  start: string;
-  end: string;
 }
 
 export interface SettingsResponse {
@@ -41,15 +33,4 @@ export interface UpdateProfilePayload {
 export interface UpdateNotificationsPayload {
   sound?: boolean;
   desktop?: boolean;
-}
-
-export interface UpdateAutoReplyPayload {
-  enabled?: boolean;
-  message?: string | null;
-}
-
-export interface ShiftInput {
-  dayOfWeek: number;
-  start: string;
-  end: string;
 }

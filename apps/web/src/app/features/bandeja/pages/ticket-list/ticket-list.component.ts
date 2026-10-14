@@ -17,7 +17,8 @@ import { AuthStore } from '../../../../core/auth/auth.store';
 import { WorkspaceStore } from '../../../../data-access/administracion/workspace.store';
 import { TicketApiService } from '../../../../data-access/ticket/ticket-api.service';
 import { MessageApiService, GetMessagesResponse } from '../../../../data-access/conversacion/message-api.service';
-import { WorkspaceApiService } from '../../../../data-access/administracion/workspace-api.service';
+import { AgentService } from '../../../../data-access/disponibilidad/agent.service';
+import { AssignmentApiService } from '../../../../data-access/asignacion/assignment-api.service';
 import { Ticket } from '../../../../data-access/ticket/ticket.model';
 import { AgentAvailabilityDTO } from '../../../../data-access/disponibilidad/agent-availability.dto';
 import { mapApiMessagesToCanonical } from '../../../../data-access/conversacion/message-mapper.util';
@@ -50,7 +51,8 @@ export class TicketListComponent implements OnInit {
   protected readonly conversationStore = inject(ConversationStore);
   private readonly ticketApi = inject(TicketApiService);
   private readonly messageApi = inject(MessageApiService);
-  private readonly workspaceApi = inject(WorkspaceApiService);
+  private readonly agentApi = inject(AgentService);
+  private readonly assignmentApi = inject(AssignmentApiService);
   private readonly authStore = inject(AuthStore);
   private readonly workspaceStore = inject(WorkspaceStore);
   private readonly eventBus = inject(EventBusService);
@@ -125,7 +127,7 @@ export class TicketListComponent implements OnInit {
       return;
     }
 
-    this.workspaceApi.getAvailableAgents(wsId).subscribe({
+    this.agentApi.getAvailableAgents(wsId).subscribe({
       next: (agents) => {
         // Filter out the current user — no one can assign to themselves via dropdown
         const currentAgentId = this.authStore.currentUser()?.agent_id;
@@ -254,7 +256,7 @@ export class TicketListComponent implements OnInit {
     const previousOwner = this.ticketStore.optimisticAssign(ticketId, agentId, agentName);
 
     // API call
-    this.ticketApi.assignTicket(ticketId, agentId, assignedBy).subscribe({
+    this.assignmentApi.assignTicket(ticketId, agentId, assignedBy).subscribe({
       next: () => {
         // Success: clear pending state (Mercure event will reconcile canonical owner)
         this.ticketStore.clearPendingAssign(ticketId);

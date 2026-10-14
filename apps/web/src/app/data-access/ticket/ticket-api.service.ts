@@ -39,23 +39,4 @@ export class TicketApiService {
       catchError(createHttpErrorHandler('TicketApi'))
     );
   }
-
-  /**
-   * Assign or reassign a ticket to an agent.
-   *
-   * POST /api/tickets/{id}/assign
-   */
-  assignTicket(
-    ticketId: string,
-    agentId: number,
-    assignedBy: string,
-    notes?: string
-  ): Observable<Ticket> {
-    return this.http.post<Ticket>(
-      `${this.baseUrl}/api/tickets/${ticketId}/assign`,
-      { agentId, assignedBy, notes }
-    ).pipe(
-      catchError(createHttpErrorHandler('TicketApi'))
-    );
-  }
 }

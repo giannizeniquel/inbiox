@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, OnInit, inject, signal, output } from '@angular/core';
-import { TeamApiService } from '../../../../data-access/administracion/team-api.service';
+import { TeamListApiService } from '../../../../data-access/agente/team-list-api.service';
 import { TeamDTO } from '../../../../data-access/administracion/team.dto';
 
 /**
@@ -18,7 +18,7 @@ import { TeamDTO } from '../../../../data-access/administracion/team.dto';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TeamFilterComponent implements OnInit {
-  private readonly teamApi = inject(TeamApiService);
+  private readonly teamApi = inject(TeamListApiService);
 
   readonly teams = signal<TeamDTO[]>([]);
   readonly selectedTeamId = signal<number | null>(null);

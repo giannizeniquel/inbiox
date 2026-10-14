@@ -1,7 +1,7 @@
 /**
  * AgentAvailabilityDTO — matches backend AgentAvailabilityDTO.
  *
- * Used by WorkspaceApiService.getAvailableAgents() and
+ * Used by AgentService.getAvailableAgents() and
  * TicketCardComponent for the assignment dropdown.
  */
 export interface AgentAvailabilityDTO {
