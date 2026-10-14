@@ -112,7 +112,7 @@ Tablas técnicas sin relaciones de negocio (no incluidas en el diagrama): `outbo
 | `MessageDirection` | `Domain/Message/MessageDirection.php` | `inbound`, `outbound` | Los casos de uso escriben el texto literal, no el enum. |
 | `MessageSenderType` | `Domain/Message/MessageSenderType.php` | `agent`, `automatic`, `contact` | Spec `message-attribution`. El frontend todavía no lo usa. |
 | `AssignmentType` | `Domain/Assignment/AssignmentType.php` | `AUTO_ASSIGN`, `MANUAL_ASSIGN`, `REASSIGN`, `UNASSIGN` | Solo `AssignmentService` crea filas de `Assignment`. |
-| `Role` | `Domain/User/Role.php` | `ROLE_ADMIN`, `ROLE_SUPERVISOR`, `ROLE_AGENT` | Jerarquía en `security.yaml`. |
+| Roles | strings en `User.roles` | `ROLE_ADMIN`, `ROLE_SUPERVISOR`, `ROLE_AGENT` | Jerarquía en `security.yaml` (el enum `Role`, sin uso, se borró en la fase 1). |
 | `MediaKind` | `Domain/Media/MediaKind.php` | `image`, `video`, `audio`, `document` | |
 | `TicketEventType` | `Domain/Event/TicketEventType.php` | constantes de cierre/reapertura | `tag_added`, `tag_removed`, `auto_reopened`, `auto_closed` siguen como textos sueltos. |
 | Estado de entrega (textos) | `Application/UseCase/HandleStatusUpdateUseCase.php:29-44` | `sending` → `sent` → `delivered` → `read`; `failed` | Solo avanza; `read` y `failed` son finales. |

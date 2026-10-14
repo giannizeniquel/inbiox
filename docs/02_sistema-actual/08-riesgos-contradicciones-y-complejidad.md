@@ -52,11 +52,11 @@ Ordenadas por severidad (impacto en el comportamiento del producto).
 | Concepto | Variantes | Detalle |
 |---|---|---|
 | "Disponible" | 4 criterios + 1 copia | [04 § F7](04-flujos.md#f7-disponibilidad-override-y-turnos) |
-| Cierre automático | 3 implementaciones, 1 viva | `ConversationWindowExpiryService` (vivo, opcional), `AutoCloseRule` (inalcanzable), `AutoCloseTicketUseCase` (sin llamadores y roto: llama `rowCount()` sobre un `int`, `:69, :106`). Hoy nadie cierra resueltos por inactividad salvo por la ventana de 24 h. |
+| Cierre automático | 1 implementación | `ConversationWindowExpiryService` (vivo, opcional). `AutoCloseRule` y `AutoCloseTicketUseCase` (inalcanzables) se borraron en la fase 1. Hoy nadie cierra resueltos por inactividad salvo por la ventana de 24 h. |
 | Normalización de teléfono | 3 | C-5. |
 | "Está en turno" | 2 | Servicio y controlador. |
 | Escritura al outbox | 5 copias de `persistEventsToOutbox()` + escrituras directas + SQL en `markRead` | Formatos distintos (`event_id` vs `eventId`), distintos eventos omitidos. |
-| Evento de auto-asignación | 2 clases | `Application/Event/TicketNeedsAutoAssignmentEvent` (vivo) y `Domain/Event/TicketAutoAssignmentRequestedEvent` (sin uso). |
+| Evento de auto-asignación | 1 clase | `Application/Event/TicketNeedsAutoAssignmentEvent`. El duplicado `TicketAutoAssignmentRequestedEvent` se borró en la fase 1; el listener `TicketAutoAssignmentRequestedListener` conserva el nombre viejo. |
 | Turnos | 2 APIs | `PUT /api/me/shifts` (reemplaza todo, usada) y `/api/agents/{id}/shifts` (alta/baja individual, UI rota). Validaciones duplicadas con nombres de campo distintos. |
 | Publicador del outbox | 2 procesos posibles | Servicio docker `publisher` y `inbiox-outbox-publisher.service` (systemd). |
 | DTOs del frontend | 3 lugares | `app/dto/` (muerto), `core/dto/`, `features/contacts/models/dto/`. |
@@ -84,34 +84,23 @@ Formato pedido por el método: qué es · por qué parece existir · ¿respaldad
 
 ## Código muerto, inalcanzable o de propósito no claro
 
+> **Fase 1 de la limpieza (13/10/2026):** se borró el código muerto confirmado: `TagController` (con `RemoveTagFromTicketUseCase`), `AutoCloseController`, `AutoCloseRule`, `AutoCloseTicketUseCase`, `RebalanceUnassignedTicketsUseCase`, `TicketAutoAssignmentRequestedEvent`, `ConversationUpdatedEvent`, los métodos sin llamadores de `TicketStateMachine` y `ReportingService`, `AgentVoter`, `ReportVoter`, `TicketVoter::VIEW/EDIT`, `ActiveUserListener`, `Kernel::configure()`, el JWT de respaldo `'supersecret'`, `FlysystemFactory`, `InboundMessageRequest`, `Role`, los repositorios sin uso (`OutboxEventRepository`, `UserRepository`, `WorkspaceRepository`), `bin/outbox-direct.php` y los scripts de la raíz. Seguimiento en `odd/tasks/limpieza-backend.md`. La tabla lista lo que queda.
+
 | Elemento | Situación | Evidencia |
 |---|---|---|
 | `src/Entity/` | Carpeta vacía del esqueleto de Symfony. | `doctrine.yaml:16-22` |
-| `TagController` | Sin ruta: no se pueden etiquetar tickets a mano. | `routes.yaml` |
-| `AutoCloseController` + `AutoCloseRule` | Sin ruta; la regla nunca se dispara. | `AutoCloseController.php:28` |
-| `AutoCloseTicketUseCase` | Sin llamadores; además roto. | búsqueda |
-| `RebalanceUnassignedTicketsUseCase` | Solo registrado en `config/services_test.yaml:11`. | búsqueda |
-| `Domain/Event/TicketAutoAssignmentRequestedEvent` | Duplicado sin uso. | búsqueda |
-| `ConversationUpdatedEvent` | Nunca emitido. | búsqueda |
 | `Agent.is_available` / `setAvailable()` | Columna legacy nunca escrita (pero expuesta en la API admin). | `Agent.php:35-36, 134-144` |
-| `TicketStateMachine::isActiveForSLA()`, `getValidTransitions()` | Sin llamadores. | búsqueda |
-| `ReportingService::getAvailableAgents()` | Devuelve `[]` siempre. | `ReportingService.php:145-150` |
 | `WebhookPayload.processed` | Nunca se pone en `true`. | búsqueda de `setProcessed` |
 | `ConversationStatus::CLOSED` | Nunca escrito. | búsqueda |
-| `AgentVoter`, `ReportVoter`, `TicketVoter::VIEW/EDIT` | Sin uso (los dos últimos, deliberadamente). | `Application/Security/Voter/` |
-| `ActiveUserListener` | Corre antes del firewall; nunca hace nada. | `debug:event-dispatcher` |
-| `Kernel::configure()` | Nunca lo llama `MicroKernelTrait`. **Propósito no confirmado.** | `src/Kernel.php` |
 | `OutboxPublishCommand --status` | Se lee y se ignora. | `OutboxPublishCommand.php:28-31` |
-| Fallback JWT `'supersecret'` en `OutboxPublisherService::getJwtToken()` | Solo si no se inyecta `MercureJwtService` (siempre se inyecta). | `:225-236` |
 | Reglas con disparador `outbound` | El motor se invoca; ninguna regla lo soporta. | `HandleOutboundMessageUseCase.php:348-349` |
 | `symfony/mercure-bundle` y sus variables | Configurado, sin uso. | `config/packages/mercure.yaml` |
-| `FlysystemFactory`, `MEDIA_ENABLED`, `JWT_COOKIE_NAME` | Sin uso. | búsqueda |
+| `MEDIA_ENABLED`, `JWT_COOKIE_NAME` | Variables de entorno que nadie lee. | búsqueda |
 | Servicios `redis`, `mailhog` | Sin uso por la app. | `docker-compose.yml` |
 | `Contact.owner_id` | Se guarda y filtra; **no se sabe a qué apunta ni para qué sirve.** | `Contact.php:33-34` |
 | `Ticket.priority` | Siempre `medium`; el evento envía `priority: 1` fijo. **Propósito no confirmado.** | `HandleInboundMessageUseCase.php:299, 359` |
 | `extra_hosts: localhost:172.19.0.1` del servicio `php` | **Propósito no confirmado.** | `docker-compose.yml` |
 | `DebugController::outbound` | Mal nombrado (genera un mensaje entrante). | `DebugController.php:94` |
-| `simulate.js`, `scripts/*.js`, descripción del `package.json` raíz | Obsoletos (rutas sin `/api`, sin JWT, topics viejos); la descripción del `package.json` es texto pegado por error. | raíz del repo |
 | Frontend: `app/domain/`, `app/dto/`, `InboxPageComponent`, componentes y métodos sin uso | ver [07](07-frontend.md#código-sin-uso-en-el-frontend) | |
 | Frontend: heurística de corchetes y `loadPercentage × 20` | **Propósito no confirmado** (no hay productor de mensajes entre corchetes; no hay respaldo para capacidad 5). | `message-bubble.component.ts:44`; `get-reports-dashboard.use-case.ts:162` |
 

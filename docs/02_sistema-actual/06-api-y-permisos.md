@@ -212,13 +212,10 @@ Registradas en todos los entornos; responden 404 fuera de `dev`/`test` (`DebugCo
 
 | Elemento | Por qué | Evidencia |
 |---|---|---|
-| `TagController::addTag` (`POST /api/tickets/{ticketId}/tags`) | Solo tiene `#[Route]`; no está en `routes.yaml`. | `TagController.php:27` |
-| `TagController::removeTag` (`DELETE …/tags/{tagName}`) | Ídem. | `TagController.php:49` |
-| `AutoCloseController::triggerAutoClose` (`POST …/auto-close`) | Ídem. Es el único disparador de `AutoCloseRule`. | `AutoCloseController.php:28` |
+| `TagController` (`POST`/`DELETE …/tags`), `AutoCloseController` (`POST …/auto-close`) | Solo tenían `#[Route]`, sin entrada en `routes.yaml`. **Borrado en la fase 1 de la limpieza.** | `odd/tasks/limpieza-backend.md` |
 | `GET /api/tickets/{id}/events` | Registrado, pero el firewall rechaza el token que envía el frontend. | [R5](00-estado-y-pendientes.md#r5-endpoint-de-resync-de-eventos-inseguro-y-además-inalcanzable) |
 | Atributos `#[Route]` en general | Decorativos; varios con paths distintos al real (sin `/api`). `TicketEventsController` declara un `requirements` que no está en el yaml. | [02](02-arquitectura-y-tecnologias.md#ruteo-routesyaml-es-la-única-fuente) |
-| `AgentVoter` (`VIEW_AGENT`, `EDIT_AGENT`, `VIEW_AVAILABILITY`), `ReportVoter`, `TicketVoter::VIEW/EDIT` | Ningún controlador los usa (`ReportVoter` y `VIEW/EDIT` documentados como deliberados). | `Application/Security/Voter/` |
-| `ActiveUserListener` | Corre antes del firewall; nunca ve un usuario. | `src/EventListener/ActiveUserListener.php` |
+| `AgentVoter`, `ReportVoter`, `TicketVoter::VIEW/EDIT`, `ActiveUserListener` | Nadie los usaba o nunca actuaban. **Borrado en la fase 1 de la limpieza.** | `odd/tasks/limpieza-backend.md` |
 
 Endpoints vivos **sin UI**: plantillas, asignar equipo a ticket, historial de asignaciones, `/auto-assign`, `/transition`, `/close`, borrar contacto, override/turnos de un agente, filtros `tag`/`status`/`search`/`sort` del listado.
 

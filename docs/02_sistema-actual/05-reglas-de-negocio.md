@@ -86,7 +86,7 @@ Estas son las preguntas que solo el desarrollador (o el cliente) puede responder
 |---|---|---|---|---|
 | R-V1 | Bandeja compartida: todos los usuarios ven todos los tickets del workspace activo (no solo los propios). | `Application/Security/OwnershipScope.php:13-55`; `TicketVoter.php:19-23` | Negocio | **Contradicción documental.** `OwnershipScope` dice "confirmed product decision, sprint 16"; la spec `authorization` dice que el agente solo ve sus tickets; el análisis de brecha (§4.3) dice que la cola "sin asignar" estaba oculta a propósito. |
 | R-V2 | Sin workspace activo, el usuario ve datos de todos los workspaces. | `Application/Security/WorkspaceScope.php:43-64` | Técnica | Regla no confirmada (posible caso no previsto). |
-| R-V3 | Los reportes no se restringen por agente. | `OwnershipScope.php`; `ReportVoter.php:15-29` | Negocio | **Confirmada** como decisión documentada en el código (Sprint 16). |
+| R-V3 | Los reportes no se restringen por agente. | `OwnershipScope.php`; docblock de `ReportingController` | Negocio | **Confirmada** como decisión documentada en el código (Sprint 16). |
 | R-V4 | Solo el agente asignado puede obtener la URL de un adjunto; cualquier agente puede leer el texto. | `src/Security/Voter/MessageVoter.php` | Técnica | Regla no confirmada (inconsistente con R-V1). |
 
 ## Disponibilidad y turnos
@@ -160,7 +160,7 @@ Detalle en [07](07-frontend.md#lógica-de-negocio-que-vive-en-el-frontend).
 | Cascada de disponibilidad | `isAvailable()`, `listAvailableAgents()`, re-filtro en `AutoAssignTicketUseCase.php:135-139` | No: el re-filtro aplica capacidad también con override. |
 | "Tickets activos" = `new`/`active`/`waiting` | `AgentAvailabilityService.php:298-318`, `TicketRepository::countActiveForAgent` (`:146-160`), `ReportingRepository.php:363-365`, `TicketStateMachine::isActiveForSLA` (sin uso), frontend `get-reports-dashboard.use-case.ts` | Sí (cinco copias). |
 | Normalización de teléfono | entrante, `PhoneNormalizer`, `UpdateContactUseCase` | **No** (umbrales distintos). |
-| Cierre automático | `ConversationWindowExpiryService` (vivo), `AutoCloseRule` (inalcanzable), `AutoCloseTicketUseCase` (muerto y roto) | Tres criterios distintos. |
+| Cierre automático | `ConversationWindowExpiryService` (vivo). `AutoCloseRule` y `AutoCloseTicketUseCase` se borraron en la fase 1. | Resuelto: queda un solo criterio. |
 | Validación de turnos | `CreateAgentShiftUseCase`, `ReplaceAgentShiftsUseCase`, `ShiftInputDTO`, CHECK de la tabla | Mismas reglas, distintos nombres de campo y mensajes. |
 | Ventana de 24 h | `HandleOutboundMessageUseCase.php:210`, `AutoReplyService.php:126`, frontend `composer.component.ts:70-76` | Sí (el frontend usa el reloj del navegador; el backend manda). |
 | FSM del ticket | `TicketStateMachine.php`; frontend `status-actions.component.ts:21-27` (componente sin uso) y `ticket.store.ts:182-187` (`new → active` al asignar) | La copia del frontend no se usa; la transición implícita sí. |
