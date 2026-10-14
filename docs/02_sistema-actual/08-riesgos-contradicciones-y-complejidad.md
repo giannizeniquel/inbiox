@@ -83,7 +83,7 @@ Formato pedido por el método: qué es · por qué parece existir · ¿respaldad
 
 ## Código muerto, inalcanzable o de propósito no claro
 
-> **Fase 1 de la limpieza (13/10/2026):** se borró el código muerto confirmado: `TagController` (con `RemoveTagFromTicketUseCase`), `AutoCloseController`, `AutoCloseRule`, `AutoCloseTicketUseCase`, `RebalanceUnassignedTicketsUseCase`, `TicketAutoAssignmentRequestedEvent`, `ConversationUpdatedEvent`, los métodos sin llamadores de `TicketStateMachine` y `ReportingService`, `AgentVoter`, `ReportVoter`, `TicketVoter::VIEW/EDIT`, `ActiveUserListener`, `Kernel::configure()`, el JWT de respaldo `'supersecret'`, `FlysystemFactory`, `InboundMessageRequest`, `Role`, los repositorios sin uso (`OutboxEventRepository`, `UserRepository`, `WorkspaceRepository`), `bin/outbox-direct.php`, los scripts de la raíz, la opción ignorada `--status` de `app:outbox:publish` la unidad systemd `inbiox-outbox-publisher.service` (el publicador solo corre en docker) `symfony/mercure-bundle` (el hub de Mercure sigue; el bundle era una librería sin uso) y `league/flysystem-aws-s3-v3`. Seguimiento en `odd/tasks/limpieza-backend.md`. La tabla lista lo que queda.
+> **Fase 1 de la limpieza (13/10/2026):** se borró el código muerto confirmado: `TagController` (con `RemoveTagFromTicketUseCase`), `AutoCloseController`, `AutoCloseRule`, `AutoCloseTicketUseCase`, `RebalanceUnassignedTicketsUseCase`, `TicketAutoAssignmentRequestedEvent`, `ConversationUpdatedEvent`, los métodos sin llamadores de `TicketStateMachine` y `ReportingService`, `AgentVoter`, `ReportVoter`, `TicketVoter::VIEW/EDIT`, `ActiveUserListener`, `Kernel::configure()`, el JWT de respaldo `'supersecret'`, `FlysystemFactory`, `InboundMessageRequest`, `Role`, los repositorios sin uso (`OutboxEventRepository`, `UserRepository`, `WorkspaceRepository`), `bin/outbox-direct.php`, los scripts de la raíz, la opción ignorada `--status` de `app:outbox:publish` la unidad systemd `inbiox-outbox-publisher.service` (el publicador solo corre en docker) `symfony/mercure-bundle` (el hub de Mercure sigue; el bundle era una librería sin uso) `league/flysystem-aws-s3-v3` y los servicios docker `redis` y `mailhog` (previstos para cache y mails cuando haya uso real). Seguimiento en `odd/tasks/limpieza-backend.md`. La tabla lista lo que queda.
 
 | Elemento | Situación | Evidencia |
 |---|---|---|
@@ -93,7 +93,6 @@ Formato pedido por el método: qué es · por qué parece existir · ¿respaldad
 | `ConversationStatus::CLOSED` | Nunca escrito. | búsqueda |
 | Reglas con disparador `outbound` | El motor se invoca; ninguna regla lo soporta. | `HandleOutboundMessageUseCase.php:348-349` |
 | `MEDIA_ENABLED`, `JWT_COOKIE_NAME` | Variables de entorno que nadie lee. | búsqueda |
-| Servicios `redis`, `mailhog` | Sin uso por la app. | `docker-compose.yml` |
 | `Contact.owner_id` | Se guarda y filtra; **no se sabe a qué apunta ni para qué sirve.** | `Contact.php:33-34` |
 | `Ticket.priority` | Siempre `medium`; el evento envía `priority: 1` fijo. **Propósito no confirmado.** | `HandleInboundMessageUseCase.php:299, 359` |
 | `extra_hosts: localhost:172.19.0.1` del servicio `php` | **Propósito no confirmado.** | `docker-compose.yml` |

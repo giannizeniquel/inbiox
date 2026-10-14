@@ -73,7 +73,7 @@ cd apps/web && ./node_modules/.bin/ng build --configuration production
 
 - **Location:** always work inside WSL2 (`/home/...`), never in `/mnt/c`.
 - **Setup:** see `docs/02_sistema-actual/09-guia-de-pruebas-manuales.md` section 1 (`docs/07_dev/setup_local.md` is a generic template and does not apply).
-- **Services (docker-compose):** `php`, `nginx` (API on :8000), `db` (MySQL), `mercure` (:3000), `publisher` (outbox → Mercure), `web` (`ng serve` on :4200), `minio`, `adminer`. `window-closer` (24 h window auto-close) only runs with `--profile window-closer`. `redis` and `mailhog` are not used by the app.
+- **Services (docker-compose):** `php`, `nginx` (API on :8000), `db` (MySQL), `mercure` (:3000), `publisher` (outbox → Mercure), `web` (`ng serve` on :4200), `minio`, `adminer`. `window-closer` (24 h window auto-close) only runs with `--profile window-closer`. Redis (cache) and a mailer are planned but not installed; add them when there is a real use case.
 - **Commands:** `make up`, `make bash`, `make migrate`. `make seed` calls a command that does not exist; seed users with `docker exec inbiox_php php bin/console app:seed-users`.
 
 ---

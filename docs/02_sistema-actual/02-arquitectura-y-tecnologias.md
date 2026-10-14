@@ -56,7 +56,7 @@ flowchart LR
 | **S3 / MinIO** (`aws/aws-sdk-php`) | Guardar adjuntos y servirlos con URL prefirmada. | Especificación de producto §7: "AWS (objetivo)". MinIO como sustituto local: **Justificación no documentada.** |
 | `league/csv` | Export CSV en streaming con protección anti CSV-injection. | Spec `openspec/specs/reports-export`. |
 | **Docker Compose** + nginx | Entorno local. No hay manifiestos de producción en el repo. | **Justificación no documentada.** |
-| Redis, MailHog | Servicios en `docker-compose.yml` **sin uso** por la aplicación. | — |
+| Redis, MailHog | Se borraron de `docker-compose.yml` en la fase 1 porque la app no los usaba. Quedan **previstos**: Redis para cache y un mailer para enviar mails; se agregan cuando haya un caso de uso real. | — |
 | PHPUnit 11 / Karma + Jasmine | Tests backend / frontend. | — |
 | Contenedor/presentacional, casos de uso, stores (frontend) | Organización del código Angular. | Comentarios en el código (p. ej. `features/inbox/components/ticket-participation/ticket-participation.component.ts:6-14`). Aplicado de forma parcial. |
 | "Bounded contexts" y WhatsApp como adaptador de canal | Mantener el motor (asignación, capacidad, disponibilidad) independiente de WhatsApp. | `docs/03_architecture/ADR-004-platform-ready-bounded-contexts.md` (Accepted, 2026-08-11). Parcialmente aplicado (ver [violaciones](#separación-de-responsabilidades-reglas-del-proyecto-y-dónde-se-violan-hoy)). |
@@ -215,7 +215,6 @@ No hay cron ni Symfony Scheduler. El `Makefile` tiene un target `seed` que llama
 | `web` | `inbiox_web` | 4200 | `ng serve` con `proxy.conf.docker.json` | |
 | `minio` / `minio-init` | `inbiox_minio` | 9000, 9001 | S3 local y creación del bucket privado `inbiox-media` | Credenciales literales. |
 | `adminer` | `inbiox_adminer` | 8080 | UI de base de datos | Dev. |
-| `redis`, `mailhog` | — | 6379, 8025 | **Sin uso** por la app | |
 
 `infra/` solo tiene el `Dockerfile` de PHP, `uploads.ini` y la config de nginx. **No se sabe cómo se despliega a producción.**
 

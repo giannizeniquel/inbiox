@@ -12,7 +12,6 @@ services:
     working_dir: /var/www/html
     depends_on:
       - db
-      - redis
       - minio
 
   nginx:
@@ -37,12 +36,6 @@ services:
     volumes:
       - db_data:/var/lib/mysql
 
-  redis:
-    image: redis:7
-    container_name: inbiox_redis
-    ports:
-      - "6379:6379"
-
   mercure:
     image: dunglas/mercure
     container_name: inbiox_mercure
@@ -54,12 +47,6 @@ services:
         anonymous
     ports:
       - "3000:80"
-
-  mailhog:
-    image: mailhog/mailhog
-    container_name: inbiox_mailhog
-    ports:
-      - "8025:8025"
 
   adminer:
     image: adminer
