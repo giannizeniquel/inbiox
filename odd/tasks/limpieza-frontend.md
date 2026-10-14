@@ -64,6 +64,45 @@ These failures are current behavior: the cleanup keeps them as they are, and fix
 
 Environment at run time: `inbiox_window_closer` has an empty `/var/www/html` (stale bind mount since 2026-10-13 13:26 UTC) and never runs; `inbiox_publisher` had the same problem until someone restarted it at 02:16 UTC, mid-run. Until then, events reached Mercure only through a host crontab (`app:outbox:publish` every minute), so real-time lagged up to 60 s. Test data created by the run: contacts named `Smoke …`, `Ana Prueba`, `Beto Prueba`; tickets 448–467; team "Soporte" (id 1); workspace 3 "Smoke WS P23"; agents 11–12; user `smoke.p23@inbiox.local`.
 
+### Phase 2 destination map (proposal, pending user approval)
+
+Paths relative to `apps/web/src/app/`. Files move with their specs, templates and styles. Whole files move; splitting a file between modules is phase 3 or 4. Decisions marked **D#** are listed below the table.
+
+| From | To |
+|---|---|
+| `core/api/ticket-api.service.ts` (includes `/assign`, D4), `core/api/workflow-api.service.ts`, `core/stores/ticket.store.ts`, `core/models/ticket.model.ts` | `data-access/ticket/` |
+| `core/api/message-api.service.ts`, `core/api/media-url.service.ts`, `core/providers/*`, `core/application/messaging/*`, `core/stores/conversation.store.ts`, `core/models/message.model.ts`, `core/models/media.model.ts`, `core/utils/message-mapper.util.ts`, `core/utils/temp-id.util.ts`, `features/inbox/services/message-sender.service.ts` | `data-access/conversacion/` |
+| `core/api/contacts-api.service.ts`, `core/dto/contact-transport.dto.ts` (D6), `core/dto/timeline-transport.dto.ts`, `features/contacts/models/*`, `features/contacts/stores/*` (D7), `features/contacts/application/contacts/*` | `data-access/contacto/` |
+| `core/api/team-api.service.ts`, `core/dto/team.dto.ts`, `core/application/admin/teams/*`, `core/api/settings-api.service.ts` + `core/stores/settings.store.ts` + `core/dto/settings.dto.ts` (`/api/me/*`, D4, D5) | `data-access/agente/` |
+| `core/services/agent.service.ts`, `core/stores/agent.store.ts`, `core/dto/agent-availability.dto.ts` | `data-access/disponibilidad/` |
+| `core/api/reports-api.service.ts`, `core/application/reports/*`, `core/dto/reports.params.ts`, `core/dto/response-delay.dto.ts`, `features/reports/models/*` | `data-access/reporte/` |
+| `core/api/admin-api.service.ts` (`/api/admin/agents`, `/api/admin/users`, D5), `core/api/workspace-api.service.ts`, `core/stores/workspace.store.ts`, `core/dto/workspace.dto.ts`, `core/application/admin/{agents,linking,users,workspaces}/*` | `data-access/administracion/` |
+| `core/api/auth-api.service.ts`, `core/stores/auth.store.ts`, `core/auth/*` (D1) | `core/auth/` |
+| `core/realtime/*`, `core/stores/connection.store.ts`, `core/models/realtime-event.model.ts`, `core/metrics/metrics.service.ts` (only Mercure uses it) | `core/realtime/` |
+| `core/utils/http-error.util.ts`, `core/utils/retry.util.ts`, `core/application/shared/*` | `core/http/` |
+| `core/stores/theme.store.ts` | `core/layout/` |
+| `core/models/base.model.ts` | deleted (no importer; missed in phase 1) |
+| `features/inbox/containers/*` (D3), `features/inbox/components/*`, `core/stores/ui.store.ts` (D8) | `features/bandeja/pages/`, `features/bandeja/ui/`, `features/bandeja/` |
+| `features/contacts/pages/*`, `features/contacts/components/*` | `features/contactos/{pages,ui}/` |
+| `features/reports/pages/*`, `features/reports/components/*` | `features/reportes/{pages,ui}/` |
+| `features/settings/pages/*` | `features/configuracion/pages/` |
+| `features/admin/{agents,teams,users,workspaces}/*` | `features/administracion/pages/` |
+| `features/agents/{availability,shifts}/*` | `features/disponibilidad/pages/` |
+| `features/login/*` | `features/login/pages/` (D9) |
+| `shell/*` | stays (D2) |
+| `shared/*`, `app.*`, `environments/` | stay |
+
+- **D1 — Authentication stays in `core/auth/`, no `data-access/autenticacion/`.** `docs/arquitectura.md` lists auth under `core`, and the interceptor, the guard and `MercureService` (all `core`) depend on `AuthStore`; putting it in `data-access` would make `core` import `data-access`.
+- **D2 — `shell/` stays at the top level.** It renders the inbox containers directly, so inside `core/layout/` it would make `core` import `features`. It is the composition root, like `app.ts`.
+- **D3 — The inbox containers (`ticket-list`, `conversation`) go to `features/bandeja/pages/`.** `/inbox` has no route component; these two are the page.
+- **D4 — Services that span modules move whole, to their main module, and are split later:** `ticket-api` (`/assign` belongs to `asignacion`), `settings-api` (`/me/shifts` belongs to `disponibilidad`, `/me/auto-reply` to `automatizacion`), `workspace-api` (`/workspaces/{id}/available-agents`).
+- **D5 — To confirm with the backend:** admin CRUD of agents and users goes to `administracion` ("altas, bajas y modificaciones de administración"), teams (including `/api/admin/teams`) to `agente`, and the agent's own `/api/me/*` profile and preferences to `agente`. The backend's phase 2 decides where its controllers go; the frontend follows it.
+- **D6 — Two different files are both named `contact-transport.dto.ts`** (`core/dto/` and `features/contacts/models/dto/`, contents differ). Both land in `data-access/contacto/`; the one from `core/dto/` is renamed `contact-api.dto.ts` to avoid the clash, and merging them is phase 3.
+- **D7 — `ContactsStore` goes to `data-access/contacto/` whole,** with its `UIContact` model; its filter state is screen state and moves to `features/contactos/` in phase 3.
+- **D8 — `UiStore` (`hasNewMessages`, `isAtBottom`) is inbox screen state** and goes to `features/bandeja/` (rule 2).
+- **D9 — Screen names:** `bandeja`, `contactos`, `reportes`, `configuracion`, `administracion`, `disponibilidad`; `login` keeps its name (technical term).
+- Barrels (`index.ts`) that only re-export are not carried over; imports point at the files.
+
 ## Log
 
 - **L1** (2026-10-13) User: "claude, en esta sesion nos vamos a centrar en el front, no vamos a tocar codigo aun, solo quiero saber tu opinion sobre la arquitectura, ubicaciones de archivos, legibilidad del codigo, y muy importante: sobreingenieria. Necesitamos recuperar el control, es una app muy vibecodeada."
