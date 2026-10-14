@@ -112,7 +112,7 @@ Formato pedido por el método: qué es · por qué parece existir · ¿respaldad
 | `extra_hosts: localhost:172.19.0.1` del servicio `php` | **Propósito no confirmado.** | `docker-compose.yml` |
 | `DebugController::outbound` | Mal nombrado (genera un mensaje entrante). | `DebugController.php:94` |
 | `simulate.js`, `scripts/*.js`, descripción del `package.json` raíz | Obsoletos (rutas sin `/api`, sin JWT, topics viejos); la descripción del `package.json` es texto pegado por error. | raíz del repo |
-| Frontend: `MercureService.forceReconnect()` sin llamador (el resto del código sin uso se borró en la fase 1 de la limpieza) | ver [07](07-frontend.md#código-sin-uso-en-el-frontend) | |
+| Frontend: código sin uso (borrado en la fase 1 de la limpieza) | ver [07](07-frontend.md#código-sin-uso-en-el-frontend) | |
 | Frontend: heurística de corchetes y `loadPercentage × 20` | **Propósito no confirmado** (no hay productor de mensajes entre corchetes; no hay respaldo para capacidad 5). | `message-bubble.component.ts:44`; `get-reports-dashboard.use-case.ts:162` |
 
 ## Salud estructural de la suite de tests

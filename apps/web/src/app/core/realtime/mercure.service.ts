@@ -403,7 +403,7 @@ export class MercureService {
     // Circuit breaker: after maxReconnectAttempts consecutive failures, stop auto-retry
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
       console.error(
-        `[Mercure] Circuit breaker tripped after ${this.reconnectAttempts} consecutive failures. Use forceReconnect() to retry.`
+        `[Mercure] Circuit breaker tripped after ${this.reconnectAttempts} consecutive failures. Auto-reconnect stopped.`
       );
       this.connectionState.set('disconnected');
       this.connectionStore.setPermanentFailure();
@@ -422,19 +422,6 @@ export class MercureService {
     this.reconnectTimeoutId = setTimeout(() => {
       this.connect();
     }, delay);
-  }
-
-  /**
-   * Manually force a reconnection attempt, bypassing the circuit breaker.
-   * Resets the reconnect attempt counter and establishes a new fetch-based SSE connection.
-   * Called by DebugPanelComponent's "Retry Now" button when status is permanent_failure.
-   */
-  forceReconnect(): void {
-    console.log('[Mercure] Force reconnecting...');
-    this.reconnectAttempts = 0;
-    this.reconnectCount.set(0);
-    this.connectionStore.setReconnecting();
-    this.connect();
   }
 
   /**

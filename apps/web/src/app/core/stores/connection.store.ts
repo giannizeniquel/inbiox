@@ -10,7 +10,7 @@ import { EventBusService } from '../realtime/event-bus.service';
  *   offline ↔ connecting → online → offline → reconnecting → ...
  *   reconnecting → online (success)
  *   reconnecting → permanent_failure (circuit breaker tripped)
- *   permanent_failure → online (manual retry via forceReconnect)
+ *   permanent_failure: nothing retries automatically
  */
 @Injectable({ providedIn: 'root' })
 export class ConnectionStore {

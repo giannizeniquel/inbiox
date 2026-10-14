@@ -205,7 +205,7 @@ Limitaciones: detección de huecos desactivada (`:282-286`); `resyncAllTickets()
 
 ## Código sin uso en el frontend
 
-El código sin uso listado aquí se borró en la fase 1 de la limpieza (ver `odd/tasks/limpieza-frontend.md`). Queda `MercureService.forceReconnect()`: es la única forma de salir de `permanent_failure`, pero ninguna pantalla la llama (antes solo la usaba un panel de depuración que nunca se renderizaba). Una variable de módulo `let updatingFromUrl` en `contacts-page.component.ts:18` se comparte entre instancias (accidental).
+El código sin uso listado aquí se borró en la fase 1 de la limpieza (ver `odd/tasks/limpieza-frontend.md`). Ahí se incluyó `MercureService.forceReconnect()`, que solo llamaba un panel de depuración que nunca se renderizaba. Por eso, cuando el circuit breaker de Mercure corta la reconexión automática (`permanent_failure`), nada vuelve a intentar la conexión; resolverlo es una decisión aparte (guía 09, P-24 paso 5). Una variable de módulo `let updatingFromUrl` en `contacts-page.component.ts:18` se comparte entre instancias (accidental).
 
 ## Si algo falla en el frontend, revisar
 
