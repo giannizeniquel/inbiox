@@ -79,7 +79,9 @@ cd apps/web && ./node_modules/.bin/ng build --configuration production
 
 ## Key Conventions
 
-- HTTP routes are registered **only** in `apps/api/config/routes.yaml`. Controller `#[Route]` attributes are not loaded; a route missing from that file is unreachable.
+- HTTP routes are **currently** registered only in `apps/api/config/routes.yaml`. Controller `#[Route]` attributes are not loaded and are stale; a route missing from that file is unreachable.
+  - Target (cleanup phase 2): attributes become the single source, loaded via `resource: routing.controllers`, and are regenerated from the YAML. The check is that `debug:router` output is identical before and after.
+- States and fixed values are backed PHP enums, not catalog tables; use a table only when the business must configure the values without a deploy.
 - Effective permissions combine `access_control` in `security.yaml`, class-level `#[IsGranted]`, method-level `#[IsGranted]`, and voters. All of them must pass.
 - Frontend role checks are not hierarchical: `isAdmin()` and `isSupervisor()` are separate flags, so supervisor-gated UI must check `isAdmin() || isSupervisor()`.
 - Ticket status changes follow the FSM in `apps/api/src/Domain/Ticket/TicketStateMachine.php`.

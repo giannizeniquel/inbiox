@@ -38,7 +38,9 @@ Un módulo solo crea las carpetas que usa. Si hace falta, también puede tener `
 5. **Las entidades Doctrine son el modelo de dominio.** No hay modelo de persistencia aparte.
 6. **No hay interfaz sin dos implementaciones reales** (por ejemplo, el cliente real de Graph y uno falso para tests). En los demás casos se inyecta la clase concreta.
 7. **Un módulo puede usar los casos de uso y las consultas de otro módulo.** No puede importar sus controladores ni sus repositorios, ni leer o escribir sus tablas por SQL.
-8. **Las rutas se registran solo en `config/routes.yaml`.** No se usan atributos `#[Route]`.
+8. **Las rutas se declaran solo con atributos `#[Route]` en cada controlador**, junto al código que las atiende. `config/routes.yaml` tiene una única entrada, `resource: routing.controllers`, que carga los atributos de todos los controladores, estén en el módulo que estén. Nunca conviven las dos fuentes.
+   - **Transición:** hoy las rutas reales viven en `routes.yaml`, y los atributos que existen están desactualizados y no se cargan. En la fase 2 los atributos se regeneran **a partir del YAML**. La prueba de que no cambió nada es que la salida de `debug:router` sea idéntica antes y después.
+9. **Los estados y los valores fijos son enums respaldados de PHP** (por ejemplo, el estado del ticket), con un método `etiqueta()` para el texto que se muestra en la UI. Solo se usa una tabla de catálogo cuando el negocio necesita configurar los valores sin un deploy (por ejemplo, las etiquetas).
 
 ### SQL
 
@@ -179,5 +181,6 @@ Se guardan en la base y viajan en la API.
 | Hexagonal completo (puertos, adaptadores, modelo de persistencia separado) | Es demasiado para el tamaño de la aplicación. El intento a medias dejó interfaces que casi nadie usa. |
 | Organización por capa técnica en la raíz | Para entender una funcionalidad había que saltar entre cinco carpetas, y lo duplicado no se notaba. |
 | Stored procedures y vistas | No existirían en la base de test y esconden lógica fuera del código. |
-| Rutas por atributos | Convivían con `routes.yaml` y no se cargaban: 94 atributos que no coincidían con las rutas reales. |
+| Rutas solo en `routes.yaml` | Ya tiene 466 líneas y 98 rutas, y deja la ruta lejos del código del módulo. Se pasa a atributos como única fuente (regla 8). |
+| Tablas de catálogo para estados | Los estados son comportamiento, no datos: la máquina de estados vive en el código, así que agregar un estado siempre requiere un deploy. Una tabla agregaría una segunda fuente de verdad que mantener sincronizada y datos de catálogo que la base de test no carga (se genera desde el mapping, no desde migraciones). |
 | Carpetas de capa en español | La jerga técnica queda en inglés, y `Controller` o `Repository` son jerga técnica. |

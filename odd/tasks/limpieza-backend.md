@@ -15,7 +15,8 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
     - Every write goes through a use case.
     - No interface without two real implementations.
     - A module may call another module's use cases but never touch its tables via SQL.
-    - Routes live only in `routes.yaml`.
+    - Routes are declared only with `#[Route]` attributes, loaded via `routing.controllers`. They are regenerated from `routes.yaml` in phase 2, and `debug:router` must be identical before and after (L7).
+    - States are backed enums, not catalog tables (L7).
 - **S3 — SQL rule.** User: "evitar SQL puro tipo string. ej: $sql='SELECT...'. SIEMPRE debemos tener un repository que ejecute funciones que utilicen metodos de doctrine".
   - The adjusted rule, accepted by the user ("si me cierra"):
     - Use the Doctrine QueryBuilder (ORM or DBAL) by default.
@@ -85,3 +86,8 @@ Later phases, each with its own branch and task list when it starts:
   - After the repairs: 6 stable failures (F, G, H) plus 0–2 flaky 401s per run.
   - A first full run showed 111 failures. Cause: the repaired `Sprint09BConcurrencyTest` now reached assignment and left `assignments` rows that referenced its fixed-id agents, so other tests' `DELETE FROM agents` failed. Fixed with a `tearDown` cleanup and verified with 0 rows left.
   - RDD assess on `0150477`: medium, `under_budget` (no review due).
+- **L7 (2026-10-13), user review of `docs/arquitectura.md`:** the user questioned enums vs a status catalog table ("EstadosTickets") and routes only in `routes.yaml` ("puede volverse un archivo muy extenso e inmantenible").
+  - Enums are kept: states carry behavior (the state machine), and a table would add a second source of truth plus catalog data that the test DB, built from the mapping, does not seed.
+  - Routes are switched to attributes as the single source: `routes.yaml` is already 466 lines with 98 routes, and Symfony 7.4 `resource: routing.controllers` loads every controller.
+  - The existing 94 attributes are stale, so phase 1 does not touch them. Phase 2 regenerates them from the YAML and diffs `debug:router`.
+  - User: "si, ajustalo con un commit más".
