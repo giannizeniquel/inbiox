@@ -45,7 +45,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T7 | S1 | inline | done | Phase 1, block 3: inert `ActiveUserListener` and the unreachable `'supersecret'` JWT fallback |
 | T8 | S1 | inline | done | Phase 1, block 4: obsolete root tooling and `bin/outbox-direct.php` |
 | T9 | S1, S7 | inline | done | Phase 1: docs in `02_sistema-actual` updated for the deletions |
-| T10 | S1 | inline | in progress | Phase 1 items that change a contract or the environment (see L9). Item 1 done (L11); items 2–6 pending user decision |
+| T10 | S1 | inline | in progress | Phase 1 items that change a contract or the environment (see L9). Items 1–2 done (L11, L12); items 3–6 pending user decision |
 
 ### Baseline of failing tests (phase 0, after `1afba20`)
 
@@ -124,3 +124,4 @@ Later phases, each with its own branch and task list when it starts:
   - Re-verified: `--status` was only echoed. `publishPending()` takes no argument and hardcodes `status = 'pending'`. The only callers were `docker-compose.yml` and `inbiox-outbox-publisher.service`, both passing the default.
   - User: "si, agregala y borrá el --status". Removed the option and updated both callers and docs 02/08.
   - Checks: the command runs; `--status` now fails with "option does not exist"; the publisher was recreated and runs clean; `lint:container` OK; full suite 692 tests, exactly the 6 baseline failures, no flake.
+- **L12 (2026-10-14), T10 item 2:** the unit is installed on the dev machine but disabled and inactive; nothing in the repo references it except docs. User: "no, solo docker. borralo". Deleted `inbiox-outbox-publisher.service` and updated docs README/02/08. P-9 was rewritten, not removed, because the publisher still reads without row locks. The user must remove the installed copy (`/etc/systemd/system/`), which needs sudo.

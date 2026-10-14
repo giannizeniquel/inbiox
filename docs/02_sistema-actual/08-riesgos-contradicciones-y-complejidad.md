@@ -58,7 +58,6 @@ Ordenadas por severidad (impacto en el comportamiento del producto).
 | Escritura al outbox | 5 copias de `persistEventsToOutbox()` + escrituras directas + SQL en `markRead` | Formatos distintos (`event_id` vs `eventId`), distintos eventos omitidos. |
 | Evento de auto-asignación | 1 clase | `Application/Event/TicketNeedsAutoAssignmentEvent`. El duplicado `TicketAutoAssignmentRequestedEvent` se borró en la fase 1; el listener `TicketAutoAssignmentRequestedListener` conserva el nombre viejo. |
 | Turnos | 2 APIs | `PUT /api/me/shifts` (reemplaza todo, usada) y `/api/agents/{id}/shifts` (alta/baja individual, UI rota). Validaciones duplicadas con nombres de campo distintos. |
-| Publicador del outbox | 2 procesos posibles | Servicio docker `publisher` y `inbiox-outbox-publisher.service` (systemd). |
 | DTOs del frontend | 3 lugares | `app/dto/` (muerto), `core/dto/`, `features/contacts/models/dto/`. |
 | "Abrir ticket y cargar mensajes" (frontend) | 3 | `TicketListComponent`, `AppShellComponent`, `InboxPageComponent` (este último nunca se renderiza). |
 | Locking de tickets | 2 patrones | `findByIdForUpdate()` (correcto, en la respuesta) y `findById()` + `lock()` (rechazado por el propio repositorio, sigue en asignación manual y mensaje entrante). |
@@ -84,7 +83,7 @@ Formato pedido por el método: qué es · por qué parece existir · ¿respaldad
 
 ## Código muerto, inalcanzable o de propósito no claro
 
-> **Fase 1 de la limpieza (13/10/2026):** se borró el código muerto confirmado: `TagController` (con `RemoveTagFromTicketUseCase`), `AutoCloseController`, `AutoCloseRule`, `AutoCloseTicketUseCase`, `RebalanceUnassignedTicketsUseCase`, `TicketAutoAssignmentRequestedEvent`, `ConversationUpdatedEvent`, los métodos sin llamadores de `TicketStateMachine` y `ReportingService`, `AgentVoter`, `ReportVoter`, `TicketVoter::VIEW/EDIT`, `ActiveUserListener`, `Kernel::configure()`, el JWT de respaldo `'supersecret'`, `FlysystemFactory`, `InboundMessageRequest`, `Role`, los repositorios sin uso (`OutboxEventRepository`, `UserRepository`, `WorkspaceRepository`), `bin/outbox-direct.php`, los scripts de la raíz y la opción ignorada `--status` de `app:outbox:publish`. Seguimiento en `odd/tasks/limpieza-backend.md`. La tabla lista lo que queda.
+> **Fase 1 de la limpieza (13/10/2026):** se borró el código muerto confirmado: `TagController` (con `RemoveTagFromTicketUseCase`), `AutoCloseController`, `AutoCloseRule`, `AutoCloseTicketUseCase`, `RebalanceUnassignedTicketsUseCase`, `TicketAutoAssignmentRequestedEvent`, `ConversationUpdatedEvent`, los métodos sin llamadores de `TicketStateMachine` y `ReportingService`, `AgentVoter`, `ReportVoter`, `TicketVoter::VIEW/EDIT`, `ActiveUserListener`, `Kernel::configure()`, el JWT de respaldo `'supersecret'`, `FlysystemFactory`, `InboundMessageRequest`, `Role`, los repositorios sin uso (`OutboxEventRepository`, `UserRepository`, `WorkspaceRepository`), `bin/outbox-direct.php`, los scripts de la raíz, la opción ignorada `--status` de `app:outbox:publish` y la unidad systemd `inbiox-outbox-publisher.service` (el publicador solo corre en docker). Seguimiento en `odd/tasks/limpieza-backend.md`. La tabla lista lo que queda.
 
 | Elemento | Situación | Evidencia |
 |---|---|---|
