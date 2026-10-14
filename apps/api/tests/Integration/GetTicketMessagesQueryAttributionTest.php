@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Application\Query\GetTicketMessagesQuery;
-use App\Domain\Agent\Agent;
-use App\Domain\Contact\Contact;
-use App\Domain\Conversation\Conversation;
-use App\Domain\Message\Message;
-use App\Domain\Message\MessageSenderType;
-use App\Domain\Ticket\Ticket;
+use App\Conversacion\Query\GetTicketMessagesQuery;
+use App\Agente\Agent;
+use App\Contacto\Contact;
+use App\Conversacion\Conversation;
+use App\Conversacion\Message;
+use App\Conversacion\MessageSenderType;
+use App\Ticket\Ticket;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 

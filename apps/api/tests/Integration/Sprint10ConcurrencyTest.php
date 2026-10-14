@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Application\UseCase\AutoAssignTicketUseCase;
-use App\Domain\Agent\Agent;
-use App\Domain\Agent\AgentShift;
-use App\Domain\Ticket\Ticket;
-use App\Domain\Ticket\TicketStatus;
+use App\Asignacion\UseCase\AutoAssignTicketUseCase;
+use App\Agente\Agent;
+use App\Disponibilidad\AgentShift;
+use App\Ticket\Ticket;
+use App\Ticket\TicketStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 

@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Domain\Assignment\Assignment;
-use App\Domain\Contact\Contact;
-use App\Domain\Conversation\Conversation;
-use App\Domain\Message\Message;
-use App\Domain\Message\MessageDirection;
-use App\Domain\Outbox\OutboxEvent;
-use App\Domain\Ticket\Ticket;
-use App\Domain\Ticket\TicketStatus;
+use App\Asignacion\Assignment;
+use App\Contacto\Contact;
+use App\Conversacion\Conversation;
+use App\Conversacion\Message;
+use App\Conversacion\MessageDirection;
+use App\Compartido\Outbox\OutboxEvent;
+use App\Ticket\Ticket;
+use App\Ticket\TicketStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -70,7 +70,7 @@ class Sprint15ContactTimelineTest extends WebTestCase
 
     private function createAuthenticatedUser(): string
     {
-        $user = new \App\Domain\User\User();
+        $user = new \App\Administracion\User();
         $user->setEmail('timeline-agent@inbiox.local');
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
         $user->setRoles(['ROLE_AGENT']);
@@ -172,7 +172,7 @@ class Sprint15ContactTimelineTest extends WebTestCase
             aggregateType: 'Ticket',
             aggregateId: $ticketId,
             topic: 'tickets',
-            eventType: \App\Domain\Event\TicketCreatedEvent::class,
+            eventType: \App\Ticket\TicketCreatedEvent::class,
             payload: [
                 'contact_id' => $contactId,
                 'conversation_id' => $conversationId,
@@ -191,7 +191,7 @@ class Sprint15ContactTimelineTest extends WebTestCase
             aggregateType: 'Ticket',
             aggregateId: $ticketId,
             topic: 'tickets',
-            eventType: \App\Domain\Event\TicketUpdatedEvent::class,
+            eventType: \App\Ticket\TicketUpdatedEvent::class,
             payload: [
                 'status' => 'active',
             ],

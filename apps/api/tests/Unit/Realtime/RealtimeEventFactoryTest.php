@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Realtime;
 
-use App\Application\Realtime\EventTypeMapper;
-use App\Application\Realtime\RealtimeEventFactory;
-use App\Domain\Event\AgentAvailabilityChangedEvent;
-use App\Domain\Event\AgentShiftChangedEvent;
-use App\Domain\Event\TicketUpdatedEvent;
-use App\Domain\Outbox\OutboxEvent;
+use App\Compartido\Realtime\EventTypeMapper;
+use App\Compartido\Realtime\RealtimeEventFactory;
+use App\Disponibilidad\AgentAvailabilityChangedEvent;
+use App\Disponibilidad\AgentShiftChangedEvent;
+use App\Ticket\TicketUpdatedEvent;
+use App\Compartido\Outbox\OutboxEvent;
 use PHPUnit\Framework\TestCase;
 
 /**

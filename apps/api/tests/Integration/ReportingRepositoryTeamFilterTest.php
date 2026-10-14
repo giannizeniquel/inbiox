@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Domain\Contact\Contact;
-use App\Domain\Conversation\Conversation;
-use App\Domain\Team\Team;
-use App\Domain\Ticket\Ticket;
-use App\Domain\Workspace\Workspace;
-use App\Repository\ReportingRepository;
+use App\Contacto\Contact;
+use App\Conversacion\Conversation;
+use App\Agente\Team;
+use App\Ticket\Ticket;
+use App\Administracion\Workspace;
+use App\Reporte\Repository\ReportingRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 

@@ -63,7 +63,7 @@ Pregunta clave en cada grupo: ¿el test está mal, o revela un problema del cód
 
 | Grupo | Tests | Cant. | Causa raíz | Veredicto |
 |---|---|---|---|---|
-| **F** | `ReportingV2Test::testGetUnassignedReturnsTickets` | 1 | `ReportingRepository::getUnassigned()` arma el conteo con un `str_replace` que nunca coincide con el SQL multilínea → `count` siempre 0 (`apps/api/src/Repository/ReportingRepository.php:507-540`, verificado). | **BUG REAL DE PRODUCCIÓN.** La tarjeta "Sin asignar" del dashboard siempre muestra 0. |
+| **F** | `ReportingV2Test::testGetUnassignedReturnsTickets` | 1 | `ReportingRepository::getUnassigned()` arma el conteo con un `str_replace` que nunca coincide con el SQL multilínea → `count` siempre 0 (`apps/api/src/Reporte/Repository/ReportingRepository.php:507-540`, verificado). | **BUG REAL DE PRODUCCIÓN.** La tarjeta "Sin asignar" del dashboard siempre muestra 0. |
 | **G** | `Sprint09BOutboxTest::test_outbox_event_persisted_after_inbound_message`, `Sprint09BSecurityTest::test_jwt_contains_assigned_ticket_topics`, `::test_jwt_denies_unassigned_tickets` | 3 | Esperan topics `ticket/{id}`; el código pasó (commit `d939c6e`) a un topic único `tickets`. | **El test tiene razón en lo conceptual; el código derivó.** El test describe el diseño más seguro. Ver [R4](#r4-tiempo-real-sin-aislamiento-entre-workspaces). |
 | **H** | `MediaValidatorTest::test_rejects_exe_mime_type`, `::test_rejects_application_octet_stream` | 2 | El commit `941afac` agregó a propósito ejecutables y `application/octet-stream` a la lista blanca de media. | **El test expresa la regla de seguridad; el código derivó.** Requiere decisión. Ver [R12](#r12-lista-blanca-de-media-acepta-cualquier-archivo). |
 | A | `AuthorizationTest` (7) | 7 | Usan rutas sin `/api` (`/tickets`, `/contacts`, `/reports/frt`). | Test roto (ruta obsoleta). |
@@ -120,13 +120,13 @@ Leyenda: **[SEG]** seguridad · **[DATOS]** pérdida o corrupción de datos · *
 | `docs/03_architecture/saas-multi-tenant.md` | Fragmentos de credenciales y números de teléfono reales. |
 | `apps/api/config/packages/test.yaml` | El secreto con el que se firman los JWT de Mercure. Este archivo está en la raíz de `config/packages/` y **no** usa `when@test`, así que se carga **en todos los entornos** (verificado con `debug:container`). Cambiar `MERCURE_JWT_SECRET` en `.env` no lo rota. |
 | `docker-compose.yml` | Contraseñas de MySQL, clave de publicador de Mercure, credenciales de MinIO (dev). |
-| `apps/api/src/Command/SeedUsersCommand.php:31` | Contraseña fija de los usuarios de seed (dev). |
-| `MercureJwtService.php:200`, `OutboxPublisherService.php:225` | Secretos de respaldo hardcodeados si falta la variable. |
+| `apps/api/src/Administracion/Command/SeedUsersCommand.php:31` | Contraseña fija de los usuarios de seed (dev). |
+| `MercureJwtService.php:200`, `OutboxPublisherService.php:226` | Secretos de respaldo hardcodeados si falta la variable. |
 
 ### R3. Cualquier agente modifica disponibilidad y turnos de cualquier agente
 
 **[SEG] · Confirmado (lectura).**
-`AgentAvailabilityController::isGrantedForAgent()` (`apps/api/src/Controller/AgentAvailabilityController.php:321-333`) interpreta "scope `null`" como "supervisor/admin", pero `OwnershipScope::getAgentId()` (`apps/api/src/Application/Security/OwnershipScope.php:42-55`) devuelve `null` **siempre** desde Sprint 16. Resultado: cualquier `ROLE_AGENT` puede, vía API, marcar a otro agente como no disponible, crearle o borrarle turnos. Eso altera la auto-asignación y bloquea asignaciones manuales. Endpoints: `POST/DELETE/GET /api/agents/{id}/availability`, `POST /api/agents/{id}/shifts`, `DELETE /api/agents/{id}/shifts/{shiftId}`. Sin test que lo cubra. (Hoy la UI no expone estas pantallas, ver [07](07-frontend.md#disponibilidad-y-turnos-agentsagentid), así que el abuso requiere llamar a la API directamente.)
+`AgentAvailabilityController::isGrantedForAgent()` (`apps/api/src/Disponibilidad/Controller/AgentAvailabilityController.php:319-331`) interpreta "scope `null`" como "supervisor/admin", pero `OwnershipScope::getAgentId()` (`apps/api/src/Compartido/Security/OwnershipScope.php:42-55`) devuelve `null` **siempre** desde Sprint 16. Resultado: cualquier `ROLE_AGENT` puede, vía API, marcar a otro agente como no disponible, crearle o borrarle turnos. Eso altera la auto-asignación y bloquea asignaciones manuales. Endpoints: `POST/DELETE/GET /api/agents/{id}/availability`, `POST /api/agents/{id}/shifts`, `DELETE /api/agents/{id}/shifts/{shiftId}`. Sin test que lo cubra. (Hoy la UI no expone estas pantallas, ver [07](07-frontend.md#disponibilidad-y-turnos-agentsagentid), así que el abuso requiere llamar a la API directamente.)
 
 ### R4. Tiempo real sin aislamiento entre workspaces
 
@@ -136,12 +136,12 @@ El hub Mercure acepta suscriptores anónimos (`docker-compose.yml`, `anonymous`)
 ### R5. Endpoint de resync de eventos inseguro y, además, inalcanzable
 
 **[SEG]/[PROD] · Confirmado.**
-`GET /api/tickets/{id}/events` (`apps/api/src/Controller/TicketEventsController.php`) valida solo la firma del JWT de Mercure (no el vencimiento), no verifica workspace y no filtra por `aggregate_type`. En la práctica el frontend envía el token de Mercure en `Authorization` y el firewall de la API lo rechaza con 401 antes de llegar al controlador. Ni la seguridad ni el resync funcionan.
+`GET /api/tickets/{id}/events` (`apps/api/src/Compartido/Controller/TicketEventsController.php`) valida solo la firma del JWT de Mercure (no el vencimiento), no verifica workspace y no filtra por `aggregate_type`. En la práctica el frontend envía el token de Mercure en `Authorization` y el firewall de la API lo rechaza con 401 antes de llegar al controlador. Ni la seguridad ni el resync funcionan.
 
 ### R6. Resolver quita el dueño (contradicción autoinfligida)
 
 **[PROD] · Confirmado.**
-Resolver o cerrar un ticket le quita el dueño: `TransitionTicketStatusUseCase::recordUnassignIfOwner()` (líneas 37-61, llamado en 99, 172 y 289) → `AssignmentService.php:67` pone `assigned_agent_id = null`. Consecuencias:
+Resolver o cerrar un ticket le quita el dueño: `TransitionTicketStatusUseCase::recordUnassignIfOwner()` (líneas 37-61, llamado en 99, 172 y 289) → `AssignmentService.php:65` pone `assigned_agent_id = null`. Consecuencias:
 
 1. La regla de Sprint 17 (Tier 1 #6, `TicketOwnershipGuard`) dice que en un ticket resuelto/cerrado solo supervisor/admin **o el dueño** pueden enviar mensajes. Como el dueño siempre es `null` en ese estado, **ningún `ROLE_AGENT` puede responder un ticket resuelto**. Los tests de ese cambio construyeron a mano tickets resueltos *con* dueño, un estado que producción nunca genera.
 2. Los reportes por agente (`tickets_resolved`, tiempo medio de resolución) se calculan por `assigned_agent_id`: los tickets resueltos dejan de contar para quien los resolvió.
@@ -153,7 +153,7 @@ Si "desasignar al resolver" es una regla de negocio: **Regla no confirmada** (el
 ### R7. Auto-asignación sin filtro de workspace
 
 **[PROD]/[DATOS] · Probable** (depende de que haya más de un workspace en uso).
-`AgentAvailabilityService::listAvailableAgents()` (`apps/api/src/Application/Service/AgentAvailabilityService.php:112-115`) toma **todos** los agentes activos del sistema. Un ticket del número A puede asignarse a un agente que solo pertenece al número B y que no lo ve en su bandeja. Un comentario en la línea 174 menciona un método `listAvailableAgentsInWorkspace()` "(removed)": existió una variante por workspace y se quitó; el motivo no está documentado. La asignación manual tampoco verifica workspace.
+`AgentAvailabilityService::listAvailableAgents()` (`apps/api/src/Disponibilidad/AgentAvailabilityService.php:111-114`) toma **todos** los agentes activos del sistema. Un ticket del número A puede asignarse a un agente que solo pertenece al número B y que no lo ve en su bandeja. Un comentario en la línea 174 menciona un método `listAvailableAgentsInWorkspace()` "(removed)": existió una variante por workspace y se quitó; el motivo no está documentado. La asignación manual tampoco verifica workspace.
 
 ### R8. KPI "Sin asignar" siempre en 0
 
@@ -168,7 +168,7 @@ La auto-asignación corre **de forma síncrona dentro de la transacción del men
 
 **[DATOS] · Confirmado (lectura).**
 `ProviderProxyController::send` persiste el mensaje y cambia estado/dueño del ticket **antes** de llamar a WhatsApp. Si WhatsApp falla, se devuelve error pero el mensaje queda guardado con `delivery_status = 'sent'`. No hay compensación.
-El problema inverso también existe: cuando el caso de uso detecta un duplicado (`duplicate_skipped`), el controlador **no lo revisa y envía igual a WhatsApp** (`ProviderProxyController.php:97-155`). Como el frontend reintenta el POST automáticamente, un error de red puede hacer llegar **el mismo mensaje hasta 3 veces** al cliente mientras la base registra uno solo. Detalle en [04 § F2](04-flujos.md#f2-respuesta-del-agente).
+El problema inverso también existe: cuando el caso de uso detecta un duplicado (`duplicate_skipped`), el controlador **no lo revisa y envía igual a WhatsApp** (`ProviderProxyController.php:96-154`). Como el frontend reintenta el POST automáticamente, un error de red puede hacer llegar **el mismo mensaje hasta 3 veces** al cliente mientras la base registra uno solo. Detalle en [04 § F2](04-flujos.md#f2-respuesta-del-agente).
 
 ### R11. Huecos en el tiempo real
 
@@ -178,7 +178,7 @@ Resolver, cerrar, transicionar y el cierre por ventana **no publican eventos**; 
 ### R12. Lista blanca de media acepta cualquier archivo
 
 **[SEG] (bajo) · Confirmado.**
-`apps/api/src/Infrastructure/Storage/MediaValidator.php:60-65` acepta ejecutables, `application/octet-stream` (que funciona como comodín) y `image/svg+xml`. Fue una decisión explícita (commit `941afac`) para poder descargar cualquier adjunto de WhatsApp. Mitigante: los archivos se sirven por URL prefirmada de S3/MinIO en otro origen.
+`apps/api/src/Conversacion/MediaValidator.php:56-61` acepta ejecutables, `application/octet-stream` (que funciona como comodín) y `image/svg+xml`. Fue una decisión explícita (commit `941afac`) para poder descargar cualquier adjunto de WhatsApp. Mitigante: los archivos se sirven por URL prefirmada de S3/MinIO en otro origen.
 
 ### R13. Lecturas por ID sin filtro de workspace
 
@@ -195,7 +195,7 @@ Resolver, cerrar, transicionar y el cierre por ventana **no publican eventos**; 
 | El botón "reintentar" de un mensaje fallido no reenvía nada (queda en "⏳"). | `features/inbox/containers/conversation/conversation.component.ts:281-286` |
 | El envío reintenta automáticamente un POST no idempotente (riesgo de duplicados en WhatsApp). | `features/inbox/services/message-sender.service.ts:41-45,71-74` |
 | Las páginas `/agents/:agentId/availability` y `/shifts` llaman URLs sin `/api` y no funcionan. | `core/services/agent.service.ts:47-108` |
-| El link "Ver ficha" del contacto puede abrir otro contacto: en el listado, `contact.id` es el id de la **conversación**. | `apps/api/src/Application/Query/ListTicketsQuery.php:164` |
+| El link "Ver ficha" del contacto puede abrir otro contacto: en el listado, `contact.id` es el id de la **conversación**. | `apps/api/src/Ticket/Query/ListTicketsQuery.php:163` |
 | Supervisores ven botones que el backend reserva a admin (vincular usuario-agente) y no pueden crear equipos (el selector de workspace queda vacío). | `features/admin/agents/agents-page.component.html:67-71`, `features/admin/teams/teams-page.component.ts:88-95` |
 
 ### R15. Cierre automático por ventana es opcional

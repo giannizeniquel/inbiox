@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Domain\Ticket;
 
-use App\Domain\Ticket\TicketOwnershipGuard;
-use App\Domain\Ticket\TicketStatus;
+use App\Ticket\TicketOwnershipGuard;
+use App\Ticket\TicketStatus;
 use PHPUnit\Framework\TestCase;
 
 /**

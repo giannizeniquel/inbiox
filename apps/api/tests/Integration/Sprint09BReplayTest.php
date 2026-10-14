@@ -2,7 +2,7 @@
 
 namespace App\Tests\Integration;
 
-use App\Domain\Outbox\OutboxEvent;
+use App\Compartido\Outbox\OutboxEvent;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -155,7 +155,7 @@ class Sprint09BReplayTest extends KernelTestCase
     public function test_seq_monotonically_increasing(): void
     {
         // Arrange - create multiple events
-        $useCase = static::getContainer()->get(\App\Application\UseCase\HandleInboundMessageUseCase::class);
+        $useCase = static::getContainer()->get(\App\Conversacion\UseCase\HandleInboundMessageUseCase::class);
         
         // First message
         $useCase->processInboundMessage('+5491111111111', 'Msg 1');

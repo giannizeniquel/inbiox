@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Application\Query\GetTicketDetailQuery;
-use App\Application\Query\ListTicketsQuery;
-use App\Domain\Contact\Contact;
-use App\Domain\Conversation\Conversation;
-use App\Domain\Ticket\Ticket;
+use App\Ticket\Query\GetTicketDetailQuery;
+use App\Ticket\Query\ListTicketsQuery;
+use App\Contacto\Contact;
+use App\Conversacion\Conversation;
+use App\Ticket\Ticket;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 

@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Application\Query\ListTicketsQuery;
-use App\Domain\Contact\Contact;
-use App\Domain\Conversation\Conversation;
-use App\Domain\Tag\Tag;
-use App\Domain\Tag\TicketTag;
-use App\Domain\Team\Team;
-use App\Domain\Ticket\Ticket;
-use App\Domain\Ticket\TicketStatus;
-use App\Domain\Workspace\Workspace;
-use App\Repository\TagRepository;
+use App\Ticket\Query\ListTicketsQuery;
+use App\Contacto\Contact;
+use App\Conversacion\Conversation;
+use App\Ticket\Tag;
+use App\Ticket\TicketTag;
+use App\Agente\Team;
+use App\Ticket\Ticket;
+use App\Ticket\TicketStatus;
+use App\Administracion\Workspace;
+use App\Ticket\Repository\TagRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 

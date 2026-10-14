@@ -2,7 +2,7 @@
 
 namespace App;
 
-use App\DependencyInjection\RulePass;
+use App\Automatizacion\DependencyInjection\RulePass;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\HttpKernel\Kernel as BaseKernel;

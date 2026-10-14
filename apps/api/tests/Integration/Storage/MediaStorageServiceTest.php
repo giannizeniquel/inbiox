@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Storage;
 
-use App\Infrastructure\Storage\MediaStorageService;
+use App\Compartido\Storage\MediaStorageService;
 use Aws\S3\S3Client;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;

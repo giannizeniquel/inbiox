@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
-use App\Domain\User\User;
+use App\Administracion\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -288,7 +288,7 @@ class AuthControllerTest extends WebTestCase
         self::assertNotNull($refreshCookie);
 
         // Manually expire the refresh token in the database
-        $repo = $this->em->getRepository(\App\Domain\RefreshToken\RefreshToken::class);
+        $repo = $this->em->getRepository(\App\Autenticacion\RefreshToken::class);
         $tokenEntity = $repo->findOneBy(['refreshToken' => $refreshCookie->getValue()]);
         self::assertNotNull($tokenEntity);
         $tokenEntity->setValid(new \DateTime('-1 day'));

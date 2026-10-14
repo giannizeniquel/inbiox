@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Application\UseCase\ImportContactsFromCsvUseCase;
-use App\Domain\Contact\Contact;
+use App\Contacto\UseCase\ImportContactsFromCsvUseCase;
+use App\Contacto\Contact;
 use Doctrine\ORM\Event\PrePersistEventArgs;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Events;

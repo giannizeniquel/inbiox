@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit;
 
-use App\Application\Security\WorkspaceScope;
-use App\Domain\Agent\Agent;
-use App\Domain\User\User;
-use App\Domain\Workspace\Workspace;
+use App\Compartido\Security\WorkspaceScope;
+use App\Agente\Agent;
+use App\Administracion\User;
+use App\Administracion\Workspace;
 use PHPUnit\Framework\TestCase;
 use Symfony\Bundle\SecurityBundle\Security;
 

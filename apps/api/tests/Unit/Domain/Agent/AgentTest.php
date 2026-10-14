@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Domain\Agent;
 
-use App\Domain\Agent\Agent;
-use App\Domain\User\User;
+use App\Agente\Agent;
+use App\Administracion\User;
 use PHPUnit\Framework\TestCase;
 
 /**

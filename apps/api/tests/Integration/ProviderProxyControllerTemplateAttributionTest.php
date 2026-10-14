@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Application\Service\GraphClient;
-use App\Domain\Agent\Agent;
-use App\Domain\Contact\Contact;
-use App\Domain\Conversation\Conversation;
-use App\Domain\Message\MessageSenderType;
-use App\Domain\Ticket\Ticket;
-use App\Domain\User\User;
+use App\Compartido\Graph\GraphClient;
+use App\Agente\Agent;
+use App\Contacto\Contact;
+use App\Conversacion\Conversation;
+use App\Conversacion\MessageSenderType;
+use App\Ticket\Ticket;
+use App\Administracion\User;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;

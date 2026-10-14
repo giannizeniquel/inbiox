@@ -5,10 +5,10 @@ services:
         autoconfigure: true
 
     # Make services public for tests (they get inlined in production)
-    App\Application\Service\OutboxPublisherService:
+    App\Compartido\Outbox\OutboxPublisherService:
         public: true
 
-    App\Application\Service\AssignmentService:
+    App\Asignacion\AssignmentService:
         public: true
 
     # Password hasher is accessed via PHP's native password_hash in test fixtures

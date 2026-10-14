@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Application\Service\ConversationWindowExpiryService;
-use App\Domain\Contact\Contact;
-use App\Domain\Conversation\Conversation;
-use App\Domain\Event\TicketEventType;
-use App\Domain\Ticket\Ticket;
-use App\Domain\Ticket\TicketStatus;
+use App\Conversacion\UseCase\ConversationWindowExpiryService;
+use App\Contacto\Contact;
+use App\Conversacion\Conversation;
+use App\Ticket\TicketEventType;
+use App\Ticket\Ticket;
+use App\Ticket\TicketStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Domain\Contact\Contact;
-use App\Domain\Conversation\Conversation;
-use App\Domain\Ticket\Ticket;
-use App\Domain\Ticket\TicketStatus;
+use App\Contacto\Contact;
+use App\Conversacion\Conversation;
+use App\Ticket\Ticket;
+use App\Ticket\TicketStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;

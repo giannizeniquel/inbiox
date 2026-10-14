@@ -2,21 +2,21 @@
 
 namespace App\Tests\Unit;
 
-use App\Application\Service\AgentAvailabilityService;
-use App\Application\Service\AutoReplyService;
-use App\Application\Service\GraphClient;
-use App\Application\UseCase\HandleInboundMessageUseCase;
-use App\Application\UseCase\TransitionTicketStatusUseCase;
-use App\Application\Rule\RuleExecutorService;
-use App\Domain\Agent\AgentShiftRepository;
-use App\Domain\Event\EventCollector;
-use App\Domain\Ticket\ConversationWindowPolicy;
-use App\Repository\AgentRepository;
-use App\Repository\ContactRepository;
-use App\Repository\ConversationRepository;
-use App\Repository\MessageRepository;
-use App\Repository\ProcessedEventRepository;
-use App\Repository\TicketRepository;
+use App\Disponibilidad\AgentAvailabilityService;
+use App\Automatizacion\AutoReplyService;
+use App\Compartido\Graph\GraphClient;
+use App\Conversacion\UseCase\HandleInboundMessageUseCase;
+use App\Ticket\UseCase\TransitionTicketStatusUseCase;
+use App\Automatizacion\RuleExecutorService;
+use App\Disponibilidad\Repository\AgentShiftRepository;
+use App\Compartido\EventCollector;
+use App\Conversacion\ConversationWindowPolicy;
+use App\Agente\Repository\AgentRepository;
+use App\Contacto\Repository\ContactRepository;
+use App\Conversacion\Repository\ConversationRepository;
+use App\Conversacion\Repository\MessageRepository;
+use App\Compartido\Repository\ProcessedEventRepository;
+use App\Ticket\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -174,7 +174,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
         $message = 'Hello';
         $phoneNumberId = 'B';
 
-        $contact = $this->createMock(\App\Domain\Contact\Contact::class);
+        $contact = $this->createMock(\App\Contacto\Contact::class);
         $contact->method('getId')->willReturn(1);
         $contact->method('getName')->willReturn(null);
         $contact->method('getUpdatedAt')->willReturn(new \DateTimeImmutable());
@@ -219,7 +219,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
         $message = 'Hello again';
         $phoneNumberId = 'A';
 
-        $contact = $this->createMock(\App\Domain\Contact\Contact::class);
+        $contact = $this->createMock(\App\Contacto\Contact::class);
         $contact->method('getId')->willReturn(1);
         $contact->method('getName')->willReturn(null);
         $contact->method('getUpdatedAt')->willReturn(new \DateTimeImmutable());
@@ -232,13 +232,13 @@ class HandleInboundMessageUseCaseTest extends TestCase
 
         $this->contactRepo->method('findOneByPhone')->willReturn($contact);
 
-        $existingConversation = $this->createMock(\App\Domain\Conversation\Conversation::class);
+        $existingConversation = $this->createMock(\App\Conversacion\Conversation::class);
         $existingConversation->method('getId')->willReturn(10);
         $existingConversation->method('getUpdatedAt')->willReturn(new \DateTimeImmutable());
 
-        $existingTicket = $this->createMock(\App\Domain\Ticket\Ticket::class);
+        $existingTicket = $this->createMock(\App\Ticket\Ticket::class);
         $existingTicket->method('getId')->willReturn(20);
-        $existingTicket->method('getStatus')->willReturn(\App\Domain\Ticket\TicketStatus::ACTIVE->value);
+        $existingTicket->method('getStatus')->willReturn(\App\Ticket\TicketStatus::ACTIVE->value);
         $existingTicket->method('getUpdatedAt')->willReturn(new \DateTimeImmutable());
         $existingTicket->method('incrementLastEventSeq')->willReturn(1);
 
@@ -272,7 +272,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
         $phone = '+543712345678';
         $message = 'Hello with null workspace';
 
-        $contact = $this->createMock(\App\Domain\Contact\Contact::class);
+        $contact = $this->createMock(\App\Contacto\Contact::class);
         $contact->method('getId')->willReturn(1);
         $contact->method('getName')->willReturn(null);
         $contact->method('getUpdatedAt')->willReturn(new \DateTimeImmutable());
@@ -285,13 +285,13 @@ class HandleInboundMessageUseCaseTest extends TestCase
 
         $this->contactRepo->method('findOneByPhone')->willReturn($contact);
 
-        $existingConversation = $this->createMock(\App\Domain\Conversation\Conversation::class);
+        $existingConversation = $this->createMock(\App\Conversacion\Conversation::class);
         $existingConversation->method('getId')->willReturn(10);
         $existingConversation->method('getUpdatedAt')->willReturn(new \DateTimeImmutable());
 
-        $existingTicket = $this->createMock(\App\Domain\Ticket\Ticket::class);
+        $existingTicket = $this->createMock(\App\Ticket\Ticket::class);
         $existingTicket->method('getId')->willReturn(20);
-        $existingTicket->method('getStatus')->willReturn(\App\Domain\Ticket\TicketStatus::ACTIVE->value);
+        $existingTicket->method('getStatus')->willReturn(\App\Ticket\TicketStatus::ACTIVE->value);
         $existingTicket->method('getUpdatedAt')->willReturn(new \DateTimeImmutable());
         $existingTicket->method('incrementLastEventSeq')->willReturn(1);
 

@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Application\Rule\RuleExecutorService;
-use App\Application\UseCase\HandleOutboundMessageUseCase;
-use App\Domain\Contact\Contact;
-use App\Domain\Conversation\Conversation;
-use App\Domain\Rule\RuleContext;
-use App\Domain\Ticket\Ticket;
-use App\Domain\Ticket\TicketStatus;
-use App\Exception\StateConflictException;
+use App\Automatizacion\RuleExecutorService;
+use App\Conversacion\UseCase\HandleOutboundMessageUseCase;
+use App\Contacto\Contact;
+use App\Conversacion\Conversation;
+use App\Automatizacion\RuleContext;
+use App\Ticket\Ticket;
+use App\Ticket\TicketStatus;
+use App\Compartido\StateConflictException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -154,7 +154,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
         $ticketId = $this->seedTicket(TicketStatus::ACTIVE->value, null);
 
         $explodingRuleExecutor = new class(
-            static::getContainer()->get(\App\Domain\Rule\RuleExecutionLogRepositoryInterface::class),
+            static::getContainer()->get(\App\Automatizacion\Repository\RuleExecutionLogRepository::class),
             static::getContainer()->get(\Symfony\Component\EventDispatcher\EventDispatcherInterface::class),
         ) extends RuleExecutorService {
             public function execute(RuleContext $context): void
@@ -184,7 +184,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
         self::assertSame(0, (int) $conn->fetchOne('SELECT COUNT(*) FROM outbox_events WHERE aggregate_id = ?', [$ticketId]));
         self::assertNull($conn->fetchOne('SELECT assigned_agent_id FROM tickets WHERE id = ?', [$ticketId]));
 
-        $eventCollector = static::getContainer()->get(\App\Domain\Event\EventCollector::class);
+        $eventCollector = static::getContainer()->get(\App\Compartido\EventCollector::class);
         self::assertSame(
             [],
             $eventCollector->getEvents(),
@@ -211,13 +211,13 @@ class AgentReplyAutoClaimTest extends KernelTestCase
 
         $ticketUpdatedCount = (int) $conn->fetchOne(
             "SELECT COUNT(*) FROM outbox_events WHERE aggregate_id = ? AND event_type = ?",
-            [$ticketId, \App\Domain\Event\TicketUpdatedEvent::class],
+            [$ticketId, \App\Ticket\TicketUpdatedEvent::class],
         );
         self::assertSame(1, $ticketUpdatedCount, 'Exactly one TicketUpdatedEvent must reach the outbox — no phantom duplicate from the rolled-back attempt');
 
         $seqs = $conn->fetchFirstColumn(
             'SELECT payload FROM outbox_events WHERE aggregate_id = ? AND event_type = ?',
-            [$ticketId, \App\Domain\Event\TicketUpdatedEvent::class],
+            [$ticketId, \App\Ticket\TicketUpdatedEvent::class],
         );
         $decodedSeqs = array_map(static fn (string $p) => json_decode($p, true)['seq'], $seqs);
         self::assertSame(array_unique($decodedSeqs), array_values($decodedSeqs), 'No duplicate seq values from the leaked/rolled-back attempt');

@@ -46,6 +46,10 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T8 | S1 | inline | done | Phase 1, block 4: obsolete root tooling and `bin/outbox-direct.php` |
 | T9 | S1, S7 | inline | done | Phase 1: docs in `02_sistema-actual` updated for the deletions |
 | T10 | S1 | inline | done | Phase 1 items that change a contract or the environment (see L9): L11–L16 |
+| T11 | S2 | inline | done | Phase 2: routes regenerated as `#[Route]` attributes from the YAML; `routes.yaml` = `routing.controllers` (L19) |
+| T12 | S2 | inline | done | Phase 2: removed 8 single-implementation interfaces (7 repository interfaces + `EventCollector`) (L20) |
+| T13 | S2 | inline | done | Phase 2: moved 162 classes into 11 modules in one commit, plus the event_type migration (L21) |
+| T14 | S2, S7 | inline | done | Phase 2: docs paths and line refs updated after the moves (L22) |
 
 ### Baseline of failing tests (phase 0, after `1afba20`)
 
@@ -138,3 +142,34 @@ Later phases, each with its own branch and task list when it starts:
 - **L16 (2026-10-14), T10 item 6:** re-verified that no code or config reads `MEDIA_ENABLED` or `JWT_COOKIE_NAME`. The refresh cookie name is hardcoded as `token_parameter_name: inbiox_refresh` in `gesdinet_jwt_refresh_token.yaml`, so the `api-contracts.md` row saying it was required was wrong. Claude must not read `.env*`, so the user removed the lines by hand (`.env` lines 18 and 30, `.env.example` 32, `.env.test` 10); a first `sd` attempt matched nothing, for an unknown reason. Docs 02/08/api-contracts updated. Checks: `lint:container` OK; full suite 692 tests, exactly the 6 baseline failures.
 - **L17 (2026-10-14), integration branch:** user: "no vamos a mergear a test, ahi vive la app funcionando (con errores pero anda). Podemos crear una rama nueva test-refactor o algo asi a donde ir mergeando lo que estamos haciendo". Created and pushed `test-refactor` from `origin/test` (`b543593`). Phase PRs target it in order (0, then 1); the frontend phases also target it. If `test` gets fixes, merge `test` into `test-refactor`.
 - **L18 (2026-10-14), missed caller of `--status` (T10 item 1):** the frontend's smoke baseline (`32d97cb`) mentioned a host crontab running `app:outbox:publish`. The user's crontab had `* * * * * docker exec inbiox_php php /var/www/html/bin/console app:outbox:publish --status=pending 2>/dev/null`. Since `e04c3a4` it failed every minute, silently because of `2>/dev/null`. No impact, because the docker `publisher` runs every 2 s, but it was a third publisher. Root cause: the reference search covered the repo, docker and systemd, but not host crontabs. User: "si, borrala y agregá lo de crontab a la regla". Removed the line (it was the only one; backup in `/tmp/claude-1000/crontab.bak`), and the `AGENTS.md` rule now lists host crontabs.
+- **L19 (2026-10-14), phase 2 start:** user: "si, arrancá la fase 2". Branch `chore/limpieza-backend-fase-2` stacked on `97c0eec`. The user asked whether the frontend should wait; the answer was no, because phase 2 does not change the API contract.
+  - **T11 (routes):** a script turned the `debug:router` dump (YAML order) into one `#[Route]` per action: 90 routes in 24 controllers. It deleted the stale attributes and switched the `Annotation` import to `Attribute`. The stale `requirements` on `TicketEventsController` was not carried over, because the YAML did not have it.
+  - Checks: `debug:router` gives the same 91 names, each with identical content (path, regex, methods, requirements, defaults, options). Only the listing order changed. A route-match probe (a concrete URL per route and method, 92 probes) resolves every URL to the same route before and after, with no shadowing in either. `lint:container` OK. Full suite: 692 tests, exactly the 6 baseline failures.
+  - **Explorer map** (`f2-map.csv`, session scratchpad): 171 files, 38 with debatable placement. Blockers it found:
+    1. `outbox_events.event_type` stores event FQCNs, and `EventTypeMapper` rejects unknown names, so moving event classes breaks stored rows (pending retry and resync).
+    2. `RulePass` registers rules by hardcoded class-name strings.
+    3. The Doctrine mapping only scans `src/Domain`, with prefix `App\Domain`.
+    4. The service config hardcodes FQCNs (`services.yaml`, `services_test.yaml`, `packages/test.yaml`, `security.yaml`, `gesdinet_jwt_refresh_token.yaml`, `bin/outbox-publish.php`).
+  - Single-implementation interfaces: Assignment, Contact, Conversation, Message, Tag, Ticket and RuleExecutionLog repository interfaces, plus `EventCollector`. The only test doubles are PHPUnit mocks, which also work on concrete classes.
+- **L20 (2026-10-14), T12:** removed the 7 repository interfaces and `EventCollector`. Type hints now use the concrete repositories; `DefaultEventCollector` became `EventCollector` and is no longer `final`, so the existing PHPUnit mocks still work. Gesdinet's `RefreshTokenRepositoryInterface` is a framework contract and stays. User decision on the event blocker: "si, vamos con la migración" (rewrite `outbox_events.event_type` when the event classes move). Checks: `php -l` on every touched file; `lint:container` OK; full suite 692 tests, exactly the 6 baseline failures.
+- **L21 (2026-10-14), T13 (module move):** a script did the move in one commit instead of one per module, because the cross-references only compile once every class is in place.
+  - Script steps: map old→new FQCN from the explorer CSV. Add an explicit `use` wherever a class referenced a same-namespace neighbour by its short name and the two end up apart (26 imports). Rewrite every plain and double-escaped FQCN in src, tests, config and bin (193 files). `git mv` 162 files and fix their `namespace` lines. Drop imports that became same-namespace, and delete the emptied folders (including `Controller/`, `Entity/` and `Repository/`, which only held `.gitignore`).
+  - Placement changes vs the explorer map: `StateConflictException` goes to `Compartido`, because several modules use it. All `Controller/Admin/*` controllers go to `Administracion/Controller`.
+  - Manual fix: `InvalidTransitionException` is declared inside `TicketStateMachine.php`, so its two references were rewritten by hand.
+  - Doctrine mapping changed to `dir: src`, `prefix: App`.
+  - Migration `Version20261014000000` rewrites `outbox_events.event_type` and `payload.type` (old→new event FQCN), with bound parameters and a reversible `down()`. It was executed alone on the dev DB, because that DB already had an unrelated problem: `Version20260912000002` is pending but its `teams` table exists. 309 rows rewritten; down→up round trip verified.
+  - Checks:
+    - `lint:container` OK; `doctrine:mapping:info` finds 19 entities.
+    - `schema:validate` reports `TicketTag` inverse sides (`ticketTags`) missing. This is pre-existing: the same `inversedBy` was there at HEAD.
+    - `debug:router`: same 91 routes, only the controller FQCNs changed; route-match probe identical.
+    - PHPStan level 0 (docker image, not a project dependency): the same 29 messages before and after. They are pre-existing: Validator constraint attributes whose package is not installed, so those validations never run, plus `AsService`.
+    - `RulePass` still registers both rules (2× `addRule`).
+    - A live outbox event with the new class name was published with HTTP 200; the test row was deleted.
+    - Full suite: 692 tests, exactly the 6 baseline failures.
+- **L22 (2026-10-14), T14 (docs):** a script rewrote moved paths in `02_sistema-actual`, `AGENTS.md` and `arquitectura.md` (174 rewrites). It shifted 97 `File.php:line` refs from the phase-2 base (`97c0eec`) to HEAD, using a per-file line diff. 5 ambiguous `Admin/*Controller` refs and 6 bare `Admin/` mentions were fixed by hand. The doc 02 folder table was rewritten as a module table. Spot check: `HandleInboundMessageUseCase.php:381-384` still points at the auto-assignment dispatch. Remaining old-folder mentions are struck-through deleted files only.
+- **L23 (2026-10-14), phase 2 review:** the full range `4f28857..a73adc1` was refused with `lens_context_budget_exceeded` (442 files). User: "si, vamos así". It was split into three candidates, each reviewed in its own temporary worktree:
+  - T10 (`4f28857..97c0eec`): risk + reliability.
+  - Routes (`97c0eec..b971b31`): risk + reliability.
+  - Interfaces (`b971b31..e2d847f`): reliability + readability.
+  - Outcome: all three approved and acknowledged (authority burned), with 0 blocking findings. Readability advisories: R2-001 (the B4 doc row was stale and the 7+1 vs 8 counts confusing) is fixed here; R2-002 (import order in `AddTagToTicketUseCase`) is not applied, because the project has no import-order rule or formatter.
+  - The module move `3f70628` and the docs commit `a73adc1` are not reviewed: the move is too large for the reviewer, so it relies on the mechanical checks in L21. The temporary worktrees were removed.

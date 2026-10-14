@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Application\Query\ExportTicketsCsvQuery;
-use App\Domain\Agent\Agent;
-use App\Domain\Contact\Contact;
-use App\Domain\Conversation\Conversation;
-use App\Domain\Tag\Tag;
-use App\Domain\Tag\TicketTag;
-use App\Domain\Team\Team;
-use App\Domain\Ticket\Ticket;
-use App\Domain\Workspace\Workspace;
-use App\Repository\TagRepository;
+use App\Reporte\Query\ExportTicketsCsvQuery;
+use App\Agente\Agent;
+use App\Contacto\Contact;
+use App\Conversacion\Conversation;
+use App\Ticket\Tag;
+use App\Ticket\TicketTag;
+use App\Agente\Team;
+use App\Ticket\Ticket;
+use App\Administracion\Workspace;
+use App\Ticket\Repository\TagRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use League\Csv\Reader;
 use League\Csv\Writer;

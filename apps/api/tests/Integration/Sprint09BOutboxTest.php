@@ -2,12 +2,12 @@
 
 namespace App\Tests\Integration;
 
-use App\Application\UseCase\HandleInboundMessageUseCase;
-use App\Application\UseCase\AssignTicketUseCase;
-use App\Domain\Outbox\OutboxEvent;
-use App\Domain\Ticket\Ticket;
-use App\Domain\Contact\Contact;
-use App\Domain\Conversation\Conversation;
+use App\Conversacion\UseCase\HandleInboundMessageUseCase;
+use App\Asignacion\UseCase\AssignTicketUseCase;
+use App\Compartido\Outbox\OutboxEvent;
+use App\Ticket\Ticket;
+use App\Contacto\Contact;
+use App\Conversacion\Conversation;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Ulid;

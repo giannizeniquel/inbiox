@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Application\UseCase\HandleInboundMessageUseCase;
-use App\Application\UseCase\HandleOutboundMessageUseCase;
+use App\Conversacion\UseCase\HandleInboundMessageUseCase;
+use App\Conversacion\UseCase\HandleOutboundMessageUseCase;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 

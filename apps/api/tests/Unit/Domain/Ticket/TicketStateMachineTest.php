@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Domain\Ticket;
 
-use App\Domain\Ticket\TicketStateMachine;
-use App\Domain\Ticket\TicketStatus;
+use App\Ticket\TicketStateMachine;
+use App\Ticket\TicketStatus;
 use PHPUnit\Framework\TestCase;
 
 /**
