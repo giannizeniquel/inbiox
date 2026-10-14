@@ -30,7 +30,7 @@ Roles: `AuthStore.isAdmin()` / `isSupervisor()` (no jerárquicos; no existe `isA
 
 ## Inicio de sesión
 
-| Acción | Componente → caso de uso / store → endpoint |
+| Acción | Componente → servicio o store → endpoint |
 |---|---|
 | Iniciar sesión | `LoginPageComponent` → `AuthStore.login()` → `POST /api/auth/login`, `GET /api/auth/me`, `GET /api/mercure/token`, abre SSE |
 | Restaurar sesión al recargar | `APP_INITIALIZER` → `AuthStore.initialize()` → `POST /api/auth/refresh` (cookie) → token Mercure → `/me` |
@@ -92,12 +92,12 @@ Contenedor: `features/bandeja/pages/conversation/conversation.component.ts`. Sto
 
 ## Contactos
 
-`features/contactos/` (`pages/`, `ui/`) y `data-access/contacto/` (API, stores, modelos, casos de uso).
+`features/contactos/` (`pages/`, `ui/`) y `data-access/contacto/` (API, stores, modelos).
 
 | Acción | Código | Endpoint | Servidor / navegador | Rol |
 |---|---|---|---|---|
 | Listar (20 por página, "cargar más") | `GetContactsUseCase` (`contacts-page.component.ts:171-195`) | `GET /api/contacts?page&limit` | Servidor | Todos |
-| Buscar, filtrar por estado/canal | `ContactsStore.filteredContacts` (`data-access/contacto/contacts.store.ts:51-85`) | — | **Navegador** (solo lo cargado) | Todos |
+| Buscar, filtrar por estado/canal | `ContactsScreenStore.filteredContacts` (`features/contactos/contacts-screen.store.ts:40-74`) | — | **Navegador** (solo lo cargado) | Todos |
 | Detalle | `ContactDetailComponent`; si no está en caché, API directa | `GET /api/contacts/{id}` | — | Todos |
 | Línea de tiempo | `ContactTimelineComponent` → `ContactTimelineStore` (hace HTTP) | `GET /api/contacts/{id}/timeline?before&limit=20` | Servidor | Todos |
 | Abrir ticket desde el contacto | navega a `/inbox?ticketId=…`; sin ticket activo, solo a `/inbox` (`TODO`) | — | — | Todos |
@@ -118,16 +118,16 @@ Contenedor: `features/bandeja/pages/conversation/conversation.component.ts`. Sto
 | Carga por agente, agentes disponibles, clientes recurrentes | `agent-load`, `available-agents`, `recurring-customers` | **No** |
 | Exportar CSV | `ExportTicketsCsvUseCase` → `GET /api/reports/export` (blob) | Sí; botón solo admin/supervisor |
 
-Lógica inventada: nombres `Agent {id}` y `loadPercentage = asignados × 20` (`:158-162`). Fechas locales del navegador enviadas como UTC (`data-access/reporte/reports-api.service.ts:131-143`): rango desplazado fuera de UTC.
+Lógica inventada: nombres `Agent {id}` y `loadPercentage = asignados × 20` (`:158-162`). Fechas locales del navegador enviadas como UTC (`data-access/reporte/reports-api.service.ts:133-145`): rango desplazado fuera de UTC.
 
 ## Administración
 
-| Pantalla | Acciones | Casos de uso | Endpoints | Rol frontend / backend |
+| Pantalla | Acciones | Servicio | Endpoints | Rol frontend / backend |
 |---|---|---|---|---|
-| Usuarios | listar, crear (roles + agente opcional), editar, desactivar, reactivar | `data-access/administracion/*-user.use-case.ts` | `/api/admin/users[/{id}]` | Admin / Admin |
-| Agentes | listar, crear, editar (incl. zona horaria con `Intl.supportedValuesOf('timeZone')`), desactivar, reactivar, vincular usuario | `data-access/administracion/*-agent.use-case.ts`, `manage-agent-user-linking.use-case.ts` | `/api/admin/agents[/{id}]`, `/link-user`, `GET /api/admin/users` | Supervisor+ / Supervisor (vincular: **Admin**) |
-| Workspaces | listar, crear, editar, desactivar, asignar agentes | `data-access/administracion/*-workspace.use-case.ts` + API directa | `/api/admin/workspaces[/{id}]`, `/agents`, `GET /api/admin/agents?limit=100` | Admin / Admin |
-| Equipos | listar, crear (workspace fijo después), editar, desactivar, asignar agentes | `data-access/administracion/*-team.use-case.ts` + API directa | `/api/admin/teams[/{id}]`, `/agents`, `GET /api/admin/workspaces` (**Admin**), `GET /api/admin/agents?limit=100` | Supervisor+ / Supervisor |
+| Usuarios | listar, crear (roles + agente opcional), editar, desactivar, reactivar | `AdminApiService` (`data-access/administracion/admin-api.service.ts`) | `/api/admin/users[/{id}]` | Admin / Admin |
+| Agentes | listar, crear, editar (incl. zona horaria con `Intl.supportedValuesOf('timeZone')`), desactivar, reactivar, vincular usuario | `AdminApiService` | `/api/admin/agents[/{id}]`, `/link-user`, `GET /api/admin/users` | Supervisor+ / Supervisor (vincular: **Admin**) |
+| Workspaces | listar, crear, editar, desactivar, asignar agentes | `WorkspaceApiService` | `/api/admin/workspaces[/{id}]`, `/agents`, `GET /api/admin/agents?limit=100` | Admin / Admin |
+| Equipos | listar, crear (workspace fijo después), editar, desactivar, asignar agentes | `TeamApiService` | `/api/admin/teams[/{id}]`, `/agents`, `GET /api/admin/workspaces` (**Admin**), `GET /api/admin/agents?limit=100` | Supervisor+ / Supervisor |
 
 Con más de 100 agentes, los modales no muestran el resto.
 
@@ -146,7 +146,7 @@ El store (`data-access/agente/settings.store.ts`) hace HTTP sin esperar el resul
 ## Disponibilidad y turnos (`/agents/:agentId/...`)
 
 - No existe un interruptor de disponibilidad en la UI.
-- `data-access/disponibilidad/agent.service.ts:47-108` llama `${apiUrl}/agents/{id}/…` **sin `/api`**: esas URLs no existen y además el interceptor no agrega el token.
+- `data-access/disponibilidad/agent.service.ts:64-125` llama `${apiUrl}/agents/{id}/…` **sin `/api`**: esas URLs no existen y además el interceptor no agrega el token.
 - Las páginas ignoran `:agentId` y leen `AgentStore.currentAgent()`, que nadie asigna (siempre `null`). `AgentStore.loadShifts()` no hace nada.
 - Resultado: ambas páginas no funcionan. Los turnos solo se gestionan desde `/settings`.
 
@@ -184,9 +184,9 @@ Limitaciones: detección de huecos desactivada (`:282-286`); `resyncAllTickets()
 | `new → active` al asignar | `ticket.store.ts:163-168` | Duplica R-T4. |
 | FSM de tickets | `status-actions.component.ts:21-27` | Componente sin uso. |
 | Ventana de 24 h | `composer.component.ts:7, 70-76` | Duplica R-W1 con el reloj del navegador; el backend manda. |
-| Quién puede asignar; no asignarse a uno mismo; estados asignables; agentes inactivos no elegibles | `ticket-list.component.ts:130-135, 219-236`; `ticket-card.component.ts:51-59, 142-146` | Duplica el voter y el guard "Activo"; "no asignarse a uno mismo" solo existe aquí. |
+| Quién puede asignar; no asignarse a uno mismo; estados asignables; agentes inactivos no elegibles | `ticket-list.component.ts:132-137, 221-238`; `ticket-card.component.ts:51-59, 142-146` | Duplica el voter y el guard "Activo"; "no asignarse a uno mismo" solo existe aquí. |
 | Validación de archivos | `message-sender.service.ts:49-54, 227-253` | Duplica `MediaValidator`; los límites pueden divergir. |
-| Roles por defecto `ROLE_AGENT` | `create-user.use-case.ts:66`, `update-user.use-case.ts:49` | Solo frontend. |
+| Roles por defecto `ROLE_AGENT` | `admin-api.service.ts:178`, `:197` | Solo frontend. |
 | `loadPercentage`, nombres `Agent {id}` | `get-reports-dashboard.use-case.ts:158-162` | **Inventados.** |
 | Abiertos / cerrados agregados | `get-reports-dashboard.use-case.ts:148-151` | Coincide con el backend. |
 
@@ -218,10 +218,10 @@ El código sin uso listado aquí se borró en la fase 1 de la limpieza (ver `odd
 | Mensaje duplicado en pantalla | `conversation.store.ts:76-82, 176-199` |
 | El **cliente** recibe un mensaje repetido | Causa en el backend: `apps/api/src/Controller/ProviderProxyController.php:97-155` envía a WhatsApp aunque el mensaje sea `duplicate_skipped`, y `message-sender.service.ts:72-75` reintenta el POST. Ver [04 § F2](04-flujos.md#f2-respuesta-del-agente). |
 | Mensaje fallido no se reintenta | `conversation.component.ts:279-284` vs `message-sender.service.ts:185-213` |
-| No puedo asignar | `ticket-list.component.ts:219-277`, `ticket-card.component.ts`, roster `available-agents` |
+| No puedo asignar | `ticket-list.component.ts:221-279`, `ticket-card.component.ts`, roster `available-agents` |
 | "Resolver" da error | `conversation.component.ts:293-320`, `data-access/ticket/workflow-api.service.ts:32-37` |
 | Mensaje del cliente se ve como "sistema" | `message-bubble.component.ts:44` |
 | No se puede escribir al cliente | `composer.component.ts:70-76` (ventana 24 h) |
 | Informes en cero | `get-reports-dashboard.use-case.ts` (errores degradados a 0) |
-| Supervisor no puede crear equipos / vincular usuarios | `teams-page.component.ts:88-95`, `agents-page.component.html:67-71` |
+| Supervisor no puede crear equipos / vincular usuarios | `teams-page.component.ts:80-87`, `agents-page.component.html:67-71` |
 | Horarios / disponibilidad | `/settings` funciona; `features/disponibilidad/*` y `data-access/disponibilidad/agent.service.ts` no |

@@ -112,7 +112,7 @@ Todo en `apps/web/src/app/`. Detalle por pantalla en [07-frontend.md](07-fronten
 | `core/realtime/` | `MercureService` (SSE por `fetch`), `EventBusService`, `ConnectionStore`, `MetricsService`. | |
 | `core/http/`, `core/layout/` | Utilidades HTTP (errores, reintentos) y `ThemeStore`. | |
 | `data-access/<modulo>/` | Un módulo del glosario por carpeta (`ticket`, `conversacion`, `contacto`, `agente`, `disponibilidad`, `reporte`, `administracion`): servicios HTTP (`*-api.service.ts`), stores con signals, DTOs, modelos y casos de uso. | Varios stores hacen HTTP directamente. No hay casos de uso para la bandeja, settings ni workspace. |
-| `data-access/conversacion/` | Además, `ProviderInterface` y `WhatsAppCloudProvider` (proxy a `/api/provider/*`). | La "abstracción de proveedor" de ADR-004 existe **solo** aquí. |
+| `data-access/conversacion/` | Además, `WhatsAppCloudProvider` (proxy a `/api/provider/*`). | La "abstracción de proveedor" de ADR-004 ya no existe en el frontend: la fase 3 de la limpieza quitó `ProviderInterface`, que tenía una sola implementación. |
 | `data-access/disponibilidad/` | Además, `agent.service.ts` (roto). | |
 | `features/<pantalla>/` | `bandeja`, `contactos`, `reportes`, `configuracion`, `administracion`, `disponibilidad`, `login`, cada una con `pages/` y `ui/`. | `bandeja/ui.store.ts` es estado de pantalla. |
 | `shell/` | Layout: barra superior, menú lateral, selector de workspace, banner de conexión. **El shell pinta directamente la bandeja.** | |
@@ -289,10 +289,10 @@ Archivos: `apps/api/.env` (no versionado), `.env.dev` (**versionado, con credenc
 
 | # | Violación | Evidencia |
 |---|---|---|
-| W1 | El núcleo de la bandeja no usa casos de uso: los contenedores llaman a los servicios `*-api` o a `HttpClient` y escriben en los stores. | `ticket-list.component.ts:51-53`, `conversation.component.ts:87,198`, `shell/app-shell.component.ts:58-59` |
+| W1 | El núcleo de la bandeja no usa casos de uso: los contenedores llaman a los servicios `*-api` o a `HttpClient` y escriben en los stores. | `ticket-list.component.ts:52-55`, `conversation.component.ts:87,198`, `shell/app-shell.component.ts:58-59` |
 | W2 | Stores que hacen HTTP. | `settings.store.ts`, `workspace.store.ts`, `auth.store.ts`, `agent.store.ts`, `data-access/contacto/contact-timeline.store.ts` |
 | W3 | **Resuelto** en la fase 2 de la limpieza frontend: `core` importaba de `features`; hoy `core/` no importa de `data-access/` ni de `features/`. | — |
-| W4 | Componente presentacional con acceso a API. | `TeamFilterComponent` llama `TeamApiService` |
+| W4 | Componente presentacional con acceso a API. | `TeamFilterComponent` llama `TeamListApiService` |
 | W5 | Reglas de negocio duplicadas en el navegador. | ventana de 24 h, FSM, `new → active` al asignar, permisos de asignación (ver [07](07-frontend.md#lógica-de-negocio-que-vive-en-el-frontend)) |
 | W6 | **Resuelto** en la fase 2 de la limpieza frontend: el DTO de contacto de `features/contacts/models/dto/` solo reexportaba el de `core/dto/` y se borró. | `data-access/<modulo>/` |
-| W7 | Flujo "abrir ticket y cargar mensajes" escrito dos veces. | `ticket-list.component.ts:176-192`, `app-shell.component.ts:90-106` |
+| W7 | Flujo "abrir ticket y cargar mensajes" escrito dos veces. | `ticket-list.component.ts:178-194`, `app-shell.component.ts:90-106` |

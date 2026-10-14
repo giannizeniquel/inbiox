@@ -229,7 +229,7 @@ Endpoints vivos **sin UI**: plantillas, asignar equipo a ticket, historial de as
 | Pantalla / control | Frontend | Backend | Efecto |
 |---|---|---|---|
 | Botones "Link/Unlink" usuario ↔ agente (`features/administracion/pages/agents/agents-page.component.html:67-71`) | Visibles para supervisor | `AgentLinkController` exige Admin; el modal carga `GET /api/admin/users` (Admin) | El supervisor recibe 403. |
-| Crear equipo (`features/administracion/pages/teams/teams-page.component.ts:88-95`) | Pantalla para supervisor | El selector de workspace usa `GET /api/admin/workspaces` (Admin); el error se traga | El supervisor no puede crear equipos (el campo obligatorio queda vacío). |
+| Crear equipo (`features/administracion/pages/teams/teams-page.component.ts:80-87`) | Pantalla para supervisor | El selector de workspace usa `GET /api/admin/workspaces` (Admin); el error se traga | El supervisor no puede crear equipos (el campo obligatorio queda vacío). |
 | Texto "(solo administradores)" junto a "Gestionar horarios" en `/settings` | Visible para todos | — | El enlace además está roto (usa el id del workspace como id de agente). |
 | Roles en el frontend (`core/auth/auth.store.ts:40-52`) | No jerárquicos (`isAdmin`, `isSupervisor`; no hay `isAgent`) | Jerárquicos | `roleGuard` lo compensa dejando pasar siempre al admin (`core/auth/auth.guard.ts:35-38`). Hoy no queda ninguna comprobación `isSupervisor()` sin `\|\| isAdmin()`. |
 | Informes (`/reports`) | Sin guard | Agente | Consistente: los agentes ven todos los reportes. |

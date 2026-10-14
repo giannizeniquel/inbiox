@@ -19,7 +19,7 @@ Una bandeja de atención compartida: los mensajes que llegan por **WhatsApp Clou
 | 5 | [02-arquitectura-y-tecnologias.md](02-arquitectura-y-tecnologias.md) | Stack, capas, rutas, autenticación, tiempo real, docker. | 25 min |
 | 6 | [05-reglas-de-negocio.md](05-reglas-de-negocio.md) | Catálogo de reglas: dónde se aplican y si están confirmadas. | consulta |
 | 7 | [06-api-y-permisos.md](06-api-y-permisos.md) | Las 90 rutas HTTP y qué rol necesita cada una. | consulta |
-| 8 | [07-frontend.md](07-frontend.md) | Pantalla por pantalla: componente → caso de uso → store → endpoint. | consulta |
+| 8 | [07-frontend.md](07-frontend.md) | Pantalla por pantalla: componente → servicio o store → endpoint. | consulta |
 | 9 | [08-riesgos-contradicciones-y-complejidad.md](08-riesgos-contradicciones-y-complejidad.md) | Contradicciones, código de propósito no claro, complejidad. | 20 min |
 | 10 | [09-guia-de-pruebas-manuales.md](09-guia-de-pruebas-manuales.md) | Cómo levantar el entorno y probar cada funcionalidad a mano. | práctica |
 

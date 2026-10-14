@@ -147,10 +147,10 @@ Detalle en [07](07-frontend.md#lógica-de-negocio-que-vive-en-el-frontend).
 | Regla | Dónde (`apps/web/src/app/`) | ¿Coincide con el backend? |
 |---|---|---|
 | Un mensaje entrante entre corchetes `[...]` se muestra como "mensaje de sistema". | `features/bandeja/ui/message-bubble/message-bubble.component.ts:44` | **Inventada**: el backend ya expone `sender_type` y no produce mensajes entre corchetes. Regla no confirmada. |
-| No puede asignarse a uno mismo desde el desplegable. | `ticket-list.component.ts:130-135` | Solo frontend. Regla no confirmada. |
+| No puede asignarse a uno mismo desde el desplegable. | `ticket-list.component.ts:132-137` | Solo frontend. Regla no confirmada. |
 | `loadPercentage = asignados × 20` (capacidad asumida de 5). | `data-access/reporte/get-reports-dashboard.use-case.ts:162` | **Inventada**: la capacidad real por defecto es 10. |
 | "Abierto" = `new`+`active`+`waiting`; "cerrado" = `resolved`+`closed`. | `get-reports-dashboard.use-case.ts:148-151` | Coincide con "tickets activos" del backend. |
-| Roles por defecto `['ROLE_AGENT']` si no se elige ninguno. | `data-access/administracion/create-user.use-case.ts:66` | Solo frontend. |
+| Roles por defecto `['ROLE_AGENT']` si no se elige ninguno. | `data-access/administracion/admin-api.service.ts:178` | Solo frontend. |
 
 ## Reglas aplicadas en más de un lugar
 
@@ -165,5 +165,5 @@ Detalle en [07](07-frontend.md#lógica-de-negocio-que-vive-en-el-frontend).
 | Ventana de 24 h | `HandleOutboundMessageUseCase.php:210`, `AutoReplyService.php:126`, frontend `composer.component.ts:70-76` | Sí (el frontend usa el reloj del navegador; el backend manda). |
 | FSM del ticket | `TicketStateMachine.php`; frontend `status-actions.component.ts:21-27` (componente sin uso) y `ticket.store.ts:163-168` (`new → active` al asignar) | La copia del frontend no se usa; la transición implícita sí. |
 | Ticket resuelto/cerrado bloquea cambios de dueño | `TicketVoter` (asignación manual, 409 para todos) y `TicketOwnershipGuard` (respuesta, permite a privilegiados) | Distintos a propósito; documentado en cada lugar. |
-| Permiso para asignar | `TicketVoter::ASSIGN` y `ticket-list.component.ts:219-236` | Sí. |
+| Permiso para asignar | `TicketVoter::ASSIGN` y `ticket-list.component.ts:221-238` | Sí. |
 | `persistEventsToOutbox()` | 5 copias | **No** (formato del payload, eventos omitidos, `sequence`). |

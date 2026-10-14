@@ -204,7 +204,7 @@ stateDiagram-v2
 
 | # | Paso | Dónde | Regla |
 |---|---|---|---|
-| 1 | (Frontend) El desplegable se muestra si el usuario es supervisor/admin, o si es agente y dueño; solo en `new`/`active`/`waiting`. Excluye al propio usuario. Los agentes "Inactivo" no se pueden elegir. | `features/bandeja/pages/ticket-list/ticket-list.component.ts:121-149, 219-236`; `features/bandeja/ui/ticket-card/ticket-card.component.ts:51-59, 138-150` | |
+| 1 | (Frontend) El desplegable se muestra si el usuario es supervisor/admin, o si es agente y dueño; solo en `new`/`active`/`waiting`. Excluye al propio usuario. Los agentes "Inactivo" no se pueden elegir. | `features/bandeja/pages/ticket-list/ticket-list.component.ts:123-151, 221-238`; `features/bandeja/ui/ticket-card/ticket-card.component.ts:51-59, 138-150` | |
 | 2 | (Frontend) Roster: `GET /api/workspaces/{wsId}/available-agents` → agentes activos del workspace con `is_active_now`, "Activo" primero. | `Controller/WorkspaceAgentController.php:32-46`; `AgentAvailabilityService::listWorkspaceAgentRoster()` (`:181-224`) | |
 | 3 | Voter `ASSIGN`: ticket `resolved`/`closed` → 409 para todos; supervisor/admin pasan; agente solo si ya es el dueño. | `TicketVoter.php:88-118` | R-A9, R-A10 |
 | 4 | Valida `agentId > 0` y `assignedBy` (texto **enviado por el cliente**). | `Application/UseCase/AssignTicketUseCase.php:57-66` | R-A11 |
@@ -212,7 +212,7 @@ stateDiagram-v2
 | 6 | **Guard "Activo":** `isActiveNow()` (cuenta activa → override → turno; **sin capacidad**). Si no → 409 `AGENT_NOT_ACTIVE`. Sin excepción para ningún rol. | `:86-95`; `AgentAvailabilityService.php:84-102` | R-A8 |
 | 7 | `REASSIGN` si ya tenía dueño, si no `MANUAL_ASSIGN` → `AssignmentService::recordOwnershipChange()` (fila `Assignment`, `new → active`, eventos). | `:97-117`; `AssignmentService.php:47-113` | R-A1, R-T4 |
 | 8 | Post-commit: eventos al outbox (los `InboxUpdatedEvent` terminan en dead letter). | `:135, 143-180` | P-1 |
-| 9 | (Frontend) Actualización optimista; si falla, rollback y mensaje 5 s; si 409 `AGENT_NOT_ACTIVE`, recarga el roster. | `ticket-list.component.ts:242-277` | |
+| 9 | (Frontend) Actualización optimista; si falla, rollback y mensaje 5 s; si 409 `AGENT_NOT_ACTIVE`, recarga el roster. | `ticket-list.component.ts:244-279` | |
 
 - **No verifica workspace** del agente destino. **No existe endpoint para desasignar**: `UNASSIGN` solo ocurre al resolver/cerrar.
 - **Historial:** `GET /api/tickets/{id}/assignment` (`TicketController.php:140-186`) — sin UI.
@@ -353,7 +353,7 @@ Frontend: `features/contactos/` (pages, componentes de diálogo, `data-access/co
 
 El equipo **no participa en la asignación** (ni manual ni automática).
 
-**Si falla, revisar:** 403 al crear siendo supervisor → el frontend llama `GET /api/admin/workspaces` (solo admin) en `features/administracion/pages/teams/teams-page.component.ts:88-95` → `Admin/TeamController.php` → `Domain/Team/Team.php`.
+**Si falla, revisar:** 403 al crear siendo supervisor → el frontend llama `GET /api/admin/workspaces` (solo admin) en `features/administracion/pages/teams/teams-page.component.ts:80-87` → `Admin/TeamController.php` → `Domain/Team/Team.php`.
 
 ---
 
@@ -410,7 +410,7 @@ Un mensaje `failed` no afecta el estado del ticket.
 | Export CSV | Streaming por keyset, filtros compartidos con la bandeja, anti CSV-injection | `Application/Query/ExportTicketsCsvQuery.php`; supervisor+. |
 
 - Ningún reporte se restringe por agente (`OwnershipScope` siempre `null`, decisión documentada). Se filtran por workspace activo y, en 5 casos, por equipo.
-- Frontend: tres bloques de llamadas en secuencia; cualquier error se muestra como 0. Nombres "Agent {id}" y `loadPercentage = asignados × 20` inventados en `data-access/reporte/get-reports-dashboard.use-case.ts:158-162`. Fechas locales convertidas a UTC con desfase (`data-access/reporte/reports-api.service.ts:131-143`).
+- Frontend: tres bloques de llamadas en secuencia; cualquier error se muestra como 0. Nombres "Agent {id}" y `loadPercentage = asignados × 20` inventados en `data-access/reporte/get-reports-dashboard.use-case.ts:158-162`. Fechas locales convertidas a UTC con desfase (`data-access/reporte/reports-api.service.ts:133-145`).
 
 **Si falla, revisar:** pestaña Red (¿403/500 silenciados como 0?) → `get-reports-dashboard.use-case.ts` → `ReportingController.php` → `ReportingRepository.php` (método del reporte).
 
@@ -421,7 +421,7 @@ Un mensaje `failed` no afecta el estado del ticket.
 | # | Paso | Dónde |
 |---|---|---|
 | 1 | Login: `POST /api/auth/login` → `GET /api/auth/me` → `GET /api/mercure/token` → abre SSE. | `core/auth/auth.store.ts:60-101` |
-| 2 | Al recargar la app: `APP_INITIALIZER` → `POST /api/auth/refresh` (cookie) → token Mercure → `/me` → SSE. | `app.config.ts:18-25`; `auth.store.ts:175-202` |
+| 2 | Al recargar la app: `APP_INITIALIZER` → `POST /api/auth/refresh` (cookie) → token Mercure → `/me` → SSE. | `app.config.ts:13-20`; `auth.store.ts:175-202` |
 | 3 | Ante un 401: el interceptor deduplica refresh concurrentes y reintenta. Si el refresh falla, llama `logout()` (riesgo **no verificado** de bucle logout/refresh). | `core/auth/auth.interceptor.ts:81-133` |
 | 4 | Logout: `POST /api/auth/logout` (borra todos los refresh tokens), desconecta Mercure. **No limpia** los stores de tickets/conversación. | `auth.store.ts:136-148` |
 | 5 | Workspace: `GET /api/me/workspaces` (con `has_pending`) y `GET /api/me/workspace`; al elegir, `PUT /api/me/workspace` y `window.location.reload()`. Admin/supervisor pueden elegir cualquiera (y se les crea un agente); un agente solo los suyos. | `data-access/administracion/workspace.store.ts:93-108`; `Controller/MeController.php:282-461` |
@@ -438,7 +438,7 @@ Un mensaje `failed` no afecta el estado del ticket.
 | 1 | El shell, en la ruta `/inbox`, pinta directamente `TicketListComponent` + `ConversationComponent` (la ruta `/inbox` no tiene componente propio). | `shell/app-shell.component.html:24-37` |
 | 2 | `GET /api/tickets[?teamId=N]` **sin `page`/`limit`** → el backend devuelve 20. | `data-access/ticket/ticket-api.service.ts:20-34`; `Controller/InboxController.php:44-45`; `Application/Query/ListTicketsQuery.php` |
 | 3 | Pestañas Míos / Sin asignar / Todos y contadores: en el navegador sobre lo cargado. | `data-access/ticket/ticket.store.ts:192-213` |
-| 4 | Abrir ticket: `GET /api/tickets/{id}/messages?limit=20&offset=0` (mensajes de toda la conversación); scroll hacia arriba pide más. | `ticket-list.component.ts:176-192`; `conversation.component.ts:368-401`; `Application/Query/GetTicketMessagesQuery.php:23-53` |
+| 4 | Abrir ticket: `GET /api/tickets/{id}/messages?limit=20&offset=0` (mensajes de toda la conversación); scroll hacia arriba pide más. | `ticket-list.component.ts:178-194`; `conversation.component.ts:368-401`; `Application/Query/GetTicketMessagesQuery.php:23-53` |
 | 5 | Marcar leído: `PUT /api/tickets/{id}/mark-read` (HttpClient directo). Solo tiene efecto si el usuario es el dueño; emite `ticket.read`. | `conversation.component.ts:193-206`; `InboxController.php:168-214` |
 | 6 | No leídos: +1 por `message.added` entrante si no es el ticket abierto; 0 con `ticket.read` o `ticket.assigned`. | `ticket.store.ts:95-110, 173-186` |
 | 7 | Deep link `/inbox?ticketId=X` (desde Contactos): `GET /api/tickets/{id}` + mensajes. | `shell/app-shell.component.ts:90-106` |
@@ -459,6 +459,6 @@ En la respuesta del listado, `contact.id` es el **id de la conversación** (`Lis
 | Workspaces | `/api/admin/workspaces[/{id}]`, `PUT …/{id}/agents` | `Admin/WorkspaceController.php` | Admin | Borrar = desactivar. `phone_number_id` único. |
 | Equipos | ver [F12](#f12-equipos) | | Supervisor | |
 
-Frontend: `features/administracion/pages/{users,agents,workspaces,teams}` con casos de uso en `data-access/administracion/`; `teams` y `workspaces` llaman `GET /api/admin/agents?limit=100` directo (con más de 100 agentes, faltan).
+Frontend: `features/administracion/pages/{users,agents,workspaces,teams}` con sus servicios en `data-access/administracion/`; `teams` y `workspaces` llaman `GET /api/admin/agents?limit=100` directo (con más de 100 agentes, faltan).
 
-**Si falla, revisar:** 403 → comparar `access_control` (`security.yaml:44-81`) con `#[IsGranted]` de la clase → el controlador `Admin/*` → el caso de uso de `data-access/administracion/`.
+**Si falla, revisar:** 403 → comparar `access_control` (`security.yaml:44-81`) con `#[IsGranted]` de la clase → el controlador `Admin/*` → el servicio de `data-access/administracion/`.
