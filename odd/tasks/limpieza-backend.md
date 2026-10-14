@@ -45,7 +45,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T7 | S1 | inline | done | Phase 1, block 3: inert `ActiveUserListener` and the unreachable `'supersecret'` JWT fallback |
 | T8 | S1 | inline | done | Phase 1, block 4: obsolete root tooling and `bin/outbox-direct.php` |
 | T9 | S1, S7 | inline | done | Phase 1: docs in `02_sistema-actual` updated for the deletions |
-| T10 | S1 | inline | in progress | Phase 1 items that change a contract or the environment (see L9). Items 1–5 done (L11–L15); item 6 pending user decision |
+| T10 | S1 | inline | done | Phase 1 items that change a contract or the environment (see L9): L11–L16 |
 
 ### Baseline of failing tests (phase 0, after `1afba20`)
 
@@ -135,3 +135,4 @@ Later phases, each with its own branch and task list when it starts:
   - Removed both services and the `php` → `redis` dependency from `docker-compose.yml`, and the commented Redis block from `cache.yaml`. Updated `AGENTS.md` and docs 02/08 to say Redis (cache) and a mailer are planned.
   - `docker compose up -d --remove-orphans` removed both containers; no others changed.
   - Checks: `docker compose config` OK; `lint:container` OK; full suite 692 tests, exactly the 6 baseline failures.
+- **L16 (2026-10-14), T10 item 6:** re-verified that no code or config reads `MEDIA_ENABLED` or `JWT_COOKIE_NAME`. The refresh cookie name is hardcoded as `token_parameter_name: inbiox_refresh` in `gesdinet_jwt_refresh_token.yaml`, so the `api-contracts.md` row saying it was required was wrong. Claude must not read `.env*`, so the user removed the lines by hand (`.env` lines 18 and 30, `.env.example` 32, `.env.test` 10); a first `sd` attempt matched nothing, for an unknown reason. Docs 02/08/api-contracts updated. Checks: `lint:container` OK; full suite 692 tests, exactly the 6 baseline failures.

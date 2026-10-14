@@ -236,7 +236,6 @@ Archivos: `apps/api/.env` (no versionado), `.env.dev` (**versionado, con credenc
 | `APP_SECRET`, `APP_ENV`, `DEFAULT_URI`, `CORS_ALLOW_ORIGIN`, `DATABASE_URL` | Framework | Sí (`APP_ENV` no está definida: el default es `dev`). |
 | `JWT_SECRET_KEY`, `JWT_PUBLIC_KEY`, `JWT_PASSPHRASE` | Claves RS256 de Lexik (`config/jwt/*.pem`, no versionadas) | Sí. |
 | `REFRESH_COOKIE_SECURE` | Flag `secure` de la cookie de refresh | Sí. |
-| `JWT_COOKIE_NAME`, `MEDIA_ENABLED` | — | **No se usan.** |
 | `MERCURE_URL`, `MERCURE_PUBLIC_URL`, `MERCURE_JWT_SECRET` | Las leía MercureBundle, borrado en la fase 1 (Flex sacó su bloque de `apps/api/.env`; puede quedar en otros `.env*`). | **No se usan.** El secreto real es el parámetro de `config/packages/test.yaml`. |
 | `META_ACCESS_TOKEN`, `META_PHONE_NUMBER_ID`, `META_APP_SECRET`, `META_WEBHOOK_VERIFY_TOKEN` | WhatsApp | Sí. |
 | `S3_ENDPOINT`, `S3_PUBLIC_ENDPOINT`, `S3_REGION`, `S3_KEY`, `S3_SECRET`, `S3_BUCKET`, `MEDIA_URL_TTL` | Media | Sí. |
