@@ -28,7 +28,7 @@ Branch: one branch per phase in the worktree `/home/gianni/projects/inbiox-workt
 | T1 | S2, S3 | inline | done | Baseline below (phase 0 commit) |
 | T2 | S3, S4 | inline | done | `AGENTS.md` § Frontend and `07-frontend.md` updated (phase 0 commit) |
 | T3 | S3 | delegated (browser) | done, 6 manual checks pending | Smoke baseline below |
-| T4 | S2 (phase 1), S3, S4 | inline | done | Branch `chore/limpieza-frontend-fase-1`; phase 1 commit. Gates: build exit 0 with 12 warnings (NG8113 gone), spec `tsc` 0 errors, initial bundle 593.13 → 579.41 kB; routes and inbox checked in the browser (L6) |
+| T4 | S2 (phase 1), S3, S4 | inline | done | Branch `chore/limpieza-frontend-fase-1`; phase 1 commit. Gates: build exit 0 with 12 warnings (NG8113 gone), spec `tsc` 0 errors, initial bundle 593.13 → 579.41 kB; routes and inbox checked in the browser (L6). Commit `529ff41`; native review: assessed high (`auth.guard.ts`), user granted, lenses risk + reliability, 0 findings, acknowledged |
 
 ### Baseline (phase 0, at `6fcefec`, Node 20.19.5)
 
