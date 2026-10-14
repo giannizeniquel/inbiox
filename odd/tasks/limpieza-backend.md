@@ -34,10 +34,25 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 
 | ID | Specs | Route | Status | Evidence |
 |---|---|---|---|---|
-| T1 | S2, S3, S4, S5 | inline | pending | `docs/arquitectura.md`: target architecture, rules, glossary |
-| T2 | S2, S3, S4 | inline | pending | `AGENTS.md`: rules summary + pointer to `docs/arquitectura.md` |
-| T3 | S6 | inline | pending | Fix test groups A–E, J, K (39 tests); delete obsolete group I (1) |
-| T4 | S6, S7 | inline | pending | Baseline of failing names; update `docs/02_sistema-actual/00` |
+| T1 | S2, S3, S4, S5 | inline | done | `0150477`; frontend structure + rules added in the T4 commit (L5) |
+| T2 | S2, S3, S4 | inline | done | `0150477` |
+| T3 | S6 | inline | done | `1afba20`. Fixed groups A–E and K, plus a leaking concurrency fixture; deleted groups I and J (3 tests). 46 → 6 stable failures |
+| T4 | S6, S7 | inline | done | Baseline below; `00` and `AGENTS.md` updated (T4 commit) |
+
+### Baseline of failing tests (phase 0, after `1afba20`)
+
+There are 725 tests. The 6 stable failures are all real problems, kept red on purpose:
+
+```
+App\Tests\Integration\ReportingV2Test::testGetUnassignedReturnsTickets                    (F: real bug)
+App\Tests\Integration\Sprint09BOutboxTest::test_outbox_event_persisted_after_inbound_message (G: drift)
+App\Tests\Integration\Sprint09BSecurityTest::test_jwt_contains_assigned_ticket_topics      (G)
+App\Tests\Integration\Sprint09BSecurityTest::test_jwt_denies_unassigned_tickets            (G)
+App\Tests\Unit\Infrastructure\Storage\MediaValidatorTest::test_rejects_application_octet_stream (H: drift)
+App\Tests\Unit\Infrastructure\Storage\MediaValidatorTest::test_rejects_exe_mime_type        (H)
+```
+
+Known flake: 0–2 random HTTP tests per full run get `401 {"message":"Invalid JWT Token"}`. It is not a regression. Root cause not investigated; it is a candidate for a later phase.
 
 Later phases, each with its own branch and task list when it starts:
 
@@ -64,3 +79,9 @@ Later phases, each with its own branch and task list when it starts:
   - Spanish rule and glossary (S4).
   - Glossary moved from phase 5 to phase 0, so the frontend can reorganize in parallel on its own branch.
 - **L4 (2026-10-13):** user: "si, arrancá con la fase 0". Branch `chore/limpieza-backend-fase-0` created from `test` (`b543593`).
+- **L5 (2026-10-13), frontend structure:** the frontend agent proposed splitting `data-access` by backend module from `pages`/`ui` by screen, plus two rules: one-way dependencies, and UI state lives in the screen. User: "si, aceptala y escribilas en este PR". Written in `docs/arquitectura.md` § Frontend. The frontend works in a separate worktree.
+- **L6 (2026-10-13), T3 evidence:**
+  - Baseline run: 46 failures. The 45 triaged in doc 00, plus one flaky `401 Invalid JWT Token`.
+  - After the repairs: 6 stable failures (F, G, H) plus 0–2 flaky 401s per run.
+  - A first full run showed 111 failures. Cause: the repaired `Sprint09BConcurrencyTest` now reached assignment and left `assignments` rows that referenced its fixed-id agents, so other tests' `DELETE FROM agents` failed. Fixed with a `tearDown` cleanup and verified with 0 rows left.
+  - RDD assess on `0150477`: medium, `under_budget` (no review due).

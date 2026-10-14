@@ -51,6 +51,12 @@ docker exec inbiox_php php bin/console cache:pool:clear cache.rate_limiter --env
 docker exec inbiox_php php -d memory_limit=512M bin/phpunit
 ```
 
+> **Actualización 13/10/2026 (fase 0 de la limpieza del backend, commit `1afba20`):** se repararon los tests rotos (grupos A–E y K), se borraron los obsoletos (grupos I y J) y se arregló un fixture de `Sprint09BConcurrencyTest` que dejaba filas en la base. Resultado: **725 tests, 6 fallos estables**: los grupos F, G y H, que exponen problemas reales del código y quedan rojos a propósito hasta que se decidan.
+>
+> **Inestabilidad conocida:** en cada corrida completa, entre 0 y 2 tests HTTP elegidos al azar reciben `401 {"message":"Invalid JWT Token"}` con un token recién emitido. Ya pasaba antes de la limpieza, y corridos solos pasan. Causa sin investigar. Al comparar contra la línea base, un fallo nuevo con exactamente esa firma no cuenta como regresión.
+>
+> La tabla siguiente es el triage original (`239ee15`, 45 fallos). Ese día la corrida dio 46 fallos: el extra fue esta inestabilidad.
+
 #### Los 45 fallos agrupados por causa raíz
 
 Pregunta clave en cada grupo: ¿el test está mal, o revela un problema del código?

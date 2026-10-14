@@ -53,7 +53,8 @@ docker exec inbiox_php php -d memory_limit=512M vendor/bin/phpunit --filter X # 
 ```
 
 - `make test` does **not** apply either step above, so it produces false failures.
-- The suite is **not green**: 45 tests fail on `test` at `239ee15` (triaged in `docs/02_sistema-actual/00-estado-y-pendientes.md`). Compare failing test **names** before and after a change, not just the count.
+- The suite is **not green**: 6 tests fail on purpose because they expose real code problems (groups F, G, H in `docs/02_sistema-actual/00-estado-y-pendientes.md`); the baseline list is in `odd/tasks/limpieza-backend.md`. Compare failing test **names** before and after a change, not just the count.
+- Known flake: 0–2 random HTTP tests per full run get `401 Invalid JWT Token`; a new failure with exactly that signature is not a regression.
 - Never run two full suites at the same time: they share one test database.
 - The test database is built from the Doctrine mapping, not from migrations, so tests do not validate the migration chain.
 

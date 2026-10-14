@@ -37,7 +37,7 @@ Un módulo solo crea las carpetas que usa. Si hace falta, también puede tener `
 4. **Los errores se manejan en un único listener de excepciones.** No se usa `try/catch` genérico en los controladores.
 5. **Las entidades Doctrine son el modelo de dominio.** No hay modelo de persistencia aparte.
 6. **No hay interfaz sin dos implementaciones reales** (por ejemplo, el cliente real de Graph y uno falso para tests). En los demás casos se inyecta la clase concreta.
-7. **Un módulo puede llamar a los casos de uso y consultas de otro**, pero no puede leer ni escribir sus tablas por SQL.
+7. **Un módulo puede usar los casos de uso y las consultas de otro módulo.** No puede importar sus controladores ni sus repositorios, ni leer o escribir sus tablas por SQL.
 8. **Las rutas se registran solo en `config/routes.yaml`.** No se usan atributos `#[Route]`.
 
 ### SQL
@@ -66,6 +66,28 @@ Un módulo solo crea las carpetas que usa. Si hace falta, también puede tener `
    - Consultas: `Listar…` u `Obtener…` (`ListarTickets`).
    - Controladores y repositorios: nombre de negocio con sufijo técnico (`TicketController`, `AgenteRepository`).
 
+### Frontend (`apps/web`)
+
+El backend se organiza por módulo. El frontend separa **lo que habla con la API** (por módulo del backend) de **lo que ve el usuario** (por pantalla).
+
+```
+apps/web/src/app/
+├── data-access/<modulo>/   servicio de API, store y DTOs de un módulo del backend
+├── features/<pantalla>/    bandeja, contactos, reportes, configuracion, administracion…
+│   ├── pages/              contenedores con ruta
+│   └── ui/                 componentes de presentación
+├── core/                   solo lo transversal: auth, http, tiempo real, layout
+└── shared/                 UI genérica sin estado
+```
+
+1. **Las dependencias van en un solo sentido: `features → data-access → core`.**
+   - Un `data-access` nunca importa de `features`.
+   - Una pantalla nunca importa de otra pantalla.
+   - Si dos pantallas necesitan lo mismo, va a `data-access` cuando habla con la API, o a `shared` cuando es UI genérica.
+2. **El estado de UI propio de una pantalla vive en `features/<pantalla>`** (por ejemplo, el ticket seleccionado o los filtros abiertos). En `data-access` solo va el estado que viene de la API.
+3. **Los DTOs y modelos de la API van únicamente en `data-access/<modulo>`.**
+4. **Hasta que exista el contrato nuevo de la API, solo se renombran carpetas.** Las variables y los campos que reflejan el JSON se renombran junto con el contrato (fase 5 del backend).
+
 ### Proceso
 
 1. **Ninguna fase de limpieza cambia el comportamiento.** Las contradicciones de producto (C-1 a C-20 en [`02_sistema-actual/08`](02_sistema-actual/08-riesgos-contradicciones-y-complejidad.md)) se resuelven aparte, con una decisión explícita.
@@ -76,7 +98,7 @@ Un módulo solo crea las carpetas que usa. Si hace falta, también puede tener `
 
 ### Módulos
 
-Los mismos nombres se usan en el backend (`src/<Modulo>/`) y en el frontend (`features/<modulo>/`).
+Los mismos nombres se usan en el backend (`src/<Modulo>/`) y en el frontend (`data-access/<modulo>/`). Las pantallas del frontend (`features/<pantalla>/`) tienen nombre propio, porque una pantalla puede combinar varios módulos: por ejemplo, `bandeja` usa `ticket` y `conversacion`.
 
 | Módulo | Contiene |
 |---|---|
@@ -94,14 +116,11 @@ Los mismos nombres se usan en el backend (`src/<Modulo>/`) y en el frontend (`fe
 
 ### Carpetas de capa
 
-| Backend | Frontend |
+| Backend (`src/<Modulo>/`) | Frontend |
 |---|---|
-| `Controller/` | `pages/` (contenedores con ruta) |
-| `UseCase/` | `data-access/` (servicio de API, store y DTOs; es el único lugar para DTOs y modelos) |
-| `Query/` | `ui/` (componentes de presentación) |
-| `Repository/` | — |
+| `Controller/`, `UseCase/`, `Query/`, `Repository/` | `data-access/<modulo>/` (por módulo) · `features/<pantalla>/{pages,ui}` (por pantalla) · `core/` · `shared/` |
 
-El frontend suma `core/`, solo para lo transversal (auth, http, tiempo real, layout), y `shared/`, para UI genérica sin estado.
+Las carpetas de capa no se corresponden una a una entre backend y frontend: cada lado sigue la convención de su framework.
 
 ### Entidades
 
