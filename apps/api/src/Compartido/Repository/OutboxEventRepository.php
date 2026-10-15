@@ -3,10 +3,8 @@
 namespace App\Compartido\Repository;
 
 use App\Compartido\Outbox\OutboxEvent;
-use App\Compartido\Realtime\RealtimeEventType;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
-use Symfony\Component\Uid\Ulid;
 
 /**
  * Reads and writes on the raw `outbox_events` table for the publisher and the
@@ -59,29 +57,6 @@ class OutboxEventRepository extends ServiceEntityRepository
             ->setParameter('seq', $afterSequence)
             ->setMaxResults(100)
             ->fetchAllAssociative();
-    }
-
-    /**
-     * Inserts the pending `ticket.read` realtime event that lets other
-     * clients clear their unread badge. It is written as a raw row with
-     * sequence 0, not as an OutboxEvent entity (phase 3e unifies the writers).
-     */
-    public function insertTicketReadEvent(int $ticketId): void
-    {
-        $this->getEntityManager()->getConnection()->insert('outbox_events', [
-            'id' => (string) (new Ulid()),
-            'aggregate_type' => 'ticket',
-            'aggregate_id' => $ticketId,
-            'topic' => 'tickets',
-            'event_type' => RealtimeEventType::TicketRead->value,
-            'payload' => json_encode([
-                'eventType' => RealtimeEventType::TicketRead->value,
-                'ticketId' => $ticketId,
-            ]),
-            'created_at' => (new \DateTimeImmutable())->format('Y-m-d H:i:s'),
-            'status' => 'pending',
-            'sequence' => 0,
-        ]);
     }
 
     public function markPublished(string $id, \DateTimeImmutable $publishedAt): void

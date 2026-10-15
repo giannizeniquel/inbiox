@@ -7,6 +7,7 @@ namespace App\Conversacion\UseCase;
 use App\Compartido\EventCollector;
 use App\Conversacion\MessageUpdatedEvent;
 use App\Compartido\Outbox\OutboxEvent;
+use App\Compartido\Outbox\OutboxWriter;
 use App\Conversacion\Repository\MessageRepository;
 use App\Ticket\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -51,6 +52,7 @@ class HandleStatusUpdateUseCase
         private readonly MessageRepository $messageRepo,
         private readonly TicketRepository $ticketRepo,
         private readonly EventCollector $eventCollector,
+        private readonly OutboxWriter $outboxWriter,
         private readonly LoggerInterface $logger,
     ) {}
 
@@ -219,6 +221,8 @@ class HandleStatusUpdateUseCase
             return;
         }
 
+        $outboxEvents = [];
+
         foreach ($events as $event) {
             $payload = [
                 'event_id' => $event->eventId->toRfc4122(),
@@ -245,10 +249,10 @@ class HandleStatusUpdateUseCase
                 sequence: $event->seq,
             );
 
-            $this->em->persist($outboxEvent);
+            $outboxEvents[] = $outboxEvent;
         }
 
-        $this->em->flush();
+        $this->outboxWriter->write(...$outboxEvents);
         $this->eventCollector->clear();
     }
 }

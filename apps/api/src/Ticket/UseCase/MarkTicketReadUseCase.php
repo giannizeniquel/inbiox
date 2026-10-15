@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Ticket\UseCase;
 
-use App\Compartido\Repository\OutboxEventRepository;
+use App\Compartido\Outbox\OutboxEvent;
+use App\Compartido\Outbox\OutboxWriter;
+use App\Compartido\Realtime\RealtimeEventType;
 use App\Ticket\Ticket;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -12,7 +14,7 @@ final class MarkTicketReadUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly OutboxEventRepository $outboxEventRepository,
+        private readonly OutboxWriter $outboxWriter,
     ) {}
 
     /**
@@ -31,6 +33,16 @@ final class MarkTicketReadUseCase
         $this->entityManager->flush();
 
         // Emit real-time event so other clients clear their unread badge
-        $this->outboxEventRepository->insertTicketReadEvent((int) $ticket->getId());
+        $ticketId = (int) $ticket->getId();
+        $this->outboxWriter->write(new OutboxEvent(
+            aggregateType: 'ticket',
+            aggregateId: $ticketId,
+            topic: 'tickets',
+            eventType: RealtimeEventType::TicketRead->value,
+            payload: [
+                'eventType' => RealtimeEventType::TicketRead->value,
+                'ticketId' => $ticketId,
+            ],
+        ));
     }
 }

@@ -4,6 +4,7 @@ namespace App\Tests\Unit;
 
 use App\Disponibilidad\AgentAvailabilityService;
 use App\Automatizacion\AutoReplyService;
+use App\Compartido\Outbox\OutboxWriter;
 use App\Compartido\Graph\GraphClient;
 use App\Conversacion\UseCase\HandleInboundMessageUseCase;
 use App\Ticket\UseCase\TransitionTicketStatusUseCase;
@@ -78,6 +79,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
             $this->transitionUseCase,
             $this->ruleExecutor,
             $this->eventCollector,
+            new OutboxWriter($this->em),
             $this->autoReplyService,
             $this->logger,
         );

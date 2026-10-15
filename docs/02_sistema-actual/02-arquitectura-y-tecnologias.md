@@ -160,7 +160,7 @@ sequenceDiagram
 | Paso | Archivos |
 |---|---|
 | Recolección de eventos | `Compartido/DomainEvent.php`, `Compartido/EventCollector.php` |
-| Escritura en outbox | Cada caso de uso tiene **su propia copia** de `persistEventsToOutbox()`: `HandleInboundMessageUseCase.php:107-156`, `HandleOutboundMessageUseCase.php:372-430`, `AssignTicketUseCase.php:143-180`, `AutoAssignTicketUseCase.php:216-252`, `HandleStatusUpdateUseCase.php:214-253`. Disponibilidad y turnos escriben `OutboxEvent` directo. `InboxController::markRead` inserta por SQL. |
+| Escritura en outbox | Un solo escritor: `Compartido/Outbox/OutboxWriter::write()` (persist + flush, siempre después del commit del negocio). Cada caso de uso sigue armando **su propio payload** en `persistEventsToOutbox()`: `HandleInboundMessageUseCase.php:109-157`, `HandleOutboundMessageUseCase.php:371-428`, `AssignTicketUseCase.php:145-184`, `AutoAssignTicketUseCase.php:211-249`, `HandleStatusUpdateUseCase.php:216-257`. Disponibilidad, turnos y `MarkTicketReadUseCase` arman un `OutboxEvent` y lo pasan al mismo escritor. |
 | Publicación | `Compartido/Command/OutboxPublishCommand.php` → `Compartido/Outbox/OutboxPublisherService.php` |
 | Contrato | `Compartido/Realtime/RealtimeEventFactory.php`, `EventTypeMapper.php`, `RealtimeEventType.php` (`ticket.created`, `ticket.status_changed`, `ticket.assigned`, `message.added`, `message.updated`, `conversation.updated`, `agent.availability_changed`, `agent.shift_changed`) |
 | Token de suscripción | `GET /api/mercure/token` → `MercureJwtService::issueForUser()`; en la práctica el frontend **no lo usa para suscribirse** (el hub es anónimo), solo para el resync. |

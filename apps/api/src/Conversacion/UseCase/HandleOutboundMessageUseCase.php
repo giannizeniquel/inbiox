@@ -18,6 +18,7 @@ use App\Conversacion\Message;
 use App\Conversacion\MessageDirection;
 use App\Conversacion\MessageSenderType;
 use App\Compartido\Outbox\OutboxEvent;
+use App\Compartido\Outbox\OutboxWriter;
 use App\Compartido\ProcessedEvent;
 use App\Ticket\Ticket;
 use App\Ticket\TicketStatus;
@@ -56,6 +57,7 @@ class HandleOutboundMessageUseCase
         private AssignmentService $assignmentService,
         private AgentRepository $agentRepo,
         private EventCollector $eventCollector,
+        private readonly OutboxWriter $outboxWriter,
         private ConversationWindowPolicy $windowPolicy,
     ) {}
 
@@ -373,6 +375,8 @@ class HandleOutboundMessageUseCase
             return;
         }
 
+        $outboxEvents = [];
+
         foreach ($events as $event) {
             $payload = [
                 'event_id' => $event->eventId->toRfc4122(),
@@ -416,10 +420,10 @@ class HandleOutboundMessageUseCase
                 eventType: $event->type,
                 payload: $payload
             );
-            $this->em->persist($outboxEvent);
+            $outboxEvents[] = $outboxEvent;
         }
 
-        $this->em->flush();
+        $this->outboxWriter->write(...$outboxEvents);
         $this->eventCollector->clear();
     }
 }

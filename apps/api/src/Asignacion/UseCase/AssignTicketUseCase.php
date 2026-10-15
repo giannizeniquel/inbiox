@@ -11,6 +11,7 @@ use App\Compartido\EventCollector;
 use App\Ticket\InboxUpdatedEvent;
 use App\Ticket\TicketUpdatedEvent;
 use App\Compartido\Outbox\OutboxEvent;
+use App\Compartido\Outbox\OutboxWriter;
 use App\Ticket\TicketStatus;
 use App\Disponibilidad\AgentNotActiveException;
 use App\Agente\Repository\AgentRepository;
@@ -40,6 +41,7 @@ class AssignTicketUseCase
         private AssignmentRepository $assignmentRepo,
         private AgentRepository $agentRepo,
         private EventCollector $eventCollector,
+        private readonly OutboxWriter $outboxWriter,
         private AssignmentService $assignmentService,
         private AgentAvailabilityService $agentAvailabilityService,
     ) {}
@@ -147,6 +149,8 @@ class AssignTicketUseCase
             return;
         }
 
+        $outboxEvents = [];
+
         foreach ($events as $event) {
             $payload = [
                 'eventId' => $event->eventId->toRfc4122(),
@@ -172,10 +176,10 @@ class AssignTicketUseCase
                 eventType: $event->type,
                 payload: $payload,
             );
-            $this->em->persist($outboxEvent);
+            $outboxEvents[] = $outboxEvent;
         }
 
-        $this->em->flush();
+        $this->outboxWriter->write(...$outboxEvents);
         $this->eventCollector->clear();
     }
 }

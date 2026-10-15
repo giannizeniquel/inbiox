@@ -11,6 +11,7 @@ use App\Ticket\TicketCreatedEvent;
 use App\Conversacion\Message;
 use App\Conversacion\MessageSenderType;
 use App\Compartido\Outbox\OutboxEvent;
+use App\Compartido\Outbox\OutboxWriter;
 use App\Ticket\Ticket;
 use App\Ticket\TicketStatus;
 use App\Contacto\Repository\ContactRepository;
@@ -41,6 +42,7 @@ class HandleInboundMessageUseCase
         private TransitionTicketStatusUseCase $transitionUseCase,
         private RuleExecutorService $ruleExecutor,
         private EventCollector $eventCollector,
+        private readonly OutboxWriter $outboxWriter,
         private AutoReplyService $autoReplyService,
         private LoggerInterface $logger,
         private readonly ?MediaDownloadService $mediaDownloadService = null,
@@ -111,6 +113,8 @@ class HandleInboundMessageUseCase
             return;
         }
 
+        $outboxEvents = [];
+
 foreach ($events as $event) {
             $payload = [
                 'event_id' => $event->eventId->toRfc4122(),
@@ -145,10 +149,10 @@ foreach ($events as $event) {
                 eventType: $event->type,
                 payload: $payload
             );
-            $this->em->persist($outboxEvent);
+            $outboxEvents[] = $outboxEvent;
         }
 
-        $this->em->flush();
+        $this->outboxWriter->write(...$outboxEvents);
         $this->eventCollector->clear();
     }
 

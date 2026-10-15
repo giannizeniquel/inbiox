@@ -55,7 +55,7 @@ Ordenadas por severidad (impacto en el comportamiento del producto).
 | Cierre automático | 1 implementación | `ConversationWindowExpiryService` (vivo, opcional). `AutoCloseRule` y `AutoCloseTicketUseCase` (inalcanzables) se borraron en la fase 1. Hoy nadie cierra resueltos por inactividad salvo por la ventana de 24 h. |
 | Normalización de teléfono | 3 | C-5. |
 | "Está en turno" | 2 | Servicio y controlador. |
-| Escritura al outbox | 5 copias de `persistEventsToOutbox()` + escrituras directas + SQL en `markRead` | Formatos distintos (`event_id` vs `eventId`), distintos eventos omitidos. |
+| Escritura al outbox | Un solo escritor (`OutboxWriter`, fase 3e), pero 5 copias del armado del payload en `persistEventsToOutbox()` | Formatos distintos (`event_id` vs `eventId`), distintos eventos omitidos. |
 | Evento de auto-asignación | 1 clase | `Asignacion/TicketNeedsAutoAssignmentEvent`. El duplicado `TicketAutoAssignmentRequestedEvent` se borró en la fase 1; el listener `TicketAutoAssignmentRequestedListener` conserva el nombre viejo. |
 | Turnos | 2 APIs | `PUT /api/me/shifts` (reemplaza todo, usada) y `/api/agents/{id}/shifts` (alta/baja individual, UI rota). Validaciones duplicadas con nombres de campo distintos. |
 | DTOs del frontend | 3 lugares | `app/dto/` (muerto), `core/dto/`, `features/contacts/models/dto/`. |
