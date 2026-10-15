@@ -60,7 +60,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T15 | S8 | delegated (context backstop) | done | 3a: 82 characterization tests in `tests/Characterization/` (L25) |
 | T16 | S8 | delegated (context backstop) | done | 3b: `InternalServerErrorListener`, 71 catch-alls removed (L26) |
 | T17 | S8, S3 | delegated (context backstop) | done | 3c-1 (L28) and 3c-2 (L29) |
-| T18 | S8 | inline | in progress | 3d thin controllers, per module. 3d-1 Administracion (L32), 3d-2 `MeController` split (L33), 3d-3 small controllers (L34), 3d-4 Ticket and Asignacion (L35), 3d-5 Conversacion (L36); independent verifier pending |
+| T18 | S8 | inline | done | 3d thin controllers, per module. 3d-1 Administracion (L32), 3d-2 `MeController` split (L33), 3d-3 small controllers (L34), 3d-4 Ticket and Asignacion (L35), 3d-5 Conversacion (L36); independent verifier PASS (L37) |
 | T19 | S8 | inline | pending | 3e single outbox writer (needs 2 user decisions) |
 
 ### Baseline of failing tests (phase 0, after `1afba20`)
@@ -291,3 +291,16 @@ Later phases, each with its own branch and task list when it starts:
   - `ProviderProxyControllerResolveAgentTest` now builds the real use cases over the same mocked `EntityManager`, and an `AgentRepository` mock replaces the `getRepository` expectations; the same 3 scenarios hold.
   - Gotcha: after a `git stash` round trip the test container cache kept the old constructor (`TypeError ... EntityManagerGhost given`); `cache:clear --env=test` fixed it.
   - Checks: `lint:container` OK; PHPStan level 0 identical; provider, webhook and `/me/workspace` tests green; full suite 847 tests, exactly the 6 baseline failures (01:04 UTC). The per-test assertion diff covers only time-dependent `ReportingV2Test` cases, the adapted unit test (one more `never()` expectation) and the new tests.
+- **L37 (2026-10-15), T18 independent verifier (route: delegated, verification trigger: auth logout touched):** PASS for S1, S2, S3 and S8, no blockers. Baseline `4df4131` vs `98d95dd`.
+  - Probes ran in throwaway containers on scratch copies of both trees. The 3d-added tests copied into the baseline gave 44/44 on both trees. A custom probe of about 95 requests (`/me/workspace` malformed bodies and role paths, the `has_pending` matrix, mark-read, team set, about 50 admin edge requests) gave identical status, content type, body and DB side-effect counts. Full suites had the same 6 failing names. `debug:router` JSON without `_controller` was identical, and `router:match` agreed for the 6 moved path+method pairs.
+  - The L33 order change was confirmed unobservable.
+  - Advisories:
+    1. Route registration order changed; matching is unaffected.
+    2. `UnlinkUserFromAgentUseCase`: an `InvalidArgumentException` raised by `flush()` would now be a 400 instead of a 500; no realistic input raises it.
+    3. `insertTicketReadEvent` is covered end to end by `InboxControllerCharacterizationTest`, not by a repository test.
+    4. `resolveActingAgentId` in `sendTemplate` now runs before the message is built (equivalent: the message was not persisted).
+  - New pre-existing findings for the contradiction track (identical on both trees):
+    1. `PUT /api/admin/teams/{id}/agents` with a non-object body clears all of the team's agents and returns 200.
+    2. `PUT /api/admin/workspaces/{id}` with a duplicate `phoneNumberId` gives a 500 (unique constraint).
+    3. `POST /api/admin/users` with `roles` as a string gives a 500 (`TypeError`).
+  - Parent spot check: workspace clean; 91 routes in the dev environment (the verifier counted 90 in the test environment).
