@@ -267,7 +267,7 @@ Archivos: `apps/api/.env` (no versionado), `.env.dev` (**versionado, con credenc
 
 | # | Violación | Evidencia | Efecto observado |
 |---|---|---|---|
-| B1 | Controladores con lógica de negocio, SQL o `EntityManager` directo. | `InboxController::markRead` (escribe `last_read_at` e inserta en `outbox_events` por SQL); `TicketController::setTeam`; `ProviderProxyController` (crea agentes, persiste el mensaje de plantilla, llama a Graph); `TicketWorkflowController` (clasifica y guarda la auditoría). | La regla queda repartida; es difícil saber "dónde está" una operación. Fase 3d: Administracion y `/api/me` ya pasan por casos de uso. |
+| B1 | Controladores con lógica de negocio, SQL o `EntityManager` directo. | `ProviderProxyController` (crea agentes, persiste el mensaje de plantilla, llama a Graph). | La regla queda repartida; es difícil saber "dónde está" una operación. Fase 3d: Administracion, `/api/me`, Ticket y Asignacion ya pasan por casos de uso. |
 | B2 | El dominio depende de aplicación e infraestructura. | `Automatizacion/AutoReopenRule.php:12-13` usa `TransitionTicketStatusUseCase` y el `EntityManager`. | Dirección de dependencias invertida. |
 | B3 | Implementación concreta dentro de `Domain`. | `Disponibilidad/Repository/AgentShiftRepository.php` | Inconsistencia con `Repository/`. |
 | B4 | ~~Interfaces con una sola implementación.~~ **Resuelto en la fase 2.** | Se borraron 8 interfaces (7 de repositorio y `EventCollector`); se inyecta la clase concreta. | — |

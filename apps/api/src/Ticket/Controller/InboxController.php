@@ -8,12 +8,11 @@ use App\Compartido\PaginationMetaDTO;
 use App\Ticket\Query\GetTicketDetailQuery;
 use App\Conversacion\Query\GetTicketMessagesQuery;
 use App\Ticket\Query\ListTicketsQuery;
-use App\Compartido\Realtime\RealtimeEventType;
 use App\Compartido\Security\OwnershipScope;
 use App\Compartido\Security\WorkspaceScope;
-use App\Ticket\Ticket;
+use App\Ticket\Repository\TicketRepository;
+use App\Ticket\UseCase\MarkTicketReadUseCase;
 use App\Administracion\User;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -32,7 +31,8 @@ class InboxController
         private OwnershipScope $ownershipScope,
         private WorkspaceScope $workspaceScope,
         private Security $security,
-        private EntityManagerInterface $em,
+        private TicketRepository $ticketRepository,
+        private MarkTicketReadUseCase $markTicketReadUseCase,
     ) {}
 
     #[Route('/api/tickets', name: 'app_inbox_tickets', methods: ['GET'])]
@@ -139,39 +139,15 @@ class InboxController
     #[Route('/api/tickets/{id}/mark-read', name: 'app_ticket_mark_read', methods: ['PUT'])]
     public function markRead(int $id): JsonResponse
     {
-        $ticket = $this->em->getRepository(Ticket::class)->find($id);
+        $ticket = $this->ticketRepository->find($id);
         if (!$ticket) {
             return new JsonResponse(['error' => 'Ticket not found'], Response::HTTP_NOT_FOUND);
         }
 
-        // Only the assigned agent marks the ticket as read.
-        // Other users can view but don't affect the read state.
         $user = $this->security->getUser();
         $currentAgentId = $user instanceof User ? $user->getAgent()?->getId() : null;
-        $ownerAgentId = $ticket->getAssignedAgentId();
 
-        if ($currentAgentId === null || $ownerAgentId === null || $currentAgentId !== $ownerAgentId) {
-            return new JsonResponse(null, Response::HTTP_NO_CONTENT);
-        }
-
-        $ticket->setLastReadAt(new \DateTimeImmutable());
-        $this->em->flush();
-
-        // Emit real-time event so other clients clear their unread badge
-        $this->em->getConnection()->insert('outbox_events', [
-            'id' => (string) (new Ulid()),
-            'aggregate_type' => 'ticket',
-            'aggregate_id' => $id,
-            'topic' => 'tickets',
-            'event_type' => RealtimeEventType::TicketRead->value,
-            'payload' => json_encode([
-                'eventType' => RealtimeEventType::TicketRead->value,
-                'ticketId' => $id,
-            ]),
-            'created_at' => (new \DateTimeImmutable())->format('Y-m-d H:i:s'),
-            'status' => 'pending',
-            'sequence' => 0,
-        ]);
+        $this->markTicketReadUseCase->execute($ticket, $currentAgentId);
 
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }

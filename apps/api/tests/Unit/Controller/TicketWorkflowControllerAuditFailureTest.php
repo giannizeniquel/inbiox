@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Controller;
 
+use App\Ticket\UseCase\RecordClosureAuditUseCase;
 use App\Ticket\UseCase\ResolveTicketUseCase;
 use App\Ticket\UseCase\TransitionTicketStatusUseCase;
 use App\Ticket\Controller\TicketWorkflowController;
@@ -63,11 +64,10 @@ class TicketWorkflowControllerAuditFailureTest extends TestCase
         $controller = new TicketWorkflowController(
             $transitionUseCase,
             $resolveUseCase,
-            $logger,
             $ticketRepo,
             $security,
-            $em,
             new ClosureAuditClassifier(),
+            new RecordClosureAuditUseCase($em, new ClosureAuditClassifier(), $logger),
         );
 
         return [$controller, $user];

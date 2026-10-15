@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace App\Asignacion\Controller;
 
 use App\Asignacion\UseCase\AssignTicketUseCase;
-use App\Agente\Team;
+use App\Asignacion\UseCase\SetTicketTeamUseCase;
 use App\Disponibilidad\AgentNotActiveException;
 use App\Compartido\StateConflictException;
 use App\Asignacion\Repository\AssignmentRepository;
 use App\Ticket\Repository\TicketRepository;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -26,7 +25,7 @@ class TicketController
         private TicketRepository $ticketRepo,
         private AssignmentRepository $assignmentRepo,
         private Security $security,
-        private EntityManagerInterface $entityManager,
+        private SetTicketTeamUseCase $setTicketTeamUseCase,
     ) {}
 
     #[Route('/api/tickets/{id}/assign', name: 'app_ticket_assign', methods: ['POST'])]
@@ -88,28 +87,7 @@ class TicketController
             }
 
             $teamId = $data['teamId'];
-
-            if (null === $teamId) {
-                $ticket->setTeamId(null);
-                $this->entityManager->flush();
-                return new JsonResponse(['ticket_id' => $ticket->getId(), 'team_id' => null]);
-            }
-
-            if (!\is_int($teamId)) {
-                return new JsonResponse(['error' => 'teamId must be an integer or null'], 400);
-            }
-
-            $team = $this->entityManager->getRepository(Team::class)->find($teamId);
-            if (null === $team) {
-                return new JsonResponse(['error' => 'Team not found'], 400);
-            }
-
-            if ($team->getWorkspace()->getPhoneNumberId() !== $ticket->getPhoneNumberId()) {
-                return new JsonResponse(['error' => 'Team does not belong to the same workspace as the ticket'], 400);
-            }
-
-            $ticket->setTeamId($teamId);
-            $this->entityManager->flush();
+            $this->setTicketTeamUseCase->execute($ticket, $teamId);
 
             return new JsonResponse(['ticket_id' => $ticket->getId(), 'team_id' => $teamId]);
         } catch (\InvalidArgumentException $e) {

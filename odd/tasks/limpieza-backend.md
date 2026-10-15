@@ -60,7 +60,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T15 | S8 | delegated (context backstop) | done | 3a: 82 characterization tests in `tests/Characterization/` (L25) |
 | T16 | S8 | delegated (context backstop) | done | 3b: `InternalServerErrorListener`, 71 catch-alls removed (L26) |
 | T17 | S8, S3 | delegated (context backstop) | done | 3c-1 (L28) and 3c-2 (L29) |
-| T18 | S8 | inline | in progress | 3d thin controllers, per module. 3d-1 Administracion (L32), 3d-2 `MeController` split (L33), 3d-3 small controllers (L34) |
+| T18 | S8 | inline | in progress | 3d thin controllers, per module. 3d-1 Administracion (L32), 3d-2 `MeController` split (L33), 3d-3 small controllers (L34), 3d-4 Ticket and Asignacion (L35) |
 | T19 | S8 | inline | pending | 3e single outbox writer (needs 2 user decisions) |
 
 ### Baseline of failing tests (phase 0, after `1afba20`)
@@ -280,3 +280,8 @@ Later phases, each with its own branch and task list when it starts:
   - `Agente/TeamController` → `TeamRepository::findByWorkspaces`; `WorkspaceAgentController` → `WorkspaceRepository::find`. `AgentAvailabilityController` had no violation (only a comment).
   - Checks: `lint:container` OK; PHPStan level 0 identical; endpoint tests (26 files, 283 tests) only the baseline `ReportingV2Test` failure; full suite 844 tests, the 6 baseline failures plus the time-of-day `AutoReplyServiceTest` failure (run at 23:52 UTC).
   - The assertion total dropped 4614 → 4563. The per-test diff shows that only `ReportingV2Test::testGetHeatmapReturnsData` (497 → 442) and `testGetFrtTrendReturnsData` (57 → 52) changed. They assert once per data row in a date window relative to now, and this change does not touch them. Advisory: time-dependent reporting tests.
+- **L35 (2026-10-15), T18 3d-4 Ticket and Asignacion (route: inline):**
+  - `InboxController::markRead` → `Ticket/UseCase/MarkTicketReadUseCase` (same owner-only rule). Its raw outbox insert moved verbatim to `OutboxEventRepository::insertTicketReadEvent` (same columns and values; phase 3e unifies the outbox writers).
+  - `TicketWorkflowController`: the closure audit write → `Ticket/UseCase/RecordClosureAuditUseCase`, with the same catch-and-log (D8). The `TicketVoter::CLOSE` check stays in the controller. `TicketWorkflowControllerAuditFailureTest` now builds the controller with a real use case over the same mocked `EntityManager` and logger, so it pins the same behavior.
+  - `Asignacion/TicketController::setTeam` → `Asignacion/UseCase/SetTicketTeamUseCase`, with the same order and messages (an unknown team is still a 400).
+  - Checks: `lint:container` OK; PHPStan level 0 identical; endpoint tests (20 files, 236 tests) green; full suite 844 tests, exactly the 6 baseline failures. Run at 00:36 UTC, so the time-of-day `AutoReplyServiceTest` test passed, which confirms L32. Per-test assertion diff vs 3d-3: only `ReportingV2Test` heatmap/FRT trend and `AutoReplyServiceTest`, all time-dependent.
