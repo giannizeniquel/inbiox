@@ -6,7 +6,7 @@ namespace App\Disponibilidad\Controller;
 
 use App\Disponibilidad\AgentAvailabilityService;
 use App\Administracion\Workspace;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Administracion\Repository\WorkspaceRepository;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -22,13 +22,13 @@ final class WorkspaceAgentController
 {
     public function __construct(
         private readonly AgentAvailabilityService $agentAvailabilityService,
-        private readonly EntityManagerInterface $entityManager,
+        private readonly WorkspaceRepository $workspaceRepository,
     ) {}
 
     #[Route('/api/workspaces/{id}/available-agents', name: 'app_workspace_available_agents', methods: ['GET'])]
     public function listAvailableAgents(int $id): JsonResponse
     {
-        $workspace = $this->entityManager->getRepository(Workspace::class)->find($id);
+        $workspace = $this->workspaceRepository->find($id);
 
         if (null === $workspace) {
             return new JsonResponse(['error' => 'Workspace not found'], Response::HTTP_NOT_FOUND);

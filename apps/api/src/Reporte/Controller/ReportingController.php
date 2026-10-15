@@ -10,7 +10,7 @@ use App\Compartido\Security\OwnershipScope;
 use App\Compartido\Security\WorkspaceScope;
 use App\Disponibilidad\AgentAvailabilityService;
 use App\Reporte\Query\ReportingService;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Ticket\Repository\TicketRepository;
 use League\Csv\Bom;
 use League\Csv\Writer;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -40,7 +40,7 @@ class ReportingController
     public function __construct(
         private ReportingService $reportingService,
         private AgentAvailabilityService $agentAvailabilityService,
-        private EntityManagerInterface $entityManager,
+        private TicketRepository $ticketRepository,
         private OwnershipScope $ownershipScope,
         private WorkspaceScope $workspaceScope,
         private ExportTicketsCsvQuery $exportTicketsCsvQuery,
@@ -295,7 +295,7 @@ class ReportingController
                 'agent_id' => $agent->getId(),
                 'agent_name' => $agent->getName(),
                 'in_shift' => true,
-                'active_tickets' => $this->countActiveTicketsForAgent($agent->getId()),
+                'active_tickets' => $this->ticketRepository->countActiveForAgent($agent->getId()),
             ];
         }
 
@@ -486,22 +486,5 @@ class ReportingController
         }
 
         return new JsonResponse($result);
-    }
-
-    /**
-     * Count active tickets for a specific agent (helper for available-agents).
-     */
-    private function countActiveTicketsForAgent(int $agentId): int
-    {
-        $result = $this->entityManager->createQuery(
-            'SELECT COUNT(t.id) FROM App\Ticket\Ticket t
-             WHERE t.assignedAgentId = :agentId
-             AND t.status IN (:statuses)'
-        )
-            ->setParameter('agentId', $agentId)
-            ->setParameter('statuses', ['new', 'active', 'waiting'])
-            ->getSingleScalarResult();
-
-        return (int) $result;
     }
 }

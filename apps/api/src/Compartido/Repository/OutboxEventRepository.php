@@ -37,6 +37,28 @@ class OutboxEventRepository extends ServiceEntityRepository
             ->fetchAllAssociative();
     }
 
+    /**
+     * Pending or published events of an aggregate with a sequence greater
+     * than $afterSequence, lowest sequence first (max 100). Used by the
+     * ticket events resync endpoint.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function findResyncRows(int $aggregateId, int $afterSequence): array
+    {
+        return $this->getEntityManager()->getConnection()->createQueryBuilder()
+            ->select('id', 'aggregate_type', 'aggregate_id', 'topic', 'event_type', 'payload', 'created_at', 'published_at', 'retry_count', 'status', 'sequence')
+            ->from('outbox_events')
+            ->where('aggregate_id = :id')
+            ->andWhere('sequence > :seq')
+            ->andWhere("status IN ('pending', 'published')")
+            ->orderBy('sequence', 'ASC')
+            ->setParameter('id', $aggregateId)
+            ->setParameter('seq', $afterSequence)
+            ->setMaxResults(100)
+            ->fetchAllAssociative();
+    }
+
     public function markPublished(string $id, \DateTimeImmutable $publishedAt): void
     {
         $this->getEntityManager()->getConnection()->createQueryBuilder()

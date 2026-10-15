@@ -60,7 +60,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T15 | S8 | delegated (context backstop) | done | 3a: 82 characterization tests in `tests/Characterization/` (L25) |
 | T16 | S8 | delegated (context backstop) | done | 3b: `InternalServerErrorListener`, 71 catch-alls removed (L26) |
 | T17 | S8, S3 | delegated (context backstop) | done | 3c-1 (L28) and 3c-2 (L29) |
-| T18 | S8 | inline | in progress | 3d thin controllers, per module. 3d-1 Administracion (L32), 3d-2 `MeController` split (L33) |
+| T18 | S8 | inline | in progress | 3d thin controllers, per module. 3d-1 Administracion (L32), 3d-2 `MeController` split (L33), 3d-3 small controllers (L34) |
 | T19 | S8 | inline | pending | 3e single outbox writer (needs 2 user decisions) |
 
 ### Baseline of failing tests (phase 0, after `1afba20`)
@@ -273,3 +273,10 @@ Later phases, each with its own branch and task list when it starts:
   - Route names, paths, methods and every `#[IsGranted]` are unchanged: the removed attribute lines reappear verbatim, plus one class-level `IS_AUTHENTICATED_FULLY` per new controller, as on the old class. 91 routes.
   - One order change, not observable: in `PUT /api/me/workspace` the `Unauthorized` 401 guard now runs before the workspace checks. It is unreachable, because the only user provider is the `User` entity and the class requires `IS_AUTHENTICATED_FULLY`.
   - Checks: `lint:container` OK; PHPStan level 0 identical; `/api/me` tests (`SettingsPageTest`, `MeWorkspaceControllerCharacterizationTest`) 24/24; full suite 841 tests, the 6 baseline failures plus the time-of-day `AutoReplyServiceTest` failure (run at 23:34 UTC, see L32).
+- **L34 (2026-10-14), T18 3d-3 small controllers (route: inline):**
+  - `TicketEventsController`: the resync SQL moved to `OutboxEventRepository::findResyncRows` (DBAL QueryBuilder, same predicates and `LIMIT 100`), and the hydration and response building to `Compartido/Query/ResyncTicketEventsQuery` (moved verbatim, without `strict_types`, like its origin). The controller keeps the JWT and `afterSequence` checks. 2 new repository tests, written before the method but not run RED first.
+  - `AuthController::logout`: refresh-token deletion moved to `Autenticacion/UseCase/LogoutUseCase` unchanged. New test `testLogoutAlsoDeletesTheRefreshTokenSentInTheCookie` pins the cookie branch; it passes against the old and the new controller.
+  - `ReportingController`: its private DQL count was identical to `TicketRepository::countActiveForAgent` (same statuses), so it now calls that method.
+  - `Agente/TeamController` → `TeamRepository::findByWorkspaces`; `WorkspaceAgentController` → `WorkspaceRepository::find`. `AgentAvailabilityController` had no violation (only a comment).
+  - Checks: `lint:container` OK; PHPStan level 0 identical; endpoint tests (26 files, 283 tests) only the baseline `ReportingV2Test` failure; full suite 844 tests, the 6 baseline failures plus the time-of-day `AutoReplyServiceTest` failure (run at 23:52 UTC).
+  - The assertion total dropped 4614 → 4563. The per-test diff shows that only `ReportingV2Test::testGetHeatmapReturnsData` (497 → 442) and `testGetFrtTrendReturnsData` (57 → 52) changed. They assert once per data row in a date window relative to now, and this change does not touch them. Advisory: time-dependent reporting tests.

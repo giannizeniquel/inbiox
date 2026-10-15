@@ -159,4 +159,39 @@ class OutboxEventRepositoryTest extends KernelTestCase
         self::assertIsArray($this->row($recent));
         self::assertIsArray($this->row($oldPending));
     }
+
+    private function withSequence(string $id, int $sequence): string
+    {
+        $this->conn->executeStatement('UPDATE outbox_events SET sequence = ? WHERE id = ?', [$sequence, $id]);
+
+        return $id;
+    }
+
+    public function testFindResyncRowsReturnsPendingAndPublishedAfterTheSequenceInOrder(): void
+    {
+        $this->withSequence($this->createEvent('1990-01-01 00:00:00'), 5);
+        $third = $this->withSequence($this->createEvent('1990-01-01 00:00:00', 'published'), 9);
+        $second = $this->withSequence($this->createEvent('1990-01-01 00:00:00'), 7);
+        $this->withSequence($this->createEvent('1990-01-01 00:00:00', 'dead_letter'), 8);
+
+        $rows = $this->repo->findResyncRows(self::AGGREGATE_ID, 5);
+
+        self::assertSame([$second, $third], array_column($rows, 'id'));
+        self::assertSame(
+            ['id', 'aggregate_type', 'aggregate_id', 'topic', 'event_type', 'payload', 'created_at', 'published_at', 'retry_count', 'status', 'sequence'],
+            array_keys($rows[0])
+        );
+    }
+
+    public function testFindResyncRowsReturnsAtMostOneHundredRows(): void
+    {
+        for ($i = 1; $i <= 101; ++$i) {
+            $this->withSequence($this->createEvent('1990-01-01 00:00:00'), $i);
+        }
+
+        $rows = $this->repo->findResyncRows(self::AGGREGATE_ID, 0);
+
+        self::assertCount(100, $rows);
+        self::assertSame(100, (int) $rows[99]['sequence']);
+    }
 }

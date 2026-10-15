@@ -375,6 +375,35 @@ class AuthControllerTest extends WebTestCase
         self::assertSame(401, $response->getStatusCode());
     }
 
+    public function testLogoutAlsoDeletesTheRefreshTokenSentInTheCookie(): void
+    {
+        $this->createUser('cookie-owner@inbiox.local');
+        $this->login('cookie-owner@inbiox.local');
+        $ownerRefresh = null;
+        foreach ($this->client->getResponse()->headers->getCookies() as $cookie) {
+            if ('inbiox_refresh' === $cookie->getName()) {
+                $ownerRefresh = $cookie->getValue();
+            }
+        }
+        self::assertNotNull($ownerRefresh);
+
+        // Another user logs out sending the first user's refresh cookie.
+        $this->createUser('cookie-sender@inbiox.local');
+        $senderToken = $this->login('cookie-sender@inbiox.local');
+        $this->client->getCookieJar()->clear();
+        $this->client->request('POST', '/api/auth/logout', [], [], [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$senderToken,
+            'HTTP_COOKIE' => 'inbiox_refresh='.$ownerRefresh,
+        ]);
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+
+        $this->client->getCookieJar()->clear();
+        $this->client->request('POST', '/api/auth/refresh', [], [], [
+            'HTTP_COOKIE' => 'inbiox_refresh='.$ownerRefresh,
+        ]);
+        self::assertSame(401, $this->client->getResponse()->getStatusCode());
+    }
+
     // ────────────────────────────────────────────────────────
     //  A4 — GET /me
     // ────────────────────────────────────────────────────────

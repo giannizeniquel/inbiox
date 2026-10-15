@@ -2,10 +2,8 @@
 
 namespace App\Compartido\Controller;
 
-use App\Compartido\Realtime\RealtimeEventFactory;
+use App\Compartido\Query\ResyncTicketEventsQuery;
 use App\Compartido\Realtime\MercureJwtService;
-use App\Compartido\Outbox\OutboxEvent;
-use Doctrine\DBAL\Connection;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
@@ -25,8 +23,7 @@ use Symfony\Component\Routing\Attribute\Route;
 final class TicketEventsController
 {
     public function __construct(
-        private readonly Connection $conn,
-        private readonly RealtimeEventFactory $factory,
+        private readonly ResyncTicketEventsQuery $resyncTicketEventsQuery,
         private readonly MercureJwtService $jwtService,
     ) {}
 
@@ -51,33 +48,7 @@ final class TicketEventsController
             return new JsonResponse(['error' => 'afterSequence must be >= -1'], 400);
         }
 
-        // 4. Query outbox_events
-        $rows = $this->conn->fetchAllAssociative(
-            'SELECT id, aggregate_type, aggregate_id, topic, event_type, payload, created_at, published_at, retry_count, status, sequence
-             FROM outbox_events
-             WHERE aggregate_id = :id
-               AND sequence > :seq
-               AND status IN (\'pending\', \'published\')
-             ORDER BY sequence ASC
-             LIMIT 100',
-            ['id' => $id, 'seq' => $afterSequence]
-        );
-
-        // 5. Build contract events
-        $events = [];
-        $highest = $afterSequence;
-
-        foreach ($rows as $row) {
-            $outboxEvent = $this->hydrateEvent($row);
-            $events[] = $this->factory->build($outboxEvent);
-            $highest = max($highest, (int) $row['sequence']);
-        }
-
-        return new JsonResponse([
-            'events' => $events,
-            'lastSequence' => $highest,
-            'hasMore' => \count($events) === 100,
-        ]);
+        return new JsonResponse($this->resyncTicketEventsQuery->execute($id, $afterSequence));
     }
 
     /**
@@ -105,39 +76,5 @@ final class TicketEventsController
         }
 
         return null;
-    }
-
-    /**
-     * Hydrate an OutboxEvent from a raw DB row.
-     */
-    private function hydrateEvent(array $row): OutboxEvent
-    {
-        $event = new OutboxEvent(
-            aggregateType: $row['aggregate_type'],
-            aggregateId: (int) $row['aggregate_id'],
-            topic: $row['topic'],
-            eventType: $row['event_type'],
-            payload: json_decode($row['payload'], true) ?? [],
-            sequence: (int) ($row['sequence'] ?? 0)
-        );
-
-        // Use reflection to set the ID (generated in constructor, we want the persisted one)
-        $idReflection = new \ReflectionProperty(OutboxEvent::class, 'id');
-        $idReflection->setAccessible(true);
-        $idReflection->setValue($event, $row['id']);
-
-        // Set created_at
-        $createdAtReflection = new \ReflectionProperty(OutboxEvent::class, 'createdAt');
-        $createdAtReflection->setAccessible(true);
-        if (isset($row['created_at'])) {
-            $createdAtReflection->setValue($event, new \DateTimeImmutable($row['created_at']));
-        }
-
-        // Set status
-        $statusReflection = new \ReflectionProperty(OutboxEvent::class, 'status');
-        $statusReflection->setAccessible(true);
-        $statusReflection->setValue($event, $row['status'] ?? 'pending');
-
-        return $event;
     }
 }

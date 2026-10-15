@@ -6,7 +6,7 @@ namespace App\Agente\Controller;
 
 use App\Agente\Team;
 use App\Administracion\User;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Agente\Repository\TeamRepository;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
@@ -30,7 +30,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class TeamController
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly TeamRepository $teamRepository,
         private readonly Security $security,
     ) {}
 
@@ -52,13 +52,7 @@ final class TeamController
             return new JsonResponse([]);
         }
 
-        $teams = $this->entityManager->getRepository(Team::class)
-            ->createQueryBuilder('t')
-            ->andWhere('t.workspace IN (:workspaces)')
-            ->setParameter('workspaces', $workspaces)
-            ->orderBy('t.name', 'ASC')
-            ->getQuery()
-            ->getResult();
+        $teams = $this->teamRepository->findByWorkspaces($workspaces);
 
         $items = array_map(fn(Team $t) => [
             'id' => (int) $t->getId(),
