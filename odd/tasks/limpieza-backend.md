@@ -313,3 +313,15 @@ Later phases, each with its own branch and task list when it starts:
   6. The inbox list `contact.id` differs from the detail one (ticket 489: 75 vs 85).
   - Also reported: the duplicate `phoneNumberId` 500 (already in L37) and workspace 2 having a real Meta number, so sends there give 422 `RECIPIENT_NOT_ALLOWED` (environment data, not code).
   - Next: T19 (3e), evidence first, then the two user decisions one at a time.
+- **L39 (2026-10-15), T19 evidence (route: delegated explorer, mapping trigger):**
+  - 10 outbox writers, all post-commit in their own flush or insert; none inside the business transaction:
+    - AssignTicket and AutoAssign: camelCase plus `assignee_id`/`assignment_type`.
+    - HandleInbound and HandleOutbound: snake_case. HandleOutbound skips `InboxUpdatedEvent` on purpose.
+    - HandleStatusUpdate: snake_case, no transaction; the only writer that fills `sequence`.
+    - 4 Disponibilidad shift/availability use cases: snake_case, `aggregate_type='agent'`.
+    - Mark-read: raw DBAL insert, `ticket.read`, camelCase.
+    - Every other writer: `sequence=0`, with the number kept in payload `seq`.
+  - Leak: `TransitionTicketStatusUseCase` (resolve, close, transition, window-expiry close, AutoReopen) collects the UNASSIGN `TicketUpdatedEvent` and `InboxUpdatedEvent` through `AssignmentService` and never drains them. They are written only when HandleInbound or HandleOutbound call it inside their own drain.
+  - `dead_letter`: `EventTypeMapper::MAP` has no `InboxUpdatedEvent`, so `RealtimeEventFactory::build` throws and the row dead-letters after 5 retries (spot-checked).
+  - No `status_changed` on resolve: the status change is a raw `updateStatusAfterTransition` that emits no event; no code path produces a real `ticket.status_changed` with `previous_status`.
+  - Pins: `Sprint09BOutboxTest`, `AsignacionControllersCharacterizationTest::testAutoAssignPicksAnAvailableAgentAndWritesOutbox` (event types and mixed key set), the mark-read row in `InboxControllerCharacterizationTest`, and `MessageAgentAttributionOutboxTest`.
