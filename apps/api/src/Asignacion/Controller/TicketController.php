@@ -5,13 +5,11 @@ declare(strict_types=1);
 namespace App\Asignacion\Controller;
 
 use App\Asignacion\UseCase\AssignTicketUseCase;
-use App\Agente\Team;
+use App\Asignacion\UseCase\SetTicketTeamUseCase;
 use App\Disponibilidad\AgentNotActiveException;
 use App\Compartido\StateConflictException;
 use App\Asignacion\Repository\AssignmentRepository;
 use App\Ticket\Repository\TicketRepository;
-use Doctrine\ORM\EntityManagerInterface;
-use Psr\Log\LoggerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -26,9 +24,8 @@ class TicketController
         private AssignTicketUseCase $assignTicketUseCase,
         private TicketRepository $ticketRepo,
         private AssignmentRepository $assignmentRepo,
-        private LoggerInterface $logger,
         private Security $security,
-        private EntityManagerInterface $entityManager,
+        private SetTicketTeamUseCase $setTicketTeamUseCase,
     ) {}
 
     #[Route('/api/tickets/{id}/assign', name: 'app_ticket_assign', methods: ['POST'])]
@@ -63,14 +60,6 @@ class TicketController
             return new JsonResponse(['error' => $e->getMessage()], 409);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
-        } catch (\Exception $e) {
-            $referenceId = bin2hex(random_bytes(8));
-            $this->logger->error('Error assigning ticket: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
         }
     }
 
@@ -98,89 +87,50 @@ class TicketController
             }
 
             $teamId = $data['teamId'];
-
-            if (null === $teamId) {
-                $ticket->setTeamId(null);
-                $this->entityManager->flush();
-                return new JsonResponse(['ticket_id' => $ticket->getId(), 'team_id' => null]);
-            }
-
-            if (!\is_int($teamId)) {
-                return new JsonResponse(['error' => 'teamId must be an integer or null'], 400);
-            }
-
-            $team = $this->entityManager->getRepository(Team::class)->find($teamId);
-            if (null === $team) {
-                return new JsonResponse(['error' => 'Team not found'], 400);
-            }
-
-            if ($team->getWorkspace()->getPhoneNumberId() !== $ticket->getPhoneNumberId()) {
-                return new JsonResponse(['error' => 'Team does not belong to the same workspace as the ticket'], 400);
-            }
-
-            $ticket->setTeamId($teamId);
-            $this->entityManager->flush();
+            $this->setTicketTeamUseCase->execute($ticket, $teamId);
 
             return new JsonResponse(['ticket_id' => $ticket->getId(), 'team_id' => $teamId]);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
-        } catch (\Exception $e) {
-            $referenceId = bin2hex(random_bytes(8));
-            $this->logger->error('Error setting ticket team: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
         }
     }
 
     #[Route('/api/tickets/{id}/assignment', name: 'app_ticket_assignment', methods: ['GET'])]
     public function getAssignment(int $id): JsonResponse
     {
-        try {
-            // Find the ticket first
-            $ticket = $this->ticketRepo->findById($id);
-            if (!$ticket) {
-                return new JsonResponse(['error' => 'Ticket not found'], 404);
-            }
-
-            // Get assignment history
-            $assignments = $this->assignmentRepo->findByTicket($ticket);
-
-            $data = [
-                'ticket_id' => $ticket->getId(),
-                'assignments' => array_map(function ($assignment) {
-                    return [
-                        'id' => $assignment->getId(),
-                        'agent_id' => $assignment->getAgentId(),
-                        'assigned_by' => $assignment->getAssignedBy(),
-                        'assigned_at' => $assignment->getAssignedAt()->format('Y-m-d H:i:s'),
-                        'notes' => $assignment->getNotes(),
-                    ];
-                }, $assignments),
-                'current_assignment' => null,
-            ];
-
-            // Get the most recent assignment as current
-            if (!empty($assignments)) {
-                $current = $assignments[0]; // Already ordered by DESC
-                $data['current_assignment'] = [
-                    'agent_id' => $current->getAgentId(),
-                    'assigned_by' => $current->getAssignedBy(),
-                    'assigned_at' => $current->getAssignedAt()->format('Y-m-d H:i:s'),
-                ];
-            }
-
-            return new JsonResponse($data);
-        } catch (\Exception $e) {
-            $referenceId = bin2hex(random_bytes(8));
-            $this->logger->error('Error fetching ticket assignment: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
+        // Find the ticket first
+        $ticket = $this->ticketRepo->findById($id);
+        if (!$ticket) {
+            return new JsonResponse(['error' => 'Ticket not found'], 404);
         }
+
+        // Get assignment history
+        $assignments = $this->assignmentRepo->findByTicket($ticket);
+
+        $data = [
+            'ticket_id' => $ticket->getId(),
+            'assignments' => array_map(function ($assignment) {
+                return [
+                    'id' => $assignment->getId(),
+                    'agent_id' => $assignment->getAgentId(),
+                    'assigned_by' => $assignment->getAssignedBy(),
+                    'assigned_at' => $assignment->getAssignedAt()->format('Y-m-d H:i:s'),
+                    'notes' => $assignment->getNotes(),
+                ];
+            }, $assignments),
+            'current_assignment' => null,
+        ];
+
+        // Get the most recent assignment as current
+        if (!empty($assignments)) {
+            $current = $assignments[0]; // Already ordered by DESC
+            $data['current_assignment'] = [
+                'agent_id' => $current->getAgentId(),
+                'assigned_by' => $current->getAssignedBy(),
+                'assigned_at' => $current->getAssignedAt()->format('Y-m-d H:i:s'),
+            ];
+        }
+
+        return new JsonResponse($data);
     }
 }

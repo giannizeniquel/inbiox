@@ -6,15 +6,13 @@ namespace App\Ticket\Controller;
 
 use App\Ticket\Security\TicketVoter;
 use App\Ticket\UseCase\TransitionTicketStatusUseCase;
+use App\Ticket\UseCase\RecordClosureAuditUseCase;
 use App\Ticket\UseCase\ResolveTicketUseCase;
 use App\Ticket\ClosureAuditClassifier;
-use App\Ticket\TicketEvent;
 use App\Ticket\Ticket;
 use App\Ticket\TicketStatus;
 use App\Administracion\User;
 use App\Ticket\Repository\TicketRepository;
-use Doctrine\ORM\EntityManagerInterface;
-use Psr\Log\LoggerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -28,11 +26,10 @@ class TicketWorkflowController
     public function __construct(
         private TransitionTicketStatusUseCase $transitionUseCase,
         private ResolveTicketUseCase $resolveTicketUseCase,
-        private LoggerInterface $logger,
         private TicketRepository $ticketRepo,
         private Security $security,
-        private EntityManagerInterface $em,
         private ClosureAuditClassifier $classifier,
+        private RecordClosureAuditUseCase $recordClosureAuditUseCase,
     ) {}
 
     #[Route('/api/tickets/{id}/transition', name: 'app_ticket_transition', methods: ['POST'])]
@@ -67,7 +64,7 @@ class TicketWorkflowController
             );
 
             if ($isClosingTarget && $user !== null) {
-                $this->recordClosureAuditEvent($id, $targetStatus, $result, $user);
+                $this->recordClosureAuditUseCase->execute($id, $targetStatus, $result['previous_assigned_agent_id'] ?? null, $user);
             }
 
             unset($result['previous_assigned_agent_id']);
@@ -77,10 +74,6 @@ class TicketWorkflowController
             return new JsonResponse(['error' => $e->getMessage()], 400);
         } catch (\App\Ticket\InvalidTransitionException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 422);
-        } catch (\Exception $e) {
-            $refId = bin2hex(random_bytes(8));
-            $this->logger->error('Transition error: ' . $e->getMessage(), ['ref' => $refId]);
-            return new JsonResponse(['error' => 'Internal error', 'reference' => $refId], 500);
         }
     }
 
@@ -97,7 +90,7 @@ class TicketWorkflowController
             $result = $this->resolveTicketUseCase->execute($id, $actor);
 
             if ($user !== null) {
-                $this->recordClosureAuditEvent($id, TicketStatus::RESOLVED->value, $result, $user);
+                $this->recordClosureAuditUseCase->execute($id, TicketStatus::RESOLVED->value, $result['previous_assigned_agent_id'] ?? null, $user);
             }
 
             unset($result['previous_assigned_agent_id']);
@@ -105,10 +98,6 @@ class TicketWorkflowController
             return new JsonResponse($result);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
-        } catch (\Exception $e) {
-            $refId = bin2hex(random_bytes(8));
-            $this->logger->error('Resolve error: ' . $e->getMessage(), ['ref' => $refId]);
-            return new JsonResponse(['error' => 'Internal error', 'reference' => $refId], 500);
         }
     }
 
@@ -125,7 +114,7 @@ class TicketWorkflowController
             $result = $this->transitionUseCase->close($id, $actor);
 
             if ($user !== null) {
-                $this->recordClosureAuditEvent($id, TicketStatus::CLOSED->value, $result, $user);
+                $this->recordClosureAuditUseCase->execute($id, TicketStatus::CLOSED->value, $result['previous_assigned_agent_id'] ?? null, $user);
             }
 
             unset($result['previous_assigned_agent_id']);
@@ -133,10 +122,6 @@ class TicketWorkflowController
             return new JsonResponse($result);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
-        } catch (\Exception $e) {
-            $refId = bin2hex(random_bytes(8));
-            $this->logger->error('Close error: ' . $e->getMessage(), ['ref' => $refId]);
-            return new JsonResponse(['error' => 'Internal error', 'reference' => $refId], 500);
         }
     }
 
@@ -180,35 +165,5 @@ class TicketWorkflowController
         }
 
         return 'not_ticket_owner';
-    }
-
-    /**
-     * Classifies and persists the manual closure/resolution `TicketEvent`
-     * (design.md D2/D4/D5). Uses `previous_assigned_agent_id` from the use
-     * case's own `FOR UPDATE`-locked read — no second query, no TOCTOU.
-     *
-     * D8: an audit-write failure here must NOT fail an already-committed
-     * transition. Log at `error` and swallow the exception.
-     */
-    private function recordClosureAuditEvent(int $ticketId, string $newStatus, array $result, User $user): void
-    {
-        $previousOwnerId = $result['previous_assigned_agent_id'] ?? null;
-        $actingAgentId = $user->getAgent()?->getId();
-
-        $type = $this->classifier->classify($newStatus, $previousOwnerId, $actingAgentId);
-        $source = $this->classifier->actorReference($user);
-
-        try {
-            $event = new TicketEvent($ticketId, $type, $source);
-            $this->em->persist($event);
-            $this->em->flush();
-        } catch (\Throwable $e) {
-            $this->logger->error('Failed to persist closure audit event', [
-                'ticket_id' => $ticketId,
-                'type' => $type,
-                'source' => $source,
-                'exception' => $e->getMessage(),
-            ]);
-        }
     }
 }

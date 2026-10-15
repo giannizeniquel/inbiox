@@ -2,12 +2,14 @@
 
 namespace App\Conversacion\Query;
 
-use Doctrine\ORM\EntityManagerInterface;
+use App\Conversacion\Repository\MessageRepository;
+use App\Ticket\Repository\TicketRepository;
 
 class GetTicketMessagesQuery
 {
     public function __construct(
-        private EntityManagerInterface $entityManager,
+        private TicketRepository $ticketRepository,
+        private MessageRepository $messageRepository,
     ) {}
 
     public function execute(
@@ -20,15 +22,11 @@ class GetTicketMessagesQuery
         $limit = min(200, max(1, $limit));
         
         // Get ticket's conversation
-        $ticketSql = 'SELECT conversation_id FROM tickets WHERE id = ?';
-        $ticketStmt = $this->entityManager->getConnection()->executeQuery($ticketSql, [$ticketId]);
-        $ticketRow = $ticketStmt->fetchAssociative();
-        
-        if (!$ticketRow) {
+        $conversationId = $this->ticketRepository->findConversationId($ticketId);
+
+        if ($conversationId === false) {
             return ['items' => [], 'has_more' => false, 'next_cursor' => null];
         }
-        
-        $conversationId = $ticketRow['conversation_id'];
         
         // Decode cursor
         $cursorData = null;
@@ -48,24 +46,13 @@ class GetTicketMessagesQuery
     
     private function getMessagesForward(int $conversationId, ?array $cursorData, int $limit): array
     {
-        $params = [$conversationId];
-        $where = 'conversation_id = ?';
-        
-        if ($cursorData && isset($cursorData['created_at'], $cursorData['id'])) {
-            $where .= ' AND (created_at > ? OR (created_at = ? AND id > ?))';
-            $params[] = $cursorData['created_at'];
-            $params[] = $cursorData['created_at'];
-            $params[] = (int) $cursorData['id'];
-        }
-        
-        $sql = "SELECT id, content, direction, created_at, media, sender_agent_id, sender_type
-                FROM messages
-                WHERE $where
-                ORDER BY created_at ASC, id ASC
-                LIMIT " . ($limit + 1);
-
-        $stmt = $this->entityManager->getConnection()->executeQuery($sql, $params);
-        $results = $stmt->fetchAllAssociative();
+        $hasCursor = $cursorData && isset($cursorData['created_at'], $cursorData['id']);
+        $results = $this->messageRepository->findPageAscending(
+            $conversationId,
+            $hasCursor ? $cursorData['created_at'] : null,
+            $hasCursor ? (int) $cursorData['id'] : null,
+            $limit + 1,
+        );
 
         $hasMore = count($results) > $limit;
         if ($hasMore) {
@@ -96,28 +83,14 @@ class GetTicketMessagesQuery
 
     private function getMessagesBackward(int $conversationId, ?array $cursorData, int $limit, int $offset = 0): array
     {
-        $params = [$conversationId];
-        $where = 'conversation_id = ?';
-        
-        if ($cursorData && isset($cursorData['created_at'], $cursorData['id'])) {
-            $where .= ' AND (created_at < ? OR (created_at = ? AND id < ?))';
-            $params[] = $cursorData['created_at'];
-            $params[] = $cursorData['created_at'];
-            $params[] = (int) $cursorData['id'];
-        }
-        
-        $sql = "SELECT id, content, direction, created_at, media, sender_agent_id, sender_type
-                FROM messages
-                WHERE $where
-                ORDER BY created_at DESC, id DESC
-                LIMIT " . ($limit + 1);
-
-        if ($offset > 0) {
-            $sql .= " OFFSET " . $offset;
-        }
-
-        $stmt = $this->entityManager->getConnection()->executeQuery($sql, $params);
-        $results = $stmt->fetchAllAssociative();
+        $hasCursor = $cursorData && isset($cursorData['created_at'], $cursorData['id']);
+        $results = $this->messageRepository->findPageDescending(
+            $conversationId,
+            $hasCursor ? $cursorData['created_at'] : null,
+            $hasCursor ? (int) $cursorData['id'] : null,
+            $limit + 1,
+            $offset,
+        );
 
         $hasMore = count($results) > $limit;
         if ($hasMore) {

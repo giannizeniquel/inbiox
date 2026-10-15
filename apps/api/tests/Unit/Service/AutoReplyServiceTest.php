@@ -20,6 +20,7 @@ use App\Compartido\ProcessedEvent;
 use App\Ticket\Ticket;
 use App\Compartido\Graph\GraphApiException;
 use App\Agente\Repository\AgentRepository;
+use App\Ticket\Repository\TicketRepository;
 use App\Compartido\Repository\ProcessedEventRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Query;
@@ -46,6 +47,7 @@ class AutoReplyServiceTest extends TestCase
     private AgentRepository&MockObject $agentRepo;
     private AgentShiftRepository&MockObject $agentShiftRepo;
     private EntityManagerInterface&MockObject $em;
+    private TicketRepository&MockObject $ticketRepo;
     private AgentAvailabilityService $availabilityService;
     private GraphClient&MockObject $graphClient;
     private ProcessedEventRepository&MockObject $processedEventRepo;
@@ -65,10 +67,11 @@ class AutoReplyServiceTest extends TestCase
         $this->logger = $this->createMock(LoggerInterface::class);
 
         // Create REAL AgentAvailabilityService with mocked deps
+        $this->ticketRepo = $this->createMock(TicketRepository::class);
         $this->availabilityService = new AgentAvailabilityService(
             $this->agentRepo,
             $this->agentShiftRepo,
-            $this->em,
+            $this->ticketRepo,
         );
 
         $this->windowPolicy = new ConversationWindowPolicy(safetyMarginMinutes: 5);
@@ -254,18 +257,9 @@ class AutoReplyServiceTest extends TestCase
             ->willReturn($agent);
 
         // Make the COUNT query return a value below max (capacity check)
-        $query = $this->createMock(Query::class);
-        $query->expects(self::once())
-            ->method('getSingleScalarResult')
-            ->willReturn('2'); // max = 5, count = 2 → available
-        $query->expects(self::exactly(2))
-            ->method('setParameter')
-            ->willReturnSelf();
-
-        $this->em->expects(self::once())
-            ->method('createQuery')
-            ->with(self::stringContains('COUNT(t.id)'))
-            ->willReturn($query);
+        $this->ticketRepo->expects(self::once())
+            ->method('countActiveForAgent')
+            ->willReturn(2); // max = 5, count = 2 → available
 
         $this->graphClient->expects(self::never())->method('sendMessage');
 

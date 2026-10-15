@@ -14,7 +14,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
     - Controllers only handle HTTP.
     - Every write goes through a use case.
     - No interface without two real implementations.
-    - A module may call another module's use cases but never touch its tables via SQL.
+    - A module may call another module's use cases, queries and repositories, but never writes SQL on its tables (adjusted in L31).
     - Routes are declared only with `#[Route]` attributes, loaded via `routing.controllers`. They are regenerated from `routes.yaml` in phase 2, and `debug:router` must be identical before and after (L7).
     - States are backed enums, not catalog tables (L7).
 - **S3 — SQL rule.** User: "evitar SQL puro tipo string. ej: $sql='SELECT...'. SIEMPRE debemos tener un repository que ejecute funciones que utilicen metodos de doctrine".
@@ -29,6 +29,13 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
   - The renaming happens in phase 5. The glossary is fixed in phase 0.
 - **S5 — Glossary shared with the frontend.** The module names and the naming rule are the same in `apps/web`. The API JSON contract is redefined jointly in phase 5.
 - **S6 — Safety net (phase 0).** Repair the tests that are broken by themselves, delete obsolete ones, and keep the tests that expose real bugs or code drift failing and documented. Record the baseline of failing test names.
+- **S8 — Phase 3, split by the user.** User: "si, y si crees necesario dividirlo en mas partes hazlo, esta es la parte mas critica." (answering whether rule 4 should be split: one listener only for the generic 500 now, with error formats and exception→status mapping unified with the new contract in phase 5).
+  - 3a: characterization tests for uncovered actions that will be touched; no production change.
+  - 3b: one `kernel.exception` listener for the generic 500 only; specific error arms and the 13 error shapes stay until phase 5.
+  - 3c: SQL into repositories; locking reads keep their statement order and transaction.
+  - 3d: controllers only do HTTP, module by module, Administracion first.
+  - 3e: single outbox writer. Open decisions for 3e: outbox timing (today post-commit) and the `EventCollector` leak (events collected but never published).
+  - Inventory (from the explorer): `odd/fase-3/violaciones.csv`, `errores.md`, `cobertura.md`.
 - **S7 — Docs policy (assumption, not explicitly confirmed by the user).** Each phase fixes the docs it invalidates in the same PR. A full docs pass happens in phase 6, after the renaming.
 
 ## Tasks
@@ -50,6 +57,11 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T12 | S2 | inline | done | Phase 2: removed 8 single-implementation interfaces (7 repository interfaces + `EventCollector`) (L20) |
 | T13 | S2 | inline | done | Phase 2: moved 162 classes into 11 modules in one commit, plus the event_type migration (L21) |
 | T14 | S2, S7 | inline | done | Phase 2: docs paths and line refs updated after the moves (L22) |
+| T15 | S8 | delegated (context backstop) | done | 3a: 82 characterization tests in `tests/Characterization/` (L25) |
+| T16 | S8 | delegated (context backstop) | done | 3b: `InternalServerErrorListener`, 71 catch-alls removed (L26) |
+| T17 | S8, S3 | delegated (context backstop) | done | 3c-1 (L28) and 3c-2 (L29) |
+| T18 | S8 | inline | done | 3d thin controllers, per module. 3d-1 Administracion (L32), 3d-2 `MeController` split (L33), 3d-3 small controllers (L34), 3d-4 Ticket and Asignacion (L35), 3d-5 Conversacion (L36); independent verifier PASS (L37) |
+| T19 | S8 | inline | done | 3e single outbox writer: `OutboxWriter` (`a286b03`), decisions L40/L41, implementation L42 |
 
 ### Baseline of failing tests (phase 0, after `1afba20`)
 
@@ -173,3 +185,176 @@ Later phases, each with its own branch and task list when it starts:
   - Interfaces (`b971b31..e2d847f`): reliability + readability.
   - Outcome: all three approved and acknowledged (authority burned), with 0 blocking findings. Readability advisories: R2-001 (the B4 doc row was stale and the 7+1 vs 8 counts confusing) is fixed here; R2-002 (import order in `AddTagToTicketUseCase`) is not applied, because the project has no import-order rule or formatter.
   - The module move `3f70628` and the docs commit `a73adc1` are not reviewed: the move is too large for the reviewer, so it relies on the mechanical checks in L21. The temporary worktrees were removed.
+- **L24 (2026-10-14), phase 3 start:** user: "ok, arrancá la fase 3". Branch `chore/limpieza-backend-fase-3` from `db54c40`. A read-only explorer found 389 violations: rule 1: 95, rule 2: 56, rule 3: 12 outbox writers, rule 4: 174, rule 5: 52. The worst module is Administracion (120). Risks:
+  - There is no exception listener and there are 13 error shapes.
+  - Every use case writes the outbox after commit, in its own flush, with payload casing that differs per use case.
+  - `EventCollector` leaks events.
+  - There are raw `FOR UPDATE` reads, nested transactions, and repositories that flush inside `save()`.
+  - Many actions have no tests.
+
+  Split decided with the user (S8).
+- **L25 (2026-10-14), T15 (3a):** a bounded writer (route: delegated, context-backstop reason; edit surface `tests/Characterization/**`) wrote 82 characterization tests in 9 files.
+  - **Covered:** all `app_admin_workspaces_*`, `app_me_workspace(s)` and `_set`, inbox detail and messages, `mark_read` (exact outbox row), auto-assign and assignment history, contacts detail/update/delete, the 4 realtime and report routes, events resync, and both 500 envelopes (S1 through stubbed collaborators, S2 on transition/resolve/close).
+  - **Skipped:** debug routes, the webhook (HMAC), and media upload/download/url (they need S3 and Graph doubles). The S1 500 is not pinned for EM-only controllers.
+  - **Likely bugs pinned as-is**, marked `// Characterization`:
+    - ticket detail has no ownership or workspace scope;
+    - the detail response has hardcoded null `owner.name` and `closed_at`;
+    - messages of an unknown ticket return 200;
+    - auto-assign has no scope, and its `InvalidArgumentException` becomes a 500;
+    - the event_type format differs between writers;
+    - the admin `me/workspaces` returns fixed `agent_count` and `has_pending` values;
+    - `PUT me/workspace` creates an Agent row;
+    - an unknown contact gives 400 on update but 404 on delete;
+    - resync filters by `aggregate_id` only, has an unreachable header branch, and `verifyToken` skips the expiry check;
+    - resolve and close return a 500 on an invalid transition.
+  - **Parent spot check:** `phpunit tests/Characterization` gives OK (82 tests, 485 assertions). The full suite has 774 tests and exactly the 6 baseline failures.
+- **L26 (2026-10-14), T16 (3b):** a bounded writer added `Compartido/EventListener/InternalServerErrorListener`. It acts only on `/api` paths and only on throwables that are neither HTTP nor security exceptions. It returns S1 `{"error":"Internal server error","reference":<16 hex>}` and logs `Unhandled exception` with the reference and the trace. The writer removed 71 controller catch-alls in 15 controllers (`git diff -w`: +6/−639). Kept:
+  - TicketWorkflow's audit swallow;
+  - ProviderProxy's storage swallow;
+  - the 3 Webhook catches (it must keep returning 200);
+  - the 4 Debug catches;
+  - every specific arm, and every catch in use cases and services.
+  - **Intended visible changes, approved by the user as the "500 genérico" unification:** S2 `"Internal error"` becomes S1, and uncaught non-HTTP exceptions on `/api` return S1 instead of Symfony's problem+json, which leaked the exception message. Per-action log messages were replaced by one log format.
+  - **Tests:** 4 new listener tests. They pin the 404, 401 and 403 bodies as unchanged, and the forced uncaught exception now returns S1 (RED before the listener). The 3 S2 characterization tests now assert S1.
+  - **Parent checks:** `lint:container` OK; full suite 778 tests, exactly the 6 baseline failures.
+- **L27 (2026-10-14), shared smoke (guide 09):** the frontend agent ran it with front `e47b12e`+`d85ccbe` against back `3f2b83f`. P-01..P-24 match the phase-0 baseline. P-07 got further (upload reached Meta's 502), which is not a regression. Findings, all pre-existing and not caused by the cleanup:
+  1. Resolving a `new` or closed ticket gives a 500. It was the same 500 before, only with the S2 text; pinned in 3a.
+  2. `/assign` without `assignedBy` gives a 500: an uninitialized typed property in `AssignTicketRequest`, because `symfony/validator` is not installed.
+  3. `GET /api/tickets/{id}` has `owner.name: null` (hardcoded in `GetTicketDetailQuery`), so "Asignado:" is empty after a reload.
+  4. Unknown URLs give an HTML 404 to browsers (Symfony's default; the 3b listener leaves HTTP exceptions alone). Error formats are deferred to phase 5.
+  - Smoke data left in the dev DB: tickets 468–480, `Smoke2 …` contacts, team 2, workspace 4, agents 13–14, user 12. Overrides of agents 1–3 were cleared, and message 219's `created_at` was backdated.
+- **L28 (2026-10-14), T17 3c-1:** a bounded writer moved the SQL in use cases, services and commands into named repository methods.
+  - **Native SQL** (bound params, a why-comment, own test): `TicketRepository::findRowByIdForUpdate`, `AgentRepository::lockRowsForUpdate` and `ReportingRepository::truncateSeedTables`.
+  - **DBAL QueryBuilder:** `updateStatusAfterTransition`, `markClosed`, `markReopened`, `findLatestEventType`, `markFirstResponse`, `findPhoneNumberId`, `findIdsWithExpiredWindow`, `TagRepository::isAttachedToTicket`, and the recreated `Compartido/Repository/OutboxEventRepository` (7 methods).
+  - The `ReportingRepository` agents `IN` list is now bound. 22 new tests in `tests/Integration/Repository/`, two of which prove the row lock holds with `NOWAIT` from a second connection.
+  - **Parent fix:** a characterization mock of `TicketRepository` now forwards `findRowByIdForUpdate` to `new TicketRepository(ManagerRegistry)`. The pinned behavior is unchanged (`InvalidArgumentException` returns the generic 500, with no assignment).
+  - **Independent verifier** (high risk: locking and writes): PASS on statement equivalence, transactions/locking, wiring, scope and S3, with no blockers. It captured the SQL each new method renders, inside a rolled-back transaction, and it matches the old statements. Full suite: 800 tests, exactly the 6 baseline failures.
+  - **Advisories, for 3c-2:**
+    1. `InvalidTransitionException` is declared inside `TicketStateMachine.php`, so a test that builds it first fails when run alone.
+    2. The existing native `ReportingRepository::getTicketParticipation` has no why-comment and no test.
+    3. `countActiveForAgent` has no test of its own.
+- **L29 (2026-10-14), T17 3c-2:** a bounded writer moved the read-side SQL out of `src/*/Query/*` and into repository methods.
+  - **DBAL QueryBuilder:**
+    - `TicketRepository`: `findListPage`, `countList`, `countUnreadInboundByConversation`, `findDetailRow`, `findConversationId`, `findExportChunk`, `findLatestOpenTicketIdsByContact`.
+    - `MessageRepository`: page asc/desc.
+    - `ContactRepository`: list, count and detail.
+    - `TagRepository::findNamesByTicketIds`, `AgentRepository::findByIds`.
+  - **Native:** `ContactRepository::findTimelineRows` (UNION ALL in a derived table). Its SQL is now one fixed string with `(:p IS NULL OR …)` and bound type lists, where it used to concatenate fragments.
+  - `TicketFilterBuilder` now returns a `Ticket/Repository/TicketFilters` value object (same normalization), and the private `TicketRepository::applyListFilters` applies it in the old clause order. `InvalidTransitionException` moved into its own file (same FQCN).
+  - `getTicketParticipation` got its why-comment. It already had 5 direct tests in `ReportingResponseDelayTest`, so the L28 "no test" advisory was wrong. `countActiveForAgent` got a test.
+  - **Writer's proof:** 61 old-vs-new cases with 0 result differences; 29 new repository tests.
+  - **Independent verifier:** PASS, no blockers. It ran the old classes from `e1425d3` under a renamed namespace next to the new services in one rolled-back transaction, plus edge rows (timestamp ties, an out-of-allow-list event, an unknown source user, a phone with `+`, 1001 export tickets). 9,597 cases, 0 differences, including identical exceptions, the export keyset at 499/500/501/1000/1001 rows, and the timeline `before` equal to a row timestamp. Full suite: 826 tests, exactly the 6 baseline failures.
+  - **Advisories:**
+    1. Timeline tie order is unstable, and the strict `before <` cursor drops ties at page edges. Already at baseline; contradiction track.
+    2. `(:p IS NULL OR …)` may hurt index use; not measured.
+    3. The `TimelineEventDTO` deprecation is pre-existing.
+    4. Rule-7 tension: some Query classes read another module's repository. Revisit in 3d.
+- **L30 (2026-10-14), shared smoke after 3c (guide 09):** the frontend agent ran it with its phase 3 (`9f1f174..a9671c7`) against back `4df4131`. No regressions. It compared inbox, detail, messages, contacts, timeline and CSV reads directly in MySQL against the `e1425d3` SQL: identical in every filter and in pagination. `/assign`: 200 on assign and reassign, 409 `AGENT_NOT_ACTIVE` for an inactive agent. New pre-existing findings for the contradiction track, confirmed in the code (neither handler checks that the parent exists):
+  1. `GET /api/contacts/{id}/timeline` for an unknown contact returns 200 with empty `events` instead of 404 (`ContactTimelineController::getTimeline`).
+  2. `GET /api/tickets/{id}/messages` for an unknown ticket returns 200 with empty `data` instead of 404 (`InboxController::getMessages`).
+  - **User decision (verbatim):** "cuando terminemos el refactor, los rename al español de todo lo que dijimos, etc, vamos a hacer una pasada tranquila por funcionalidad y dependencia para ir viendo si el codigo es entendible-legible o conviene cambiar algo. eso ya seria otra fase. primero nos enfocamos en el trabajo actual". A comprehension pass is a later, separate phase, not part of this feature.
+  - Next: T18 (3d).
+- **L31 (2026-10-14), rule 7 adjusted (T18 prep):** about 33 imports of another module's repository already exist (outside Compartido), and the Administracion controllers manage Agente entities (`Agent`, `Team`). User, choosing option 1: "si, 1. Ajustar la regla 7 (recomendada)."
+  - New rule 7 in `docs/arquitectura.md`: a module may use another module's use cases, queries and repositories. The SQL on a table lives only in its owner module's repository, and other modules call its methods. Importing another module's controllers stays forbidden.
+  - Existing cross-module calls to write or lock methods (`Conversacion` → `TicketRepository::markFirstResponse`, `Asignacion` → `AgentRepository::lockRowsForUpdate`) comply, because the SQL stays in the owner's repository.
+  - The L29 advisory 4 (Query classes reading another module's repository) is closed by this rule.
+- **L32 (2026-10-14), T18 3d-1 Administracion (route: inline, fresh context after compact; no writer reason):** the 5 Administracion controllers no longer use `EntityManager`.
+  - 16 use cases in `Administracion/UseCase/` (create, update and deactivate for users, agents, teams and workspaces; link and unlink; team and workspace agent assignment). Each keeps the old check order and messages. Repositories: new `UserRepository`, `WorkspaceRepository`, `Agente/Repository/TeamRepository`; `AgentRepository::findPageWithUser`. Lists use `count([])` and the same fetch joins.
+  - Error mapping stays in the controller: `InvalidArgumentException` → 400, new `Compartido/NotFoundException` → 404, `StateConflictException` → 409, all with `{"error": message}`. The controller loads the route entity first (404) and then decodes JSON (400), as before. A non-object JSON body becomes `[]`, which matches the old `??`/`isset` reads.
+  - `UpdateAgentUseCase` keeps the reflection write of `name` (it does not bump `updated_at`), so behavior stays the same; candidate for phase 4.
+  - 11 new characterization tests (`AdministracionEdgeCasesCharacterizationTest`), green before the change: check order (409 before 404/400), JSON `null` body, 404 before invalid JSON, rollback of team agent assignment, unknown ids skipped.
+  - Checks: `lint:container` OK; route and `#[IsGranted]` lines unchanged in the diff; PHPStan level 0 identical (29 lines, base vs new); admin + characterization tests 167/167; full suite 837 tests with the 6 baseline failures plus `AutoReplyServiceTest::testDoesNotSendWhenAgentIsAvailable`.
+  - That extra failure is a pre-existing time-of-day bug, not a regression: `makeAgentAvailable` builds a shift from `hour-1` to `min(23, hour+2)`, so between 23:00 and 23:59 (container time) the shift ends at 23:00 and the agent is unavailable. The run was at 23:24 UTC. Added to the known flakes.
+  - Commits: `cbaed47` (rule 7), `7f5601d` (3d-1), `4ee34c7` (flake note in `AGENTS.md`). RDD assess on `db54c40..HEAD`: medium, `under_budget`. Next: 3d-2, `MeController` split.
+- **L33 (2026-10-14), T18 3d-2 `MeController` split (route: inline):** following the map the frontend already uses.
+  - `Agente/Controller/MeController` keeps settings, profile and notifications (new `UpdateAgentProfileUseCase`, `UpdateNotificationPreferencesUseCase`).
+  - `Automatizacion/Controller/MeAutoReplyController` (new `UpdateAutoReplySettingsUseCase`), `Disponibilidad/Controller/MeShiftsController` (existing `ReplaceAgentShiftsUseCase`), `Administracion/Controller/MeWorkspaceController` (new `SetActiveWorkspaceUseCase` with the `ensureAgent` side write, and `WorkspaceNotAssignedException` → 403).
+  - The embedded `has_pending` SQL moved to `TicketRepository::hasPendingForAgent` (DBAL QueryBuilder, same predicates, `LIMIT 1` instead of `SELECT EXISTS`). 4 new repository tests, RED before the method.
+  - Route names, paths, methods and every `#[IsGranted]` are unchanged: the removed attribute lines reappear verbatim, plus one class-level `IS_AUTHENTICATED_FULLY` per new controller, as on the old class. 91 routes.
+  - One order change, not observable: in `PUT /api/me/workspace` the `Unauthorized` 401 guard now runs before the workspace checks. It is unreachable, because the only user provider is the `User` entity and the class requires `IS_AUTHENTICATED_FULLY`.
+  - Checks: `lint:container` OK; PHPStan level 0 identical; `/api/me` tests (`SettingsPageTest`, `MeWorkspaceControllerCharacterizationTest`) 24/24; full suite 841 tests, the 6 baseline failures plus the time-of-day `AutoReplyServiceTest` failure (run at 23:34 UTC, see L32).
+- **L34 (2026-10-14), T18 3d-3 small controllers (route: inline):**
+  - `TicketEventsController`: the resync SQL moved to `OutboxEventRepository::findResyncRows` (DBAL QueryBuilder, same predicates and `LIMIT 100`), and the hydration and response building to `Compartido/Query/ResyncTicketEventsQuery` (moved verbatim, without `strict_types`, like its origin). The controller keeps the JWT and `afterSequence` checks. 2 new repository tests, written before the method but not run RED first.
+  - `AuthController::logout`: refresh-token deletion moved to `Autenticacion/UseCase/LogoutUseCase` unchanged. New test `testLogoutAlsoDeletesTheRefreshTokenSentInTheCookie` pins the cookie branch; it passes against the old and the new controller.
+  - `ReportingController`: its private DQL count was identical to `TicketRepository::countActiveForAgent` (same statuses), so it now calls that method.
+  - `Agente/TeamController` → `TeamRepository::findByWorkspaces`; `WorkspaceAgentController` → `WorkspaceRepository::find`. `AgentAvailabilityController` had no violation (only a comment).
+  - Checks: `lint:container` OK; PHPStan level 0 identical; endpoint tests (26 files, 283 tests) only the baseline `ReportingV2Test` failure; full suite 844 tests, the 6 baseline failures plus the time-of-day `AutoReplyServiceTest` failure (run at 23:52 UTC).
+  - The assertion total dropped 4614 → 4563. The per-test diff shows that only `ReportingV2Test::testGetHeatmapReturnsData` (497 → 442) and `testGetFrtTrendReturnsData` (57 → 52) changed. They assert once per data row in a date window relative to now, and this change does not touch them. Advisory: time-dependent reporting tests.
+- **L35 (2026-10-15), T18 3d-4 Ticket and Asignacion (route: inline):**
+  - `InboxController::markRead` → `Ticket/UseCase/MarkTicketReadUseCase` (same owner-only rule). Its raw outbox insert moved verbatim to `OutboxEventRepository::insertTicketReadEvent` (same columns and values; phase 3e unifies the outbox writers).
+  - `TicketWorkflowController`: the closure audit write → `Ticket/UseCase/RecordClosureAuditUseCase`, with the same catch-and-log (D8). The `TicketVoter::CLOSE` check stays in the controller. `TicketWorkflowControllerAuditFailureTest` now builds the controller with a real use case over the same mocked `EntityManager` and logger, so it pins the same behavior.
+  - `Asignacion/TicketController::setTeam` → `Asignacion/UseCase/SetTicketTeamUseCase`, with the same order and messages (an unknown team is still a 400).
+  - Checks: `lint:container` OK; PHPStan level 0 identical; endpoint tests (20 files, 236 tests) green; full suite 844 tests, exactly the 6 baseline failures. Run at 00:36 UTC, so the time-of-day `AutoReplyServiceTest` test passed, which confirms L32. Per-test assertion diff vs 3d-3: only `ReportingV2Test` heatmap/FRT trend and `AutoReplyServiceTest`, all time-dependent.
+- **L36 (2026-10-15), T18 3d-5 Conversacion (route: inline):** no controller in `src/` uses `EntityManager` or SQL any more.
+  - `WebhookController`: the raw payload write moved to `Conversacion/UseCase/RecordWebhookPayloadUseCase`. The controller keeps the HMAC check, the always-200 try/catch and the dispatch. `/webhook` had no endpoint test, so `WebhookControllerCharacterizationTest` (3 tests: signed status payload stored as `status`, a payload with neither messages nor statuses stored as `unknown`, invalid signature 401 and not stored) was added and passes against both the old and the new controller.
+  - `ProviderProxyController`: the WAMID update → `MarkOutboundMessageSentUseCase`; the template message write → `RecordSentTemplateUseCase` (content built the same way; `templateName` is already a string because `GraphClient::sendTemplate` requires one); agent auto-creation → new `Agente/UseCase/EnsureAgentForUserUseCase`, still wrapped in the controller's catch-all that degrades to null. `SetActiveWorkspaceUseCase` now uses the same use case instead of its own copy of `ensureAgent` (identical logic). Splitting the send flow stays in phase 4.
+  - `ProviderProxyControllerResolveAgentTest` now builds the real use cases over the same mocked `EntityManager`, and an `AgentRepository` mock replaces the `getRepository` expectations; the same 3 scenarios hold.
+  - Gotcha: after a `git stash` round trip the test container cache kept the old constructor (`TypeError ... EntityManagerGhost given`); `cache:clear --env=test` fixed it.
+  - Checks: `lint:container` OK; PHPStan level 0 identical; provider, webhook and `/me/workspace` tests green; full suite 847 tests, exactly the 6 baseline failures (01:04 UTC). The per-test assertion diff covers only time-dependent `ReportingV2Test` cases, the adapted unit test (one more `never()` expectation) and the new tests.
+- **L37 (2026-10-15), T18 independent verifier (route: delegated, verification trigger: auth logout touched):** PASS for S1, S2, S3 and S8, no blockers. Baseline `4df4131` vs `98d95dd`.
+  - Probes ran in throwaway containers on scratch copies of both trees. The 3d-added tests copied into the baseline gave 44/44 on both trees. A custom probe of about 95 requests (`/me/workspace` malformed bodies and role paths, the `has_pending` matrix, mark-read, team set, about 50 admin edge requests) gave identical status, content type, body and DB side-effect counts. Full suites had the same 6 failing names. `debug:router` JSON without `_controller` was identical, and `router:match` agreed for the 6 moved path+method pairs.
+  - The L33 order change was confirmed unobservable.
+  - Advisories:
+    1. Route registration order changed; matching is unaffected.
+    2. `UnlinkUserFromAgentUseCase`: an `InvalidArgumentException` raised by `flush()` would now be a 400 instead of a 500; no realistic input raises it.
+    3. `insertTicketReadEvent` is covered end to end by `InboxControllerCharacterizationTest`, not by a repository test.
+    4. `resolveActingAgentId` in `sendTemplate` now runs before the message is built (equivalent: the message was not persisted).
+  - New pre-existing findings for the contradiction track (identical on both trees):
+    1. `PUT /api/admin/teams/{id}/agents` with a non-object body clears all of the team's agents and returns 200.
+    2. `PUT /api/admin/workspaces/{id}` with a duplicate `phoneNumberId` gives a 500 (unique constraint).
+    3. `POST /api/admin/users` with `roles` as a string gives a 500 (`TypeError`).
+  - Parent spot check: workspace clean; 91 routes in the dev environment (the verifier counted 90 in the test environment).
+- **L38 (2026-10-15), shared smoke after 3d (guide 09):** the frontend agent ran it against back `9a10e2f`. No regressions: P-01..P-24 match the baseline, 403s unchanged; admin, settings, `has_pending` (same as the old SQL), mark-read, resolve/close, team, sends and webhook match the old code in status, body and DB effect. New pre-existing findings for the contradiction track (neither 3d nor the front phase 3 touched this logic):
+  1. `provider/send` to a nonexistent ticket gives a 500.
+  2. An agent can `PUT /tickets/{id}/team` and gets 200.
+  3. User creation accepts `ROLE_BOGUS`.
+  4. `InboxUpdatedEvent` outbox rows always end in `dead_letter` (input for T19).
+  5. Resolving a ticket is not published in real time: no `ticket.status_changed` is emitted (input for T19).
+  6. The inbox list `contact.id` differs from the detail one (ticket 489: 75 vs 85).
+  - Also reported: the duplicate `phoneNumberId` 500 (already in L37) and workspace 2 having a real Meta number, so sends there give 422 `RECIPIENT_NOT_ALLOWED` (environment data, not code).
+  - Next: T19 (3e), evidence first, then the two user decisions one at a time.
+- **L39 (2026-10-15), T19 evidence (route: delegated explorer, mapping trigger):**
+  - 10 outbox writers, all post-commit in their own flush or insert; none inside the business transaction:
+    - AssignTicket and AutoAssign: camelCase plus `assignee_id`/`assignment_type`.
+    - HandleInbound and HandleOutbound: snake_case. HandleOutbound skips `InboxUpdatedEvent` on purpose.
+    - HandleStatusUpdate: snake_case, no transaction; the only writer that fills `sequence`.
+    - 4 Disponibilidad shift/availability use cases: snake_case, `aggregate_type='agent'`.
+    - Mark-read: raw DBAL insert, `ticket.read`, camelCase.
+    - Every other writer: `sequence=0`, with the number kept in payload `seq`.
+  - Leak: `TransitionTicketStatusUseCase` (resolve, close, transition, window-expiry close, AutoReopen) collects the UNASSIGN `TicketUpdatedEvent` and `InboxUpdatedEvent` through `AssignmentService` and never drains them. They are written only when HandleInbound or HandleOutbound call it inside their own drain.
+  - `dead_letter`: `EventTypeMapper::MAP` has no `InboxUpdatedEvent`, so `RealtimeEventFactory::build` throws and the row dead-letters after 5 retries (spot-checked).
+  - No `status_changed` on resolve: the status change is a raw `updateStatusAfterTransition` that emits no event; no code path produces a real `ticket.status_changed` with `previous_status`.
+  - Pins: `Sprint09BOutboxTest`, `AsignacionControllersCharacterizationTest::testAutoAssignPicksAnAvailableAgentAndWritesOutbox` (event types and mixed key set), the mark-read row in `InboxControllerCharacterizationTest`, and `MessageAgentAttributionOutboxTest`.
+- **L40 (2026-10-15), T19 decision (a), outbox timing:** user: "bueno, vamos con la opcion 1, despues vemos como subsanamos el hueco de cuando falla la escritura del outbox. te parece?" Option 1: keep writing post-commit; 3e only unifies the writers behind one, behavior identical. Contradiction track: when the outbox write fails after commit, the business change persists without its event (to be fixed later).
+- **L41 (2026-10-15), T19 decision (b), `EventCollector` leak:** user: "si, vamos con la opcion 1, despues vemos como solucionamos esos temas que no estan resueltos". Option 1: keep dropping. The single writer writes only where rows are written today; Transition's collected events stay dropped. Contradiction track: the leak, `InboxUpdatedEvent` dead-letters, and no `ticket.status_changed` on resolve/close.
+- **L42 (2026-10-15), T19 implementation (`a286b03`, route: inline, no writer trigger):**
+  - New `Compartido/Outbox/OutboxWriter::write(OutboxEvent ...$events)`: it persists the events and always flushes once, as each replaced writer did.
+  - Every one of the 10 writers now goes through it:
+    - The 5 collector drains keep their own payload builders and early returns, and still clear the collector themselves.
+    - The 4 Disponibilidad use cases keep their pending-event pattern.
+    - `MarkTicketReadUseCase` builds an `OutboxEvent` with the same values the removed `OutboxEventRepository::insertTicketReadEvent` used: same columns, ULID id, sequence 0, and the same camelCase payload.
+  - Timing (post-commit) and the dropped Transition events are unchanged (L40, L41).
+  - New test `tests/Integration/Outbox/OutboxWriterTest.php`.
+  - `HandleInboundMessageUseCaseTest` builds the real writer over its mocked EntityManager.
+  - Docs 02/04/05/08 updated.
+  - Checks:
+    - `lint:container` OK; PHPStan level 0 identical (29 lines).
+    - Focused outbox tests: 113 tests, only the baseline `Sprint09BOutboxTest` failure.
+    - Full suite: 848 tests, exactly the 6 baseline failures.
+    - No `outbox_events` insert or `persist($outbox...)` left outside the writer.
+    - RDD assess: medium, `under_budget`.
+- **L43 (2026-10-15), T19 independent verifier (route: delegated, verification timing: phase 3 end):** PASS for S1, S2, S3 and S8, no blockers. Baseline `9a10e2f` vs `a286b03`.
+  - It ran in throwaway containers with its own MySQL, on `git archive` copies; `inbiox_php` and the shared databases were untouched.
+  - Static: no `outbox_events` write outside `OutboxWriter::write`.
+  - Probe: each of the 10 writers called through its public entry on both trees. 17 normalized rows, identical. Rejected commands added 0 rows on both trees.
+  - Full suite: the 6 baseline failures plus one known 401 flake, which passed on the focused rerun.
+  - Advisories: auto-assign right after inbound writes 0 rows on both trees; the JSON column normalizes payload bytes.
+  - Parent spot check: workspace clean, no verifier containers or network left.
+- **L44 (2026-10-15), shared realtime smoke after 3e:** the frontend agent ran it against back `4919f7a`. No differences: outbox rows matched the `9a10e2f` smoke (event_type, topic, payload keys and shape, sequence, count and order) for inbound, agent reply, delivery status, manual and auto assignment, mark-read, shift create/delete, and availability on/off; 25 rows published, 25 Mercure events.
+  - Delivery status, auto-assign and shifts were compared against the `9a10e2f` code, because the old window had no rows for them.
+  - Availability "off" was tested via DELETE of the override, not `POST isAvailable:false`.
+  - Confirmed as expected (L41): resolve/close emit nothing, and `InboxUpdatedEvent` dead-letters ("Unknown event class").
+  - New pre-existing findings for the contradiction track:
+    1. `ticket.created` carries `contactId` 0, hence "Unknown" in the UI.
+    2. Assignment events carry `assigneeName` null and an empty `assignedAt`.
+  - Phase 3 complete. Next: push and PR #4 (base `chore/limpieza-backend-fase-2`), with user approval.

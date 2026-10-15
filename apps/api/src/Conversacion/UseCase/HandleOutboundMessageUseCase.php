@@ -18,6 +18,7 @@ use App\Conversacion\Message;
 use App\Conversacion\MessageDirection;
 use App\Conversacion\MessageSenderType;
 use App\Compartido\Outbox\OutboxEvent;
+use App\Compartido\Outbox\OutboxWriter;
 use App\Compartido\ProcessedEvent;
 use App\Ticket\Ticket;
 use App\Ticket\TicketStatus;
@@ -56,6 +57,7 @@ class HandleOutboundMessageUseCase
         private AssignmentService $assignmentService,
         private AgentRepository $agentRepo,
         private EventCollector $eventCollector,
+        private readonly OutboxWriter $outboxWriter,
         private ConversationWindowPolicy $windowPolicy,
     ) {}
 
@@ -302,10 +304,7 @@ class HandleOutboundMessageUseCase
                 );
             } else if ($shouldSetFirstResponse) {
                 // Just set first_response_at without status change
-                $this->em->getConnection()->executeStatement(
-                    "UPDATE tickets SET first_response_at = NOW(), updated_at = NOW() WHERE id = ?",
-                    [$ticketId]
-                );
+                $this->ticketRepo->markFirstResponse($ticketId);
             }
 
             // Update conversation timestamps
@@ -376,6 +375,8 @@ class HandleOutboundMessageUseCase
             return;
         }
 
+        $outboxEvents = [];
+
         foreach ($events as $event) {
             $payload = [
                 'event_id' => $event->eventId->toRfc4122(),
@@ -406,12 +407,9 @@ class HandleOutboundMessageUseCase
                 $payload['sender_name'] = $event->senderName;
                 $payload['media'] = $event->media;
                 // Include phone_number_id for workspace-pending indicator
-                $ticketRow = $this->em->getConnection()->executeQuery(
-                    'SELECT phone_number_id FROM tickets WHERE id = ?',
-                    [$event->ticketId]
-                )->fetchAssociative();
-                if ($ticketRow && !empty($ticketRow['phone_number_id'])) {
-                    $payload['phone_number_id'] = $ticketRow['phone_number_id'];
+                $phoneNumberId = $this->ticketRepo->findPhoneNumberId($event->ticketId);
+                if (!empty($phoneNumberId)) {
+                    $payload['phone_number_id'] = $phoneNumberId;
                 }
             }
 
@@ -422,10 +420,10 @@ class HandleOutboundMessageUseCase
                 eventType: $event->type,
                 payload: $payload
             );
-            $this->em->persist($outboxEvent);
+            $outboxEvents[] = $outboxEvent;
         }
 
-        $this->em->flush();
+        $this->outboxWriter->write(...$outboxEvents);
         $this->eventCollector->clear();
     }
 }

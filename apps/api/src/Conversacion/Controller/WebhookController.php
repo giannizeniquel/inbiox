@@ -6,8 +6,7 @@ namespace App\Conversacion\Controller;
 
 use App\Conversacion\UseCase\HandleInboundMessageUseCase;
 use App\Conversacion\UseCase\HandleStatusUpdateUseCase;
-use App\Conversacion\WebhookPayload;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Conversacion\UseCase\RecordWebhookPayloadUseCase;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -30,7 +29,7 @@ class WebhookController extends AbstractController
         private readonly string $appSecret,
         private readonly HandleStatusUpdateUseCase $handleStatusUpdate,
         private readonly HandleInboundMessageUseCase $handleInboundMessage,
-        private readonly EntityManagerInterface $em,
+        private readonly RecordWebhookPayloadUseCase $recordWebhookPayload,
         private readonly LoggerInterface $logger,
     ) {}
 
@@ -124,7 +123,7 @@ class WebhookController extends AbstractController
         // Step 4: Persist raw webhook payload BEFORE processing
         // This ensures we have a record even if the processor crashes (T-02)
         try {
-            $this->logRawPayload($payload);
+            $this->recordWebhookPayload->execute($payload);
         } catch (\Throwable $e) {
             // Don't crash the webhook — log and continue
             $this->logger->error('Failed to persist webhook payload', [
@@ -164,45 +163,6 @@ class WebhookController extends AbstractController
         $expectedHash = hash_hmac('sha256', $rawBody, $this->appSecret);
 
         return hash_equals($expectedHash, $providedHash);
-    }
-
-    /**
-     * Persist raw webhook payload to webhook_payloads table (T-02).
-     *
-     * This runs BEFORE dispatch so we have a record even if processing fails.
-     * Extracts phone_number_id from metadata for multi-number traceability (CAP-7).
-     */
-    private function logRawPayload(array $payload): void
-    {
-        $eventType = 'unknown';
-        $phoneNumberId = null;
-
-        // Determine event type and extract phoneNumberId from metadata
-        foreach ($payload['entry'] ?? [] as $entry) {
-            foreach ($entry['changes'] ?? [] as $change) {
-                $value = $change['value'] ?? [];
-                if (isset($value['messages'])) {
-                    $eventType = 'message';
-                }
-                if (isset($value['statuses'])) {
-                    $eventType = 'status';
-                }
-                // Extract phone_number_id from metadata (CAP-7 / META-017)
-                if ($phoneNumberId === null && isset($value['metadata']['phone_number_id'])) {
-                    $phoneNumberId = $value['metadata']['phone_number_id'];
-                }
-            }
-        }
-
-        $webhookPayload = new WebhookPayload(
-            eventType: $eventType,
-            payload: $payload,
-            receivedAt: new \DateTimeImmutable(),
-            phoneNumberId: $phoneNumberId
-        );
-
-        $this->em->persist($webhookPayload);
-        $this->em->flush();
     }
 
     /**

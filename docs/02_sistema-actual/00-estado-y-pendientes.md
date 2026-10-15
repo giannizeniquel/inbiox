@@ -168,7 +168,7 @@ La auto-asignación corre **de forma síncrona dentro de la transacción del men
 
 **[DATOS] · Confirmado (lectura).**
 `ProviderProxyController::send` persiste el mensaje y cambia estado/dueño del ticket **antes** de llamar a WhatsApp. Si WhatsApp falla, se devuelve error pero el mensaje queda guardado con `delivery_status = 'sent'`. No hay compensación.
-El problema inverso también existe: cuando el caso de uso detecta un duplicado (`duplicate_skipped`), el controlador **no lo revisa y envía igual a WhatsApp** (`ProviderProxyController.php:96-154`). Como el frontend reintenta el POST automáticamente, un error de red puede hacer llegar **el mismo mensaje hasta 3 veces** al cliente mientras la base registra uno solo. Detalle en [04 § F2](04-flujos.md#f2-respuesta-del-agente).
+El problema inverso también existe: cuando el caso de uso detecta un duplicado (`duplicate_skipped`), el controlador **no lo revisa y envía igual a WhatsApp** (`ProviderProxyController.php:97-155`). Como el frontend reintenta el POST automáticamente, un error de red puede hacer llegar **el mismo mensaje hasta 3 veces** al cliente mientras la base registra uno solo. Detalle en [04 § F2](04-flujos.md#f2-respuesta-del-agente).
 
 ### R11. Huecos en el tiempo real
 

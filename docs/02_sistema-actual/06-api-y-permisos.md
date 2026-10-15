@@ -115,7 +115,7 @@ Todas **Agente**, salvo export. Filtran por workspace activo; nunca por agente.
 
 > Verificado en `ReportingController.php`: solo `frt`, `rt`, `counts`, `volume`, `agents` y `export` leen `teamId`. Los demás lo ignoran aunque el frontend lo envíe (p. ej. `response-delay`).
 
-### G. Autoservicio (`MeController`, clase `IS_AUTHENTICATED_FULLY`)
+### G. Autoservicio (`MeController`, `MeAutoReplyController`, `MeShiftsController`, `MeWorkspaceController`; todos con clase `IS_AUTHENTICATED_FULLY`)
 
 | Método | Path | Acción | Rol | Nota |
 |---|---|---|---|---|
@@ -230,4 +230,4 @@ Endpoints vivos **sin UI**: plantillas, asignar equipo a ticket, historial de as
 | Roles en el frontend (`core/stores/auth.store.ts:40-52`) | No jerárquicos (`isAdmin`, `isSupervisor`; no hay `isAgent`) | Jerárquicos | `roleGuard` lo compensa dejando pasar siempre al admin (`core/auth/auth.guard.ts:55-58`). Hoy no queda ninguna comprobación `isSupervisor()` sin `\|\| isAdmin()`. |
 | Informes (`/reports`) | Sin guard | Agente | Consistente: los agentes ven todos los reportes. |
 | Importar CSV / Exportar CSV | `isAdmin() \|\| isSupervisor()` | Supervisor | Consistente. |
-| Comentarios desactualizados | `contacts-page.component.ts:247` ("ROLE_SUPERVISOR only") | `Administracion/Controller/TeamController.php:26-33` dice que `AgentController` exige Admin (hoy exige Supervisor); `InboxController.php:55` dice "AGENT sees only own tickets" | Confunden al lector; no cambian comportamiento. |
+| Comentarios desactualizados | `contacts-page.component.ts:247` ("ROLE_SUPERVISOR only") | `Administracion/Controller/TeamController.php:29-36` dice que `AgentController` exige Admin (hoy exige Supervisor); `InboxController.php:53` dice "AGENT sees only own tickets" | Confunden al lector; no cambian comportamiento. |

@@ -7,6 +7,7 @@ namespace App\Disponibilidad\UseCase;
 use App\Disponibilidad\AgentShift;
 use App\Disponibilidad\AgentShiftChangedEvent;
 use App\Compartido\Outbox\OutboxEvent;
+use App\Compartido\Outbox\OutboxWriter;
 use App\Agente\Repository\AgentRepository;
 use App\Disponibilidad\Repository\AgentShiftRepository;
 use Doctrine\DBAL\LockMode;
@@ -27,6 +28,7 @@ final class CreateAgentShiftUseCase
         private EntityManagerInterface $em,
         private AgentRepository $agentRepo,
         private AgentShiftRepository $agentShiftRepo,
+        private readonly OutboxWriter $outboxWriter,
     ) {}
 
     /**
@@ -157,8 +159,7 @@ final class CreateAgentShiftUseCase
             payload: $data['payload'],
         );
 
-        $this->em->persist($outboxEvent);
-        $this->em->flush();
+        $this->outboxWriter->write($outboxEvent);
 
         $this->pendingOutboxEvent = null;
     }

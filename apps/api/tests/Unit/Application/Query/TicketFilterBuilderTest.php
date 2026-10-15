@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Application\Query;
 
 use App\Ticket\Query\TicketFilterBuilder;
+use App\Ticket\Repository\TicketFilters;
 use PHPUnit\Framework\TestCase;
 
 /**
  * Pure unit tests for `TicketFilterBuilder::build()` — no DB, no kernel.
  *
- * Locks the clause/param ORDER that `ListTicketsQuery` depends on for its
- * positional `?` placeholders: filter/scope → workspace scope → status → tag.
+ * Since phase 3c-2 it returns normalized `TicketFilters` and holds no SQL;
+ * `TicketRepositoryReadTest` covers the WHERE clauses built from them.
  */
 class TicketFilterBuilderTest extends TestCase
 {
@@ -22,208 +23,135 @@ class TicketFilterBuilderTest extends TestCase
         $this->builder = new TicketFilterBuilder();
     }
 
-    public function test_no_filters_produces_empty_where_and_params(): void
+    private static function assertNoFilters(TicketFilters $f): void
     {
-        [$where, $params] = $this->builder->build();
-
-        self::assertSame([], $where);
-        self::assertSame([], $params);
+        self::assertNull($f->assignment);
+        self::assertNull($f->mineAgentId);
+        self::assertNull($f->scopeAgentId);
+        self::assertNull($f->phoneNumberId);
+        self::assertSame([], $f->statuses);
+        self::assertSame([], $f->tags);
+        self::assertNull($f->teamId);
     }
 
-    public function test_unassigned_filter(): void
+    public function test_no_filters(): void
     {
-        [$where, $params] = $this->builder->build(filter: 'unassigned');
-
-        self::assertSame(['t.assigned_agent_id IS NULL'], $where);
-        self::assertSame([], $params);
+        self::assertNoFilters($this->builder->build());
+        self::assertNoFilters($this->builder->build(filter: 'all'));
     }
 
-    public function test_assigned_filter(): void
+    public function test_unassigned_and_assigned_filters(): void
     {
-        [$where, $params] = $this->builder->build(filter: 'assigned');
-
-        self::assertSame(['t.assigned_agent_id IS NOT NULL'], $where);
-        self::assertSame([], $params);
+        self::assertSame('unassigned', $this->builder->build(filter: 'unassigned')->assignment);
+        self::assertSame('assigned', $this->builder->build(filter: 'assigned')->assignment);
     }
 
     public function test_mine_filter_with_agent_id(): void
     {
-        [$where, $params] = $this->builder->build(filter: 'mine', agentId: '7');
+        $f = $this->builder->build(filter: 'mine', agentId: '7');
 
-        self::assertSame(['t.assigned_agent_id = ?'], $where);
-        self::assertSame(['7'], $params);
+        self::assertSame('7', $f->mineAgentId);
+        self::assertNull($f->assignment);
     }
 
-    public function test_mine_filter_without_agent_id_adds_no_clause(): void
+    public function test_mine_filter_without_a_truthy_agent_id_adds_nothing(): void
     {
-        [$where, $params] = $this->builder->build(filter: 'mine', agentId: null);
-
-        self::assertSame([], $where);
-        self::assertSame([], $params);
+        self::assertNoFilters($this->builder->build(filter: 'mine', agentId: null));
+        self::assertNoFilters($this->builder->build(filter: 'mine', agentId: '0'));
     }
 
-    public function test_ownership_scope_clause_and_param_order(): void
+    public function test_agent_id_is_ignored_without_the_mine_filter(): void
     {
-        [$where, $params] = $this->builder->build(scopeAgentId: 42);
-
-        self::assertSame(['t.assigned_agent_id = ?'], $where);
-        self::assertSame(['42'], $params);
+        self::assertNoFilters($this->builder->build(filter: 'all', agentId: '7'));
     }
 
-    public function test_workspace_scope_clause_and_param_order(): void
+    public function test_ownership_scope_is_kept_as_a_string(): void
     {
-        [$where, $params] = $this->builder->build(phoneNumberId: 'phone-1');
-
-        self::assertSame(['t.phone_number_id = ?'], $where);
-        self::assertSame(['phone-1'], $params);
+        self::assertSame('42', $this->builder->build(scopeAgentId: 42)->scopeAgentId);
     }
 
-    public function test_status_whitelist_keeps_only_known_statuses(): void
+    public function test_workspace_scope(): void
     {
-        [$where, $params] = $this->builder->build(status: 'new,bogus,active');
-
-        self::assertSame(['t.status IN (?,?)'], $where);
-        self::assertSame(['new', 'active'], $params);
+        self::assertSame('phone-1', $this->builder->build(phoneNumberId: 'phone-1')->phoneNumberId);
     }
 
-    public function test_status_all_unknown_produces_no_clause(): void
+    public function test_status_whitelist_keeps_only_known_statuses_trimmed(): void
     {
-        [$where, $params] = $this->builder->build(status: 'bogus,nope');
-
-        self::assertSame([], $where);
-        self::assertSame([], $params);
+        self::assertSame(['new', 'active'], $this->builder->build(status: 'new, bogus ,active ')->statuses);
     }
 
-    public function test_single_tag_produces_exists_clause(): void
+    public function test_status_all_unknown_or_empty_adds_nothing(): void
     {
-        [$where, $params] = $this->builder->build(tag: 'VIP');
-
-        self::assertCount(1, $where);
-        self::assertStringContainsString('EXISTS (SELECT 1 FROM ticket_tags tt JOIN tags tg', $where[0]);
-        self::assertSame(['vip'], $params);
+        self::assertSame([], $this->builder->build(status: 'bogus,nope')->statuses);
+        self::assertSame([], $this->builder->build(status: '')->statuses);
+        self::assertSame([], $this->builder->build(status: '0')->statuses);
     }
 
-    public function test_multi_tag_and_semantics_produces_one_exists_per_tag(): void
+    public function test_tags_are_normalized(): void
     {
-        [$where, $params] = $this->builder->build(tag: 'vip,urgente');
-
-        self::assertCount(2, $where);
-        self::assertSame(['vip', 'urgente'], $params);
+        self::assertSame(['vip'], $this->builder->build(tag: 'VIP')->tags);
+        self::assertSame(['vip', 'muy urgente'], $this->builder->build(tag: ' vip , Muy   Urgente ')->tags);
     }
 
     public function test_blank_tag_segments_are_discarded(): void
     {
-        [$where, $params] = $this->builder->build(tag: 'vip,,urgente');
-
-        self::assertCount(2, $where);
-        self::assertSame(['vip', 'urgente'], $params);
+        self::assertSame(['vip', 'urgente'], $this->builder->build(tag: 'vip,,urgente')->tags);
     }
 
     public function test_duplicate_tags_are_deduplicated(): void
     {
-        [$where, $params] = $this->builder->build(tag: 'vip,vip');
-
-        self::assertCount(1, $where);
-        self::assertSame(['vip'], $params);
+        self::assertSame(['vip'], $this->builder->build(tag: 'vip,vip')->tags);
     }
 
-    public function test_empty_or_null_tag_applies_no_filter(): void
+    public function test_empty_blank_or_null_tag_applies_no_filter(): void
     {
-        [$whereEmpty, $paramsEmpty] = $this->builder->build(tag: '');
-        [$whereNull, $paramsNull] = $this->builder->build(tag: null);
-
-        self::assertSame([], $whereEmpty);
-        self::assertSame([], $paramsEmpty);
-        self::assertSame([], $whereNull);
-        self::assertSame([], $paramsNull);
+        self::assertSame([], $this->builder->build(tag: '')->tags);
+        self::assertSame([], $this->builder->build(tag: ' , ')->tags);
+        self::assertSame([], $this->builder->build(tag: null)->tags);
     }
 
     public function test_more_than_five_tags_throws(): void
     {
         $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('A maximum of 5 tags may be filtered at once');
 
         $this->builder->build(tag: 'a,b,c,d,e,f');
     }
 
     public function test_exactly_five_tags_does_not_throw(): void
     {
-        [$where, $params] = $this->builder->build(tag: 'a,b,c,d,e');
-
-        self::assertCount(5, $where);
-        self::assertCount(5, $params);
+        self::assertCount(5, $this->builder->build(tag: 'a,b,c,d,e')->tags);
     }
 
-    public function test_clause_and_param_order_across_all_filters(): void
+    public function test_six_tags_that_deduplicate_to_five_do_not_throw(): void
     {
-        [$where, $params] = $this->builder->build(
+        self::assertCount(5, $this->builder->build(tag: 'a,b,c,d,e,a')->tags);
+    }
+
+    public function test_team_id_is_kept_as_a_string(): void
+    {
+        self::assertNull($this->builder->build(teamId: null)->teamId);
+        self::assertSame('7', $this->builder->build(teamId: 7)->teamId);
+    }
+
+    public function test_all_filters_together(): void
+    {
+        $f = $this->builder->build(
+            filter: 'mine',
+            agentId: '9',
             scopeAgentId: 42,
             phoneNumberId: 'phone-1',
             status: 'active,waiting',
-            tag: 'vip',
+            tag: 'vip,urgente',
+            teamId: 3,
         );
 
-        // Order: scope → workspace → status → tag (matches ListTicketsQuery's
-        // original block order; positional `?` params depend on this).
-        self::assertSame(
-            [
-                't.assigned_agent_id = ?',
-                't.phone_number_id = ?',
-                't.status IN (?,?)',
-                'EXISTS (SELECT 1 FROM ticket_tags tt JOIN tags tg ON tg.id = tt.tag_id
-                                    WHERE tt.ticket_id = t.id AND tg.name = ?)',
-            ],
-            $where,
-        );
-        self::assertSame(['42', 'phone-1', 'active', 'waiting', 'vip'], $params);
-    }
-
-    // --- Phase 3 (Slice 3): team filter (single-select, appended LAST) ---
-
-    public function test_null_team_id_produces_no_clause(): void
-    {
-        [$where, $params] = $this->builder->build(teamId: null);
-
-        self::assertSame([], $where);
-        self::assertSame([], $params);
-    }
-
-    public function test_team_id_appends_exactly_one_clause(): void
-    {
-        [$where, $params] = $this->builder->build(teamId: 7);
-
-        self::assertSame(['t.team_id = ?'], $where);
-        self::assertSame(['7'], $params);
-    }
-
-    public function test_team_id_is_appended_last_after_tag_clauses(): void
-    {
-        [$where, $params] = $this->builder->build(
-            scopeAgentId: 42,
-            phoneNumberId: 'phone-1',
-            status: 'active,waiting',
-            tag: 'vip',
-            teamId: 7,
-        );
-
-        self::assertSame(
-            [
-                't.assigned_agent_id = ?',
-                't.phone_number_id = ?',
-                't.status IN (?,?)',
-                'EXISTS (SELECT 1 FROM ticket_tags tt JOIN tags tg ON tg.id = tt.tag_id
-                                    WHERE tt.ticket_id = t.id AND tg.name = ?)',
-                't.team_id = ?',
-            ],
-            $where,
-        );
-        self::assertSame(['42', 'phone-1', 'active', 'waiting', 'vip', '7'], $params);
-    }
-
-    public function test_team_id_composes_independently_with_multi_tag_and_filter(): void
-    {
-        [$where, $params] = $this->builder->build(tag: 'vip,urgente', teamId: 3);
-
-        self::assertCount(3, $where);
-        self::assertSame(['vip', 'urgente', '3'], $params);
+        self::assertNull($f->assignment);
+        self::assertSame('9', $f->mineAgentId);
+        self::assertSame('42', $f->scopeAgentId);
+        self::assertSame('phone-1', $f->phoneNumberId);
+        self::assertSame(['active', 'waiting'], $f->statuses);
+        self::assertSame(['vip', 'urgente'], $f->tags);
+        self::assertSame('3', $f->teamId);
     }
 }

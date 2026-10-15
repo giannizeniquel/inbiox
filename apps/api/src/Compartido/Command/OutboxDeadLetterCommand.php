@@ -2,7 +2,7 @@
 
 namespace App\Compartido\Command;
 
-use Doctrine\DBAL\Connection;
+use App\Compartido\Repository\OutboxEventRepository;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
@@ -17,7 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class OutboxDeadLetterCommand extends Command
 {
     public function __construct(
-        private readonly Connection $conn,
+        private readonly OutboxEventRepository $outboxRepo,
     ) {
         parent::__construct();
     }
@@ -48,13 +48,7 @@ class OutboxDeadLetterCommand extends Command
      */
     private function listEvents(OutputInterface $output): int
     {
-        $rows = $this->conn->fetchAllAssociative(
-            'SELECT id, event_type, aggregate_id, retry_count, created_at
-             FROM outbox_events
-             WHERE status = \'dead_letter\'
-             ORDER BY created_at DESC
-             LIMIT 100'
-        );
+        $rows = $this->outboxRepo->findDeadLetters();
 
         if (empty($rows)) {
             $output->writeln('No dead-letter events found.');
@@ -91,14 +85,7 @@ class OutboxDeadLetterCommand extends Command
             return Command::FAILURE;
         }
 
-        $affected = $this->conn->executeStatement(
-            'UPDATE outbox_events
-             SET status = \'pending\',
-                 retry_count = 0
-             WHERE id = :id
-               AND status = \'dead_letter\'',
-            ['id' => $eventId]
-        );
+        $affected = $this->outboxRepo->resetDeadLetterToPending($eventId);
 
         if ($affected === 0) {
             $output->writeln(sprintf('<error>Event %s not found or not in dead_letter status.</error>', $eventId));
@@ -122,12 +109,7 @@ class OutboxDeadLetterCommand extends Command
 
         $cutoff = (new \DateTimeImmutable("-{$days} days"))->format('Y-m-d H:i:s');
 
-        $count = $this->conn->executeStatement(
-            'DELETE FROM outbox_events
-             WHERE status = \'dead_letter\'
-               AND created_at < :cutoff',
-            ['cutoff' => $cutoff]
-        );
+        $count = $this->outboxRepo->purgeDeadLettersCreatedBefore($cutoff);
 
         $output->writeln(sprintf('Purged %d dead-letter events older than %d days.', $count, $days));
         return Command::SUCCESS;

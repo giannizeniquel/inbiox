@@ -101,7 +101,3 @@ class TicketStateMachine
         return $status === TicketStatus::CLOSED->value;
     }
 }
-
-class InvalidTransitionException extends \Exception
-{
-}

@@ -7,16 +7,18 @@ namespace App\Reporte\Query;
 use App\Ticket\Query\ListTicketsQuery;
 use App\Ticket\Query\TicketFilterBuilder;
 
-use Doctrine\ORM\EntityManagerInterface;
+use App\Ticket\Repository\TagRepository;
+use App\Ticket\Repository\TicketRepository;
 use League\Csv\EscapeFormula;
 use League\Csv\Writer;
 
 /**
  * Streams the filtered ticket list as CSV rows into a `League\Csv\Writer`.
  *
- * Reuses `TicketFilterBuilder` for the shared WHERE/params (same semantics
- * as `ListTicketsQuery`), then appends a `t.created_at` date-range bound and
- * a keyset cursor (`t.id > :lastId ORDER BY t.id ASC LIMIT 500`) so results
+ * Reuses `TicketFilterBuilder` for the shared filters (same semantics as
+ * `ListTicketsQuery`); `TicketRepository::findExportChunk()` adds a
+ * `t.created_at` date-range bound and a keyset cursor
+ * (`t.id > :afterId ORDER BY t.id ASC LIMIT 500`) so results
  * are walked in bounded-memory chunks with no gaps/duplicates — see
  * `design.md`, "keyset chunking, not an unbuffered PDO connection".
  */
@@ -46,8 +48,9 @@ class ExportTicketsCsvQuery
     private const ESCAPABLE_COLUMNS = ['contact_name', 'assigned_agent', 'tags'];
 
     public function __construct(
-        private EntityManagerInterface $entityManager,
         private TicketFilterBuilder $ticketFilterBuilder,
+        private TicketRepository $ticketRepository,
+        private TagRepository $tagRepository,
     ) {}
 
     /**
@@ -73,7 +76,7 @@ class ExportTicketsCsvQuery
 
         $escapeFormula = new EscapeFormula();
 
-        [$baseWhere, $baseParams] = $this->ticketFilterBuilder->build(
+        $filters = $this->ticketFilterBuilder->build(
             filter: $agentId ? 'mine' : 'all',
             agentId: $agentId,
             status: $status,
@@ -81,39 +84,14 @@ class ExportTicketsCsvQuery
             tag: $tag,
             teamId: $teamId,
         );
+        $fromBound = $from->format('Y-m-d H:i:s');
+        $toBound = $to->format('Y-m-d H:i:s');
 
-        $baseWhere[] = 't.created_at >= ?';
-        $baseParams[] = $from->format('Y-m-d H:i:s');
-        $baseWhere[] = 't.created_at <= ?';
-        $baseParams[] = $to->format('Y-m-d H:i:s');
-
-        $conn = $this->entityManager->getConnection();
         $lastId = 0;
         $totalRows = 0;
 
         do {
-            $chunkWhere = $baseWhere;
-            $chunkParams = $baseParams;
-            $chunkWhere[] = 't.id > ?';
-            $chunkParams[] = $lastId;
-
-            $whereClause = 'WHERE ' . implode(' AND ', $chunkWhere);
-
-            $sql = "SELECT t.id, t.status, t.priority, t.assigned_agent_id, t.phone_number_id,
-                           t.created_at, t.first_response_at, t.resolved_at, t.closed_at,
-                           TIMESTAMPDIFF(SECOND, t.created_at, t.first_response_at) AS first_response_seconds,
-                           TIMESTAMPDIFF(SECOND, t.created_at, t.resolved_at) AS resolution_seconds,
-                           c.phone AS contact_phone, c.name AS contact_name,
-                           a.name AS agent_name
-                    FROM tickets t
-                    JOIN conversations conv ON t.conversation_id = conv.id
-                    JOIN contacts c ON conv.contact_id = c.id
-                    LEFT JOIN agents a ON t.assigned_agent_id = a.id
-                    $whereClause
-                    ORDER BY t.id ASC
-                    LIMIT " . self::CHUNK_SIZE;
-
-            $rows = $conn->executeQuery($sql, $chunkParams)->fetchAllAssociative();
+            $rows = $this->ticketRepository->findExportChunk($filters, $fromBound, $toBound, $lastId, self::CHUNK_SIZE);
             $chunkCount = count($rows);
 
             if ($chunkCount === 0) {
@@ -121,7 +99,7 @@ class ExportTicketsCsvQuery
             }
 
             $ticketIds = array_map(fn($row) => (int) $row['id'], $rows);
-            $tagsByTicket = $this->fetchTagsByTicket($conn, $ticketIds);
+            $tagsByTicket = $this->fetchTagsByTicket($ticketIds);
 
             foreach ($rows as $row) {
                 $ticketId = (int) $row['id'];
@@ -163,20 +141,13 @@ class ExportTicketsCsvQuery
      * @param list<int> $ticketIds
      * @return array<int, list<string>> ticket id => ordered tag names
      */
-    private function fetchTagsByTicket(\Doctrine\DBAL\Connection $conn, array $ticketIds): array
+    private function fetchTagsByTicket(array $ticketIds): array
     {
         if (empty($ticketIds)) {
             return [];
         }
 
-        $placeholders = implode(',', array_fill(0, count($ticketIds), '?'));
-        $sql = "SELECT tt.ticket_id, tg.name
-                FROM ticket_tags tt
-                JOIN tags tg ON tg.id = tt.tag_id
-                WHERE tt.ticket_id IN ($placeholders)
-                ORDER BY tt.ticket_id ASC, tt.id ASC";
-
-        $rows = $conn->executeQuery($sql, $ticketIds)->fetchAllAssociative();
+        $rows = $this->tagRepository->findNamesByTicketIds($ticketIds);
 
         $tagsByTicket = [];
         foreach ($rows as $row) {

@@ -72,12 +72,12 @@ Todo en `apps/api/src/`, organizado **por módulo de negocio** desde la fase 2 d
 | `Ticket/` | Ticket, estados, máquina de estados, etiquetas, bandeja. | `Ticket.php`, `TicketStateMachine.php`, `Controller/InboxController`, `Controller/TicketWorkflowController`, `Query/ListTicketsQuery`, `Query/TicketFilterBuilder` |
 | `Conversacion/` | Conversación, mensajes, media, ventana de 24 h, webhook de Meta, envío. | `Controller/WebhookController`, `Controller/ProviderProxyController`, `UseCase/HandleInboundMessageUseCase`, `ConversationWindowPolicy.php`, `MediaValidator.php` |
 | `Contacto/` | Contactos, importación, línea de tiempo. | `Controller/ContactController`, `Query/GetContactTimelineQuery`, `UseCase/ImportContactsFromCsvUseCase` |
-| `Agente/` | Agentes, equipos, perfil propio (`/api/me`). | `Agent.php`, `Team.php`, `Controller/MeController` |
+| `Agente/` | Agentes, equipos, perfil propio (`/api/me`). | `Agent.php`, `Team.php`, `Controller/MeController` (configuración, perfil y notificaciones; auto-respuesta, turnos y workspaces propios viven en Automatizacion, Disponibilidad y Administracion) |
 | `Disponibilidad/` | Turnos, disponibilidad manual. | `AgentShift.php`, `AgentAvailabilityService.php`, `UseCase/SetAgentAvailabilityUseCase` |
 | `Asignacion/` | Asignación manual y automática. | `AssignmentService.php`, `UseCase/AssignTicketUseCase`, `UseCase/AutoAssignTicketUseCase`, `EventListener/TicketAutoAssignmentRequestedListener` |
 | `Reporte/` | Métricas y exportación. | `Controller/ReportingController`, `Query/ReportingService`, `Repository/ReportingRepository` |
 | `Automatizacion/` | Reglas y respuesta automática. | `RuleExecutorService.php`, `AutoReopenRule.php`, `KeywordTaggingRule.php`, `AutoReplyService.php`, `DependencyInjection/RulePass` (registra **a mano** las reglas) |
-| `Administracion/` | Espacios de trabajo, usuarios y el ABM de administración (`/api/admin/*`). | `User.php`, `Workspace.php`, `Controller/UserController`, `Controller/AgentController` |
+| `Administracion/` | Espacios de trabajo, usuarios y el ABM de administración (`/api/admin/*`). | `User.php`, `Workspace.php`, `Controller/UserController`, `Controller/AgentController`, `UseCase/` (un caso de uso por cada escritura de administración) |
 | `Autenticacion/` | Login, refresh token, chequeo de usuarios inactivos. | `Controller/AuthController`, `Security/UserChecker`, `RefreshToken.php` |
 | `Compartido/` | Outbox, tiempo real, cliente de Graph, storage, scopes de seguridad, excepciones comunes. | `Outbox/OutboxPublisherService`, `Realtime/RealtimeEventFactory`, `Graph/GraphClient`, `Storage/MediaStorageService`, `Security/OwnershipScope` |
 
@@ -88,7 +88,7 @@ Dentro de cada módulo, las carpetas de capa son `Controller/`, `UseCase/`, `Que
 1. Buscar el path con `php bin/console debug:router --show-controllers` o con `rg "#\[Route\('/api/…"` → da el controlador.
 2. Ver permisos: `config/packages/security.yaml` (`access_control`, la primera regla que coincide) + `#[IsGranted]` de clase + `#[IsGranted]` de método + voters dentro de la acción. **Todas** deben pasar.
 3. Seguir la llamada al caso de uso o consulta del módulo (`<Modulo>/UseCase/`, `<Modulo>/Query/`).
-4. Ante un 500 con `reference`, buscar ese valor en los logs: es el patrón de manejo de errores de casi todos los controladores.
+4. Ante un 500 con `reference`, buscar ese valor en los logs (`Unhandled exception …`). Desde la fase 3b, todo 500 inesperado de `/api` lo arma un único listener, `Compartido/EventListener/InternalServerErrorListener`. Los errores específicos (400, 404, 409, 422…) siguen en cada controlador hasta la fase 5.
 
 ### Ruteo: los atributos `#[Route]` son la única fuente
 
@@ -129,7 +129,7 @@ Todo en `apps/web/src/app/`. Detalle por pantalla en [07-frontend.md](07-fronten
 | Jerarquía de roles | `security.yaml:2-4` | `ROLE_ADMIN` ⊃ `ROLE_SUPERVISOR` ⊃ `ROLE_AGENT`. En el frontend los roles **no** son jerárquicos (se compensa en `roleGuard`). |
 | Voters | `Ticket/Security/TicketVoter.php` (usado: `ASSIGN`, `CLOSE`), `src/Conversacion/Security/MessageVoter.php` (solo URL de adjuntos) | Ver [06](06-api-y-permisos.md). |
 | Scopes | `OwnershipScope` (siempre `null`: bandeja compartida, decisión Sprint 16) y `WorkspaceScope` (filtra por el `phone_number_id` del workspace activo; si no hay, **no filtra**) | El primero se reutiliza mal como autorización ([R3](00-estado-y-pendientes.md#r3-cualquier-agente-modifica-disponibilidad-y-turnos-de-cualquier-agente)). |
-| Usuario ↔ Agente | `Agent.user` (1:1 opcional) | Si un usuario sin agente envía un mensaje o cambia de workspace (admin/supervisor), **se le crea un agente** con nombre = email (`ProviderProxyController.php:205-225`, `MeController.php:371-385`). |
+| Usuario ↔ Agente | `Agent.user` (1:1 opcional) | Si un usuario sin agente envía un mensaje o cambia de workspace (admin/supervisor), **se le crea un agente** con nombre = email (`Agente/UseCase/EnsureAgentForUserUseCase.php`, `Administracion/UseCase/SetActiveWorkspaceUseCase.php` (`ensureAgent`)). |
 
 ---
 
@@ -160,7 +160,7 @@ sequenceDiagram
 | Paso | Archivos |
 |---|---|
 | Recolección de eventos | `Compartido/DomainEvent.php`, `Compartido/EventCollector.php` |
-| Escritura en outbox | Cada caso de uso tiene **su propia copia** de `persistEventsToOutbox()`: `HandleInboundMessageUseCase.php:107-156`, `HandleOutboundMessageUseCase.php:372-430`, `AssignTicketUseCase.php:143-180`, `AutoAssignTicketUseCase.php:216-252`, `HandleStatusUpdateUseCase.php:214-253`. Disponibilidad y turnos escriben `OutboxEvent` directo. `InboxController::markRead` inserta por SQL. |
+| Escritura en outbox | Un solo escritor: `Compartido/Outbox/OutboxWriter::write()` (persist + flush, siempre después del commit del negocio). Cada caso de uso sigue armando **su propio payload** en `persistEventsToOutbox()`: `HandleInboundMessageUseCase.php:109-157`, `HandleOutboundMessageUseCase.php:371-428`, `AssignTicketUseCase.php:145-184`, `AutoAssignTicketUseCase.php:211-249`, `HandleStatusUpdateUseCase.php:216-257`. Disponibilidad, turnos y `MarkTicketReadUseCase` arman un `OutboxEvent` y lo pasan al mismo escritor. |
 | Publicación | `Compartido/Command/OutboxPublishCommand.php` → `Compartido/Outbox/OutboxPublisherService.php` |
 | Contrato | `Compartido/Realtime/RealtimeEventFactory.php`, `EventTypeMapper.php`, `RealtimeEventType.php` (`ticket.created`, `ticket.status_changed`, `ticket.assigned`, `message.added`, `message.updated`, `conversation.updated`, `agent.availability_changed`, `agent.shift_changed`) |
 | Token de suscripción | `GET /api/mercure/token` → `MercureJwtService::issueForUser()`; en la práctica el frontend **no lo usa para suscribirse** (el hub es anónimo), solo para el resync. |
@@ -173,8 +173,8 @@ Deducidos de la lectura; confirmar con `SELECT event_type, status, COUNT(*) FROM
 | # | Problema | Evidencia |
 |---|---|---|
 | P-1 | `InboxUpdatedEvent` no está en `EventTypeMapper` → falla 5 veces → `dead_letter`. | `EventTypeMapper.php:11-19`; `OutboxPublisherService.php:206-210` |
-| P-2 | `outbox_events.sequence` queda en 0 salvo en estados de entrega → el resync por `afterSequence` no devuelve casi nada. | `HandleStatusUpdateUseCase.php:245`; `TicketEventsController.php:59` |
-| P-3 | El resync filtra por `aggregate_id` sin `aggregate_type` (mezcla eventos de agente y de ticket). Además es inalcanzable (401 del firewall). | `TicketEventsController.php:55-63` |
+| P-2 | `outbox_events.sequence` queda en 0 salvo en estados de entrega → el resync por `afterSequence` no devuelve casi nada. | `HandleStatusUpdateUseCase.php:245`; `OutboxEventRepository::findResyncRows` |
+| P-3 | El resync filtra por `aggregate_id` sin `aggregate_type` (mezcla eventos de agente y de ticket). Además es inalcanzable (401 del firewall). | `OutboxEventRepository::findResyncRows` |
 | P-4 | En el mensaje entrante, la auto-asignación se publica como `ticket.status_changed` vacío, no como `ticket.assigned`. | `HandleInboundMessageUseCase.php:124-142` |
 | P-5 | Resolver, cerrar, transicionar y el cierre por ventana **no escriben nada** en el outbox. | `TransitionTicketStatusUseCase.php` (no tiene `EventCollector`) |
 | P-6 | `ConversationUpdatedEvent` existía en el contrato sin que nadie lo emitiera; se borró en la fase 1 (el frontend todavía declara `conversation.updated`). (`ticket.read` sí se emite: lo inserta `InboxController::markRead` por SQL con el tipo ya en formato de contrato, que `RealtimeEventFactory::resolveEnum()` acepta.) | `InboxController.php:189-202`; `RealtimeEventFactory.php:42-53` |
@@ -267,7 +267,7 @@ Archivos: `apps/api/.env` (no versionado), `.env.dev` (**versionado, con credenc
 
 | # | Violación | Evidencia | Efecto observado |
 |---|---|---|---|
-| B1 | Controladores con lógica de negocio, SQL o `EntityManager` directo. | `InboxController::markRead` (escribe `last_read_at` e inserta en `outbox_events` por SQL); `MeController::listMyWorkspaces` (SQL embebido); `TicketController::setTeam`; `Admin/*Controller` (CRUD con EM); `ProviderProxyController` (crea agentes, persiste el mensaje de plantilla, llama a Graph); `TicketWorkflowController` (clasifica y guarda la auditoría). | La regla queda repartida; es difícil saber "dónde está" una operación. |
+| B1 | Controladores con lógica de negocio, SQL o `EntityManager` directo. | `ProviderProxyController` (orquesta el envío: resuelve el teléfono y llama a Graph). | La regla queda repartida; es difícil saber "dónde está" una operación. Fase 3d: ningún controlador usa `EntityManager` ni SQL y toda escritura pasa por un caso de uso; partir el flujo de envío queda para la fase 4. |
 | B2 | El dominio depende de aplicación e infraestructura. | `Automatizacion/AutoReopenRule.php:12-13` usa `TransitionTicketStatusUseCase` y el `EntityManager`. | Dirección de dependencias invertida. |
 | B3 | Implementación concreta dentro de `Domain`. | `Disponibilidad/Repository/AgentShiftRepository.php` | Inconsistencia con `Repository/`. |
 | B4 | ~~Interfaces con una sola implementación.~~ **Resuelto en la fase 2.** | Se borraron 8 interfaces (7 de repositorio y `EventCollector`); se inyecta la clase concreta. | — |

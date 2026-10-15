@@ -10,10 +10,9 @@ use App\Compartido\Security\OwnershipScope;
 use App\Compartido\Security\WorkspaceScope;
 use App\Disponibilidad\AgentAvailabilityService;
 use App\Reporte\Query\ReportingService;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Ticket\Repository\TicketRepository;
 use League\Csv\Bom;
 use League\Csv\Writer;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -41,10 +40,9 @@ class ReportingController
     public function __construct(
         private ReportingService $reportingService,
         private AgentAvailabilityService $agentAvailabilityService,
-        private EntityManagerInterface $entityManager,
+        private TicketRepository $ticketRepository,
         private OwnershipScope $ownershipScope,
         private WorkspaceScope $workspaceScope,
-        private LoggerInterface $logger,
         private ExportTicketsCsvQuery $exportTicketsCsvQuery,
         private TicketFilterBuilder $ticketFilterBuilder,
     ) {}
@@ -122,13 +120,6 @@ class ReportingController
             return new JsonResponse($metrics);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
-        } catch (\Exception $e) {
-            $referenceId = bin2hex(random_bytes(8));
-            $this->logger->error('Error fetching FRT metrics: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-            ]);
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
         }
     }
 
@@ -152,13 +143,6 @@ class ReportingController
             return new JsonResponse($metrics);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
-        } catch (\Exception $e) {
-            $referenceId = bin2hex(random_bytes(8));
-            $this->logger->error('Error fetching RT metrics: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-            ]);
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
         }
     }
 
@@ -182,13 +166,6 @@ class ReportingController
             return new JsonResponse($counts);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
-        } catch (\Exception $e) {
-            $referenceId = bin2hex(random_bytes(8));
-            $this->logger->error('Error fetching ticket counts: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-            ]);
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
         }
     }
 
@@ -212,13 +189,6 @@ class ReportingController
             return new JsonResponse($volume);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
-        } catch (\Exception $e) {
-            $referenceId = bin2hex(random_bytes(8));
-            $this->logger->error('Error fetching volume: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-            ]);
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
         }
     }
 
@@ -247,13 +217,6 @@ class ReportingController
             return new JsonResponse($performance);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
-        } catch (\Exception $e) {
-            $referenceId = bin2hex(random_bytes(8));
-            $this->logger->error('Error fetching agent performance: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-            ]);
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
         }
     }
 
@@ -265,26 +228,17 @@ class ReportingController
     #[Route('/api/reports/agent-load', name: 'app_report_agent_load', methods: ['GET'])]
     public function agentLoad(Request $request): JsonResponse
     {
-        try {
-            $agentId = $request->query->get('agent_id') ? (int) $request->query->get('agent_id') : null;
+        $agentId = $request->query->get('agent_id') ? (int) $request->query->get('agent_id') : null;
 
-            $scopeAgentId = $this->getScopeAgentId();
-            if (null !== $scopeAgentId) {
-                $agentId = $scopeAgentId;
-            }
-
-            $phoneNumberId = $this->getScopePhoneNumberId();
-            $metrics = $this->reportingService->getAgentLoad($agentId, $phoneNumberId);
-
-            return new JsonResponse($metrics);
-        } catch (\Exception $e) {
-            $referenceId = bin2hex(random_bytes(8));
-            $this->logger->error('Error fetching agent load: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-            ]);
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
+        $scopeAgentId = $this->getScopeAgentId();
+        if (null !== $scopeAgentId) {
+            $agentId = $scopeAgentId;
         }
+
+        $phoneNumberId = $this->getScopePhoneNumberId();
+        $metrics = $this->reportingService->getAgentLoad($agentId, $phoneNumberId);
+
+        return new JsonResponse($metrics);
     }
 
     /**
@@ -305,13 +259,6 @@ class ReportingController
             return new JsonResponse($result);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
-        } catch (\Exception $e) {
-            $referenceId = bin2hex(random_bytes(8));
-            $this->logger->error('Error fetching unassigned tickets: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-            ]);
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
         }
     }
 
@@ -323,45 +270,36 @@ class ReportingController
     #[Route('/api/reports/available-agents', name: 'app_report_available_agents', methods: ['GET'])]
     public function availableAgents(Request $request): JsonResponse
     {
-        try {
-            $phoneNumberId = $this->getScopePhoneNumberId();
-            $now = new \DateTimeImmutable();
+        $phoneNumberId = $this->getScopePhoneNumberId();
+        $now = new \DateTimeImmutable();
 
-            $available = $this->agentAvailabilityService->listAvailableAgents($now);
+        $available = $this->agentAvailabilityService->listAvailableAgents($now);
 
-            $result = [];
-            foreach ($available as $agent) {
-                // Filter by workspace if scoped
-                if ($phoneNumberId !== null) {
-                    $isInWorkspace = false;
-                    foreach ($agent->getWorkspaces() as $ws) {
-                        if ($ws->getPhoneNumberId() === $phoneNumberId) {
-                            $isInWorkspace = true;
-                            break;
-                        }
-                    }
-                    if (!$isInWorkspace) {
-                        continue;
+        $result = [];
+        foreach ($available as $agent) {
+            // Filter by workspace if scoped
+            if ($phoneNumberId !== null) {
+                $isInWorkspace = false;
+                foreach ($agent->getWorkspaces() as $ws) {
+                    if ($ws->getPhoneNumberId() === $phoneNumberId) {
+                        $isInWorkspace = true;
+                        break;
                     }
                 }
-
-                $result[] = [
-                    'agent_id' => $agent->getId(),
-                    'agent_name' => $agent->getName(),
-                    'in_shift' => true,
-                    'active_tickets' => $this->countActiveTicketsForAgent($agent->getId()),
-                ];
+                if (!$isInWorkspace) {
+                    continue;
+                }
             }
 
-            return new JsonResponse($result);
-        } catch (\Exception $e) {
-            $referenceId = bin2hex(random_bytes(8));
-            $this->logger->error('Error fetching available agents: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-            ]);
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
+            $result[] = [
+                'agent_id' => $agent->getId(),
+                'agent_name' => $agent->getName(),
+                'in_shift' => true,
+                'active_tickets' => $this->ticketRepository->countActiveForAgent($agent->getId()),
+            ];
         }
+
+        return new JsonResponse($result);
     }
 
     /**
@@ -382,13 +320,6 @@ class ReportingController
             return new JsonResponse($trend);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
-        } catch (\Exception $e) {
-            $referenceId = bin2hex(random_bytes(8));
-            $this->logger->error('Error fetching FRT trend: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-            ]);
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
         }
     }
 
@@ -410,13 +341,6 @@ class ReportingController
             return new JsonResponse($heatmap);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
-        } catch (\Exception $e) {
-            $referenceId = bin2hex(random_bytes(8));
-            $this->logger->error('Error fetching heatmap: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-            ]);
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
         }
     }
 
@@ -428,21 +352,12 @@ class ReportingController
     #[Route('/api/reports/recurring-customers', name: 'app_report_recurring', methods: ['GET'])]
     public function recurringCustomers(Request $request): JsonResponse
     {
-        try {
-            $phoneNumberId = $this->getScopePhoneNumberId();
-            $threshold = $request->query->get('threshold') ? (int) $request->query->get('threshold') : 3;
+        $phoneNumberId = $this->getScopePhoneNumberId();
+        $threshold = $request->query->get('threshold') ? (int) $request->query->get('threshold') : 3;
 
-            $result = $this->reportingService->getRecurringCustomers($phoneNumberId, $threshold);
+        $result = $this->reportingService->getRecurringCustomers($phoneNumberId, $threshold);
 
-            return new JsonResponse($result);
-        } catch (\Exception $e) {
-            $referenceId = bin2hex(random_bytes(8));
-            $this->logger->error('Error fetching recurring customers: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-            ]);
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
-        }
+        return new JsonResponse($result);
     }
 
     /**
@@ -463,13 +378,6 @@ class ReportingController
             return new JsonResponse($result);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
-        } catch (\Exception $e) {
-            $referenceId = bin2hex(random_bytes(8));
-            $this->logger->error('Error fetching reopened tickets: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-            ]);
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
         }
     }
 
@@ -560,13 +468,6 @@ class ReportingController
             return new JsonResponse($result);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
-        } catch (\Exception $e) {
-            $referenceId = bin2hex(random_bytes(8));
-            $this->logger->error('Error fetching response delay metrics: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-            ]);
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
         }
     }
 
@@ -578,38 +479,12 @@ class ReportingController
     #[Route('/api/reports/tickets/{id}/participation', name: 'app_report_ticket_participation', methods: ['GET'])]
     public function ticketParticipation(Request $request, int $id): JsonResponse
     {
-        try {
-            $result = $this->reportingService->getTicketParticipation($id);
+        $result = $this->reportingService->getTicketParticipation($id);
 
-            if ($result === null) {
-                return new JsonResponse(['error' => 'Ticket not found'], 404);
-            }
-
-            return new JsonResponse($result);
-        } catch (\Exception $e) {
-            $referenceId = bin2hex(random_bytes(8));
-            $this->logger->error('Error fetching ticket participation: {message}', [
-                'reference' => $referenceId,
-                'exception' => $e->getMessage(),
-            ]);
-            return new JsonResponse(['error' => 'Internal server error', 'reference' => $referenceId], 500);
+        if ($result === null) {
+            return new JsonResponse(['error' => 'Ticket not found'], 404);
         }
-    }
 
-    /**
-     * Count active tickets for a specific agent (helper for available-agents).
-     */
-    private function countActiveTicketsForAgent(int $agentId): int
-    {
-        $result = $this->entityManager->createQuery(
-            'SELECT COUNT(t.id) FROM App\Ticket\Ticket t
-             WHERE t.assignedAgentId = :agentId
-             AND t.status IN (:statuses)'
-        )
-            ->setParameter('agentId', $agentId)
-            ->setParameter('statuses', ['new', 'active', 'waiting'])
-            ->getSingleScalarResult();
-
-        return (int) $result;
+        return new JsonResponse($result);
     }
 }

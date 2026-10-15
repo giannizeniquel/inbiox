@@ -5,6 +5,7 @@ namespace App\Agente\Repository;
 use App\Agente\Agent;
 use App\Administracion\Workspace;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\Persistence\ManagerRegistry;
 
 class AgentRepository extends ServiceEntityRepository
@@ -23,6 +24,22 @@ class AgentRepository extends ServiceEntityRepository
     public function findById(int $id): ?Agent
     {
         return $this->find($id);
+    }
+
+    /**
+     * @param int[] $ids
+     * @return Agent[]
+     */
+    public function findByIds(array $ids): array
+    {
+        return $this->getEntityManager()
+            ->createQueryBuilder()
+            ->select('a')
+            ->from(Agent::class, 'a')
+            ->where('a.id IN (:ids)')
+            ->setParameter('ids', $ids)
+            ->getQuery()
+            ->getResult();
     }
 
     public function findAllActive(): array
@@ -55,6 +72,43 @@ class AgentRepository extends ServiceEntityRepository
             ->andWhere('a.active = true')
             ->setParameter('workspaceId', $workspace->getId())
             ->orderBy('a.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Take row locks on the given `agents` rows: `SELECT id ... FOR UPDATE`.
+     * Only the lock matters; the result is discarded.
+     *
+     * Native SQL because DQL cannot do this without side effects: a DQL
+     * PESSIMISTIC_WRITE read hydrates and refreshes the managed Agent
+     * entities, which the caller already holds. Runs on the EntityManager's
+     * connection, so it joins the caller's open transaction.
+     *
+     * @param int[] $ids non-empty
+     */
+    public function lockRowsForUpdate(array $ids): void
+    {
+        $this->getEntityManager()->getConnection()->executeQuery(
+            'SELECT id FROM agents WHERE id IN (?) FOR UPDATE',
+            [array_values($ids)],
+            [ArrayParameterType::INTEGER],
+        );
+    }
+
+    /**
+     * Newest first, with the linked user fetched in the same query.
+     *
+     * @return Agent[]
+     */
+    public function findPageWithUser(int $offset, int $limit): array
+    {
+        return $this->createQueryBuilder('a')
+            ->leftJoin('a.user', 'u')
+            ->addSelect('u')
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
+            ->orderBy('a.id', 'DESC')
             ->getQuery()
             ->getResult();
     }

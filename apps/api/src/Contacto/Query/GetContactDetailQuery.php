@@ -3,25 +3,16 @@
 namespace App\Contacto\Query;
 
 use App\Contacto\Repository\ContactRepository;
-use Doctrine\ORM\EntityManagerInterface;
 
 class GetContactDetailQuery
 {
     public function __construct(
-        private EntityManagerInterface $entityManager,
         private ContactRepository $contactRepository,
     ) {}
 
     public function execute(int $id): ?ContactDetailDTO
     {
-        $conn = $this->entityManager->getConnection();
-
-        $sql = "SELECT c.id, c.phone, c.name, c.status, c.channel, c.owner_id, c.email, c.created_at, c.updated_at
-                FROM contacts c
-                WHERE c.id = ?";
-
-        $stmt = $conn->executeQuery($sql, [$id]);
-        $row = $stmt->fetchAssociative();
+        $row = $this->contactRepository->findDetailRow($id);
 
         if (!$row) {
             return null;

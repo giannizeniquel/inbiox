@@ -10,6 +10,7 @@ use App\Contacto\Contact;
 use App\Ticket\TicketEvent;
 use App\Ticket\Ticket;
 use App\Administracion\Workspace;
+use App\Reporte\Repository\ReportingRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -31,6 +32,7 @@ final class SeedReportsCommand extends Command
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
+        private readonly ReportingRepository $reportingRepo,
     ) {
         parent::__construct();
     }
@@ -56,13 +58,7 @@ final class SeedReportsCommand extends Command
 
         // ── Truncate tables (order matters for foreign keys) ──
         $output->writeln('Truncating existing data...');
-        $conn->executeStatement('SET FOREIGN_KEY_CHECKS = 0');
-        $conn->executeStatement('TRUNCATE TABLE ticket_events');
-        $conn->executeStatement('TRUNCATE TABLE tickets');
-        $conn->executeStatement('TRUNCATE TABLE agent_shifts');
-        $conn->executeStatement('TRUNCATE TABLE contacts');
-        $conn->executeStatement('TRUNCATE TABLE agents');
-        $conn->executeStatement('SET FOREIGN_KEY_CHECKS = 1');
+        $this->reportingRepo->truncateSeedTables();
 
         // ── Load existing workspaces ──
         $workspaceRepo = $this->em->getRepository(Workspace::class);

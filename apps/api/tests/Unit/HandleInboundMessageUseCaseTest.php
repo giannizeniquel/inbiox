@@ -4,6 +4,7 @@ namespace App\Tests\Unit;
 
 use App\Disponibilidad\AgentAvailabilityService;
 use App\Automatizacion\AutoReplyService;
+use App\Compartido\Outbox\OutboxWriter;
 use App\Compartido\Graph\GraphClient;
 use App\Conversacion\UseCase\HandleInboundMessageUseCase;
 use App\Ticket\UseCase\TransitionTicketStatusUseCase;
@@ -54,7 +55,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
         // Create a real AutoReplyService with mocked deps (can't mock final class)
         $agentRepo = $this->createMock(AgentRepository::class);
         $agentShiftRepo = $this->createMock(AgentShiftRepository::class);
-        $availabilityService = new AgentAvailabilityService($agentRepo, $agentShiftRepo, $this->em);
+        $availabilityService = new AgentAvailabilityService($agentRepo, $agentShiftRepo, $this->ticketRepo);
         $graphClient = $this->createMock(GraphClient::class);
         $processedEventRepo = $this->createMock(ProcessedEventRepository::class);
         $this->autoReplyService = new AutoReplyService(
@@ -78,6 +79,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
             $this->transitionUseCase,
             $this->ruleExecutor,
             $this->eventCollector,
+            new OutboxWriter($this->em),
             $this->autoReplyService,
             $this->logger,
         );

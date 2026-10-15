@@ -10,7 +10,7 @@ use App\Disponibilidad\Repository\AgentShiftRepository;
 use App\Ticket\TicketStatus;
 use App\Administracion\Workspace;
 use App\Agente\Repository\AgentRepository;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Ticket\Repository\TicketRepository;
 
 /**
  * Single source of truth for agent availability evaluation.
@@ -27,7 +27,7 @@ final class AgentAvailabilityService
     public function __construct(
         private AgentRepository $agentRepository,
         private AgentShiftRepository $agentShiftRepository,
-        private EntityManagerInterface $entityManager,
+        private TicketRepository $ticketRepository,
     ) {}
 
     /**
@@ -300,19 +300,6 @@ final class AgentAvailabilityService
             return 0;
         }
 
-        $result = $this->entityManager->createQuery(
-            'SELECT COUNT(t.id) FROM App\Ticket\Ticket t
-             WHERE t.assignedAgentId = :agentId
-             AND t.status IN (:statuses)',
-        )
-            ->setParameter('agentId', $agentId)
-            ->setParameter('statuses', [
-                TicketStatus::NEW->value,
-                TicketStatus::ACTIVE->value,
-                TicketStatus::WAITING->value,
-            ])
-            ->getSingleScalarResult();
-
-        return (int) $result;
+        return $this->ticketRepository->countActiveForAgent($agentId);
     }
 }
