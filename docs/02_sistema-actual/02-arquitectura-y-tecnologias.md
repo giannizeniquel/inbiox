@@ -129,7 +129,7 @@ Todo en `apps/web/src/app/`. Detalle por pantalla en [07-frontend.md](07-fronten
 | Jerarquía de roles | `security.yaml:2-4` | `ROLE_ADMIN` ⊃ `ROLE_SUPERVISOR` ⊃ `ROLE_AGENT`. En el frontend los roles **no** son jerárquicos (se compensa en `roleGuard`). |
 | Voters | `Ticket/Security/TicketVoter.php` (usado: `ASSIGN`, `CLOSE`), `src/Conversacion/Security/MessageVoter.php` (solo URL de adjuntos) | Ver [06](06-api-y-permisos.md). |
 | Scopes | `OwnershipScope` (siempre `null`: bandeja compartida, decisión Sprint 16) y `WorkspaceScope` (filtra por el `phone_number_id` del workspace activo; si no hay, **no filtra**) | El primero se reutiliza mal como autorización ([R3](00-estado-y-pendientes.md#r3-cualquier-agente-modifica-disponibilidad-y-turnos-de-cualquier-agente)). |
-| Usuario ↔ Agente | `Agent.user` (1:1 opcional) | Si un usuario sin agente envía un mensaje o cambia de workspace (admin/supervisor), **se le crea un agente** con nombre = email (`ProviderProxyController.php:205-225`, `Administracion/UseCase/SetActiveWorkspaceUseCase.php` (`ensureAgent`)). |
+| Usuario ↔ Agente | `Agent.user` (1:1 opcional) | Si un usuario sin agente envía un mensaje o cambia de workspace (admin/supervisor), **se le crea un agente** con nombre = email (`Agente/UseCase/EnsureAgentForUserUseCase.php`, `Administracion/UseCase/SetActiveWorkspaceUseCase.php` (`ensureAgent`)). |
 
 ---
 
@@ -267,7 +267,7 @@ Archivos: `apps/api/.env` (no versionado), `.env.dev` (**versionado, con credenc
 
 | # | Violación | Evidencia | Efecto observado |
 |---|---|---|---|
-| B1 | Controladores con lógica de negocio, SQL o `EntityManager` directo. | `ProviderProxyController` (crea agentes, persiste el mensaje de plantilla, llama a Graph). | La regla queda repartida; es difícil saber "dónde está" una operación. Fase 3d: Administracion, `/api/me`, Ticket y Asignacion ya pasan por casos de uso. |
+| B1 | Controladores con lógica de negocio, SQL o `EntityManager` directo. | `ProviderProxyController` (orquesta el envío: resuelve el teléfono y llama a Graph). | La regla queda repartida; es difícil saber "dónde está" una operación. Fase 3d: ningún controlador usa `EntityManager` ni SQL y toda escritura pasa por un caso de uso; partir el flujo de envío queda para la fase 4. |
 | B2 | El dominio depende de aplicación e infraestructura. | `Automatizacion/AutoReopenRule.php:12-13` usa `TransitionTicketStatusUseCase` y el `EntityManager`. | Dirección de dependencias invertida. |
 | B3 | Implementación concreta dentro de `Domain`. | `Disponibilidad/Repository/AgentShiftRepository.php` | Inconsistencia con `Repository/`. |
 | B4 | ~~Interfaces con una sola implementación.~~ **Resuelto en la fase 2.** | Se borraron 8 interfaces (7 de repositorio y `EventCollector`); se inyecta la clase concreta. | — |

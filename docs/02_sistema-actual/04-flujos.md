@@ -64,7 +64,7 @@ flowchart TD
 
 | # | Paso | Dónde | Regla |
 |---|---|---|---|
-| 1 | GET: verificación de suscripción (`hub.verify_token`). | `WebhookController.php:59-83` | |
+| 1 | GET: verificación de suscripción (`hub.verify_token`). | `WebhookController.php:58-82` | |
 | 2 | POST: valida `X-Hub-Signature-256` (HMAC-SHA256 con `META_APP_SECRET`). Inválida → 401. JSON inválido → 400. | `:100-121`, `:154-166` | R-M8 |
 | 3 | Guarda el payload crudo en `webhook_payloads` (si falla, se loguea y sigue). | `:125-132`, `:174-205` | |
 | 4 | Por cada `entry[].changes[].value` de WhatsApp: toma `metadata.phone_number_id` y el nombre de perfil. Descarta tipos no soportados. | `:223-274` | R-M1 |
@@ -107,7 +107,7 @@ flowchart TD
 |---|---|---|---|
 | 1 | (Frontend) Si la ventana de 24 h venció según el reloj del navegador, el composer se reemplaza por un aviso. | `features/inbox/components/composer/composer.component.ts:70-76` | R-W1 (copia) |
 | 2 | (Frontend) Adjuntos: valida tipo/tamaño, sube con `POST /api/provider/media/upload`, luego envía con `mediaId`. | `features/inbox/services/message-sender.service.ts:131-134, 226-252` | |
-| 3 | Valida `ticketId` y `content`. Resuelve el agente del usuario; **si no tiene, lo crea** (nombre = email). | `ProviderProxyController.php:51-71, 205-225` | R-A12 |
+| 3 | Valida `ticketId` y `content`. Resuelve el agente del usuario; **si no tiene, lo crea** (nombre = email). | `ProviderProxyController.php:52-72`; `Agente/UseCase/EnsureAgentForUserUseCase.php` | R-A12 |
 | 4 | `senderIsPrivileged = isGranted('ROLE_SUPERVISOR')`. | `:76` | |
 | 5 | Idempotencia: clave `outbound:{ticketId}:md5(texto o media)`; si ya existe, devuelve `duplicate_skipped` sin persistir. | `Conversacion/UseCase/HandleOutboundMessageUseCase.php:83-102` | R-M3 |
 | 6 | Hasta 3 intentos ante bloqueo optimista; transacción con `SELECT … FOR UPDATE`. | `:106-188` | |
@@ -117,7 +117,7 @@ flowchart TD
 | 10 | Crea el `Message` (`outbound`, `sender_type=agent`, `sender_agent_id`). | `:257-269` | R-M4 |
 | 11 | Estado: `new → active`, `active → waiting`; registra `first_response_at`. Como el paso 9 ya pasó `new → active`, el primer mensaje deja el ticket en `waiting`. | `:272-305` | R-T5, R-T6 |
 | 12 | Guarda `ProcessedEvent`, recolecta `MessageCreatedEvent`, commit, escribe outbox (omite `InboxUpdatedEvent`, agrega `assignee_id`). | `:308-426` | |
-| 13 | **Recién ahora** llama a Graph API (`sendMessage` o `sendMediaMessage`) con el `phone_number_id` del ticket. Si falla → error al usuario, **pero el mensaje ya quedó guardado como `sent`** y el ticket ya cambió. | `ProviderProxyController.php:121-171` | R-M6 |
+| 13 | **Recién ahora** llama a Graph API (`sendMessage` o `sendMediaMessage`) con el `phone_number_id` del ticket. Si falla → error al usuario, **pero el mensaje ya quedó guardado como `sent`** y el ticket ya cambió. | `ProviderProxyController.php:122-172` | R-M6 |
 | 14 | Guarda el WAMID en `messages.external_id` (para correlacionar estados de entrega). | `:174-184` | |
 | 15 | (Frontend) Confirma el mensaje optimista; si falla, `retryWithBackoff` **reintenta el POST 2 veces**. | `message-sender.service.ts:41-45, 71-74` | |
 

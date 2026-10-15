@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Conversacion\Controller;
 
 use App\Compartido\Graph\GraphClient;
+use App\Agente\UseCase\EnsureAgentForUserUseCase;
 use App\Conversacion\UseCase\HandleOutboundMessageUseCase;
-use App\Conversacion\Message;
-use App\Conversacion\MessageDirection;
-use App\Conversacion\MessageSenderType;
+use App\Conversacion\UseCase\MarkOutboundMessageSentUseCase;
+use App\Conversacion\UseCase\RecordSentTemplateUseCase;
 use App\Conversacion\MediaKind;
 use App\Administracion\User;
 use App\Conversacion\ConversationWindowExpiredException;
@@ -19,7 +19,6 @@ use App\Compartido\StateConflictException;
 use App\Compartido\Storage\MediaStorageService;
 use App\Conversacion\MediaValidator;
 use App\Ticket\Repository\TicketRepository;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -39,8 +38,10 @@ class ProviderProxyController extends AbstractController
     public function __construct(
         private readonly TicketRepository $ticketRepository,
         private readonly GraphClient $graphClient,
-        private readonly EntityManagerInterface $em,
         private readonly HandleOutboundMessageUseCase $outboundUseCase,
+        private readonly MarkOutboundMessageSentUseCase $markOutboundMessageSent,
+        private readonly RecordSentTemplateUseCase $recordSentTemplate,
+        private readonly EnsureAgentForUserUseCase $ensureAgentForUser,
         private readonly MediaValidator $mediaValidator,
         private readonly MediaStorageService $mediaStorageService,
     ) {}
@@ -174,12 +175,7 @@ class ProviderProxyController extends AbstractController
 
         // Set WAMID on the message created by HandleOutboundMessageUseCase
         if ($wamid !== null && !empty($result['message_id'])) {
-            $message = $this->em->getRepository(Message::class)->find($result['message_id']);
-            if ($message) {
-                $message->setExternalId($wamid);
-                $message->setDeliveryStatus('sent');
-                $this->em->flush();
-            }
+            $this->markOutboundMessageSent->execute($result['message_id'], $wamid);
         }
 
         return new JsonResponse(
@@ -209,16 +205,7 @@ class ProviderProxyController extends AbstractController
         }
 
         try {
-            $agent = $user->getAgent()
-                ?? $this->em->getRepository(\App\Agente\Agent::class)->findOneBy(['user' => $user]);
-            if (!$agent) {
-                $agent = new \App\Agente\Agent($user->getEmail() ?? 'Admin');
-                $agent->setUser($user);
-                $this->em->persist($agent);
-                $this->em->flush();
-            }
-
-            return $agent->getId();
+            return $this->ensureAgentForUser->execute($user)->getId();
         } catch (\Throwable) {
             return null;
         }
@@ -304,20 +291,7 @@ class ProviderProxyController extends AbstractController
 
         // Persist WAMID as externalId on a new outbound Message for webhook correlation
         if ($wamid !== null) {
-            $content = "Template: {$templateName}" . (!empty($parameters) ? ' (' . implode(', ', $parameters) . ')' : '');
-            $message = new Message();
-            $message->setContent($content);
-            $message->setExternalId($wamid);
-            $message->setDirection(MessageDirection::OUTBOUND->value);
-            $message->setDeliveryStatus('sent');
-            $message->setUpdatedAt(new \DateTimeImmutable());
-            $message->setSenderAgentId($this->resolveActingAgentId($user));
-            $message->setSenderType(MessageSenderType::AGENT);
-            if ($ticket->getConversation()) {
-                $message->setConversation($ticket->getConversation());
-            }
-            $this->em->persist($message);
-            $this->em->flush();
+            $this->recordSentTemplate->execute($ticket, $templateName, $parameters, $wamid, $this->resolveActingAgentId($user));
         }
 
         return new JsonResponse(

@@ -61,7 +61,7 @@ Estas son las preguntas que solo el desarrollador (o el cliente) puede responder
 | R-W3 | Solo los mensajes entrantes actualizan `last_inbound_message_at`. | `HandleInboundMessageUseCase.php:345` | Negocio | **Confirmada** — spec "Inbound Message Timestamp Tracking". |
 | R-W4 | Los tickets con ventana vencida se cierran automáticamente (incluso `new` y `resolved`). | `Conversacion/UseCase/ConversationWindowExpiryService.php:31-36, 55-93` | Negocio | **Confirmada** — spec "Automatic Closure on Window Expiry". Solo corre con el profile `window-closer`. |
 | R-W5 | Un ticket sin mensaje entrante registrado nunca se cierra por ventana. | `ConversationWindowPolicy.php:40-48` | Técnica | **Confirmada** — design D8 citado en `ConversationWindowPolicy.php:15-20`. |
-| R-W6 | Las plantillas se pueden enviar fuera de la ventana. | `Conversacion/Controller/ProviderProxyController.php:228-330` (sin guard) | Negocio | **Confirmada** — análisis de brecha fila #9c. |
+| R-W6 | Las plantillas se pueden enviar fuera de la ventana. | `Conversacion/Controller/ProviderProxyController.php:215-304` (sin guard) | Negocio | **Confirmada** — análisis de brecha fila #9c. |
 
 ## Asignación y propiedad
 
@@ -78,7 +78,7 @@ Estas son las preguntas que solo el desarrollador (o el cliente) puede responder
 | R-A9 | No se puede asignar manualmente un ticket resuelto/cerrado (409 para todos). | `TicketVoter.php:88-95` | Negocio | Regla no confirmada. |
 | R-A10 | Un agente solo puede reasignar tickets que ya son suyos; no puede tomar uno sin dueño desde el desplegable. | `TicketVoter.php:102-118` | Negocio | Regla no confirmada. |
 | R-A11 | El campo "asignado por" lo envía el cliente y se guarda tal cual. | `Asignacion/Controller/AssignTicketRequest.php:13-15` | Accidental | Regla no confirmada. |
-| R-A12 | Un usuario sin agente obtiene uno creado automáticamente (nombre = email) al enviar un mensaje o al cambiar de workspace (admin/supervisor). | `ProviderProxyController.php:205-225`; `Administracion/UseCase/SetActiveWorkspaceUseCase.php` (`ensureAgent`) | Técnica | Regla no confirmada. Efecto: aparecen "agentes" con nombre de email en reportes. |
+| R-A12 | Un usuario sin agente obtiene uno creado automáticamente (nombre = email) al enviar un mensaje o al cambiar de workspace (admin/supervisor). | `Agente/UseCase/EnsureAgentForUserUseCase.php`; `Administracion/UseCase/SetActiveWorkspaceUseCase.php` (`ensureAgent`) | Técnica | Regla no confirmada. Efecto: aparecen "agentes" con nombre de email en reportes. |
 
 ## Visibilidad y permisos
 
@@ -105,14 +105,14 @@ Estas son las preguntas que solo el desarrollador (o el cliente) puede responder
 
 | ID | Regla | Dónde | Clasif. | Estado |
 |---|---|---|---|---|
-| R-M1 | Solo se procesan mensajes entrantes `text`, `document`, `image`, `audio`, `video`; el resto se descarta. | `Conversacion/Controller/WebhookController.php:267-275` | Técnica | Regla no confirmada. |
+| R-M1 | Solo se procesan mensajes entrantes `text`, `document`, `image`, `audio`, `video`; el resto se descarta. | `Conversacion/Controller/WebhookController.php:227-235` | Técnica | Regla no confirmada. |
 | R-M2 | Un mensaje entrante repetido (mismo WAMID) se ignora. | `HandleInboundMessageUseCase.php:195-206` | Técnica | **Confirmada** (idempotencia ante reintentos de Meta, comentario `:54`). |
-| R-M3 | Un mensaje saliente con el mismo texto (o el mismo archivo) en el mismo ticket se considera duplicado para siempre. | `HandleOutboundMessageUseCase.php:83-102`; `ProviderProxyController.php:96-154` | Accidental | Regla no confirmada. Efecto real: si un agente escribe "ok" dos veces en el mismo ticket, el segundo **no se guarda en la base pero sí se envía a WhatsApp** (el controlador no revisa `duplicate_skipped`). El cliente lo recibe; el historial de la app no lo muestra. Ver [04 § F2](04-flujos.md#f2-respuesta-del-agente). |
+| R-M3 | Un mensaje saliente con el mismo texto (o el mismo archivo) en el mismo ticket se considera duplicado para siempre. | `HandleOutboundMessageUseCase.php:83-102`; `ProviderProxyController.php:97-155` | Accidental | Regla no confirmada. Efecto real: si un agente escribe "ok" dos veces en el mismo ticket, el segundo **no se guarda en la base pero sí se envía a WhatsApp** (el controlador no revisa `duplicate_skipped`). El cliente lo recibe; el historial de la app no lo muestra. Ver [04 § F2](04-flujos.md#f2-respuesta-del-agente). |
 | R-M4 | Cada mensaje registra quién lo produjo (`agent`/`automatic`/`contact`) y qué agente. | 4 puntos de escritura (entrante, respuesta, plantilla, auto-respuesta) | Negocio | **Confirmada** — spec `message-attribution`. |
 | R-M5 | El estado de entrega solo avanza; `failed` desde cualquier estado no final. | `HandleStatusUpdateUseCase.php:142-159` | Negocio | Regla no confirmada (design "AD-4", sin documento de negocio). |
-| R-M6 | El mensaje saliente se guarda antes de llamar a WhatsApp; si WhatsApp falla, queda como `sent`. | `ProviderProxyController.php:96-171` | Accidental | Regla no confirmada. |
-| R-M7 | El webhook siempre responde 200 a Meta, aunque falle el procesamiento. | `WebhookController.php:135-147` | Técnica | Regla no confirmada (motivo técnico: evitar reintentos). |
-| R-M8 | El webhook exige firma HMAC válida. | `WebhookController.php:155-167` | Técnica (seguridad) | **Confirmada** — spec `authorization` "Webhook Carve-out". |
+| R-M6 | El mensaje saliente se guarda antes de llamar a WhatsApp; si WhatsApp falla, queda como `sent`. | `ProviderProxyController.php:97-172` | Accidental | Regla no confirmada. |
+| R-M7 | El webhook siempre responde 200 a Meta, aunque falle el procesamiento. | `WebhookController.php:134-146` | Técnica | Regla no confirmada (motivo técnico: evitar reintentos). |
+| R-M8 | El webhook exige firma HMAC válida. | `WebhookController.php:154-166` | Técnica (seguridad) | **Confirmada** — spec `authorization` "Webhook Carve-out". |
 | R-M9 | Tipos y tamaños de adjunto permitidos (incluye ejecutables y `octet-stream`). | `Conversacion/MediaValidator.php:9-14, 56-61` | Técnica | Ampliación deliberada (commit `941afac`); los tests describen la regla más estricta. Regla no confirmada como decisión de seguridad. |
 
 ## Automatizaciones

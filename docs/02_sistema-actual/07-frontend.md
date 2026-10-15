@@ -214,7 +214,7 @@ Limitaciones: detección de huecos desactivada (`:282-286`); `resyncAllTickets()
 | Badge de no leídos incorrecto | `ticket.store.ts:114-129, 192-205`, `conversation.component.ts:195-208` |
 | No llegan mensajes en tiempo real | `core/realtime/mercure.service.ts`, `conversation.store.ts:65-96` |
 | Mensaje duplicado en pantalla | `conversation.store.ts:76-82, 176-199` |
-| El **cliente** recibe un mensaje repetido | Causa en el backend: `apps/api/src/Conversacion/Controller/ProviderProxyController.php:96-154` envía a WhatsApp aunque el mensaje sea `duplicate_skipped`, y `message-sender.service.ts:71-74` reintenta el POST. Ver [04 § F2](04-flujos.md#f2-respuesta-del-agente). |
+| El **cliente** recibe un mensaje repetido | Causa en el backend: `apps/api/src/Conversacion/Controller/ProviderProxyController.php:97-155` envía a WhatsApp aunque el mensaje sea `duplicate_skipped`, y `message-sender.service.ts:71-74` reintenta el POST. Ver [04 § F2](04-flujos.md#f2-respuesta-del-agente). |
 | Mensaje fallido no se reintenta | `conversation.component.ts:281-286` vs `message-sender.service.ts:184-212` |
 | No puedo asignar | `ticket-list.component.ts:219-277`, `ticket-card.component.ts`, roster `available-agents` |
 | "Resolver" da error | `conversation.component.ts:295-322`, `core/api/workflow-api.service.ts:32-37` |

@@ -8,8 +8,7 @@ use App\Administracion\Repository\WorkspaceRepository;
 use App\Administracion\User;
 use App\Administracion\Workspace;
 use App\Administracion\WorkspaceNotAssignedException;
-use App\Agente\Agent;
-use App\Agente\Repository\AgentRepository;
+use App\Agente\UseCase\EnsureAgentForUserUseCase;
 use App\Compartido\NotFoundException;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -18,7 +17,7 @@ final class SetActiveWorkspaceUseCase
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly WorkspaceRepository $workspaceRepository,
-        private readonly AgentRepository $agentRepository,
+        private readonly EnsureAgentForUserUseCase $ensureAgentForUser,
     ) {}
 
     /**
@@ -53,7 +52,7 @@ final class SetActiveWorkspaceUseCase
         }
 
         if ($canUseAnyWorkspace) {
-            $agent = $this->ensureAgent($user);
+            $agent = $this->ensureAgentForUser->execute($user);
             $agent->setActiveWorkspace($workspace);
             $this->entityManager->flush();
 
@@ -73,21 +72,5 @@ final class SetActiveWorkspaceUseCase
         $this->entityManager->flush();
 
         return $workspace;
-    }
-
-    private function ensureAgent(User $user): Agent
-    {
-        $agent = $user->getAgent();
-        if ($agent === null) {
-            $agent = $this->agentRepository->findOneBy(['user' => $user]);
-            if ($agent === null) {
-                $agent = new Agent($user->getEmail() ?? 'Admin');
-                $agent->setUser($user);
-                $this->entityManager->persist($agent);
-                $this->entityManager->flush();
-            }
-        }
-
-        return $agent;
     }
 }
