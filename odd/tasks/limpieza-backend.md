@@ -343,3 +343,18 @@ Later phases, each with its own branch and task list when it starts:
     - Full suite: 848 tests, exactly the 6 baseline failures.
     - No `outbox_events` insert or `persist($outbox...)` left outside the writer.
     - RDD assess: medium, `under_budget`.
+- **L43 (2026-10-15), T19 independent verifier (route: delegated, verification timing: phase 3 end):** PASS for S1, S2, S3 and S8, no blockers. Baseline `9a10e2f` vs `a286b03`.
+  - It ran in throwaway containers with its own MySQL, on `git archive` copies; `inbiox_php` and the shared databases were untouched.
+  - Static: no `outbox_events` write outside `OutboxWriter::write`.
+  - Probe: each of the 10 writers called through its public entry on both trees. 17 normalized rows, identical. Rejected commands added 0 rows on both trees.
+  - Full suite: the 6 baseline failures plus one known 401 flake, which passed on the focused rerun.
+  - Advisories: auto-assign right after inbound writes 0 rows on both trees; the JSON column normalizes payload bytes.
+  - Parent spot check: workspace clean, no verifier containers or network left.
+- **L44 (2026-10-15), shared realtime smoke after 3e:** the frontend agent ran it against back `4919f7a`. No differences: outbox rows matched the `9a10e2f` smoke (event_type, topic, payload keys and shape, sequence, count and order) for inbound, agent reply, delivery status, manual and auto assignment, mark-read, shift create/delete, and availability on/off; 25 rows published, 25 Mercure events.
+  - Delivery status, auto-assign and shifts were compared against the `9a10e2f` code, because the old window had no rows for them.
+  - Availability "off" was tested via DELETE of the override, not `POST isAvailable:false`.
+  - Confirmed as expected (L41): resolve/close emit nothing, and `InboxUpdatedEvent` dead-letters ("Unknown event class").
+  - New pre-existing findings for the contradiction track:
+    1. `ticket.created` carries `contactId` 0, hence "Unknown" in the UI.
+    2. Assignment events carry `assigneeName` null and an empty `assignedAt`.
+  - Phase 3 complete. Next: push and PR #4 (base `chore/limpieza-backend-fase-2`), with user approval.
