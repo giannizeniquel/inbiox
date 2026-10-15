@@ -61,7 +61,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T16 | S8 | delegated (context backstop) | done | 3b: `InternalServerErrorListener`, 71 catch-alls removed (L26) |
 | T17 | S8, S3 | delegated (context backstop) | done | 3c-1 (L28) and 3c-2 (L29) |
 | T18 | S8 | inline | done | 3d thin controllers, per module. 3d-1 Administracion (L32), 3d-2 `MeController` split (L33), 3d-3 small controllers (L34), 3d-4 Ticket and Asignacion (L35), 3d-5 Conversacion (L36); independent verifier PASS (L37) |
-| T19 | S8 | inline | pending | 3e single outbox writer (needs 2 user decisions) |
+| T19 | S8 | inline | done | 3e single outbox writer: `OutboxWriter` (`a286b03`), decisions L40/L41, implementation L42 |
 
 ### Baseline of failing tests (phase 0, after `1afba20`)
 
@@ -327,3 +327,19 @@ Later phases, each with its own branch and task list when it starts:
   - Pins: `Sprint09BOutboxTest`, `AsignacionControllersCharacterizationTest::testAutoAssignPicksAnAvailableAgentAndWritesOutbox` (event types and mixed key set), the mark-read row in `InboxControllerCharacterizationTest`, and `MessageAgentAttributionOutboxTest`.
 - **L40 (2026-10-15), T19 decision (a), outbox timing:** user: "bueno, vamos con la opcion 1, despues vemos como subsanamos el hueco de cuando falla la escritura del outbox. te parece?" Option 1: keep writing post-commit; 3e only unifies the writers behind one, behavior identical. Contradiction track: when the outbox write fails after commit, the business change persists without its event (to be fixed later).
 - **L41 (2026-10-15), T19 decision (b), `EventCollector` leak:** user: "si, vamos con la opcion 1, despues vemos como solucionamos esos temas que no estan resueltos". Option 1: keep dropping. The single writer writes only where rows are written today; Transition's collected events stay dropped. Contradiction track: the leak, `InboxUpdatedEvent` dead-letters, and no `ticket.status_changed` on resolve/close.
+- **L42 (2026-10-15), T19 implementation (`a286b03`, route: inline, no writer trigger):**
+  - New `Compartido/Outbox/OutboxWriter::write(OutboxEvent ...$events)`: it persists the events and always flushes once, as each replaced writer did.
+  - Every one of the 10 writers now goes through it:
+    - The 5 collector drains keep their own payload builders and early returns, and still clear the collector themselves.
+    - The 4 Disponibilidad use cases keep their pending-event pattern.
+    - `MarkTicketReadUseCase` builds an `OutboxEvent` with the same values the removed `OutboxEventRepository::insertTicketReadEvent` used: same columns, ULID id, sequence 0, and the same camelCase payload.
+  - Timing (post-commit) and the dropped Transition events are unchanged (L40, L41).
+  - New test `tests/Integration/Outbox/OutboxWriterTest.php`.
+  - `HandleInboundMessageUseCaseTest` builds the real writer over its mocked EntityManager.
+  - Docs 02/04/05/08 updated.
+  - Checks:
+    - `lint:container` OK; PHPStan level 0 identical (29 lines).
+    - Focused outbox tests: 113 tests, only the baseline `Sprint09BOutboxTest` failure.
+    - Full suite: 848 tests, exactly the 6 baseline failures.
+    - No `outbox_events` insert or `persist($outbox...)` left outside the writer.
+    - RDD assess: medium, `under_budget`.
