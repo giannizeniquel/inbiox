@@ -304,3 +304,12 @@ Later phases, each with its own branch and task list when it starts:
     2. `PUT /api/admin/workspaces/{id}` with a duplicate `phoneNumberId` gives a 500 (unique constraint).
     3. `POST /api/admin/users` with `roles` as a string gives a 500 (`TypeError`).
   - Parent spot check: workspace clean; 91 routes in the dev environment (the verifier counted 90 in the test environment).
+- **L38 (2026-10-15), shared smoke after 3d (guide 09):** the frontend agent ran it against back `9a10e2f`. No regressions: P-01..P-24 match the baseline, 403s unchanged; admin, settings, `has_pending` (same as the old SQL), mark-read, resolve/close, team, sends and webhook match the old code in status, body and DB effect. New pre-existing findings for the contradiction track (neither 3d nor the front phase 3 touched this logic):
+  1. `provider/send` to a nonexistent ticket gives a 500.
+  2. An agent can `PUT /tickets/{id}/team` and gets 200.
+  3. User creation accepts `ROLE_BOGUS`.
+  4. `InboxUpdatedEvent` outbox rows always end in `dead_letter` (input for T19).
+  5. Resolving a ticket is not published in real time: no `ticket.status_changed` is emitted (input for T19).
+  6. The inbox list `contact.id` differs from the detail one (ticket 489: 75 vs 85).
+  - Also reported: the duplicate `phoneNumberId` 500 (already in L37) and workspace 2 having a real Meta number, so sends there give 422 `RECIPIENT_NOT_ALLOWED` (environment data, not code).
+  - Next: T19 (3e), evidence first, then the two user decisions one at a time.
