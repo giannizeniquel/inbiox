@@ -46,6 +46,18 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
   - 4a-2: `send` business logic (media metadata, recipient phone, Graph dispatch, WAMID mark) into a use case; the controller keeps parsing, `isGranted`, agent resolution and the exception→JSON mapping, with byte-identical bodies.
   - 4a-3: `sendTemplate` into a use case, sharing the recipient phone resolution with 4a-2.
   - 4a-4: `uploadMedia` into a use case; `downloadMedia` stays a thin proxy.
+- **S10 — Phase 4b, inbound.** User: "dale, arrancá con lo que teniamos previsto, suma lo que te sirva de las orbseravciones del otro agente, pero nos mantenemos en nuestro plan". Same rules as S9: behavior is preserved even where it looks wrong, characterization tests first. Branch `chore/limpieza-backend-fase-4b`, stacked on `chore/limpieza-backend-fase-4`.
+  - 4b-0: characterization tests for signed `POST /webhook` with `GraphClient` stubbed: text, each media type (label, caption, missing `mediaId`), unsupported type and missing `from` skipped, duplicate WAMID, new ticket, reopen, `waiting` → `active`, auto-reply, media download success and failure, status updates (forward, backward skip, failed with reason, unknown WAMID). From the second opinion: a mixed payload where one status in the middle throws (freezes today's cut of the remaining entries, still 200), and invalid JSON → 400 (bad signature → 401 is already covered).
+  - 4b-1: split `HandleInboundMessageUseCase::executeInternal` into private steps named after what they do today, even when it is wrong (for example `downloadMediaInsideTransaction`). Keep the 3 flushes, the lock, the refresh and the sequence increments in the same order. `processInboundMessage` keeps its signature (`DebugController` also calls it).
+  - 4b-2: `HandleStatusUpdateUseCase` is not touched; the only change worth making there (a catch per status) changes behavior.
+  - 4b-3: move `WebhookController::dispatch` payload parsing into a final `ProcessWebhookPayloadUseCase`. The controller keeps HMAC → JSON → record payload → use case → 200, with the same log lines, the per-message catch and no per-status catch.
+  - To the contradiction track, not changed in 4b (decided separately with the user):
+    - High priority bug: no catch per status entry; one failing status drops the rest and Meta gets 200, so it never resends them.
+    - Critical debt: the media download (Graph I/O) runs inside the open inbound transaction, holding the rows just inserted; the ticket lock comes later (L308).
+    - Outbox written after commit (already decided in L40).
+    - Topic `tickets` vs `ticket/{id}` and R4 workspace isolation (group G; product/security decision).
+    - Product decisions: a duplicate WAMID can still create the contact/conversation (it runs after they are persisted; when the duplicate is the last message of a payload from a new sender, nothing is stored, L58); auto-reply window constant 2 h vs docblock 4 h.
+    - Bug found in 4b-0: two messages in one payload on a `waiting` ticket lose the second one. The first moves the ticket to active with raw SQL, the managed entity still says waiting, and the second fails its waiting → active transition and is rolled back; Meta still gets 200.
 - **S7 — Docs policy (assumption, not explicitly confirmed by the user).** Each phase fixes the docs it invalidates in the same PR. A full docs pass happens in phase 6, after the renaming.
 
 ## Tasks
@@ -77,6 +89,9 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T22 | S9 | inline | done | 4a-2 `send` into a use case (`8d9d0fb`, L48) |
 | T23 | S9 | inline | done | 4a-3 `sendTemplate` into a use case (`dc30fac`, L49) |
 | T24 | S9 | inline | done | 4a-4 `uploadMedia` into a use case (`4dc42f4`, L50) |
+| T25 | S10 | inline | done | 4b-0 inbound webhook characterization tests (`3d72b65`, L55) |
+| T26 | S10 | inline | done | 4b-1 split `executeInternal` into private steps (`e9bbd90`, L56) |
+| T27 | S10 | inline | done | 4b-3 webhook payload parsing into `ProcessWebhookPayloadUseCase` (`8e0e099`, L57) |
 
 ### Baseline of failing tests (phase 0, after `1afba20`)
 
@@ -438,4 +453,62 @@ Later phases, each with its own branch and task list when it starts:
   - Leftover test data: user 17 and agent 19; one real media upload to Meta with no message (a `.txt`, which is allowed), stored as MinIO object `default/463/01M52JHMDKJSF4EWT8R41SR3QF.txt`.
   - Next: push and PR #5 (base `chore/limpieza-backend-fase-3`), with the user's approval.
 - **L53 (2026-10-16):** User: "dale, hacé el push y abrí el PR #5". Pushed `chore/limpieza-backend-fase-4` and opened PR #5 (https://github.com/giannizeniquel/inbiox/pull/5), base `chore/limpieza-backend-fase-3`, 13 commits from `6fe5483`. Phase 4a is closed. Next part: 4b (inbound), still to be planned.
+- **L54 (2026-10-16), phase 4b plan:**
+  - An explorer mapped the inbound flow (spot-checked `HandleInboundMessageUseCase.php:79,148,234,308`, `WebhookController.php:296-300`).
+  - The user got a second opinion from another agent. Adopted from it: the two extra 4b-0 tests and the step naming. Not adopted, after checking the code:
+    - "Postgres": the DB is MySQL 8.
+    - "The ticket is locked while waiting for Graph": the lock comes after the download (L234 vs L308).
+    - "A failing auto-reply loses the event": the auto-reply has its own catch (L85-98).
+    - Adding a transaction and a per-status catch, and fixing `Sprint09BOutboxTest`, would change behavior; they go to the contradiction track.
+  - User: "dale, arrancá con lo que teniamos previsto, suma lo que te sirva de las orbseravciones del otro agente, pero nos mantenemos en nuestro plan". S10 and T25–T27 added (4b-2 needs no task: nothing is changed there).
+- **L55 (2026-10-16), T25:**
+  - 4b-0 (`3d72b65`, tests only): new `tests/Characterization/WebhookInboundCharacterizationTest.php`, 18 tests through a signed `POST /webhook` with Graph and storage stubbed. It covers:
+    - Text: first message (contact, conversation, ticket `new`/`medium`, 2 outbox rows with seq 1 and 2, `webhook_payloads` row), second message reusing the ticket (seq 3), the contact name filled only when missing, a duplicate WAMID, `waiting` → `active`.
+    - Skips: unsupported types, no `from`, and a failing message not stopping the next one. Malformed JSON → 400.
+    - Media: label and caption text, the stored key under the message id with `.bin` when there is no filename, a document filename, no media id, a failed download.
+    - Auto-reply from an unavailable agent: Graph send, stored outbound message, third outbox row with seq 3.
+    - Statuses: forward with a sequenced row, backward/terminal/unknown/missing fields changing nothing, failed reason from the first error, and a failing status cutting the remaining ones while still returning 200.
+  - Findings pinned as-is:
+    - The outbox `event_type` and the payload `type` are the event class names (`App\Ticket\TicketCreatedEvent`), not the realtime names.
+    - MySQL's JSON column reorders the payload keys, so the tests compare key sets.
+    - New bug (added to S10's contradiction list): two messages in one payload on a `waiting` ticket lose the second one.
+  - Checks: the new file passes (18 tests); full suite 915 tests, the 6 baseline failures plus one `401 Invalid JWT Token` in `TicketClosureAuthorizationTest` (the known flake).
+- **L56 (2026-10-16), T26:**
+  - 4b-1 (`e9bbd90`): `HandleInboundMessageUseCase::executeInternal` now reads as the sequence of its steps, each a private method named after what it does today: `findOrCreateContact`, `findOrCreateOpenConversation`, `findAlreadyStoredMessage`, `storeInboundMessage` (first flush), `downloadMediaInsideTransaction` (second flush on success), `findOrReopenOrCreateTicketAndLock`, `moveWaitingTicketToActive`, `touchTimestamps`, the third flush, `collectInboundEvents` and `runRulesAndRequestAutoAssignment`.
+  - The order, the 3 flushes, the lock, the refresh after a reopen and the sequence increments are unchanged. Two unused locals were dropped (`$isNewConversation`, and the transition result `$result`). `processInboundMessage` and `persistEventsToOutbox` are untouched. No new classes.
+  - Docs: line references to the use case updated.
+  - Checks:
+    - `lint:container` OK; PHPStan level 0 identical (29 lines).
+    - Inbound-related tests (`Inbound|Webhook|Reopen|Sprint09B|Sprint08Automation|AutoReply`): 110 tests, only the 3 baseline Sprint09B failures.
+    - Full suite: 915 tests, exactly the 6 baseline failures.
+- **L57 (2026-10-16), T27:**
+  - 4b-3 (`8e0e099`): `WebhookController::dispatch` moved verbatim into the new final `Conversacion/UseCase/ProcessWebhookPayloadUseCase::execute(array $payload)`. It keeps the type filter, the label and caption text, the per-message catch with its log lines, and no catch per status entry (a throwing status still reaches the controller's catch, so Meta gets 200).
+  - The controller keeps only HTTP: verify (GET), HMAC → JSON → record payload → use case → 200. It no longer depends on the inbound or status use cases. The stale "Sprint 13.2: log only" docblock went away with `dispatch`, so C-20 drops that example.
+  - Docs: the F1 step table in `04-flujos.md` (controller and inbound use case lines, stale since 4b-1), R-M1/R-M7/R-M8 and the architecture tables.
+  - Checks:
+    - `lint:container` OK; PHPStan level 0 identical (29 lines).
+    - Inbound/webhook tests: 110 tests, only the 3 baseline Sprint09B failures.
+    - Full suite: 915 tests, the 6 baseline failures plus two `401` in `TeamControllerTest::testListTeamsDeniedForPlainAgent` and `AuthorizationTest::testAgentWithoutLinkedAgentGets403OnTicketEndpoint` (the known JWT flake; neither touches the webhook).
+  - Phase 4b code is complete (T25–T27; 4b-2 changes nothing). Next: independent verifier, then a front smoke with real inbound messages, push and PR #6 with the user's approval.
+- **L58 (2026-10-16), phase 4b independent verification:**
+  - Verdict PASS for 4b-0, 4b-1, 4b-2 and 4b-3, no blockers. Baseline `eaa7cc6` vs HEAD `091dfd1`, both trees run from scratch copies with their own vendor, Graph and storage stubbed (no Meta calls): 69 tests, identical results, only the baseline Sprint09BOutbox failure.
+    - 4b-0: `WebhookInboundCharacterizationTest` passes unchanged on the baseline tree.
+    - 4b-1: same step order, 3 flushes, lock only for an existing ticket, refresh only after a reopen, sequence increments, rules and auto-assign inside the transaction, auto-reply before the outbox; same log lines and keys; `processInboundMessage` signature unchanged.
+    - 4b-3: the use case body is the old `dispatch` character for character; the per-message catch, no per-status catch and the controller's outer catch are unchanged; same logger service.
+  - 15 probes pass on both trees and are committed as `tests/Characterization/WebhookInboundVerifierProbeTest.php` (`c2d001b`). Parent spot check: `--filter 'WebhookInboundVerifierProbe|WebhookInbound|WebhookController'` gives 36 tests OK.
+  - Advisories (same on both trees or out-of-domain):
+    - The `trace` text of `Webhook dispatch error` and PHP warning locations now name `ProcessWebhookPayloadUseCase` instead of `WebhookController::dispatch`; this comes with moving the code.
+    - The duplicate-WAMID contradiction wording was narrowed in S10.
+    - A storage failure after a successful download is absorbed by `MediaDownloadService` (no `Failed to process inbound media` line); media without `mime_type` is stored with `kind: document`.
+    - `{"entry":"x"}` raises PHP warnings and still returns 200.
+    - New pinned cuts: an array `from` or a non-string `phone_number_id` stops the rest of the payload (still 200).
+  - Next: front smoke with real inbound messages, then push and PR #6 (base `chore/limpieza-backend-fase-4`), with the user's approval.
 
+- **L59 (2026-10-16), phase 4b front smoke with real inbound messages:**
+  - Run by the front against `e6e724c` (front log L21, `9be0977`). No differences caused by 4b and no lost messages (no grouped webhooks arrived).
+    - Text, image with caption, PDF and audio are stored with the same labels as before 4b (compared with messages 154/288/289); media in MinIO and visible live.
+    - Sticker and location reach `webhook_payloads` and are discarded, as before.
+    - #501: waiting → active on the first inbound; the agent reply (WAMID, `delivered` in 3 s) moved it to waiting; the next inbound moved it back to active.
+    - Mercure captured `message.added` ×6, `message.updated` (delivered) ×1 and `ticket.read` ×1; all outbox rows published.
+  - Notes, unchanged from before 4b: waiting/active transitions emit no ticket event (no outbox row, same as resolve and close). Meta sent no `read` status for the reply (only `sent` and `delivered`), most likely the phone's read receipts setting; not verified.
+  - Phase 4b is verified. Next: push and PR #6 (base `chore/limpieza-backend-fase-4`), with the user's approval.

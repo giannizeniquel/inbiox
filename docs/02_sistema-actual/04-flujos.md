@@ -64,22 +64,22 @@ flowchart TD
 
 | # | Paso | Dónde | Regla |
 |---|---|---|---|
-| 1 | GET: verificación de suscripción (`hub.verify_token`). | `WebhookController.php:58-82` | |
-| 2 | POST: valida `X-Hub-Signature-256` (HMAC-SHA256 con `META_APP_SECRET`). Inválida → 401. JSON inválido → 400. | `:100-121`, `:154-166` | R-M8 |
-| 3 | Guarda el payload crudo en `webhook_payloads` (si falla, se loguea y sigue). | `:125-132`, `:174-205` | |
-| 4 | Por cada `entry[].changes[].value` de WhatsApp: toma `metadata.phone_number_id` y el nombre de perfil. Descarta tipos no soportados. | `:223-274` | R-M1 |
-| 5 | Llama `HandleInboundMessageUseCase::processInboundMessage()`. Cualquier excepción se loguea **y se traga**. | `:308-331` | |
+| 1 | GET: verificación de suscripción (`hub.verify_token`). | `WebhookController.php:56-80` | |
+| 2 | POST: valida `X-Hub-Signature-256` (HMAC-SHA256 con `META_APP_SECRET`). Inválida → 401. JSON inválido → 400. | `:98-119`, `:150-164` | R-M8 |
+| 3 | Guarda el payload crudo en `webhook_payloads` (si falla, se loguea y sigue). | `:121-130`; `Conversacion/UseCase/RecordWebhookPayloadUseCase.php` | |
+| 4 | Por cada `entry[].changes[].value` de WhatsApp: toma `metadata.phone_number_id` y el nombre de perfil. Descarta tipos no soportados. | `Conversacion/UseCase/ProcessWebhookPayloadUseCase.php:38-118` | R-M1 |
+| 5 | Llama `HandleInboundMessageUseCase::processInboundMessage()`. Cualquier excepción se loguea **y se traga**. | `ProcessWebhookPayloadUseCase.php:119-143`; los estados no tienen catch propio (`:147-151`) | |
 | 6 | Normaliza el teléfono (solo dígitos, mínimo 10, antepone `+`). | `Conversacion/UseCase/HandleInboundMessageUseCase.php:69-75` | R-C2 |
-| 7 | Busca o crea el contacto (no mira si está `inactive`). | `:167-178` | R-C3 |
-| 8 | Busca la conversación `open` del contacto para ese número; si no hay, la crea. | `:181-192` | |
-| 9 | Si el WAMID ya existe, termina (idempotencia ante reintentos de Meta). | `:195-206` | R-M2 |
-| 10 | Crea el `Message` (`inbound`, `sender_type=contact`); si hay media, la descarga de Meta y la sube a S3 (errores tragados). | `:209-260` | R-M4 |
-| 11 | Busca un ticket no cerrado del contacto en ese número. Si no hay, intenta reabrir uno cerrado por ventana; si no, crea uno `new`/`medium`. | `:264-304`; `Ticket/Repository/TicketRepository.php:42-61, 105-132` | R-T1, R-T16 |
-| 12 | Si el ticket existía: bloqueo pesimista; `waiting → active`. | `:305-332` | R-T7 |
-| 13 | Actualiza `last_message_at`, `updated_at` y **`last_inbound_message_at`** (único escritor). | `:335-345` | R-W3 |
-| 14 | Recolecta `TicketCreatedEvent` / `MessageCreatedEvent`. | `:348-375` | |
-| 15 | Ejecuta reglas `inbound` (`KeywordTaggingRule`, `AutoReopenRule`). | `:378-379` | R-R1, R-T8 |
-| 16 | Despacha `TicketNeedsAutoAssignmentEvent` → listener → `AutoAssignTicketUseCase::executeInTransaction()` **dentro de la misma transacción**. | `:382-384`; `Asignacion/EventListener/TicketAutoAssignmentRequestedListener.php:17-20` | ver F6 |
+| 7 | Busca o crea el contacto (no mira si está `inactive`). | `:212-228` | R-C3 |
+| 8 | Busca la conversación `open` del contacto para ese número; si no hay, la crea. | `:230-244` | |
+| 9 | Si el WAMID ya existe, termina (idempotencia ante reintentos de Meta). | `:178-187`, `:246-253` | R-M2 |
+| 10 | Crea el `Message` (`inbound`, `sender_type=contact`); si hay media, la descarga de Meta y la sube a S3 (errores tragados). | `:256-321` | R-M4 |
+| 11 | Busca un ticket no cerrado del contacto en ese número. Si no hay, intenta reabrir uno cerrado por ventana; si no, crea uno `new`/`medium`. | `:330-372`; `Ticket/Repository/TicketRepository.php:42-61, 105-132` | R-T1, R-T16 |
+| 12 | Si el ticket existía: bloqueo pesimista; `waiting → active`. | `:374-388`, `:394-408` | R-T7 |
+| 13 | Actualiza `last_message_at`, `updated_at` y **`last_inbound_message_at`** (único escritor). | `:410-423` | R-W3 |
+| 14 | Recolecta `TicketCreatedEvent` / `MessageCreatedEvent`. | `:429-455` | |
+| 15 | Ejecuta reglas `inbound` (`KeywordTaggingRule`, `AutoReopenRule`). | `:461-465` | R-R1, R-T8 |
+| 16 | Despacha `TicketNeedsAutoAssignmentEvent` → listener → `AutoAssignTicketUseCase::executeInTransaction()` **dentro de la misma transacción**. | `:466-468`; `Asignacion/EventListener/TicketAutoAssignmentRequestedListener.php:17-20` | ver F6 |
 | 17 | Commit. Después: `AutoReplyService::maybeSend()` y escritura de eventos en el outbox. | `:83-99`, `:107-156` | ver F9, F13 |
 
 - **Entidades:** Contact, Conversation, Message, Ticket, TicketEvent, Tag/TicketTag, Assignment, Agent, OutboxEvent, WebhookPayload, ProcessedEvent, RuleExecutionLog.
@@ -91,7 +91,7 @@ flowchart TD
 
 **Si falla, revisar:**
 1. Logs de PHP (`docker logs inbiox_php`) y la tabla `webhook_payloads` (¿llegó el POST?).
-2. `Conversacion/Controller/WebhookController.php` (firma, tipo de mensaje, excepciones tragadas en `:325-331`).
+2. `Conversacion/Controller/WebhookController.php` (firma, JSON) y `Conversacion/UseCase/ProcessWebhookPayloadUseCase.php` (tipo de mensaje, excepciones tragadas en `:136-142`).
 3. `Conversacion/UseCase/HandleInboundMessageUseCase.php`.
 4. `Asignacion/UseCase/AutoAssignTicketUseCase.php` (una excepción aquí revierte el mensaje).
 5. `Ticket/Repository/TicketRepository.php:42-61` (búsqueda del ticket no cerrado).

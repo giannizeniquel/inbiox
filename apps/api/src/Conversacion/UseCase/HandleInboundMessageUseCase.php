@@ -156,6 +156,12 @@ foreach ($events as $event) {
         $this->eventCollector->clear();
     }
 
+    /**
+     * Runs inside the inbound transaction. The steps keep their original
+     * order: three flushes (message, media, everything else), the media
+     * download from Graph before the ticket lock, and the event sequence
+     * increments after the last flush.
+     */
     private function executeInternal(
         string $phone,
         string $message,
@@ -164,7 +170,47 @@ foreach ($events as $event) {
         ?string $contactName = null,
         ?array $mediaDownloadPayload = null,
     ): array {
-        // 2. Find or create Contact
+        $contact = $this->findOrCreateContact($phone, $contactName);
+        $conversation = $this->findOrCreateOpenConversation($contact, $phoneNumberId);
+
+        // Idempotency by WAMID. It runs after the contact and conversation
+        // may have been created, so a duplicate still stores those.
+        $existingMessage = $this->findAlreadyStoredMessage($externalId);
+        if ($existingMessage) {
+            return [
+                'contact_id' => $contact->getId(),
+                'conversation_id' => $conversation->getId(),
+                'message_id' => $existingMessage->getId(),
+                'ticket_id' => $this->getTicketForConversation($conversation)?->getId(),
+                'status' => 'ok'
+            ];
+        }
+
+        $msg = $this->storeInboundMessage($conversation, $message, $externalId);
+        $this->downloadMediaInsideTransaction($msg, $mediaDownloadPayload);
+
+        [$ticket, $isNewTicket] = $this->findOrReopenOrCreateTicketAndLock($contact, $conversation, $phoneNumberId);
+        $transition = $this->moveWaitingTicketToActive($ticket);
+
+        $this->touchTimestamps($conversation, $contact, $ticket, $msg);
+        $this->em->flush();
+
+        $this->collectInboundEvents($ticket, $isNewTicket, $msg, $message, $contact);
+        $this->runRulesAndRequestAutoAssignment($ticket, $msg);
+
+        return [
+            'contact_id' => $contact->getId(),
+            'conversation_id' => $conversation->getId(),
+            'message_id' => $msg->getId(),
+            'ticket_id' => $ticket->getId(),
+            'ticket_status' => $ticket->getStatus(),
+            'transition' => $transition,
+            'status' => 'ok'
+        ];
+    }
+
+    private function findOrCreateContact(string $phone, ?string $contactName): Contact
+    {
         $contact = $this->contactRepo->findOneByPhone($phone);
         if (!$contact) {
             $contact = new Contact();
@@ -178,9 +224,12 @@ foreach ($events as $event) {
             $contact->setName($contactName);
         }
 
-        // 3. Find or create Conversation
+        return $contact;
+    }
+
+    private function findOrCreateOpenConversation(Contact $contact, ?string $phoneNumberId): Conversation
+    {
         $conversation = $this->conversationRepo->findOpenByContact($contact, $phoneNumberId);
-        $isNewConversation = false;
         if (!$conversation) {
             $conversation = new Conversation();
             $conversation->setContact($contact);
@@ -189,24 +238,23 @@ foreach ($events as $event) {
                 $conversation->setPhoneNumberId($phoneNumberId);
             }
             $this->em->persist($conversation);
-            $isNewConversation = true;
         }
 
-        // 4. Check idempotency - if externalId provided and exists, return existing
-        if ($externalId) {
-            $existingMessage = $this->messageRepo->findByExternalId($externalId);
-            if ($existingMessage) {
-                return [
-                    'contact_id' => $contact->getId(),
-                    'conversation_id' => $conversation->getId(),
-                    'message_id' => $existingMessage->getId(),
-                    'ticket_id' => $this->getTicketForConversation($conversation)?->getId(),
-                    'status' => 'ok'
-                ];
-            }
+        return $conversation;
+    }
+
+    private function findAlreadyStoredMessage(?string $externalId): ?Message
+    {
+        if (!$externalId) {
+            return null;
         }
 
-        // 5. Create Message
+        return $this->messageRepo->findByExternalId($externalId);
+    }
+
+    /** Persists the message and flushes (first flush), so it has an id for the media key. */
+    private function storeInboundMessage(Conversation $conversation, string $message, ?string $externalId): Message
+    {
         $msg = new Message();
         $msg->setConversation($conversation);
         $msg->setDirection('inbound');
@@ -217,53 +265,71 @@ foreach ($events as $event) {
         $msg->setSenderType(MessageSenderType::CONTACT);
 
         $this->em->persist($msg);
-        $this->em->flush(); // Flush to get message ID for media key
+        $this->em->flush();
 
-        // 5b. Handle media download and storage (fire-and-forget on failure)
-        if ($mediaDownloadPayload && $this->mediaDownloadService !== null) {
-            try {
-                $mediaId = $mediaDownloadPayload['mediaId'];
-                $mimeType = $mediaDownloadPayload['mimeType'] ?? 'application/octet-stream';
-                $filename = $mediaDownloadPayload['filename'] ?? 'file';
-                $caption = $mediaDownloadPayload['caption'] ?? null;
+        return $msg;
+    }
 
-                // Determine tenant and ticket for the object key
-                $tenantId = 'default'; // Default tenant prefix
-                $ticketId = $msg->getId(); // Use message ID as part of key
-
-                $mediaResult = $this->mediaDownloadService->downloadAndStore(
-                    mediaId: $mediaId,
-                    mimeType: $mimeType,
-                    tenantId: $tenantId,
-                    ticketId: $ticketId,
-                    filename: $filename,
-                );
-
-                if ($mediaResult !== null) {
-                    $msg->setMedia([
-                        'key' => $mediaResult['key'],
-                        'mimeType' => $mimeType,
-                        'filename' => $filename,
-                        'size' => $mediaResult['size'],
-                        'kind' => $mediaResult['kind'],
-                        'providerId' => $mediaId,
-                        'caption' => $caption,
-                    ]);
-                    $this->em->flush();
-                }
-            } catch (\Throwable $e) {
-                $this->logger->error('Failed to process inbound media', [
-                    'error' => $e->getMessage(),
-                    'mediaId' => $mediaDownloadPayload['mediaId'] ?? null,
-                ]);
-                // Continue without media — message is already persisted
-            }
+    /**
+     * Downloads the media from Graph and stores it while the inbound
+     * transaction is open (contradiction track, S10). A failure only logs:
+     * the message stays stored without media. Success flushes (second flush).
+     */
+    private function downloadMediaInsideTransaction(Message $msg, ?array $mediaDownloadPayload): void
+    {
+        if (!$mediaDownloadPayload || $this->mediaDownloadService === null) {
+            return;
         }
 
-        // 6. Handle Ticket - create if new conversation or no open ticket
-        // Use findNotClosedByContact to include resolved tickets (for auto-reopen)
+        try {
+            $mediaId = $mediaDownloadPayload['mediaId'];
+            $mimeType = $mediaDownloadPayload['mimeType'] ?? 'application/octet-stream';
+            $filename = $mediaDownloadPayload['filename'] ?? 'file';
+            $caption = $mediaDownloadPayload['caption'] ?? null;
+
+            // Determine tenant and ticket for the object key
+            $tenantId = 'default'; // Default tenant prefix
+            $ticketId = $msg->getId(); // Use message ID as part of key
+
+            $mediaResult = $this->mediaDownloadService->downloadAndStore(
+                mediaId: $mediaId,
+                mimeType: $mimeType,
+                tenantId: $tenantId,
+                ticketId: $ticketId,
+                filename: $filename,
+            );
+
+            if ($mediaResult !== null) {
+                $msg->setMedia([
+                    'key' => $mediaResult['key'],
+                    'mimeType' => $mimeType,
+                    'filename' => $filename,
+                    'size' => $mediaResult['size'],
+                    'kind' => $mediaResult['kind'],
+                    'providerId' => $mediaId,
+                    'caption' => $caption,
+                ]);
+                $this->em->flush();
+            }
+        } catch (\Throwable $e) {
+            $this->logger->error('Failed to process inbound media', [
+                'error' => $e->getMessage(),
+                'mediaId' => $mediaDownloadPayload['mediaId'] ?? null,
+            ]);
+            // Continue without media — message is already persisted
+        }
+    }
+
+    /**
+     * Uses the contact's not-closed ticket (resolved included, for the
+     * auto-reopen), else reopens its window-expired closed ticket on the same
+     * conversation, else creates a new one. An existing ticket is locked.
+     *
+     * @return array{0: Ticket, 1: bool} the ticket and whether it is new
+     */
+    private function findOrReopenOrCreateTicketAndLock(Contact $contact, Conversation $conversation, ?string $phoneNumberId): array
+    {
         $ticket = $this->ticketRepo->findNotClosedByContact($contact, $phoneNumberId);
-        $isNewTicket = false;
         $wasReopened = false;
 
         // WhatsApp 24h conversation-window compliance: a ticket closed
@@ -302,37 +368,47 @@ foreach ($events as $event) {
                 $ticket->setPhoneNumberId($phoneNumberId);
             }
             $this->em->persist($ticket);
-            $isNewTicket = true;
-        } else {
-            // Existing ticket: lock to prevent seq duplicates under concurrency
-            $this->em->lock($ticket, LockMode::PESSIMISTIC_WRITE);
 
-            // `reopenDueToInboundMessage()` writes via raw SQL, so the
-            // managed entity fetched above still reports the stale
-            // `status = 'closed'`. Without this refresh, step 7's
-            // waiting→active branch (and the returned `ticket_status`)
-            // would read/report the wrong status.
-            if ($wasReopened) {
-                $this->em->refresh($ticket);
-            }
+            return [$ticket, true];
         }
 
-        // 7. FSM transition: waiting → active on customer response
-        $currentStatus = $ticket->getStatus();
-        $transition = null;
-        
-        if ($currentStatus === TicketStatus::WAITING->value) {
-            // Customer responds while waiting → go back to active
-            $result = $this->transitionUseCase->execute(
-                $ticket->getId(),
-                TicketStatus::ACTIVE->value,
-                false, // don't set first_response - this is customer
-                false  // don't set resolved
-            );
-            $transition = 'waiting_to_active';
+        // Existing ticket: lock to prevent seq duplicates under concurrency
+        $this->em->lock($ticket, LockMode::PESSIMISTIC_WRITE);
+
+        // `reopenDueToInboundMessage()` writes via raw SQL, so the
+        // managed entity fetched above still reports the stale
+        // `status = 'closed'`. Without this refresh, the waiting→active
+        // step (and the returned `ticket_status`) would read/report the
+        // wrong status.
+        if ($wasReopened) {
+            $this->em->refresh($ticket);
         }
 
-        // 8. Update conversation last_message_at
+        return [$ticket, false];
+    }
+
+    /**
+     * FSM transition on a customer response. The transition writes with raw
+     * SQL and the managed ticket keeps `waiting` (contradiction track, S10).
+     */
+    private function moveWaitingTicketToActive(Ticket $ticket): ?string
+    {
+        if ($ticket->getStatus() !== TicketStatus::WAITING->value) {
+            return null;
+        }
+
+        $this->transitionUseCase->execute(
+            $ticket->getId(),
+            TicketStatus::ACTIVE->value,
+            false, // don't set first_response - this is customer
+            false  // don't set resolved
+        );
+
+        return 'waiting_to_active';
+    }
+
+    private function touchTimestamps(Conversation $conversation, Contact $contact, Ticket $ticket, Message $msg): void
+    {
         $conversation->setLastMessageAt($msg->getCreatedAt());
         $conversation->setUpdatedAt(new \DateTimeImmutable());
         $contact->setUpdatedAt(new \DateTimeImmutable());
@@ -344,15 +420,18 @@ foreach ($events as $event) {
         // and a reused/reopened one, and on no other path (outbound sends
         // and auto-replies never touch this field).
         $ticket->setLastInboundMessageAt($msg->getCreatedAt());
+    }
 
-        // 8. Flush everything
-        $this->em->flush();
-
-        // Collect TicketCreatedEvent after flush (ticket now has a persisted ID)
+    /**
+     * Collected after the last flush, so the ticket has its id. The sequence
+     * increments are saved by the outbox writer's flush.
+     */
+    private function collectInboundEvents(Ticket $ticket, bool $isNewTicket, Message $msg, string $message, Contact $contact): void
+    {
         if ($isNewTicket) {
             $this->eventCollector->collect(new TicketCreatedEvent(
                 eventId: new Ulid(),
-                ticketId: $ticket->getId(), // CORRECT — now persisted
+                ticketId: $ticket->getId(),
                 occurredAt: new \DateTimeImmutable(),
                 seq: $ticket->incrementLastEventSeq(),
                 version: 1,
@@ -361,7 +440,6 @@ foreach ($events as $event) {
             ));
         }
 
-        // Collect MessageCreatedEvent after message is persisted
         $this->eventCollector->collect(new MessageCreatedEvent(
             eventId: new Ulid(),
             ticketId: $ticket->getId(),
@@ -374,25 +452,20 @@ foreach ($events as $event) {
             senderName: $contact->getName(),
             media: $msg->getMedia(),
         ));
+    }
 
-        // 9. Execute automation rules (inbound trigger)
+    /**
+     * Inbound automation rules, then the auto-assignment request. Its
+     * listener runs synchronously, inside the inbound transaction.
+     */
+    private function runRulesAndRequestAutoAssignment(Ticket $ticket, Message $msg): void
+    {
         $ruleContext = new RuleContext($ticket, $msg, 'inbound');
         $this->ruleExecutor->execute($ruleContext);
 
-        // 10. Dispatch event for auto-assignment (decoupled from this use case)
         if ($ticket->getId()) {
             $this->eventDispatcher->dispatch(new TicketNeedsAutoAssignmentEvent($ticket->getId()));
         }
-
-        return [
-            'contact_id' => $contact->getId(),
-            'conversation_id' => $conversation->getId(),
-            'message_id' => $msg->getId(),
-            'ticket_id' => $ticket->getId(),
-            'ticket_status' => $ticket->getStatus(),
-            'transition' => $transition,
-            'status' => 'ok'
-        ];
     }
 
     private function getTicketForConversation(Conversation $conversation): ?Ticket

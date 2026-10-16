@@ -35,13 +35,13 @@ Estas son las preguntas que solo el desarrollador (o el cliente) puede responder
 
 | ID | Regla (lenguaje simple) | Dónde se aplica | Clasif. | Estado |
 |---|---|---|---|---|
-| R-T1 | Un contacto tiene a lo sumo un ticket no cerrado por número de WhatsApp; los mensajes nuevos se suman a ese ticket. | `Ticket/Repository/TicketRepository.php:42-61`; `Conversacion/UseCase/HandleInboundMessageUseCase.php:264` | Negocio | **Confirmada** — análisis de brecha §1 ("1 caso abierto por contacto, reutilizado mientras no esté `closed`"). No hay restricción en la base: si existieran dos, el mensaje entrante falla. |
-| R-T2 | Un ticket nuevo nace `new` con prioridad `medium`; la prioridad nunca cambia. | `HandleInboundMessageUseCase.php:298-299` | Accidental (prioridad) | Regla no confirmada. La prioridad no tiene uso. |
+| R-T1 | Un contacto tiene a lo sumo un ticket no cerrado por número de WhatsApp; los mensajes nuevos se suman a ese ticket. | `Ticket/Repository/TicketRepository.php:42-61`; `Conversacion/UseCase/HandleInboundMessageUseCase.php:332` | Negocio | **Confirmada** — análisis de brecha §1 ("1 caso abierto por contacto, reutilizado mientras no esté `closed`"). No hay restricción en la base: si existieran dos, el mensaje entrante falla. |
+| R-T2 | Un ticket nuevo nace `new` con prioridad `medium`; la prioridad nunca cambia. | `HandleInboundMessageUseCase.php:365-366` | Accidental (prioridad) | Regla no confirmada. La prioridad no tiene uso. |
 | R-T3 | Las transiciones válidas son las de la FSM; `closed` es terminal. | `Ticket/TicketStateMachine.php:34-54` | Negocio | **Confirmada** — análisis de brecha §1 y fila #9b. |
 | R-T4 | Al asignar un dueño a un ticket `new`, pasa a `active` (sin pasar por la FSM). | `Asignacion/AssignmentService.php:69-73` | Técnica | Regla no confirmada. El docblock de la FSM dice que `new → active` ocurre "por la primera respuesta". |
 | R-T5 | Primera respuesta del agente: `new → active` y se registra `first_response_at`. | `HandleOutboundMessageUseCase.php:281-309` | Negocio | **Confirmada** — métrica FRT (análisis de brecha fila #16). |
 | R-T6 | Cuando el agente responde, el ticket pasa a `waiting` (espera al cliente). | `HandleOutboundMessageUseCase.php:285-288` | Negocio | Regla no confirmada. |
-| R-T7 | Cuando el cliente responde a un ticket `waiting`, vuelve a `active`. | `HandleInboundMessageUseCase.php:323-332` | Negocio | Regla no confirmada (implícita en la FSM). |
+| R-T7 | Cuando el cliente responde a un ticket `waiting`, vuelve a `active`. | `HandleInboundMessageUseCase.php:394-408` | Negocio | Regla no confirmada (implícita en la FSM). |
 | R-T8 | Cuando el cliente escribe en un ticket `resolved`, se reabre en `waiting`. | `Automatizacion/AutoReopenRule.php:17-47` | Negocio | Reapertura: **Confirmada** (análisis de brecha fila #13). Destino `waiting`: Regla no confirmada. |
 | R-T9 | Resolver o cerrar quita el dueño y deja auditoría `UNASSIGN`. | `Ticket/UseCase/TransitionTicketStatusUseCase.php:37-61` (llamado en `:99`, `:172`, `:289`) → `AssignmentService.php:65` | Técnica | **Regla no confirmada.** El docblock (`:21-22`) lo justifica como corrección de auditoría "W1". Efectos graves: ver [R6](00-estado-y-pendientes.md#r6-resolver-quita-el-dueño-contradicción-autoinfligida). |
 | R-T10 | El cierre manual (`/close`) solo aplica a tickets `resolved`. | `TransitionTicketStatusUseCase.php:283-285` | Negocio | **Confirmada** — spec `whatsapp-conversation-window` "No Regression to Manual Closure". |
@@ -58,7 +58,7 @@ Estas son las preguntas que solo el desarrollador (o el cliente) puede responder
 |---|---|---|---|---|
 | R-W1 | No se puede enviar texto libre si pasaron 24 h (menos un margen) desde el último mensaje del cliente; sin mensaje registrado, tampoco. | `Conversacion/ConversationWindowPolicy.php:30-38`; `HandleOutboundMessageUseCase.php:214-216`; `Automatizacion/AutoReplyService.php:129-135` | Negocio (regla de Meta) | **Confirmada** — spec `whatsapp-conversation-window` "Free-Text Send Blocking". |
 | R-W2 | El margen de seguridad es configurable (5 min). | `config/services.yaml:70-80`; `.env` | Técnica | **Confirmada** — spec "Configurable Safety Margin". |
-| R-W3 | Solo los mensajes entrantes actualizan `last_inbound_message_at`. | `HandleInboundMessageUseCase.php:345` | Negocio | **Confirmada** — spec "Inbound Message Timestamp Tracking". |
+| R-W3 | Solo los mensajes entrantes actualizan `last_inbound_message_at`. | `HandleInboundMessageUseCase.php:422` | Negocio | **Confirmada** — spec "Inbound Message Timestamp Tracking". |
 | R-W4 | Los tickets con ventana vencida se cierran automáticamente (incluso `new` y `resolved`). | `Conversacion/UseCase/ConversationWindowExpiryService.php:31-36, 55-93` | Negocio | **Confirmada** — spec "Automatic Closure on Window Expiry". Solo corre con el profile `window-closer`. |
 | R-W5 | Un ticket sin mensaje entrante registrado nunca se cierra por ventana. | `ConversationWindowPolicy.php:40-48` | Técnica | **Confirmada** — design D8 citado en `ConversationWindowPolicy.php:15-20`. |
 | R-W6 | Las plantillas se pueden enviar fuera de la ventana. | `Conversacion/UseCase/SendTemplateUseCase.php` (sin guard) | Negocio | **Confirmada** — análisis de brecha fila #9c. |
@@ -105,14 +105,14 @@ Estas son las preguntas que solo el desarrollador (o el cliente) puede responder
 
 | ID | Regla | Dónde | Clasif. | Estado |
 |---|---|---|---|---|
-| R-M1 | Solo se procesan mensajes entrantes `text`, `document`, `image`, `audio`, `video`; el resto se descarta. | `Conversacion/Controller/WebhookController.php:227-235` | Técnica | Regla no confirmada. |
-| R-M2 | Un mensaje entrante repetido (mismo WAMID) se ignora. | `HandleInboundMessageUseCase.php:195-206` | Técnica | **Confirmada** (idempotencia ante reintentos de Meta, comentario `:54`). |
+| R-M1 | Solo se procesan mensajes entrantes `text`, `document`, `image`, `audio`, `video`; el resto se descarta. | `Conversacion/UseCase/ProcessWebhookPayloadUseCase.php:76-84` | Técnica | Regla no confirmada. |
+| R-M2 | Un mensaje entrante repetido (mismo WAMID) se ignora. | `HandleInboundMessageUseCase.php:178-187, 246-253` | Técnica | **Confirmada** (idempotencia ante reintentos de Meta, comentario `:54`). |
 | R-M3 | Un mensaje saliente con el mismo texto (o el mismo archivo) en el mismo ticket se considera duplicado para siempre. | `HandleOutboundMessageUseCase.php:83-102`; `SendOutboundMessageUseCase.php:69-91` | Accidental | Regla no confirmada. Efecto real: si un agente escribe "ok" dos veces en el mismo ticket, el segundo **no se guarda en la base pero sí se envía a WhatsApp** (el caso de uso de envío no revisa `duplicate_skipped`). El cliente lo recibe; el historial de la app no lo muestra. Ver [04 § F2](04-flujos.md#f2-respuesta-del-agente). |
 | R-M4 | Cada mensaje registra quién lo produjo (`agent`/`automatic`/`contact`) y qué agente. | 4 puntos de escritura (entrante, respuesta, plantilla, auto-respuesta) | Negocio | **Confirmada** — spec `message-attribution`. |
 | R-M5 | El estado de entrega solo avanza; `failed` desde cualquier estado no final. | `HandleStatusUpdateUseCase.php:142-159` | Negocio | Regla no confirmada (design "AD-4", sin documento de negocio). |
 | R-M6 | El mensaje saliente se guarda antes de llamar a WhatsApp; si WhatsApp falla, queda como `sent`. | `SendOutboundMessageUseCase.php:69-91` | Accidental | Regla no confirmada. |
-| R-M7 | El webhook siempre responde 200 a Meta, aunque falle el procesamiento. | `WebhookController.php:134-146` | Técnica | Regla no confirmada (motivo técnico: evitar reintentos). |
-| R-M8 | El webhook exige firma HMAC válida. | `WebhookController.php:154-166` | Técnica (seguridad) | **Confirmada** — spec `authorization` "Webhook Carve-out". |
+| R-M7 | El webhook siempre responde 200 a Meta, aunque falle el procesamiento. | `WebhookController.php:132-144` | Técnica | Regla no confirmada (motivo técnico: evitar reintentos). |
+| R-M8 | El webhook exige firma HMAC válida. | `WebhookController.php:150-164` | Técnica (seguridad) | **Confirmada** — spec `authorization` "Webhook Carve-out". |
 | R-M9 | Tipos y tamaños de adjunto permitidos (incluye ejecutables y `octet-stream`). | `Conversacion/MediaValidator.php:9-14, 56-61` | Técnica | Ampliación deliberada (commit `941afac`); los tests describen la regla más estricta. Regla no confirmada como decisión de seguridad. |
 
 ## Automatizaciones
