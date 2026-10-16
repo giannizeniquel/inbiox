@@ -512,3 +512,4 @@ Later phases, each with its own branch and task list when it starts:
     - Mercure captured `message.added` ×6, `message.updated` (delivered) ×1 and `ticket.read` ×1; all outbox rows published.
   - Notes, unchanged from before 4b: waiting/active transitions emit no ticket event (no outbox row, same as resolve and close). Meta sent no `read` status for the reply (only `sent` and `delivered`), most likely the phone's read receipts setting; not verified.
   - Phase 4b is verified. Next: push and PR #6 (base `chore/limpieza-backend-fase-4`), with the user's approval.
+- **L60 (2026-10-16):** User: "dale, hacé el push y abrí el PR #6". Pushed `chore/limpieza-backend-fase-4b` and opened PR #6 (https://github.com/giannizeniquel/inbiox/pull/6), base `chore/limpieza-backend-fase-4`, 10 commits from `eaa7cc6`. Phase 4b is closed. Next part: 4c (reporting), still to be planned.
