@@ -419,3 +419,13 @@ Later phases, each with its own branch and task list when it starts:
     - Full suite, first run: 9 failures, the 6 baseline plus `TicketWorkflowControllerCharacterizationTest::testTransitionUnexpectedFailure`, `AgentLinkControllerTest::testUnlinkUserFromAgent` and `TicketClosureAuditClassificationTest::testSupervisorResolvesAnAutoReopenedUnownedTicketProducesManualResolvedUnowned`. Their messages were cut by the output filter, so the signature is unknown. None touches the provider code; the 3 pass in isolation.
     - Full suite, rerun with full output: 882 tests, exactly the 6 baseline failures.
   - Phase 4a code is complete (T20–T24). Next: independent verifier, front smoke with real sends, then push and PR #5 with the user's approval.
+- **L51 (2026-10-16), phase 4a independent verification:**
+  - Verdict PASS for 4a-0..4a-4, no blockers. Baseline `6fe5483` vs HEAD, both trees run from scratch copies with Graph and storage stubbed (no Meta calls).
+    - 4a-1: the order of the lock, guards, claim flushes, message persist, FSM, ProcessedEvent and event collect is unchanged; the outbox rows for a happy send are identical on both trees after normalization.
+    - 4a-2 to 4a-4: raw bodies are byte-identical (409 escaping, 429, 404, 422, upload key order); non-string payload values fail at the same point; the template agent is still created lazily; a non-scalar upload `ticketId` still fails inside the storage `try`.
+  - 15 probes pass on both trees and are committed as `tests/Characterization/ProviderProxyVerifierProbeTest.php` (`7834d4b`), without the verifier's `PROBE_OUT` dump. Parent spot check: `--filter 'ProviderProxyVerifierProbe|ProviderProxyController'` gives 55 tests OK.
+  - Advisories, already present at the baseline:
+    - An unrecognized binary (`.exe`, `application/octet-stream`) passes `MediaValidator` and is uploaded; this is the known MediaValidator baseline failure.
+    - The controller catches now wrap the whole use case, so a future `NotFoundException` thrown inside the outbound transaction would become 404 instead of 500. Nothing throws it there today.
+  - Next: front smoke with real sends, then push and PR #5 (base `chore/limpieza-backend-fase-3`), with the user's approval.
+
