@@ -506,6 +506,15 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
         $this->assertJsonResponse(200, ['mediaId' => '', 'key' => null], $this->upload($token, $this->tempFile('hola'), 'nota'));
     }
 
+    public function testUploadWithANonScalarTicketIdSkipsStorageAndStillReturnsTheMediaId(): void
+    {
+        [$token] = $this->agentToken();
+        $this->graph->method('uploadMedia')->willReturn(['id' => 'media-up-2']);
+        $this->storage->expects(self::never())->method('put');
+
+        $this->assertJsonResponse(200, ['mediaId' => 'media-up-2', 'key' => null], $this->upload($token, $this->tempFile('hola'), 'nota.txt', ['ticketId' => ['42']]));
+    }
+
     // ────────────────────────────────────────────────────────
     //  GET /api/provider/media/{mediaId}
     // ────────────────────────────────────────────────────────

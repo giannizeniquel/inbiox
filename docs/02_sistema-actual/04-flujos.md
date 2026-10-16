@@ -107,7 +107,7 @@ flowchart TD
 |---|---|---|---|
 | 1 | (Frontend) Si la ventana de 24 h venció según el reloj del navegador, el composer se reemplaza por un aviso. | `features/inbox/components/composer/composer.component.ts:70-76` | R-W1 (copia) |
 | 2 | (Frontend) Adjuntos: valida tipo/tamaño, sube con `POST /api/provider/media/upload`, luego envía con `mediaId`. | `features/inbox/services/message-sender.service.ts:131-134, 226-252` | |
-| 3 | Valida `ticketId` y `content`. Resuelve el agente del usuario; **si no tiene, lo crea** (nombre = email). | `ProviderProxyController.php:49-69`; `Agente/UseCase/EnsureAgentForUserUseCase.php` | R-A12 |
+| 3 | Valida `ticketId` y `content`. Resuelve el agente del usuario; **si no tiene, lo crea** (nombre = email). | `ProviderProxyController.php:46-66`; `Agente/UseCase/EnsureAgentForUserUseCase.php` | R-A12 |
 | 4 | `senderIsPrivileged = isGranted('ROLE_SUPERVISOR')`. | `:76` | |
 | 5 | Idempotencia: clave `outbound:{ticketId}:md5(texto o media)`; si ya existe, devuelve `duplicate_skipped` sin persistir. | `Conversacion/UseCase/HandleOutboundMessageUseCase.php:83-102` | R-M3 |
 | 6 | Hasta 3 intentos ante bloqueo optimista; transacción con `SELECT … FOR UPDATE`. | `:106-188` | |
@@ -117,7 +117,7 @@ flowchart TD
 | 10 | Crea el `Message` (`outbound`, `sender_type=agent`, `sender_agent_id`). | `:257-269` | R-M4 |
 | 11 | Estado: `new → active`, `active → waiting`; registra `first_response_at`. Como el paso 9 ya pasó `new → active`, el primer mensaje deja el ticket en `waiting`. | `:272-305` | R-T5, R-T6 |
 | 12 | Guarda `ProcessedEvent`, recolecta `MessageCreatedEvent`, commit, escribe outbox (omite `InboxUpdatedEvent`, agrega `assignee_id`). | `:308-426` | |
-| 13 | **Recién ahora** llama a Graph API (`sendMessage` o `sendMediaMessage`) con el `phone_number_id` del ticket. Si falla → error al usuario, **pero el mensaje ya quedó guardado como `sent`** y el ticket ya cambió. | `SendOutboundMessageUseCase.php:77-97`; errores → JSON en `ProviderProxyController.php:75-126` | R-M6 |
+| 13 | **Recién ahora** llama a Graph API (`sendMessage` o `sendMediaMessage`) con el `phone_number_id` del ticket. Si falla → error al usuario, **pero el mensaje ya quedó guardado como `sent`** y el ticket ya cambió. | `SendOutboundMessageUseCase.php:77-97`; errores → JSON en `ProviderProxyController.php:72-123` | R-M6 |
 | 14 | Guarda el WAMID en `messages.external_id` (para correlacionar estados de entrega). | `:174-184` | |
 | 15 | (Frontend) Confirma el mensaje optimista; si falla, `retryWithBackoff` **reintenta el POST 2 veces**. | `message-sender.service.ts:41-45, 71-74` | |
 
@@ -127,7 +127,7 @@ flowchart TD
 
 **Si falla, revisar:**
 1. Respuesta HTTP: 422 = ventana de 24 h; 409 `TICKET_NOT_OWNED` = guard de resuelto ([R6](00-estado-y-pendientes.md#r6-resolver-quita-el-dueño-contradicción-autoinfligida)); 422/429/502 desde `mapGraphErrorCode` = error de Meta.
-2. `Conversacion/UseCase/SendOutboundMessageUseCase.php::execute`, y `Conversacion/Controller/ProviderProxyController.php::send` y `::mapGraphErrorCode` (`:332-354`).
+2. `Conversacion/UseCase/SendOutboundMessageUseCase.php::execute`, y `Conversacion/Controller/ProviderProxyController.php::send` y `::mapGraphErrorCode` (`:301-323`).
 3. `Conversacion/UseCase/HandleOutboundMessageUseCase.php`.
 4. `Conversacion/ConversationWindowPolicy.php`, `Ticket/TicketOwnershipGuard.php`.
 5. `Compartido/Graph/GraphClient.php` (incluye el workaround `normalizePhone()` para un número de prueba).
@@ -137,7 +137,7 @@ flowchart TD
 
 ## F3. Envío de plantilla
 
-**Entrada:** `POST /api/provider/template/send` → `ProviderProxyController::sendTemplate` (`:162-228`) → `Conversacion/UseCase/SendTemplateUseCase.php`, `ROLE_AGENT`. **No hay UI** (`WhatsAppCloudProvider.sendTemplate()` no se llama).
+**Entrada:** `POST /api/provider/template/send` → `ProviderProxyController::sendTemplate` (`:159-225`) → `Conversacion/UseCase/SendTemplateUseCase.php`, `ROLE_AGENT`. **No hay UI** (`WhatsAppCloudProvider.sendTemplate()` no se llama).
 
 1. Valida `ticketId`, `templateName`, `language`, `parameters` (array).
 2. Carga ticket → contacto → teléfono (`Ticket::recipientPhone()`, compartido con `send`).

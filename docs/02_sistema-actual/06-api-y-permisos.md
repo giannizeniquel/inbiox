@@ -67,10 +67,10 @@ Leyenda "Rol": **Público**, **Auth** (cualquier usuario autenticado), **Agente*
 
 | Método | Path | Controlador::acción | Rol | Delega en / nota |
 |---|---|---|---|---|
-| POST | `/api/provider/send` | `ProviderProxyController::send` (`:47-138`) | Agente | `SendOutboundMessageUseCase` (`HandleOutboundMessageUseCase` + `GraphClient`). Crea un agente si el usuario no tiene. |
-| POST | `/api/provider/template/send` | `::sendTemplate` (`:162-228`) | Agente | `SendTemplateUseCase` (`GraphClient::sendTemplate`); persiste el mensaje directo. Sin UI. |
-| POST | `/api/provider/media/upload` | `::uploadMedia` (`:231-308`) | Agente | `MediaValidator` → `GraphClient::uploadMedia` (siempre con el número por defecto) → `MediaStorageService`. |
-| GET | `/api/provider/media/{mediaId}` | `::downloadMedia` (`:311-327`) | Agente | **Sin chequeo de pertenencia** (esquiva `MessageVoter`). |
+| POST | `/api/provider/send` | `ProviderProxyController::send` (`:44-135`) | Agente | `SendOutboundMessageUseCase` (`HandleOutboundMessageUseCase` + `GraphClient`). Crea un agente si el usuario no tiene. |
+| POST | `/api/provider/template/send` | `::sendTemplate` (`:159-225`) | Agente | `SendTemplateUseCase` (`GraphClient::sendTemplate`); persiste el mensaje directo. Sin UI. |
+| POST | `/api/provider/media/upload` | `::uploadMedia` (`:228-277`) | Agente | `UploadMediaUseCase`: `MediaValidator` → `GraphClient::uploadMedia` (siempre con el número por defecto) → `MediaStorageService`. |
+| GET | `/api/provider/media/{mediaId}` | `::downloadMedia` (`:280-296`) | Agente | **Sin chequeo de pertenencia** (esquiva `MessageVoter`). |
 | GET | `/api/messages/{id}/media` | `MediaUrlController::__invoke` | Agente + `MessageVoter::ACCESS` (solo el asignado o supervisor+) | URL prefirmada de S3. |
 
 ### D. Webhook de Meta

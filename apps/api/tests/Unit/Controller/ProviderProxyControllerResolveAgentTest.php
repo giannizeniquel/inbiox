@@ -12,6 +12,7 @@ use App\Conversacion\UseCase\MarkOutboundMessageSentUseCase;
 use App\Conversacion\UseCase\RecordSentTemplateUseCase;
 use App\Conversacion\UseCase\SendOutboundMessageUseCase;
 use App\Conversacion\UseCase\SendTemplateUseCase;
+use App\Conversacion\UseCase\UploadMediaUseCase;
 use App\Conversacion\Controller\ProviderProxyController;
 use App\Conversacion\Repository\MessageRepository;
 use App\Agente\Agent;
@@ -51,8 +52,11 @@ class ProviderProxyControllerResolveAgentTest extends TestCase
                 new RecordSentTemplateUseCase($em),
             ),
             new EnsureAgentForUserUseCase($em, $agentRepository),
-            $this->createMock(MediaValidator::class),
-            $this->createMock(MediaStorageService::class),
+            new UploadMediaUseCase(
+                $this->createMock(MediaValidator::class),
+                $this->createMock(GraphClient::class),
+                $this->createMock(MediaStorageService::class),
+            ),
         );
     }
 

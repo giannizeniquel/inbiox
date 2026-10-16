@@ -8,6 +8,7 @@ use App\Compartido\Graph\GraphClient;
 use App\Agente\UseCase\EnsureAgentForUserUseCase;
 use App\Conversacion\UseCase\SendOutboundMessageUseCase;
 use App\Conversacion\UseCase\SendTemplateUseCase;
+use App\Conversacion\UseCase\UploadMediaUseCase;
 use App\Administracion\User;
 use App\Conversacion\ConversationWindowExpiredException;
 use App\Conversacion\RecipientPhoneNotFoundException;
@@ -16,8 +17,6 @@ use App\Compartido\Graph\GraphApiException;
 use App\Conversacion\MediaTooLargeException;
 use App\Conversacion\MediaTypeNotAllowedException;
 use App\Compartido\StateConflictException;
-use App\Compartido\Storage\MediaStorageService;
-use App\Conversacion\MediaValidator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -26,7 +25,6 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Component\Uid\Ulid;
 
 #[IsGranted('ROLE_AGENT')]
 class ProviderProxyController extends AbstractController
@@ -39,8 +37,7 @@ class ProviderProxyController extends AbstractController
         private readonly SendOutboundMessageUseCase $sendOutboundMessage,
         private readonly SendTemplateUseCase $sendTemplateUseCase,
         private readonly EnsureAgentForUserUseCase $ensureAgentForUser,
-        private readonly MediaValidator $mediaValidator,
-        private readonly MediaStorageService $mediaStorageService,
+        private readonly UploadMediaUseCase $uploadMediaUseCase,
     ) {}
 
     #[Route('/api/provider/send', name: 'app_provider_send', methods: ['POST'])]
@@ -240,14 +237,14 @@ class ProviderProxyController extends AbstractController
             );
         }
 
-        $filePath = $file->getPathname();
-        $mimeType = $file->getMimeType() ?? 'application/octet-stream';
-        $fileSize = $file->getSize();
-        $filename = $file->getClientOriginalName();
-
-        // 1. Validate MIME and size
         try {
-            $this->mediaValidator->validate($mimeType, $fileSize);
+            $result = $this->uploadMediaUseCase->execute(
+                filePath: $file->getPathname(),
+                mimeType: $file->getMimeType() ?? 'application/octet-stream',
+                fileSize: $file->getSize(),
+                filename: $file->getClientOriginalName(),
+                ticketId: $request->request->all()['ticketId'] ?? null,
+            );
         } catch (MediaTooLargeException $e) {
             return new JsonResponse(
                 [
@@ -265,11 +262,6 @@ class ProviderProxyController extends AbstractController
                 ],
                 Response::HTTP_UNSUPPORTED_MEDIA_TYPE
             );
-        }
-
-        // 2. Upload to WhatsApp Graph API
-        try {
-            $graphResult = $this->graphClient->uploadMedia($filePath, $mimeType);
         } catch (GraphApiException $e) {
             return new JsonResponse(
                 [
@@ -281,30 +273,7 @@ class ProviderProxyController extends AbstractController
             );
         }
 
-        $mediaId = $graphResult['id'] ?? '';
-
-        // 3. Store in object storage (optional — best effort)
-        $key = null;
-        try {
-            $tenantId = 'default';
-            $ticketId = (int) ($request->request->get('ticketId') ?: 0);
-            $ext = pathinfo($filename, PATHINFO_EXTENSION) ?: 'bin';
-            $uuid = Ulid::generate();
-            $s3Key = sprintf('%s/%d/%s.%s', $tenantId, $ticketId, $uuid, $ext);
-
-            $this->mediaStorageService->put($s3Key, file_get_contents($filePath), $mimeType);
-            $key = $s3Key;
-        } catch (\Throwable $e) {
-            // Storage failure is non-fatal — we already have the mediaId from WhatsApp
-        }
-
-        return new JsonResponse(
-            [
-                'mediaId' => $mediaId,
-                'key' => $key,
-            ],
-            Response::HTTP_OK
-        );
+        return new JsonResponse($result, Response::HTTP_OK);
     }
 
     #[Route('/api/provider/media/{mediaId}', name: 'app_provider_media_download', methods: ['GET'])]
