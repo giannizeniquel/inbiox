@@ -57,6 +57,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
     - Outbox written after commit (already decided in L40).
     - Topic `tickets` vs `ticket/{id}` and R4 workspace isolation (group G; product/security decision).
     - Product decisions: a duplicate WAMID still creates the contact/conversation; auto-reply window constant 2 h vs docblock 4 h.
+    - Bug found in 4b-0: two messages in one payload on a `waiting` ticket lose the second one. The first moves the ticket to active with raw SQL, the managed entity still says waiting, and the second fails its waiting → active transition and is rolled back; Meta still gets 200.
 - **S7 — Docs policy (assumption, not explicitly confirmed by the user).** Each phase fixes the docs it invalidates in the same PR. A full docs pass happens in phase 6, after the renaming.
 
 ## Tasks
@@ -88,7 +89,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T22 | S9 | inline | done | 4a-2 `send` into a use case (`8d9d0fb`, L48) |
 | T23 | S9 | inline | done | 4a-3 `sendTemplate` into a use case (`dc30fac`, L49) |
 | T24 | S9 | inline | done | 4a-4 `uploadMedia` into a use case (`4dc42f4`, L50) |
-| T25 | S10 | inline | pending | 4b-0 inbound webhook characterization tests |
+| T25 | S10 | inline | done | 4b-0 inbound webhook characterization tests (`3d72b65`, L55) |
 | T26 | S10 | inline | pending | 4b-1 split `executeInternal` into private steps |
 | T27 | S10 | inline | pending | 4b-3 webhook payload parsing into `ProcessWebhookPayloadUseCase` |
 
@@ -460,4 +461,16 @@ Later phases, each with its own branch and task list when it starts:
     - "A failing auto-reply loses the event": the auto-reply has its own catch (L85-98).
     - Adding a transaction and a per-status catch, and fixing `Sprint09BOutboxTest`, would change behavior; they go to the contradiction track.
   - User: "dale, arrancá con lo que teniamos previsto, suma lo que te sirva de las orbseravciones del otro agente, pero nos mantenemos en nuestro plan". S10 and T25–T27 added (4b-2 needs no task: nothing is changed there).
+- **L55 (2026-10-16), T25:**
+  - 4b-0 (`3d72b65`, tests only): new `tests/Characterization/WebhookInboundCharacterizationTest.php`, 18 tests through a signed `POST /webhook` with Graph and storage stubbed. It covers:
+    - Text: first message (contact, conversation, ticket `new`/`medium`, 2 outbox rows with seq 1 and 2, `webhook_payloads` row), second message reusing the ticket (seq 3), the contact name filled only when missing, a duplicate WAMID, `waiting` → `active`.
+    - Skips: unsupported types, no `from`, and a failing message not stopping the next one. Malformed JSON → 400.
+    - Media: label and caption text, the stored key under the message id with `.bin` when there is no filename, a document filename, no media id, a failed download.
+    - Auto-reply from an unavailable agent: Graph send, stored outbound message, third outbox row with seq 3.
+    - Statuses: forward with a sequenced row, backward/terminal/unknown/missing fields changing nothing, failed reason from the first error, and a failing status cutting the remaining ones while still returning 200.
+  - Findings pinned as-is:
+    - The outbox `event_type` and the payload `type` are the event class names (`App\Ticket\TicketCreatedEvent`), not the realtime names.
+    - MySQL's JSON column reorders the payload keys, so the tests compare key sets.
+    - New bug (added to S10's contradiction list): two messages in one payload on a `waiting` ticket lose the second one.
+  - Checks: the new file passes (18 tests); full suite 915 tests, the 6 baseline failures plus one `401 Invalid JWT Token` in `TicketClosureAuthorizationTest` (the known flake).
 
