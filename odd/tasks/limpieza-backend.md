@@ -90,7 +90,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T23 | S9 | inline | done | 4a-3 `sendTemplate` into a use case (`dc30fac`, L49) |
 | T24 | S9 | inline | done | 4a-4 `uploadMedia` into a use case (`4dc42f4`, L50) |
 | T25 | S10 | inline | done | 4b-0 inbound webhook characterization tests (`3d72b65`, L55) |
-| T26 | S10 | inline | pending | 4b-1 split `executeInternal` into private steps |
+| T26 | S10 | inline | done | 4b-1 split `executeInternal` into private steps (`e9bbd90`, L56) |
 | T27 | S10 | inline | pending | 4b-3 webhook payload parsing into `ProcessWebhookPayloadUseCase` |
 
 ### Baseline of failing tests (phase 0, after `1afba20`)
@@ -473,4 +473,12 @@ Later phases, each with its own branch and task list when it starts:
     - MySQL's JSON column reorders the payload keys, so the tests compare key sets.
     - New bug (added to S10's contradiction list): two messages in one payload on a `waiting` ticket lose the second one.
   - Checks: the new file passes (18 tests); full suite 915 tests, the 6 baseline failures plus one `401 Invalid JWT Token` in `TicketClosureAuthorizationTest` (the known flake).
+- **L56 (2026-10-16), T26:**
+  - 4b-1 (`e9bbd90`): `HandleInboundMessageUseCase::executeInternal` now reads as the sequence of its steps, each a private method named after what it does today: `findOrCreateContact`, `findOrCreateOpenConversation`, `findAlreadyStoredMessage`, `storeInboundMessage` (first flush), `downloadMediaInsideTransaction` (second flush on success), `findOrReopenOrCreateTicketAndLock`, `moveWaitingTicketToActive`, `touchTimestamps`, the third flush, `collectInboundEvents` and `runRulesAndRequestAutoAssignment`.
+  - The order, the 3 flushes, the lock, the refresh after a reopen and the sequence increments are unchanged. Two unused locals were dropped (`$isNewConversation`, and the transition result `$result`). `processInboundMessage` and `persistEventsToOutbox` are untouched. No new classes.
+  - Docs: line references to the use case updated.
+  - Checks:
+    - `lint:container` OK; PHPStan level 0 identical (29 lines).
+    - Inbound-related tests (`Inbound|Webhook|Reopen|Sprint09B|Sprint08Automation|AutoReply`): 110 tests, only the 3 baseline Sprint09B failures.
+    - Full suite: 915 tests, exactly the 6 baseline failures.
 
