@@ -75,7 +75,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T20 | S9 | inline | done | 4a-0 outbound characterization tests (`364d163`, L47) |
 | T21 | S9 | inline | done | 4a-1 split `executeTransactionWithRetry` (`187360a`, L47) |
 | T22 | S9 | inline | done | 4a-2 `send` into a use case (`8d9d0fb`, L48) |
-| T23 | S9 | inline | pending | 4a-3 `sendTemplate` into a use case |
+| T23 | S9 | inline | done | 4a-3 `sendTemplate` into a use case (`dc30fac`, L49) |
 | T24 | S9 | inline | pending | 4a-4 `uploadMedia` into a use case |
 
 ### Baseline of failing tests (phase 0, after `1afba20`)
@@ -403,3 +403,10 @@ Later phases, each with its own branch and task list when it starts:
   - The media fields stay untyped (`mixed`) so a non-string value fails at the same point as before (the Graph call, after the message is stored).
   - `ProviderProxyControllerResolveAgentTest` builds the final use case over mocks; docs updated to point at the use case.
   - Checks: `lint:container` OK; PHPStan level 0 identical (29 lines); focused provider/outbound/window/media tests 93, only the 2 baseline MediaValidator failures; full suite 880 tests, exactly the 6 baseline failures.
+- **L49 (2026-10-16), T23:**
+  - 4a-3 (`dc30fac`): new final `Conversacion/UseCase/SendTemplateUseCase` holds the ticket lookup, the recipient phone, the Graph template send and the template message record.
+  - The recipient phone resolution shared by send and template is now `Ticket::recipientPhone()`, which throws `RecipientPhoneNotFoundException` with the same two messages.
+  - The sending agent is resolved lazily through a closure from the controller, only after a send that returned a WAMID, as before: resolving it can create an agent. New characterization test `testSendTemplateCreatesTheMissingAgentOnlyAfterASuccessfulSend` pins it; it passes on the old and the new code.
+  - `templateName` and `language` stay `mixed` so a non-string value still fails at the Graph call, after the ticket and phone checks.
+  - The controller no longer needs `TicketRepository` or `RecordSentTemplateUseCase`. Docs updated (also stale line refs in `06-api-y-permisos.md`).
+  - Checks: `lint:container` OK; PHPStan level 0 identical (29 lines); focused provider/template/outbound/window tests 65 OK; full suite 881 tests, exactly the 6 baseline failures.
