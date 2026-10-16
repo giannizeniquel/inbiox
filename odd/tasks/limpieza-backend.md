@@ -72,8 +72,8 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T17 | S8, S3 | delegated (context backstop) | done | 3c-1 (L28) and 3c-2 (L29) |
 | T18 | S8 | inline | done | 3d thin controllers, per module. 3d-1 Administracion (L32), 3d-2 `MeController` split (L33), 3d-3 small controllers (L34), 3d-4 Ticket and Asignacion (L35), 3d-5 Conversacion (L36); independent verifier PASS (L37) |
 | T19 | S8 | inline | done | 3e single outbox writer: `OutboxWriter` (`a286b03`), decisions L40/L41, implementation L42 |
-| T20 | S9 | inline | pending | 4a-0 outbound characterization tests |
-| T21 | S9 | inline | pending | 4a-1 split `executeTransactionWithRetry` |
+| T20 | S9 | inline | done | 4a-0 outbound characterization tests (`364d163`, L47) |
+| T21 | S9 | inline | done | 4a-1 split `executeTransactionWithRetry` (`187360a`, L47) |
 | T22 | S9 | inline | pending | 4a-2 `send` into a use case |
 | T23 | S9 | inline | pending | 4a-3 `sendTemplate` into a use case |
 | T24 | S9 | inline | pending | 4a-4 `uploadMedia` into a use case |
@@ -385,3 +385,15 @@ Later phases, each with its own branch and task list when it starts:
   - `ProviderProxyController::send` (143 lines) holds business logic: media metadata, recipient phone, Graph dispatch, WAMID mark. `sendTemplate` duplicates the phone resolution; `uploadMedia` holds the storage key and the best-effort storage policy.
   - Coverage gaps: the Graph happy path, media send, Graph error mapping, PHONE_NOT_FOUND, the 400s, everything in upload and download, the FSM matrix, retry exhaustion. Graph is not stubbed in `services_test.yaml`; tests use `container->set` plus `disableReboot()`.
   - Specs S9 and tasks T20–T24 added.
+- **L47 (2026-10-16), T20 and T21:**
+  - 4a-0 (`364d163`, tests only): new `tests/Characterization/ProviderProxyControllerCharacterizationTest.php`, 32 tests that pass on the unchanged code. It covers:
+    - Send: text and media happy paths, the FSM after a reply, each Graph error code mapping, a missing WAMID, the duplicate send, the 400s, a missing ticket giving 500, and PHONE_NOT_FOUND ×2.
+    - Template send: happy path, missing WAMID, Graph error, validation, PHONE_NOT_FOUND.
+    - Upload: 400, 415, 413, Graph 502, the storage key, and a storage failure.
+    - Download: success and error.
+  - New observation: a reply to a `new` unassigned ticket leaves it `waiting`, not `active`; auto-claim moves it to active and the reply FSM then moves it to waiting. It is pinned as-is.
+  - 4a-1 (`187360a`): `executeTransactionWithRetry` keeps the transaction, the lock and the order of every flush. Its steps moved into private methods: `guardSend`, `claimTicketForReplyingAgent`, `createOutboundMessage`, `applyReplyTransition` and `collectMessageCreatedEvent`. No new classes.
+  - Checks:
+    - `lint:container` OK; PHPStan level 0 identical (29 lines).
+    - Outbound-related tests: 81 tests; only the 3 baseline Sprint09B failures fail.
+    - Full suite: 880 tests, exactly the 6 baseline failures. A first run had a 7th failure whose name was cut from the output; it did not reproduce on the rerun.
