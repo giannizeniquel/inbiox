@@ -206,7 +206,7 @@ El servicio `window-closer` está detrás de un *profile* de docker-compose: con
 ### R16. Concurrencia en asignación manual (TOCTOU)
 
 **[DATOS] · Confirmado (lectura); deuda ya registrada en el análisis de brecha.**
-`AssignTicketUseCase.php:78-84` lee el ticket y después lo bloquea (`findById()` + `lock()`); el bloqueo no refresca la entidad. Bajo REPEATABLE READ, dos asignaciones simultáneas pueden registrar un tipo de asignación incorrecto y repetir el número de secuencia de eventos. Mismo patrón en `HandleInboundMessageUseCase.php:264,307`. El bug equivalente ya se corrigió en `HandleOutboundMessageUseCase` con `findByIdForUpdate()`.
+`AssignTicketUseCase.php:78-84` lee el ticket y después lo bloquea (`findById()` + `lock()`); el bloqueo no refresca la entidad. Bajo REPEATABLE READ, dos asignaciones simultáneas pueden registrar un tipo de asignación incorrecto y repetir el número de secuencia de eventos. Mismo patrón en `HandleInboundMessageUseCase.php:332,376`. El bug equivalente ya se corrigió en `HandleOutboundMessageUseCase` con `findByIdForUpdate()`.
 
 ### R17. Deuda de comprensión
 
