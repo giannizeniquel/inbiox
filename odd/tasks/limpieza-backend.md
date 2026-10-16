@@ -36,6 +36,16 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
   - 3d: controllers only do HTTP, module by module, Administracion first.
   - 3e: single outbox writer. Open decisions for 3e: outbox timing (today post-commit) and the `EventCollector` leak (events collected but never published).
   - Inventory (from the explorer): `odd/fase-3/violaciones.csv`, `errores.md`, `cobertura.md`.
+- **S9 — Phase 4, outbound first.** User: "dale" (to "¿Arrancamos la fase 4 con la parte de salida?"). Plan line: "Split the god methods, with characterization tests first: outbound, then inbound, then reporting."
+  - Behavior is preserved even where it looks wrong (S1). These quirks stay as they are and go to the contradiction track:
+    - The message is committed before the Graph call; on a Graph failure it stays `sent` without a WAMID.
+    - A missing ticket on `send` gives a 500.
+    - Template sends skip the outbound use case.
+  - 4a-0: characterization tests for `/api/provider/send`, `template/send`, `media/upload`, `media/{id}` and the `HandleOutboundMessageUseCase` branches not yet covered, with Graph stubbed via `container->set(GraphClient::class, ...)`.
+  - 4a-1: split `HandleOutboundMessageUseCase::executeTransactionWithRetry` (192 lines) into private steps; no new classes without a concrete reason.
+  - 4a-2: `send` business logic (media metadata, recipient phone, Graph dispatch, WAMID mark) into a use case; the controller keeps parsing, `isGranted`, agent resolution and the exception→JSON mapping, with byte-identical bodies.
+  - 4a-3: `sendTemplate` into a use case, sharing the recipient phone resolution with 4a-2.
+  - 4a-4: `uploadMedia` into a use case; `downloadMedia` stays a thin proxy.
 - **S7 — Docs policy (assumption, not explicitly confirmed by the user).** Each phase fixes the docs it invalidates in the same PR. A full docs pass happens in phase 6, after the renaming.
 
 ## Tasks
@@ -62,6 +72,11 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T17 | S8, S3 | delegated (context backstop) | done | 3c-1 (L28) and 3c-2 (L29) |
 | T18 | S8 | inline | done | 3d thin controllers, per module. 3d-1 Administracion (L32), 3d-2 `MeController` split (L33), 3d-3 small controllers (L34), 3d-4 Ticket and Asignacion (L35), 3d-5 Conversacion (L36); independent verifier PASS (L37) |
 | T19 | S8 | inline | done | 3e single outbox writer: `OutboxWriter` (`a286b03`), decisions L40/L41, implementation L42 |
+| T20 | S9 | inline | pending | 4a-0 outbound characterization tests |
+| T21 | S9 | inline | pending | 4a-1 split `executeTransactionWithRetry` |
+| T22 | S9 | inline | pending | 4a-2 `send` into a use case |
+| T23 | S9 | inline | pending | 4a-3 `sendTemplate` into a use case |
+| T24 | S9 | inline | pending | 4a-4 `uploadMedia` into a use case |
 
 ### Baseline of failing tests (phase 0, after `1afba20`)
 
@@ -358,3 +373,15 @@ Later phases, each with its own branch and task list when it starts:
     1. `ticket.created` carries `contactId` 0, hence "Unknown" in the UI.
     2. Assignment events carry `assigneeName` null and an empty `assignedAt`.
   - Phase 3 complete. Next: push and PR #4 (base `chore/limpieza-backend-fase-2`), with user approval.
+- **L45 (2026-10-16), delivery and environment:**
+  - Phase 3 was pushed as PR #4 (https://github.com/giannizeniquel/inbiox/pull/4), base `chore/limpieza-backend-fase-2`.
+  - The dev WhatsApp numbers were replaced in place (workspace 1 → `1305366182668267`, workspace 2 → `1371728396024028`, both real). Both numbers send and receive end to end.
+  - New findings for the contradiction track:
+    1. A failed Graph send leaves the outbound message `sent` without a WAMID.
+    2. `GraphClient` drops `error_subcode` and `error_data`.
+    3. The `WS2_TEST_PHONE_NUMBER_ID` normalization in `GraphClient` is now dead.
+- **L46 (2026-10-16), phase 4 start (route: delegated explorer, mapping trigger):** user: "dale". Branch `chore/limpieza-backend-fase-4` from `6fe5483`. Outbound map:
+  - `HandleOutboundMessageUseCase`: `processOutboundMessage` (95 lines; idempotency, retry loop with 3 attempts, outbox after commit) and `executeTransactionWithRetry` (192 lines; lock, ownership guard before the window check, auto-claim, message, FSM, ProcessedEvent, event, rules).
+  - `ProviderProxyController::send` (143 lines) holds business logic: media metadata, recipient phone, Graph dispatch, WAMID mark. `sendTemplate` duplicates the phone resolution; `uploadMedia` holds the storage key and the best-effort storage policy.
+  - Coverage gaps: the Graph happy path, media send, Graph error mapping, PHONE_NOT_FOUND, the 400s, everything in upload and download, the FSM matrix, retry exhaustion. Graph is not stubbed in `services_test.yaml`; tests use `container->set` plus `disableReboot()`.
+  - Specs S9 and tasks T20–T24 added.
