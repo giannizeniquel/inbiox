@@ -428,4 +428,13 @@ Later phases, each with its own branch and task list when it starts:
     - An unrecognized binary (`.exe`, `application/octet-stream`) passes `MediaValidator` and is uploaded; this is the known MediaValidator baseline failure.
     - The controller catches now wrap the whole use case, so a future `NotFoundException` thrown inside the outbound transaction would become 404 instead of 500. Nothing throws it there today.
   - Next: front smoke with real sends, then push and PR #5 (base `chore/limpieza-backend-fase-3`), with the user's approval.
+- **L52 (2026-10-16), phase 4a front smoke with real sends (front report against `482b84c`):**
+  - No differences caused by 4a. Four real sends to ticket #501 (ws1) reached the user's phone, each with a WAMID and delivered in 2–4 s, like messages 284/286 before 4a:
+    - Admin without an agent: agent 19 was created and the ticket reassigned.
+    - Text: the ticket ended `waiting` with agent1.
+    - Image and PDF: delivered with caption and file name.
+  - Errors same as before 4a: 422 `CONVERSATION_WINDOW_EXPIRED`, 409 `TICKET_NOT_OWNED`, 415, 413. Inbound image and PDF fine.
+  - Gap: the outbox was published with the baseline pattern, but the Mercure events of the 4 sends were not captured.
+  - Leftover test data: user 17 and agent 19; one real media upload to Meta with no message (a `.txt`, which is allowed), stored as MinIO object `default/463/01M52JHMDKJSF4EWT8R41SR3QF.txt`.
+  - Next: push and PR #5 (base `chore/limpieza-backend-fase-3`), with the user's approval.
 
