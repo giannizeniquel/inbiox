@@ -169,7 +169,8 @@ class HandleOutboundMessageUseCase
     }
 
     /**
-     * Execute the transactional operation with ticket reference for refresh.
+     * Runs one attempt of the outbound flow inside a transaction. $ticket is
+     * set as soon as the row is locked, so the retry loop can refresh it.
      */
     private function executeTransactionWithRetry(
         int $ticketId,
@@ -193,29 +194,8 @@ class HandleOutboundMessageUseCase
                 throw new \InvalidArgumentException('Ticket not found');
             }
 
-            // Resolved/closed ownership guard (design.md D3-D5, spec.md
-            // "Resolved/Closed Ticket Ownership Guard"): a non-owning,
-            // non-privileged agent may not claim/reassign a resolved/closed
-            // ticket by replying. Runs BEFORE the window-policy check below
-            // — a 409 here is more informative than a misleading 422, and
-            // ownership on a closed ticket is stable/authoritative while the
-            // window is merely time-dependent.
-            $status = $ticket->getStatus();
-            $skipOwnershipChange = TicketOwnershipGuard::isResolvedOrClosed($status);
-            if (TicketOwnershipGuard::blocksReassignment($status, $senderIsPrivileged, $agentId, $ticket->getAssignedAgentId())) {
-                throw new StateConflictException(sprintf(
-                    'Cannot send to ticket in "%s" state: sender is not the assigned owner',
-                    $status
-                ));
-            }
-
-            // WhatsApp 24h conversation-window guard-before-persist (design.md
-            // D3/D4): reject free text once the effective window has elapsed,
-            // before any message row is persisted and before any FSM
-            // transition — never a phantom "sent" message.
-            if (!$this->windowPolicy->isOpenForSending($ticket->getLastInboundMessageAt(), new \DateTimeImmutable())) {
-                throw new ConversationWindowExpiredException($ticketId, $ticket->getLastInboundMessageAt());
-            }
+            $skipOwnershipChange = TicketOwnershipGuard::isResolvedOrClosed($ticket->getStatus());
+            $this->guardSend($ticket, $ticketId, $agentId, $senderIsPrivileged);
 
             // Get conversation
             $conversation = $ticket->getConversation();
@@ -223,89 +203,14 @@ class HandleOutboundMessageUseCase
                 throw new \InvalidArgumentException('Ticket has no conversation');
             }
 
-            // Auto-assign agent to ticket if not already assigned to this agent
-            // (skipped on resolved/closed tickets — ownership is frozen there).
-            $currentAssigneeId = $ticket->getAssignedAgentId();
-            if (!$skipOwnershipChange && $agentId > 0 && $currentAssigneeId !== $agentId) {
-                $agent = $this->agentRepo->findById($agentId);
-                if ($agent !== null) {
-                    $previousAgent = null;
-                    if ($currentAssigneeId !== null) {
-                        $previousAgent = $this->agentRepo->findById($currentAssigneeId);
-                    }
-
-                    $type = $currentAssigneeId !== null
-                        ? AssignmentType::REASSIGN
-                        : AssignmentType::AUTO_ASSIGN;
-
-                    $this->assignmentService->recordOwnershipChange(
-                        ticket: $ticket,
-                        agent: $agent,
-                        previousAgent: $previousAgent,
-                        type: $type,
-                        assignedBy: 'system',
-                        notes: 'Auto-assigned on agent reply',
-                    );
-
-                    // Flush the assignment + any status change made by AssignmentService
-                    // (e.g. new → active) so the DB is consistent before we decide the
-                    // FSM transition below.
-                    $this->em->flush();
-                    $this->em->refresh($ticket);
-
-                    // When an agent replies and becomes the owner, mark as read
-                    $ticket->setLastReadAt(new \DateTimeImmutable());
-                    $this->em->flush();
-                }
+            // Skipped on resolved/closed tickets — ownership is frozen there.
+            if (!$skipOwnershipChange) {
+                $this->claimTicketForReplyingAgent($ticket, $agentId);
             }
 
-            // Create outbound message
-            $msg = new Message();
-            $msg->setConversation($conversation);
-            $msg->setDirection('outbound');
-            $msg->setContent($content);
-            $msg->setSenderAgentId($agentId > 0 ? $agentId : null);
-            $msg->setSenderType(MessageSenderType::AGENT);
+            $msg = $this->createOutboundMessage($conversation, $content, $agentId, $mediaMetadata);
 
-            // Attach media metadata if provided
-            if ($mediaMetadata !== null) {
-                $msg->setMedia($mediaMetadata);
-            }
-
-            $this->em->persist($msg);
-
-            // Determine transition based on current status
-            $currentStatus = $ticket->getStatus();
-            $shouldSetFirstResponse = empty($ticket->getFirstResponseAt());
-            $newStatus = $currentStatus;
-            $transition = null;
-
-            if ($currentStatus === TicketStatus::NEW->value) {
-                // First agent response: new → active
-                $newStatus = TicketStatus::ACTIVE->value;
-                $transition = 'new_to_active';
-            } elseif ($currentStatus === TicketStatus::ACTIVE->value) {
-                // Agent waiting for response: active → waiting
-                $newStatus = TicketStatus::WAITING->value;
-                $transition = 'active_to_waiting';
-            } elseif ($currentStatus === TicketStatus::WAITING->value) {
-                // Agent replies while waiting: stays waiting (customer might respond)
-                $newStatus = TicketStatus::WAITING->value;
-                $transition = 'waiting_remains';
-            }
-
-            // Execute transition if needed
-            if ($transition && $newStatus !== $currentStatus) {
-                $result = $this->transitionUseCase->execute(
-                    $ticketId,
-                    $newStatus,
-                    $shouldSetFirstResponse,
-                    false
-                );
-            } else if ($shouldSetFirstResponse) {
-                // Just set first_response_at without status change
-                $this->ticketRepo->markFirstResponse($ticketId);
-            }
+            [$currentStatus, $newStatus, $transition, $shouldSetFirstResponse] = $this->applyReplyTransition($ticket, $ticketId);
 
             // Update conversation timestamps
             $conversation->setLastMessageAt($msg->getCreatedAt());
@@ -327,22 +232,7 @@ class HandleOutboundMessageUseCase
 
             $this->em->flush();
 
-            // Collect MessageCreatedEvent for human-agent replies (design.md D5) —
-            // makes outbound messages broadcast over Mercure for the first time.
-            // $msg->getId() exists because of the flush() above.
-            $senderName = $agentId > 0 ? $this->agentRepo->findById($agentId)?->getName() : null;
-            $this->eventCollector->collect(new MessageCreatedEvent(
-                eventId: new Ulid(),
-                ticketId: $ticketId,
-                occurredAt: new \DateTimeImmutable(),
-                seq: $ticket->incrementLastEventSeq(),
-                version: 1,
-                direction: MessageDirection::OUTBOUND,
-                messageId: $msg->getId(),
-                content: $content,
-                senderName: $senderName,
-                media: $msg->getMedia(),
-            ));
+            $this->collectMessageCreatedEvent($ticket, $ticketId, $msg, $content, $agentId);
 
             // Flush again to persist the bumped lastEventSeq (design.md D5).
             $this->em->flush();
@@ -362,6 +252,165 @@ class HandleOutboundMessageUseCase
                 'event_key' => $eventKey,
             ];
         });
+    }
+
+    /**
+     * Rejects the send before anything is persisted.
+     *
+     * Resolved/closed ownership guard (design.md D3-D5, spec.md
+     * "Resolved/Closed Ticket Ownership Guard"): a non-owning, non-privileged
+     * agent may not claim/reassign a resolved/closed ticket by replying. It
+     * runs BEFORE the window-policy check — a 409 here is more informative
+     * than a misleading 422, and ownership on a closed ticket is
+     * stable/authoritative while the window is merely time-dependent.
+     *
+     * WhatsApp 24h conversation-window guard-before-persist (design.md D3/D4):
+     * free text is rejected once the effective window has elapsed, before any
+     * message row is persisted and before any FSM transition — never a
+     * phantom "sent" message.
+     */
+    private function guardSend(Ticket $ticket, int $ticketId, int $agentId, bool $senderIsPrivileged): void
+    {
+        $status = $ticket->getStatus();
+        if (TicketOwnershipGuard::blocksReassignment($status, $senderIsPrivileged, $agentId, $ticket->getAssignedAgentId())) {
+            throw new StateConflictException(sprintf(
+                'Cannot send to ticket in "%s" state: sender is not the assigned owner',
+                $status
+            ));
+        }
+
+        if (!$this->windowPolicy->isOpenForSending($ticket->getLastInboundMessageAt(), new \DateTimeImmutable())) {
+            throw new ConversationWindowExpiredException($ticketId, $ticket->getLastInboundMessageAt());
+        }
+    }
+
+    /**
+     * Assigns the ticket to the replying agent when someone else (or nobody)
+     * owns it. An unknown agent, or agent id 0, leaves the ticket as it is.
+     */
+    private function claimTicketForReplyingAgent(Ticket $ticket, int $agentId): void
+    {
+        $currentAssigneeId = $ticket->getAssignedAgentId();
+        if ($agentId <= 0 || $currentAssigneeId === $agentId) {
+            return;
+        }
+
+        $agent = $this->agentRepo->findById($agentId);
+        if ($agent === null) {
+            return;
+        }
+
+        $previousAgent = null;
+        if ($currentAssigneeId !== null) {
+            $previousAgent = $this->agentRepo->findById($currentAssigneeId);
+        }
+
+        $type = $currentAssigneeId !== null
+            ? AssignmentType::REASSIGN
+            : AssignmentType::AUTO_ASSIGN;
+
+        $this->assignmentService->recordOwnershipChange(
+            ticket: $ticket,
+            agent: $agent,
+            previousAgent: $previousAgent,
+            type: $type,
+            assignedBy: 'system',
+            notes: 'Auto-assigned on agent reply',
+        );
+
+        // Flush the assignment + any status change made by AssignmentService
+        // (e.g. new → active) so the DB is consistent before we decide the
+        // FSM transition below.
+        $this->em->flush();
+        $this->em->refresh($ticket);
+
+        // When an agent replies and becomes the owner, mark as read
+        $ticket->setLastReadAt(new \DateTimeImmutable());
+        $this->em->flush();
+    }
+
+    private function createOutboundMessage(Conversation $conversation, string $content, int $agentId, ?array $mediaMetadata): Message
+    {
+        $msg = new Message();
+        $msg->setConversation($conversation);
+        $msg->setDirection('outbound');
+        $msg->setContent($content);
+        $msg->setSenderAgentId($agentId > 0 ? $agentId : null);
+        $msg->setSenderType(MessageSenderType::AGENT);
+
+        // Attach media metadata if provided
+        if ($mediaMetadata !== null) {
+            $msg->setMedia($mediaMetadata);
+        }
+
+        $this->em->persist($msg);
+
+        return $msg;
+    }
+
+    /**
+     * Moves the ticket after an agent reply (new → active, active → waiting,
+     * waiting stays) and sets first_response_at on the first reply.
+     *
+     * @return array{0: string, 1: string, 2: ?string, 3: bool} previous status, new status, transition name, whether first response was set
+     */
+    private function applyReplyTransition(Ticket $ticket, int $ticketId): array
+    {
+        $currentStatus = $ticket->getStatus();
+        $shouldSetFirstResponse = empty($ticket->getFirstResponseAt());
+        $newStatus = $currentStatus;
+        $transition = null;
+
+        if ($currentStatus === TicketStatus::NEW->value) {
+            // First agent response: new → active
+            $newStatus = TicketStatus::ACTIVE->value;
+            $transition = 'new_to_active';
+        } elseif ($currentStatus === TicketStatus::ACTIVE->value) {
+            // Agent waiting for response: active → waiting
+            $newStatus = TicketStatus::WAITING->value;
+            $transition = 'active_to_waiting';
+        } elseif ($currentStatus === TicketStatus::WAITING->value) {
+            // Agent replies while waiting: stays waiting (customer might respond)
+            $newStatus = TicketStatus::WAITING->value;
+            $transition = 'waiting_remains';
+        }
+
+        // Execute transition if needed
+        if ($transition && $newStatus !== $currentStatus) {
+            $this->transitionUseCase->execute(
+                $ticketId,
+                $newStatus,
+                $shouldSetFirstResponse,
+                false
+            );
+        } else if ($shouldSetFirstResponse) {
+            // Just set first_response_at without status change
+            $this->ticketRepo->markFirstResponse($ticketId);
+        }
+
+        return [$currentStatus, $newStatus, $transition, $shouldSetFirstResponse];
+    }
+
+    /**
+     * Collects MessageCreatedEvent for human-agent replies (design.md D5), so
+     * outbound messages are broadcast over Mercure. The message must already
+     * be flushed, because the event carries its id.
+     */
+    private function collectMessageCreatedEvent(Ticket $ticket, int $ticketId, Message $msg, string $content, int $agentId): void
+    {
+        $senderName = $agentId > 0 ? $this->agentRepo->findById($agentId)?->getName() : null;
+        $this->eventCollector->collect(new MessageCreatedEvent(
+            eventId: new Ulid(),
+            ticketId: $ticketId,
+            occurredAt: new \DateTimeImmutable(),
+            seq: $ticket->incrementLastEventSeq(),
+            version: 1,
+            direction: MessageDirection::OUTBOUND,
+            messageId: $msg->getId(),
+            content: $content,
+            senderName: $senderName,
+            media: $msg->getMedia(),
+        ));
     }
 
     /**

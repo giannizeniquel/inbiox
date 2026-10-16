@@ -6,19 +6,17 @@ namespace App\Conversacion\Controller;
 
 use App\Compartido\Graph\GraphClient;
 use App\Agente\UseCase\EnsureAgentForUserUseCase;
-use App\Conversacion\UseCase\HandleOutboundMessageUseCase;
-use App\Conversacion\UseCase\MarkOutboundMessageSentUseCase;
-use App\Conversacion\UseCase\RecordSentTemplateUseCase;
-use App\Conversacion\MediaKind;
+use App\Conversacion\UseCase\SendOutboundMessageUseCase;
+use App\Conversacion\UseCase\SendTemplateUseCase;
+use App\Conversacion\UseCase\UploadMediaUseCase;
 use App\Administracion\User;
 use App\Conversacion\ConversationWindowExpiredException;
+use App\Conversacion\RecipientPhoneNotFoundException;
+use App\Compartido\NotFoundException;
 use App\Compartido\Graph\GraphApiException;
 use App\Conversacion\MediaTooLargeException;
 use App\Conversacion\MediaTypeNotAllowedException;
 use App\Compartido\StateConflictException;
-use App\Compartido\Storage\MediaStorageService;
-use App\Conversacion\MediaValidator;
-use App\Ticket\Repository\TicketRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -27,7 +25,6 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Component\Uid\Ulid;
 
 #[IsGranted('ROLE_AGENT')]
 class ProviderProxyController extends AbstractController
@@ -36,14 +33,11 @@ class ProviderProxyController extends AbstractController
     private const GRAPH_RATE_LIMIT = 429;    // Too many requests
 
     public function __construct(
-        private readonly TicketRepository $ticketRepository,
         private readonly GraphClient $graphClient,
-        private readonly HandleOutboundMessageUseCase $outboundUseCase,
-        private readonly MarkOutboundMessageSentUseCase $markOutboundMessageSent,
-        private readonly RecordSentTemplateUseCase $recordSentTemplate,
+        private readonly SendOutboundMessageUseCase $sendOutboundMessage,
+        private readonly SendTemplateUseCase $sendTemplateUseCase,
         private readonly EnsureAgentForUserUseCase $ensureAgentForUser,
-        private readonly MediaValidator $mediaValidator,
-        private readonly MediaStorageService $mediaStorageService,
+        private readonly UploadMediaUseCase $uploadMediaUseCase,
     ) {}
 
     #[Route('/api/provider/send', name: 'app_provider_send', methods: ['POST'])]
@@ -75,31 +69,18 @@ class ProviderProxyController extends AbstractController
         // ROLE_ADMIN inherit ROLE_SUPERVISOR, so this single check covers both.
         $senderIsPrivileged = $this->isGranted('ROLE_SUPERVISOR');
 
-        // Build media metadata for persistence
-        $mediaMetadata = null;
-        if ($mediaId !== null && $mimeType !== null) {
-            $mediaMetadata = [
-                'providerId' => $mediaId,
-                'mimeType' => $mimeType,
-                'key' => $mediaKey,
-                'caption' => $caption,
-                'filename' => $filename,
-                'size' => $size,
-                'kind' => MediaKind::fromMime($mimeType)->value,
-            ];
-        }
-
-        // --- Process outbound message (creates Message, handles assignment + status) ---
-        // This single call site covers both free-text and media sends (the media
-        // metadata, when present, is passed through above) — one catch below
-        // guards both.
         try {
-            $result = $this->outboundUseCase->processOutboundMessage(
+            $result = $this->sendOutboundMessage->execute(
                 ticketId: $ticketId,
                 content: $content,
                 agentId: $agentId,
-                mediaMetadata: $mediaMetadata,
                 senderIsPrivileged: $senderIsPrivileged,
+                mediaId: $mediaId,
+                mimeType: $mimeType,
+                caption: $caption,
+                mediaKey: $mediaKey,
+                filename: $filename,
+                size: $size,
             );
         } catch (ConversationWindowExpiredException $e) {
             return new JsonResponse(
@@ -117,46 +98,16 @@ class ProviderProxyController extends AbstractController
                 ],
                 Response::HTTP_CONFLICT
             );
-        }
-
-        // --- Phone Resolution Chain ---
-        $ticket = $this->ticketRepository->find($ticketId);
-
-        if (!$ticket) {
+        } catch (NotFoundException $e) {
             return new JsonResponse(
-                ['error' => 'Ticket not found'],
+                ['error' => $e->getMessage()],
                 Response::HTTP_NOT_FOUND
             );
-        }
-
-        $contact = $ticket->getContact();
-
-        if (!$contact) {
+        } catch (RecipientPhoneNotFoundException $e) {
             return new JsonResponse(
-                ['type' => 'PHONE_NOT_FOUND', 'message' => 'Ticket has no associated contact'],
+                ['type' => 'PHONE_NOT_FOUND', 'message' => $e->getMessage()],
                 Response::HTTP_UNPROCESSABLE_ENTITY
             );
-        }
-
-        $phone = $contact->getPhone();
-
-        if ($phone === null || $phone === '') {
-            return new JsonResponse(
-                ['type' => 'PHONE_NOT_FOUND', 'message' => 'Contact has no phone number'],
-                Response::HTTP_UNPROCESSABLE_ENTITY
-            );
-        }
-
-        // --- Multi-number resolution (CAP-7 / META-018) ---
-        $phoneNumberId = $ticket->getPhoneNumberId();
-
-        // --- Call Graph API ---
-        try {
-            if ($mediaId !== null && $mimeType !== null) {
-                $graphResponse = $this->graphClient->sendMediaMessage($phone, $mediaId, $mimeType, $caption ?? $content, $phoneNumberId, $filename);
-            } else {
-                $graphResponse = $this->graphClient->sendMessage($phone, $content, $phoneNumberId);
-            }
         } catch (GraphApiException $e) {
             $httpStatus = $this->mapGraphErrorCode($e->getGraphCode());
             $errorType = $this->mapGraphErrorType($e->getGraphCode());
@@ -171,19 +122,12 @@ class ProviderProxyController extends AbstractController
             );
         }
 
-        $wamid = $graphResponse['messages'][0]['id'] ?? null;
-
-        // Set WAMID on the message created by HandleOutboundMessageUseCase
-        if ($wamid !== null && !empty($result['message_id'])) {
-            $this->markOutboundMessageSent->execute($result['message_id'], $wamid);
-        }
-
         return new JsonResponse(
             [
                 // DB message ID — the frontend uses this to fetch the media URL
-                'messageId' => $result['message_id'] ?? null,
+                'messageId' => $result['messageId'],
                 // WhatsApp message ID (WAMID)
-                'externalId' => $wamid,
+                'externalId' => $result['externalId'],
                 'status' => 'sent',
             ],
             Response::HTTP_OK
@@ -239,40 +183,24 @@ class ProviderProxyController extends AbstractController
             );
         }
 
-        // --- Phone Resolution Chain ---
-        $ticket = $this->ticketRepository->find($ticketId);
-
-        if (!$ticket) {
+        try {
+            $wamid = $this->sendTemplateUseCase->execute(
+                ticketId: $ticketId,
+                templateName: $templateName,
+                language: $language,
+                parameters: $parameters,
+                resolveSenderAgentId: fn (): ?int => $this->resolveActingAgentId($user),
+            );
+        } catch (NotFoundException $e) {
             return new JsonResponse(
-                ['error' => 'Ticket not found'],
+                ['error' => $e->getMessage()],
                 Response::HTTP_NOT_FOUND
             );
-        }
-
-        $contact = $ticket->getContact();
-
-        if (!$contact) {
+        } catch (RecipientPhoneNotFoundException $e) {
             return new JsonResponse(
-                ['type' => 'PHONE_NOT_FOUND', 'message' => 'Ticket has no associated contact'],
+                ['type' => 'PHONE_NOT_FOUND', 'message' => $e->getMessage()],
                 Response::HTTP_UNPROCESSABLE_ENTITY
             );
-        }
-
-        $phone = $contact->getPhone();
-
-        if ($phone === null || $phone === '') {
-            return new JsonResponse(
-                ['type' => 'PHONE_NOT_FOUND', 'message' => 'Contact has no phone number'],
-                Response::HTTP_UNPROCESSABLE_ENTITY
-            );
-        }
-
-        // --- Multi-number resolution (CAP-7 / META-018) ---
-        $phoneNumberId = $ticket->getPhoneNumberId();
-
-        // --- Call Graph API ---
-        try {
-            $graphResponse = $this->graphClient->sendTemplate($phone, $templateName, $language, $parameters, $phoneNumberId);
         } catch (GraphApiException $e) {
             $httpStatus = $this->mapGraphErrorCode($e->getGraphCode());
             $errorType = $this->mapGraphErrorType($e->getGraphCode());
@@ -285,13 +213,6 @@ class ProviderProxyController extends AbstractController
                 ],
                 $httpStatus
             );
-        }
-
-        $wamid = $graphResponse['messages'][0]['id'] ?? null;
-
-        // Persist WAMID as externalId on a new outbound Message for webhook correlation
-        if ($wamid !== null) {
-            $this->recordSentTemplate->execute($ticket, $templateName, $parameters, $wamid, $this->resolveActingAgentId($user));
         }
 
         return new JsonResponse(
@@ -316,14 +237,14 @@ class ProviderProxyController extends AbstractController
             );
         }
 
-        $filePath = $file->getPathname();
-        $mimeType = $file->getMimeType() ?? 'application/octet-stream';
-        $fileSize = $file->getSize();
-        $filename = $file->getClientOriginalName();
-
-        // 1. Validate MIME and size
         try {
-            $this->mediaValidator->validate($mimeType, $fileSize);
+            $result = $this->uploadMediaUseCase->execute(
+                filePath: $file->getPathname(),
+                mimeType: $file->getMimeType() ?? 'application/octet-stream',
+                fileSize: $file->getSize(),
+                filename: $file->getClientOriginalName(),
+                ticketId: $request->request->all()['ticketId'] ?? null,
+            );
         } catch (MediaTooLargeException $e) {
             return new JsonResponse(
                 [
@@ -341,11 +262,6 @@ class ProviderProxyController extends AbstractController
                 ],
                 Response::HTTP_UNSUPPORTED_MEDIA_TYPE
             );
-        }
-
-        // 2. Upload to WhatsApp Graph API
-        try {
-            $graphResult = $this->graphClient->uploadMedia($filePath, $mimeType);
         } catch (GraphApiException $e) {
             return new JsonResponse(
                 [
@@ -357,30 +273,7 @@ class ProviderProxyController extends AbstractController
             );
         }
 
-        $mediaId = $graphResult['id'] ?? '';
-
-        // 3. Store in object storage (optional — best effort)
-        $key = null;
-        try {
-            $tenantId = 'default';
-            $ticketId = (int) ($request->request->get('ticketId') ?: 0);
-            $ext = pathinfo($filename, PATHINFO_EXTENSION) ?: 'bin';
-            $uuid = Ulid::generate();
-            $s3Key = sprintf('%s/%d/%s.%s', $tenantId, $ticketId, $uuid, $ext);
-
-            $this->mediaStorageService->put($s3Key, file_get_contents($filePath), $mimeType);
-            $key = $s3Key;
-        } catch (\Throwable $e) {
-            // Storage failure is non-fatal — we already have the mediaId from WhatsApp
-        }
-
-        return new JsonResponse(
-            [
-                'mediaId' => $mediaId,
-                'key' => $key,
-            ],
-            Response::HTTP_OK
-        );
+        return new JsonResponse($result, Response::HTTP_OK);
     }
 
     #[Route('/api/provider/media/{mediaId}', name: 'app_provider_media_download', methods: ['GET'])]

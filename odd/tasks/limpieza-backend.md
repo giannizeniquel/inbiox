@@ -36,6 +36,16 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
   - 3d: controllers only do HTTP, module by module, Administracion first.
   - 3e: single outbox writer. Open decisions for 3e: outbox timing (today post-commit) and the `EventCollector` leak (events collected but never published).
   - Inventory (from the explorer): `odd/fase-3/violaciones.csv`, `errores.md`, `cobertura.md`.
+- **S9 — Phase 4, outbound first.** User: "dale" (to "¿Arrancamos la fase 4 con la parte de salida?"). Plan line: "Split the god methods, with characterization tests first: outbound, then inbound, then reporting."
+  - Behavior is preserved even where it looks wrong (S1). These quirks stay as they are and go to the contradiction track:
+    - The message is committed before the Graph call; on a Graph failure it stays `sent` without a WAMID.
+    - A missing ticket on `send` gives a 500.
+    - Template sends skip the outbound use case.
+  - 4a-0: characterization tests for `/api/provider/send`, `template/send`, `media/upload`, `media/{id}` and the `HandleOutboundMessageUseCase` branches not yet covered, with Graph stubbed via `container->set(GraphClient::class, ...)`.
+  - 4a-1: split `HandleOutboundMessageUseCase::executeTransactionWithRetry` (192 lines) into private steps; no new classes without a concrete reason.
+  - 4a-2: `send` business logic (media metadata, recipient phone, Graph dispatch, WAMID mark) into a use case; the controller keeps parsing, `isGranted`, agent resolution and the exception→JSON mapping, with byte-identical bodies.
+  - 4a-3: `sendTemplate` into a use case, sharing the recipient phone resolution with 4a-2.
+  - 4a-4: `uploadMedia` into a use case; `downloadMedia` stays a thin proxy.
 - **S7 — Docs policy (assumption, not explicitly confirmed by the user).** Each phase fixes the docs it invalidates in the same PR. A full docs pass happens in phase 6, after the renaming.
 
 ## Tasks
@@ -62,6 +72,11 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T17 | S8, S3 | delegated (context backstop) | done | 3c-1 (L28) and 3c-2 (L29) |
 | T18 | S8 | inline | done | 3d thin controllers, per module. 3d-1 Administracion (L32), 3d-2 `MeController` split (L33), 3d-3 small controllers (L34), 3d-4 Ticket and Asignacion (L35), 3d-5 Conversacion (L36); independent verifier PASS (L37) |
 | T19 | S8 | inline | done | 3e single outbox writer: `OutboxWriter` (`a286b03`), decisions L40/L41, implementation L42 |
+| T20 | S9 | inline | done | 4a-0 outbound characterization tests (`364d163`, L47) |
+| T21 | S9 | inline | done | 4a-1 split `executeTransactionWithRetry` (`187360a`, L47) |
+| T22 | S9 | inline | done | 4a-2 `send` into a use case (`8d9d0fb`, L48) |
+| T23 | S9 | inline | done | 4a-3 `sendTemplate` into a use case (`dc30fac`, L49) |
+| T24 | S9 | inline | done | 4a-4 `uploadMedia` into a use case (`4dc42f4`, L50) |
 
 ### Baseline of failing tests (phase 0, after `1afba20`)
 
@@ -358,3 +373,68 @@ Later phases, each with its own branch and task list when it starts:
     1. `ticket.created` carries `contactId` 0, hence "Unknown" in the UI.
     2. Assignment events carry `assigneeName` null and an empty `assignedAt`.
   - Phase 3 complete. Next: push and PR #4 (base `chore/limpieza-backend-fase-2`), with user approval.
+- **L45 (2026-10-16), delivery and environment:**
+  - Phase 3 was pushed as PR #4 (https://github.com/giannizeniquel/inbiox/pull/4), base `chore/limpieza-backend-fase-2`.
+  - The dev WhatsApp numbers were replaced in place (workspace 1 → `1305366182668267`, workspace 2 → `1371728396024028`, both real). Both numbers send and receive end to end.
+  - New findings for the contradiction track:
+    1. A failed Graph send leaves the outbound message `sent` without a WAMID.
+    2. `GraphClient` drops `error_subcode` and `error_data`.
+    3. The `WS2_TEST_PHONE_NUMBER_ID` normalization in `GraphClient` is now dead.
+- **L46 (2026-10-16), phase 4 start (route: delegated explorer, mapping trigger):** user: "dale". Branch `chore/limpieza-backend-fase-4` from `6fe5483`. Outbound map:
+  - `HandleOutboundMessageUseCase`: `processOutboundMessage` (95 lines; idempotency, retry loop with 3 attempts, outbox after commit) and `executeTransactionWithRetry` (192 lines; lock, ownership guard before the window check, auto-claim, message, FSM, ProcessedEvent, event, rules).
+  - `ProviderProxyController::send` (143 lines) holds business logic: media metadata, recipient phone, Graph dispatch, WAMID mark. `sendTemplate` duplicates the phone resolution; `uploadMedia` holds the storage key and the best-effort storage policy.
+  - Coverage gaps: the Graph happy path, media send, Graph error mapping, PHONE_NOT_FOUND, the 400s, everything in upload and download, the FSM matrix, retry exhaustion. Graph is not stubbed in `services_test.yaml`; tests use `container->set` plus `disableReboot()`.
+  - Specs S9 and tasks T20–T24 added.
+- **L47 (2026-10-16), T20 and T21:**
+  - 4a-0 (`364d163`, tests only): new `tests/Characterization/ProviderProxyControllerCharacterizationTest.php`, 32 tests that pass on the unchanged code. It covers:
+    - Send: text and media happy paths, the FSM after a reply, each Graph error code mapping, a missing WAMID, the duplicate send, the 400s, a missing ticket giving 500, and PHONE_NOT_FOUND ×2.
+    - Template send: happy path, missing WAMID, Graph error, validation, PHONE_NOT_FOUND.
+    - Upload: 400, 415, 413, Graph 502, the storage key, and a storage failure.
+    - Download: success and error.
+  - New observation: a reply to a `new` unassigned ticket leaves it `waiting`, not `active`; auto-claim moves it to active and the reply FSM then moves it to waiting. It is pinned as-is.
+  - 4a-1 (`187360a`): `executeTransactionWithRetry` keeps the transaction, the lock and the order of every flush. Its steps moved into private methods: `guardSend`, `claimTicketForReplyingAgent`, `createOutboundMessage`, `applyReplyTransition` and `collectMessageCreatedEvent`. No new classes.
+  - Checks:
+    - `lint:container` OK; PHPStan level 0 identical (29 lines).
+    - Outbound-related tests: 81 tests; only the 3 baseline Sprint09B failures fail.
+    - Full suite: 880 tests, exactly the 6 baseline failures. A first run had a 7th failure whose name was cut from the output; it did not reproduce on the rerun.
+- **L48 (2026-10-16), T22:**
+  - 4a-2 (`8d9d0fb`): new final `Conversacion/UseCase/SendOutboundMessageUseCase` holds the media metadata, `processOutboundMessage`, the recipient phone resolution, the Graph dispatch and the WAMID mark.
+  - The controller keeps parsing, agent resolution, `isGranted` and the exception→JSON mapping. Bodies are unchanged: a missing ticket after storing is `NotFoundException` → 404 `{"error":"Ticket not found"}`; the two PHONE_NOT_FOUND cases are the new `RecipientPhoneNotFoundException` → 422; `GraphApiException` goes through the same mappers. A missing ticket before storing still throws `InvalidArgumentException` → 500.
+  - The media fields stay untyped (`mixed`) so a non-string value fails at the same point as before (the Graph call, after the message is stored).
+  - `ProviderProxyControllerResolveAgentTest` builds the final use case over mocks; docs updated to point at the use case.
+  - Checks: `lint:container` OK; PHPStan level 0 identical (29 lines); focused provider/outbound/window/media tests 93, only the 2 baseline MediaValidator failures; full suite 880 tests, exactly the 6 baseline failures.
+- **L49 (2026-10-16), T23:**
+  - 4a-3 (`dc30fac`): new final `Conversacion/UseCase/SendTemplateUseCase` holds the ticket lookup, the recipient phone, the Graph template send and the template message record.
+  - The recipient phone resolution shared by send and template is now `Ticket::recipientPhone()`, which throws `RecipientPhoneNotFoundException` with the same two messages.
+  - The sending agent is resolved lazily through a closure from the controller, only after a send that returned a WAMID, as before: resolving it can create an agent. New characterization test `testSendTemplateCreatesTheMissingAgentOnlyAfterASuccessfulSend` pins it; it passes on the old and the new code.
+  - `templateName` and `language` stay `mixed` so a non-string value still fails at the Graph call, after the ticket and phone checks.
+  - The controller no longer needs `TicketRepository` or `RecordSentTemplateUseCase`. Docs updated (also stale line refs in `06-api-y-permisos.md`).
+  - Checks: `lint:container` OK; PHPStan level 0 identical (29 lines); focused provider/template/outbound/window tests 65 OK; full suite 881 tests, exactly the 6 baseline failures.
+- **L50 (2026-10-16), T24:**
+  - 4a-4 (`4dc42f4`): new final `Conversacion/UseCase/UploadMediaUseCase` holds the MIME/size validation, the Graph upload and the best-effort storage copy. The controller keeps reading the multipart file and the exception→JSON mapping (413, 415, 502). `downloadMedia` stays a thin proxy to Graph.
+  - Edge kept: a non-scalar `ticketId` made `InputBag::get()` throw inside the storage `try`, so storage was skipped and `key` was null. The controller now passes the raw form value and the use case throws inside the same `try`. New characterization test `testUploadWithANonScalarTicketIdSkipsStorageAndStillReturnsTheMediaId` pins it; it passed on the old code first.
+  - The controller now depends only on `GraphClient` (download), the three provider use cases and `EnsureAgentForUserUseCase`. Docs updated; B1 marked resolved in phase 4a.
+  - Checks:
+    - `lint:container` OK; PHPStan level 0 identical (29 lines); focused provider/media/template tests 68, only the 2 baseline MediaValidator failures.
+    - Full suite, first run: 9 failures, the 6 baseline plus `TicketWorkflowControllerCharacterizationTest::testTransitionUnexpectedFailure`, `AgentLinkControllerTest::testUnlinkUserFromAgent` and `TicketClosureAuditClassificationTest::testSupervisorResolvesAnAutoReopenedUnownedTicketProducesManualResolvedUnowned`. Their messages were cut by the output filter, so the signature is unknown. None touches the provider code; the 3 pass in isolation.
+    - Full suite, rerun with full output: 882 tests, exactly the 6 baseline failures.
+  - Phase 4a code is complete (T20–T24). Next: independent verifier, front smoke with real sends, then push and PR #5 with the user's approval.
+- **L51 (2026-10-16), phase 4a independent verification:**
+  - Verdict PASS for 4a-0..4a-4, no blockers. Baseline `6fe5483` vs HEAD, both trees run from scratch copies with Graph and storage stubbed (no Meta calls).
+    - 4a-1: the order of the lock, guards, claim flushes, message persist, FSM, ProcessedEvent and event collect is unchanged; the outbox rows for a happy send are identical on both trees after normalization.
+    - 4a-2 to 4a-4: raw bodies are byte-identical (409 escaping, 429, 404, 422, upload key order); non-string payload values fail at the same point; the template agent is still created lazily; a non-scalar upload `ticketId` still fails inside the storage `try`.
+  - 15 probes pass on both trees and are committed as `tests/Characterization/ProviderProxyVerifierProbeTest.php` (`7834d4b`), without the verifier's `PROBE_OUT` dump. Parent spot check: `--filter 'ProviderProxyVerifierProbe|ProviderProxyController'` gives 55 tests OK.
+  - Advisories, already present at the baseline:
+    - An unrecognized binary (`.exe`, `application/octet-stream`) passes `MediaValidator` and is uploaded; this is the known MediaValidator baseline failure.
+    - The controller catches now wrap the whole use case, so a future `NotFoundException` thrown inside the outbound transaction would become 404 instead of 500. Nothing throws it there today.
+  - Next: front smoke with real sends, then push and PR #5 (base `chore/limpieza-backend-fase-3`), with the user's approval.
+- **L52 (2026-10-16), phase 4a front smoke with real sends (front report against `482b84c`):**
+  - No differences caused by 4a. Four real sends to ticket #501 (ws1) reached the user's phone, each with a WAMID and delivered in 2–4 s, like messages 284/286 before 4a:
+    - Admin without an agent: agent 19 was created and the ticket reassigned.
+    - Text: the ticket ended `waiting` with agent1.
+    - Image and PDF: delivered with caption and file name.
+  - Errors same as before 4a: 422 `CONVERSATION_WINDOW_EXPIRED`, 409 `TICKET_NOT_OWNED`, 415, 413. Inbound image and PDF fine.
+  - Gap: the outbox was published with the baseline pattern, but the Mercure events of the 4 sends were not captured.
+  - Leftover test data: user 17 and agent 19; one real media upload to Meta with no message (a `.txt`, which is allowed), stored as MinIO object `default/463/01M52JHMDKJSF4EWT8R41SR3QF.txt`.
+  - Next: push and PR #5 (base `chore/limpieza-backend-fase-3`), with the user's approval.
+

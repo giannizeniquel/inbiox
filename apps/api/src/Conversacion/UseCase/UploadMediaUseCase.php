@@ -1,0 +1,68 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Conversacion\UseCase;
+
+use App\Compartido\Graph\GraphApiException;
+use App\Compartido\Graph\GraphClient;
+use App\Compartido\Storage\MediaStorageService;
+use App\Conversacion\MediaTooLargeException;
+use App\Conversacion\MediaTypeNotAllowedException;
+use App\Conversacion\MediaValidator;
+use Symfony\Component\Uid\Ulid;
+
+/**
+ * Uploads an agent's attachment to WhatsApp and keeps a copy in object
+ * storage, so a later send can reference it by its Graph media id.
+ */
+final class UploadMediaUseCase
+{
+    public function __construct(
+        private readonly MediaValidator $mediaValidator,
+        private readonly GraphClient $graphClient,
+        private readonly MediaStorageService $mediaStorageService,
+    ) {}
+
+    /**
+     * Storing the copy is best effort: when it fails, `key` is null and the
+     * upload still succeeds.
+     *
+     * `$ticketId` is the raw form value; it only names the storage key.
+     *
+     * @return array{mediaId: mixed, key: ?string}
+     *
+     * @throws MediaTooLargeException
+     * @throws MediaTypeNotAllowedException
+     * @throws GraphApiException
+     */
+    public function execute(string $filePath, string $mimeType, int $fileSize, string $filename, mixed $ticketId): array
+    {
+        $this->mediaValidator->validate($mimeType, $fileSize);
+
+        $graphResult = $this->graphClient->uploadMedia($filePath, $mimeType);
+        $mediaId = $graphResult['id'] ?? '';
+
+        $key = null;
+        try {
+            // A non-scalar ticketId fails this step, as it did when it was read with InputBag::get().
+            if ($ticketId !== null && !\is_scalar($ticketId)) {
+                throw new \UnexpectedValueException('ticketId must be a scalar');
+            }
+
+            $tenantId = 'default';
+            $ext = pathinfo($filename, PATHINFO_EXTENSION) ?: 'bin';
+            $s3Key = sprintf('%s/%d/%s.%s', $tenantId, (int) ($ticketId ?: 0), Ulid::generate(), $ext);
+
+            $this->mediaStorageService->put($s3Key, file_get_contents($filePath), $mimeType);
+            $key = $s3Key;
+        } catch (\Throwable) {
+            // Non-fatal: the caller already has the media id from WhatsApp.
+        }
+
+        return [
+            'mediaId' => $mediaId,
+            'key' => $key,
+        ];
+    }
+}
