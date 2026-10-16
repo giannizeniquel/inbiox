@@ -74,7 +74,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T19 | S8 | inline | done | 3e single outbox writer: `OutboxWriter` (`a286b03`), decisions L40/L41, implementation L42 |
 | T20 | S9 | inline | done | 4a-0 outbound characterization tests (`364d163`, L47) |
 | T21 | S9 | inline | done | 4a-1 split `executeTransactionWithRetry` (`187360a`, L47) |
-| T22 | S9 | inline | pending | 4a-2 `send` into a use case |
+| T22 | S9 | inline | done | 4a-2 `send` into a use case (`8d9d0fb`, L48) |
 | T23 | S9 | inline | pending | 4a-3 `sendTemplate` into a use case |
 | T24 | S9 | inline | pending | 4a-4 `uploadMedia` into a use case |
 
@@ -397,3 +397,9 @@ Later phases, each with its own branch and task list when it starts:
     - `lint:container` OK; PHPStan level 0 identical (29 lines).
     - Outbound-related tests: 81 tests; only the 3 baseline Sprint09B failures fail.
     - Full suite: 880 tests, exactly the 6 baseline failures. A first run had a 7th failure whose name was cut from the output; it did not reproduce on the rerun.
+- **L48 (2026-10-16), T22:**
+  - 4a-2 (`8d9d0fb`): new final `Conversacion/UseCase/SendOutboundMessageUseCase` holds the media metadata, `processOutboundMessage`, the recipient phone resolution, the Graph dispatch and the WAMID mark.
+  - The controller keeps parsing, agent resolution, `isGranted` and the exception→JSON mapping. Bodies are unchanged: a missing ticket after storing is `NotFoundException` → 404 `{"error":"Ticket not found"}`; the two PHONE_NOT_FOUND cases are the new `RecipientPhoneNotFoundException` → 422; `GraphApiException` goes through the same mappers. A missing ticket before storing still throws `InvalidArgumentException` → 500.
+  - The media fields stay untyped (`mixed`) so a non-string value fails at the same point as before (the Graph call, after the message is stored).
+  - `ProviderProxyControllerResolveAgentTest` builds the final use case over mocks; docs updated to point at the use case.
+  - Checks: `lint:container` OK; PHPStan level 0 identical (29 lines); focused provider/outbound/window/media tests 93, only the 2 baseline MediaValidator failures; full suite 880 tests, exactly the 6 baseline failures.
