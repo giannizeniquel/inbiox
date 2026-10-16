@@ -504,3 +504,11 @@ Later phases, each with its own branch and task list when it starts:
     - New pinned cuts: an array `from` or a non-string `phone_number_id` stops the rest of the payload (still 200).
   - Next: front smoke with real inbound messages, then push and PR #6 (base `chore/limpieza-backend-fase-4`), with the user's approval.
 
+- **L59 (2026-10-16), phase 4b front smoke with real inbound messages:**
+  - Run by the front against `e6e724c` (front log L21, `9be0977`). No differences caused by 4b and no lost messages (no grouped webhooks arrived).
+    - Text, image with caption, PDF and audio are stored with the same labels as before 4b (compared with messages 154/288/289); media in MinIO and visible live.
+    - Sticker and location reach `webhook_payloads` and are discarded, as before.
+    - #501: waiting → active on the first inbound; the agent reply (WAMID, `delivered` in 3 s) moved it to waiting; the next inbound moved it back to active.
+    - Mercure captured `message.added` ×6, `message.updated` (delivered) ×1 and `ticket.read` ×1; all outbox rows published.
+  - Notes, unchanged from before 4b: waiting/active transitions emit no ticket event (no outbox row, same as resolve and close). Meta sent no `read` status for the reply (only `sent` and `delivered`), most likely the phone's read receipts setting; not verified.
+  - Phase 4b is verified. Next: push and PR #6 (base `chore/limpieza-backend-fase-4`), with the user's approval.
