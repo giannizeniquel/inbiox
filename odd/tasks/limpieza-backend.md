@@ -437,4 +437,5 @@ Later phases, each with its own branch and task list when it starts:
   - Gap: the outbox was published with the baseline pattern, but the Mercure events of the 4 sends were not captured.
   - Leftover test data: user 17 and agent 19; one real media upload to Meta with no message (a `.txt`, which is allowed), stored as MinIO object `default/463/01M52JHMDKJSF4EWT8R41SR3QF.txt`.
   - Next: push and PR #5 (base `chore/limpieza-backend-fase-3`), with the user's approval.
+- **L53 (2026-10-16):** User: "dale, hacé el push y abrí el PR #5". Pushed `chore/limpieza-backend-fase-4` and opened PR #5 (https://github.com/giannizeniquel/inbiox/pull/5), base `chore/limpieza-backend-fase-3`, 13 commits from `6fe5483`. Phase 4a is closed. Next part: 4b (inbound), still to be planned.
 
