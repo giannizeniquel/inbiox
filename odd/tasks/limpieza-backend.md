@@ -56,7 +56,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
     - Critical debt: the media download (Graph I/O) runs inside the open inbound transaction, holding the rows just inserted; the ticket lock comes later (L308).
     - Outbox written after commit (already decided in L40).
     - Topic `tickets` vs `ticket/{id}` and R4 workspace isolation (group G; product/security decision).
-    - Product decisions: a duplicate WAMID still creates the contact/conversation; auto-reply window constant 2 h vs docblock 4 h.
+    - Product decisions: a duplicate WAMID can still create the contact/conversation (it runs after they are persisted; when the duplicate is the last message of a payload from a new sender, nothing is stored, L58); auto-reply window constant 2 h vs docblock 4 h.
     - Bug found in 4b-0: two messages in one payload on a `waiting` ticket lose the second one. The first moves the ticket to active with raw SQL, the managed entity still says waiting, and the second fails its waiting → active transition and is rolled back; Meta still gets 200.
 - **S7 — Docs policy (assumption, not explicitly confirmed by the user).** Each phase fixes the docs it invalidates in the same PR. A full docs pass happens in phase 6, after the renaming.
 
@@ -490,4 +490,17 @@ Later phases, each with its own branch and task list when it starts:
     - Inbound/webhook tests: 110 tests, only the 3 baseline Sprint09B failures.
     - Full suite: 915 tests, the 6 baseline failures plus two `401` in `TeamControllerTest::testListTeamsDeniedForPlainAgent` and `AuthorizationTest::testAgentWithoutLinkedAgentGets403OnTicketEndpoint` (the known JWT flake; neither touches the webhook).
   - Phase 4b code is complete (T25–T27; 4b-2 changes nothing). Next: independent verifier, then a front smoke with real inbound messages, push and PR #6 with the user's approval.
+- **L58 (2026-10-16), phase 4b independent verification:**
+  - Verdict PASS for 4b-0, 4b-1, 4b-2 and 4b-3, no blockers. Baseline `eaa7cc6` vs HEAD `091dfd1`, both trees run from scratch copies with their own vendor, Graph and storage stubbed (no Meta calls): 69 tests, identical results, only the baseline Sprint09BOutbox failure.
+    - 4b-0: `WebhookInboundCharacterizationTest` passes unchanged on the baseline tree.
+    - 4b-1: same step order, 3 flushes, lock only for an existing ticket, refresh only after a reopen, sequence increments, rules and auto-assign inside the transaction, auto-reply before the outbox; same log lines and keys; `processInboundMessage` signature unchanged.
+    - 4b-3: the use case body is the old `dispatch` character for character; the per-message catch, no per-status catch and the controller's outer catch are unchanged; same logger service.
+  - 15 probes pass on both trees and are committed as `tests/Characterization/WebhookInboundVerifierProbeTest.php` (`c2d001b`). Parent spot check: `--filter 'WebhookInboundVerifierProbe|WebhookInbound|WebhookController'` gives 36 tests OK.
+  - Advisories (same on both trees or out-of-domain):
+    - The `trace` text of `Webhook dispatch error` and PHP warning locations now name `ProcessWebhookPayloadUseCase` instead of `WebhookController::dispatch`; this comes with moving the code.
+    - The duplicate-WAMID contradiction wording was narrowed in S10.
+    - A storage failure after a successful download is absorbed by `MediaDownloadService` (no `Failed to process inbound media` line); media without `mime_type` is stored with `kind: document`.
+    - `{"entry":"x"}` raises PHP warnings and still returns 200.
+    - New pinned cuts: an array `from` or a non-string `phone_number_id` stops the rest of the payload (still 200).
+  - Next: front smoke with real inbound messages, then push and PR #6 (base `chore/limpieza-backend-fase-4`), with the user's approval.
 
