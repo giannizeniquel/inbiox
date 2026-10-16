@@ -10,6 +10,7 @@ use App\Compartido\Graph\GraphClient;
 use App\Conversacion\UseCase\HandleOutboundMessageUseCase;
 use App\Conversacion\UseCase\MarkOutboundMessageSentUseCase;
 use App\Conversacion\UseCase\RecordSentTemplateUseCase;
+use App\Conversacion\UseCase\SendOutboundMessageUseCase;
 use App\Conversacion\Controller\ProviderProxyController;
 use App\Conversacion\Repository\MessageRepository;
 use App\Agente\Agent;
@@ -38,8 +39,12 @@ class ProviderProxyControllerResolveAgentTest extends TestCase
         return new ProviderProxyController(
             $this->createMock(TicketRepository::class),
             $this->createMock(GraphClient::class),
-            $this->createMock(HandleOutboundMessageUseCase::class),
-            new MarkOutboundMessageSentUseCase($em, $this->createMock(MessageRepository::class)),
+            new SendOutboundMessageUseCase(
+                $this->createMock(TicketRepository::class),
+                $this->createMock(GraphClient::class),
+                $this->createMock(HandleOutboundMessageUseCase::class),
+                new MarkOutboundMessageSentUseCase($em, $this->createMock(MessageRepository::class)),
+            ),
             new RecordSentTemplateUseCase($em),
             new EnsureAgentForUserUseCase($em, $agentRepository),
             $this->createMock(MediaValidator::class),

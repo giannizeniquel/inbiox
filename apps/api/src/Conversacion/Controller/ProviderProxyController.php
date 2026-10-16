@@ -6,12 +6,12 @@ namespace App\Conversacion\Controller;
 
 use App\Compartido\Graph\GraphClient;
 use App\Agente\UseCase\EnsureAgentForUserUseCase;
-use App\Conversacion\UseCase\HandleOutboundMessageUseCase;
-use App\Conversacion\UseCase\MarkOutboundMessageSentUseCase;
+use App\Conversacion\UseCase\SendOutboundMessageUseCase;
 use App\Conversacion\UseCase\RecordSentTemplateUseCase;
-use App\Conversacion\MediaKind;
 use App\Administracion\User;
 use App\Conversacion\ConversationWindowExpiredException;
+use App\Conversacion\RecipientPhoneNotFoundException;
+use App\Compartido\NotFoundException;
 use App\Compartido\Graph\GraphApiException;
 use App\Conversacion\MediaTooLargeException;
 use App\Conversacion\MediaTypeNotAllowedException;
@@ -38,8 +38,7 @@ class ProviderProxyController extends AbstractController
     public function __construct(
         private readonly TicketRepository $ticketRepository,
         private readonly GraphClient $graphClient,
-        private readonly HandleOutboundMessageUseCase $outboundUseCase,
-        private readonly MarkOutboundMessageSentUseCase $markOutboundMessageSent,
+        private readonly SendOutboundMessageUseCase $sendOutboundMessage,
         private readonly RecordSentTemplateUseCase $recordSentTemplate,
         private readonly EnsureAgentForUserUseCase $ensureAgentForUser,
         private readonly MediaValidator $mediaValidator,
@@ -75,31 +74,18 @@ class ProviderProxyController extends AbstractController
         // ROLE_ADMIN inherit ROLE_SUPERVISOR, so this single check covers both.
         $senderIsPrivileged = $this->isGranted('ROLE_SUPERVISOR');
 
-        // Build media metadata for persistence
-        $mediaMetadata = null;
-        if ($mediaId !== null && $mimeType !== null) {
-            $mediaMetadata = [
-                'providerId' => $mediaId,
-                'mimeType' => $mimeType,
-                'key' => $mediaKey,
-                'caption' => $caption,
-                'filename' => $filename,
-                'size' => $size,
-                'kind' => MediaKind::fromMime($mimeType)->value,
-            ];
-        }
-
-        // --- Process outbound message (creates Message, handles assignment + status) ---
-        // This single call site covers both free-text and media sends (the media
-        // metadata, when present, is passed through above) — one catch below
-        // guards both.
         try {
-            $result = $this->outboundUseCase->processOutboundMessage(
+            $result = $this->sendOutboundMessage->execute(
                 ticketId: $ticketId,
                 content: $content,
                 agentId: $agentId,
-                mediaMetadata: $mediaMetadata,
                 senderIsPrivileged: $senderIsPrivileged,
+                mediaId: $mediaId,
+                mimeType: $mimeType,
+                caption: $caption,
+                mediaKey: $mediaKey,
+                filename: $filename,
+                size: $size,
             );
         } catch (ConversationWindowExpiredException $e) {
             return new JsonResponse(
@@ -117,46 +103,16 @@ class ProviderProxyController extends AbstractController
                 ],
                 Response::HTTP_CONFLICT
             );
-        }
-
-        // --- Phone Resolution Chain ---
-        $ticket = $this->ticketRepository->find($ticketId);
-
-        if (!$ticket) {
+        } catch (NotFoundException $e) {
             return new JsonResponse(
-                ['error' => 'Ticket not found'],
+                ['error' => $e->getMessage()],
                 Response::HTTP_NOT_FOUND
             );
-        }
-
-        $contact = $ticket->getContact();
-
-        if (!$contact) {
+        } catch (RecipientPhoneNotFoundException $e) {
             return new JsonResponse(
-                ['type' => 'PHONE_NOT_FOUND', 'message' => 'Ticket has no associated contact'],
+                ['type' => 'PHONE_NOT_FOUND', 'message' => $e->getMessage()],
                 Response::HTTP_UNPROCESSABLE_ENTITY
             );
-        }
-
-        $phone = $contact->getPhone();
-
-        if ($phone === null || $phone === '') {
-            return new JsonResponse(
-                ['type' => 'PHONE_NOT_FOUND', 'message' => 'Contact has no phone number'],
-                Response::HTTP_UNPROCESSABLE_ENTITY
-            );
-        }
-
-        // --- Multi-number resolution (CAP-7 / META-018) ---
-        $phoneNumberId = $ticket->getPhoneNumberId();
-
-        // --- Call Graph API ---
-        try {
-            if ($mediaId !== null && $mimeType !== null) {
-                $graphResponse = $this->graphClient->sendMediaMessage($phone, $mediaId, $mimeType, $caption ?? $content, $phoneNumberId, $filename);
-            } else {
-                $graphResponse = $this->graphClient->sendMessage($phone, $content, $phoneNumberId);
-            }
         } catch (GraphApiException $e) {
             $httpStatus = $this->mapGraphErrorCode($e->getGraphCode());
             $errorType = $this->mapGraphErrorType($e->getGraphCode());
@@ -171,19 +127,12 @@ class ProviderProxyController extends AbstractController
             );
         }
 
-        $wamid = $graphResponse['messages'][0]['id'] ?? null;
-
-        // Set WAMID on the message created by HandleOutboundMessageUseCase
-        if ($wamid !== null && !empty($result['message_id'])) {
-            $this->markOutboundMessageSent->execute($result['message_id'], $wamid);
-        }
-
         return new JsonResponse(
             [
                 // DB message ID — the frontend uses this to fetch the media URL
-                'messageId' => $result['message_id'] ?? null,
+                'messageId' => $result['messageId'],
                 // WhatsApp message ID (WAMID)
-                'externalId' => $wamid,
+                'externalId' => $result['externalId'],
                 'status' => 'sent',
             ],
             Response::HTTP_OK
