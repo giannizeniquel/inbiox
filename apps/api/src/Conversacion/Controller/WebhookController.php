@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace App\Conversacion\Controller;
 
-use App\Conversacion\UseCase\HandleInboundMessageUseCase;
-use App\Conversacion\UseCase\HandleStatusUpdateUseCase;
+use App\Conversacion\UseCase\ProcessWebhookPayloadUseCase;
 use App\Conversacion\UseCase\RecordWebhookPayloadUseCase;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -27,8 +26,7 @@ class WebhookController extends AbstractController
     public function __construct(
         private readonly string $verifyToken,
         private readonly string $appSecret,
-        private readonly HandleStatusUpdateUseCase $handleStatusUpdate,
-        private readonly HandleInboundMessageUseCase $handleInboundMessage,
+        private readonly ProcessWebhookPayloadUseCase $processWebhookPayload,
         private readonly RecordWebhookPayloadUseCase $recordWebhookPayload,
         private readonly LoggerInterface $logger,
     ) {}
@@ -133,7 +131,7 @@ class WebhookController extends AbstractController
 
         // Step 5: Dispatch to handlers
         try {
-            $this->dispatch($payload);
+            $this->processWebhookPayload->execute($payload);
         } catch (\Throwable $e) {
             // Log but always return 200 — Meta retries on failure
             $this->logger->error('Webhook dispatch error', [
@@ -163,143 +161,5 @@ class WebhookController extends AbstractController
         $expectedHash = hash_hmac('sha256', $rawBody, $this->appSecret);
 
         return hash_equals($expectedHash, $providedHash);
-    }
-
-    /**
-     * Dispatch webhook payload to the appropriate handler(s).
-     *
-     * Meta's payload structure (META-002):
-     *   entry[].changes[].value.messaging_product === 'whatsapp'
-     *   value.messages[]     → inbound messages (Sprint 13.2: log only)
-     *   value.statuses[]     → status updates → HandleStatusUpdateUseCase
-     *
-     * Note: Meta sends both messages and statuses under field = "messages".
-     * We route by checking value.messages[] vs value.statuses[] presence.
-     *
-     * Multi-number (CAP-7 / META-017): extracts phone_number_id from metadata
-     * and passes it to handlers. Status updates already accept the optional
-     * $phoneNumberId parameter. Inbound message dispatch (when implemented)
-     * will receive it as the 4th argument to processInboundMessage().
-     */
-    private function dispatch(array $payload): void
-    {
-        $entries = $payload['entry'] ?? [];
-
-        foreach ($entries as $entry) {
-            $changes = $entry['changes'] ?? [];
-
-            foreach ($changes as $change) {
-                $value = $change['value'] ?? [];
-
-                // Validate messaging_product is 'whatsapp'
-                if (($value['messaging_product'] ?? null) !== 'whatsapp') {
-                    continue;
-                }
-
-                // Extract phone_number_id from metadata (CAP-7 / META-017)
-                $phoneNumberId = $value['metadata']['phone_number_id'] ?? null;
-
-                // Handle inbound messages — process via HandleInboundMessageUseCase
-                if (isset($value['messages']) && is_array($value['messages'])) {
-                    // Build phone→name lookup from contacts[] (Meta sends wa_id + profile.name)
-                    $contactNames = [];
-                    if (isset($value['contacts']) && is_array($value['contacts'])) {
-                        foreach ($value['contacts'] as $contact) {
-                            if (isset($contact['wa_id'])) {
-                                $contactNames[$contact['wa_id']] = $contact['profile']['name'] ?? null;
-                            }
-                        }
-                    }
-
-                    foreach ($value['messages'] as $msg) {
-                        $from = $msg['from'] ?? null;
-                        $wamid = $msg['id'] ?? null;
-                        $msgType = $msg['type'] ?? null;
-
-                        // Skip messages without a sender
-                        if ($from === null) {
-                            continue;
-                        }
-
-                        $contactName = $contactNames[$from] ?? null;
-
-                        // Supported message types: text, document, image, audio, video
-                        $supportedTypes = ['text', 'document', 'image', 'audio', 'video'];
-                        if (!in_array($msgType, $supportedTypes, true)) {
-                            $this->logger->debug('Skipping unsupported inbound message type', [
-                                'type' => $msgType,
-                                'from' => $from,
-                                'wamid' => $wamid,
-                            ]);
-                            continue;
-                        }
-
-                        // Extract message content based on type
-                        $mediaDownloadPayload = null;
-                        if ($msgType === 'text') {
-                            $text = $msg['text']['body'] ?? '';
-                        } else {
-                        // Media types: build descriptive content for inbox display
-                        $mediaId = $msg[$msgType]['id'] ?? null;
-                        $filename = $msg[$msgType]['filename'] ?? null;
-                        $mimeType = $msg[$msgType]['mime_type'] ?? null;
-                        $caption = $msg[$msgType]['caption'] ?? null;
-
-                        $typeLabels = [
-                            'document' => '📎 Documento',
-                            'image' => '🖼 Imagen',
-                            'audio' => '🎵 Audio',
-                            'video' => '🎬 Video',
-                        ];
-                        $typeLabel = $typeLabels[$msgType] ?? '📁 ' . ucfirst($msgType);
-
-                        $text = $caption
-                            ? "{$typeLabel}: {$filename} — \"{$caption}\""
-                            : "{$typeLabel}: {$filename}";
-
-                        // Build media download payload for storage
-                        $mediaDownloadPayload = $mediaId ? [
-                            'mediaId' => $mediaId,
-                            'mimeType' => $mimeType,
-                            'filename' => $filename,
-                            'caption' => $caption,
-                        ] : null;
-                        }
-
-                        try {
-                            $result = $this->handleInboundMessage->processInboundMessage(
-                                $from,
-                                $text,
-                                $wamid,
-                                $phoneNumberId,
-                                $contactName,
-                                $mediaDownloadPayload,
-                            );
-
-                            $this->logger->info('Inbound message processed', [
-                                'wamid' => $wamid,
-                                'from' => $from,
-                                'message_id' => $result['message_id'],
-                                'ticket_id' => $result['ticket_id'],
-                                'ticket_status' => $result['ticket_status'] ?? 'ok',
-                            ]);
-                        } catch (\Throwable $e) {
-                            $this->logger->error('Failed to process inbound message', [
-                                'wamid' => $wamid,
-                                'from' => $from,
-                                'error' => $e->getMessage(),
-                            ]);
-                        }
-                    }
-                }
-
-                // Handle status updates — pass phoneNumberId for multi-number (CAP-7)
-                if (isset($value['statuses']) && is_array($value['statuses'])) {
-                    foreach ($value['statuses'] as $statusEntry) {
-                        $this->handleStatusUpdate->processStatusUpdate($statusEntry, $phoneNumberId);
-                    }
-                }
-            }
-        }
     }
 }

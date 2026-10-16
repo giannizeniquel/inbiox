@@ -70,7 +70,7 @@ Todo en `apps/api/src/`, organizado **por módulo de negocio** desde la fase 2 d
 | Módulo | Contiene | Ejemplos |
 |---|---|---|
 | `Ticket/` | Ticket, estados, máquina de estados, etiquetas, bandeja. | `Ticket.php`, `TicketStateMachine.php`, `Controller/InboxController`, `Controller/TicketWorkflowController`, `Query/ListTicketsQuery`, `Query/TicketFilterBuilder` |
-| `Conversacion/` | Conversación, mensajes, media, ventana de 24 h, webhook de Meta, envío. | `Controller/WebhookController`, `Controller/ProviderProxyController`, `UseCase/HandleInboundMessageUseCase`, `UseCase/SendOutboundMessageUseCase`, `UseCase/SendTemplateUseCase`, `UseCase/UploadMediaUseCase`, `ConversationWindowPolicy.php`, `MediaValidator.php` |
+| `Conversacion/` | Conversación, mensajes, media, ventana de 24 h, webhook de Meta, envío. | `Controller/WebhookController`, `Controller/ProviderProxyController`, `UseCase/HandleInboundMessageUseCase`, `UseCase/ProcessWebhookPayloadUseCase`, `UseCase/SendOutboundMessageUseCase`, `UseCase/SendTemplateUseCase`, `UseCase/UploadMediaUseCase`, `ConversationWindowPolicy.php`, `MediaValidator.php` |
 | `Contacto/` | Contactos, importación, línea de tiempo. | `Controller/ContactController`, `Query/GetContactTimelineQuery`, `UseCase/ImportContactsFromCsvUseCase` |
 | `Agente/` | Agentes, equipos, perfil propio (`/api/me`). | `Agent.php`, `Team.php`, `Controller/MeController` (configuración, perfil y notificaciones; auto-respuesta, turnos y workspaces propios viven en Automatizacion, Disponibilidad y Administracion) |
 | `Disponibilidad/` | Turnos, disponibilidad manual. | `AgentShift.php`, `AgentAvailabilityService.php`, `UseCase/SetAgentAvailabilityUseCase` |
@@ -219,7 +219,7 @@ No hay cron ni Symfony Scheduler. El `Makefile` tiene un target `seed` que llama
 | Integración | Cliente | Detalles |
 |---|---|---|
 | WhatsApp Cloud API (Meta) | `src/Compartido/Graph/GraphClient.php` (clase concreta, sin interfaz) | Base `https://graph.facebook.com/v25.0` (el docblock dice v23.0). Métodos: `sendMessage`, `sendMediaMessage`, `sendTemplate`, `uploadMedia` (siempre con el `phone_number_id` por defecto del env), `downloadMedia`. **Un solo access token para todos los workspaces**: funciona solo si todos los números están en la misma app/WABA de Meta. Contiene un workaround temporal hardcodeado (`WS2_TEST_PHONE_NUMBER_ID`, `normalizePhone()`) que quita el `9` de móviles argentinos solo para un número de prueba. Lo llaman `ProviderProxyController` (solo `downloadMedia`), `SendOutboundMessageUseCase`, `SendTemplateUseCase`, `UploadMediaUseCase`, `AutoReplyService` y `Conversacion/MediaDownloadService`. |
-| Webhook de Meta | `src/Conversacion/Controller/WebhookController.php` | GET: verificación (`META_WEBHOOK_VERIFY_TOKEN`). POST: HMAC SHA-256 con `META_APP_SECRET`; guarda el payload crudo en `webhook_payloads`; siempre responde 200. Un solo app secret para todos los números. |
+| Webhook de Meta | `src/Conversacion/Controller/WebhookController.php` | GET: verificación (`META_WEBHOOK_VERIFY_TOKEN`). POST: HMAC SHA-256 con `META_APP_SECRET`; guarda el payload crudo en `webhook_payloads`; pasa el payload a `UseCase/ProcessWebhookPayloadUseCase`; siempre responde 200. Un solo app secret para todos los números. |
 | S3 / MinIO | `config/services.yaml:46-68`, `Compartido/Storage/*` | Dos clientes (interno y público para URLs prefirmadas), bucket `S3_BUCKET`, clave `default/{messageId}/…` (tenant `default` fijo). |
 | Mercure | ver [tiempo real](#tiempo-real-outbox--publicador--mercure--sse) | |
 
