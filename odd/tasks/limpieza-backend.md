@@ -76,7 +76,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T21 | S9 | inline | done | 4a-1 split `executeTransactionWithRetry` (`187360a`, L47) |
 | T22 | S9 | inline | done | 4a-2 `send` into a use case (`8d9d0fb`, L48) |
 | T23 | S9 | inline | done | 4a-3 `sendTemplate` into a use case (`dc30fac`, L49) |
-| T24 | S9 | inline | pending | 4a-4 `uploadMedia` into a use case |
+| T24 | S9 | inline | done | 4a-4 `uploadMedia` into a use case (`4dc42f4`, L50) |
 
 ### Baseline of failing tests (phase 0, after `1afba20`)
 
@@ -410,3 +410,12 @@ Later phases, each with its own branch and task list when it starts:
   - `templateName` and `language` stay `mixed` so a non-string value still fails at the Graph call, after the ticket and phone checks.
   - The controller no longer needs `TicketRepository` or `RecordSentTemplateUseCase`. Docs updated (also stale line refs in `06-api-y-permisos.md`).
   - Checks: `lint:container` OK; PHPStan level 0 identical (29 lines); focused provider/template/outbound/window tests 65 OK; full suite 881 tests, exactly the 6 baseline failures.
+- **L50 (2026-10-16), T24:**
+  - 4a-4 (`4dc42f4`): new final `Conversacion/UseCase/UploadMediaUseCase` holds the MIME/size validation, the Graph upload and the best-effort storage copy. The controller keeps reading the multipart file and the exception→JSON mapping (413, 415, 502). `downloadMedia` stays a thin proxy to Graph.
+  - Edge kept: a non-scalar `ticketId` made `InputBag::get()` throw inside the storage `try`, so storage was skipped and `key` was null. The controller now passes the raw form value and the use case throws inside the same `try`. New characterization test `testUploadWithANonScalarTicketIdSkipsStorageAndStillReturnsTheMediaId` pins it; it passed on the old code first.
+  - The controller now depends only on `GraphClient` (download), the three provider use cases and `EnsureAgentForUserUseCase`. Docs updated; B1 marked resolved in phase 4a.
+  - Checks:
+    - `lint:container` OK; PHPStan level 0 identical (29 lines); focused provider/media/template tests 68, only the 2 baseline MediaValidator failures.
+    - Full suite, first run: 9 failures, the 6 baseline plus `TicketWorkflowControllerCharacterizationTest::testTransitionUnexpectedFailure`, `AgentLinkControllerTest::testUnlinkUserFromAgent` and `TicketClosureAuditClassificationTest::testSupervisorResolvesAnAutoReopenedUnownedTicketProducesManualResolvedUnowned`. Their messages were cut by the output filter, so the signature is unknown. None touches the provider code; the 3 pass in isolation.
+    - Full suite, rerun with full output: 882 tests, exactly the 6 baseline failures.
+  - Phase 4a code is complete (T20–T24). Next: independent verifier, front smoke with real sends, then push and PR #5 with the user's approval.
