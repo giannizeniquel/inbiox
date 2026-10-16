@@ -11,6 +11,7 @@ use App\Conversacion\UseCase\HandleOutboundMessageUseCase;
 use App\Conversacion\UseCase\MarkOutboundMessageSentUseCase;
 use App\Conversacion\UseCase\RecordSentTemplateUseCase;
 use App\Conversacion\UseCase\SendOutboundMessageUseCase;
+use App\Conversacion\UseCase\SendTemplateUseCase;
 use App\Conversacion\Controller\ProviderProxyController;
 use App\Conversacion\Repository\MessageRepository;
 use App\Agente\Agent;
@@ -37,7 +38,6 @@ class ProviderProxyControllerResolveAgentTest extends TestCase
     private function makeController(EntityManagerInterface $em, AgentRepository $agentRepository): ProviderProxyController
     {
         return new ProviderProxyController(
-            $this->createMock(TicketRepository::class),
             $this->createMock(GraphClient::class),
             new SendOutboundMessageUseCase(
                 $this->createMock(TicketRepository::class),
@@ -45,7 +45,11 @@ class ProviderProxyControllerResolveAgentTest extends TestCase
                 $this->createMock(HandleOutboundMessageUseCase::class),
                 new MarkOutboundMessageSentUseCase($em, $this->createMock(MessageRepository::class)),
             ),
-            new RecordSentTemplateUseCase($em),
+            new SendTemplateUseCase(
+                $this->createMock(TicketRepository::class),
+                $this->createMock(GraphClient::class),
+                new RecordSentTemplateUseCase($em),
+            ),
             new EnsureAgentForUserUseCase($em, $agentRepository),
             $this->createMock(MediaValidator::class),
             $this->createMock(MediaStorageService::class),

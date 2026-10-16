@@ -385,6 +385,25 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
         self::assertSame([], $this->outboundMessages((int) $ticket->getId()));
     }
 
+    public function testSendTemplateCreatesTheMissingAgentOnlyAfterASuccessfulSend(): void
+    {
+        $ticket = $this->ticketInOpenWindow();
+        $email = 'char-pp-no-agent@inbiox.local';
+        $token = $this->loginAs($email, ['ROLE_AGENT']);
+        $this->graph->method('sendTemplate')->willReturnOnConsecutiveCalls(
+            self::throwException(new GraphApiException('Blocked', 131047)),
+            ['messages' => [['id' => 'wamid.char-template-agent']]],
+        );
+        $body = ['ticketId' => $ticket->getId(), 'templateName' => 'hello_world', 'language' => 'es_AR'];
+
+        $this->request('POST', '/api/provider/template/send', $token, $body);
+        self::assertSame(0, $this->countRows('agents', 'name = ?', [$email]));
+
+        $response = $this->request('POST', '/api/provider/template/send', $token, $body);
+        $this->assertJsonResponse(200, ['messageId' => 'wamid.char-template-agent', 'status' => 'sent'], $response);
+        self::assertSame(1, $this->countRows('agents', 'name = ?', [$email]));
+    }
+
     public function testSendTemplateValidation(): void
     {
         [$token] = $this->agentToken();

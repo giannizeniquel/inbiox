@@ -7,7 +7,7 @@ namespace App\Conversacion\Controller;
 use App\Compartido\Graph\GraphClient;
 use App\Agente\UseCase\EnsureAgentForUserUseCase;
 use App\Conversacion\UseCase\SendOutboundMessageUseCase;
-use App\Conversacion\UseCase\RecordSentTemplateUseCase;
+use App\Conversacion\UseCase\SendTemplateUseCase;
 use App\Administracion\User;
 use App\Conversacion\ConversationWindowExpiredException;
 use App\Conversacion\RecipientPhoneNotFoundException;
@@ -18,7 +18,6 @@ use App\Conversacion\MediaTypeNotAllowedException;
 use App\Compartido\StateConflictException;
 use App\Compartido\Storage\MediaStorageService;
 use App\Conversacion\MediaValidator;
-use App\Ticket\Repository\TicketRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -36,10 +35,9 @@ class ProviderProxyController extends AbstractController
     private const GRAPH_RATE_LIMIT = 429;    // Too many requests
 
     public function __construct(
-        private readonly TicketRepository $ticketRepository,
         private readonly GraphClient $graphClient,
         private readonly SendOutboundMessageUseCase $sendOutboundMessage,
-        private readonly RecordSentTemplateUseCase $recordSentTemplate,
+        private readonly SendTemplateUseCase $sendTemplateUseCase,
         private readonly EnsureAgentForUserUseCase $ensureAgentForUser,
         private readonly MediaValidator $mediaValidator,
         private readonly MediaStorageService $mediaStorageService,
@@ -188,40 +186,24 @@ class ProviderProxyController extends AbstractController
             );
         }
 
-        // --- Phone Resolution Chain ---
-        $ticket = $this->ticketRepository->find($ticketId);
-
-        if (!$ticket) {
+        try {
+            $wamid = $this->sendTemplateUseCase->execute(
+                ticketId: $ticketId,
+                templateName: $templateName,
+                language: $language,
+                parameters: $parameters,
+                resolveSenderAgentId: fn (): ?int => $this->resolveActingAgentId($user),
+            );
+        } catch (NotFoundException $e) {
             return new JsonResponse(
-                ['error' => 'Ticket not found'],
+                ['error' => $e->getMessage()],
                 Response::HTTP_NOT_FOUND
             );
-        }
-
-        $contact = $ticket->getContact();
-
-        if (!$contact) {
+        } catch (RecipientPhoneNotFoundException $e) {
             return new JsonResponse(
-                ['type' => 'PHONE_NOT_FOUND', 'message' => 'Ticket has no associated contact'],
+                ['type' => 'PHONE_NOT_FOUND', 'message' => $e->getMessage()],
                 Response::HTTP_UNPROCESSABLE_ENTITY
             );
-        }
-
-        $phone = $contact->getPhone();
-
-        if ($phone === null || $phone === '') {
-            return new JsonResponse(
-                ['type' => 'PHONE_NOT_FOUND', 'message' => 'Contact has no phone number'],
-                Response::HTTP_UNPROCESSABLE_ENTITY
-            );
-        }
-
-        // --- Multi-number resolution (CAP-7 / META-018) ---
-        $phoneNumberId = $ticket->getPhoneNumberId();
-
-        // --- Call Graph API ---
-        try {
-            $graphResponse = $this->graphClient->sendTemplate($phone, $templateName, $language, $parameters, $phoneNumberId);
         } catch (GraphApiException $e) {
             $httpStatus = $this->mapGraphErrorCode($e->getGraphCode());
             $errorType = $this->mapGraphErrorType($e->getGraphCode());
@@ -234,13 +216,6 @@ class ProviderProxyController extends AbstractController
                 ],
                 $httpStatus
             );
-        }
-
-        $wamid = $graphResponse['messages'][0]['id'] ?? null;
-
-        // Persist WAMID as externalId on a new outbound Message for webhook correlation
-        if ($wamid !== null) {
-            $this->recordSentTemplate->execute($ticket, $templateName, $parameters, $wamid, $this->resolveActingAgentId($user));
         }
 
         return new JsonResponse(

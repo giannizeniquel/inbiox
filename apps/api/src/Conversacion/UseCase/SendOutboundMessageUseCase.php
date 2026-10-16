@@ -79,15 +79,7 @@ final class SendOutboundMessageUseCase
             throw new NotFoundException('Ticket not found');
         }
 
-        $contact = $ticket->getContact();
-        if (!$contact) {
-            throw new RecipientPhoneNotFoundException('Ticket has no associated contact');
-        }
-
-        $phone = $contact->getPhone();
-        if ($phone === null || $phone === '') {
-            throw new RecipientPhoneNotFoundException('Contact has no phone number');
-        }
+        $phone = $ticket->recipientPhone();
 
         // Each ticket replies from the WhatsApp number it came in on (CAP-7 / META-018).
         $phoneNumberId = $ticket->getPhoneNumberId();

@@ -4,6 +4,7 @@ namespace App\Ticket;
 
 use App\Contacto\Contact;
 use App\Conversacion\Conversation;
+use App\Conversacion\RecipientPhoneNotFoundException;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
@@ -84,6 +85,25 @@ class Ticket
     public function getContact(): ?Contact
     {
         return $this->contact;
+    }
+
+    /**
+     * The WhatsApp number replies on this ticket go to.
+     *
+     * @throws RecipientPhoneNotFoundException when there is no contact or it has no phone
+     */
+    public function recipientPhone(): string
+    {
+        if (!$this->contact) {
+            throw new RecipientPhoneNotFoundException('Ticket has no associated contact');
+        }
+
+        $phone = $this->contact->getPhone();
+        if ($phone === null || $phone === '') {
+            throw new RecipientPhoneNotFoundException('Contact has no phone number');
+        }
+
+        return $phone;
     }
 
     public function setContact(Contact $contact): self
