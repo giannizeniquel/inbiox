@@ -91,7 +91,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T24 | S9 | inline | done | 4a-4 `uploadMedia` into a use case (`4dc42f4`, L50) |
 | T25 | S10 | inline | done | 4b-0 inbound webhook characterization tests (`3d72b65`, L55) |
 | T26 | S10 | inline | done | 4b-1 split `executeInternal` into private steps (`e9bbd90`, L56) |
-| T27 | S10 | inline | pending | 4b-3 webhook payload parsing into `ProcessWebhookPayloadUseCase` |
+| T27 | S10 | inline | done | 4b-3 webhook payload parsing into `ProcessWebhookPayloadUseCase` (`8e0e099`, L57) |
 
 ### Baseline of failing tests (phase 0, after `1afba20`)
 
@@ -481,4 +481,13 @@ Later phases, each with its own branch and task list when it starts:
     - `lint:container` OK; PHPStan level 0 identical (29 lines).
     - Inbound-related tests (`Inbound|Webhook|Reopen|Sprint09B|Sprint08Automation|AutoReply`): 110 tests, only the 3 baseline Sprint09B failures.
     - Full suite: 915 tests, exactly the 6 baseline failures.
+- **L57 (2026-10-16), T27:**
+  - 4b-3 (`8e0e099`): `WebhookController::dispatch` moved verbatim into the new final `Conversacion/UseCase/ProcessWebhookPayloadUseCase::execute(array $payload)`. It keeps the type filter, the label and caption text, the per-message catch with its log lines, and no catch per status entry (a throwing status still reaches the controller's catch, so Meta gets 200).
+  - The controller keeps only HTTP: verify (GET), HMAC → JSON → record payload → use case → 200. It no longer depends on the inbound or status use cases. The stale "Sprint 13.2: log only" docblock went away with `dispatch`, so C-20 drops that example.
+  - Docs: the F1 step table in `04-flujos.md` (controller and inbound use case lines, stale since 4b-1), R-M1/R-M7/R-M8 and the architecture tables.
+  - Checks:
+    - `lint:container` OK; PHPStan level 0 identical (29 lines).
+    - Inbound/webhook tests: 110 tests, only the 3 baseline Sprint09B failures.
+    - Full suite: 915 tests, the 6 baseline failures plus two `401` in `TeamControllerTest::testListTeamsDeniedForPlainAgent` and `AuthorizationTest::testAgentWithoutLinkedAgentGets403OnTicketEndpoint` (the known JWT flake; neither touches the webhook).
+  - Phase 4b code is complete (T25–T27; 4b-2 changes nothing). Next: independent verifier, then a front smoke with real inbound messages, push and PR #6 with the user's approval.
 
