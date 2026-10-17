@@ -897,6 +897,37 @@ class ReportingRepository extends ServiceEntityRepository
      */
     public function getTicketParticipation(int $ticketId): ?array
     {
+        $episode = $this->findParticipationEpisode($ticketId);
+        if ($episode === null) {
+            return null;
+        }
+
+        $cutoff = $this->getAttributionCutoff();
+        $pairRows = $this->fetchParticipationPairRows($episode, $cutoff);
+        $messageCounts = $this->countEpisodeMessagesBySender($episode);
+        [$pairs, $participantStats, $unansweredInboundCount] = $this->foldParticipationPairs($pairRows);
+        $participants = $this->buildParticipants($messageCounts['by_agent'], $participantStats);
+
+        return [
+            'ticket_id' => $ticketId,
+            'data_available_from' => $cutoff,
+            'partial_data' => $messageCounts['unattributed'] > 0 || $cutoff === null,
+            'participants' => $participants,
+            'automatic_message_count' => $messageCounts['automatic'],
+            'unanswered_inbound_count' => $unansweredInboundCount,
+            'pairs' => $pairs,
+        ];
+    }
+
+    /**
+     * The ticket's episode: its conversation, its own creation time as the
+     * start, and the next ticket's creation time on that conversation as the
+     * end (null for the latest ticket).
+     *
+     * @return array{conversation_id: int, start: string, end: string|null}|null null when the ticket does not exist or has no conversation
+     */
+    private function findParticipationEpisode(int $ticketId): ?array
+    {
         $conn = $this->entityManager->getConnection();
 
         $ticketRow = $conn->fetchAssociative(
@@ -921,20 +952,35 @@ class ReportingRepository extends ServiceEntityRepository
                     OR (t2.created_at = :episodeStart AND t2.id > :ticketId))',
             ['conversationId' => $conversationId, 'episodeStart' => $episodeStart, 'ticketId' => $ticketId]
         );
-        $episodeEnd = $episodeEndRow['episode_end'] ?? null;
 
-        $cutoff = $this->getAttributionCutoff();
+        return [
+            'conversation_id' => $conversationId,
+            'start' => $episodeStart,
+            'end' => $episodeEndRow['episode_end'] ?? null,
+        ];
+    }
+
+    /**
+     * One row per inbound burst of the episode (attributed messages after
+     * the cutoff only), joined to the agent reply that closed it, if any.
+     *
+     * @param array{conversation_id: int, start: string, end: string|null} $episode
+     * @return list<array<string, mixed>>
+     */
+    private function fetchParticipationPairRows(array $episode, ?\DateTimeImmutable $cutoff): array
+    {
+        $conn = $this->entityManager->getConnection();
         $timeDiff = $this->getTimeDiffExpression('b.inbound_at', 'r.reply_at');
 
         $params = [
-            'conversationId' => $conversationId,
-            'episodeStart' => $episodeStart,
+            'conversationId' => $episode['conversation_id'],
+            'episodeStart' => $episode['start'],
             'cutoff' => $cutoff !== null ? $cutoff->format('Y-m-d H:i:s') : '1970-01-01 00:00:00',
         ];
         $episodeEndClause = '';
-        if ($episodeEnd !== null) {
+        if ($episode['end'] !== null) {
             $episodeEndClause = ' AND m.created_at < :episodeEnd';
-            $params['episodeEnd'] = $episodeEnd;
+            $params['episodeEnd'] = $episode['end'];
         }
 
         $sql = "WITH msgs AS (
@@ -972,16 +1018,26 @@ class ReportingRepository extends ServiceEntityRepository
             LEFT JOIN agents a ON a.id = r.sender_agent_id
             ORDER BY b.inbound_at";
 
-        $pairRows = $conn->fetchAllAssociative($sql, $params);
+        return $conn->fetchAllAssociative($sql, $params);
+    }
 
-        // Rollup over ALL episode messages (including legacy sender_type IS
-        // NULL rows) for message counts / automatic activity / unattributed
-        // detection — independent of the cutoff-filtered seq/bursts pipeline.
-        $rollupParams = ['conversationId' => $conversationId, 'episodeStart' => $episodeStart];
+    /**
+     * Rollup over ALL episode messages (including legacy sender_type IS
+     * NULL rows) for message counts / automatic activity / unattributed
+     * detection — independent of the cutoff-filtered seq/bursts pipeline.
+     *
+     * @param array{conversation_id: int, start: string, end: string|null} $episode
+     * @return array{by_agent: array<int, int>, automatic: int, unattributed: int}
+     */
+    private function countEpisodeMessagesBySender(array $episode): array
+    {
+        $conn = $this->entityManager->getConnection();
+
+        $rollupParams = ['conversationId' => $episode['conversation_id'], 'episodeStart' => $episode['start']];
         $rollupEpisodeEndClause = '';
-        if ($episodeEnd !== null) {
+        if ($episode['end'] !== null) {
             $rollupEpisodeEndClause = ' AND m.created_at < :episodeEnd';
-            $rollupParams['episodeEnd'] = $episodeEnd;
+            $rollupParams['episodeEnd'] = $episode['end'];
         }
         $rollupSql = "SELECT m.sender_type, m.sender_agent_id, COUNT(*) AS message_count
             FROM messages m
@@ -1005,6 +1061,22 @@ class ReportingRepository extends ServiceEntityRepository
             }
         }
 
+        return [
+            'by_agent' => $messageCountByAgent,
+            'automatic' => $automaticMessageCount,
+            'unattributed' => $unattributedCount,
+        ];
+    }
+
+    /**
+     * Turn the burst rows into the public pairs, per-agent delay totals and
+     * the number of bursts nobody answered.
+     *
+     * @param list<array<string, mixed>> $pairRows
+     * @return array{0: list<array{run_start_at: string, reply_at: string|null, agent_id: int|null, delay_seconds: float|null}>, 1: array<int, array{agent_name: string|null, sample_count: int, sum_delay: float}>, 2: int}
+     */
+    private function foldParticipationPairs(array $pairRows): array
+    {
         $participantStats = [];
         $unansweredInboundCount = 0;
         $pairs = [];
@@ -1036,6 +1108,21 @@ class ReportingRepository extends ServiceEntityRepository
             $participantStats[$agentId]['sum_delay'] += $delaySeconds ?? 0.0;
         }
 
+        return [$pairs, $participantStats, $unansweredInboundCount];
+    }
+
+    /**
+     * One entry per agent who wrote in the episode or answered a burst,
+     * sorted by agent id.
+     *
+     * @param array<int, int> $messageCountByAgent
+     * @param array<int, array{agent_name: string|null, sample_count: int, sum_delay: float}> $participantStats
+     * @return list<array{agent_id: int, agent_name: string|null, message_count: int, sample_count: int, avg_delay_seconds: float|null}>
+     */
+    private function buildParticipants(array $messageCountByAgent, array $participantStats): array
+    {
+        $conn = $this->entityManager->getConnection();
+
         // Fallback agent-name lookup: an agent who replied without a
         // preceding unanswered burst (unprompted message) has message_count
         // but never appears in $participantStats.
@@ -1066,15 +1153,7 @@ class ReportingRepository extends ServiceEntityRepository
             ];
         }
 
-        return [
-            'ticket_id' => $ticketId,
-            'data_available_from' => $cutoff,
-            'partial_data' => $unattributedCount > 0 || $cutoff === null,
-            'participants' => $participants,
-            'automatic_message_count' => $automaticMessageCount,
-            'unanswered_inbound_count' => $unansweredInboundCount,
-            'pairs' => $pairs,
-        ];
+        return $participants;
     }
 
     /**
