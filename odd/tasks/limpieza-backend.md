@@ -109,7 +109,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T25 | S10 | inline | done | 4b-0 inbound webhook characterization tests (`3d72b65`, L55) |
 | T26 | S10 | inline | done | 4b-1 split `executeInternal` into private steps (`e9bbd90`, L56) |
 | T27 | S10 | inline | done | 4b-3 webhook payload parsing into `ProcessWebhookPayloadUseCase` (`8e0e099`, L57) |
-| T28 | S11 | inline | pending | 4c-0 reporting characterization tests |
+| T28 | S11 | inline | done | 4c-0 reporting characterization tests (`094fffe`, L62) |
 | T29 | S11 | inline | pending | 4c-1 shared filter helper in `ReportingRepository` |
 | T30 | S11 | inline | pending | 4c-2 `availableAgents` into a `Reporte/Query/` class |
 | T31 | S11 | inline | pending | 4c-3 split `getTicketParticipation` |
@@ -540,3 +540,7 @@ Later phases, each with its own branch and task list when it starts:
 - **L61 (2026-10-16), phase 4c plan:**
   - A read-only explorer mapped the `Reporte` module: 5 files; the controller has no EntityManager or SQL left; all native SQL lives in the 1155-line `ReportingRepository`, whose largest methods are `getTicketParticipation` (181 lines), `getResponseDelayMetrics` (117) and `getAgentPerformance` (108). Existing exact-body HTTP coverage is limited to rt, counts, volume and agents; `ReportingV2Test` is shape-only and seeder-based. Parent spot check confirmed the participation endpoint has no workspace scope (`ReportingController.php:480`).
   - User accepted the plan and asked to log every finding in the contradiction list for after the cleanup (quote in S11). S11 and T28–T34 added. Route: inline for every task (no writer trigger). Forecast: above ~400 changed lines, mostly tests; delivered as one stacked PR like 4a and 4b.
+- **L62 (2026-10-16), T28:**
+  - 4c-0 (`094fffe`, tests only): `ReportingControllerCharacterizationTest` now pins, with exact bodies over HTTP and its own fixtures in a fixed window: frt, agent-load, unassigned (with and without a window), available-agents (supervisor, and an agent filtered by its active workspace, using availability overrides so the result does not depend on the time), frt-trend, heatmap, recurring-customers (default threshold, `threshold=2`, and `threshold=0` falling back to 3), reopened, response-delay and ticket participation 200. The date-parameter error cases now also cover frt, frt-trend, heatmap, reopened and response-delay, plus a malformed date on unassigned. 29 tests in the file (was 12 methods).
+  - Findings pinned as-is: unassigned `count` is 0 while its `tickets` list is not empty (F); the default ticket priority in reports is `medium`; JSON floats with no fraction come out as integers (`JsonResponse` without `JSON_PRESERVE_ZERO_FRACTION`).
+  - Checks: the file passes (29 tests, 132 assertions); full suite 947 tests, the 6 baseline failures plus one `401` (expected 403) in `TicketClosureAuthorizationTest::testAgentWithNoLinkedAgentIsDenied`, the known JWT flake, which passes on an isolated rerun.
