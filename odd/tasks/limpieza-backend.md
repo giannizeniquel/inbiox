@@ -75,6 +75,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
     - The attribution cutoff query runs twice per response-delay request (`getAttributionCutoff` and inside `getResponseDelayMetrics`).
     - `available-agents` runs one active-ticket count per agent (N+1).
     - To check (verifier, L69): `response-delay` returns `partial_data: true` whenever the range starts before the first attributed message, even if every message in the range is attributed (`cutoff > from`); same before 4c.
+    - Frontend bug (front smoke, L70): the dashboard's "Volumen diario" shows 0 and the agent ranking is empty because the frontend reads `.data`/`.agents` while the API returns plain arrays.
     - Also seen in the map: dead `agent_id` override branches in the controller (the ownership scope is always null, R-V3); `recurring-customers` with `threshold=0` falls back to 3; Postgres branches in `ReportingRepository::detectPlatform` are dead on MySQL; R6/C-2 (per-agent resolved metrics empty because resolving unassigns).
 - **S7 — Docs policy (assumption, not explicitly confirmed by the user).** Each phase fixes the docs it invalidates in the same PR. A full docs pass happens in phase 6, after the renaming.
 
@@ -603,3 +604,9 @@ Later phases, each with its own branch and task list when it starts:
     - `response-delay` reports `partial_data: true` when the range starts before the first attributed message even if all messages in the range are attributed; same on the baseline, added to S11's list to check.
   - Setup note: the verifier copied the ignored `apps/api/.env`, `.env.test.local` and `config/jwt` into its scratch trees (without reading them) because the `inbiox_php` environment has no `DATABASE_URL`; the scratch trees were removed and the workspace has no new files.
   - Next: front smoke of the reports dashboard, then push and PR #7 (base `chore/limpieza-backend-fase-4b`), with the user's approval.
+- **L70 (2026-10-17), phase 4c front smoke:**
+  - Run by the front against `832e79e`. No differences caused by 4c; every `/api/reports/*` call returned 200 (no 500).
+    - API values match the SQL of the `c96ffa6` `ReportingRepository` for the cards, volume, agent performance with `is_in_shift`, agent load, FRT trend, heatmap, recurring customers, reopened and response delay, with and without team and workspace filters. `partial_data` is true only when the range starts before 2026-10-12 01:34:08 (the local attribution cutoff).
+    - CSV export and ticket participation are identical to the baseline.
+  - Notes for the contradiction track: "Volumen diario" at 0 and the empty agent ranking are a frontend bug (it reads `.data`/`.agents`; the API returns plain arrays), added to S11's list. 396 of the 400 local tickets belong to a number with no workspace.
+  - Phase 4c is verified. Next: push and PR #7 (base `chore/limpieza-backend-fase-4b`), with the user's approval.
