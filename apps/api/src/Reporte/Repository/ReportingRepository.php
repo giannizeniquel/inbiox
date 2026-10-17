@@ -2,8 +2,6 @@
 
 namespace App\Reporte\Repository;
 
-use App\Disponibilidad\AgentAvailabilityService;
-use App\Agente\Agent;
 use App\Ticket\Ticket;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ArrayParameterType;
@@ -30,7 +28,6 @@ class ReportingRepository extends ServiceEntityRepository
     public function __construct(
         ManagerRegistry $registry,
         private EntityManagerInterface $entityManager,
-        private AgentAvailabilityService $agentAvailabilityService,
     ) {
         parent::__construct($registry, Ticket::class);
         
@@ -316,7 +313,7 @@ class ReportingRepository extends ServiceEntityRepository
      * @param int|null $agentId Optional filter by specific agent
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
      * @param int|null $teamId Optional filter by team (single-select)
-     * @return array<int, array{agent_id: int, agent_name: string|null, tickets_assigned: int, tickets_resolved: int, current_active_tickets: int, max_active_tickets: int, current_load: float, is_in_shift: bool, avg_frt_seconds: float|null, avg_frt_minutes: float|null, avg_rt_seconds: float|null, avg_rt_minutes: float|null}>
+     * @return array<int, array{agent_id: int, agent_name: string|null, tickets_assigned: int, tickets_resolved: int, current_active_tickets: int, max_active_tickets: int, current_load: float, avg_frt_seconds: float|null, avg_frt_minutes: float|null, avg_rt_seconds: float|null, avg_rt_minutes: float|null}>
      */
     public function getAgentPerformance(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
     {
@@ -354,26 +351,6 @@ class ReportingRepository extends ServiceEntityRepository
         
         $results = $conn->fetchAllAssociative($sql, $params);
         
-        // Preload agent entities for is_in_shift evaluation
-        $now = new \DateTimeImmutable();
-        $agentEntities = [];
-        if (!empty($results)) {
-            $agentIds = array_map(fn($r) => (int) $r['agent_id'], $results);
-            $agentEntities = $this->entityManager
-                ->createQueryBuilder()
-                ->select('a')
-                ->from(Agent::class, 'a')
-                ->where('a.id IN (:ids)')
-                ->setParameter('ids', $agentIds)
-                ->getQuery()
-                ->getResult();
-        }
-        /** @var array<int, Agent> $agentMap */
-        $agentMap = [];
-        foreach ($agentEntities as $agent) {
-            $agentMap[$agent->getId()] = $agent;
-        }
-        
         $agentMetrics = [];
         foreach ($results as $row) {
             $agentId = (int) $row['agent_id'];
@@ -381,12 +358,6 @@ class ReportingRepository extends ServiceEntityRepository
             $avgRt = $row['avg_rt'] !== null ? (float) $row['avg_rt'] : null;
             $maxActive = (int) ($row['max_active_tickets'] ?? 10);
             $currentActive = (int) ($row['current_active_tickets'] ?? 0);
-            
-            // Compute is_in_shift via AgentAvailabilityService (schedule only)
-            $isInShift = false;
-            if (isset($agentMap[$agentId])) {
-                $isInShift = $this->agentAvailabilityService->isInShift($agentMap[$agentId], $now);
-            }
             
             $agentMetrics[] = [
                 'agent_id' => $agentId,
@@ -396,7 +367,6 @@ class ReportingRepository extends ServiceEntityRepository
                 'current_active_tickets' => $currentActive,
                 'max_active_tickets' => $maxActive,
                 'current_load' => $maxActive > 0 ? round($currentActive / $maxActive, 2) : 0.0,
-                'is_in_shift' => $isInShift,
                 'avg_frt_seconds' => $avgFrt,
                 'avg_frt_minutes' => $avgFrt !== null ? round($avgFrt / 60, 2) : null,
                 'avg_rt_seconds' => $avgRt,

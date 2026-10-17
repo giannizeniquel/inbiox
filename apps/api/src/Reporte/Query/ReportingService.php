@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Reporte\Query;
 
+use App\Agente\Repository\AgentRepository;
+use App\Disponibilidad\AgentAvailabilityService;
 use App\Reporte\Repository\ReportingRepository;
 
 /**
@@ -20,7 +22,9 @@ use App\Reporte\Repository\ReportingRepository;
 class ReportingService
 {
     public function __construct(
-        private ReportingRepository $reportingRepository
+        private ReportingRepository $reportingRepository,
+        private AgentRepository $agentRepository,
+        private AgentAvailabilityService $agentAvailabilityService,
     ) {}
 
     /**
@@ -105,7 +109,48 @@ class ReportingService
     {
         $this->validateDateRange($from, $to);
 
-        return $this->reportingRepository->getAgentPerformance($from, $to, $agentId, $phoneNumberId, $teamId);
+        $rows = $this->reportingRepository->getAgentPerformance($from, $to, $agentId, $phoneNumberId, $teamId);
+
+        return $this->addIsInShift($rows);
+    }
+
+    /**
+     * Add `is_in_shift` (schedule only, evaluated now) right after
+     * `current_load` in each agent row. An agent that cannot be loaded is
+     * reported as not in shift.
+     *
+     * @param array<int, array<string, mixed>> $rows
+     * @return array<int, array<string, mixed>>
+     */
+    private function addIsInShift(array $rows): array
+    {
+        $now = new \DateTimeImmutable();
+        $agentMap = [];
+        if (!empty($rows)) {
+            $agentIds = array_map(fn($r) => (int) $r['agent_id'], $rows);
+            foreach ($this->agentRepository->findByIds($agentIds) as $agent) {
+                $agentMap[$agent->getId()] = $agent;
+            }
+        }
+
+        $enriched = [];
+        foreach ($rows as $row) {
+            $isInShift = false;
+            if (isset($agentMap[$row['agent_id']])) {
+                $isInShift = $this->agentAvailabilityService->isInShift($agentMap[$row['agent_id']], $now);
+            }
+
+            $enrichedRow = [];
+            foreach ($row as $key => $value) {
+                $enrichedRow[$key] = $value;
+                if ($key === 'current_load') {
+                    $enrichedRow['is_in_shift'] = $isInShift;
+                }
+            }
+            $enriched[] = $enrichedRow;
+        }
+
+        return $enriched;
     }
 
     /**

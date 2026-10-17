@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Characterization;
 
 use App\Agente\Agent;
+use App\Disponibilidad\AgentShift;
 use App\Reporte\Query\ReportingService;
 use PHPUnit\Framework\Attributes\DataProvider;
 
@@ -149,6 +150,25 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
             'avg_rt_seconds' => 5400,
             'avg_rt_minutes' => 90,
         ]], $response);
+    }
+
+    public function testAgentPerformanceReportsAnAgentInShift(): void
+    {
+        $this->seedTickets();
+        // A 00:00-00:00 shift is read as a cross-midnight shift that covers the
+        // whole day, so one per weekday keeps the agent in shift at any time.
+        foreach (range(1, 7) as $dayOfWeek) {
+            $shift = new AgentShift($this->owner, $dayOfWeek, new \DateTimeImmutable('00:00:00'), new \DateTimeImmutable('00:00:00'));
+            $this->owner->addShift($shift);
+            $this->em->persist($shift);
+        }
+        $this->em->flush();
+        $token = $this->supervisorToken();
+
+        $body = $this->json($this->request('GET', '/api/reports/agents?' . self::WINDOW, $token));
+
+        self::assertTrue($body[0]['is_in_shift']);
+        self::assertSame(['current_load', 'is_in_shift', 'avg_frt_seconds'], \array_slice(\array_keys($body[0]), 6, 3));
     }
 
     public function testAgentPerformanceFilteredByUnknownAgentIsEmpty(): void
