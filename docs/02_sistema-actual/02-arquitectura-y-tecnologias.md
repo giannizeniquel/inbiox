@@ -167,8 +167,8 @@ sequenceDiagram
 | Escritura en outbox | Cada caso de uso tiene **su propia copia** de `persistEventsToOutbox()`: `HandleInboundMessageUseCase.php:107-156`, `HandleOutboundMessageUseCase.php:368-426`, `AssignTicketUseCase.php:143-180`, `AutoAssignTicketUseCase.php:216-252`, `HandleStatusUpdateUseCase.php:214-253`. Disponibilidad y turnos escriben `OutboxEvent` directo. `InboxController::markRead` inserta por SQL. |
 | Publicación | `Command/OutboxPublishCommand.php` → `Application/Service/OutboxPublisherService.php` |
 | Contrato | `Application/Realtime/RealtimeEventFactory.php`, `EventTypeMapper.php`, `RealtimeEventType.php` (`ticket.created`, `ticket.status_changed`, `ticket.assigned`, `message.added`, `message.updated`, `conversation.updated`, `agent.availability_changed`, `agent.shift_changed`) |
-| Token de suscripción | `GET /api/mercure/token` → `MercureJwtService::issueForUser()`; en la práctica el frontend **no lo usa para suscribirse** (el hub es anónimo), solo para el resync. |
-| Frontend | `core/realtime/mercure.service.ts`, `core/realtime/event-bus.service.ts`, `data-access/ticket/ticket.store.ts:93-189`, `data-access/conversacion/conversation.store.ts:65-107` |
+| Token de suscripción | `GET /api/mercure/token` → `MercureJwtService::issueForUser()`; el frontend lo pide pero **no lo usa**: el hub es anónimo y el resync se eliminó en la fase 4. |
+| Frontend | `core/realtime/mercure.service.ts`, `core/realtime/event-bus.service.ts`, `data-access/ticket/ticket-realtime.reducer.ts:9-99`, `data-access/conversacion/conversation.store.ts:65-107` |
 
 ### Problemas conocidos del pipeline
 
@@ -185,7 +185,7 @@ Deducidos de la lectura; confirmar con `SELECT event_type, status, COUNT(*) FROM
 | P-7 | Plantillas y reaperturas por ventana no emiten eventos (la segunda es una limitación aceptada y documentada en `HandleInboundMessageUseCase.php:275-283`). | — |
 | P-8 | Topics `agent/{id}/availability`, `agent/{id}/shifts`, `agents`: se publican o conceden, pero el frontend no los escucha. | `MercureJwtService.php:28-32` |
 | P-9 | Dos publicadores posibles en paralelo (servicio docker `publisher` y la unidad systemd `inbiox-outbox-publisher.service` de la raíz) sin bloqueo de filas → eventos duplicados (el frontend deduplica por `eventId`). En la máquina de desarrollo la unidad systemd está instalada pero deshabilitada. | `OutboxPublisherService.php:64-77` |
-| P-10 | Frontend: la detección de huecos está desactivada, `resyncAllTickets()` nunca se llama, si el stream cierra limpio no reconecta, tras 10 fallos deja de reintentar y el menú lateral sigue diciendo "Conectado". | `mercure.service.ts:110-113, 282-286, 403-424` |
+| P-10 | Frontend: no hay detección de huecos ni resync (el código inalcanzable se eliminó en la fase 4), si el stream cierra limpio no reconecta, tras 10 fallos deja de reintentar y el menú lateral sigue diciendo "Conectado". | `mercure.service.ts:67-69, 146-173` |
 | P-11 | Seguridad: hub anónimo, eventos públicos, topic único ([R4](00-estado-y-pendientes.md#r4-tiempo-real-sin-aislamiento-entre-workspaces)). El secreto JWT efectivo sale de `config/packages/test.yaml`, cargado en todos los entornos; `MERCURE_URL`, `MERCURE_PUBLIC_URL` y `MERCURE_JWT_SECRET` del `.env` no tienen efecto real (la URL del hub está fija en el constructor de `OutboxPublisherService`). | `OutboxPublisherService.php:26`; `MercureJwtService.php:198-201` |
 
 ---
@@ -289,7 +289,7 @@ Archivos: `apps/api/.env` (no versionado), `.env.dev` (**versionado, con credenc
 
 | # | Violación | Evidencia |
 |---|---|---|
-| W1 | El núcleo de la bandeja no usa casos de uso: los contenedores llaman a los servicios `*-api` o a `HttpClient` y escriben en los stores. | `ticket-list.component.ts:52-55`, `conversation.component.ts:87,198`, `shell/app-shell.component.ts:58-59` |
+| W1 | El núcleo de la bandeja no usa casos de uso: los contenedores llaman a los servicios `*-api` o a `HttpClient` y escriben en los stores. | `ticket-list.component.ts:52-55`, `conversation.component.ts:61-63`, `shell/app-shell.component.ts:58-59` |
 | W2 | Stores que hacen HTTP. | `settings.store.ts`, `workspace.store.ts`, `auth.store.ts`, `agent.store.ts`, `data-access/contacto/contact-timeline.store.ts` |
 | W3 | **Resuelto** en la fase 2 de la limpieza frontend: `core` importaba de `features`; hoy `core/` no importa de `data-access/` ni de `features/`. | — |
 | W4 | Componente presentacional con acceso a API. | `TeamFilterComponent` llama `TeamListApiService` |

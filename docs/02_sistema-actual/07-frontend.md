@@ -55,17 +55,17 @@ Roles: `AuthStore.isAdmin()` / `isSupervisor()` (no jerárquicos; no existe `isA
 
 ## Bandeja: lista de tickets
 
-Contenedor: `features/bandeja/pages/ticket-list/ticket-list.component.ts`. Store: `data-access/ticket/ticket.store.ts`.
+Contenedor: `features/bandeja/pages/ticket-list/ticket-list.component.ts`. Store: `data-access/ticket/ticket.store.ts` (eventos de tiempo real en `ticket-realtime.reducer.ts`).
 
 | Acción | Código | Endpoint | ¿Servidor o navegador? |
 |---|---|---|---|
 | Cargar lista | `loadTickets()` (`:101-114`) → `TicketApiService.getTickets()` → `TicketStore.loadTickets()` | `GET /api/tickets[?teamId=N]` | Servidor, **sin `page`/`limit` → solo 20** |
-| Pestañas Míos / Sin asignar / Todos + contadores | `TicketFiltersComponent` → `TicketStore.filter` / `filteredTickets` / `filterCounts` (`ticket.store.ts:192-213`) | — | **Navegador** (sobre los 20) |
+| Pestañas Míos / Sin asignar / Todos + contadores | `TicketFiltersComponent` → `TicketStore.filter` / `filteredTickets` / `filterCounts` (`ticket.store.ts:86-107`) | — | **Navegador** (sobre los 20) |
 | Filtro por equipo | `TeamFilterComponent` → `onTeamFilterChange` | `GET /api/teams`, luego `GET /api/tickets?teamId=N` | **Servidor** |
 | Buscar | `TicketSearchComponent` → `onSearch()` hace `console.log` (`:209-213`) | — | **No implementado** |
 | Abrir ticket | `selectTicket()` (`:176-192`) | `GET /api/tickets/{id}/messages?limit=20&offset=0` | — |
 | Desplegable de asignación | `TicketCardComponent` (`ticket-card.component.ts:51-59, 138-150`), visible si `canAssignTicket()` y estado `new`/`active`/`waiting` | `GET /api/workspaces/{wsId}/available-agents`; se refresca 10 s después de un `ticket.assigned` | — |
-| Asignar | `onAssign()` (`:242-277`): optimista → API → rollback + error 5 s | `POST /api/tickets/{id}/assign` | — |
+| Asignar | `onAssign()` (`:244-276`): optimista → API → rollback + error 5 s | `POST /api/tickets/{id}/assign` | — |
 
 - Un usuario sin agente (admin sin vincular) ve la pestaña "Míos" vacía.
 - Un `message.added` no reordena la lista ni actualiza el último mensaje.
@@ -74,20 +74,20 @@ Contenedor: `features/bandeja/pages/ticket-list/ticket-list.component.ts`. Store
 
 ## Conversación y composer
 
-Contenedor: `features/bandeja/pages/conversation/conversation.component.ts`. Store: `data-access/conversacion/conversation.store.ts`.
+Contenedor: `features/bandeja/pages/conversation/conversation.component.ts` (scroll y paginación en `conversation-scroll.controller.ts`). Store: `data-access/conversacion/conversation.store.ts`.
 
 | Elemento / acción | Código | Endpoint | Nota |
 |---|---|---|---|
 | Cabecera (contacto, dueño, estado, `#id`) | `ConversationHeaderComponent` | — | El link a la ficha usa `ticket.contact.id`, que en el listado es el id de la conversación ([R14](00-estado-y-pendientes.md#r14-bugs-del-frontend-con-impacto-directo)). |
-| Botón "RESOLVER" | `onResolveTicket()` (`:295-322`); deshabilitado en `resolved`/`closed` | `POST /api/tickets/{id}/resolve` | 403 → "Solo puede hacerlo un administrador, un supervisor o el agente asignado". |
+| Botón "RESOLVER" | `onResolveTicket()` (`:186-213`); deshabilitado en `resolved`/`closed` | `POST /api/tickets/{id}/resolve` | 403 → "Solo puede hacerlo un administrador, un supervisor o el agente asignado". |
 | Botón "Participación" | `TicketParticipationComponent` → `GetTicketParticipationUseCase` | `GET /api/reports/tickets/{id}/participation` | Sprint 18. |
-| Marcar como leído al abrir | `markReadEffect` con `HttpClient` directo (`:195-208`) | `PUT /api/tickets/{id}/mark-read` | El badge se limpia al recibir `ticket.read`. |
-| Historial hacia arriba | `loadOlderMessages()` (`:370-403`) | `GET /api/tickets/{id}/messages?limit=20&offset=N` | La primera página "anterior" repite offset 0 (se deduplica). |
+| Marcar como leído al abrir | `markReadEffect` → `TicketApiService.markRead` (`:137-150`; `data-access/ticket/ticket-api.service.ts:44-47`) | `PUT /api/tickets/{id}/mark-read` | El badge se limpia al recibir `ticket.read`. |
+| Historial hacia arriba | `loadOlderMessages()` (`conversation-scroll.controller.ts:180-213`) | `GET /api/tickets/{id}/messages?limit=20&offset=N` | La primera página "anterior" repite offset 0 (se deduplica). |
 | Burbujas y adjuntos | `MessageBubbleComponent` + renderers | `GET /api/messages/{id}/media` | Heurística de "sistema" por corchetes. |
 | Enviar texto (Enter) | `ComposerComponent.send()` → `onSendMessage()` → `MessageSenderService.send()` → `SendMessageUseCase` → `WhatsAppCloudProvider.sendMessage()` | `POST /api/provider/send` (ruta relativa, sin `environment.apiUrl`) | Reintenta el POST 2 veces ante error. |
 | Adjuntar | `MessageSenderService.sendWithMedia()` valida tipo/tamaño (5/16/16/100 MB) | `POST {apiUrl}/api/provider/media/upload` → `POST /api/provider/send` | |
 | Bloqueo por ventana de 24 h | `composer.component.ts:70-76` | — | Reemplaza el composer por un aviso que sugiere "usá una plantilla aprobada", pero no hay forma de enviarla. |
-| Reintentar fallido | `onRetry()` (`:281-286`) solo cambia el estado a `sending` | — | **Roto**: `MessageSenderService.retry()` no se llama nunca. |
+| Reintentar fallido | `onRetry()` (`:172-177`) solo cambia el estado a `sending` | — | **Roto**: `MessageSenderService.retry()` no se llama nunca. |
 | Emoji | — | — | Deshabilitado. |
 
 ## Contactos
@@ -156,10 +156,10 @@ El store (`data-access/agente/settings.store.ts`) hace HTTP sin esperar el resul
 
 | Paso | Código |
 |---|---|
-| Tras login/refresh, guarda el token de Mercure (solo se usa para resync). | `auth.store.ts:75-88, 115-124` |
-| `fetch(${mercureUrl}/.well-known/mercure?topic=tickets)` **sin token**; parseo manual de líneas `data:`. | `core/realtime/mercure.service.ts:85-126` |
-| Deduplica por `eventId` (últimos 1000). | `mercure.service.ts:243-256` |
-| Emite al `EventBusService`; los stores reaccionan. | `mercure.service.ts:151-162` |
+| Tras login/refresh, guarda el token de Mercure (no se usa: el resync se eliminó en la fase 4). | `auth.store.ts:75-88, 115-124` |
+| `fetch(${mercureUrl}/.well-known/mercure?topic=tickets)` **sin token**; parseo manual de líneas `data:`. | `core/realtime/mercure.service.ts:46-83` |
+| Deduplica por `eventId` (últimos 1000). | `mercure.service.ts:102-113` |
+| Emite al `EventBusService`; los stores reaccionan. | `mercure.service.ts:120-121` |
 
 | Evento | `TicketStore` | `ConversationStore` |
 |---|---|---|
@@ -170,7 +170,7 @@ El store (`data-access/agente/settings.store.ts`) hace HTTP sin esperar el resul
 | `message.updated` | — | Actualiza estado de entrega (`null` → `read`). |
 | `ticket.read` | No leídos = 0. | — |
 
-Limitaciones: detección de huecos desactivada (`:282-286`); `resyncAllTickets()` nunca se llama; si el stream se cierra limpio no reconecta (`:110-113`); tras 10 fallos (`:403-411`) deja de intentar y solo se recupera recargando. El eco por Mercure de un mensaje propio no trae `sender_type`; si el `id` confirmado llega vacío, puede quedar duplicado.
+Limitaciones: no hay detección de huecos ni resync (ese código nunca se ejecutaba y se eliminó en la fase 4); si el stream se cierra limpio no reconecta (`:67-69`); tras 10 fallos (`:156-162`) deja de intentar y solo se recupera recargando. El eco por Mercure de un mensaje propio no trae `sender_type`; si el `id` confirmado llega vacío, puede quedar duplicado.
 
 ---
 
@@ -180,8 +180,8 @@ Limitaciones: detección de huecos desactivada (`:282-286`); `resyncAllTickets()
 |---|---|---|
 | Mensaje "sistema" si es entrante y el texto está entre `[` y `]` | `features/bandeja/ui/message-bubble/message-bubble.component.ts:44` | **Inventada**; ignora `sender_type`. Un cliente que escribe `[hola]` se ve como sistema; las auto-respuestas se ven como del agente. |
 | Remitente: entrante = cliente, resto = agente | `data-access/conversacion/message-mapper.util.ts:33` | Ignora `sender_type` y `sender_agent_id`. |
-| Filtros Míos / Sin asignar / Todos | `ticket.store.ts:192-213` | Duplica filtros que el backend tiene (`filter`, `agent_id`). |
-| `new → active` al asignar | `ticket.store.ts:163-168` | Duplica R-T4. |
+| Filtros Míos / Sin asignar / Todos | `ticket.store.ts:86-107` | Duplica filtros que el backend tiene (`filter`, `agent_id`). |
+| `new → active` al asignar | `ticket-realtime.reducer.ts:79-83` | Duplica R-T4. |
 | FSM de tickets | `status-actions.component.ts:21-27` | Componente sin uso. |
 | Ventana de 24 h | `composer.component.ts:7, 70-76` | Duplica R-W1 con el reloj del navegador; el backend manda. |
 | Quién puede asignar; no asignarse a uno mismo; estados asignables; agentes inactivos no elegibles | `ticket-list.component.ts:132-137, 221-238`; `ticket-card.component.ts:51-59, 142-146` | Duplica el voter y el guard "Activo"; "no asignarse a uno mismo" solo existe aquí. |
@@ -212,14 +212,14 @@ El código sin uso listado aquí se borró en la fase 1 de la limpieza (ver `odd
 | Síntoma | Primer lugar |
 |---|---|
 | No puedo iniciar sesión / me expulsa | `core/auth/auth.store.ts`, `core/auth/auth.interceptor.ts` |
-| Faltan tickets | `data-access/ticket/ticket-api.service.ts:20` (sin `limit`), `ticket.store.ts:192` |
-| Badge de no leídos incorrecto | `ticket.store.ts:95-110, 173-186`, `conversation.component.ts:193-206` |
+| Faltan tickets | `data-access/ticket/ticket-api.service.ts:20` (sin `limit`), `ticket.store.ts:86` |
+| Badge de no leídos incorrecto | `ticket-realtime.reducer.ts:11-26, 86-97`, `conversation.component.ts:137-150` |
 | No llegan mensajes en tiempo real | `core/realtime/mercure.service.ts`, `conversation.store.ts:65-96` |
 | Mensaje duplicado en pantalla | `conversation.store.ts:76-82, 176-199` |
 | El **cliente** recibe un mensaje repetido | Causa en el backend: `apps/api/src/Controller/ProviderProxyController.php:97-155` envía a WhatsApp aunque el mensaje sea `duplicate_skipped`, y `message-sender.service.ts:72-75` reintenta el POST. Ver [04 § F2](04-flujos.md#f2-respuesta-del-agente). |
-| Mensaje fallido no se reintenta | `conversation.component.ts:279-284` vs `message-sender.service.ts:185-213` |
-| No puedo asignar | `ticket-list.component.ts:221-279`, `ticket-card.component.ts`, roster `available-agents` |
-| "Resolver" da error | `conversation.component.ts:293-320`, `data-access/ticket/workflow-api.service.ts:32-37` |
+| Mensaje fallido no se reintenta | `conversation.component.ts:172-177` vs `message-sender.service.ts:185-213` |
+| No puedo asignar | `ticket-list.component.ts:221-276`, `ticket-card.component.ts`, roster `available-agents` |
+| "Resolver" da error | `conversation.component.ts:186-213`, `data-access/ticket/workflow-api.service.ts:32-37` |
 | Mensaje del cliente se ve como "sistema" | `message-bubble.component.ts:44` |
 | No se puede escribir al cliente | `composer.component.ts:70-76` (ventana 24 h) |
 | Informes en cero | `get-reports-dashboard.use-case.ts` (errores degradados a 0) |

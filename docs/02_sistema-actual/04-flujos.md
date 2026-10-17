@@ -194,7 +194,7 @@ stateDiagram-v2
 1. 403 → voter: `TicketVoter.php` (¿el usuario tiene agente vinculado? ¿es el dueño?).
 2. 409 / error de transición → `TicketStateMachine.php`.
 3. `TransitionTicketStatusUseCase.php`.
-4. Frontend: `features/bandeja/pages/conversation/conversation.component.ts:293-320`, `data-access/ticket/workflow-api.service.ts:32-37`.
+4. Frontend: `features/bandeja/pages/conversation/conversation.component.ts:186-213`, `data-access/ticket/workflow-api.service.ts:32-37`.
 
 ---
 
@@ -212,7 +212,7 @@ stateDiagram-v2
 | 6 | **Guard "Activo":** `isActiveNow()` (cuenta activa → override → turno; **sin capacidad**). Si no → 409 `AGENT_NOT_ACTIVE`. Sin excepción para ningún rol. | `:86-95`; `AgentAvailabilityService.php:84-102` | R-A8 |
 | 7 | `REASSIGN` si ya tenía dueño, si no `MANUAL_ASSIGN` → `AssignmentService::recordOwnershipChange()` (fila `Assignment`, `new → active`, eventos). | `:97-117`; `AssignmentService.php:47-113` | R-A1, R-T4 |
 | 8 | Post-commit: eventos al outbox (los `InboxUpdatedEvent` terminan en dead letter). | `:135, 143-180` | P-1 |
-| 9 | (Frontend) Actualización optimista; si falla, rollback y mensaje 5 s; si 409 `AGENT_NOT_ACTIVE`, recarga el roster. | `ticket-list.component.ts:244-279` | |
+| 9 | (Frontend) Actualización optimista; si falla, rollback y mensaje 5 s; si 409 `AGENT_NOT_ACTIVE`, recarga el roster. | `ticket-list.component.ts:244-276` | |
 
 - **No verifica workspace** del agente destino. **No existe endpoint para desasignar**: `UNASSIGN` solo ocurre al resolver/cerrar.
 - **Historial:** `GET /api/tickets/{id}/assignment` (`TicketController.php:140-186`) — sin UI.
@@ -374,7 +374,7 @@ Ver el diagrama y la tabla de archivos en [02 § Tiempo real](02-arquitectura-y-
 2. Tabla `outbox_events`: ¿quedan `pending`? ¿hay `dead_letter`? (`app:outbox:dead-letter list`).
 3. `Application/Service/OutboxPublisherService.php`, `Application/Realtime/EventTypeMapper.php`.
 4. Navegador: pestaña Red → petición a `/.well-known/mercure?topic=tickets`; `mercure.service.ts` (circuit breaker tras 10 fallos; recargar la página).
-5. `data-access/ticket/ticket.store.ts:93-189`, `data-access/conversacion/conversation.store.ts:65-107` (el mensaje solo se agrega si es el ticket abierto).
+5. `data-access/ticket/ticket-realtime.reducer.ts:9-99`, `data-access/conversacion/conversation.store.ts:65-107` (el mensaje solo se agrega si es el ticket abierto).
 
 ---
 
@@ -437,10 +437,10 @@ Un mensaje `failed` no afecta el estado del ticket.
 |---|---|---|
 | 1 | El shell, en la ruta `/inbox`, pinta directamente `TicketListComponent` + `ConversationComponent` (la ruta `/inbox` no tiene componente propio). | `shell/app-shell.component.html:24-37` |
 | 2 | `GET /api/tickets[?teamId=N]` **sin `page`/`limit`** → el backend devuelve 20. | `data-access/ticket/ticket-api.service.ts:20-34`; `Controller/InboxController.php:44-45`; `Application/Query/ListTicketsQuery.php` |
-| 3 | Pestañas Míos / Sin asignar / Todos y contadores: en el navegador sobre lo cargado. | `data-access/ticket/ticket.store.ts:192-213` |
-| 4 | Abrir ticket: `GET /api/tickets/{id}/messages?limit=20&offset=0` (mensajes de toda la conversación); scroll hacia arriba pide más. | `ticket-list.component.ts:178-194`; `conversation.component.ts:368-401`; `Application/Query/GetTicketMessagesQuery.php:23-53` |
-| 5 | Marcar leído: `PUT /api/tickets/{id}/mark-read` (HttpClient directo). Solo tiene efecto si el usuario es el dueño; emite `ticket.read`. | `conversation.component.ts:193-206`; `InboxController.php:168-214` |
-| 6 | No leídos: +1 por `message.added` entrante si no es el ticket abierto; 0 con `ticket.read` o `ticket.assigned`. | `ticket.store.ts:95-110, 173-186` |
+| 3 | Pestañas Míos / Sin asignar / Todos y contadores: en el navegador sobre lo cargado. | `data-access/ticket/ticket.store.ts:86-107` |
+| 4 | Abrir ticket: `GET /api/tickets/{id}/messages?limit=20&offset=0` (mensajes de toda la conversación); scroll hacia arriba pide más. | `ticket-list.component.ts:178-194`; `conversation-scroll.controller.ts:180-213`; `Application/Query/GetTicketMessagesQuery.php:23-53` |
+| 5 | Marcar leído: `PUT /api/tickets/{id}/mark-read` (`TicketApiService.markRead`). Solo tiene efecto si el usuario es el dueño; emite `ticket.read`. | `conversation.component.ts:137-150`; `InboxController.php:168-214` |
+| 6 | No leídos: +1 por `message.added` entrante si no es el ticket abierto; 0 con `ticket.read` o `ticket.assigned`. | `ticket-realtime.reducer.ts:11-26, 86-97` |
 | 7 | Deep link `/inbox?ticketId=X` (desde Contactos): `GET /api/tickets/{id}` + mensajes. | `shell/app-shell.component.ts:90-106` |
 
 En la respuesta del listado, `contact.id` es el **id de la conversación** (`ListTicketsQuery.php:164`), mientras que el detalle devuelve el id real del contacto.

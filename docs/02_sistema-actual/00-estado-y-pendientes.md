@@ -192,7 +192,7 @@ Resolver, cerrar, transicionar y el cierre por ventana **no publican eventos**; 
 | Bug | Archivo |
 |---|---|
 | La bandeja solo carga **20 tickets** (no envía `page`/`limit`; no hay paginación). Las pestañas "Míos / Sin asignar / Todos" filtran sobre esos 20. | `apps/web/src/app/data-access/ticket/ticket-api.service.ts:20-34` |
-| El botón "reintentar" de un mensaje fallido no reenvía nada (queda en "⏳"). | `features/bandeja/pages/conversation/conversation.component.ts:279-284` |
+| El botón "reintentar" de un mensaje fallido no reenvía nada (queda en "⏳"). | `features/bandeja/pages/conversation/conversation.component.ts:172-177` |
 | El envío reintenta automáticamente un POST no idempotente (riesgo de duplicados en WhatsApp). | `data-access/conversacion/message-sender.service.ts:42-46,72-75` |
 | Las páginas `/agents/:agentId/availability` y `/shifts` llaman URLs sin `/api` y no funcionan. | `data-access/disponibilidad/agent.service.ts:64-125` |
 | El link "Ver ficha" del contacto puede abrir otro contacto: en el listado, `contact.id` es el id de la **conversación**. | `apps/api/src/Application/Query/ListTicketsQuery.php:164` |
