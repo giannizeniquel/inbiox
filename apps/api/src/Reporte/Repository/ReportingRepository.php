@@ -65,6 +65,36 @@ class ReportingRepository extends ServiceEntityRepository
     }
 
     /**
+     * Build the optional ticket filters shared by the native report queries
+     * and bind their parameters. The clauses keep a fixed order: agent,
+     * workspace, team. Returns an empty string when no filter is set.
+     *
+     * @param array<string, mixed> $params Query parameters, extended in place
+     * @param string $alias Alias of the tickets table in the query
+     */
+    private function ticketFilterClause(array &$params, string $alias, ?int $agentId, ?string $phoneNumberId, ?int $teamId): string
+    {
+        $clause = '';
+
+        if ($agentId !== null) {
+            $clause .= " AND {$alias}.assigned_agent_id = :agentId";
+            $params['agentId'] = $agentId;
+        }
+
+        if ($phoneNumberId !== null) {
+            $clause .= " AND {$alias}.phone_number_id = :phoneNumberId";
+            $params['phoneNumberId'] = $phoneNumberId;
+        }
+
+        if ($teamId !== null) {
+            $clause .= " AND {$alias}.team_id = :teamId";
+            $params['teamId'] = $teamId;
+        }
+
+        return $clause;
+    }
+
+    /**
      * Get First Response Time metrics.
      *
      * All values are in SECONDS (UTC-based).
@@ -93,20 +123,7 @@ class ReportingRepository extends ServiceEntityRepository
         
         $params = ['from' => $from->format('Y-m-d H:i:s'), 'to' => $to->format('Y-m-d H:i:s')];
         
-        if ($agentId !== null) {
-            $sql .= ' AND t.assigned_agent_id = :agentId';
-            $params['agentId'] = $agentId;
-        }
-
-        if ($phoneNumberId !== null) {
-            $sql .= ' AND t.phone_number_id = :phoneNumberId';
-            $params['phoneNumberId'] = $phoneNumberId;
-        }
-
-        if ($teamId !== null) {
-            $sql .= ' AND t.team_id = :teamId';
-            $params['teamId'] = $teamId;
-        }
+        $sql .= $this->ticketFilterClause($params, 't', $agentId, $phoneNumberId, $teamId);
 
         $result = $conn->fetchAssociative($sql, $params);
 
@@ -153,20 +170,7 @@ class ReportingRepository extends ServiceEntityRepository
         
         $params = ['from' => $from->format('Y-m-d H:i:s'), 'to' => $to->format('Y-m-d H:i:s')];
         
-        if ($agentId !== null) {
-            $sql .= ' AND t.assigned_agent_id = :agentId';
-            $params['agentId'] = $agentId;
-        }
-
-        if ($phoneNumberId !== null) {
-            $sql .= ' AND t.phone_number_id = :phoneNumberId';
-            $params['phoneNumberId'] = $phoneNumberId;
-        }
-
-        if ($teamId !== null) {
-            $sql .= ' AND t.team_id = :teamId';
-            $params['teamId'] = $teamId;
-        }
+        $sql .= $this->ticketFilterClause($params, 't', $agentId, $phoneNumberId, $teamId);
 
         $result = $conn->fetchAssociative($sql, $params);
 
@@ -254,28 +258,12 @@ class ReportingRepository extends ServiceEntityRepository
         $conn = $this->entityManager->getConnection();
         $params = ['from' => $from->format('Y-m-d H:i:s'), 'to' => $to->format('Y-m-d H:i:s')];
 
-        $agentClause = '';
-        if ($agentId !== null) {
-            $agentClause = ' AND t.assigned_agent_id = :agentId';
-            $params['agentId'] = $agentId;
-        }
-
-        $workspaceClause = '';
-        if ($phoneNumberId !== null) {
-            $workspaceClause = ' AND t.phone_number_id = :phoneNumberId';
-            $params['phoneNumberId'] = $phoneNumberId;
-        }
-
-        $teamClause = '';
-        if ($teamId !== null) {
-            $teamClause = ' AND t.team_id = :teamId';
-            $params['teamId'] = $teamId;
-        }
+        $filterClause = $this->ticketFilterClause($params, 't', $agentId, $phoneNumberId, $teamId);
 
         // Created tickets grouped by date
         $sqlCreated = 'SELECT DATE(t.created_at) as date, COUNT(t.id) as tickets_created
         FROM tickets t
-        WHERE t.created_at >= :from AND t.created_at < :to' . $agentClause . $workspaceClause . $teamClause . '
+        WHERE t.created_at >= :from AND t.created_at < :to' . $filterClause . '
         GROUP BY DATE(t.created_at)';
 
         $createdResults = $conn->fetchAllAssociative($sqlCreated, $params);
@@ -283,7 +271,7 @@ class ReportingRepository extends ServiceEntityRepository
         // Resolved tickets grouped by date
         $sqlResolved = 'SELECT DATE(t.resolved_at) as date, COUNT(t.id) as tickets_resolved
         FROM tickets t
-        WHERE t.resolved_at IS NOT NULL AND t.resolved_at >= :from AND t.resolved_at < :to' . $agentClause . $workspaceClause . $teamClause . '
+        WHERE t.resolved_at IS NOT NULL AND t.resolved_at >= :from AND t.resolved_at < :to' . $filterClause . '
         GROUP BY DATE(t.resolved_at)';
         
         $resolvedResults = $conn->fetchAllAssociative($sqlResolved, $params);
@@ -337,19 +325,9 @@ class ReportingRepository extends ServiceEntityRepository
         $frtTimeDiff = $this->getTimeDiffExpression('t.created_at', 't.first_response_at');
         $rtTimeDiff = $this->getTimeDiffExpression('t.created_at', 't.resolved_at');
 
-        $workspaceSubClause = '';
-        $workspaceJoinClause = '';
-        if ($phoneNumberId !== null) {
-            $workspaceSubClause = ' AND t2.phone_number_id = :phoneNumberId';
-            $workspaceJoinClause = ' AND t.phone_number_id = :phoneNumberId';
-        }
-
-        $teamSubClause = '';
-        $teamJoinClause = '';
-        if ($teamId !== null) {
-            $teamSubClause = ' AND t2.team_id = :teamId';
-            $teamJoinClause = ' AND t.team_id = :teamId';
-        }
+        $params = ['from' => $from->format('Y-m-d H:i:s'), 'to' => $to->format('Y-m-d H:i:s')];
+        $subFilterClause = $this->ticketFilterClause($params, 't2', null, $phoneNumberId, $teamId);
+        $joinFilterClause = $this->ticketFilterClause($params, 't', null, $phoneNumberId, $teamId);
 
         $sql = "SELECT
             a.id as agent_id,
@@ -361,25 +339,15 @@ class ReportingRepository extends ServiceEntityRepository
             AVG(CASE WHEN t.resolved_at IS NOT NULL THEN {$rtTimeDiff} ELSE NULL END) as avg_rt,
             (SELECT COUNT(*) FROM tickets t2
              WHERE t2.assigned_agent_id = a.id
-             AND t2.status IN ('new', 'active', 'waiting'){$workspaceSubClause}{$teamSubClause}) as current_active_tickets
+             AND t2.status IN ('new', 'active', 'waiting'){$subFilterClause}) as current_active_tickets
         FROM agents a
         LEFT JOIN tickets t ON t.assigned_agent_id = a.id
-            AND t.created_at >= :from AND t.created_at < :to{$workspaceJoinClause}{$teamJoinClause}
+            AND t.created_at >= :from AND t.created_at < :to{$joinFilterClause}
         WHERE a.active = 1";
-
-        $params = ['from' => $from->format('Y-m-d H:i:s'), 'to' => $to->format('Y-m-d H:i:s')];
 
         if ($agentId !== null) {
             $sql .= ' AND a.id = :agentId';
             $params['agentId'] = $agentId;
-        }
-
-        if ($phoneNumberId !== null) {
-            $params['phoneNumberId'] = $phoneNumberId;
-        }
-
-        if ($teamId !== null) {
-            $params['teamId'] = $teamId;
         }
 
         $sql .= " GROUP BY a.id, a.name, a.max_active_tickets ORDER BY a.id ASC";
@@ -450,12 +418,8 @@ class ReportingRepository extends ServiceEntityRepository
     {
         $conn = $this->entityManager->getConnection();
 
-        $workspaceClause = '';
         $params = [];
-        if ($phoneNumberId !== null) {
-            $workspaceClause = ' AND t.phone_number_id = :phoneNumberId';
-            $params['phoneNumberId'] = $phoneNumberId;
-        }
+        $workspaceClause = $this->ticketFilterClause($params, 't', null, $phoneNumberId, null);
 
         $agentClause = '';
         if ($agentId !== null) {
@@ -516,10 +480,7 @@ class ReportingRepository extends ServiceEntityRepository
 
         $params = [];
 
-        if ($phoneNumberId !== null) {
-            $sql .= ' AND t.phone_number_id = :phoneNumberId';
-            $params['phoneNumberId'] = $phoneNumberId;
-        }
+        $sql .= $this->ticketFilterClause($params, 't', null, $phoneNumberId, null);
 
         if ($from !== null) {
             $sql .= ' AND t.created_at >= :from';
@@ -586,10 +547,7 @@ class ReportingRepository extends ServiceEntityRepository
             'to' => $to->format('Y-m-d H:i:s'),
         ];
 
-        if ($phoneNumberId !== null) {
-            $sql .= ' AND t.phone_number_id = :phoneNumberId';
-            $params['phoneNumberId'] = $phoneNumberId;
-        }
+        $sql .= $this->ticketFilterClause($params, 't', null, $phoneNumberId, null);
 
         $sql .= ' GROUP BY DATE(t.created_at) ORDER BY date ASC';
 
@@ -646,10 +604,7 @@ class ReportingRepository extends ServiceEntityRepository
             'to' => $to->format('Y-m-d H:i:s'),
         ];
 
-        if ($phoneNumberId !== null) {
-            $sql .= ' AND t.phone_number_id = :phoneNumberId';
-            $params['phoneNumberId'] = $phoneNumberId;
-        }
+        $sql .= $this->ticketFilterClause($params, 't', null, $phoneNumberId, null);
 
         $sql .= ' GROUP BY day_of_week, hour ORDER BY day_of_week ASC, hour ASC';
 
@@ -696,10 +651,7 @@ class ReportingRepository extends ServiceEntityRepository
 
         $params = ['since' => $since->format('Y-m-d H:i:s')];
 
-        if ($phoneNumberId !== null) {
-            $sql .= ' AND t.phone_number_id = :phoneNumberId';
-            $params['phoneNumberId'] = $phoneNumberId;
-        }
+        $sql .= $this->ticketFilterClause($params, 't', null, $phoneNumberId, null);
 
         $sql .= ' GROUP BY c.id, c.name, c.email
                   HAVING COUNT(t.id) >= :threshold
@@ -753,10 +705,7 @@ class ReportingRepository extends ServiceEntityRepository
             'to' => $to->format('Y-m-d H:i:s'),
         ];
 
-        if ($phoneNumberId !== null) {
-            $sql .= ' AND t.phone_number_id = :phoneNumberId';
-            $params['phoneNumberId'] = $phoneNumberId;
-        }
+        $sql .= $this->ticketFilterClause($params, 't', null, $phoneNumberId, null);
 
         $sql .= ' ORDER BY te.created_at DESC LIMIT ' . $limit;
 
@@ -828,11 +777,7 @@ class ReportingRepository extends ServiceEntityRepository
             'to' => $to->format('Y-m-d H:i:s'),
         ];
 
-        $workspaceClause = '';
-        if ($phoneNumberId !== null) {
-            $workspaceClause = ' AND t.phone_number_id = :phoneNumberId';
-            $params['phoneNumberId'] = $phoneNumberId;
-        }
+        $workspaceClause = $this->ticketFilterClause($params, 't', null, $phoneNumberId, null);
 
         $sql = "WITH cutoff AS (
                 SELECT MIN(c) AS data_available_from FROM (
