@@ -22,14 +22,6 @@
   box-sizing: border-box;
 }
 
-// Wrapper for messages area + composer (pushes composer to bottom)
-.conversation-container__body {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-}
-
 // Header with back button (mobile) and contact info
 .conversation-container__header {
   display: flex;

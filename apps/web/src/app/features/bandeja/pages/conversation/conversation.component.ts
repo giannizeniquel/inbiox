@@ -1,11 +1,10 @@
-import { Component, inject, signal, viewChild, computed, ChangeDetectionStrategy, input, output, effect } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { Component, inject, signal, viewChild, computed, ChangeDetectionStrategy, output, effect } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { take } from 'rxjs/operators';
-import { environment } from '../../../../../environments/environment';
 import { ConversationStore } from '../../../../data-access/conversacion/conversation.store';
 import { TicketStore } from '../../../../data-access/ticket/ticket.store';
+import { TicketApiService } from '../../../../data-access/ticket/ticket-api.service';
 import { UiStore } from '../../ui.store';
-import { MessageApiService, GetMessagesResponse } from '../../../../data-access/conversacion/message-api.service';
 import { WorkflowApiService } from '../../../../data-access/ticket/workflow-api.service';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import { CdkAutoSizeVirtualScroll } from '@angular/cdk-experimental/scrolling';
@@ -20,33 +19,7 @@ import { BannerWarningComponent } from '../../../../shared/components/banner-war
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
 import { MessageSenderService } from '../../../../data-access/conversacion/message-sender.service';
 import { Message } from '../../../../data-access/conversacion/message.model';
-import { mapApiMessagesToCanonical } from '../../../../data-access/conversacion/message-mapper.util';
-
-/**
- * Scroll state machine for the conversation viewport.
- *
- * - `idle`: no scroll operation in progress; pagination may trigger on user scroll.
- * - `loading-older`: fetching the previous page from the API.
- * - `restoring-anchor`: adjusting scroll to re-anchor the message the user was
- *   looking at after prepending the new page.
- * - `programmatic-scroll`: a scroll triggered by code (scroll-to-bottom, initial
- *   scroll), not by the user. Pagination must not trigger from these.
- */
-type ScrollState = 'idle' | 'loading-older' | 'restoring-anchor' | 'programmatic-scroll';
-
-/**
- * A visual anchor for scroll restoration: the message the user is looking at
- * and its offset from the top of the viewport. Restoring by this anchor (rather
- * than by total scrollHeight) keeps the same content in the same visual place
- * regardless of how the prepended messages change the global geometry.
- */
-interface ScrollAnchor {
-  messageId: string;
-  offsetFromViewportTop: number;
-}
-
-/** Threshold (px) from the top at which scroll-up pagination triggers. */
-const PAGINATION_THRESHOLD = 200;
+import { ConversationScrollController } from './conversation-scroll.controller';
 
 /**
  * ConversationComponent — main conversation panel container.
@@ -54,9 +27,9 @@ const PAGINATION_THRESHOLD = 200;
  * Per spec section 17:
  * - flex-grow, overflow-y: auto, min-height: 0
  * - Connects to ConversationStore (messages, loading) + TicketStore (activeTicket)
- * - Auto-scroll detection (per spec section 6)
+ * - Auto-scroll detection (per spec section 6), delegated to ConversationScrollController
  * - Renders: header + scrollable message list + composer + new-msg indicator
- * - BannerWarning for contextual notices (per spec section 17[D])
+ * - BannerWarning for workflow action feedback (resolve)
  */
 @Component({
   selector: 'app-conversation-container',
@@ -76,6 +49,7 @@ const PAGINATION_THRESHOLD = 200;
   ],
   templateUrl: './conversation.component.html',
   styleUrl: './conversation.component.scss',
+  providers: [ConversationScrollController],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ConversationComponent {
@@ -84,13 +58,14 @@ export class ConversationComponent {
   protected readonly conversationStore = inject(ConversationStore);
   protected readonly ticketStore = inject(TicketStore);
   protected readonly uiStore = inject(UiStore);
-  private readonly http = inject(HttpClient);
+  protected readonly scroll = inject(ConversationScrollController);
+  private readonly ticketApi = inject(TicketApiService);
   private readonly messageSender = inject(MessageSenderService);
-  private readonly messageApi = inject(MessageApiService);
   private readonly workflowApi = inject(WorkflowApiService);
 
-  /** Contextual warning message (e.g. SLA breach, internal note) */
-  protected readonly warningMessage = input<string | null>(null);
+  constructor() {
+    this.scroll.attach(this.vps);
+  }
 
   /**
    * Feedback for a workflow action the agent just triggered (resolve).
@@ -110,9 +85,6 @@ export class ConversationComponent {
   protected readonly messages = this.conversationStore.messages;
   protected readonly loading = this.conversationStore.loading;
   protected readonly activeTicket = this.ticketStore.activeTicket;
-
-  protected readonly isAtBottom = signal(true);
-  protected readonly newMessagesCount = signal(0);
 
   /**
    * WhatsApp 24h conversation-window compliance (Sprint 16 Fase 3, design.md D7).
@@ -144,48 +116,20 @@ export class ConversationComponent {
   });
 
   trackById = (_: number, m: Message): string => m.tempId ?? m.id;
-
   // React to UiStore notifications from SSE events
   private readonly newMessagesEffect = effect(() => {
     if (this.uiStore.hasNewMessages()) {
-      this.notifyNewMessages();
+      this.scroll.notifyNewMessages();
       this.uiStore.markViewed();
     }
   });
 
-  /** Auto-scroll to bottom once per ticket (tracked flag reset on ticket switch) */
-  private initialLoadDone = false;
+  private readonly initialScrollEffect = effect(() => this.scroll.runInitialScroll());
 
-  private readonly initialScrollEffect = effect(() => {
-    const vp = this.vps();
-    const isLoading = this.loading();
-    if (!vp || isLoading || this.initialLoadDone) return;
-
-    this.initialLoadDone = true;
-    if (this.messages().length > 0) {
-      requestAnimationFrame(() => {
-        this.scrollToBottom();
-        // Autosize measures items asynchronously and images load, shifting the
-        // true bottom. Re-scroll on progressive delays until heights settle.
-        [150, 400, 800].forEach((delay) => {
-          setTimeout(() => this.scrollToBottom(), delay);
-        });
-      });
-    } else {
-      // Empty conversation — nothing to scroll, already "at bottom"
-      this.isAtBottom.set(true);
-    }
-  });
-
-  /** Reset pagination offset when switching to a different ticket */
+  /** Reset scroll, pagination and the participation panel when switching to a different ticket */
   private readonly ticketResetEffect = effect(() => {
     void this.activeTicket();
-    this.oldestLoadedOffset.set(0);
-    this.initialLoadDone = false;
-    this.scrollState.set('idle');
-    this.paginationArmed.set(true);
-    this.isAtBottom.set(false);
-    this.newMessagesCount.set(0);
+    this.scroll.reset();
     this.participationOpen.set(false);
   });
 
@@ -195,7 +139,7 @@ export class ConversationComponent {
     if (ticket) {
       const ticketId = Number(ticket.ticket_id);
       if (!isNaN(ticketId)) {
-        this.http.put(`${environment.apiUrl}/api/tickets/${ticketId}/mark-read`, {})
+        this.ticketApi.markRead(ticketId)
           .subscribe({
             error: () => { /* fire-and-forget */ },
           });
@@ -219,62 +163,11 @@ export class ConversationComponent {
       rafPending = true;
       requestAnimationFrame(() => {
         rafPending = false;
-        this.handleScroll(vp);
+        this.scroll.handleScroll(vp);
       });
     });
     onCleanup(() => sub.unsubscribe());
   });
-
-  /**
-   * Handle a scroll event. Only triggers pagination on genuine user scroll in
-   * the idle state; programmatic scrolls (restore, scroll-to-bottom) are
-   * ignored by the state machine.
-   */
-  private handleScroll(vp: CdkVirtualScrollViewport): void {
-    const top = vp.measureScrollOffset('top');
-
-    // Hysteresis: re-arm pagination once the user scrolls back down past the
-    // threshold, so a restore that leaves us near the top does not loop.
-    if (top >= PAGINATION_THRESHOLD) {
-      this.paginationArmed.set(true);
-    }
-
-    if (
-      this.scrollState() === 'idle'
-      && this.paginationArmed()
-      && top < PAGINATION_THRESHOLD
-      && this.conversationStore.hasMore()
-    ) {
-      this.loadOlderMessages(vp);
-    }
-
-    const bottom = vp.measureScrollOffset('bottom');
-    this.isAtBottom.set(bottom === 0);
-    if (bottom === 0) {
-      this.newMessagesCount.set(0);
-    }
-  }
-
-  /**
-   * How many older messages have been loaded from the API (offset tracking).
-   * 0 = initial load returned the most recent messages.
-   */
-  private readonly oldestLoadedOffset = signal(0);
-
-  /** Scroll state machine (see ScrollState type). */
-  private readonly scrollState = signal<ScrollState>('idle');
-
-  /**
-   * Hysteresis gate for pagination. Disarmed after restoring the anchor so that
-   * the programmatic scroll-back does not immediately re-trigger pagination;
-   * re-armed once the user scrolls back down past the threshold.
-   */
-  private readonly paginationArmed = signal(true);
-
-  /** Spinner is visible during the whole older-messages load + anchor restore. */
-  protected readonly loadingOlder = computed(() =>
-    this.scrollState() === 'loading-older' || this.scrollState() === 'restoring-anchor'
-  );
 
   onRetry(tempId: string): void {
     const message = this.messages().find((m: Message) => m.tempId === tempId);
@@ -334,7 +227,7 @@ export class ConversationComponent {
     if (!ticket) return;
 
     this.messageSender.send(ticket.ticket_id, event.content, event.tempId);
-    this.scrollToBottom();
+    this.scroll.scrollToBottom();
   }
 
   onSendFile(event: { content: string; tempId: string; file: File }): void {
@@ -342,122 +235,11 @@ export class ConversationComponent {
     if (!ticket) return;
 
     this.messageSender.sendWithMedia(ticket.ticket_id, event.content, event.file, event.tempId);
-    this.scrollToBottom();
+    this.scroll.scrollToBottom();
   }
 
-  scrollToBottom(): void {
-    const vp = this.vps();
-    if (!vp) return;
-    this.scrollState.set('programmatic-scroll');
-    vp.scrollTo({ bottom: 0, behavior: 'auto' });
-    this.isAtBottom.set(true);
-    this.newMessagesCount.set(0);
-    // Re-arm once the programmatic scroll has settled (next frame).
-    requestAnimationFrame(() => {
-      if (this.scrollState() === 'programmatic-scroll') {
-        this.scrollState.set('idle');
-      }
-    });
-  }
-
-  /**
-   * Load older messages from the API and prepend them to the store.
-   * Preserves the user's visual context by capturing a scroll anchor (the first
-   * visible message + its offset) and restoring it after the new page renders.
-   */
-  private loadOlderMessages(vp: CdkVirtualScrollViewport): void {
-    const ticket = this.activeTicket();
-    if (!ticket) return;
-
-    this.scrollState.set('loading-older');
-    this.paginationArmed.set(false);
-    const anchor = this.captureAnchor(vp);
-
-    this.messageApi.getMessages(ticket.ticket_id, 20, this.oldestLoadedOffset()).pipe(take(1)).subscribe({
-      next: (resp: GetMessagesResponse) => {
-        const added = mapApiMessagesToCanonical(resp, ticket.ticket_id);
-        this.conversationStore.prependMessages(added);
-        this.conversationStore.setHasMore(resp.meta.has_more);
-        this.oldestLoadedOffset.set(this.oldestLoadedOffset() + resp.data.length);
-
-        if (anchor) {
-          this.scrollState.set('restoring-anchor');
-          // Two rAFs: let Angular render the prepended block, then restore the
-          // anchor's visual position deterministically.
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              this.restoreAnchor(vp, anchor);
-              this.scrollState.set('idle');
-            });
-          });
-        } else {
-          this.scrollState.set('idle');
-        }
-      },
-      error: () => {
-        this.scrollState.set('idle');
-      },
-    });
-  }
-
-  /**
-   * Capture the first visible message as a scroll anchor: its persistent id and
-   * its offset from the top of the viewport.
-   */
-  private captureAnchor(vp: CdkVirtualScrollViewport): ScrollAnchor | null {
-    const el = vp.elementRef.nativeElement;
-    const viewportTop = el.getBoundingClientRect().top;
-
-    const bubbles = el.querySelectorAll<HTMLElement>('app-message-bubble');
-    for (const bubble of Array.from(bubbles)) {
-      const rect = bubble.getBoundingClientRect();
-      // First bubble whose top edge is at or below the viewport top.
-      if (rect.top >= viewportTop) {
-        const messageId = bubble.getAttribute('data-message-id');
-        if (messageId) {
-          return { messageId, offsetFromViewportTop: rect.top - viewportTop };
-        }
-      }
-    }
-    return null;
-  }
-
-  /**
-   * Restore the anchor's visual position: locate the same message by id and
-   * adjust the native scroll so it sits at the same offset from the viewport top
-   * as before the prepend.
-   */
-  private restoreAnchor(vp: CdkVirtualScrollViewport, anchor: ScrollAnchor): void {
-    const el = vp.elementRef.nativeElement;
-    const bubble = el.querySelector<HTMLElement>(
-      `app-message-bubble[data-message-id="${anchor.messageId}"]`
-    );
-    if (!bubble) return;
-
-    const viewportTop = el.getBoundingClientRect().top;
-    const currentOffset = bubble.getBoundingClientRect().top - viewportTop;
-    el.scrollTop += currentOffset - anchor.offsetFromViewportTop;
-  }
-
-  /**
-   * Called externally when new messages arrive (e.g., via Mercure SSE).
-   * If user is not at bottom, show the "new messages" indicator.
-   */
   onBack(): void {
     this.ticketStore.setActiveTicket(null);
     this.back.emit();
-  }
-
-  notifyNewMessages(): void {
-    const vp = this.vps();
-    if (!vp) return;
-    if (vp.measureScrollOffset('bottom') === 0) {
-      vp.scrollTo({ bottom: 0, behavior: 'auto' });
-      this.isAtBottom.set(true);
-      this.newMessagesCount.set(0);
-    } else {
-      this.isAtBottom.set(false);
-      this.newMessagesCount.update((c) => c + 1);
-    }
   }
 }

@@ -39,4 +39,9 @@ export class TicketApiService {
       catchError(createHttpErrorHandler('TicketApi'))
     );
   }
+
+  /** `PUT /api/tickets/{id}/mark-read`: single attempt, no retry; the caller decides how to handle errors. */
+  markRead(ticketId: number): Observable<unknown> {
+    return this.http.put(`${this.baseUrl}/api/tickets/${ticketId}/mark-read`, {});
+  }
 }

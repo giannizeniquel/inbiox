@@ -1,4 +1,4 @@
-<div class="conversation-container" #containerEl>
+<div class="conversation-container">
   @if (activeTicket()) {
     <!-- Sticky header: 64px — with back button for mobile -->
     <div class="conversation-container__header">
@@ -24,11 +24,6 @@
     <!-- "Participación" panel — collapsible, lazy-fetches only while open -->
     @if (participationOpen()) {
       <app-ticket-participation [ticketId]="+activeTicket()!.ticket_id" />
-    }
-
-    <!-- Contextual warning banner (conditional) -->
-    @if (warningMessage()) {
-      <app-banner-warning>{{ warningMessage() }}</app-banner-warning>
     }
 
     <!-- Result of a workflow action the agent triggered (e.g. resolve) -->
@@ -57,7 +52,7 @@
         maxBufferPx="4000"
         class="conversation-vp"
       >
-        @if (loadingOlder()) {
+        @if (scroll.loadingOlder()) {
           <app-loading-spinner class="older-messages-spinner" />
         }
         <app-message-bubble
@@ -70,9 +65,9 @@
 
     <!-- Scroll-to-bottom button — visible whenever user is not at the bottom -->
     <app-new-messages-indicator
-      [visible]="!isAtBottom()"
-      [count]="newMessagesCount()"
-      (click)="scrollToBottom()"
+      [visible]="!scroll.isAtBottom()"
+      [count]="scroll.newMessagesCount()"
+      (click)="scroll.scrollToBottom()"
     />
 
     <!-- Sticky composer: 56px -->
