@@ -145,6 +145,7 @@ Las carpetas de capa no se corresponden una a una entre backend y frontend: cada
 | RuleExecutionLog | `RegistroDeRegla` |
 | OutboxEvent | `EventoOutbox` |
 | ProcessedEvent | `EventoProcesado` |
+| TicketEvent | `EventoDeTicket` |
 | WebhookPayload | `PayloadWebhook` |
 | RefreshToken | `RefreshToken` (jerga técnica) |
 
@@ -171,8 +172,24 @@ Se guardan en la base y viajan en la API.
 | auto-reply | `respuestaAutomatica` |
 | template | `plantilla` |
 | assign / unassign / resolve / reopen | `asignar` / `desasignar` / `resolver` / `reabrir` |
+| status | `estado` |
+| direction | `direccion` |
+| sender | `remitente` |
+| availability | `disponibilidad` |
+| owner / ownership | `responsable` / `responsabilidad` |
+| priority | `prioridad` |
+| customer | `contacto` |
+| timeline | `lineaDeTiempo` |
+| closure / audit | `cierre` / `auditoria` |
+| read / unread | `leido` / `noLeido` |
+| import | `importacion` (verbo: `importar`) |
+| load / capacity | `carga` / `capacidad` |
+| participation / episode / attribution | `participacion` / `episodio` / `atribucion` |
+| keyword | `palabraClave` |
 
-**Jerga técnica que queda en inglés:** webhook, outbox, token, payload, refresh token, query builder.
+**Jerga técnica que queda en inglés:** webhook, outbox, token, payload, refresh token, query builder, sequence (del outbox), phone number id (identificador de la API de Meta).
+
+**Prefijos de métodos:** los prefijos técnicos `get`, `set`, `is`, `has`, `find`, `count`, `create`, `update` y `delete` quedan en inglés, como el resto de la jerga técnica; el resto del nombre sigue el vocabulario de negocio en español. Ejemplos: `getCargaDeAgente`, `findByResponsable`, `asignar`, `resolver`.
 
 ## Lo que se descartó y por qué
 
