@@ -13,10 +13,11 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity]
 #[ORM\Table(name: 'teams')]
 #[ORM\UniqueConstraint(name: 'uniq_teams_workspace_name', columns: ['workspace_id', 'name'])]
+#[ORM\Index(name: 'idx_teams_workspace', columns: ['workspace_id'])]
 class Team
 {
     #[ORM\Id]
-    #[ORM\Column(type: Types::BIGINT)]
+    #[ORM\Column(name: 'id', type: Types::BIGINT)]
     #[ORM\GeneratedValue]
     private ?int $id = null;
 

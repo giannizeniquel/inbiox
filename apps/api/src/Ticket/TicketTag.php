@@ -11,14 +11,14 @@ class TicketTag
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(type: 'bigint')]
+    #[ORM\Column(name: 'id', type: 'bigint')]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(targetEntity: Ticket::class, inversedBy: 'ticketTags')]
+    #[ORM\ManyToOne(targetEntity: Ticket::class)]
     #[ORM\JoinColumn(name: 'ticket_id', referencedColumnName: 'id')]
     private ?Ticket $ticket = null;
 
-    #[ORM\ManyToOne(targetEntity: Tag::class, inversedBy: 'ticketTags')]
+    #[ORM\ManyToOne(targetEntity: Tag::class)]
     #[ORM\JoinColumn(name: 'tag_id', referencedColumnName: 'id')]
     private ?Tag $tag = null;
 

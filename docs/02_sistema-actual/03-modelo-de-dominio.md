@@ -41,7 +41,7 @@ erDiagram
     CONVERSATION ||--o{ MESSAGE : "messages.conversation_id (FK)"
     CONTACT ||--o{ TICKET : "tickets.contact_id (FK)"
     CONVERSATION ||--o{ TICKET : "tickets.conversation_id (FK)"
-    TICKET }o--o| TEAM : "tickets.team_id (FK solo en BD)"
+    TICKET }o--o| TEAM : "tickets.team_id"
     TICKET }o--o| AGENT : "tickets.assigned_agent_id (SIN FK)"
     MESSAGE }o--o| AGENT : "messages.sender_agent_id (SIN FK)"
     TICKET ||--o{ ASSIGNMENT : "assignments.ticket_id (FK, CASCADE)"
@@ -90,7 +90,7 @@ Tablas técnicas sin relaciones de negocio (no incluidas en el diagrama): `outbo
 | `Workspace` (`workspaces`) | `Administracion/Workspace.php` | Un número de WhatsApp Business. Ejemplo de negocio: un número para clientes y otro para contratistas (análisis de brecha, req. #0b). | `phone_number_id` (UNIQUE), `display_name`, `is_active`. **No guarda credenciales**: todos los números usan el mismo token de Meta. |
 | `Team` (`teams`) | `Agente/Team.php` | Área dentro de un workspace (Sprint 18). | `workspace_id`, `name` (UNIQUE por workspace), `is_active` |
 | `Tag` (`tags`) | `Ticket/Tag.php` | Etiqueta global (no por workspace). | `name` (minúsculas, normalizado, UNIQUE) |
-| `TicketTag` (`ticket_tags`) | `Ticket/TicketTag.php` | Relación ticket ↔ etiqueta. | `inversedBy: 'ticketTags'` apunta a propiedades que no existen: **mapeo Doctrine inválido** (`schema:validate` lo reporta). |
+| `TicketTag` (`ticket_tags`) | `Ticket/TicketTag.php` | Relación ticket ↔ etiqueta. | Relación unidireccional: ni `Ticket` ni `Tag` tienen la colección inversa. |
 | `TicketEvent` (`ticket_events`) | `Ticket/TicketEvent.php` | Historial de hechos de un ticket: tags, cierres manuales (`manual_{resolved,closed}_{owner,override,unowned}`), cierre por ventana (`window_expired_closed`), reaperturas (`window_reopened`, `auto_reopened`). | `ticket_id` (sin FK), `type` (texto), `source` (`system`, `manual`, `u:{id}`) |
 
 ### Entidades técnicas

@@ -13,7 +13,7 @@ class Conversation
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(type: 'bigint')]
+    #[ORM\Column(name: 'id', type: 'bigint')]
     private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: Contact::class, inversedBy: 'conversations')]
@@ -23,7 +23,7 @@ class Conversation
     #[ORM\OneToMany(mappedBy: 'conversation', targetEntity: Message::class, cascade: ['persist', 'remove'])]
     private Collection $messages;
 
-    #[ORM\Column(type: 'string', length: 20)]
+    #[ORM\Column(name: 'status', type: 'string', length: 20)]
     private string $status = ConversationStatus::OPEN->value;
 
     #[ORM\Column(name: 'last_message_at', type: 'datetime_immutable', nullable: true)]

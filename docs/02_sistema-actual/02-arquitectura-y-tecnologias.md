@@ -244,7 +244,7 @@ Archivos: `apps/api/.env` (no versionado), `.env.dev` (**versionado, con credenc
 - 27 migraciones en `apps/api/migrations/`. El problema histórico (`Version20260612000002` asumía la tabla `messages`) **ya está reparado** por `Version20250503000002` (commit `c590982`).
 - Migrar desde cero exige `INITIAL_ADMIN_PASSWORD`. `Version20260616000001` también crea usuarios con contraseña aleatoria inutilizable para cada agente con email.
 - `Version20260728161023` siembra el workspace "Default" desde `META_PHONE_NUMBER_ID` y le asigna todos los agentes. Posible bug: `getenv()` devuelve `false` (no `null`) si falta la variable, y la guarda lo deja pasar.
-- El mapping de Doctrine **no declara** varios índices y la FK `tickets.team_id` que sí crean las migraciones: un `doctrine:schema:update --force` los borraría. `doctrine:schema:validate` reporta el mapeo inválido de `TicketTag`.
+- Desde la fase 5-0 de la limpieza, el mapping de Doctrine declara los índices y la FK `tickets.team_id` (`ON DELETE SET NULL`) que crean las migraciones, todas las columnas tienen nombre explícito y `doctrine:schema:validate` da el mapeo como válido. `doctrine:schema:update --dump-sql` solo propone diferencias cosméticas de la base existente: comentarios `DC2Type` en `teams` (y en `tickets.last_read_at` en dev) y los nombres de los índices automáticos de `agent_team`.
 - No se verificó que la cadena completa funcione desde una base vacía (no se permitió ejecutar migraciones).
 
 ---

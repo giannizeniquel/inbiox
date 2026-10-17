@@ -28,7 +28,7 @@ final class SetTicketTeamUseCase
     public function execute(Ticket $ticket, mixed $teamId): void
     {
         if (null === $teamId) {
-            $ticket->setTeamId(null);
+            $ticket->setTeam(null);
             $this->entityManager->flush();
 
             return;
@@ -48,7 +48,7 @@ final class SetTicketTeamUseCase
             throw new \InvalidArgumentException('Team does not belong to the same workspace as the ticket');
         }
 
-        $ticket->setTeamId($teamId);
+        $ticket->setTeam($team);
         $this->entityManager->flush();
     }
 }

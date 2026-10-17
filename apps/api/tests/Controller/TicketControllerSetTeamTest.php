@@ -198,7 +198,7 @@ class TicketControllerSetTeamTest extends WebTestCase
         $workspace = $this->createWorkspace('+1000000000', 'Workspace A');
         $team = $this->createTeam($workspace, 'Support');
         $ticket = $this->createTicket('+1000000000');
-        $ticket->setTeamId($team->getId());
+        $ticket->setTeam($team);
         $this->em->flush();
 
         $this->client->request('PUT', "/api/tickets/{$ticket->getId()}/team", [], [], $this->authHeaders($token) + [

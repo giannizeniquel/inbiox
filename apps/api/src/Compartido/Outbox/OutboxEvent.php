@@ -12,7 +12,7 @@ use Symfony\Component\Uid\Ulid;
 class OutboxEvent
 {
     #[ORM\Id]
-    #[ORM\Column(type: 'string', length: 36)]
+    #[ORM\Column(name: 'id', type: 'string', length: 36)]
     private string $id;
 
     #[ORM\Column(name: 'aggregate_type', type: 'string', length: 100)]
@@ -21,13 +21,13 @@ class OutboxEvent
     #[ORM\Column(name: 'aggregate_id', type: 'integer')]
     private int $aggregateId;
 
-    #[ORM\Column(type: 'string', length: 255)]
+    #[ORM\Column(name: 'topic', type: 'string', length: 255)]
     private string $topic;
 
     #[ORM\Column(name: 'event_type', type: 'string', length: 100)]
     private string $eventType;
 
-    #[ORM\Column(type: 'json')]
+    #[ORM\Column(name: 'payload', type: 'json')]
     private array $payload = [];
 
     #[ORM\Column(name: 'created_at', type: 'datetime_immutable')]

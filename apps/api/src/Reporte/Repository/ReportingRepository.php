@@ -225,7 +225,7 @@ class ReportingRepository extends ServiceEntityRepository
         }
 
         if ($teamId !== null) {
-            $qb->andWhere('t.teamId = :teamId')
+            $qb->andWhere('t.team = :teamId')
                ->setParameter('teamId', $teamId);
         }
 

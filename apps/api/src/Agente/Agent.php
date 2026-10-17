@@ -19,7 +19,7 @@ use Doctrine\ORM\Mapping as ORM;
 class Agent
 {
     #[ORM\Id]
-    #[ORM\Column(type: Types::BIGINT)]
+    #[ORM\Column(name: 'id', type: Types::BIGINT)]
     #[ORM\GeneratedValue]
     private ?int $id = null;
 

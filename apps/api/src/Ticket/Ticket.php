@@ -2,6 +2,7 @@
 
 namespace App\Ticket;
 
+use App\Agente\Team;
 use App\Contacto\Contact;
 use App\Conversacion\Conversation;
 use App\Conversacion\RecipientPhoneNotFoundException;
@@ -13,11 +14,14 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(name: 'idx_tickets_assigned_agent_id', columns: ['assigned_agent_id'])]
 #[ORM\Index(name: 'idx_tickets_owner_status', columns: ['assigned_agent_id', 'status'])]
 #[ORM\Index(name: 'idx_tickets_conversation_created_id', columns: ['conversation_id', 'created_at', 'id'])]
+#[ORM\Index(name: 'idx_tickets_created_at', columns: ['created_at'])]
+#[ORM\Index(name: 'idx_tickets_status_last_inbound', columns: ['status', 'last_inbound_message_at'])]
+#[ORM\Index(name: 'idx_tickets_team_id', columns: ['team_id'])]
 class Ticket
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(type: "bigint")]
+    #[ORM\Column(name: "id", type: "bigint")]
     private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: Contact::class)]
@@ -28,10 +32,10 @@ class Ticket
     #[ORM\JoinColumn(name: "conversation_id", referencedColumnName: "id")]
     private ?Conversation $conversation = null;
 
-    #[ORM\Column(type: "string", length: 20)]
+    #[ORM\Column(name: "status", type: "string", length: 20)]
     private string $status = TicketStatus::NEW->value;
 
-    #[ORM\Column(type: "string", length: 20)]
+    #[ORM\Column(name: "priority", type: "string", length: 20)]
     private string $priority = "medium";
 
     #[ORM\Column(name: "assigned_agent_id", type: "bigint", nullable: true)]
@@ -53,7 +57,7 @@ class Ticket
     private \DateTimeImmutable $updatedAt;
 
     #[ORM\Version]
-    #[ORM\Column(type: "integer", nullable: false, options: ["default" => 0])]
+    #[ORM\Column(name: "version", type: "integer", nullable: false, options: ["default" => 0])]
     private int $version = 0;
 
     #[ORM\Column(name: "last_event_seq", type: "integer", nullable: false, options: ["default" => 0])]
@@ -62,8 +66,9 @@ class Ticket
     #[ORM\Column(name: "phone_number_id", type: "string", length: 36, nullable: true)]
     private ?string $phoneNumberId = null;
 
-    #[ORM\Column(name: "team_id", type: "bigint", nullable: true)]
-    private ?int $teamId = null;
+    #[ORM\ManyToOne(targetEntity: Team::class)]
+    #[ORM\JoinColumn(name: "team_id", referencedColumnName: "id", nullable: true, onDelete: "SET NULL")]
+    private ?Team $team = null;
 
     #[ORM\Column(name: "last_read_at", type: "datetime_immutable", nullable: true)]
     private ?\DateTimeImmutable $lastReadAt = null;
@@ -246,12 +251,12 @@ class Ticket
 
     public function getTeamId(): ?int
     {
-        return $this->teamId;
+        return $this->team?->getId();
     }
 
-    public function setTeamId(?int $teamId): self
+    public function setTeam(?Team $team): self
     {
-        $this->teamId = $teamId;
+        $this->team = $team;
         return $this;
     }
 

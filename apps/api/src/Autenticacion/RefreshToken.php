@@ -16,16 +16,16 @@ class RefreshToken implements RefreshTokenInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(type: Types::BIGINT)]
+    #[ORM\Column(name: 'id', type: Types::BIGINT)]
     private ?int $id = null;
 
-    #[ORM\Column(type: Types::STRING, length: 128, unique: true)]
+    #[ORM\Column(name: 'refresh_token', type: Types::STRING, length: 128, unique: true)]
     private ?string $refreshToken = null;
 
-    #[ORM\Column(type: Types::STRING, length: 255)]
+    #[ORM\Column(name: 'username', type: Types::STRING, length: 255)]
     private ?string $username = null;
 
-    #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    #[ORM\Column(name: 'valid', type: Types::DATETIME_MUTABLE)]
     private ?\DateTimeInterface $valid = null;
 
     public static function createForUserWithTtl(string $refreshToken, UserInterface $user, int $ttl): RefreshTokenInterface

@@ -11,7 +11,7 @@ class ProcessedEvent
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(type: "bigint")]
+    #[ORM\Column(name: "id", type: "bigint")]
     private ?int $id = null;
 
     #[ORM\Column(name: "event_id", type: "string", length: 255, unique: true)]

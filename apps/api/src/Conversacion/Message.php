@@ -9,24 +9,25 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(name: 'idx_messages_conversation_id', columns: ['conversation_id'])]
 #[ORM\Index(name: 'idx_messages_conversation_created_id', columns: ['conversation_id', 'created_at', 'id'])]
 #[ORM\Index(name: 'idx_messages_sender_type_created_at', columns: ['sender_type', 'created_at'])]
+#[ORM\Index(name: 'idx_messages_sender_agent_id', columns: ['sender_agent_id'])]
 class Message
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(type: 'bigint')]
+    #[ORM\Column(name: 'id', type: 'bigint')]
     private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: Conversation::class, inversedBy: 'messages')]
     #[ORM\JoinColumn(name: 'conversation_id', referencedColumnName: 'id', nullable: false)]
     private ?Conversation $conversation = null;
 
-    #[ORM\Column(type: 'string', length: 10)]
+    #[ORM\Column(name: 'direction', type: 'string', length: 10)]
     private string $direction = MessageDirection::INBOUND->value;
 
     #[ORM\Column(name: 'external_id', type: 'string', length: 100, unique: true, nullable: true)]
     private ?string $externalId = null;
 
-    #[ORM\Column(type: 'text')]
+    #[ORM\Column(name: 'content', type: 'text')]
     private string $content;
 
     #[ORM\Column(name: 'delivery_status', type: 'string', length: 20, options: ['default' => 'sent'])]
@@ -38,7 +39,7 @@ class Message
     #[ORM\Column(name: 'updated_at', type: 'datetime_immutable', nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
 
-    #[ORM\Column(type: 'json', nullable: true)]
+    #[ORM\Column(name: 'media', type: 'json', nullable: true)]
     private ?array $media = null;
 
     #[ORM\Column(name: 'sender_agent_id', type: 'bigint', nullable: true)]

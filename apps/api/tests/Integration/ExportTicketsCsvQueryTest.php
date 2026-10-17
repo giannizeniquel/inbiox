@@ -87,7 +87,7 @@ class ExportTicketsCsvQueryTest extends KernelTestCase
             $ticket->setCreatedAt($createdAt);
         }
         if (null !== $teamId) {
-            $ticket->setTeamId($teamId);
+            $ticket->setTeam($this->em->getReference(Team::class, $teamId));
         }
         $this->em->persist($ticket);
         $this->em->flush();

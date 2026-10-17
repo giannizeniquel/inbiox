@@ -20,13 +20,13 @@ class WebhookPayload
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(type: 'bigint')]
+    #[ORM\Column(name: 'id', type: 'bigint')]
     private ?int $id = null;
 
     #[ORM\Column(name: 'event_type', type: 'string', length: 50)]
     private string $eventType;
 
-    #[ORM\Column(type: 'json')]
+    #[ORM\Column(name: 'payload', type: 'json')]
     private array $payload;
 
     #[ORM\Column(name: 'received_at', type: 'datetime_immutable')]
@@ -35,7 +35,7 @@ class WebhookPayload
     #[ORM\Column(name: 'phone_number_id', type: 'string', length: 36, nullable: true)]
     private ?string $phoneNumberId = null;
 
-    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    #[ORM\Column(name: 'processed', type: 'boolean', options: ['default' => false])]
     private bool $processed = false;
 
     public function __construct(string $eventType, array $payload, \DateTimeImmutable $receivedAt, ?string $phoneNumberId = null)

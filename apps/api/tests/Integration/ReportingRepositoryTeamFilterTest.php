@@ -93,7 +93,7 @@ class ReportingRepositoryTeamFilterTest extends KernelTestCase
             $ticket->setResolvedAt($resolvedAt);
         }
         if (null !== $teamId) {
-            $ticket->setTeamId($teamId);
+            $ticket->setTeam($this->em->getReference(Team::class, $teamId));
         }
         $this->em->persist($ticket);
         $this->em->flush();

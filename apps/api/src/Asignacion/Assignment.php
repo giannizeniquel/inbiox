@@ -18,7 +18,7 @@ class Assignment
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(type: "bigint")]
+    #[ORM\Column(name: "id", type: "bigint")]
     private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: Ticket::class)]
@@ -42,7 +42,7 @@ class Assignment
     #[ORM\Column(name: "assigned_by", type: "string", length: 100)]
     private string $assignedBy;
 
-    #[ORM\Column(type: "text", nullable: true)]
+    #[ORM\Column(name: "notes", type: "text", nullable: true)]
     private ?string $notes = null;
 
     public function __construct(

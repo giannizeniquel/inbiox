@@ -11,10 +11,10 @@ class Tag
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(type: 'bigint')]
+    #[ORM\Column(name: 'id', type: 'bigint')]
     private ?int $id = null;
 
-    #[ORM\Column(type: 'string', length: 50, unique: true)]
+    #[ORM\Column(name: 'name', type: 'string', length: 50, unique: true)]
     private string $name;
 
     #[ORM\Column(name: 'created_at', type: 'datetime_immutable')]

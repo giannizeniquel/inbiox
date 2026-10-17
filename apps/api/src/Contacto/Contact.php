@@ -12,28 +12,28 @@ class Contact
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(type: 'bigint')]
+    #[ORM\Column(name: 'id', type: 'bigint')]
     private ?int $id = null;
 
-    #[ORM\Column(type: 'string', length: 20, unique: true)]
+    #[ORM\Column(name: 'phone', type: 'string', length: 20, unique: true)]
     private string $phone;
 
-    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    #[ORM\Column(name: 'name', type: 'string', length: 255, nullable: true)]
     private ?string $name = null;
 
     #[ORM\OneToMany(mappedBy: 'contact', targetEntity: \App\Conversacion\Conversation::class, cascade: ['persist', 'remove'])]
     private Collection $conversations;
 
-    #[ORM\Column(type: 'string', length: 20, nullable: true)]
+    #[ORM\Column(name: 'status', type: 'string', length: 20, nullable: true)]
     private ?string $status = 'active';
 
-    #[ORM\Column(type: 'string', length: 20, nullable: true)]
+    #[ORM\Column(name: 'channel', type: 'string', length: 20, nullable: true)]
     private ?string $channel = 'whatsapp';
 
     #[ORM\Column(name: 'owner_id', type: 'bigint', nullable: true)]
     private ?int $ownerId = null;
 
-    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    #[ORM\Column(name: 'email', type: 'string', length: 255, nullable: true)]
     private ?string $email = null;
 
     #[ORM\Column(name: 'created_at', type: 'datetime_immutable')]

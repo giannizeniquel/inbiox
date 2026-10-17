@@ -16,18 +16,18 @@ use Symfony\Component\Security\Core\User\UserInterface;
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
-    #[ORM\Column(type: Types::BIGINT)]
+    #[ORM\Column(name: 'id', type: Types::BIGINT)]
     #[ORM\GeneratedValue]
     private ?int $id = null;
 
-    #[ORM\Column(type: Types::STRING, length: 180, unique: true)]
+    #[ORM\Column(name: 'email', type: Types::STRING, length: 180, unique: true)]
     private string $email;
 
     #[ORM\Column(name: 'password_hash', type: Types::STRING, length: 255)]
     private string $password;
 
     /** @var string[] */
-    #[ORM\Column(type: Types::JSON)]
+    #[ORM\Column(name: 'roles', type: Types::JSON)]
     private array $roles = [];
 
     #[ORM\Column(name: 'is_active', type: Types::BOOLEAN, options: ['default' => true])]
