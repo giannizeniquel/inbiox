@@ -8,9 +8,8 @@ use App\Reporte\Query\ExportTicketsCsvQuery;
 use App\Ticket\Query\TicketFilterBuilder;
 use App\Compartido\Security\OwnershipScope;
 use App\Compartido\Security\WorkspaceScope;
-use App\Disponibilidad\AgentAvailabilityService;
+use App\Reporte\Query\ListAvailableAgentsQuery;
 use App\Reporte\Query\ReportingService;
-use App\Ticket\Repository\TicketRepository;
 use League\Csv\Bom;
 use League\Csv\Writer;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -39,8 +38,7 @@ class ReportingController
 
     public function __construct(
         private ReportingService $reportingService,
-        private AgentAvailabilityService $agentAvailabilityService,
-        private TicketRepository $ticketRepository,
+        private ListAvailableAgentsQuery $listAvailableAgents,
         private OwnershipScope $ownershipScope,
         private WorkspaceScope $workspaceScope,
         private ExportTicketsCsvQuery $exportTicketsCsvQuery,
@@ -270,34 +268,7 @@ class ReportingController
     #[Route('/api/reports/available-agents', name: 'app_report_available_agents', methods: ['GET'])]
     public function availableAgents(Request $request): JsonResponse
     {
-        $phoneNumberId = $this->getScopePhoneNumberId();
-        $now = new \DateTimeImmutable();
-
-        $available = $this->agentAvailabilityService->listAvailableAgents($now);
-
-        $result = [];
-        foreach ($available as $agent) {
-            // Filter by workspace if scoped
-            if ($phoneNumberId !== null) {
-                $isInWorkspace = false;
-                foreach ($agent->getWorkspaces() as $ws) {
-                    if ($ws->getPhoneNumberId() === $phoneNumberId) {
-                        $isInWorkspace = true;
-                        break;
-                    }
-                }
-                if (!$isInWorkspace) {
-                    continue;
-                }
-            }
-
-            $result[] = [
-                'agent_id' => $agent->getId(),
-                'agent_name' => $agent->getName(),
-                'in_shift' => true,
-                'active_tickets' => $this->ticketRepository->countActiveForAgent($agent->getId()),
-            ];
-        }
+        $result = $this->listAvailableAgents->execute($this->getScopePhoneNumberId(), new \DateTimeImmutable());
 
         return new JsonResponse($result);
     }
