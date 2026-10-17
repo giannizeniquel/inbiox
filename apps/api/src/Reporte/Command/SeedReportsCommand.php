@@ -137,35 +137,35 @@ final class SeedReportsCommand extends Command
             $createdAt = $baseTime->modify("+{$dayOffset} days +{$hourOffset} hours");
 
             $ticket = new Ticket();
-            $ticket->setContact($contacts[array_rand($contacts)]);
-            $ticket->setStatus($statuses[array_rand($statuses)]);
-            $ticket->setPriority($priorities[array_rand($priorities)]);
-            $ticket->setCreatedAt($createdAt);
-            $ticket->setUpdatedAt($createdAt);
+            $ticket->setContacto($contacts[array_rand($contacts)]);
+            $ticket->setEstado($statuses[array_rand($statuses)]);
+            $ticket->setPrioridad($priorities[array_rand($priorities)]);
+            $ticket->setCreadoAt($createdAt);
+            $ticket->setActualizadoAt($createdAt);
 
             // Assign to agent (first 45 assigned, last 10 unassigned)
             if ($i <= 45) {
                 $agent = $agents[array_rand($agents)];
-                $ticket->setAssignedAgentId($agent->getId());
+                $ticket->setAgenteAsignadoId($agent->getId());
             }
             // Last 10 tickets remain unassigned
 
             // Set first_response_at for ~70% of tickets
             if (random_int(1, 100) <= 70) {
                 $frtMinutes = random_int(1, 120);
-                $ticket->setFirstResponseAt($createdAt->modify("+{$frtMinutes} minutes"));
+                $ticket->setPrimeraRespuestaAt($createdAt->modify("+{$frtMinutes} minutes"));
             }
 
             // Set resolved_at for ~60% of tickets
             if (random_int(1, 100) <= 60) {
                 $rtMinutes = random_int(30, 480);
                 $resolvedAt = $createdAt->modify("+{$rtMinutes} minutes");
-                $ticket->setResolvedAt($resolvedAt);
+                $ticket->setResueltoAt($resolvedAt);
             }
 
             // Set closed_at for ~30% of tickets
             if (random_int(1, 100) <= 30) {
-                $ticket->setClosedAt($createdAt->modify('+1 day'));
+                $ticket->setCerradoAt($createdAt->modify('+1 day'));
             }
 
             // Workspace phone_number_id
@@ -183,7 +183,7 @@ final class SeedReportsCommand extends Command
             if ($reopenedCount >= 3) {
                 break;
             }
-            if ($ticket->getResolvedAt() !== null) {
+            if ($ticket->getResueltoAt() !== null) {
                 $event = new EventoDeTicket($ticket->getId(), 'auto_reopened', 'system');
                 $this->em->persist($event);
                 $reopenedCount++;

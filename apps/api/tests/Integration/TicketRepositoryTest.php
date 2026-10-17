@@ -61,9 +61,9 @@ class TicketRepositoryTest extends KernelTestCase
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
-        $ticket->setContact($this->contact);
-        $ticket->setConversation($conversation);
-        $ticket->setStatus(EstadoDeTicket::CLOSED->value);
+        $ticket->setContacto($this->contact);
+        $ticket->setConversacion($conversation);
+        $ticket->setEstado(EstadoDeTicket::CERRADO->value);
         if ($phoneNumberId !== null) {
             $ticket->setPhoneNumberId($phoneNumberId);
         }
@@ -93,9 +93,9 @@ class TicketRepositoryTest extends KernelTestCase
     public function testMatchesAClosedTicketWhoseLatestEventIsWindowExpiredClosed(): void
     {
         $ticketId = $this->createClosedTicket();
-        $this->addEvent($ticketId, TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED);
+        $this->addEvent($ticketId, TipoDeEventoDeTicket::VENTANA_VENCIDA_CERRADO);
 
-        $found = $this->repo->findWindowExpiredClosedByContact($this->contact);
+        $found = $this->repo->findCerradoPorVentanaVencidaByContacto($this->contact);
 
         self::assertNotNull($found);
         self::assertSame($ticketId, $found->getId());
@@ -105,7 +105,7 @@ class TicketRepositoryTest extends KernelTestCase
     {
         $this->createClosedTicket();
 
-        $found = $this->repo->findWindowExpiredClosedByContact($this->contact);
+        $found = $this->repo->findCerradoPorVentanaVencidaByContacto($this->contact);
 
         self::assertNull($found);
     }
@@ -114,10 +114,10 @@ class TicketRepositoryTest extends KernelTestCase
     {
         $ticketId = $this->createClosedTicket();
         $this->addEvent($ticketId, 'tag_added', new \DateTimeImmutable('-2 hours'));
-        $this->addEvent($ticketId, TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED, new \DateTimeImmutable('-3 hours'));
+        $this->addEvent($ticketId, TipoDeEventoDeTicket::VENTANA_VENCIDA_CERRADO, new \DateTimeImmutable('-3 hours'));
         // Latest by created_at is 'tag_added' (2h ago is more recent than 3h ago).
 
-        $found = $this->repo->findWindowExpiredClosedByContact($this->contact);
+        $found = $this->repo->findCerradoPorVentanaVencidaByContacto($this->contact);
 
         self::assertNull($found);
     }
@@ -127,7 +127,7 @@ class TicketRepositoryTest extends KernelTestCase
         $ticketId = $this->createClosedTicket();
         $this->addEvent($ticketId, 'auto_closed');
 
-        $found = $this->repo->findWindowExpiredClosedByContact($this->contact);
+        $found = $this->repo->findCerradoPorVentanaVencidaByContacto($this->contact);
 
         self::assertNull($found);
     }
@@ -139,10 +139,10 @@ class TicketRepositoryTest extends KernelTestCase
 
         // Insert WINDOW_EXPIRED_CLOSED first (lower id), then a disqualifying
         // event with the SAME created_at but a higher id — id DESC must win.
-        $this->addEvent($ticketId, TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED, $sameInstant);
+        $this->addEvent($ticketId, TipoDeEventoDeTicket::VENTANA_VENCIDA_CERRADO, $sameInstant);
         $this->addEvent($ticketId, 'tag_added', $sameInstant);
 
-        $found = $this->repo->findWindowExpiredClosedByContact($this->contact);
+        $found = $this->repo->findCerradoPorVentanaVencidaByContacto($this->contact);
 
         self::assertNull($found, 'The higher-id (newer insert) tag_added event must win the tie-break, disqualifying the ticket');
     }
@@ -150,20 +150,20 @@ class TicketRepositoryTest extends KernelTestCase
     public function testReturnsTheMostRecentByUpdatedAtWhenMultipleTicketsAreEligible(): void
     {
         $olderTicketId = $this->createClosedTicket();
-        $this->addEvent($olderTicketId, TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED);
+        $this->addEvent($olderTicketId, TipoDeEventoDeTicket::VENTANA_VENCIDA_CERRADO);
         $this->em->getConnection()->executeStatement(
             'UPDATE tickets SET updated_at = ? WHERE id = ?',
             [(new \DateTimeImmutable('-2 hours'))->format('Y-m-d H:i:s'), $olderTicketId]
         );
 
         $newerTicketId = $this->createClosedTicket();
-        $this->addEvent($newerTicketId, TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED);
+        $this->addEvent($newerTicketId, TipoDeEventoDeTicket::VENTANA_VENCIDA_CERRADO);
         $this->em->getConnection()->executeStatement(
             'UPDATE tickets SET updated_at = ? WHERE id = ?',
             [(new \DateTimeImmutable('-1 hour'))->format('Y-m-d H:i:s'), $newerTicketId]
         );
 
-        $found = $this->repo->findWindowExpiredClosedByContact($this->contact);
+        $found = $this->repo->findCerradoPorVentanaVencidaByContacto($this->contact);
 
         self::assertNotNull($found);
         self::assertSame($newerTicketId, $found->getId());
@@ -172,12 +172,12 @@ class TicketRepositoryTest extends KernelTestCase
     public function testOptionalPhoneNumberIdFilterScopesTheMatch(): void
     {
         $ticketA = $this->createClosedTicket('phone-a');
-        $this->addEvent($ticketA, TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED);
+        $this->addEvent($ticketA, TipoDeEventoDeTicket::VENTANA_VENCIDA_CERRADO);
 
         $ticketB = $this->createClosedTicket('phone-b');
-        $this->addEvent($ticketB, TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED);
+        $this->addEvent($ticketB, TipoDeEventoDeTicket::VENTANA_VENCIDA_CERRADO);
 
-        $found = $this->repo->findWindowExpiredClosedByContact($this->contact, 'phone-b');
+        $found = $this->repo->findCerradoPorVentanaVencidaByContacto($this->contact, 'phone-b');
 
         self::assertNotNull($found);
         self::assertSame($ticketB, $found->getId());

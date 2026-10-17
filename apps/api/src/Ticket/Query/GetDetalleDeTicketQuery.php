@@ -12,7 +12,7 @@ class GetDetalleDeTicketQuery
 
     public function execute(int $ticketId): ?DetalleDeTicketDTO
     {
-        $row = $this->ticketRepository->findDetailRow($ticketId);
+        $row = $this->ticketRepository->findFilaDeDetalle($ticketId);
 
         if (!$row) {
             return null;

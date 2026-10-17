@@ -49,7 +49,7 @@ final class ListAvailableAgentsQuery
                 'agent_id' => $agent->getId(),
                 'agent_name' => $agent->getName(),
                 'in_shift' => true,
-                'active_tickets' => $this->ticketRepository->countActiveForAgent($agent->getId()),
+                'active_tickets' => $this->ticketRepository->countActivosDeAgente($agent->getId()),
             ];
         }
 

@@ -79,8 +79,8 @@ final class TicketVoter extends Voter
 
         // For ASSIGN attribute, reject resolved/closed tickets with 409
         if ($attribute === self::ASSIGN) {
-            $status = $ticket->getStatus();
-            if ($status === EstadoDeTicket::RESOLVED->value || $status === EstadoDeTicket::CLOSED->value) {
+            $status = $ticket->getEstado();
+            if ($status === EstadoDeTicket::RESUELTO->value || $status === EstadoDeTicket::CERRADO->value) {
                 throw new \App\Compartido\StateConflictException(
                     \sprintf('Cannot assign ticket in "%s" state', $status)
                 );
@@ -103,11 +103,11 @@ final class TicketVoter extends Voter
             // R2: AGENT cannot ASSIGN an unassigned ticket via this voter
             // (this only governs the ASSIGN attribute, not visibility —
             // ticket VIEW is unrestricted for all authenticated agents).
-            if (null === $ticket->getAssignedAgentId()) {
+            if (null === $ticket->getAgenteAsignadoId()) {
                 return false;
             }
 
-            return $ticket->getAssignedAgentId() === $agent->getId();
+            return $ticket->getAgenteAsignadoId() === $agent->getId();
         }
 
         return false;

@@ -130,18 +130,18 @@ class AutoReplyServiceTest extends TestCase
     ): Ticket {
         $ticket = new Ticket();
         if ($agent !== null) {
-            $ticket->setAssignedAgentId((int) $agent->getId());
+            $ticket->setAgenteAsignadoId((int) $agent->getId());
         }
         if ($contact !== null) {
-            $ticket->setContact($contact);
+            $ticket->setContacto($contact);
         }
         if ($phoneNumberId !== null) {
             $ticket->setPhoneNumberId($phoneNumberId);
         }
         if ($conversation !== null) {
-            $ticket->setConversation($conversation);
+            $ticket->setConversacion($conversation);
         }
-        $ticket->setLastInboundMessageAt($lastInboundMessageAt);
+        $ticket->setUltimoMensajeEntranteAt($lastInboundMessageAt);
 
         return $ticket;
     }
@@ -258,7 +258,7 @@ class AutoReplyServiceTest extends TestCase
 
         // Make the COUNT query return a value below max (capacity check)
         $this->ticketRepo->expects(self::once())
-            ->method('countActiveForAgent')
+            ->method('countActivosDeAgente')
             ->willReturn(2); // max = 5, count = 2 → available
 
         $this->graphClient->expects(self::never())->method('sendMessage');

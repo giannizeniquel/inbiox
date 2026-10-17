@@ -20,16 +20,16 @@ class EtiquetaDeTicket
 
     #[ORM\ManyToOne(targetEntity: Etiqueta::class)]
     #[ORM\JoinColumn(name: 'tag_id', referencedColumnName: 'id')]
-    private ?Etiqueta $tag = null;
+    private ?Etiqueta $etiqueta = null;
 
     #[ORM\Column(name: 'created_at', type: 'datetime_immutable')]
-    private \DateTimeImmutable $createdAt;
+    private \DateTimeImmutable $creadoAt;
 
     public function __construct(Ticket $ticket, Etiqueta $tag)
     {
         $this->ticket = $ticket;
-        $this->tag = $tag;
-        $this->createdAt = new \DateTimeImmutable();
+        $this->etiqueta = $tag;
+        $this->creadoAt = new \DateTimeImmutable();
     }
 
     public function getId(): ?int
@@ -42,13 +42,13 @@ class EtiquetaDeTicket
         return $this->ticket;
     }
 
-    public function getTag(): ?Etiqueta
+    public function getEtiqueta(): ?Etiqueta
     {
-        return $this->tag;
+        return $this->etiqueta;
     }
 
-    public function getCreatedAt(): \DateTimeImmutable
+    public function getCreadoAt(): \DateTimeImmutable
     {
-        return $this->createdAt;
+        return $this->creadoAt;
     }
 }

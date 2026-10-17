@@ -443,25 +443,25 @@ class ReportingV2Test extends WebTestCase
             $createdAt = $baseTime->modify("+{$dayOffset} days +{$hourOffset} hours");
 
             $ticket = new Ticket();
-            $ticket->setContact($contacts[array_rand($contacts)]);
-            $ticket->setStatus(['new', 'active', 'waiting', 'resolved', 'closed'][array_rand(['new', 'active', 'waiting', 'resolved', 'closed'])]);
-            $ticket->setPriority(['low', 'medium', 'high'][array_rand(['low', 'medium', 'high'])]);
-            $ticket->setCreatedAt($createdAt);
-            $ticket->setUpdatedAt($createdAt);
+            $ticket->setContacto($contacts[array_rand($contacts)]);
+            $ticket->setEstado(['new', 'active', 'waiting', 'resolved', 'closed'][array_rand(['new', 'active', 'waiting', 'resolved', 'closed'])]);
+            $ticket->setPrioridad(['low', 'medium', 'high'][array_rand(['low', 'medium', 'high'])]);
+            $ticket->setCreadoAt($createdAt);
+            $ticket->setActualizadoAt($createdAt);
             $ticket->setPhoneNumberId($ws1->getPhoneNumberId());
 
             if ($i <= 45) {
-                $ticket->setAssignedAgentId($agents[array_rand($agents)]->getId());
+                $ticket->setAgenteAsignadoId($agents[array_rand($agents)]->getId());
             }
 
             if (random_int(1, 100) <= 70) {
                 $frtMinutes = random_int(1, 120);
-                $ticket->setFirstResponseAt($createdAt->modify("+{$frtMinutes} minutes"));
+                $ticket->setPrimeraRespuestaAt($createdAt->modify("+{$frtMinutes} minutes"));
             }
 
             if (random_int(1, 100) <= 60) {
                 $rtMinutes = random_int(30, 480);
-                $ticket->setResolvedAt($createdAt->modify("+{$rtMinutes} minutes"));
+                $ticket->setResueltoAt($createdAt->modify("+{$rtMinutes} minutes"));
             }
 
             $this->em->persist($ticket);
@@ -475,7 +475,7 @@ class ReportingV2Test extends WebTestCase
             if ($reopenedCount >= 3) {
                 break;
             }
-            if ($ticket->getResolvedAt() !== null) {
+            if ($ticket->getResueltoAt() !== null) {
                 $event = new EventoDeTicket($ticket->getId(), 'auto_reopened', 'system');
                 $this->em->persist($event);
                 $reopenedCount++;

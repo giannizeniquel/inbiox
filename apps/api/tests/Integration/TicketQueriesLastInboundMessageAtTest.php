@@ -54,10 +54,10 @@ class TicketQueriesLastInboundMessageAtTest extends KernelTestCase
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
-        $ticket->setContact($contact);
-        $ticket->setConversation($conversation);
-        $ticket->setStatus('active');
-        $ticket->setLastInboundMessageAt($lastInboundMessageAt);
+        $ticket->setContacto($contact);
+        $ticket->setConversacion($conversation);
+        $ticket->setEstado('active');
+        $ticket->setUltimoMensajeEntranteAt($lastInboundMessageAt);
         $this->em->persist($ticket);
         $this->em->flush();
 

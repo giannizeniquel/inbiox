@@ -160,7 +160,7 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
     {
         $ticket = $this->createTicket($status, null, $this->createContact(self::PHONE, 'Ana'));
         $ticket->setPhoneNumberId(self::PNID);
-        $ticket->getConversation()->setPhoneNumberId(self::PNID);
+        $ticket->getConversacion()->setPhoneNumberId(self::PNID);
         $this->em->flush();
 
         return $ticket;
@@ -169,7 +169,7 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
     private function outboundMessage(Ticket $ticket, string $wamid): void
     {
         $message = new Message();
-        $message->setConversation($ticket->getConversation());
+        $message->setConversation($ticket->getConversacion());
         $message->setDirection('outbound');
         $message->setContent('respuesta');
         $message->setExternalId($wamid);
@@ -377,7 +377,7 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
     {
         $this->postValue(['messages' => [$this->text('wamid.probe-r1', 'uno')]]);
         $ticketId = (int) $this->connection()->fetchOne('SELECT id FROM tickets');
-        static::getContainer()->get(CambiarEstadoDeTicketUseCase::class)->closeDueToWindowExpiry($ticketId);
+        static::getContainer()->get(CambiarEstadoDeTicketUseCase::class)->cerrarPorVentanaVencida($ticketId);
         $this->connection()->executeStatement('DELETE FROM outbox_events');
 
         $this->assertAcknowledged($this->postValue(['messages' => [$this->text('wamid.probe-r2', 'dos')]]));

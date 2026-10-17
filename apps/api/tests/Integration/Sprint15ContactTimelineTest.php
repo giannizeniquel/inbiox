@@ -142,9 +142,9 @@ class Sprint15ContactTimelineTest extends WebTestCase
 
         // Ticket
         $ticket = new Ticket();
-        $ticket->setContact($contact);
-        $ticket->setConversation($conversation);
-        $ticket->setStatus(EstadoDeTicket::ACTIVE->value);
+        $ticket->setContacto($contact);
+        $ticket->setConversacion($conversation);
+        $ticket->setEstado(EstadoDeTicket::ACTIVO->value);
         $this->em->persist($ticket);
         $this->em->flush();
         $ticketId = $ticket->getId();

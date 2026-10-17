@@ -50,17 +50,17 @@ Leyenda "Rol": **Público**, **Auth** (cualquier usuario autenticado), **Agente*
 
 | Método | Path | Controlador::acción | Rol | Delega en / nota |
 |---|---|---|---|---|
-| GET | `/api/tickets` | `BandejaController::listTickets` (`:41`) | Agente | `ListTicketsQuery`. Parámetros: `page`, `limit` (default 20, máx. 100), `filter`, `agent_id`, `status`, `search`, `sort`, `tag`, `teamId`. Filtra por workspace activo. |
+| GET | `/api/tickets` | `BandejaController::listarTickets` (`:41`) | Agente | `ListTicketsQuery`. Parámetros: `page`, `limit` (default 20, máx. 100), `filter`, `agent_id`, `status`, `search`, `sort`, `tag`, `teamId`. Filtra por workspace activo. |
 | GET | `/api/tickets/{id}` | `BandejaController::getTicket` (`:102`) | Agente | `GetDetalleDeTicketQuery`. **Sin filtro de workspace.** |
-| GET | `/api/tickets/{id}/messages` | `BandejaController::getMessages` (`:124`) | Agente | `GetTicketMessagesQuery` (toda la conversación). Sin filtro de workspace. |
-| PUT | `/api/tickets/{id}/mark-read` | `BandejaController::markRead` (`:168-214`) | Agente; efecto solo si es el dueño | SQL directo + evento `ticket.read`. |
+| GET | `/api/tickets/{id}/messages` | `BandejaController::getMensajes` (`:124`) | Agente | `GetTicketMessagesQuery` (toda la conversación). Sin filtro de workspace. |
+| PUT | `/api/tickets/{id}/mark-read` | `BandejaController::marcarLeido` (`:168-214`) | Agente; efecto solo si es el dueño | SQL directo + evento `ticket.read`. |
 | POST | `/api/tickets/{id}/assign` | `TicketController::assign` (`:35-75`) | Agente + voter `ASSIGN` | `AssignTicketUseCase`. |
 | GET | `/api/tickets/{id}/assignment` | `TicketController::getAssignment` (`:140`) | Agente | `AssignmentRepository::findByTicket`. Sin UI. |
 | PUT | `/api/tickets/{id}/team` | `TicketController::setTeam` (`:88-137`) | Agente (sin voter, design D5) | EntityManager directo. Sin UI. |
 | POST | `/api/tickets/{id}/auto-assign` | `AutoAssignController::autoAssign` (`:22`) | Agente (sin voter) | `AutoAssignTicketUseCase::execute`. Sin UI. |
-| POST | `/api/tickets/{id}/transition` | `FlujoDeTicketController::transition` (`:39-85`) | Agente; voter `CLOSE` solo hacia `resolved`/`closed` | `CambiarEstadoDeTicketUseCase::execute`. Sin UI. |
-| POST | `/api/tickets/{id}/resolve` | `FlujoDeTicketController::resolve` (`:88`) | Agente + voter `CLOSE` | `ResolverTicketUseCase`. Botón "RESOLVER". |
-| POST | `/api/tickets/{id}/close` | `FlujoDeTicketController::close` (`:116`) | Agente + voter `CLOSE` → en la práctica Supervisor | Sin UI. |
+| POST | `/api/tickets/{id}/transition` | `FlujoDeTicketController::transicionar` (`:39-85`) | Agente; voter `CLOSE` solo hacia `resolved`/`closed` | `CambiarEstadoDeTicketUseCase::execute`. Sin UI. |
+| POST | `/api/tickets/{id}/resolve` | `FlujoDeTicketController::resolver` (`:88`) | Agente + voter `CLOSE` | `ResolverTicketUseCase`. Botón "RESOLVER". |
+| POST | `/api/tickets/{id}/close` | `FlujoDeTicketController::cerrar` (`:116`) | Agente + voter `CLOSE` → en la práctica Supervisor | Sin UI. |
 | GET | `/api/tickets/{id}/events` | `TicketEventsController::listSince` (`:34-81`) | Agente **y** JWT de Mercure en la misma cabecera → **inalcanzable** | Resync. Ver [R5](00-estado-y-pendientes.md#r5-endpoint-de-resync-de-eventos-inseguro-y-además-inalcanzable). |
 
 ### C. Mensajería saliente (proxy a WhatsApp)

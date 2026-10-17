@@ -177,7 +177,7 @@ class HandleStatusUpdateUseCase
             return;
         }
 
-        $ticket = $this->ticketRepo->findByConversation($conversation);
+        $ticket = $this->ticketRepo->findByConversacion($conversation);
 
         if (!$ticket) {
             $this->logger->warning('Cannot publish MessageUpdatedEvent: conversation has no associated ticket', [

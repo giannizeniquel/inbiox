@@ -200,7 +200,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
         // No not-closed ticket in workspace B -> must create new
         $this->ticketRepo
             ->expects($this->once())
-            ->method('findNotClosedByContact')
+            ->method('findNoCerradoByContacto')
             ->with($contact, 'B')
             ->willReturn(null);
 
@@ -240,8 +240,8 @@ class HandleInboundMessageUseCaseTest extends TestCase
 
         $existingTicket = $this->createMock(\App\Ticket\Ticket::class);
         $existingTicket->method('getId')->willReturn(20);
-        $existingTicket->method('getStatus')->willReturn(\App\Ticket\EstadoDeTicket::ACTIVE->value);
-        $existingTicket->method('getUpdatedAt')->willReturn(new \DateTimeImmutable());
+        $existingTicket->method('getEstado')->willReturn(\App\Ticket\EstadoDeTicket::ACTIVO->value);
+        $existingTicket->method('getActualizadoAt')->willReturn(new \DateTimeImmutable());
         $existingTicket->method('incrementLastEventSeq')->willReturn(1);
 
         // Existing conversation + ticket in workspace A -> reused
@@ -253,7 +253,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
 
         $this->ticketRepo
             ->expects($this->once())
-            ->method('findNotClosedByContact')
+            ->method('findNoCerradoByContacto')
             ->with($contact, 'A')
             ->willReturn($existingTicket);
 
@@ -293,8 +293,8 @@ class HandleInboundMessageUseCaseTest extends TestCase
 
         $existingTicket = $this->createMock(\App\Ticket\Ticket::class);
         $existingTicket->method('getId')->willReturn(20);
-        $existingTicket->method('getStatus')->willReturn(\App\Ticket\EstadoDeTicket::ACTIVE->value);
-        $existingTicket->method('getUpdatedAt')->willReturn(new \DateTimeImmutable());
+        $existingTicket->method('getEstado')->willReturn(\App\Ticket\EstadoDeTicket::ACTIVO->value);
+        $existingTicket->method('getActualizadoAt')->willReturn(new \DateTimeImmutable());
         $existingTicket->method('incrementLastEventSeq')->willReturn(1);
 
         // Legacy: findOpenByContact called with null -> finds regardless of workspace
@@ -306,7 +306,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
 
         $this->ticketRepo
             ->expects($this->once())
-            ->method('findNotClosedByContact')
+            ->method('findNoCerradoByContacto')
             ->with($contact, null)
             ->willReturn($existingTicket);
 

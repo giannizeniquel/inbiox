@@ -15,15 +15,15 @@ class Etiqueta
     private ?int $id = null;
 
     #[ORM\Column(name: 'name', type: 'string', length: 50, unique: true)]
-    private string $name;
+    private string $nombre;
 
     #[ORM\Column(name: 'created_at', type: 'datetime_immutable')]
-    private \DateTimeImmutable $createdAt;
+    private \DateTimeImmutable $creadoAt;
 
     public function __construct(string $name)
     {
-        $this->name = self::normalize($name);
-        $this->createdAt = new \DateTimeImmutable();
+        $this->nombre = self::normalizar($name);
+        $this->creadoAt = new \DateTimeImmutable();
     }
 
     public function getId(): ?int
@@ -31,26 +31,26 @@ class Etiqueta
         return $this->id;
     }
 
-    public function getName(): string
+    public function getNombre(): string
     {
-        return $this->name;
+        return $this->nombre;
     }
 
-    public function setName(string $name): self
+    public function setNombre(string $name): self
     {
-        $this->name = self::normalize($name);
+        $this->nombre = self::normalizar($name);
         return $this;
     }
 
-    public function getCreatedAt(): \DateTimeImmutable
+    public function getCreadoAt(): \DateTimeImmutable
     {
-        return $this->createdAt;
+        return $this->creadoAt;
     }
 
     /**
      * Normalize tag name: lowercase + trim + reduce multiple spaces
      */
-    public static function normalize(string $name): string
+    public static function normalizar(string $name): string
     {
         return preg_replace('/\s+/', ' ', trim(strtolower($name)));
     }

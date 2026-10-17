@@ -192,9 +192,9 @@ final class MeWorkspaceControllerCharacterizationTest extends CharacterizationTe
         // A read ticket with no newer inbound message in the "quiet" workspace.
         $readTicket = $this->createTicket('active', $agent->getId());
         $readTicket->setPhoneNumberId('char-me-quiet');
-        $readTicket->setLastReadAt(new \DateTimeImmutable('+1 hour'));
+        $readTicket->setUltimaLecturaAt(new \DateTimeImmutable('+1 hour'));
         $message = new Message();
-        $message->setConversation($readTicket->getConversation());
+        $message->setConversation($readTicket->getConversacion());
         $message->setDirection('inbound');
         $message->setContent('old');
         $this->em->persist($message);

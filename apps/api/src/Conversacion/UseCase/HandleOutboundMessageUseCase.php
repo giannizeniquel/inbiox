@@ -194,11 +194,11 @@ class HandleOutboundMessageUseCase
                 throw new \InvalidArgumentException('Ticket not found');
             }
 
-            $skipOwnershipChange = TicketResponsabilidadGuard::isResolvedOrClosed($ticket->getStatus());
+            $skipOwnershipChange = TicketResponsabilidadGuard::isResueltoOCerrado($ticket->getEstado());
             $this->guardSend($ticket, $ticketId, $agentId, $senderIsPrivileged);
 
             // Get conversation
-            $conversation = $ticket->getConversation();
+            $conversation = $ticket->getConversacion();
             if (!$conversation) {
                 throw new \InvalidArgumentException('Ticket has no conversation');
             }
@@ -215,7 +215,7 @@ class HandleOutboundMessageUseCase
             // Update conversation timestamps
             $conversation->setLastMessageAt($msg->getCreatedAt());
             $conversation->setUpdatedAt(new \DateTimeImmutable());
-            $ticket->markUpdated();
+            $ticket->marcarActualizado();
 
             // Store processed event for idempotency
             $resultData = [
@@ -271,16 +271,16 @@ class HandleOutboundMessageUseCase
      */
     private function guardSend(Ticket $ticket, int $ticketId, int $agentId, bool $senderIsPrivileged): void
     {
-        $status = $ticket->getStatus();
-        if (TicketResponsabilidadGuard::blocksReassignment($status, $senderIsPrivileged, $agentId, $ticket->getAssignedAgentId())) {
+        $status = $ticket->getEstado();
+        if (TicketResponsabilidadGuard::bloqueaReasignacion($status, $senderIsPrivileged, $agentId, $ticket->getAgenteAsignadoId())) {
             throw new StateConflictException(sprintf(
                 'Cannot send to ticket in "%s" state: sender is not the assigned owner',
                 $status
             ));
         }
 
-        if (!$this->windowPolicy->isOpenForSending($ticket->getLastInboundMessageAt(), new \DateTimeImmutable())) {
-            throw new ConversationWindowExpiredException($ticketId, $ticket->getLastInboundMessageAt());
+        if (!$this->windowPolicy->isOpenForSending($ticket->getUltimoMensajeEntranteAt(), new \DateTimeImmutable())) {
+            throw new ConversationWindowExpiredException($ticketId, $ticket->getUltimoMensajeEntranteAt());
         }
     }
 
@@ -290,7 +290,7 @@ class HandleOutboundMessageUseCase
      */
     private function claimTicketForReplyingAgent(Ticket $ticket, int $agentId): void
     {
-        $currentAssigneeId = $ticket->getAssignedAgentId();
+        $currentAssigneeId = $ticket->getAgenteAsignadoId();
         if ($agentId <= 0 || $currentAssigneeId === $agentId) {
             return;
         }
@@ -325,7 +325,7 @@ class HandleOutboundMessageUseCase
         $this->em->refresh($ticket);
 
         // When an agent replies and becomes the owner, mark as read
-        $ticket->setLastReadAt(new \DateTimeImmutable());
+        $ticket->setUltimaLecturaAt(new \DateTimeImmutable());
         $this->em->flush();
     }
 
@@ -356,22 +356,22 @@ class HandleOutboundMessageUseCase
      */
     private function applyReplyTransition(Ticket $ticket, int $ticketId): array
     {
-        $currentStatus = $ticket->getStatus();
-        $shouldSetFirstResponse = empty($ticket->getFirstResponseAt());
+        $currentStatus = $ticket->getEstado();
+        $shouldSetFirstResponse = empty($ticket->getPrimeraRespuestaAt());
         $newStatus = $currentStatus;
         $transition = null;
 
-        if ($currentStatus === EstadoDeTicket::NEW->value) {
+        if ($currentStatus === EstadoDeTicket::NUEVO->value) {
             // First agent response: new → active
-            $newStatus = EstadoDeTicket::ACTIVE->value;
+            $newStatus = EstadoDeTicket::ACTIVO->value;
             $transition = 'new_to_active';
-        } elseif ($currentStatus === EstadoDeTicket::ACTIVE->value) {
+        } elseif ($currentStatus === EstadoDeTicket::ACTIVO->value) {
             // Agent waiting for response: active → waiting
-            $newStatus = EstadoDeTicket::WAITING->value;
+            $newStatus = EstadoDeTicket::EN_ESPERA->value;
             $transition = 'active_to_waiting';
-        } elseif ($currentStatus === EstadoDeTicket::WAITING->value) {
+        } elseif ($currentStatus === EstadoDeTicket::EN_ESPERA->value) {
             // Agent replies while waiting: stays waiting (customer might respond)
-            $newStatus = EstadoDeTicket::WAITING->value;
+            $newStatus = EstadoDeTicket::EN_ESPERA->value;
             $transition = 'waiting_remains';
         }
 
@@ -385,7 +385,7 @@ class HandleOutboundMessageUseCase
             );
         } else if ($shouldSetFirstResponse) {
             // Just set first_response_at without status change
-            $this->ticketRepo->markFirstResponse($ticketId);
+            $this->ticketRepo->marcarPrimeraRespuesta($ticketId);
         }
 
         return [$currentStatus, $newStatus, $transition, $shouldSetFirstResponse];

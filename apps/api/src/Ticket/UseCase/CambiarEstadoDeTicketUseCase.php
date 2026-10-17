@@ -34,14 +34,14 @@ class CambiarEstadoDeTicketUseCase
     /**
      * Record UNASSIGN audit if the ticket owner is being resolved/closed.
      */
-    private function recordUnassignIfOwner(int $ticketId, string $actor = 'system'): void
+    private function registrarDesasignacionSiEsResponsable(int $ticketId, string $actor = 'system'): void
     {
         $ticketEntity = $this->ticketRepo->findById($ticketId);
         if ($ticketEntity === null) {
             return;
         }
 
-        $ownerId = $ticketEntity->getAssignedAgentId();
+        $ownerId = $ticketEntity->getAgenteAsignadoId();
         if ($ownerId === null) {
             return;
         }
@@ -78,7 +78,7 @@ class CambiarEstadoDeTicketUseCase
     ): array {
         return $this->em->getConnection()->transactional(function() use ($ticketId, $targetStatus, $setFirstResponse, $setResolved, $actor) {
             // Lock ticket for update
-            $ticket = $this->ticketRepo->findRowByIdForUpdate($ticketId);
+            $ticket = $this->ticketRepo->findFilaByIdForUpdate($ticketId);
 
             if (!$ticket) {
                 throw new \InvalidArgumentException('Ticket not found: ' . $ticketId);
@@ -87,13 +87,13 @@ class CambiarEstadoDeTicketUseCase
             $currentStatus = $ticket['status'];
 
             // Validate transition via FSM
-            $newStatus = $this->stateMachine->transition($currentStatus, $targetStatus);
+            $newStatus = $this->stateMachine->transicionar($currentStatus, $targetStatus);
 
             // Record UNASSIGN audit for resolve/close transitions
-            if (($newStatus === EstadoDeTicket::RESOLVED->value || $newStatus === EstadoDeTicket::CLOSED->value)
+            if (($newStatus === EstadoDeTicket::RESUELTO->value || $newStatus === EstadoDeTicket::CERRADO->value)
                 && !empty($ticket['assigned_agent_id'])
             ) {
-                $this->recordUnassignIfOwner($ticketId, $actor);
+                $this->registrarDesasignacionSiEsResponsable($ticketId, $actor);
                 // Flush entity changes (Assignment + ticket entity modifications)
                 // so they are part of this transaction before the raw SQL status update
                 $this->em->flush();
@@ -103,14 +103,14 @@ class CambiarEstadoDeTicketUseCase
             $markFirstResponse = $setFirstResponse && empty($ticket['first_response_at']);
 
             // Set resolved_at if transitioning to resolved
-            $markResolved = $setResolved && $newStatus === EstadoDeTicket::RESOLVED->value && empty($ticket['resolved_at']);
+            $markResolved = $setResolved && $newStatus === EstadoDeTicket::RESUELTO->value && empty($ticket['resolved_at']);
 
             // Set closed_at when landing on closed via this generic entry
             // point (design.md D7) — the agent's primary own-ticket close
             // path once /close is structurally unowned-only (D3).
-            $markClosed = $newStatus === EstadoDeTicket::CLOSED->value && empty($ticket['closed_at']);
+            $markClosed = $newStatus === EstadoDeTicket::CERRADO->value && empty($ticket['closed_at']);
 
-            $this->ticketRepo->updateStatusAfterTransition(
+            $this->ticketRepo->updateEstadoTrasTransicion(
                 $ticketId,
                 $newStatus,
                 $markFirstResponse,
@@ -140,10 +140,10 @@ class CambiarEstadoDeTicketUseCase
      * distinguishable from a human close in the audit trail (ticket-closure-
      * audit capability).
      */
-    public function closeDueToWindowExpiry(int $ticketId): array
+    public function cerrarPorVentanaVencida(int $ticketId): array
     {
         return $this->em->getConnection()->transactional(function () use ($ticketId) {
-            $ticket = $this->ticketRepo->findRowByIdForUpdate($ticketId);
+            $ticket = $this->ticketRepo->findFilaByIdForUpdate($ticketId);
 
             if (!$ticket) {
                 throw new \InvalidArgumentException('Ticket not found: ' . $ticketId);
@@ -154,16 +154,16 @@ class CambiarEstadoDeTicketUseCase
             // Validity delegated to the FSM (task 0.9's widening); rejects
             // an already-closed ticket via its own guard — no special-cased
             // check needed here.
-            $newStatus = $this->stateMachine->transition($currentStatus, EstadoDeTicket::CLOSED->value);
+            $newStatus = $this->stateMachine->transicionar($currentStatus, EstadoDeTicket::CERRADO->value);
 
             if (!empty($ticket['assigned_agent_id'])) {
-                $this->recordUnassignIfOwner($ticketId);
+                $this->registrarDesasignacionSiEsResponsable($ticketId);
                 $this->em->flush();
             }
 
-            $this->ticketRepo->markClosed($ticketId, $newStatus);
+            $this->ticketRepo->marcarCerrado($ticketId, $newStatus);
 
-            $event = new EventoDeTicket($ticketId, TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED, 'system');
+            $event = new EventoDeTicket($ticketId, TipoDeEventoDeTicket::VENTANA_VENCIDA_CERRADO, 'system');
             $this->em->persist($event);
             $this->em->flush();
 
@@ -192,35 +192,35 @@ class CambiarEstadoDeTicketUseCase
      * the caller: the two calls are separated in time and a concurrent
      * close could change the reason in between.
      */
-    public function reopenDueToInboundMessage(int $ticketId): array
+    public function reabrirPorMensajeEntrante(int $ticketId): array
     {
         return $this->em->getConnection()->transactional(function () use ($ticketId) {
-            $ticket = $this->ticketRepo->findRowByIdForUpdate($ticketId);
+            $ticket = $this->ticketRepo->findFilaByIdForUpdate($ticketId);
 
             if (!$ticket) {
                 throw new \InvalidArgumentException('Ticket not found: ' . $ticketId);
             }
 
             // Guard 1: only a closed ticket is eligible.
-            if ($ticket['status'] !== EstadoDeTicket::CLOSED->value) {
+            if ($ticket['status'] !== EstadoDeTicket::CERRADO->value) {
                 throw new \InvalidArgumentException('Only closed tickets can be reopened: ' . $ticketId);
             }
 
             // Guard 2: the ticket's latest event must be a window-expiry
             // closure — re-checked here under the lock, not trusted from
             // the caller's earlier repository lookup.
-            $latestType = $this->ticketRepo->findLatestEventType($ticketId);
-            if ($latestType !== TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED) {
+            $latestType = $this->ticketRepo->findUltimoTipoDeEvento($ticketId);
+            if ($latestType !== TipoDeEventoDeTicket::VENTANA_VENCIDA_CERRADO) {
                 throw new \InvalidArgumentException(
                     'Ticket ' . $ticketId . ' is not eligible for system-triggered reopen'
                 );
             }
 
-            $newStatus = EstadoDeTicket::ACTIVE->value;
+            $newStatus = EstadoDeTicket::ACTIVO->value;
 
-            $this->ticketRepo->markReopened($ticketId, $newStatus);
+            $this->ticketRepo->marcarReabierto($ticketId, $newStatus);
 
-            $event = new EventoDeTicket($ticketId, TipoDeEventoDeTicket::WINDOW_REOPENED, 'system');
+            $event = new EventoDeTicket($ticketId, TipoDeEventoDeTicket::VENTANA_REABIERTO, 'system');
             $this->em->persist($event);
             $this->em->flush();
 
@@ -236,39 +236,39 @@ class CambiarEstadoDeTicketUseCase
     /**
      * Resolve a ticket (manual or automated)
      */
-    public function resolve(int $ticketId, string $actor = 'system'): array
+    public function resolver(int $ticketId, string $actor = 'system'): array
     {
-        return $this->execute($ticketId, EstadoDeTicket::RESOLVED->value, true, true, $actor);
+        return $this->execute($ticketId, EstadoDeTicket::RESUELTO->value, true, true, $actor);
     }
 
     /**
      * Close a resolved ticket
      */
-    public function close(int $ticketId, string $actor = 'system'): array
+    public function cerrar(int $ticketId, string $actor = 'system'): array
     {
         return $this->em->getConnection()->transactional(function() use ($ticketId, $actor) {
-            $ticket = $this->ticketRepo->findRowByIdForUpdate($ticketId);
+            $ticket = $this->ticketRepo->findFilaByIdForUpdate($ticketId);
 
             if (!$ticket) {
                 throw new \InvalidArgumentException('Ticket not found: ' . $ticketId);
             }
 
-            if ($ticket['status'] !== EstadoDeTicket::RESOLVED->value) {
+            if ($ticket['status'] !== EstadoDeTicket::RESUELTO->value) {
                 throw new \InvalidArgumentException('Only resolved tickets can be closed');
             }
 
             // Record UNASSIGN audit if ticket has an owner
             if (!empty($ticket['assigned_agent_id'])) {
-                $this->recordUnassignIfOwner($ticketId, $actor);
+                $this->registrarDesasignacionSiEsResponsable($ticketId, $actor);
                 $this->em->flush();
             }
 
-            $this->ticketRepo->markClosed($ticketId, EstadoDeTicket::CLOSED->value);
+            $this->ticketRepo->marcarCerrado($ticketId, EstadoDeTicket::CERRADO->value);
 
             return [
                 'ticket_id' => $ticketId,
                 'previous_status' => $ticket['status'],
-                'new_status' => EstadoDeTicket::CLOSED->value,
+                'new_status' => EstadoDeTicket::CERRADO->value,
                 'previous_assigned_agent_id' => isset($ticket['assigned_agent_id'])
                     ? (int) $ticket['assigned_agent_id'] : null,
                 'reason' => 'success',

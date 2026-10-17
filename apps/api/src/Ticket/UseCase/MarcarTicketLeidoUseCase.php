@@ -23,13 +23,13 @@ final class MarcarTicketLeidoUseCase
      */
     public function execute(Ticket $ticket, ?int $currentAgentId): void
     {
-        $ownerAgentId = $ticket->getAssignedAgentId();
+        $ownerAgentId = $ticket->getAgenteAsignadoId();
 
         if ($currentAgentId === null || $ownerAgentId === null || $currentAgentId !== $ownerAgentId) {
             return;
         }
 
-        $ticket->setLastReadAt(new \DateTimeImmutable());
+        $ticket->setUltimaLecturaAt(new \DateTimeImmutable());
         $this->entityManager->flush();
 
         // Emit real-time event so other clients clear their unread badge

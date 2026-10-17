@@ -31,24 +31,24 @@ class MaquinaDeEstadosDeTicket
     /**
      * @var array<string, array<string, true>> Valid transitions
      */
-    private const TRANSITIONS = [
-        EstadoDeTicket::NEW->value => [
-            EstadoDeTicket::ACTIVE->value => true,
-            EstadoDeTicket::CLOSED->value => true,
+    private const TRANSICIONES = [
+        EstadoDeTicket::NUEVO->value => [
+            EstadoDeTicket::ACTIVO->value => true,
+            EstadoDeTicket::CERRADO->value => true,
         ],
-        EstadoDeTicket::ACTIVE->value => [
-            EstadoDeTicket::WAITING->value => true,
-            EstadoDeTicket::RESOLVED->value => true,
-            EstadoDeTicket::CLOSED->value => true,
+        EstadoDeTicket::ACTIVO->value => [
+            EstadoDeTicket::EN_ESPERA->value => true,
+            EstadoDeTicket::RESUELTO->value => true,
+            EstadoDeTicket::CERRADO->value => true,
         ],
-        EstadoDeTicket::WAITING->value => [
-            EstadoDeTicket::ACTIVE->value => true,
-            EstadoDeTicket::RESOLVED->value => true,
-            EstadoDeTicket::CLOSED->value => true,
+        EstadoDeTicket::EN_ESPERA->value => [
+            EstadoDeTicket::ACTIVO->value => true,
+            EstadoDeTicket::RESUELTO->value => true,
+            EstadoDeTicket::CERRADO->value => true,
         ],
-        EstadoDeTicket::RESOLVED->value => [
-            EstadoDeTicket::WAITING->value => true,
-            EstadoDeTicket::CLOSED->value => true,
+        EstadoDeTicket::RESUELTO->value => [
+            EstadoDeTicket::EN_ESPERA->value => true,
+            EstadoDeTicket::CERRADO->value => true,
         ],
         // closed is terminal - no transitions allowed
     ];
@@ -60,9 +60,9 @@ class MaquinaDeEstadosDeTicket
      * @param string $to Target status
      * @return bool
      */
-    public function canTransition(string $from, string $to): bool
+    public function puedeTransicionar(string $from, string $to): bool
     {
-        return isset(self::TRANSITIONS[$from][$to]) && self::TRANSITIONS[$from][$to] === true;
+        return isset(self::TRANSICIONES[$from][$to]) && self::TRANSICIONES[$from][$to] === true;
     }
 
     /**
@@ -73,16 +73,16 @@ class MaquinaDeEstadosDeTicket
      * @return string The new status
      * @throws TransicionInvalidaException If transition is invalid
      */
-    public function transition(string $currentStatus, string $targetStatus): string
+    public function transicionar(string $currentStatus, string $targetStatus): string
     {
-        if (!$this->canTransition($currentStatus, $targetStatus)) {
+        if (!$this->puedeTransicionar($currentStatus, $targetStatus)) {
             throw new TransicionInvalidaException(
                 sprintf(
                     'Invalid transition from "%s" to "%s". Valid transitions from "%s" are: %s',
                     $currentStatus,
                     $targetStatus,
                     $currentStatus,
-                    implode(', ', array_keys(self::TRANSITIONS[$currentStatus] ?? [])) ?: 'none'
+                    implode(', ', array_keys(self::TRANSICIONES[$currentStatus] ?? [])) ?: 'none'
                 )
             );
         }
@@ -98,6 +98,6 @@ class MaquinaDeEstadosDeTicket
      */
     public function isTerminal(string $status): bool
     {
-        return $status === EstadoDeTicket::CLOSED->value;
+        return $status === EstadoDeTicket::CERRADO->value;
     }
 }

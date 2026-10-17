@@ -23,6 +23,6 @@ class ResolverTicketUseCase
      */
     public function execute(int $ticketId, string $actor = 'system'): array
     {
-        return $this->transitionUseCase->resolve($ticketId, $actor);
+        return $this->transitionUseCase->resolver($ticketId, $actor);
     }
 }

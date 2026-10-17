@@ -61,15 +61,15 @@ class ListTicketsQuery
             teamId: $teamId,
         );
 
-        $results = $this->ticketRepository->findListPage($filters, $limit, $offset);
-        $total = $this->ticketRepository->countList($filters);
+        $results = $this->ticketRepository->findPaginaDeLista($filters, $limit, $offset);
+        $total = $this->ticketRepository->countLista($filters);
 
         // Compute unread counts post-query: count inbound messages after ticket.last_read_at
         $unreadCounts = [];
         if (!empty($results)) {
             $convIds = array_unique(array_column($results, 'conv_id'));
             if (!empty($convIds)) {
-                $unreadRows = $this->ticketRepository->countUnreadInboundByConversation(
+                $unreadRows = $this->ticketRepository->countEntrantesNoLeidosByConversacion(
                     array_map(fn($id) => (int) $id, array_values($convIds)),
                 );
                 foreach ($unreadRows as $row) {

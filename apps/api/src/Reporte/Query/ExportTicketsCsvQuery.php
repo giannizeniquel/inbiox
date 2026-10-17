@@ -91,7 +91,7 @@ class ExportTicketsCsvQuery
         $totalRows = 0;
 
         do {
-            $rows = $this->ticketRepository->findExportChunk($filters, $fromBound, $toBound, $lastId, self::CHUNK_SIZE);
+            $rows = $this->ticketRepository->findBloqueDeExportacion($filters, $fromBound, $toBound, $lastId, self::CHUNK_SIZE);
             $chunkCount = count($rows);
 
             if ($chunkCount === 0) {
@@ -147,7 +147,7 @@ class ExportTicketsCsvQuery
             return [];
         }
 
-        $rows = $this->tagRepository->findNamesByTicketIds($ticketIds);
+        $rows = $this->tagRepository->findNombresByTicketIds($ticketIds);
 
         $tagsByTicket = [];
         foreach ($rows as $row) {

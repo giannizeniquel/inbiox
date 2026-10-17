@@ -657,22 +657,22 @@ class Sprint09AReportingTest extends KernelTestCase
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
-        $ticket->setContact($contact);
-        $ticket->setConversation($conversation);
-        $ticket->setStatus('active');
-        $ticket->setCreatedAt(new \DateTimeImmutable($createdAt));
-        $ticket->setUpdatedAt(new \DateTimeImmutable($createdAt));
-        $ticket->setAssignedAgentId($assignedAgentId);
+        $ticket->setContacto($contact);
+        $ticket->setConversacion($conversation);
+        $ticket->setEstado('active');
+        $ticket->setCreadoAt(new \DateTimeImmutable($createdAt));
+        $ticket->setActualizadoAt(new \DateTimeImmutable($createdAt));
+        $ticket->setAgenteAsignadoId($assignedAgentId);
         if ($phoneNumberId !== null) {
             $ticket->setPhoneNumberId($phoneNumberId);
         }
 
         if ($firstResponseAt) {
-            $ticket->setFirstResponseAt(new \DateTimeImmutable($firstResponseAt));
+            $ticket->setPrimeraRespuestaAt(new \DateTimeImmutable($firstResponseAt));
         }
 
         if ($resolvedAt) {
-            $ticket->setResolvedAt(new \DateTimeImmutable($resolvedAt));
+            $ticket->setResueltoAt(new \DateTimeImmutable($resolvedAt));
         }
 
         $this->em->persist($ticket);
@@ -701,11 +701,11 @@ class Sprint09AReportingTest extends KernelTestCase
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
-        $ticket->setContact($contact);
-        $ticket->setConversation($conversation);
-        $ticket->setStatus($status);
-        $ticket->setCreatedAt(new \DateTimeImmutable('2026-01-15 12:00:00'));
-        $ticket->setUpdatedAt(new \DateTimeImmutable('2026-01-15 12:00:00'));
+        $ticket->setContacto($contact);
+        $ticket->setConversacion($conversation);
+        $ticket->setEstado($status);
+        $ticket->setCreadoAt(new \DateTimeImmutable('2026-01-15 12:00:00'));
+        $ticket->setActualizadoAt(new \DateTimeImmutable('2026-01-15 12:00:00'));
 
         $this->em->persist($ticket);
         $this->em->flush();

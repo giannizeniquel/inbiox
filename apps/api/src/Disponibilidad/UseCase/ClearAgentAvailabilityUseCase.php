@@ -59,7 +59,7 @@ final class ClearAgentAvailabilityUseCase
 
             // 4. Compute current load and availability
             $now = new \DateTimeImmutable();
-            $currentLoad = $this->ticketRepo->countActiveForAgent($agentId);
+            $currentLoad = $this->ticketRepo->countActivosDeAgente($agentId);
 
             // After clearing, availability is determined by schedule + capacity
             // We report is_available after the fact using the service,

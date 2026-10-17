@@ -59,10 +59,10 @@ class MessageAttributionWriteSiteTest extends KernelTestCase
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
-        $ticket->setContact($contact);
-        $ticket->setConversation($conversation);
-        $ticket->setStatus(EstadoDeTicket::NEW->value);
-        $ticket->setLastInboundMessageAt(new \DateTimeImmutable('-1 hour'));
+        $ticket->setContacto($contact);
+        $ticket->setConversacion($conversation);
+        $ticket->setEstado(EstadoDeTicket::NUEVO->value);
+        $ticket->setUltimoMensajeEntranteAt(new \DateTimeImmutable('-1 hour'));
         $this->em->persist($ticket);
         $this->em->flush();
 

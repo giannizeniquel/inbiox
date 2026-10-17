@@ -23,11 +23,11 @@ class AutoReopenRule implements RuleInterface
 
         $ticket = $context->getTicket();
         // MUST return false for CLOSED tickets - don't reopen closed tickets
-        if ($ticket->getStatus() === EstadoDeTicket::CLOSED->value) {
+        if ($ticket->getEstado() === EstadoDeTicket::CERRADO->value) {
             return false;
         }
 
-        return $ticket->getStatus() === EstadoDeTicket::RESOLVED->value;
+        return $ticket->getEstado() === EstadoDeTicket::RESUELTO->value;
     }
 
     public function execute(RuleContext $context): void
@@ -35,7 +35,7 @@ class AutoReopenRule implements RuleInterface
         // Transition resolved → waiting (NOT to active)
         $this->transitionUseCase->execute(
             $context->getTicketId(),
-            EstadoDeTicket::WAITING->value,
+            EstadoDeTicket::EN_ESPERA->value,
             false, // don't set first_response
             false  // don't set resolved
         );

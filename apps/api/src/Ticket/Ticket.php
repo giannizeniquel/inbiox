@@ -26,35 +26,35 @@ class Ticket
 
     #[ORM\ManyToOne(targetEntity: Contact::class)]
     #[ORM\JoinColumn(name: "contact_id", referencedColumnName: "id")]
-    private ?Contact $contact = null;
+    private ?Contact $contacto = null;
 
     #[ORM\ManyToOne(targetEntity: Conversation::class)]
     #[ORM\JoinColumn(name: "conversation_id", referencedColumnName: "id")]
-    private ?Conversation $conversation = null;
+    private ?Conversation $conversacion = null;
 
     #[ORM\Column(name: "status", type: "string", length: 20)]
-    private string $status = EstadoDeTicket::NEW->value;
+    private string $estado = EstadoDeTicket::NUEVO->value;
 
     #[ORM\Column(name: "priority", type: "string", length: 20)]
-    private string $priority = "medium";
+    private string $prioridad = "medium";
 
     #[ORM\Column(name: "assigned_agent_id", type: "bigint", nullable: true)]
-    private ?int $assignedAgentId = null;
+    private ?int $agenteAsignadoId = null;
 
     #[ORM\Column(name: "first_response_at", type: "datetime_immutable", nullable: true)]
-    private ?\DateTimeImmutable $firstResponseAt = null;
+    private ?\DateTimeImmutable $primeraRespuestaAt = null;
 
     #[ORM\Column(name: "resolved_at", type: "datetime_immutable", nullable: true)]
-    private ?\DateTimeImmutable $resolvedAt = null;
+    private ?\DateTimeImmutable $resueltoAt = null;
 
     #[ORM\Column(name: "closed_at", type: "datetime_immutable", nullable: true)]
-    private ?\DateTimeImmutable $closedAt = null;
+    private ?\DateTimeImmutable $cerradoAt = null;
 
     #[ORM\Column(name: "created_at", type: "datetime_immutable")]
-    private \DateTimeImmutable $createdAt;
+    private \DateTimeImmutable $creadoAt;
 
     #[ORM\Column(name: "updated_at", type: "datetime_immutable")]
-    private \DateTimeImmutable $updatedAt;
+    private \DateTimeImmutable $actualizadoAt;
 
     #[ORM\Version]
     #[ORM\Column(name: "version", type: "integer", nullable: false, options: ["default" => 0])]
@@ -68,18 +68,18 @@ class Ticket
 
     #[ORM\ManyToOne(targetEntity: Team::class)]
     #[ORM\JoinColumn(name: "team_id", referencedColumnName: "id", nullable: true, onDelete: "SET NULL")]
-    private ?Team $team = null;
+    private ?Team $equipo = null;
 
     #[ORM\Column(name: "last_read_at", type: "datetime_immutable", nullable: true)]
-    private ?\DateTimeImmutable $lastReadAt = null;
+    private ?\DateTimeImmutable $ultimaLecturaAt = null;
 
     #[ORM\Column(name: "last_inbound_message_at", type: "datetime_immutable", nullable: true)]
-    private ?\DateTimeImmutable $lastInboundMessageAt = null;
+    private ?\DateTimeImmutable $ultimoMensajeEntranteAt = null;
 
     public function __construct()
     {
-        $this->createdAt = new \DateTimeImmutable();
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->creadoAt = new \DateTimeImmutable();
+        $this->actualizadoAt = new \DateTimeImmutable();
     }
 
     public function getId(): ?int
@@ -87,9 +87,9 @@ class Ticket
         return $this->id;
     }
 
-    public function getContact(): ?Contact
+    public function getContacto(): ?Contact
     {
-        return $this->contact;
+        return $this->contacto;
     }
 
     /**
@@ -97,13 +97,13 @@ class Ticket
      *
      * @throws RecipientPhoneNotFoundException when there is no contact or it has no phone
      */
-    public function recipientPhone(): string
+    public function telefonoDestinatario(): string
     {
-        if (!$this->contact) {
+        if (!$this->contacto) {
             throw new RecipientPhoneNotFoundException('Ticket has no associated contact');
         }
 
-        $phone = $this->contact->getPhone();
+        $phone = $this->contacto->getPhone();
         if ($phone === null || $phone === '') {
             throw new RecipientPhoneNotFoundException('Contact has no phone number');
         }
@@ -111,108 +111,108 @@ class Ticket
         return $phone;
     }
 
-    public function setContact(Contact $contact): self
+    public function setContacto(Contact $contact): self
     {
-        $this->contact = $contact;
+        $this->contacto = $contact;
         return $this;
     }
 
-    public function getConversation(): ?Conversation
+    public function getConversacion(): ?Conversation
     {
-        return $this->conversation;
+        return $this->conversacion;
     }
 
-    public function setConversation(Conversation $conversation): self
+    public function setConversacion(Conversation $conversation): self
     {
-        $this->conversation = $conversation;
+        $this->conversacion = $conversation;
         return $this;
     }
 
-    public function getStatus(): string
+    public function getEstado(): string
     {
-        return $this->status;
+        return $this->estado;
     }
 
-    public function setStatus(string $status): self
+    public function setEstado(string $status): self
     {
-        $this->status = $status;
+        $this->estado = $status;
         return $this;
     }
 
-    public function getPriority(): string
+    public function getPrioridad(): string
     {
-        return $this->priority;
+        return $this->prioridad;
     }
 
-    public function setPriority(string $priority): self
+    public function setPrioridad(string $priority): self
     {
-        $this->priority = $priority;
+        $this->prioridad = $priority;
         return $this;
     }
 
-    public function getAssignedAgentId(): ?int
+    public function getAgenteAsignadoId(): ?int
     {
-        return $this->assignedAgentId;
+        return $this->agenteAsignadoId;
     }
 
-    public function setAssignedAgentId(?int $assignedAgentId): self
+    public function setAgenteAsignadoId(?int $assignedAgentId): self
     {
-        $this->assignedAgentId = $assignedAgentId;
+        $this->agenteAsignadoId = $assignedAgentId;
         return $this;
     }
 
-    public function getFirstResponseAt(): ?\DateTimeImmutable
+    public function getPrimeraRespuestaAt(): ?\DateTimeImmutable
     {
-        return $this->firstResponseAt;
+        return $this->primeraRespuestaAt;
     }
 
-    public function setFirstResponseAt(?\DateTimeImmutable $firstResponseAt): self
+    public function setPrimeraRespuestaAt(?\DateTimeImmutable $firstResponseAt): self
     {
-        $this->firstResponseAt = $firstResponseAt;
+        $this->primeraRespuestaAt = $firstResponseAt;
         return $this;
     }
 
-    public function getResolvedAt(): ?\DateTimeImmutable
+    public function getResueltoAt(): ?\DateTimeImmutable
     {
-        return $this->resolvedAt;
+        return $this->resueltoAt;
     }
 
-    public function setResolvedAt(?\DateTimeImmutable $resolvedAt): self
+    public function setResueltoAt(?\DateTimeImmutable $resolvedAt): self
     {
-        $this->resolvedAt = $resolvedAt;
+        $this->resueltoAt = $resolvedAt;
         return $this;
     }
 
-    public function getClosedAt(): ?\DateTimeImmutable
+    public function getCerradoAt(): ?\DateTimeImmutable
     {
-        return $this->closedAt;
+        return $this->cerradoAt;
     }
 
-    public function setClosedAt(?\DateTimeImmutable $closedAt): self
+    public function setCerradoAt(?\DateTimeImmutable $closedAt): self
     {
-        $this->closedAt = $closedAt;
+        $this->cerradoAt = $closedAt;
         return $this;
     }
 
-    public function getCreatedAt(): \DateTimeImmutable
+    public function getCreadoAt(): \DateTimeImmutable
     {
-        return $this->createdAt;
+        return $this->creadoAt;
     }
 
-    public function setCreatedAt(\DateTimeImmutable $createdAt): self
+    public function setCreadoAt(\DateTimeImmutable $createdAt): self
     {
-        $this->createdAt = $createdAt;
+        $this->creadoAt = $createdAt;
         return $this;
     }
 
-    public function getUpdatedAt(): \DateTimeImmutable
+    public function getActualizadoAt(): \DateTimeImmutable
     {
-        return $this->updatedAt;
+        return $this->actualizadoAt;
     }
 
-    public function setUpdatedAt(\DateTimeImmutable $updatedAt): self
+    public function setActualizadoAt(\DateTimeImmutable $updatedAt): self
     {
-        $this->updatedAt = $updatedAt;
+        $this->actualizadoAt = $updatedAt;
         return $this;
     }
 
@@ -249,42 +249,42 @@ class Ticket
         return $this;
     }
 
-    public function getTeamId(): ?int
+    public function getEquipoId(): ?int
     {
-        return $this->team?->getId();
+        return $this->equipo?->getId();
     }
 
-    public function setTeam(?Team $team): self
+    public function setEquipo(?Team $team): self
     {
-        $this->team = $team;
+        $this->equipo = $team;
         return $this;
     }
 
-    public function getLastReadAt(): ?\DateTimeImmutable
+    public function getUltimaLecturaAt(): ?\DateTimeImmutable
     {
-        return $this->lastReadAt;
+        return $this->ultimaLecturaAt;
     }
 
-    public function setLastReadAt(?\DateTimeImmutable $lastReadAt): self
+    public function setUltimaLecturaAt(?\DateTimeImmutable $lastReadAt): self
     {
-        $this->lastReadAt = $lastReadAt;
+        $this->ultimaLecturaAt = $lastReadAt;
         return $this;
     }
 
-    public function getLastInboundMessageAt(): ?\DateTimeImmutable
+    public function getUltimoMensajeEntranteAt(): ?\DateTimeImmutable
     {
-        return $this->lastInboundMessageAt;
+        return $this->ultimoMensajeEntranteAt;
     }
 
-    public function setLastInboundMessageAt(?\DateTimeImmutable $lastInboundMessageAt): self
+    public function setUltimoMensajeEntranteAt(?\DateTimeImmutable $lastInboundMessageAt): self
     {
-        $this->lastInboundMessageAt = $lastInboundMessageAt;
+        $this->ultimoMensajeEntranteAt = $lastInboundMessageAt;
         return $this;
     }
 
-    public function markUpdated(): self
+    public function marcarActualizado(): self
     {
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
 }

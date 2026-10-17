@@ -89,7 +89,7 @@ final class ReportingVerifierProbeTest extends CharacterizationTestCase
         foreach ($rows as [$name, $agent, $status, $phone, $team, $created, $frt, $resolved]) {
             $ticket = $this->createTicket($status, $agent?->getId(), $this->createContact('+54911000' . \random_int(10000, 99999), 'C-' . $name));
             $this->token($ticket->getId(), $name);
-            $this->token($ticket->getContact()->getId(), 'contact-' . $name);
+            $this->token($ticket->getContacto()->getId(), 'contact-' . $name);
             $this->connection()->executeStatement(
                 'UPDATE tickets SET phone_number_id = ?, team_id = ?, created_at = ?, first_response_at = ?, resolved_at = ? WHERE id = ?',
                 [$phone, null === $team ? null : $teams[$team], $created, $frt, $resolved, $ticket->getId()],
@@ -353,10 +353,10 @@ final class ReportingVerifierProbeTest extends CharacterizationTestCase
         $this->token($helper->getId(), 'helper');
         $first = $this->createTicket('resolved', $owner->getId());
         $this->token($first->getId(), 'first');
-        $conversationId = $first->getConversation()->getId();
+        $conversationId = $first->getConversacion()->getId();
         $this->connection()->executeStatement('UPDATE tickets SET created_at = ? WHERE id = ?', ['2025-03-01 10:00:00', $first->getId()]);
         // A later ticket on the same conversation closes the first episode.
-        $second = $this->createTicket('active', $owner->getId(), $first->getContact());
+        $second = $this->createTicket('active', $owner->getId(), $first->getContacto());
         $this->connection()->executeStatement('UPDATE tickets SET created_at = ?, conversation_id = ? WHERE id = ?', ['2025-03-01 11:00:00', $conversationId, $second->getId()]);
         foreach ([
             ['inbound', 'contact', null, '2025-03-01 10:00:00'],

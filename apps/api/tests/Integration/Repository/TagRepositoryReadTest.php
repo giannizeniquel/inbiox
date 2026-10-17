@@ -30,7 +30,7 @@ class TagRepositoryReadTest extends KernelTestCase
 
     public function testNamesAreOrderedByTicketThenAttachmentOrder(): void
     {
-        $rows = static::getContainer()->get(EtiquetaRepository::class)->findNamesByTicketIds([880004, 880003, 880001, 880002]);
+        $rows = static::getContainer()->get(EtiquetaRepository::class)->findNombresByTicketIds([880004, 880003, 880001, 880002]);
 
         self::assertSame([
             [880001, 'repo-read-vip'],

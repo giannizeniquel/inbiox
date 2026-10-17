@@ -62,13 +62,13 @@ final class AssignmentService
         $this->em->persist($assignment);
 
         // 2. Update ticket ownership (THE single point of change for assigned_agent_id)
-        $ticket->setAssignedAgentId($agent?->getId());
-        $ticket->setUpdatedAt(new \DateTimeImmutable());
+        $ticket->setAgenteAsignadoId($agent?->getId());
+        $ticket->setActualizadoAt(new \DateTimeImmutable());
 
         // If ticket was NEW, set to ACTIVE on assignment
         $statusChanged = false;
-        if ($ticket->getStatus() === EstadoDeTicket::NEW->value) {
-            $ticket->setStatus(EstadoDeTicket::ACTIVE->value);
+        if ($ticket->getEstado() === EstadoDeTicket::NUEVO->value) {
+            $ticket->setEstado(EstadoDeTicket::ACTIVO->value);
             $statusChanged = true;
         }
 
@@ -81,7 +81,7 @@ final class AssignmentService
             occurredAt: $now,
             seq: $ticket->incrementLastEventSeq(),
             version: 1,
-            status: $statusChanged ? EstadoDeTicket::ACTIVE : null,
+            status: $statusChanged ? EstadoDeTicket::ACTIVO : null,
             ownerAgentId: $agent?->getId(),
         ));
 

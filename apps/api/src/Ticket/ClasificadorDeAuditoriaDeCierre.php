@@ -22,26 +22,26 @@ final class ClasificadorDeAuditoriaDeCierre
      * @param int|null $actingAgentId   $user->getAgent()?->getId(), null for an
      *                                  agentless admin/supervisor
      */
-    public function classify(string $newStatus, ?int $previousOwnerId, ?int $actingAgentId): string
+    public function clasificar(string $newStatus, ?int $previousOwnerId, ?int $actingAgentId): string
     {
-        $isClosed = $newStatus === EstadoDeTicket::CLOSED->value;
+        $isClosed = $newStatus === EstadoDeTicket::CERRADO->value;
 
         if ($previousOwnerId === null) {
-            return $isClosed ? TipoDeEventoDeTicket::MANUAL_CLOSED_UNOWNED : TipoDeEventoDeTicket::MANUAL_RESOLVED_UNOWNED;
+            return $isClosed ? TipoDeEventoDeTicket::MANUAL_CERRADO_SIN_RESPONSABLE : TipoDeEventoDeTicket::MANUAL_RESUELTO_SIN_RESPONSABLE;
         }
 
         if ($previousOwnerId === $actingAgentId) {
-            return $isClosed ? TipoDeEventoDeTicket::MANUAL_CLOSED_OWNER : TipoDeEventoDeTicket::MANUAL_RESOLVED_OWNER;
+            return $isClosed ? TipoDeEventoDeTicket::MANUAL_CERRADO_RESPONSABLE : TipoDeEventoDeTicket::MANUAL_RESUELTO_RESPONSABLE;
         }
 
-        return $isClosed ? TipoDeEventoDeTicket::MANUAL_CLOSED_OVERRIDE : TipoDeEventoDeTicket::MANUAL_RESOLVED_OVERRIDE;
+        return $isClosed ? TipoDeEventoDeTicket::MANUAL_CERRADO_FORZADO : TipoDeEventoDeTicket::MANUAL_RESUELTO_FORZADO;
     }
 
     /**
      * Compact, namespaced actor reference for `EventoDeTicket.source` /
      * `Assignment.assignedBy` (design.md D5).
      */
-    public function actorReference(User $user): string
+    public function referenciaDeActor(User $user): string
     {
         return \sprintf('u:%d', $user->getId());
     }

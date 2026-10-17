@@ -18,20 +18,20 @@ class EventoDeTicket
     private int $ticketId;
 
     #[ORM\Column(name: 'type', type: 'string', length: 50)]
-    private string $type;
+    private string $tipo;
 
     #[ORM\Column(name: 'source', type: 'string', length: 20)]
-    private string $source = 'system';
+    private string $origen = 'system';
 
     #[ORM\Column(name: 'created_at', type: 'datetime_immutable')]
-    private \DateTimeImmutable $createdAt;
+    private \DateTimeImmutable $creadoAt;
 
     public function __construct(int $ticketId, string $type, string $source = 'system')
     {
         $this->ticketId = $ticketId;
-        $this->type = $type;
-        $this->source = $source;
-        $this->createdAt = new \DateTimeImmutable();
+        $this->tipo = $type;
+        $this->origen = $source;
+        $this->creadoAt = new \DateTimeImmutable();
     }
 
     public function getId(): ?int
@@ -44,18 +44,18 @@ class EventoDeTicket
         return $this->ticketId;
     }
 
-    public function getType(): string
+    public function getTipo(): string
     {
-        return $this->type;
+        return $this->tipo;
     }
 
-    public function getSource(): string
+    public function getOrigen(): string
     {
-        return $this->source;
+        return $this->origen;
     }
 
-    public function getCreatedAt(): \DateTimeImmutable
+    public function getCreadoAt(): \DateTimeImmutable
     {
-        return $this->createdAt;
+        return $this->creadoAt;
     }
 }

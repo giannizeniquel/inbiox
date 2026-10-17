@@ -30,8 +30,8 @@ final class RegistrarAuditoriaDeCierreUseCase
     {
         $actingAgentId = $user->getAgent()?->getId();
 
-        $type = $this->classifier->classify($newStatus, $previousOwnerId, $actingAgentId);
-        $source = $this->classifier->actorReference($user);
+        $type = $this->classifier->clasificar($newStatus, $previousOwnerId, $actingAgentId);
+        $source = $this->classifier->referenciaDeActor($user);
 
         try {
             $event = new EventoDeTicket($ticketId, $type, $source);

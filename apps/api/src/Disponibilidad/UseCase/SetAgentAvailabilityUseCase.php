@@ -63,7 +63,7 @@ final class SetAgentAvailabilityUseCase
             $this->em->flush();
 
             // 4. Compute current load
-            $currentLoad = $this->ticketRepo->countActiveForAgent($agentId);
+            $currentLoad = $this->ticketRepo->countActivosDeAgente($agentId);
 
             // 5. Track outbox event data
             $this->pendingOutboxEvent = [

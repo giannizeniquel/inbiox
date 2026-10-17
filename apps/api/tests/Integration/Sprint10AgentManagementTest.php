@@ -149,9 +149,9 @@ class Sprint10AgentManagementTest extends WebTestCase
 
         // 3. Create an unassigned ticket
         $ticket = new Ticket();
-        $ticket->setStatus(EstadoDeTicket::NEW->value);
-        $ticket->setCreatedAt(new \DateTimeImmutable());
-        $ticket->setUpdatedAt(new \DateTimeImmutable());
+        $ticket->setEstado(EstadoDeTicket::NUEVO->value);
+        $ticket->setCreadoAt(new \DateTimeImmutable());
+        $ticket->setActualizadoAt(new \DateTimeImmutable());
         $this->em->persist($ticket);
         $this->em->flush();
 
@@ -178,7 +178,7 @@ class Sprint10AgentManagementTest extends WebTestCase
 
         $this->assertNotNull($savedTicket);
         $this->assertEquals($agentId, (int) $savedTicket['assigned_agent_id'], 'Ticket should have owner_agent_id set');
-        $this->assertEquals(EstadoDeTicket::ACTIVE->value, $savedTicket['status'], 'Ticket status should be ACTIVE after assignment');
+        $this->assertEquals(EstadoDeTicket::ACTIVO->value, $savedTicket['status'], 'Ticket status should be ACTIVE after assignment');
 
         // 7. Assert Assignment row created with type=AUTO_ASSIGN
         $assignmentRow = $this->em->getConnection()->executeQuery(
@@ -234,7 +234,7 @@ class Sprint10AgentManagementTest extends WebTestCase
         // Create a single ticket — all agents have load=0, today_count=0
         // Tiebreaker should pick lowest id
         $ticket = new Ticket();
-        $ticket->setStatus(EstadoDeTicket::NEW->value);
+        $ticket->setEstado(EstadoDeTicket::NUEVO->value);
         $this->em->persist($ticket);
         $this->em->flush();
         $ticketId = (int) $ticket->getId();
@@ -251,7 +251,7 @@ class Sprint10AgentManagementTest extends WebTestCase
         // Now create another ticket — agent with lowest id now has load=1, others load=0
         // The second ticket should go to the NEXT lowest id
         $ticket2 = new Ticket();
-        $ticket2->setStatus(EstadoDeTicket::NEW->value);
+        $ticket2->setEstado(EstadoDeTicket::NUEVO->value);
         $this->em->persist($ticket2);
         $this->em->flush();
 
@@ -301,14 +301,14 @@ class Sprint10AgentManagementTest extends WebTestCase
 
         // Create a ticket pre-assigned to agentHigh to increase its load
         $preTicket = new Ticket();
-        $preTicket->setStatus(EstadoDeTicket::ACTIVE->value);
-        $preTicket->setAssignedAgentId($agentHigh->getId());
+        $preTicket->setEstado(EstadoDeTicket::ACTIVO->value);
+        $preTicket->setAgenteAsignadoId($agentHigh->getId());
         $this->em->persist($preTicket);
         $this->em->flush();
 
         // Create an unassigned ticket
         $ticket = new Ticket();
-        $ticket->setStatus(EstadoDeTicket::NEW->value);
+        $ticket->setEstado(EstadoDeTicket::NUEVO->value);
         $this->em->persist($ticket);
         $this->em->flush();
         $ticketId = (int) $ticket->getId();
@@ -346,14 +346,14 @@ class Sprint10AgentManagementTest extends WebTestCase
 
         // Fill agent to capacity
         $fillTicket = new Ticket();
-        $fillTicket->setStatus(EstadoDeTicket::ACTIVE->value);
-        $fillTicket->setAssignedAgentId($agent->getId());
+        $fillTicket->setEstado(EstadoDeTicket::ACTIVO->value);
+        $fillTicket->setAgenteAsignadoId($agent->getId());
         $this->em->persist($fillTicket);
         $this->em->flush();
 
         // Create unassigned ticket
         $ticket = new Ticket();
-        $ticket->setStatus(EstadoDeTicket::NEW->value);
+        $ticket->setEstado(EstadoDeTicket::NUEVO->value);
         $this->em->persist($ticket);
         $this->em->flush();
         $ticketId = (int) $ticket->getId();
@@ -391,8 +391,8 @@ class Sprint10AgentManagementTest extends WebTestCase
 
         // Create an already-assigned ticket
         $ticket = new Ticket();
-        $ticket->setStatus(EstadoDeTicket::ACTIVE->value);
-        $ticket->setAssignedAgentId($agent->getId());
+        $ticket->setEstado(EstadoDeTicket::ACTIVO->value);
+        $ticket->setAgenteAsignadoId($agent->getId());
         $this->em->persist($ticket);
         $this->em->flush();
         $ticketId = (int) $ticket->getId();
@@ -452,8 +452,8 @@ class Sprint10AgentManagementTest extends WebTestCase
 
         // Ticket already owned by the requesting agent (voter allows ASSIGN)
         $ticket = new Ticket();
-        $ticket->setStatus(EstadoDeTicket::ACTIVE->value);
-        $ticket->setAssignedAgentId($ownerAgent->getId());
+        $ticket->setEstado(EstadoDeTicket::ACTIVO->value);
+        $ticket->setAgenteAsignadoId($ownerAgent->getId());
         $this->em->persist($ticket);
         $this->em->flush();
 
@@ -476,7 +476,7 @@ class Sprint10AgentManagementTest extends WebTestCase
         $this->em->flush();
 
         $ticket = new Ticket();
-        $ticket->setStatus(EstadoDeTicket::NEW->value);
+        $ticket->setEstado(EstadoDeTicket::NUEVO->value);
         $this->em->persist($ticket);
         $this->em->flush();
 
@@ -499,7 +499,7 @@ class Sprint10AgentManagementTest extends WebTestCase
         $this->em->flush();
 
         $ticket = new Ticket();
-        $ticket->setStatus(EstadoDeTicket::NEW->value);
+        $ticket->setEstado(EstadoDeTicket::NUEVO->value);
         $this->em->persist($ticket);
         $this->em->flush();
 
@@ -522,7 +522,7 @@ class Sprint10AgentManagementTest extends WebTestCase
         $this->em->flush();
 
         $ticket = new Ticket();
-        $ticket->setStatus(EstadoDeTicket::NEW->value);
+        $ticket->setEstado(EstadoDeTicket::NUEVO->value);
         $this->em->persist($ticket);
         $this->em->flush();
 
@@ -545,7 +545,7 @@ class Sprint10AgentManagementTest extends WebTestCase
         $this->em->flush();
 
         $ticket = new Ticket();
-        $ticket->setStatus(EstadoDeTicket::NEW->value);
+        $ticket->setEstado(EstadoDeTicket::NUEVO->value);
         $this->em->persist($ticket);
         $this->em->flush();
         $ticketId = (int) $ticket->getId();

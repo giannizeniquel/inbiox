@@ -17,8 +17,8 @@ final class TicketOwnershipGuardTest extends TestCase
 {
     public function test_active_status_never_blocks_regardless_of_other_inputs(): void
     {
-        self::assertFalse(TicketResponsabilidadGuard::blocksReassignment(
-            status: EstadoDeTicket::ACTIVE->value,
+        self::assertFalse(TicketResponsabilidadGuard::bloqueaReasignacion(
+            status: EstadoDeTicket::ACTIVO->value,
             senderIsPrivileged: false,
             agentId: 7,
             assignedAgentId: 3,
@@ -27,8 +27,8 @@ final class TicketOwnershipGuardTest extends TestCase
 
     public function test_resolved_ticket_blocks_non_owning_non_privileged_agent(): void
     {
-        self::assertTrue(TicketResponsabilidadGuard::blocksReassignment(
-            status: EstadoDeTicket::RESOLVED->value,
+        self::assertTrue(TicketResponsabilidadGuard::bloqueaReasignacion(
+            status: EstadoDeTicket::RESUELTO->value,
             senderIsPrivileged: false,
             agentId: 7,
             assignedAgentId: 3,
@@ -37,8 +37,8 @@ final class TicketOwnershipGuardTest extends TestCase
 
     public function test_closed_ticket_blocks_non_owning_non_privileged_agent(): void
     {
-        self::assertTrue(TicketResponsabilidadGuard::blocksReassignment(
-            status: EstadoDeTicket::CLOSED->value,
+        self::assertTrue(TicketResponsabilidadGuard::bloqueaReasignacion(
+            status: EstadoDeTicket::CERRADO->value,
             senderIsPrivileged: false,
             agentId: 7,
             assignedAgentId: 3,
@@ -47,8 +47,8 @@ final class TicketOwnershipGuardTest extends TestCase
 
     public function test_privileged_sender_bypasses_the_guard(): void
     {
-        self::assertFalse(TicketResponsabilidadGuard::blocksReassignment(
-            status: EstadoDeTicket::RESOLVED->value,
+        self::assertFalse(TicketResponsabilidadGuard::bloqueaReasignacion(
+            status: EstadoDeTicket::RESUELTO->value,
             senderIsPrivileged: true,
             agentId: 7,
             assignedAgentId: 3,
@@ -57,8 +57,8 @@ final class TicketOwnershipGuardTest extends TestCase
 
     public function test_owning_agent_reply_does_not_block(): void
     {
-        self::assertFalse(TicketResponsabilidadGuard::blocksReassignment(
-            status: EstadoDeTicket::CLOSED->value,
+        self::assertFalse(TicketResponsabilidadGuard::bloqueaReasignacion(
+            status: EstadoDeTicket::CERRADO->value,
             senderIsPrivileged: false,
             agentId: 3,
             assignedAgentId: 3,
@@ -67,8 +67,8 @@ final class TicketOwnershipGuardTest extends TestCase
 
     public function test_unassigned_resolved_ticket_blocks_non_privileged_agent(): void
     {
-        self::assertTrue(TicketResponsabilidadGuard::blocksReassignment(
-            status: EstadoDeTicket::RESOLVED->value,
+        self::assertTrue(TicketResponsabilidadGuard::bloqueaReasignacion(
+            status: EstadoDeTicket::RESUELTO->value,
             senderIsPrivileged: false,
             agentId: 7,
             assignedAgentId: null,
@@ -77,8 +77,8 @@ final class TicketOwnershipGuardTest extends TestCase
 
     public function test_agent_id_zero_never_blocks(): void
     {
-        self::assertFalse(TicketResponsabilidadGuard::blocksReassignment(
-            status: EstadoDeTicket::RESOLVED->value,
+        self::assertFalse(TicketResponsabilidadGuard::bloqueaReasignacion(
+            status: EstadoDeTicket::RESUELTO->value,
             senderIsPrivileged: false,
             agentId: 0,
             assignedAgentId: 3,
@@ -87,10 +87,10 @@ final class TicketOwnershipGuardTest extends TestCase
 
     public function test_is_resolved_or_closed_helper(): void
     {
-        self::assertTrue(TicketResponsabilidadGuard::isResolvedOrClosed(EstadoDeTicket::RESOLVED->value));
-        self::assertTrue(TicketResponsabilidadGuard::isResolvedOrClosed(EstadoDeTicket::CLOSED->value));
-        self::assertFalse(TicketResponsabilidadGuard::isResolvedOrClosed(EstadoDeTicket::NEW->value));
-        self::assertFalse(TicketResponsabilidadGuard::isResolvedOrClosed(EstadoDeTicket::ACTIVE->value));
-        self::assertFalse(TicketResponsabilidadGuard::isResolvedOrClosed(EstadoDeTicket::WAITING->value));
+        self::assertTrue(TicketResponsabilidadGuard::isResueltoOCerrado(EstadoDeTicket::RESUELTO->value));
+        self::assertTrue(TicketResponsabilidadGuard::isResueltoOCerrado(EstadoDeTicket::CERRADO->value));
+        self::assertFalse(TicketResponsabilidadGuard::isResueltoOCerrado(EstadoDeTicket::NUEVO->value));
+        self::assertFalse(TicketResponsabilidadGuard::isResueltoOCerrado(EstadoDeTicket::ACTIVO->value));
+        self::assertFalse(TicketResponsabilidadGuard::isResueltoOCerrado(EstadoDeTicket::EN_ESPERA->value));
     }
 }

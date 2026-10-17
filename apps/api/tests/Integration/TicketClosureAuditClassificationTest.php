@@ -117,11 +117,11 @@ class TicketClosureAuditClassificationTest extends WebTestCase
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
-        $ticket->setContact($contact);
-        $ticket->setConversation($conversation);
-        $ticket->setStatus($status);
+        $ticket->setContacto($contact);
+        $ticket->setConversacion($conversation);
+        $ticket->setEstado($status);
         if ($assignedAgentId !== null) {
-            $ticket->setAssignedAgentId($assignedAgentId);
+            $ticket->setAgenteAsignadoId($assignedAgentId);
         }
         $this->em->persist($ticket);
         $this->em->flush();
@@ -180,13 +180,13 @@ class TicketClosureAuditClassificationTest extends WebTestCase
     {
         $agent = $this->createAgent('Owner Closer');
         ['token' => $token, 'user_id' => $userId] = $this->createAuthenticatedUser('owner-closer@inbiox.local', ['ROLE_AGENT'], $agent);
-        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVE->value, $agent->getId());
+        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVO->value, $agent->getId());
 
         $response = $this->request('POST', '/api/tickets/' . $ticketId . '/transition', $token, ['status' => 'closed']);
         self::assertSame(200, $response->getStatusCode());
 
         $event = $this->theOnlyTicketEvent($ticketId);
-        self::assertSame(TipoDeEventoDeTicket::MANUAL_CLOSED_OWNER, $event['type']);
+        self::assertSame(TipoDeEventoDeTicket::MANUAL_CERRADO_RESPONSABLE, $event['type']);
         self::assertSame('u:' . $userId, $event['source']);
         self::assertSame(1, $this->assignmentCount($ticketId));
         self::assertSame('u:' . $userId, $this->latestAssignmentAssignedBy($ticketId));
@@ -196,13 +196,13 @@ class TicketClosureAuditClassificationTest extends WebTestCase
     {
         $ownerAgent = $this->createAgent('Override Owner');
         ['token' => $token, 'user_id' => $userId] = $this->createAuthenticatedUser('override-supervisor@inbiox.local', ['ROLE_SUPERVISOR']);
-        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVE->value, $ownerAgent->getId());
+        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVO->value, $ownerAgent->getId());
 
         $response = $this->request('POST', '/api/tickets/' . $ticketId . '/transition', $token, ['status' => 'closed']);
         self::assertSame(200, $response->getStatusCode());
 
         $event = $this->theOnlyTicketEvent($ticketId);
-        self::assertSame(TipoDeEventoDeTicket::MANUAL_CLOSED_OVERRIDE, $event['type']);
+        self::assertSame(TipoDeEventoDeTicket::MANUAL_CERRADO_FORZADO, $event['type']);
         self::assertSame('u:' . $userId, $event['source']);
     }
 
@@ -210,13 +210,13 @@ class TicketClosureAuditClassificationTest extends WebTestCase
     {
         // design.md D3: /close always sees an unowned (resolved) ticket.
         ['token' => $token, 'user_id' => $userId] = $this->createAuthenticatedUser('unowned-close-supervisor@inbiox.local', ['ROLE_SUPERVISOR']);
-        $ticketId = $this->createTicket(EstadoDeTicket::RESOLVED->value, null);
+        $ticketId = $this->createTicket(EstadoDeTicket::RESUELTO->value, null);
 
         $response = $this->request('POST', '/api/tickets/' . $ticketId . '/close', $token);
         self::assertSame(200, $response->getStatusCode());
 
         $event = $this->theOnlyTicketEvent($ticketId);
-        self::assertSame(TipoDeEventoDeTicket::MANUAL_CLOSED_UNOWNED, $event['type']);
+        self::assertSame(TipoDeEventoDeTicket::MANUAL_CERRADO_SIN_RESPONSABLE, $event['type']);
         self::assertSame('u:' . $userId, $event['source']);
         self::assertSame(0, $this->assignmentCount($ticketId), 'no prior owner → zero new assignments rows');
     }
@@ -225,13 +225,13 @@ class TicketClosureAuditClassificationTest extends WebTestCase
     {
         $agent = $this->createAgent('Owner Resolver');
         ['token' => $token, 'user_id' => $userId] = $this->createAuthenticatedUser('owner-resolver@inbiox.local', ['ROLE_AGENT'], $agent);
-        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVE->value, $agent->getId());
+        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVO->value, $agent->getId());
 
         $response = $this->request('POST', '/api/tickets/' . $ticketId . '/resolve', $token);
         self::assertSame(200, $response->getStatusCode());
 
         $event = $this->theOnlyTicketEvent($ticketId);
-        self::assertSame(TipoDeEventoDeTicket::MANUAL_RESOLVED_OWNER, $event['type']);
+        self::assertSame(TipoDeEventoDeTicket::MANUAL_RESUELTO_RESPONSABLE, $event['type']);
         self::assertSame('u:' . $userId, $event['source']);
     }
 
@@ -239,13 +239,13 @@ class TicketClosureAuditClassificationTest extends WebTestCase
     {
         $ownerAgent = $this->createAgent('Resolve Override Owner');
         ['token' => $token, 'user_id' => $userId] = $this->createAuthenticatedUser('resolve-override-supervisor@inbiox.local', ['ROLE_SUPERVISOR']);
-        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVE->value, $ownerAgent->getId());
+        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVO->value, $ownerAgent->getId());
 
         $response = $this->request('POST', '/api/tickets/' . $ticketId . '/resolve', $token);
         self::assertSame(200, $response->getStatusCode());
 
         $event = $this->theOnlyTicketEvent($ticketId);
-        self::assertSame(TipoDeEventoDeTicket::MANUAL_RESOLVED_OVERRIDE, $event['type']);
+        self::assertSame(TipoDeEventoDeTicket::MANUAL_RESUELTO_FORZADO, $event['type']);
         self::assertSame('u:' . $userId, $event['source']);
     }
 
@@ -259,12 +259,12 @@ class TicketClosureAuditClassificationTest extends WebTestCase
         // A `resolved` ticket is always unowned by construction (D3: the
         // prior resolve already unassigned it) — so the fixture must start
         // unowned too, matching the only reachable real state.
-        $ticketId = $this->createTicket(EstadoDeTicket::RESOLVED->value, null);
+        $ticketId = $this->createTicket(EstadoDeTicket::RESUELTO->value, null);
 
         // Simulate AutoReopenRule::execute()'s exact call site: resolved →
         // waiting, via the system actor default. The ticket stays unowned.
         $transitionUseCase = static::getContainer()->get(CambiarEstadoDeTicketUseCase::class);
-        $transitionUseCase->execute($ticketId, EstadoDeTicket::WAITING->value, false, false);
+        $transitionUseCase->execute($ticketId, EstadoDeTicket::EN_ESPERA->value, false, false);
 
         ['token' => $token, 'user_id' => $userId] = $this->createAuthenticatedUser('reopen-resolve-supervisor@inbiox.local', ['ROLE_SUPERVISOR']);
 
@@ -272,7 +272,7 @@ class TicketClosureAuditClassificationTest extends WebTestCase
         self::assertSame(200, $response->getStatusCode());
 
         $event = $this->theOnlyTicketEvent($ticketId);
-        self::assertSame(TipoDeEventoDeTicket::MANUAL_RESOLVED_UNOWNED, $event['type']);
+        self::assertSame(TipoDeEventoDeTicket::MANUAL_RESUELTO_SIN_RESPONSABLE, $event['type']);
         self::assertSame('u:' . $userId, $event['source']);
         self::assertSame(0, $this->assignmentCount($ticketId));
     }

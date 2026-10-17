@@ -55,10 +55,10 @@ class CloseExpiredConversationWindowsCommandTest extends KernelTestCase
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
-        $ticket->setContact($contact);
-        $ticket->setConversation($conversation);
-        $ticket->setStatus($status);
-        $ticket->setLastInboundMessageAt($lastInboundMessageAt);
+        $ticket->setContacto($contact);
+        $ticket->setConversacion($conversation);
+        $ticket->setEstado($status);
+        $ticket->setUltimoMensajeEntranteAt($lastInboundMessageAt);
         $this->em->persist($ticket);
         $this->em->flush();
 
@@ -80,7 +80,7 @@ class CloseExpiredConversationWindowsCommandTest extends KernelTestCase
 
     public function testDryRunReportsCountWithoutClosingAnything(): void
     {
-        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVE->value, new \DateTimeImmutable('-25 hours'));
+        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVO->value, new \DateTimeImmutable('-25 hours'));
 
         $tester = $this->getCommandTester();
         $tester->execute(['--dry-run' => true]);
@@ -89,15 +89,15 @@ class CloseExpiredConversationWindowsCommandTest extends KernelTestCase
         self::assertStringContainsString('1', $tester->getDisplay());
 
         self::assertSame(
-            EstadoDeTicket::ACTIVE->value,
+            EstadoDeTicket::ACTIVO->value,
             $this->em->getConnection()->fetchOne('SELECT status FROM tickets WHERE id = ?', [$ticketId])
         );
     }
 
     public function testLimitOptionBoundsTheBatch(): void
     {
-        $this->createTicket(EstadoDeTicket::ACTIVE->value, new \DateTimeImmutable('-25 hours'));
-        $this->createTicket(EstadoDeTicket::ACTIVE->value, new \DateTimeImmutable('-26 hours'));
+        $this->createTicket(EstadoDeTicket::ACTIVO->value, new \DateTimeImmutable('-25 hours'));
+        $this->createTicket(EstadoDeTicket::ACTIVO->value, new \DateTimeImmutable('-26 hours'));
 
         $tester = $this->getCommandTester();
         $tester->execute(['--dry-run' => true, '--limit' => '1']);
@@ -116,7 +116,7 @@ class CloseExpiredConversationWindowsCommandTest extends KernelTestCase
         // 23h50m ago: NOT expired under the default 5-minute margin
         // (effective boundary = 23h55m), but IS expired under a 30-minute
         // margin override (effective boundary = 23h30m).
-        $this->createTicket(EstadoDeTicket::ACTIVE->value, new \DateTimeImmutable('-23 hours -50 minutes'));
+        $this->createTicket(EstadoDeTicket::ACTIVO->value, new \DateTimeImmutable('-23 hours -50 minutes'));
 
         $tester = $this->getCommandTester();
         $tester->execute(['--dry-run' => true, '--safety-margin' => '30']);
@@ -127,14 +127,14 @@ class CloseExpiredConversationWindowsCommandTest extends KernelTestCase
 
     public function testRealRunClosesExpiredTicketsAndExitsSuccessfully(): void
     {
-        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVE->value, new \DateTimeImmutable('-25 hours'));
+        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVO->value, new \DateTimeImmutable('-25 hours'));
 
         $tester = $this->getCommandTester();
         $tester->execute([]);
 
         self::assertSame(0, $tester->getStatusCode());
         self::assertSame(
-            EstadoDeTicket::CLOSED->value,
+            EstadoDeTicket::CERRADO->value,
             $this->em->getConnection()->fetchOne('SELECT status FROM tickets WHERE id = ?', [$ticketId])
         );
     }

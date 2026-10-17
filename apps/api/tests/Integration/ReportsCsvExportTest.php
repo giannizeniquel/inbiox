@@ -113,21 +113,21 @@ class ReportsCsvExportTest extends WebTestCase
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
-        $ticket->setContact($contact);
-        $ticket->setConversation($conversation);
-        $ticket->setStatus($status);
+        $ticket->setContacto($contact);
+        $ticket->setConversacion($conversation);
+        $ticket->setEstado($status);
         if (null !== $assignedAgentId) {
-            $ticket->setAssignedAgentId($assignedAgentId);
+            $ticket->setAgenteAsignadoId($assignedAgentId);
         }
         if (null !== $createdAt) {
-            $ticket->setCreatedAt($createdAt);
+            $ticket->setCreadoAt($createdAt);
         }
         $this->em->persist($ticket);
         $this->em->flush();
 
         $tagRepo = static::getContainer()->get(EtiquetaRepository::class);
         foreach ($tagNames as $tagName) {
-            $tag = $tagRepo->findByName($tagName);
+            $tag = $tagRepo->findByNombre($tagName);
             if (!$tag) {
                 $tag = new Etiqueta($tagName);
                 $this->em->persist($tag);

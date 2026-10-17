@@ -50,9 +50,9 @@ class GetContactTimelineQueryWindowEventsTest extends KernelTestCase
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
-        $ticket->setContact($contact);
-        $ticket->setConversation($conversation);
-        $ticket->setStatus(EstadoDeTicket::CLOSED->value);
+        $ticket->setContacto($contact);
+        $ticket->setConversacion($conversation);
+        $ticket->setEstado(EstadoDeTicket::CERRADO->value);
         $this->em->persist($ticket);
         $this->em->flush();
 
@@ -76,8 +76,8 @@ class GetContactTimelineQueryWindowEventsTest extends KernelTestCase
 
     public function testWindowExpiredClosedAndWindowReopenedEventsAppearInTheTimeline(): void
     {
-        $this->addTicketEvent(TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED);
-        $this->addTicketEvent(TipoDeEventoDeTicket::WINDOW_REOPENED);
+        $this->addTicketEvent(TipoDeEventoDeTicket::VENTANA_VENCIDA_CERRADO);
+        $this->addTicketEvent(TipoDeEventoDeTicket::VENTANA_REABIERTO);
 
         $query = static::getContainer()->get(GetContactTimelineQuery::class);
         $result = $query->execute($this->contactId, null, 50);

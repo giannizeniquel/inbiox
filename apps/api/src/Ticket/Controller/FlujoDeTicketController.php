@@ -33,7 +33,7 @@ class FlujoDeTicketController
     ) {}
 
     #[Route('/api/tickets/{id}/transition', name: 'app_ticket_transition', methods: ['POST'])]
-    public function transition(int $id, Request $request, #[CurrentUser] ?User $user): JsonResponse
+    public function transicionar(int $id, Request $request, #[CurrentUser] ?User $user): JsonResponse
     {
         try {
             $data = json_decode($request->getContent(), true);
@@ -45,7 +45,7 @@ class FlujoDeTicketController
 
             // Gate ownership only when the target status is resolved/closed
             // (design.md — "conditional" gating for transition()).
-            $isClosingTarget = $targetStatus === EstadoDeTicket::RESOLVED->value || $targetStatus === EstadoDeTicket::CLOSED->value;
+            $isClosingTarget = $targetStatus === EstadoDeTicket::RESUELTO->value || $targetStatus === EstadoDeTicket::CERRADO->value;
             if ($isClosingTarget) {
                 $denied = $this->denyUnlessGrantedClose($id, $user, 'transition');
                 if ($denied !== null) {
@@ -53,7 +53,7 @@ class FlujoDeTicketController
                 }
             }
 
-            $actor = $user !== null ? $this->classifier->actorReference($user) : 'system';
+            $actor = $user !== null ? $this->classifier->referenciaDeActor($user) : 'system';
 
             $result = $this->transitionUseCase->execute(
                 $id,
@@ -78,7 +78,7 @@ class FlujoDeTicketController
     }
 
     #[Route('/api/tickets/{id}/resolve', name: 'app_ticket_resolve', methods: ['POST'])]
-    public function resolve(int $id, #[CurrentUser] ?User $user): JsonResponse
+    public function resolver(int $id, #[CurrentUser] ?User $user): JsonResponse
     {
         try {
             $denied = $this->denyUnlessGrantedClose($id, $user, 'resolve');
@@ -86,11 +86,11 @@ class FlujoDeTicketController
                 return $denied;
             }
 
-            $actor = $user !== null ? $this->classifier->actorReference($user) : 'system';
+            $actor = $user !== null ? $this->classifier->referenciaDeActor($user) : 'system';
             $result = $this->resolveTicketUseCase->execute($id, $actor);
 
             if ($user !== null) {
-                $this->recordClosureAuditUseCase->execute($id, EstadoDeTicket::RESOLVED->value, $result['previous_assigned_agent_id'] ?? null, $user);
+                $this->recordClosureAuditUseCase->execute($id, EstadoDeTicket::RESUELTO->value, $result['previous_assigned_agent_id'] ?? null, $user);
             }
 
             unset($result['previous_assigned_agent_id']);
@@ -102,7 +102,7 @@ class FlujoDeTicketController
     }
 
     #[Route('/api/tickets/{id}/close', name: 'app_ticket_close', methods: ['POST'])]
-    public function close(int $id, #[CurrentUser] ?User $user): JsonResponse
+    public function cerrar(int $id, #[CurrentUser] ?User $user): JsonResponse
     {
         try {
             $denied = $this->denyUnlessGrantedClose($id, $user, 'close');
@@ -110,11 +110,11 @@ class FlujoDeTicketController
                 return $denied;
             }
 
-            $actor = $user !== null ? $this->classifier->actorReference($user) : 'system';
-            $result = $this->transitionUseCase->close($id, $actor);
+            $actor = $user !== null ? $this->classifier->referenciaDeActor($user) : 'system';
+            $result = $this->transitionUseCase->cerrar($id, $actor);
 
             if ($user !== null) {
-                $this->recordClosureAuditUseCase->execute($id, EstadoDeTicket::CLOSED->value, $result['previous_assigned_agent_id'] ?? null, $user);
+                $this->recordClosureAuditUseCase->execute($id, EstadoDeTicket::CERRADO->value, $result['previous_assigned_agent_id'] ?? null, $user);
             }
 
             unset($result['previous_assigned_agent_id']);
@@ -144,7 +144,7 @@ class FlujoDeTicketController
             return new JsonResponse([
                 'error' => 'Forbidden',
                 'code' => 'TICKET_CLOSURE_FORBIDDEN',
-                'reason' => $this->closureDenialReason($ticket, $user),
+                'reason' => $this->motivoDeRechazoDeCierre($ticket, $user),
                 'action' => $action,
                 'ticket_id' => $ticketId,
                 'message' => 'Only the ticket\'s assigned agent, a supervisor, or an admin can resolve or close this ticket.',
@@ -154,13 +154,13 @@ class FlujoDeTicketController
         return null;
     }
 
-    private function closureDenialReason(Ticket $ticket, ?User $user): string
+    private function motivoDeRechazoDeCierre(Ticket $ticket, ?User $user): string
     {
         if ($user === null || $user->getAgent() === null) {
             return 'no_linked_agent';
         }
 
-        if ($ticket->getAssignedAgentId() === null) {
+        if ($ticket->getAgenteAsignadoId() === null) {
             return 'unowned_ticket';
         }
 

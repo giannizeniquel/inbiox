@@ -203,7 +203,7 @@ foreach ($events as $event) {
             'conversation_id' => $conversation->getId(),
             'message_id' => $msg->getId(),
             'ticket_id' => $ticket->getId(),
-            'ticket_status' => $ticket->getStatus(),
+            'ticket_status' => $ticket->getEstado(),
             'transition' => $transition,
             'status' => 'ok'
         ];
@@ -329,7 +329,7 @@ foreach ($events as $event) {
      */
     private function findOrReopenOrCreateTicketAndLock(Contact $contact, Conversation $conversation, ?string $phoneNumberId): array
     {
-        $ticket = $this->ticketRepo->findNotClosedByContact($contact, $phoneNumberId);
+        $ticket = $this->ticketRepo->findNoCerradoByContacto($contact, $phoneNumberId);
         $wasReopened = false;
 
         // WhatsApp 24h conversation-window compliance: a ticket closed
@@ -349,10 +349,10 @@ foreach ($events as $event) {
         // event emission here to close this gap — it is out of scope for
         // this change.
         if (!$ticket) {
-            $reopenable = $this->ticketRepo->findWindowExpiredClosedByContact($contact, $phoneNumberId);
+            $reopenable = $this->ticketRepo->findCerradoPorVentanaVencidaByContacto($contact, $phoneNumberId);
             if ($reopenable !== null
-                && $reopenable->getConversation()?->getId() === $conversation->getId()) {
-                $this->transitionUseCase->reopenDueToInboundMessage((int) $reopenable->getId());
+                && $reopenable->getConversacion()?->getId() === $conversation->getId()) {
+                $this->transitionUseCase->reabrirPorMensajeEntrante((int) $reopenable->getId());
                 $ticket = $reopenable;
                 $wasReopened = true;
             }
@@ -360,10 +360,10 @@ foreach ($events as $event) {
 
         if (!$ticket) {
             $ticket = new Ticket();
-            $ticket->setContact($contact);
-            $ticket->setConversation($conversation);
-            $ticket->setStatus(EstadoDeTicket::NEW->value);
-            $ticket->setPriority('medium');
+            $ticket->setContacto($contact);
+            $ticket->setConversacion($conversation);
+            $ticket->setEstado(EstadoDeTicket::NUEVO->value);
+            $ticket->setPrioridad('medium');
             if ($phoneNumberId !== null) {
                 $ticket->setPhoneNumberId($phoneNumberId);
             }
@@ -393,13 +393,13 @@ foreach ($events as $event) {
      */
     private function moveWaitingTicketToActive(Ticket $ticket): ?string
     {
-        if ($ticket->getStatus() !== EstadoDeTicket::WAITING->value) {
+        if ($ticket->getEstado() !== EstadoDeTicket::EN_ESPERA->value) {
             return null;
         }
 
         $this->transitionUseCase->execute(
             $ticket->getId(),
-            EstadoDeTicket::ACTIVE->value,
+            EstadoDeTicket::ACTIVO->value,
             false, // don't set first_response - this is customer
             false  // don't set resolved
         );
@@ -412,14 +412,14 @@ foreach ($events as $event) {
         $conversation->setLastMessageAt($msg->getCreatedAt());
         $conversation->setUpdatedAt(new \DateTimeImmutable());
         $contact->setUpdatedAt(new \DateTimeImmutable());
-        $ticket->setUpdatedAt(new \DateTimeImmutable());
+        $ticket->setActualizadoAt(new \DateTimeImmutable());
 
         // WhatsApp 24h conversation-window compliance: this is the single
         // writer for `lastInboundMessageAt` (design.md, task 3.1/3.8) — it
         // must fire on every inbound message, for both a brand-new ticket
         // and a reused/reopened one, and on no other path (outbound sends
         // and auto-replies never touch this field).
-        $ticket->setLastInboundMessageAt($msg->getCreatedAt());
+        $ticket->setUltimoMensajeEntranteAt($msg->getCreatedAt());
     }
 
     /**
@@ -435,7 +435,7 @@ foreach ($events as $event) {
                 occurredAt: new \DateTimeImmutable(),
                 seq: $ticket->incrementLastEventSeq(),
                 version: 1,
-                status: EstadoDeTicket::NEW,
+                status: EstadoDeTicket::NUEVO,
                 priority: 1 // medium = 1
             ));
         }
@@ -470,6 +470,6 @@ foreach ($events as $event) {
 
     private function getTicketForConversation(Conversation $conversation): ?Ticket
     {
-        return $this->ticketRepo->findByConversation($conversation);
+        return $this->ticketRepo->findByConversacion($conversation);
     }
 }

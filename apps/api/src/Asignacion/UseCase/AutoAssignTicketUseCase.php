@@ -84,7 +84,7 @@ final class AutoAssignTicketUseCase
     private function executeInternal(int $ticketId): array
     {
         // 1. Lock the ticket row FOR UPDATE
-        $ticketRow = $this->ticketRepo->findRowByIdForUpdate($ticketId);
+        $ticketRow = $this->ticketRepo->findFilaByIdForUpdate($ticketId);
 
         if (!$ticketRow) {
             return [
@@ -128,7 +128,7 @@ final class AutoAssignTicketUseCase
         $eligible = [];
 
         foreach ($availableAgents as $agent) {
-            $activeCount = $this->ticketRepo->countActiveForAgent((int) $agent->getId());
+            $activeCount = $this->ticketRepo->countActivosDeAgente((int) $agent->getId());
             if ($activeCount >= $agent->getMaxActiveTickets()) {
                 continue; // at capacity — skip
             }

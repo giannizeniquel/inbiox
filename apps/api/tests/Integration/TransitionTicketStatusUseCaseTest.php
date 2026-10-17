@@ -61,9 +61,9 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
-        $ticket->setContact($contact);
-        $ticket->setConversation($conversation);
-        $ticket->setStatus($status);
+        $ticket->setContacto($contact);
+        $ticket->setConversacion($conversation);
+        $ticket->setEstado($status);
         $this->em->persist($ticket);
         $this->em->flush();
 
@@ -91,56 +91,56 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
         $ticketId = $this->createTicket($fromStatus);
 
         $useCase = static::getContainer()->get(CambiarEstadoDeTicketUseCase::class);
-        $result = $useCase->closeDueToWindowExpiry($ticketId);
+        $result = $useCase->cerrarPorVentanaVencida($ticketId);
 
-        self::assertSame(EstadoDeTicket::CLOSED->value, $result['new_status']);
+        self::assertSame(EstadoDeTicket::CERRADO->value, $result['new_status']);
 
         $status = $this->em->getConnection()->fetchOne('SELECT status FROM tickets WHERE id = ?', [$ticketId]);
-        self::assertSame(EstadoDeTicket::CLOSED->value, $status);
+        self::assertSame(EstadoDeTicket::CERRADO->value, $status);
 
-        self::assertSame(TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED, $this->latestEventType($ticketId));
+        self::assertSame(TipoDeEventoDeTicket::VENTANA_VENCIDA_CERRADO, $this->latestEventType($ticketId));
     }
 
     public static function closableStatusProvider(): array
     {
         return [
-            'new' => [EstadoDeTicket::NEW->value],
-            'active' => [EstadoDeTicket::ACTIVE->value],
-            'waiting' => [EstadoDeTicket::WAITING->value],
+            'new' => [EstadoDeTicket::NUEVO->value],
+            'active' => [EstadoDeTicket::ACTIVO->value],
+            'waiting' => [EstadoDeTicket::EN_ESPERA->value],
         ];
     }
 
     public function testCloseDueToWindowExpiryRejectsAnAlreadyClosedTicket(): void
     {
-        $ticketId = $this->createTicket(EstadoDeTicket::CLOSED->value);
+        $ticketId = $this->createTicket(EstadoDeTicket::CERRADO->value);
 
         $useCase = static::getContainer()->get(CambiarEstadoDeTicketUseCase::class);
 
         $this->expectException(\App\Ticket\TransicionInvalidaException::class);
-        $useCase->closeDueToWindowExpiry($ticketId);
+        $useCase->cerrarPorVentanaVencida($ticketId);
     }
 
     // ── 2.3 / 2.4: regression guard on close() ──
 
     public function testCloseStillRejectsNonResolvedTickets(): void
     {
-        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVE->value);
+        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVO->value);
 
         $useCase = static::getContainer()->get(CambiarEstadoDeTicketUseCase::class);
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Only resolved tickets can be closed');
-        $useCase->close($ticketId);
+        $useCase->cerrar($ticketId);
     }
 
     public function testCloseStillSucceedsForResolvedTickets(): void
     {
-        $ticketId = $this->createTicket(EstadoDeTicket::RESOLVED->value);
+        $ticketId = $this->createTicket(EstadoDeTicket::RESUELTO->value);
 
         $useCase = static::getContainer()->get(CambiarEstadoDeTicketUseCase::class);
-        $result = $useCase->close($ticketId);
+        $result = $useCase->cerrar($ticketId);
 
-        self::assertSame(EstadoDeTicket::CLOSED->value, $result['new_status']);
+        self::assertSame(EstadoDeTicket::CERRADO->value, $result['new_status']);
     }
 
     // ── 3.3 / 3.4: reopenDueToInboundMessage() ──
@@ -155,23 +155,23 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
 
     public function testReopenDueToInboundMessageReopensAWindowExpiredClosedTicket(): void
     {
-        $ticketId = $this->createTicket(EstadoDeTicket::CLOSED->value);
-        $this->addTicketEvent($ticketId, TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED);
+        $ticketId = $this->createTicket(EstadoDeTicket::CERRADO->value);
+        $this->addTicketEvent($ticketId, TipoDeEventoDeTicket::VENTANA_VENCIDA_CERRADO);
 
         $useCase = static::getContainer()->get(CambiarEstadoDeTicketUseCase::class);
-        $result = $useCase->reopenDueToInboundMessage($ticketId);
+        $result = $useCase->reabrirPorMensajeEntrante($ticketId);
 
-        self::assertSame(EstadoDeTicket::CLOSED->value, $result['previous_status']);
-        self::assertSame(EstadoDeTicket::ACTIVE->value, $result['new_status']);
+        self::assertSame(EstadoDeTicket::CERRADO->value, $result['previous_status']);
+        self::assertSame(EstadoDeTicket::ACTIVO->value, $result['new_status']);
 
         $row = $this->em->getConnection()->fetchAssociative(
             'SELECT status, closed_at FROM tickets WHERE id = ?',
             [$ticketId]
         );
-        self::assertSame(EstadoDeTicket::ACTIVE->value, $row['status']);
+        self::assertSame(EstadoDeTicket::ACTIVO->value, $row['status']);
         self::assertNull($row['closed_at']);
 
-        self::assertSame(TipoDeEventoDeTicket::WINDOW_REOPENED, $this->latestEventType($ticketId));
+        self::assertSame(TipoDeEventoDeTicket::VENTANA_REABIERTO, $this->latestEventType($ticketId));
     }
 
     /**
@@ -183,47 +183,47 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
     public function testReopenSucceedsEvenThoughClosedToActiveIsNotInTheSharedFsmTable(): void
     {
         $fsm = new \App\Ticket\MaquinaDeEstadosDeTicket();
-        self::assertFalse($fsm->canTransition(EstadoDeTicket::CLOSED->value, EstadoDeTicket::ACTIVE->value));
+        self::assertFalse($fsm->puedeTransicionar(EstadoDeTicket::CERRADO->value, EstadoDeTicket::ACTIVO->value));
 
-        $ticketId = $this->createTicket(EstadoDeTicket::CLOSED->value);
-        $this->addTicketEvent($ticketId, TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED);
+        $ticketId = $this->createTicket(EstadoDeTicket::CERRADO->value);
+        $this->addTicketEvent($ticketId, TipoDeEventoDeTicket::VENTANA_VENCIDA_CERRADO);
 
         $useCase = static::getContainer()->get(CambiarEstadoDeTicketUseCase::class);
-        $result = $useCase->reopenDueToInboundMessage($ticketId);
+        $result = $useCase->reabrirPorMensajeEntrante($ticketId);
 
-        self::assertSame(EstadoDeTicket::ACTIVE->value, $result['new_status']);
+        self::assertSame(EstadoDeTicket::ACTIVO->value, $result['new_status']);
     }
 
     public function testReopenDueToInboundMessageRejectsANonClosedTicket(): void
     {
-        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVE->value);
-        $this->addTicketEvent($ticketId, TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED);
+        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVO->value);
+        $this->addTicketEvent($ticketId, TipoDeEventoDeTicket::VENTANA_VENCIDA_CERRADO);
 
         $useCase = static::getContainer()->get(CambiarEstadoDeTicketUseCase::class);
 
         $this->expectException(\InvalidArgumentException::class);
-        $useCase->reopenDueToInboundMessage($ticketId);
+        $useCase->reabrirPorMensajeEntrante($ticketId);
     }
 
     public function testReopenDueToInboundMessageRejectsAClosedTicketWithADifferentLatestEventType(): void
     {
-        $ticketId = $this->createTicket(EstadoDeTicket::CLOSED->value);
+        $ticketId = $this->createTicket(EstadoDeTicket::CERRADO->value);
         $this->addTicketEvent($ticketId, 'auto_closed');
 
         $useCase = static::getContainer()->get(CambiarEstadoDeTicketUseCase::class);
 
         $this->expectException(\InvalidArgumentException::class);
-        $useCase->reopenDueToInboundMessage($ticketId);
+        $useCase->reabrirPorMensajeEntrante($ticketId);
     }
 
     public function testReopenDueToInboundMessageRejectsAClosedTicketWithNoEvents(): void
     {
-        $ticketId = $this->createTicket(EstadoDeTicket::CLOSED->value);
+        $ticketId = $this->createTicket(EstadoDeTicket::CERRADO->value);
 
         $useCase = static::getContainer()->get(CambiarEstadoDeTicketUseCase::class);
 
         $this->expectException(\InvalidArgumentException::class);
-        $useCase->reopenDueToInboundMessage($ticketId);
+        $useCase->reabrirPorMensajeEntrante($ticketId);
     }
 
     // ── Phase 3: actor threading (design.md D5/D4/D7) ──
@@ -251,10 +251,10 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
-        $ticket->setContact($contact);
-        $ticket->setConversation($conversation);
-        $ticket->setStatus($status);
-        $ticket->setAssignedAgentId($agentId);
+        $ticket->setContacto($contact);
+        $ticket->setConversacion($conversation);
+        $ticket->setEstado($status);
+        $ticket->setAgenteAsignadoId($agentId);
         $this->em->persist($ticket);
         $this->em->flush();
 
@@ -275,10 +275,10 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
     public function testExecuteWithARealActorRecordsAssignedByAsThatActorNotSystem(): void
     {
         $agentId = $this->createAgent('Actor Test Agent');
-        $ticketId = $this->createTicketWithOwner(EstadoDeTicket::ACTIVE->value, $agentId);
+        $ticketId = $this->createTicketWithOwner(EstadoDeTicket::ACTIVO->value, $agentId);
 
         $useCase = static::getContainer()->get(CambiarEstadoDeTicketUseCase::class);
-        $useCase->execute($ticketId, EstadoDeTicket::RESOLVED->value, true, true, 'u:9');
+        $useCase->execute($ticketId, EstadoDeTicket::RESUELTO->value, true, true, 'u:9');
 
         self::assertSame('u:9', $this->latestAssignmentAssignedBy($ticketId));
     }
@@ -286,10 +286,10 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
     public function testCloseWithARealActorRecordsAssignedByAsThatActorNotSystem(): void
     {
         $agentId = $this->createAgent('Actor Test Agent Close');
-        $ticketId = $this->createTicketWithOwner(EstadoDeTicket::RESOLVED->value, $agentId);
+        $ticketId = $this->createTicketWithOwner(EstadoDeTicket::RESUELTO->value, $agentId);
 
         $useCase = static::getContainer()->get(CambiarEstadoDeTicketUseCase::class);
-        $useCase->close($ticketId, 'u:11');
+        $useCase->cerrar($ticketId, 'u:11');
 
         self::assertSame('u:11', $this->latestAssignmentAssignedBy($ticketId));
     }
@@ -297,10 +297,10 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
     public function testResolveForwardsTheActorThroughToTheAssignment(): void
     {
         $agentId = $this->createAgent('Actor Test Agent Resolve');
-        $ticketId = $this->createTicketWithOwner(EstadoDeTicket::ACTIVE->value, $agentId);
+        $ticketId = $this->createTicketWithOwner(EstadoDeTicket::ACTIVO->value, $agentId);
 
         $useCase = static::getContainer()->get(CambiarEstadoDeTicketUseCase::class);
-        $useCase->resolve($ticketId, 'u:13');
+        $useCase->resolver($ticketId, 'u:13');
 
         self::assertSame('u:13', $this->latestAssignmentAssignedBy($ticketId));
     }
@@ -308,7 +308,7 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
     public function testResolveTicketUseCaseForwardsTheActor(): void
     {
         $agentId = $this->createAgent('Actor Test Agent ResolveUseCase');
-        $ticketId = $this->createTicketWithOwner(EstadoDeTicket::ACTIVE->value, $agentId);
+        $ticketId = $this->createTicketWithOwner(EstadoDeTicket::ACTIVO->value, $agentId);
 
         $resolveUseCase = static::getContainer()->get(ResolverTicketUseCase::class);
         $resolveUseCase->execute($ticketId, 'u:17');
@@ -319,10 +319,10 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
     public function testExecuteWithoutAnExplicitActorStillDefaultsToSystem(): void
     {
         $agentId = $this->createAgent('Default System Agent');
-        $ticketId = $this->createTicketWithOwner(EstadoDeTicket::ACTIVE->value, $agentId);
+        $ticketId = $this->createTicketWithOwner(EstadoDeTicket::ACTIVO->value, $agentId);
 
         $useCase = static::getContainer()->get(CambiarEstadoDeTicketUseCase::class);
-        $useCase->execute($ticketId, EstadoDeTicket::RESOLVED->value, true, true);
+        $useCase->execute($ticketId, EstadoDeTicket::RESUELTO->value, true, true);
 
         self::assertSame('system', $this->latestAssignmentAssignedBy($ticketId));
     }
@@ -330,10 +330,10 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
     public function testCloseWithoutAnExplicitActorStillDefaultsToSystem(): void
     {
         $agentId = $this->createAgent('Default System Agent Close');
-        $ticketId = $this->createTicketWithOwner(EstadoDeTicket::RESOLVED->value, $agentId);
+        $ticketId = $this->createTicketWithOwner(EstadoDeTicket::RESUELTO->value, $agentId);
 
         $useCase = static::getContainer()->get(CambiarEstadoDeTicketUseCase::class);
-        $useCase->close($ticketId);
+        $useCase->cerrar($ticketId);
 
         self::assertSame('system', $this->latestAssignmentAssignedBy($ticketId));
     }
@@ -341,20 +341,20 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
     public function testExecuteReturnsThePreTransitionOwnerAsPreviousAssignedAgentId(): void
     {
         $agentId = $this->createAgent('Prev Owner Agent');
-        $ticketId = $this->createTicketWithOwner(EstadoDeTicket::ACTIVE->value, $agentId);
+        $ticketId = $this->createTicketWithOwner(EstadoDeTicket::ACTIVO->value, $agentId);
 
         $useCase = static::getContainer()->get(CambiarEstadoDeTicketUseCase::class);
-        $result = $useCase->execute($ticketId, EstadoDeTicket::RESOLVED->value, true, true, 'u:9');
+        $result = $useCase->execute($ticketId, EstadoDeTicket::RESUELTO->value, true, true, 'u:9');
 
         self::assertSame($agentId, $result['previous_assigned_agent_id']);
     }
 
     public function testExecuteReturnsNullPreviousAssignedAgentIdWhenUnowned(): void
     {
-        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVE->value);
+        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVO->value);
 
         $useCase = static::getContainer()->get(CambiarEstadoDeTicketUseCase::class);
-        $result = $useCase->execute($ticketId, EstadoDeTicket::RESOLVED->value, true, true, 'u:9');
+        $result = $useCase->execute($ticketId, EstadoDeTicket::RESUELTO->value, true, true, 'u:9');
 
         self::assertNull($result['previous_assigned_agent_id']);
     }
@@ -362,10 +362,10 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
     public function testCloseReturnsThePreTransitionOwnerAsPreviousAssignedAgentId(): void
     {
         $agentId = $this->createAgent('Prev Owner Agent Close');
-        $ticketId = $this->createTicketWithOwner(EstadoDeTicket::RESOLVED->value, $agentId);
+        $ticketId = $this->createTicketWithOwner(EstadoDeTicket::RESUELTO->value, $agentId);
 
         $useCase = static::getContainer()->get(CambiarEstadoDeTicketUseCase::class);
-        $result = $useCase->close($ticketId, 'u:11');
+        $result = $useCase->cerrar($ticketId, 'u:11');
 
         self::assertSame($agentId, $result['previous_assigned_agent_id']);
     }
@@ -378,10 +378,10 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
      */
     public function testExecuteSetsClosedAtWhenLandingOnClosed(): void
     {
-        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVE->value);
+        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVO->value);
 
         $useCase = static::getContainer()->get(CambiarEstadoDeTicketUseCase::class);
-        $useCase->execute($ticketId, EstadoDeTicket::CLOSED->value);
+        $useCase->execute($ticketId, EstadoDeTicket::CERRADO->value);
 
         $closedAt = $this->em->getConnection()->fetchOne('SELECT closed_at FROM tickets WHERE id = ?', [$ticketId]);
         self::assertNotNull($closedAt);
@@ -391,12 +391,12 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
 
     public function testAutoReopenRuleStillCompilesAndBehavesUnchangedWithTheNewOptionalActorParameter(): void
     {
-        $ticketId = $this->createTicket(EstadoDeTicket::RESOLVED->value);
+        $ticketId = $this->createTicket(EstadoDeTicket::RESUELTO->value);
 
         $useCase = static::getContainer()->get(CambiarEstadoDeTicketUseCase::class);
         // Mirrors AutoReopenRule::execute()'s exact 4-positional-arg call site.
-        $result = $useCase->execute($ticketId, EstadoDeTicket::WAITING->value, false, false);
+        $result = $useCase->execute($ticketId, EstadoDeTicket::EN_ESPERA->value, false, false);
 
-        self::assertSame(EstadoDeTicket::WAITING->value, $result['new_status']);
+        self::assertSame(EstadoDeTicket::EN_ESPERA->value, $result['new_status']);
     }
 }

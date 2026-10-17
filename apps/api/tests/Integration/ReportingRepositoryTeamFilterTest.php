@@ -82,18 +82,18 @@ class ReportingRepositoryTeamFilterTest extends KernelTestCase
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
-        $ticket->setContact($contact);
-        $ticket->setConversation($conversation);
-        $ticket->setStatus($status);
-        $ticket->setCreatedAt($createdAt);
+        $ticket->setContacto($contact);
+        $ticket->setConversacion($conversation);
+        $ticket->setEstado($status);
+        $ticket->setCreadoAt($createdAt);
         if (null !== $firstResponseAt) {
-            $ticket->setFirstResponseAt($firstResponseAt);
+            $ticket->setPrimeraRespuestaAt($firstResponseAt);
         }
         if (null !== $resolvedAt) {
-            $ticket->setResolvedAt($resolvedAt);
+            $ticket->setResueltoAt($resolvedAt);
         }
         if (null !== $teamId) {
-            $ticket->setTeam($this->em->getReference(Team::class, $teamId));
+            $ticket->setEquipo($this->em->getReference(Team::class, $teamId));
         }
         $this->em->persist($ticket);
         $this->em->flush();

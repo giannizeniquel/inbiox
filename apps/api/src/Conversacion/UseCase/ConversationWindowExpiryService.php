@@ -27,10 +27,10 @@ final class ConversationWindowExpiryService
      *                FSM's closing side (task 0.9).
      */
     private const ELIGIBLE_STATUSES = [
-        EstadoDeTicket::NEW->value,
-        EstadoDeTicket::ACTIVE->value,
-        EstadoDeTicket::WAITING->value,
-        EstadoDeTicket::RESOLVED->value,
+        EstadoDeTicket::NUEVO->value,
+        EstadoDeTicket::ACTIVO->value,
+        EstadoDeTicket::EN_ESPERA->value,
+        EstadoDeTicket::RESUELTO->value,
     ];
 
     public function __construct(
@@ -57,7 +57,7 @@ final class ConversationWindowExpiryService
             ->modify(sprintf('-%d hours', ConversationWindowPolicy::WINDOW_HOURS))
             ->modify(sprintf('+%d minutes', $margin));
 
-        $ids = $this->ticketRepo->findIdsWithExpiredWindow(
+        $ids = $this->ticketRepo->findIdsConVentanaVencida(
             self::ELIGIBLE_STATUSES,
             $threshold->format('Y-m-d H:i:s'),
             $limit,
@@ -70,7 +70,7 @@ final class ConversationWindowExpiryService
         $closedCount = 0;
         foreach ($ids as $id) {
             try {
-                $this->transitionUseCase->closeDueToWindowExpiry((int) $id);
+                $this->transitionUseCase->cerrarPorVentanaVencida((int) $id);
                 $closedCount++;
             } catch (\Throwable $e) {
                 // One bad row must not abort the batch — log and continue.

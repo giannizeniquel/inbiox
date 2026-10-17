@@ -63,21 +63,21 @@ class ListTicketsQueryFilterTest extends KernelTestCase
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
-        $ticket->setContact($contact);
-        $ticket->setConversation($conversation);
-        $ticket->setStatus($status);
+        $ticket->setContacto($contact);
+        $ticket->setConversacion($conversation);
+        $ticket->setEstado($status);
         if (null !== $assignedAgentId) {
-            $ticket->setAssignedAgentId($assignedAgentId);
+            $ticket->setAgenteAsignadoId($assignedAgentId);
         }
         if (null !== $teamId) {
-            $ticket->setTeam($this->em->getReference(Team::class, $teamId));
+            $ticket->setEquipo($this->em->getReference(Team::class, $teamId));
         }
         $this->em->persist($ticket);
         $this->em->flush();
 
         $tagRepo = static::getContainer()->get(EtiquetaRepository::class);
         foreach ($tagNames as $tagName) {
-            $tag = $tagRepo->findByName($tagName);
+            $tag = $tagRepo->findByNombre($tagName);
             if (!$tag) {
                 $tag = new Etiqueta($tagName);
                 $this->em->persist($tag);

@@ -123,11 +123,11 @@ class TicketClosureAuthorizationTest extends WebTestCase
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
-        $ticket->setContact($contact);
-        $ticket->setConversation($conversation);
-        $ticket->setStatus($status);
+        $ticket->setContacto($contact);
+        $ticket->setConversacion($conversation);
+        $ticket->setEstado($status);
         if ($assignedAgentId !== null) {
-            $ticket->setAssignedAgentId($assignedAgentId);
+            $ticket->setAgenteAsignadoId($assignedAgentId);
         }
         $this->em->persist($ticket);
         $this->em->flush();
@@ -187,9 +187,9 @@ class TicketClosureAuthorizationTest extends WebTestCase
     public static function ownedClosingActionProvider(): array
     {
         return [
-            'resolve, active'                  => ['POST', '/api/tickets/{id}/resolve', null, EstadoDeTicket::ACTIVE->value],
-            'transition to resolved, active'   => ['POST', '/api/tickets/{id}/transition', ['status' => 'resolved'], EstadoDeTicket::ACTIVE->value],
-            'transition to closed, active'     => ['POST', '/api/tickets/{id}/transition', ['status' => 'closed'], EstadoDeTicket::ACTIVE->value],
+            'resolve, active'                  => ['POST', '/api/tickets/{id}/resolve', null, EstadoDeTicket::ACTIVO->value],
+            'transition to resolved, active'   => ['POST', '/api/tickets/{id}/transition', ['status' => 'resolved'], EstadoDeTicket::ACTIVO->value],
+            'transition to closed, active'     => ['POST', '/api/tickets/{id}/transition', ['status' => 'closed'], EstadoDeTicket::ACTIVO->value],
         ];
     }
 
@@ -202,7 +202,7 @@ class TicketClosureAuthorizationTest extends WebTestCase
     {
         $agent = $this->createAgent('Self Resolver');
         $token = $this->createAuthenticatedUser('self-resolver@inbiox.local', ['ROLE_AGENT'], $agent);
-        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVE->value, $agent->getId());
+        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVO->value, $agent->getId());
 
         $resolveResponse = $this->request('POST', '/api/tickets/' . $ticketId . '/resolve', $token);
         self::assertSame(200, $resolveResponse->getStatusCode());
@@ -279,10 +279,10 @@ class TicketClosureAuthorizationTest extends WebTestCase
     public static function closingActionProvider(): array
     {
         return [
-            'resolve'                    => ['POST', '/api/tickets/{id}/resolve', null, EstadoDeTicket::ACTIVE->value],
-            'transition to resolved'     => ['POST', '/api/tickets/{id}/transition', ['status' => 'resolved'], EstadoDeTicket::ACTIVE->value],
-            'transition to closed'       => ['POST', '/api/tickets/{id}/transition', ['status' => 'closed'], EstadoDeTicket::ACTIVE->value],
-            'close (from resolved)'      => ['POST', '/api/tickets/{id}/close', null, EstadoDeTicket::RESOLVED->value],
+            'resolve'                    => ['POST', '/api/tickets/{id}/resolve', null, EstadoDeTicket::ACTIVO->value],
+            'transition to resolved'     => ['POST', '/api/tickets/{id}/transition', ['status' => 'resolved'], EstadoDeTicket::ACTIVO->value],
+            'transition to closed'       => ['POST', '/api/tickets/{id}/transition', ['status' => 'closed'], EstadoDeTicket::ACTIVO->value],
+            'close (from resolved)'      => ['POST', '/api/tickets/{id}/close', null, EstadoDeTicket::RESUELTO->value],
         ];
     }
 
@@ -296,11 +296,11 @@ class TicketClosureAuthorizationTest extends WebTestCase
         $ownerAgent = $this->createAgent('Some Owner');
         $token = $this->createAuthenticatedUser('privileged-' . \strtolower($role) . '@inbiox.local', [$role]);
 
-        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVE->value, $ownerAgent->getId());
+        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVO->value, $ownerAgent->getId());
         $response = $this->request('POST', '/api/tickets/' . $ticketId . '/resolve', $token);
         self::assertSame(200, $response->getStatusCode());
 
-        $ticketId2 = $this->createTicket(EstadoDeTicket::RESOLVED->value, null);
+        $ticketId2 = $this->createTicket(EstadoDeTicket::RESUELTO->value, null);
         $response2 = $this->request('POST', '/api/tickets/' . $ticketId2 . '/close', $token);
         self::assertSame(200, $response2->getStatusCode());
     }
@@ -333,8 +333,8 @@ class TicketClosureAuthorizationTest extends WebTestCase
     public static function nonClosingTargetProvider(): array
     {
         return [
-            'to active'  => [EstadoDeTicket::ACTIVE->value, EstadoDeTicket::NEW->value],
-            'to waiting' => [EstadoDeTicket::WAITING->value, EstadoDeTicket::ACTIVE->value],
+            'to active'  => [EstadoDeTicket::ACTIVO->value, EstadoDeTicket::NUEVO->value],
+            'to waiting' => [EstadoDeTicket::EN_ESPERA->value, EstadoDeTicket::ACTIVO->value],
         ];
     }
 
@@ -343,7 +343,7 @@ class TicketClosureAuthorizationTest extends WebTestCase
     public function testTransitionWithNoStatusStillReturns400Unchanged(): void
     {
         $token = $this->createAuthenticatedUser('no-status@inbiox.local', ['ROLE_AGENT']);
-        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVE->value, null);
+        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVO->value, null);
 
         $response = $this->request('POST', '/api/tickets/' . $ticketId . '/transition', $token, []);
 
@@ -354,7 +354,7 @@ class TicketClosureAuthorizationTest extends WebTestCase
     {
         $agent = $this->createAgent('Wrong Case Owner');
         $token = $this->createAuthenticatedUser('wrong-case@inbiox.local', ['ROLE_AGENT'], $agent);
-        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVE->value, $agent->getId());
+        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVO->value, $agent->getId());
 
         $response = $this->request('POST', '/api/tickets/' . $ticketId . '/transition', $token, ['status' => 'CLOSED']);
 

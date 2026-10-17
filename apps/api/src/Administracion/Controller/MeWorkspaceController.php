@@ -112,7 +112,7 @@ final class MeWorkspaceController
         $agentId = (int) $agent->getId();
         $items = [];
         foreach ($agent->getWorkspaces()->toArray() as $w) {
-            $hasPending = $this->ticketRepository->hasPendingForAgent($w->getPhoneNumberId(), $agentId);
+            $hasPending = $this->ticketRepository->hasPendientesDeAgente($w->getPhoneNumberId(), $agentId);
             $items[] = array_merge(WorkspaceDTO::fromEntity($w)->toArray(), ['has_pending' => $hasPending]);
         }
 

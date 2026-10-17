@@ -66,7 +66,7 @@ final class FiltrosDeTicket
         $tags = [];
         if (null !== $tag && '' !== trim($tag)) {
             $tags = array_values(array_unique(array_filter(
-                array_map(fn ($n) => Etiqueta::normalize($n), explode(',', $tag)),
+                array_map(fn ($n) => Etiqueta::normalizar($n), explode(',', $tag)),
                 fn ($n) => '' !== $n,
             )));
             if (count($tags) > self::MAX_TAGS) {

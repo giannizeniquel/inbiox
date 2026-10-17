@@ -34,8 +34,8 @@ final class RecordSentTemplateUseCase
         $message->setUpdatedAt(new \DateTimeImmutable());
         $message->setSenderAgentId($senderAgentId);
         $message->setSenderType(MessageSenderType::AGENT);
-        if ($ticket->getConversation()) {
-            $message->setConversation($ticket->getConversation());
+        if ($ticket->getConversacion()) {
+            $message->setConversation($ticket->getConversacion());
         }
         $this->entityManager->persist($message);
         $this->entityManager->flush();

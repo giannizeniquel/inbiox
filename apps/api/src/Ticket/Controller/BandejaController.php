@@ -36,7 +36,7 @@ class BandejaController
     ) {}
 
     #[Route('/api/tickets', name: 'app_inbox_tickets', methods: ['GET'])]
-    public function listTickets(Request $request): JsonResponse
+    public function listarTickets(Request $request): JsonResponse
     {
         try {
             $page = max(1, (int) $request->query->get('page', 1));
@@ -101,7 +101,7 @@ class BandejaController
     }
 
     #[Route('/api/tickets/{id}/messages', name: 'app_inbox_ticket_messages', methods: ['GET'])]
-    public function getMessages(int $id, Request $request): JsonResponse
+    public function getMensajes(int $id, Request $request): JsonResponse
     {
         try {
             $cursor = $request->query->get('cursor');
@@ -137,7 +137,7 @@ class BandejaController
     }
 
     #[Route('/api/tickets/{id}/mark-read', name: 'app_ticket_mark_read', methods: ['PUT'])]
-    public function markRead(int $id): JsonResponse
+    public function marcarLeido(int $id): JsonResponse
     {
         $ticket = $this->ticketRepository->find($id);
         if (!$ticket) {

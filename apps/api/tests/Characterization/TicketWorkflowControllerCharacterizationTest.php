@@ -46,7 +46,7 @@ final class TicketWorkflowControllerCharacterizationTest extends Characterizatio
     {
         $token = $this->supervisorToken();
         $useCase = $this->createMock(CambiarEstadoDeTicketUseCase::class);
-        $useCase->method('close')->willThrowException(new \RuntimeException('workflow exploded'));
+        $useCase->method('cerrar')->willThrowException(new \RuntimeException('workflow exploded'));
         static::getContainer()->set(CambiarEstadoDeTicketUseCase::class, $useCase);
 
         $response = $this->request('POST', '/api/tickets/' . self::MISSING_TICKET_ID . '/close', $token);

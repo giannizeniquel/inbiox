@@ -19,9 +19,9 @@ final class TicketResponsabilidadGuard
     /**
      * A resolved/closed ticket freezes ownership for reply-driven changes.
      */
-    public static function isResolvedOrClosed(string $status): bool
+    public static function isResueltoOCerrado(string $status): bool
     {
-        return $status === EstadoDeTicket::RESOLVED->value || $status === EstadoDeTicket::CLOSED->value;
+        return $status === EstadoDeTicket::RESUELTO->value || $status === EstadoDeTicket::CERRADO->value;
     }
 
     /**
@@ -32,13 +32,13 @@ final class TicketResponsabilidadGuard
      * `$agentId <= 0` (system/no-agent callers) never blocks — preserves every
      * existing `agentId: 0` call site.
      */
-    public static function blocksReassignment(
+    public static function bloqueaReasignacion(
         string $status,
         bool $senderIsPrivileged,
         int $agentId,
         ?int $assignedAgentId,
     ): bool {
-        if (!self::isResolvedOrClosed($status)) {
+        if (!self::isResueltoOCerrado($status)) {
             return false;
         }
 

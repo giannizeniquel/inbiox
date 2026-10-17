@@ -41,7 +41,7 @@ class TicketWorkflowControllerAuditFailureTest extends TestCase
         $user->setAgent($agent);
 
         $ticket = $this->createMock(Ticket::class);
-        $ticket->method('getAssignedAgentId')->willReturn(7);
+        $ticket->method('getAgenteAsignadoId')->willReturn(7);
         $ticket->method('getId')->willReturn(42);
 
         $ticketRepo = $this->createMock(TicketRepository::class);
@@ -51,10 +51,10 @@ class TicketWorkflowControllerAuditFailureTest extends TestCase
         $security->method('isGranted')->willReturn(true);
 
         $transitionUseCase = $this->createMock(CambiarEstadoDeTicketUseCase::class);
-        $transitionUseCase->method('close')->willReturn([
+        $transitionUseCase->method('cerrar')->willReturn([
             'ticket_id' => 42,
-            'previous_status' => EstadoDeTicket::RESOLVED->value,
-            'new_status' => EstadoDeTicket::CLOSED->value,
+            'previous_status' => EstadoDeTicket::RESUELTO->value,
+            'new_status' => EstadoDeTicket::CERRADO->value,
             'previous_assigned_agent_id' => 7,
             'reason' => 'success',
         ]);
@@ -92,7 +92,7 @@ class TicketWorkflowControllerAuditFailureTest extends TestCase
 
         [$controller, $user] = $this->buildController($em, $logger);
 
-        $response = $controller->close(42, $user);
+        $response = $controller->cerrar(42, $user);
 
         self::assertSame(200, $response->getStatusCode());
         $data = \json_decode($response->getContent(), true);

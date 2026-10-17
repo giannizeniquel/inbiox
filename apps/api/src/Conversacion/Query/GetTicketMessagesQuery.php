@@ -22,7 +22,7 @@ class GetTicketMessagesQuery
         $limit = min(200, max(1, $limit));
         
         // Get ticket's conversation
-        $conversationId = $this->ticketRepository->findConversationId($ticketId);
+        $conversationId = $this->ticketRepository->findConversacionId($ticketId);
 
         if ($conversationId === false) {
             return ['items' => [], 'has_more' => false, 'next_cursor' => null];

@@ -51,7 +51,7 @@ final class SendTemplateUseCase
             throw new NotFoundException('Ticket not found');
         }
 
-        $phone = $ticket->recipientPhone();
+        $phone = $ticket->telefonoDestinatario();
 
         // Each ticket replies from the WhatsApp number it came in on (CAP-7 / META-018).
         $graphResponse = $this->graphClient->sendTemplate($phone, $templateName, $language, $parameters, $ticket->getPhoneNumberId());

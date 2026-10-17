@@ -25,7 +25,7 @@ class AgregarEtiquetaATicketUseCase
      */
     public function execute(int $ticketId, string $tagName, string $source = 'manual'): array
     {
-        $normalizedName = Etiqueta::normalize($tagName);
+        $normalizedName = Etiqueta::normalizar($tagName);
 
         return $this->em->getConnection()->transactional(function() use ($ticketId, $normalizedName, $source) {
             // Find ticket
@@ -35,7 +35,7 @@ class AgregarEtiquetaATicketUseCase
             }
 
             // Find or create tag
-            $tag = $this->tagRepo->findByName($normalizedName);
+            $tag = $this->tagRepo->findByNombre($normalizedName);
             if (!$tag) {
                 $tag = new Etiqueta($normalizedName);
                 $this->em->persist($tag);
@@ -43,7 +43,7 @@ class AgregarEtiquetaATicketUseCase
             }
 
             // Check if ticket already has this tag
-            $existing = $this->tagRepo->isAttachedToTicket($ticketId, $tag->getId());
+            $existing = $this->tagRepo->isAsociadaATicket($ticketId, $tag->getId());
 
             // Idempotent - don't add duplicate or emit event
             if ($existing) {

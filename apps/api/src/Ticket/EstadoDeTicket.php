@@ -4,9 +4,9 @@ namespace App\Ticket;
 
 enum EstadoDeTicket: string
 {
-    case NEW = 'new';
-    case ACTIVE = 'active';
-    case WAITING = 'waiting';
-    case RESOLVED = 'resolved';
-    case CLOSED = 'closed';
+    case NUEVO = 'new';
+    case ACTIVO = 'active';
+    case EN_ESPERA = 'waiting';
+    case RESUELTO = 'resolved';
+    case CERRADO = 'closed';
 }

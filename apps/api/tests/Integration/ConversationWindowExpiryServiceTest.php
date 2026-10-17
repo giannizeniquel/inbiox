@@ -54,10 +54,10 @@ class ConversationWindowExpiryServiceTest extends KernelTestCase
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
-        $ticket->setContact($contact);
-        $ticket->setConversation($conversation);
-        $ticket->setStatus($status);
-        $ticket->setLastInboundMessageAt($lastInboundMessageAt);
+        $ticket->setContacto($contact);
+        $ticket->setConversacion($conversation);
+        $ticket->setEstado($status);
+        $ticket->setUltimoMensajeEntranteAt($lastInboundMessageAt);
         $this->em->persist($ticket);
         $this->em->flush();
 
@@ -69,9 +69,9 @@ class ConversationWindowExpiryServiceTest extends KernelTestCase
 
     public function testClosesOnlyExpiredNonClosedTicketsWithAKnownLastInboundMessage(): void
     {
-        $expired = $this->createTicket(EstadoDeTicket::ACTIVE->value, new \DateTimeImmutable('-25 hours'));
-        $notExpired = $this->createTicket(EstadoDeTicket::ACTIVE->value, new \DateTimeImmutable('-1 hour'));
-        $nullInbound = $this->createTicket(EstadoDeTicket::NEW->value, null);
+        $expired = $this->createTicket(EstadoDeTicket::ACTIVO->value, new \DateTimeImmutable('-25 hours'));
+        $notExpired = $this->createTicket(EstadoDeTicket::ACTIVO->value, new \DateTimeImmutable('-1 hour'));
+        $nullInbound = $this->createTicket(EstadoDeTicket::NUEVO->value, null);
 
         $service = static::getContainer()->get(ConversationWindowExpiryService::class);
         $count = $service->closeExpired(dryRun: false, limit: 200);
@@ -79,20 +79,20 @@ class ConversationWindowExpiryServiceTest extends KernelTestCase
         self::assertSame(1, $count);
 
         self::assertSame(
-            EstadoDeTicket::CLOSED->value,
+            EstadoDeTicket::CERRADO->value,
             $this->em->getConnection()->fetchOne('SELECT status FROM tickets WHERE id = ?', [$expired])
         );
         self::assertSame(
-            EstadoDeTicket::ACTIVE->value,
+            EstadoDeTicket::ACTIVO->value,
             $this->em->getConnection()->fetchOne('SELECT status FROM tickets WHERE id = ?', [$notExpired])
         );
         self::assertSame(
-            EstadoDeTicket::NEW->value,
+            EstadoDeTicket::NUEVO->value,
             $this->em->getConnection()->fetchOne('SELECT status FROM tickets WHERE id = ?', [$nullInbound])
         );
 
         self::assertSame(
-            TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED,
+            TipoDeEventoDeTicket::VENTANA_VENCIDA_CERRADO,
             $this->em->getConnection()->fetchOne(
                 'SELECT type FROM ticket_events WHERE ticket_id = ? ORDER BY created_at DESC, id DESC LIMIT 1',
                 [$expired]
@@ -102,28 +102,28 @@ class ConversationWindowExpiryServiceTest extends KernelTestCase
 
     public function testANeverWorkedNewTicketClosesLikeAnyOther(): void
     {
-        $ticketId = $this->createTicket(EstadoDeTicket::NEW->value, new \DateTimeImmutable('-25 hours'));
+        $ticketId = $this->createTicket(EstadoDeTicket::NUEVO->value, new \DateTimeImmutable('-25 hours'));
 
         $service = static::getContainer()->get(ConversationWindowExpiryService::class);
         $count = $service->closeExpired(dryRun: false, limit: 200);
 
         self::assertSame(1, $count);
         self::assertSame(
-            EstadoDeTicket::CLOSED->value,
+            EstadoDeTicket::CERRADO->value,
             $this->em->getConnection()->fetchOne('SELECT status FROM tickets WHERE id = ?', [$ticketId])
         );
     }
 
     public function testDryRunWritesNothing(): void
     {
-        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVE->value, new \DateTimeImmutable('-25 hours'));
+        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVO->value, new \DateTimeImmutable('-25 hours'));
 
         $service = static::getContainer()->get(ConversationWindowExpiryService::class);
         $count = $service->closeExpired(dryRun: true, limit: 200);
 
         self::assertSame(1, $count);
         self::assertSame(
-            EstadoDeTicket::ACTIVE->value,
+            EstadoDeTicket::ACTIVO->value,
             $this->em->getConnection()->fetchOne('SELECT status FROM tickets WHERE id = ?', [$ticketId]),
             'Dry-run must not mutate any ticket'
         );
@@ -137,7 +137,7 @@ class ConversationWindowExpiryServiceTest extends KernelTestCase
 
     public function testAPerTicketThrowableIsCaughtSoOneBadRowDoesNotAbortTheBatch(): void
     {
-        $good = $this->createTicket(EstadoDeTicket::ACTIVE->value, new \DateTimeImmutable('-25 hours'));
+        $good = $this->createTicket(EstadoDeTicket::ACTIVO->value, new \DateTimeImmutable('-25 hours'));
         // Already-closed rows can't legally satisfy the WHERE clause used by the
         // service (status IN new/active/waiting/resolved), so simulate a bad
         // row by force-setting status to 'closed' AFTER the service's SELECT
@@ -145,10 +145,10 @@ class ConversationWindowExpiryServiceTest extends KernelTestCase
         // instead we assert the batch completes and processes the good ticket
         // even when a concurrently-closed row would throw inside
         // closeDueToWindowExpiry() due to the FSM guard.
-        $concurrentlyClosed = $this->createTicket(EstadoDeTicket::ACTIVE->value, new \DateTimeImmutable('-26 hours'));
+        $concurrentlyClosed = $this->createTicket(EstadoDeTicket::ACTIVO->value, new \DateTimeImmutable('-26 hours'));
         $this->em->getConnection()->executeStatement(
             'UPDATE tickets SET status = ? WHERE id = ?',
-            [EstadoDeTicket::CLOSED->value, $concurrentlyClosed]
+            [EstadoDeTicket::CERRADO->value, $concurrentlyClosed]
         );
 
         $service = static::getContainer()->get(ConversationWindowExpiryService::class);
@@ -159,7 +159,7 @@ class ConversationWindowExpiryServiceTest extends KernelTestCase
         // mainly proves the batch completes without throwing.
         self::assertSame(1, $count);
         self::assertSame(
-            EstadoDeTicket::CLOSED->value,
+            EstadoDeTicket::CERRADO->value,
             $this->em->getConnection()->fetchOne('SELECT status FROM tickets WHERE id = ?', [$good])
         );
     }

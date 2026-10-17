@@ -100,11 +100,11 @@ class ProviderProxyControllerAutoClaimTest extends WebTestCase
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
-        $ticket->setContact($contact);
-        $ticket->setConversation($conversation);
-        $ticket->setStatus(EstadoDeTicket::RESOLVED->value);
-        $ticket->setAssignedAgentId($owner->getId());
-        $ticket->setLastInboundMessageAt(new \DateTimeImmutable('-1 hour'));
+        $ticket->setContacto($contact);
+        $ticket->setConversacion($conversation);
+        $ticket->setEstado(EstadoDeTicket::RESUELTO->value);
+        $ticket->setAgenteAsignadoId($owner->getId());
+        $ticket->setUltimoMensajeEntranteAt(new \DateTimeImmutable('-1 hour'));
         $this->em->persist($ticket);
         $this->em->flush();
 

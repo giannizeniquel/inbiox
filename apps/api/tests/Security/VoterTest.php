@@ -63,7 +63,7 @@ class VoterTest extends TestCase
         }
 
         $ticket = $this->createMock(Ticket::class);
-        $ticket->method('getAssignedAgentId')->willReturn($ticketAgentId);
+        $ticket->method('getAgenteAsignadoId')->willReturn($ticketAgentId);
 
         $token = $this->createMock(TokenInterface::class);
         $token->method('getUser')->willReturn($user);
@@ -140,8 +140,8 @@ class VoterTest extends TestCase
         $user->setRoles(['ROLE_SUPERVISOR']);
 
         $ticket = $this->createMock(Ticket::class);
-        $ticket->method('getStatus')->willReturn(\App\Ticket\EstadoDeTicket::RESOLVED->value);
-        $ticket->method('getAssignedAgentId')->willReturn(null);
+        $ticket->method('getEstado')->willReturn(\App\Ticket\EstadoDeTicket::RESUELTO->value);
+        $ticket->method('getAgenteAsignadoId')->willReturn(null);
 
         $token = $this->createMock(TokenInterface::class);
         $token->method('getUser')->willReturn($user);

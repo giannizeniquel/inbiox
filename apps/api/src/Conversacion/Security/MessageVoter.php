@@ -62,14 +62,14 @@ final class MessageVoter extends Voter
             }
 
             // Find the ticket for this conversation
-            $ticket = $this->ticketRepository->findByConversation($conversation);
+            $ticket = $this->ticketRepository->findByConversacion($conversation);
 
             if ($ticket === null) {
                 return false;
             }
 
             // Agent can access if assigned to this ticket
-            return $ticket->getAssignedAgentId() === $agent->getId();
+            return $ticket->getAgenteAsignadoId() === $agent->getId();
         }
 
         return false;

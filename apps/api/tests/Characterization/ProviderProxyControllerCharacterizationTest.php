@@ -57,7 +57,7 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
     {
         $ticket = $this->createTicket($status, $assignedAgentId, $this->createContact(self::CONTACT_PHONE, 'Char Contact'));
         $ticket->setPhoneNumberId(self::PHONE_NUMBER_ID);
-        $ticket->setLastInboundMessageAt(new \DateTimeImmutable('-1 hour'));
+        $ticket->setUltimoMensajeEntranteAt(new \DateTimeImmutable('-1 hour'));
         $this->em->flush();
 
         return $ticket;
@@ -307,9 +307,9 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
         $conversation->setContact($contact);
         $this->em->persist($conversation);
         $ticket = new Ticket();
-        $ticket->setConversation($conversation);
-        $ticket->setStatus('new');
-        $ticket->setLastInboundMessageAt(new \DateTimeImmutable('-1 hour'));
+        $ticket->setConversacion($conversation);
+        $ticket->setEstado('new');
+        $ticket->setUltimoMensajeEntranteAt(new \DateTimeImmutable('-1 hour'));
         $this->em->persist($ticket);
         $this->em->flush();
         [$token] = $this->agentToken();
@@ -324,7 +324,7 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
     public function testSendToAContactWithoutPhoneIsPhoneNotFound(): void
     {
         $ticket = $this->createTicket('new', null, $this->createContact(''));
-        $ticket->setLastInboundMessageAt(new \DateTimeImmutable('-1 hour'));
+        $ticket->setUltimoMensajeEntranteAt(new \DateTimeImmutable('-1 hour'));
         $this->em->flush();
         [$token] = $this->agentToken();
         $this->graph->expects(self::never())->method(self::anything());

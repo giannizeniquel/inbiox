@@ -133,10 +133,10 @@ final class AsignacionControllersCharacterizationTest extends CharacterizationTe
         // AutoAssignTicketUseCase is final, so a collaborator it calls after
         // finding an available agent is replaced instead.
         $ticketRepo = $this->createMock(TicketRepository::class);
-        $ticketRepo->method('countActiveForAgent')->willThrowException(new \InvalidArgumentException('bad ticket'));
+        $ticketRepo->method('countActivosDeAgente')->willThrowException(new \InvalidArgumentException('bad ticket'));
         // Phase 3c-1: the ticket lock now goes through TicketRepository, so forward it to the real repository.
         $realRepo = new TicketRepository(static::getContainer()->get(\Doctrine\Persistence\ManagerRegistry::class));
-        $ticketRepo->method('findRowByIdForUpdate')->willReturnCallback(fn (int $id) => $realRepo->findRowByIdForUpdate($id));
+        $ticketRepo->method('findFilaByIdForUpdate')->willReturnCallback(fn (int $id) => $realRepo->findFilaByIdForUpdate($id));
         static::getContainer()->set(TicketRepository::class, $ticketRepo);
 
         $response = $this->request('POST', '/api/tickets/' . $ticket->getId() . '/auto-assign', $token);

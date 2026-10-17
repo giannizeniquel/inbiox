@@ -77,7 +77,7 @@ class AgentReplyAutoClaimConcurrencyTest extends KernelTestCase
      */
     public function testFindByIdForUpdateBlocksOnRowLockWhereasPlainFindByIdNever(): void
     {
-        $ticketId = $this->seedTicket(EstadoDeTicket::ACTIVE->value, null);
+        $ticketId = $this->seedTicket(EstadoDeTicket::ACTIVO->value, null);
 
         $conn2 = DriverManager::getConnection($this->em->getConnection()->getParams());
         $conn2->beginTransaction();
@@ -135,7 +135,7 @@ class AgentReplyAutoClaimConcurrencyTest extends KernelTestCase
     public function testConcurrentReplyRollsBackCleanlyUnderLockContention(): void
     {
         $agentId = $this->seedAgent('Lock Proof Agent');
-        $ticketId = $this->seedTicket(EstadoDeTicket::ACTIVE->value, null);
+        $ticketId = $this->seedTicket(EstadoDeTicket::ACTIVO->value, null);
 
         $conn2 = DriverManager::getConnection($this->em->getConnection()->getParams());
         $conn2->beginTransaction();
@@ -196,7 +196,7 @@ class AgentReplyAutoClaimConcurrencyTest extends KernelTestCase
 
         $agentA = $this->seedAgent('Agent A');
         $agentB = $this->seedAgent('Agent B');
-        $ticketId = $this->seedTicket(EstadoDeTicket::ACTIVE->value, null);
+        $ticketId = $this->seedTicket(EstadoDeTicket::ACTIVO->value, null);
 
         // Release the parent's DB connection before forking — forked children
         // must never share a live socket/file descriptor with the parent.
@@ -299,11 +299,11 @@ class AgentReplyAutoClaimConcurrencyTest extends KernelTestCase
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
-        $ticket->setContact($contact);
-        $ticket->setConversation($conversation);
-        $ticket->setStatus($status);
-        $ticket->setAssignedAgentId($assignedAgentId);
-        $ticket->setLastInboundMessageAt(new \DateTimeImmutable('-1 hour'));
+        $ticket->setContacto($contact);
+        $ticket->setConversacion($conversation);
+        $ticket->setEstado($status);
+        $ticket->setAgenteAsignadoId($assignedAgentId);
+        $ticket->setUltimoMensajeEntranteAt(new \DateTimeImmutable('-1 hour'));
         $this->em->persist($ticket);
         $this->em->flush();
 

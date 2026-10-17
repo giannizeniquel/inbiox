@@ -129,7 +129,7 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
     {
         $ticket = $this->createTicket($status, null, $this->createContact(self::CONTACT_PHONE, 'Ana'));
         $ticket->setPhoneNumberId(self::PHONE_NUMBER_ID);
-        $ticket->getConversation()->setPhoneNumberId(self::PHONE_NUMBER_ID);
+        $ticket->getConversacion()->setPhoneNumberId(self::PHONE_NUMBER_ID);
         $this->em->flush();
 
         return $ticket;
@@ -417,7 +417,7 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
     private function outboundMessage(Ticket $ticket, string $wamid, string $deliveryStatus): Message
     {
         $message = new Message();
-        $message->setConversation($ticket->getConversation());
+        $message->setConversation($ticket->getConversacion());
         $message->setDirection('outbound');
         $message->setContent('respuesta');
         $message->setExternalId($wamid);

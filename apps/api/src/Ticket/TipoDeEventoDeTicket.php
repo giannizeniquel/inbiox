@@ -14,15 +14,15 @@ namespace App\Ticket;
  */
 final class TipoDeEventoDeTicket
 {
-    public const WINDOW_EXPIRED_CLOSED = 'window_expired_closed';
-    public const WINDOW_REOPENED = 'window_reopened';
+    public const VENTANA_VENCIDA_CERRADO = 'window_expired_closed';
+    public const VENTANA_REABIERTO = 'window_reopened';
 
     // Manual closure/resolution audit trail (ticket-closure-authorization).
     // See ClasificadorDeAuditoriaDeCierre for the truth table that reaches these.
-    public const MANUAL_RESOLVED_OWNER = 'manual_resolved_owner';
-    public const MANUAL_RESOLVED_OVERRIDE = 'manual_resolved_override';
-    public const MANUAL_RESOLVED_UNOWNED = 'manual_resolved_unowned';
-    public const MANUAL_CLOSED_OWNER = 'manual_closed_owner';
-    public const MANUAL_CLOSED_OVERRIDE = 'manual_closed_override';
-    public const MANUAL_CLOSED_UNOWNED = 'manual_closed_unowned';
+    public const MANUAL_RESUELTO_RESPONSABLE = 'manual_resolved_owner';
+    public const MANUAL_RESUELTO_FORZADO = 'manual_resolved_override';
+    public const MANUAL_RESUELTO_SIN_RESPONSABLE = 'manual_resolved_unowned';
+    public const MANUAL_CERRADO_RESPONSABLE = 'manual_closed_owner';
+    public const MANUAL_CERRADO_FORZADO = 'manual_closed_override';
+    public const MANUAL_CERRADO_SIN_RESPONSABLE = 'manual_closed_unowned';
 }

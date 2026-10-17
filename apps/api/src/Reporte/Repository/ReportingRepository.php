@@ -208,14 +208,14 @@ class ReportingRepository extends ServiceEntityRepository
     {
         $qb = $this->createQueryBuilder('t');
 
-        $qb->select('t.status', 'COUNT(t.id) as count')
-            ->andWhere('t.createdAt >= :from AND t.createdAt < :to')
-            ->groupBy('t.status')
+        $qb->select('t.estado AS status', 'COUNT(t.id) as count')
+            ->andWhere('t.creadoAt >= :from AND t.creadoAt < :to')
+            ->groupBy('t.estado')
             ->setParameter('from', $from)
             ->setParameter('to', $to);
 
         if ($agentId !== null) {
-            $qb->andWhere('t.assignedAgentId = :agentId')
+            $qb->andWhere('t.agenteAsignadoId = :agentId')
                ->setParameter('agentId', $agentId);
         }
 
@@ -225,7 +225,7 @@ class ReportingRepository extends ServiceEntityRepository
         }
 
         if ($teamId !== null) {
-            $qb->andWhere('t.team = :teamId')
+            $qb->andWhere('t.equipo = :teamId')
                ->setParameter('teamId', $teamId);
         }
 

@@ -109,9 +109,9 @@ class ReportingResponseDelayTest extends WebTestCase
     private function createTicket(Conversation $conversation, string $createdAt): Ticket
     {
         $ticket = new Ticket();
-        $ticket->setContact($conversation->getContact());
-        $ticket->setConversation($conversation);
-        $ticket->setCreatedAt(new \DateTimeImmutable($createdAt));
+        $ticket->setContacto($conversation->getContact());
+        $ticket->setConversacion($conversation);
+        $ticket->setCreadoAt(new \DateTimeImmutable($createdAt));
         $this->em->persist($ticket);
         $this->em->flush();
 

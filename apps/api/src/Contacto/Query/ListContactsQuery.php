@@ -69,7 +69,7 @@ class ListContactsQuery
     {
         if (empty($contactIds)) return;
 
-        $rows = $this->ticketRepository->findLatestOpenTicketIdsByContact($contactIds, $phoneNumberId);
+        $rows = $this->ticketRepository->findUltimosTicketIdsAbiertosByContacto($contactIds, $phoneNumberId);
 
         // Build lookup: contact_id → ticket_id
         $ticketMap = [];

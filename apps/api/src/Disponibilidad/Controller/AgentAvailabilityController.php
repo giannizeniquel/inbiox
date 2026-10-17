@@ -140,7 +140,7 @@ class AgentAvailabilityController
         $localNow = $nowUtc->setTimezone($localTz);
 
         $isAvailable = $this->agentAvailabilityService->isAvailable($agent, $nowUtc);
-        $currentLoad = $this->ticketRepo->countActiveForAgent($id);
+        $currentLoad = $this->ticketRepo->countActivosDeAgente($id);
 
         // Compute is_in_shift by checking schedule only (no override, no capacity)
         $isInShift = $this->isAgentInShift($agent, $localNow);

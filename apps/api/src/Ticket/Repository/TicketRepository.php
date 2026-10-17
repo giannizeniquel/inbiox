@@ -21,16 +21,16 @@ class TicketRepository extends ServiceEntityRepository
         parent::__construct($registry, Ticket::class);
     }
 
-    public function findOpenByContact(Contact $contact, ?string $phoneNumberId = null): ?Ticket
+    public function findAbiertoByContacto(Contact $contact, ?string $phoneNumberId = null): ?Ticket
     {
         $qb = $this->createQueryBuilder('t')
-            ->where('t.contact = :contact')
-            ->andWhere('t.status IN (:statuses)')
+            ->where('t.contacto = :contact')
+            ->andWhere('t.estado IN (:statuses)')
             ->setParameter('contact', $contact->getId() ?? 0)
             ->setParameter('statuses', [
-                EstadoDeTicket::NEW->value,
-                EstadoDeTicket::ACTIVE->value,
-                EstadoDeTicket::WAITING->value,
+                EstadoDeTicket::NUEVO->value,
+                EstadoDeTicket::ACTIVO->value,
+                EstadoDeTicket::EN_ESPERA->value,
             ]);
 
         if ($phoneNumberId !== null) {
@@ -41,17 +41,17 @@ class TicketRepository extends ServiceEntityRepository
         return $qb->getQuery()->getOneOrNullResult();
     }
 
-    public function findNotClosedByContact(Contact $contact, ?string $phoneNumberId = null): ?Ticket
+    public function findNoCerradoByContacto(Contact $contact, ?string $phoneNumberId = null): ?Ticket
     {
         $qb = $this->createQueryBuilder('t')
-            ->where('t.contact = :contact')
-            ->andWhere('t.status IN (:statuses)')
+            ->where('t.contacto = :contact')
+            ->andWhere('t.estado IN (:statuses)')
             ->setParameter('contact', $contact->getId() ?? 0)
             ->setParameter('statuses', [
-                EstadoDeTicket::NEW->value,
-                EstadoDeTicket::ACTIVE->value,
-                EstadoDeTicket::WAITING->value,
-                EstadoDeTicket::RESOLVED->value,
+                EstadoDeTicket::NUEVO->value,
+                EstadoDeTicket::ACTIVO->value,
+                EstadoDeTicket::EN_ESPERA->value,
+                EstadoDeTicket::RESUELTO->value,
             ]);
 
         if ($phoneNumberId !== null) {
@@ -104,7 +104,7 @@ class TicketRepository extends ServiceEntityRepository
      * then rehydrates via `$this->find($id)` so the caller receives a
      * managed entity it can `lock()`.
      */
-    public function findWindowExpiredClosedByContact(Contact $contact, ?string $phoneNumberId = null): ?Ticket
+    public function findCerradoPorVentanaVencidaByContacto(Contact $contact, ?string $phoneNumberId = null): ?Ticket
     {
         $sql = 'SELECT t.id
                 FROM tickets t
@@ -117,8 +117,8 @@ class TicketRepository extends ServiceEntityRepository
                        LIMIT 1) = :window_expired_closed';
         $params = [
             'contact_id' => $contact->getId() ?? 0,
-            'status' => EstadoDeTicket::CLOSED->value,
-            'window_expired_closed' => TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED,
+            'status' => EstadoDeTicket::CERRADO->value,
+            'window_expired_closed' => TipoDeEventoDeTicket::VENTANA_VENCIDA_CERRADO,
         ];
 
         if ($phoneNumberId !== null) {
@@ -133,9 +133,9 @@ class TicketRepository extends ServiceEntityRepository
         return $id !== false ? $this->find((int) $id) : null;
     }
 
-    public function findByConversation(Conversation $conversation): ?Ticket
+    public function findByConversacion(Conversation $conversation): ?Ticket
     {
-        return $this->findOneBy(['conversation' => $conversation]);
+        return $this->findOneBy(['conversacion' => $conversation]);
     }
 
     /**
@@ -144,17 +144,17 @@ class TicketRepository extends ServiceEntityRepository
      * Active tickets are those with status IN ('new', 'active', 'waiting').
      * Uses index idx_tickets_owner_status (assigned_agent_id, status).
      */
-    public function countActiveForAgent(int $agentId): int
+    public function countActivosDeAgente(int $agentId): int
     {
         return (int) $this->createQueryBuilder('t')
             ->select('COUNT(t.id)')
-            ->where('t.assignedAgentId = :agentId')
-            ->andWhere('t.status IN (:statuses)')
+            ->where('t.agenteAsignadoId = :agentId')
+            ->andWhere('t.estado IN (:statuses)')
             ->setParameter('agentId', $agentId)
             ->setParameter('statuses', [
-                EstadoDeTicket::NEW->value,
-                EstadoDeTicket::ACTIVE->value,
-                EstadoDeTicket::WAITING->value,
+                EstadoDeTicket::NUEVO->value,
+                EstadoDeTicket::ACTIVO->value,
+                EstadoDeTicket::EN_ESPERA->value,
             ])
             ->getQuery()
             ->getSingleScalarResult();
@@ -173,7 +173,7 @@ class TicketRepository extends ServiceEntityRepository
      *
      * @return array<string, mixed>|false
      */
-    public function findRowByIdForUpdate(int $id): array|false
+    public function findFilaByIdForUpdate(int $id): array|false
     {
         return $this->getEntityManager()->getConnection()->executeQuery(
             'SELECT * FROM tickets WHERE id = ? FOR UPDATE',
@@ -186,7 +186,7 @@ class TicketRepository extends ServiceEntityRepository
      * sets status and updated_at, plus each SLA timestamp the caller asks for,
      * in this SET order: first_response_at, resolved_at, closed_at.
      */
-    public function updateStatusAfterTransition(
+    public function updateEstadoTrasTransicion(
         int $id,
         string $status,
         bool $setFirstResponse,
@@ -217,7 +217,7 @@ class TicketRepository extends ServiceEntityRepository
     /**
      * Close write: status, closed_at = NOW(), updated_at = NOW().
      */
-    public function markClosed(int $id, string $status): void
+    public function marcarCerrado(int $id, string $status): void
     {
         $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->update('tickets')
@@ -233,7 +233,7 @@ class TicketRepository extends ServiceEntityRepository
     /**
      * Reopen write: status, closed_at = NULL, updated_at = NOW().
      */
-    public function markReopened(int $id, string $status): void
+    public function marcarReabierto(int $id, string $status): void
     {
         $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->update('tickets')
@@ -250,7 +250,7 @@ class TicketRepository extends ServiceEntityRepository
      * First agent reply without a status change:
      * first_response_at = NOW(), updated_at = NOW().
      */
-    public function markFirstResponse(int $id): void
+    public function marcarPrimeraRespuesta(int $id): void
     {
         $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->update('tickets')
@@ -265,7 +265,7 @@ class TicketRepository extends ServiceEntityRepository
      * Type of the ticket's most recent `ticket_events` row
      * (by created_at, then id), or false when it has no events.
      */
-    public function findLatestEventType(int $ticketId): string|false
+    public function findUltimoTipoDeEvento(int $ticketId): string|false
     {
         return $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->select('type')
@@ -303,7 +303,7 @@ class TicketRepository extends ServiceEntityRepository
      * @param string[] $statuses
      * @return list<mixed>
      */
-    public function findIdsWithExpiredWindow(array $statuses, string $threshold, int $limit): array
+    public function findIdsConVentanaVencida(array $statuses, string $threshold, int $limit): array
     {
         return $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->select('id')
@@ -325,7 +325,7 @@ class TicketRepository extends ServiceEntityRepository
      *
      * @return list<array<string, mixed>>
      */
-    public function findListPage(FiltrosDeTicket $filters, int $limit, int $offset): array
+    public function findPaginaDeLista(FiltrosDeTicket $filters, int $limit, int $offset): array
     {
         $qb = $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->select(
@@ -340,7 +340,7 @@ class TicketRepository extends ServiceEntityRepository
             ->innerJoin('t', 'contacts', 'c', 'conv.contact_id = c.id')
             ->leftJoin('t', 'agents', 'a', 't.assigned_agent_id = a.id');
 
-        $this->applyListFilters($qb, $filters);
+        $this->aplicarFiltrosDeLista($qb, $filters);
 
         return $qb->orderBy('t.updated_at', 'DESC')
             ->addOrderBy('t.id', 'DESC')
@@ -352,13 +352,13 @@ class TicketRepository extends ServiceEntityRepository
     /**
      * Total number of tickets matching the list filters (no joins needed).
      */
-    public function countList(FiltrosDeTicket $filters): int
+    public function countLista(FiltrosDeTicket $filters): int
     {
         $qb = $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->select('COUNT(*)')
             ->from('tickets', 't');
 
-        $this->applyListFilters($qb, $filters);
+        $this->aplicarFiltrosDeLista($qb, $filters);
 
         return (int) $qb->fetchOne();
     }
@@ -371,7 +371,7 @@ class TicketRepository extends ServiceEntityRepository
      * @param int[] $conversationIds
      * @return list<array{conversation_id: mixed, cnt: mixed}>
      */
-    public function countUnreadInboundByConversation(array $conversationIds): array
+    public function countEntrantesNoLeidosByConversacion(array $conversationIds): array
     {
         return $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->select('m2.conversation_id', 'COUNT(*) AS cnt')
@@ -390,7 +390,7 @@ class TicketRepository extends ServiceEntityRepository
      * that was never read or has an inbound message newer than its last read
      * (`has_pending` in `GET /api/me/workspaces`).
      */
-    public function hasPendingForAgent(string $phoneNumberId, int $agentId): bool
+    public function hasPendientesDeAgente(string $phoneNumberId, int $agentId): bool
     {
         return false !== $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->select('1')
@@ -415,7 +415,7 @@ class TicketRepository extends ServiceEntityRepository
      *
      * @return array<string, mixed>|false
      */
-    public function findDetailRow(int $id): array|false
+    public function findFilaDeDetalle(int $id): array|false
     {
         return $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->select(
@@ -439,7 +439,7 @@ class TicketRepository extends ServiceEntityRepository
      * The ticket's `conversation_id`: false when the ticket does not exist,
      * null when the column is null.
      */
-    public function findConversationId(int $id): int|false|null
+    public function findConversacionId(int $id): int|false|null
     {
         $conversationId = $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->select('conversation_id')
@@ -462,7 +462,7 @@ class TicketRepository extends ServiceEntityRepository
      *
      * @return list<array<string, mixed>>
      */
-    public function findExportChunk(FiltrosDeTicket $filters, string $from, string $to, int $afterId, int $limit): array
+    public function findBloqueDeExportacion(FiltrosDeTicket $filters, string $from, string $to, int $afterId, int $limit): array
     {
         $qb = $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->select(
@@ -478,7 +478,7 @@ class TicketRepository extends ServiceEntityRepository
             ->innerJoin('t', 'contacts', 'c', 'conv.contact_id = c.id')
             ->leftJoin('t', 'agents', 'a', 't.assigned_agent_id = a.id');
 
-        $this->applyListFilters($qb, $filters);
+        $this->aplicarFiltrosDeLista($qb, $filters);
 
         return $qb->andWhere('t.created_at >= :from')
             ->andWhere('t.created_at <= :to')
@@ -499,7 +499,7 @@ class TicketRepository extends ServiceEntityRepository
      * @param int[] $contactIds
      * @return list<array{contact_id: mixed, ticket_id: mixed}>
      */
-    public function findLatestOpenTicketIdsByContact(array $contactIds, ?string $phoneNumberId): array
+    public function findUltimosTicketIdsAbiertosByContacto(array $contactIds, ?string $phoneNumberId): array
     {
         $qb = $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->select('t.contact_id', 'MAX(t.id) AS ticket_id')
@@ -521,7 +521,7 @@ class TicketRepository extends ServiceEntityRepository
      * in this order: assignment or mine, ownership scope, workspace, status,
      * one EXISTS per tag (AND semantics), team.
      */
-    private function applyListFilters(QueryBuilder $qb, FiltrosDeTicket $filters): void
+    private function aplicarFiltrosDeLista(QueryBuilder $qb, FiltrosDeTicket $filters): void
     {
         if ($filters->assignment === 'unassigned') {
             $qb->andWhere('t.assigned_agent_id IS NULL');

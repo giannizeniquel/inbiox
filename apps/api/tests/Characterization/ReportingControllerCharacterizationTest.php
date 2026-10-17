@@ -379,7 +379,7 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
         $this->owner = $this->createAgent('Report Owner');
         $ticket = $this->createTicket('active', $this->owner->getId());
         $this->connection()->executeStatement('UPDATE tickets SET created_at = ? WHERE id = ?', ['2025-03-01 10:00:00', $ticket->getId()]);
-        $conversationId = $ticket->getConversation()->getId();
+        $conversationId = $ticket->getConversacion()->getId();
         foreach ([
             ['inbound', 'contact', null, '2025-03-01 10:00:00'],
             ['inbound', 'contact', null, '2025-03-01 10:01:00'],

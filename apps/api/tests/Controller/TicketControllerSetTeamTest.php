@@ -127,8 +127,8 @@ class TicketControllerSetTeamTest extends WebTestCase
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
-        $ticket->setContact($contact);
-        $ticket->setConversation($conversation);
+        $ticket->setContacto($contact);
+        $ticket->setConversacion($conversation);
         $ticket->setPhoneNumberId($phoneNumberId);
         $this->em->persist($ticket);
         $this->em->flush();
@@ -170,7 +170,7 @@ class TicketControllerSetTeamTest extends WebTestCase
 
         $this->em->clear();
         $reloaded = $this->em->getRepository(Ticket::class)->find($ticket->getId());
-        self::assertSame($team->getId(), $reloaded->getTeamId());
+        self::assertSame($team->getId(), $reloaded->getEquipoId());
     }
 
     public function testSetTeamCrossWorkspaceReturns400AndLeavesTeamIdUnchanged(): void
@@ -189,7 +189,7 @@ class TicketControllerSetTeamTest extends WebTestCase
 
         $this->em->clear();
         $reloaded = $this->em->getRepository(Ticket::class)->find($ticket->getId());
-        self::assertNull($reloaded->getTeamId(), 'team_id must remain unchanged on cross-workspace rejection');
+        self::assertNull($reloaded->getEquipoId(), 'team_id must remain unchanged on cross-workspace rejection');
     }
 
     public function testClearTeamToNullSucceeds(): void
@@ -198,7 +198,7 @@ class TicketControllerSetTeamTest extends WebTestCase
         $workspace = $this->createWorkspace('+1000000000', 'Workspace A');
         $team = $this->createTeam($workspace, 'Support');
         $ticket = $this->createTicket('+1000000000');
-        $ticket->setTeam($team);
+        $ticket->setEquipo($team);
         $this->em->flush();
 
         $this->client->request('PUT', "/api/tickets/{$ticket->getId()}/team", [], [], $this->authHeaders($token) + [
@@ -213,7 +213,7 @@ class TicketControllerSetTeamTest extends WebTestCase
 
         $this->em->clear();
         $reloaded = $this->em->getRepository(Ticket::class)->find($ticket->getId());
-        self::assertNull($reloaded->getTeamId());
+        self::assertNull($reloaded->getEquipoId());
     }
 
     public function testSetTeamUnknownTicketReturns404(): void

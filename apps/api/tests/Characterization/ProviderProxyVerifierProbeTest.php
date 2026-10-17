@@ -51,7 +51,7 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
     {
         $ticket = $this->createTicket($status, $assignedAgentId, $this->createContact(self::CONTACT_PHONE, 'Probe Contact'));
         $ticket->setPhoneNumberId(self::PHONE_NUMBER_ID);
-        $ticket->setLastInboundMessageAt(new \DateTimeImmutable('-1 hour'));
+        $ticket->setUltimoMensajeEntranteAt(new \DateTimeImmutable('-1 hour'));
         $this->em->flush();
 
         return $ticket;
@@ -144,7 +144,7 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
     public function testSendOnAnExpiredWindowChangesNoData(): void
     {
         $ticket = $this->createTicket('active', null, $this->createContact(self::CONTACT_PHONE));
-        $ticket->setLastInboundMessageAt(new \DateTimeImmutable('-30 hours'));
+        $ticket->setUltimoMensajeEntranteAt(new \DateTimeImmutable('-30 hours'));
         $this->em->flush();
         [$token] = $this->agentToken();
         $this->graph->expects(self::never())->method(self::anything());
@@ -216,9 +216,9 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
     {
         $contact = $this->createContact(self::CONTACT_PHONE);
         $ticket = new Ticket();
-        $ticket->setContact($contact);
-        $ticket->setStatus('new');
-        $ticket->setLastInboundMessageAt(new \DateTimeImmutable('-1 hour'));
+        $ticket->setContacto($contact);
+        $ticket->setEstado('new');
+        $ticket->setUltimoMensajeEntranteAt(new \DateTimeImmutable('-1 hour'));
         $this->em->persist($ticket);
         $this->em->flush();
         [$token] = $this->agentToken();
@@ -251,8 +251,8 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
         $conversation->setContact($contact);
         $this->em->persist($conversation);
         $ticket = new Ticket();
-        $ticket->setConversation($conversation);
-        $ticket->setStatus('new');
+        $ticket->setConversacion($conversation);
+        $ticket->setEstado('new');
         $this->em->persist($ticket);
         $this->em->flush();
         [$token] = $this->agentToken();

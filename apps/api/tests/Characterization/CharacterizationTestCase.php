@@ -161,10 +161,10 @@ abstract class CharacterizationTestCase extends WebTestCase
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
-        $ticket->setContact($contact);
-        $ticket->setConversation($conversation);
-        $ticket->setStatus($status);
-        $ticket->setAssignedAgentId($assignedAgentId);
+        $ticket->setContacto($contact);
+        $ticket->setConversacion($conversation);
+        $ticket->setEstado($status);
+        $ticket->setAgenteAsignadoId($assignedAgentId);
         $this->em->persist($ticket);
         $this->em->flush();
 

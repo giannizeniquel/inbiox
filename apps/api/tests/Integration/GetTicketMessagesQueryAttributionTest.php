@@ -60,9 +60,9 @@ class GetTicketMessagesQueryAttributionTest extends KernelTestCase
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
-        $ticket->setContact($contact);
-        $ticket->setConversation($conversation);
-        $ticket->setStatus('active');
+        $ticket->setContacto($contact);
+        $ticket->setConversacion($conversation);
+        $ticket->setEstado('active');
         $this->em->persist($ticket);
         $this->em->flush();
 

@@ -97,7 +97,7 @@ class AssignTicketUseCase
             }
 
             // Detect assignment type from current ownership
-            $currentOwnerId = $ticket->getAssignedAgentId();
+            $currentOwnerId = $ticket->getAgenteAsignadoId();
             $previousAgent = null;
 
             if ($currentOwnerId !== null && $currentOwnerId !== $agentId) {
@@ -127,7 +127,7 @@ class AssignTicketUseCase
                 'agent_name' => $agent->getName(),
                 'assigned_by' => $assignment->getAssignedBy(),
                 'assigned_at' => $assignment->getAssignedAt()->format('Y-m-d H:i:s'),
-                'ticket_status' => $ticket->getStatus(),
+                'ticket_status' => $ticket->getEstado(),
                 'notes' => $assignment->getNotes(),
                 'status' => 'ok',
             ];

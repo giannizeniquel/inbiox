@@ -27,22 +27,22 @@ class TicketStateMachineTest extends TestCase
 
     public function testNewToClosedIsNowValid(): void
     {
-        self::assertTrue($this->fsm->canTransition(EstadoDeTicket::NEW->value, EstadoDeTicket::CLOSED->value));
+        self::assertTrue($this->fsm->puedeTransicionar(EstadoDeTicket::NUEVO->value, EstadoDeTicket::CERRADO->value));
     }
 
     public function testActiveToClosedIsNowValid(): void
     {
-        self::assertTrue($this->fsm->canTransition(EstadoDeTicket::ACTIVE->value, EstadoDeTicket::CLOSED->value));
+        self::assertTrue($this->fsm->puedeTransicionar(EstadoDeTicket::ACTIVO->value, EstadoDeTicket::CERRADO->value));
     }
 
     public function testWaitingToClosedIsNowValid(): void
     {
-        self::assertTrue($this->fsm->canTransition(EstadoDeTicket::WAITING->value, EstadoDeTicket::CLOSED->value));
+        self::assertTrue($this->fsm->puedeTransicionar(EstadoDeTicket::EN_ESPERA->value, EstadoDeTicket::CERRADO->value));
     }
 
     public function testResolvedToClosedRemainsValid(): void
     {
-        self::assertTrue($this->fsm->canTransition(EstadoDeTicket::RESOLVED->value, EstadoDeTicket::CLOSED->value));
+        self::assertTrue($this->fsm->puedeTransicionar(EstadoDeTicket::RESUELTO->value, EstadoDeTicket::CERRADO->value));
     }
 
     /**
@@ -50,35 +50,35 @@ class TicketStateMachineTest extends TestCase
      */
     public function testEveryClosedToAnythingTransitionIsInvalid(string $target): void
     {
-        self::assertFalse($this->fsm->canTransition(EstadoDeTicket::CLOSED->value, $target));
+        self::assertFalse($this->fsm->puedeTransicionar(EstadoDeTicket::CERRADO->value, $target));
     }
 
     public static function closedTargetProvider(): array
     {
         return [
-            'closed -> new' => [EstadoDeTicket::NEW->value],
-            'closed -> active' => [EstadoDeTicket::ACTIVE->value],
-            'closed -> waiting' => [EstadoDeTicket::WAITING->value],
-            'closed -> resolved' => [EstadoDeTicket::RESOLVED->value],
-            'closed -> closed' => [EstadoDeTicket::CLOSED->value],
+            'closed -> new' => [EstadoDeTicket::NUEVO->value],
+            'closed -> active' => [EstadoDeTicket::ACTIVO->value],
+            'closed -> waiting' => [EstadoDeTicket::EN_ESPERA->value],
+            'closed -> resolved' => [EstadoDeTicket::RESUELTO->value],
+            'closed -> closed' => [EstadoDeTicket::CERRADO->value],
         ];
     }
 
     public function testClosedIsStillTerminal(): void
     {
-        self::assertTrue($this->fsm->isTerminal(EstadoDeTicket::CLOSED->value));
+        self::assertTrue($this->fsm->isTerminal(EstadoDeTicket::CERRADO->value));
     }
 
     public function testNonClosedStatusesAreNotTerminal(): void
     {
-        self::assertFalse($this->fsm->isTerminal(EstadoDeTicket::NEW->value));
-        self::assertFalse($this->fsm->isTerminal(EstadoDeTicket::ACTIVE->value));
-        self::assertFalse($this->fsm->isTerminal(EstadoDeTicket::WAITING->value));
-        self::assertFalse($this->fsm->isTerminal(EstadoDeTicket::RESOLVED->value));
+        self::assertFalse($this->fsm->isTerminal(EstadoDeTicket::NUEVO->value));
+        self::assertFalse($this->fsm->isTerminal(EstadoDeTicket::ACTIVO->value));
+        self::assertFalse($this->fsm->isTerminal(EstadoDeTicket::EN_ESPERA->value));
+        self::assertFalse($this->fsm->isTerminal(EstadoDeTicket::RESUELTO->value));
     }
 
     public function testExistingActiveToWaitingTransitionUnaffected(): void
     {
-        self::assertTrue($this->fsm->canTransition(EstadoDeTicket::ACTIVE->value, EstadoDeTicket::WAITING->value));
+        self::assertTrue($this->fsm->puedeTransicionar(EstadoDeTicket::ACTIVO->value, EstadoDeTicket::EN_ESPERA->value));
     }
 }

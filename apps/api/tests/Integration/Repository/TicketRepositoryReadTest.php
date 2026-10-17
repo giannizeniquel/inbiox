@@ -36,7 +36,7 @@ class TicketRepositoryReadTest extends KernelTestCase
     /** @return list<int> */
     private function listIds(FiltrosDeTicket $filters, int $limit = 20, int $offset = 0): array
     {
-        return array_map(fn (array $row) => (int) $row['id'], $this->repo->findListPage($filters, $limit, $offset));
+        return array_map(fn (array $row) => (int) $row['id'], $this->repo->findPaginaDeLista($filters, $limit, $offset));
     }
 
     private function inWorkspaces(string $filter = 'all', ?string $agentId = null, ?string $status = null, ?int $scopeAgentId = null, ?string $tag = null, ?int $teamId = null): array
@@ -55,7 +55,7 @@ class TicketRepositoryReadTest extends KernelTestCase
 
     public function testListPageRowColumns(): void
     {
-        $rows = $this->repo->findListPage(new FiltrosDeTicket(phoneNumberId: 'repo-read-p1'), 20, 0);
+        $rows = $this->repo->findPaginaDeLista(new FiltrosDeTicket(phoneNumberId: 'repo-read-p1'), 20, 0);
         $row = $rows[2];
 
         self::assertSame(880001, (int) $row['id']);
@@ -127,14 +127,14 @@ class TicketRepositoryReadTest extends KernelTestCase
 
     public function testCountListMatchesTheFilters(): void
     {
-        self::assertSame(3, $this->repo->countList(new FiltrosDeTicket(phoneNumberId: 'repo-read-p1')));
-        self::assertSame(1, $this->repo->countList(new FiltrosDeTicket(phoneNumberId: 'repo-read-p2', tag: 'repo-read-vip')));
-        self::assertSame(0, $this->repo->countList(new FiltrosDeTicket(phoneNumberId: 'repo-read-p2', status: 'new')));
+        self::assertSame(3, $this->repo->countLista(new FiltrosDeTicket(phoneNumberId: 'repo-read-p1')));
+        self::assertSame(1, $this->repo->countLista(new FiltrosDeTicket(phoneNumberId: 'repo-read-p2', tag: 'repo-read-vip')));
+        self::assertSame(0, $this->repo->countLista(new FiltrosDeTicket(phoneNumberId: 'repo-read-p2', status: 'new')));
     }
 
     public function testCountUnreadInboundByConversation(): void
     {
-        $rows = $this->repo->countUnreadInboundByConversation([880001, 880002, 880003]);
+        $rows = $this->repo->countEntrantesNoLeidosByConversacion([880001, 880002, 880003]);
         $counts = [];
         foreach ($rows as $row) {
             $counts[(int) $row['conversation_id']] = (int) $row['cnt'];
@@ -147,7 +147,7 @@ class TicketRepositoryReadTest extends KernelTestCase
 
     public function testFindDetailRow(): void
     {
-        $row = $this->repo->findDetailRow(880001);
+        $row = $this->repo->findFilaDeDetalle(880001);
 
         self::assertSame(880001, (int) $row['ticket_id']);
         self::assertSame('active', $row['status']);
@@ -160,20 +160,20 @@ class TicketRepositoryReadTest extends KernelTestCase
         self::assertSame(1, (int) $row['unread_count']);
         self::assertSame('auto', $row['last_message']);
 
-        self::assertFalse($this->repo->findDetailRow(1));
+        self::assertFalse($this->repo->findFilaDeDetalle(1));
     }
 
     public function testFindConversationId(): void
     {
-        self::assertSame(880003, $this->repo->findConversationId(880003));
-        self::assertFalse($this->repo->findConversationId(1));
+        self::assertSame(880003, $this->repo->findConversacionId(880003));
+        self::assertFalse($this->repo->findConversacionId(1));
     }
 
     public function testExportChunkUsesKeysetAndDateRange(): void
     {
         $filters = new FiltrosDeTicket(phoneNumberId: 'repo-read-p2');
-        $first = $this->repo->findExportChunk($filters, '2026-01-01 00:00:00', '2026-01-31 00:00:00', 0, 1);
-        $next = $this->repo->findExportChunk($filters, '2026-01-01 00:00:00', '2026-01-31 00:00:00', 880003, 1);
+        $first = $this->repo->findBloqueDeExportacion($filters, '2026-01-01 00:00:00', '2026-01-31 00:00:00', 0, 1);
+        $next = $this->repo->findBloqueDeExportacion($filters, '2026-01-01 00:00:00', '2026-01-31 00:00:00', 880003, 1);
 
         self::assertSame([880003], array_map(fn ($r) => (int) $r['id'], $first));
         self::assertSame([880004], array_map(fn ($r) => (int) $r['id'], $next));
@@ -182,7 +182,7 @@ class TicketRepositoryReadTest extends KernelTestCase
         self::assertSame('Agente Uno', $next[0]['agent_name']);
         self::assertSame('Yago Repo', $next[0]['contact_name']);
 
-        $narrow = $this->repo->findExportChunk(new FiltrosDeTicket(phoneNumberId: 'repo-read-p1'), '2026-01-01 00:00:00', '2026-01-01 08:59:59', 0, 500);
+        $narrow = $this->repo->findBloqueDeExportacion(new FiltrosDeTicket(phoneNumberId: 'repo-read-p1'), '2026-01-01 00:00:00', '2026-01-01 08:59:59', 0, 500);
         self::assertSame([880002], array_map(fn ($r) => (int) $r['id'], $narrow));
     }
 
@@ -200,15 +200,15 @@ class TicketRepositoryReadTest extends KernelTestCase
 
         // Contact 880002 only has waiting 880003 open (880004 is resolved);
         // contact 880003 has 880006 open and 880005 closed.
-        self::assertSame([880001 => 880002, 880002 => 880003, 880003 => 880006], $map($this->repo->findLatestOpenTicketIdsByContact([880001, 880002, 880003], null)));
-        self::assertSame([880002 => 880003], $map($this->repo->findLatestOpenTicketIdsByContact([880001, 880002, 880003], 'repo-read-p2')));
+        self::assertSame([880001 => 880002, 880002 => 880003, 880003 => 880006], $map($this->repo->findUltimosTicketIdsAbiertosByContacto([880001, 880002, 880003], null)));
+        self::assertSame([880002 => 880003], $map($this->repo->findUltimosTicketIdsAbiertosByContacto([880001, 880002, 880003], 'repo-read-p2')));
     }
 
     public function testCountActiveForAgentCountsNewActiveAndWaiting(): void
     {
-        self::assertSame(2, $this->repo->countActiveForAgent(880001));
-        self::assertSame(1, $this->repo->countActiveForAgent(880002));
-        self::assertSame(0, $this->repo->countActiveForAgent(880003), 'closed tickets do not count');
+        self::assertSame(2, $this->repo->countActivosDeAgente(880001));
+        self::assertSame(1, $this->repo->countActivosDeAgente(880002));
+        self::assertSame(0, $this->repo->countActivosDeAgente(880003), 'closed tickets do not count');
     }
 
     public function testHasPendingWhenAnInboundMessageIsNewerThanLastRead(): void
@@ -216,7 +216,7 @@ class TicketRepositoryReadTest extends KernelTestCase
         // Leave only 880001 (read at 10:00, inbound at 10:30) open for agent 880001 in p1.
         $this->conn->executeStatement("UPDATE tickets SET status = 'resolved' WHERE id = 880006");
 
-        self::assertTrue($this->repo->hasPendingForAgent('repo-read-p1', 880001));
+        self::assertTrue($this->repo->hasPendientesDeAgente('repo-read-p1', 880001));
     }
 
     public function testNoPendingWhenEveryInboundMessageWasRead(): void
@@ -224,18 +224,18 @@ class TicketRepositoryReadTest extends KernelTestCase
         $this->conn->executeStatement("UPDATE tickets SET status = 'resolved' WHERE id = 880006");
         $this->conn->executeStatement("UPDATE tickets SET last_read_at = '2026-01-02 00:00:00' WHERE id = 880001");
 
-        self::assertFalse($this->repo->hasPendingForAgent('repo-read-p1', 880001));
+        self::assertFalse($this->repo->hasPendientesDeAgente('repo-read-p1', 880001));
     }
 
     public function testANeverReadOpenTicketIsPending(): void
     {
         // 880003: waiting, last_read_at NULL.
-        self::assertTrue($this->repo->hasPendingForAgent('repo-read-p2', 880002));
+        self::assertTrue($this->repo->hasPendientesDeAgente('repo-read-p2', 880002));
     }
 
     public function testOnlyNewActiveAndWaitingTicketsCount(): void
     {
         // Agent 880001 in p2 only has 880004, which is resolved.
-        self::assertFalse($this->repo->hasPendingForAgent('repo-read-p2', 880001));
+        self::assertFalse($this->repo->hasPendientesDeAgente('repo-read-p2', 880001));
     }
 }

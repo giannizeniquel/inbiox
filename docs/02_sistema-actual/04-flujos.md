@@ -140,7 +140,7 @@ flowchart TD
 **Entrada:** `POST /api/provider/template/send` → `ProviderProxyController::sendTemplate` (`:159-225`) → `Conversacion/UseCase/SendTemplateUseCase.php`, `ROLE_AGENT`. **No hay UI** (`WhatsAppCloudProvider.sendTemplate()` no se llama).
 
 1. Valida `ticketId`, `templateName`, `language`, `parameters` (array).
-2. Carga ticket → contacto → teléfono (`Ticket::recipientPhone()`, compartido con `send`).
+2. Carga ticket → contacto → teléfono (`Ticket::telefonoDestinatario()`, compartido con `send`).
 3. `GraphClient::sendTemplate(...)` con el `phone_number_id` del ticket.
 4. Si Meta devuelve WAMID, resuelve el agente (lo crea si el usuario no tiene; solo en este caso) y persiste un `Message` outbound con contenido `"Template: {nombre} (params)"`, `sender_type=agent`. Devuelve `messageId` = WAMID (no el id de base, a diferencia de `send`).
 
@@ -176,19 +176,19 @@ stateDiagram-v2
 
 | Endpoint | Controlador | Quién puede |
 |---|---|---|
-| `POST /api/tickets/{id}/resolve` (botón "RESOLVER" de la conversación) | `FlujoDeTicketController::resolve` (`:88`) | Dueño, supervisor, admin (voter `CLOSE`) |
+| `POST /api/tickets/{id}/resolve` (botón "RESOLVER" de la conversación) | `FlujoDeTicketController::resolver` (`:88`) | Dueño, supervisor, admin (voter `CLOSE`) |
 | `POST /api/tickets/{id}/close` (sin UI) | `::close` (`:116`) | Igual, pero solo acepta tickets `resolved`, que ya no tienen dueño → en la práctica **solo supervisor/admin** |
 | `POST /api/tickets/{id}/transition` `{status, set_first_response, set_resolved}` (sin UI) | `::transition` (`:39-85`) | Voter `CLOSE` solo si el destino es `resolved`/`closed`; **cualquier otra transición, cualquier agente** (R-T14) |
 
 | # | Paso (resolver) | Dónde | Regla |
 |---|---|---|---|
 | 1 | Voter `CLOSE`: supervisor/admin siempre; agente solo si es el dueño. | `Ticket/Security/TicketVoter.php:76-121`; `FlujoDeTicketController.php:136-155` | R-T13 |
-| 2 | `CambiarEstadoDeTicketUseCase::resolve()` → `execute()`: valida FSM, setea `resolved_at` y `first_response_at`. | `Ticket/UseCase/CambiarEstadoDeTicketUseCase.php:72-139, 263-266` | R-T3, R-T12 |
+| 2 | `CambiarEstadoDeTicketUseCase::resolver()` → `execute()`: valida FSM, setea `resolved_at` y `first_response_at`. | `Ticket/UseCase/CambiarEstadoDeTicketUseCase.php:72-139, 263-266` | R-T3, R-T12 |
 | 3 | **Si hay dueño: `UNASSIGN`** → `AssignmentService` pone `assigned_agent_id = null` y crea fila `Assignment`. | `:37-61` (llamado en `:99`, `:172`, `:289`); `Asignacion/AssignmentService.php:65` | R-T9 |
 | 4 | El controlador clasifica el cierre (`owner`/`override`/`unowned`) y guarda un `EventoDeTicket` con `source = u:{userId}`. Si falla, solo se loguea. | `Ticket/ClasificadorDeAuditoriaDeCierre.php:25-38`; `Ticket/UseCase/RegistrarAuditoriaDeCierreUseCase.php` | R-T15 |
 | 5 | **No se escribe nada en el outbox**: los demás navegadores no se enteran hasta recargar. | — | P-5 |
 
-**Quién más cambia `tickets.status`** (fuera de este flujo): `AssignmentService` (`new → active` al asignar), `HandleInboundMessageUseCase` (`waiting → active`), `HandleOutboundMessageUseCase` (`new → active`, `active → waiting`), `AutoReopenRule` (`resolved → waiting`), `closeDueToWindowExpiry` y `reopenDueToInboundMessage` (F8), `DebugController::status` (dev).
+**Quién más cambia `tickets.status`** (fuera de este flujo): `AssignmentService` (`new → active` al asignar), `HandleInboundMessageUseCase` (`waiting → active`), `HandleOutboundMessageUseCase` (`new → active`, `active → waiting`), `AutoReopenRule` (`resolved → waiting`), `cerrarPorVentanaVencida` y `reabrirPorMensajeEntrante` (F8), `DebugController::status` (dev).
 
 **Si falla, revisar:**
 1. 403 → voter: `TicketVoter.php` (¿el usuario tiene agente vinculado? ¿es el dueño?).
@@ -283,7 +283,7 @@ stateDiagram-v2
 |---|---|---|
 | 1 | El servicio docker `window-closer` (profile opcional) corre `app:conversation-window:close-expired` cada 900 s. | `docker-compose.yml`; `Conversacion/Command/CloseExpiredConversationWindowsCommand.php` |
 | 2 | Selecciona hasta 200 tickets `new`/`active`/`waiting`/`resolved` con ventana vencida. | `Conversacion/UseCase/ConversationWindowExpiryService.php:55-93` |
-| 3 | Por cada uno: `closeDueToWindowExpiry()` → FSM a `closed`, `UNASSIGN` si hay dueño, `closed_at`, `EventoDeTicket(window_expired_closed, system)`. Un error en un ticket no corta el lote. | `CambiarEstadoDeTicketUseCase.php:152-192` |
+| 3 | Por cada uno: `cerrarPorVentanaVencida()` → FSM a `closed`, `UNASSIGN` si hay dueño, `closed_at`, `EventoDeTicket(window_expired_closed, system)`. Un error en un ticket no corta el lote. | `CambiarEstadoDeTicketUseCase.php:152-192` |
 
 **Reapertura:** cuando llega un mensaje y no hay ticket no cerrado (F1 paso 11), si el **último** `ticket_event` del ticket cerrado es `window_expired_closed`, se reabre `closed → active` por SQL, `closed_at = NULL`, `EventoDeTicket(window_reopened)`; queda sin dueño y la auto-asignación del mismo mensaje lo reasigna (`CambiarEstadoDeTicketUseCase.php:210-258`). Un cierre manual nunca se reabre: el siguiente mensaje crea un ticket nuevo. Si después del cierre por ventana se agregó otro evento (p. ej. un tag), ya no es reabrible.
 
@@ -385,7 +385,7 @@ Ver el diagrama y la tabla de archivos en [02 § Tiempo real](02-arquitectura-y-
 1. Busca el mensaje por WAMID (`messages.external_id`).
 2. Aplica la FSM "solo hacia adelante" (`sending` → `sent` → `delivered` → `read`; `failed` desde cualquier no final) (`:142-159`).
 3. Guarda `failed_reason` del primer error.
-4. Para encontrar el ticket usa `TicketRepository::findByConversation()` (`findOneBy`): con varios tickets en la conversación devuelve uno cualquiera.
+4. Para encontrar el ticket usa `TicketRepository::findByConversacion()` (`findOneBy`): con varios tickets en la conversación devuelve uno cualquiera.
 5. Publica `message.updated` (único caso que llena `outbox_events.sequence`).
 
 Un mensaje `failed` no afecta el estado del ticket.

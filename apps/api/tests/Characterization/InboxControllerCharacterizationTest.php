@@ -21,7 +21,7 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
     private function addMessage(Ticket $ticket, string $direction, string $content): Message
     {
         $message = new Message();
-        $message->setConversation($ticket->getConversation());
+        $message->setConversation($ticket->getConversacion());
         $message->setDirection($direction);
         $message->setContent($content);
         $this->em->persist($message);

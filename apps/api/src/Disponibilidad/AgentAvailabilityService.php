@@ -300,6 +300,6 @@ final class AgentAvailabilityService
             return 0;
         }
 
-        return $this->ticketRepository->countActiveForAgent($agentId);
+        return $this->ticketRepository->countActivosDeAgente($agentId);
     }
 }

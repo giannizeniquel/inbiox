@@ -117,7 +117,7 @@ class AgentAvailabilityServiceTest extends TestCase
     private function expectActiveTicketCount(int $agentId, int $count): void
     {
         $this->ticketRepository->expects(self::once())
-            ->method('countActiveForAgent')
+            ->method('countActivosDeAgente')
             ->willReturn($count);
     }
 
@@ -128,7 +128,7 @@ class AgentAvailabilityServiceTest extends TestCase
     private function expectNoActiveTicketCount(): void
     {
         $this->ticketRepository->expects(self::never())
-            ->method('countActiveForAgent');
+            ->method('countActivosDeAgente');
     }
 
     /**
@@ -849,7 +849,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
         // Expect TWO COUNT queries (one per isAvailable call)
         $this->ticketRepository->expects(self::exactly(2))
-            ->method('countActiveForAgent')
+            ->method('countActivosDeAgente')
             ->willReturnOnConsecutiveCalls(2, 2);
 
         // Call twice, should get identical results
@@ -1079,7 +1079,7 @@ class AgentAvailabilityServiceTest extends TestCase
         // Both COUNT queries will be called. We need to handle the
         // sequential calls differently per agent.
         $this->ticketRepository->expects(self::exactly(2))
-            ->method('countActiveForAgent')
+            ->method('countActivosDeAgente')
             ->willReturnOnConsecutiveCalls(
                 3, // 3 < 5: available
                 5, // 5 >= 5: full
@@ -1150,7 +1150,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
         // Each agent's count query
         $this->ticketRepository->expects(self::exactly(3))
-            ->method('countActiveForAgent')
+            ->method('countActivosDeAgente')
             ->willReturn(0);
 
         $result = $this->service->listAvailableAgents(
@@ -1185,7 +1185,7 @@ class AgentAvailabilityServiceTest extends TestCase
             ->with([1])
             ->willReturn($agent->getShifts()->toArray());
 
-        $this->ticketRepository->expects(self::never())->method('countActiveForAgent');
+        $this->ticketRepository->expects(self::never())->method('countActivosDeAgente');
 
         $result = $this->service->listAvailableAgents(
             $this->utcDateTime('2026-06-15', '12:00'),
@@ -1358,7 +1358,7 @@ class AgentAvailabilityServiceTest extends TestCase
             ->willReturn([]);
 
         $this->ticketRepository->expects(self::exactly(2))
-            ->method('countActiveForAgent')
+            ->method('countActivosDeAgente')
             ->willReturn(0);
 
         $result = $this->service->listWorkspaceAgentRoster(
@@ -1395,7 +1395,7 @@ class AgentAvailabilityServiceTest extends TestCase
             ->willReturn([]);
 
         $this->ticketRepository->expects(self::exactly(3))
-            ->method('countActiveForAgent')
+            ->method('countActivosDeAgente')
             ->willReturn(0);
 
         $result = $this->service->listWorkspaceAgentRoster(

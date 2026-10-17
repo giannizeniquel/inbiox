@@ -34,9 +34,9 @@ class TagRepositorySqlTest extends KernelTestCase
         $conversation->setContact($contact);
         $em->persist($conversation);
         $ticket = new Ticket();
-        $ticket->setContact($contact);
-        $ticket->setConversation($conversation);
-        $ticket->setStatus(EstadoDeTicket::NEW->value);
+        $ticket->setContacto($contact);
+        $ticket->setConversacion($conversation);
+        $ticket->setEstado(EstadoDeTicket::NUEVO->value);
         $em->persist($ticket);
         $attached = new Etiqueta('repo-sql-attached-' . bin2hex(random_bytes(3)));
         $other = new Etiqueta('repo-sql-other-' . bin2hex(random_bytes(3)));
@@ -47,9 +47,9 @@ class TagRepositorySqlTest extends KernelTestCase
         $em->flush();
 
         try {
-            self::assertTrue($repo->isAttachedToTicket((int) $ticket->getId(), (int) $attached->getId()));
-            self::assertFalse($repo->isAttachedToTicket((int) $ticket->getId(), (int) $other->getId()));
-            self::assertFalse($repo->isAttachedToTicket(999999999, (int) $attached->getId()));
+            self::assertTrue($repo->isAsociadaATicket((int) $ticket->getId(), (int) $attached->getId()));
+            self::assertFalse($repo->isAsociadaATicket((int) $ticket->getId(), (int) $other->getId()));
+            self::assertFalse($repo->isAsociadaATicket(999999999, (int) $attached->getId()));
         } finally {
             $conn->executeStatement('DELETE FROM ticket_tags WHERE ticket_id = ?', [$ticket->getId()]);
             $conn->executeStatement('DELETE FROM tags WHERE id IN (?, ?)', [$attached->getId(), $other->getId()]);

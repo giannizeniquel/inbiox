@@ -95,7 +95,7 @@ final class AutoReplyService
         }
 
         // 4. Rate limit check
-        $contact = $ticket->getContact();
+        $contact = $ticket->getContacto();
         if ($contact === null) {
             return;
         }
@@ -126,7 +126,7 @@ final class AutoReplyService
         // WhatsApp 24h conversation-window guard: an auto-reply is fire-and-
         // forget, so an expired window is not an error — just an early
         // return with a log line, never a throw (design.md caller table).
-        if (!$this->windowPolicy->isOpenForSending($ticket->getLastInboundMessageAt(), new \DateTimeImmutable())) {
+        if (!$this->windowPolicy->isOpenForSending($ticket->getUltimoMensajeEntranteAt(), new \DateTimeImmutable())) {
             $this->logger->info('AutoReply skipped: conversation window has expired', [
                 'contactId' => $contactId,
                 'ticket_id' => $ticket->getId(),
@@ -148,7 +148,7 @@ final class AutoReplyService
 
         // 6. Create local Message entity so the auto-reply appears in the conversation
         $wamid = $graphResponse['messages'][0]['id'] ?? null;
-        $conversation = $ticket->getConversation();
+        $conversation = $ticket->getConversacion();
         $msg = null;
         if ($conversation !== null) {
             $msg = new Message();
@@ -209,7 +209,7 @@ final class AutoReplyService
      */
     private function resolveTargetAgent(Ticket $ticket): ?Agent
     {
-        $assignedAgentId = $ticket->getAssignedAgentId();
+        $assignedAgentId = $ticket->getAgenteAsignadoId();
 
         if ($assignedAgentId !== null) {
             $agent = $this->agentRepo->findById($assignedAgentId);

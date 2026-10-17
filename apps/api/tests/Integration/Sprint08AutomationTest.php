@@ -75,7 +75,7 @@ class Sprint08AutomationTest extends KernelTestCase
         $tagName = 'ERROR';
 
         // Act
-        $normalized = Etiqueta::normalize($tagName);
+        $normalized = Etiqueta::normalizar($tagName);
 
         // Assert
         $this->assertEquals('error', $normalized);
@@ -90,7 +90,7 @@ class Sprint08AutomationTest extends KernelTestCase
         $tagName = '  error  ';
 
         // Act
-        $normalized = Etiqueta::normalize($tagName);
+        $normalized = Etiqueta::normalizar($tagName);
 
         // Assert
         $this->assertEquals('error', $normalized);
@@ -105,7 +105,7 @@ class Sprint08AutomationTest extends KernelTestCase
         $tagName = '  ERROR  TAG  ';
 
         // Act
-        $normalized = Etiqueta::normalize($tagName);
+        $normalized = Etiqueta::normalizar($tagName);
 
         // Assert
         $this->assertEquals('error tag', $normalized);
@@ -120,7 +120,7 @@ class Sprint08AutomationTest extends KernelTestCase
         $tagName = 'urgenté';
 
         // Act
-        $normalized = Etiqueta::normalize($tagName);
+        $normalized = Etiqueta::normalizar($tagName);
 
         // Assert
         $this->assertEquals('urgenté', $normalized);
@@ -146,9 +146,9 @@ class Sprint08AutomationTest extends KernelTestCase
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
-        $ticket->setContact($contact);
-        $ticket->setConversation($conversation);
-        $ticket->setStatus(EstadoDeTicket::NEW->value);
+        $ticket->setContacto($contact);
+        $ticket->setConversacion($conversation);
+        $ticket->setEstado(EstadoDeTicket::NUEVO->value);
         $this->em->persist($ticket);
         $this->em->flush();
 
@@ -187,9 +187,9 @@ class Sprint08AutomationTest extends KernelTestCase
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
-        $ticket->setContact($contact);
-        $ticket->setConversation($conversation);
-        $ticket->setStatus(EstadoDeTicket::NEW->value);
+        $ticket->setContacto($contact);
+        $ticket->setConversacion($conversation);
+        $ticket->setEstado(EstadoDeTicket::NUEVO->value);
         $this->em->persist($ticket);
         $this->em->flush();
 
@@ -254,7 +254,7 @@ class Sprint08AutomationTest extends KernelTestCase
     {
         // Arrange
         $rule = $this->createMockAutoReopenRule();
-        $ticket = $this->createTestTicket(EstadoDeTicket::RESOLVED->value);
+        $ticket = $this->createTestTicket(EstadoDeTicket::RESUELTO->value);
         $context = new RuleContext($ticket, null, 'inbound');
 
         // Assert
@@ -268,7 +268,7 @@ class Sprint08AutomationTest extends KernelTestCase
     {
         // Arrange
         $rule = $this->createMockAutoReopenRule();
-        $ticket = $this->createTestTicket(EstadoDeTicket::CLOSED->value);
+        $ticket = $this->createTestTicket(EstadoDeTicket::CERRADO->value);
         $context = new RuleContext($ticket, null, 'inbound');
 
         // Assert
@@ -282,7 +282,7 @@ class Sprint08AutomationTest extends KernelTestCase
     {
         // Arrange
         $rule = $this->createMockAutoReopenRule();
-        $ticket = $this->createTestTicket(EstadoDeTicket::ACTIVE->value);
+        $ticket = $this->createTestTicket(EstadoDeTicket::ACTIVO->value);
         $context = new RuleContext($ticket, null, 'inbound');
 
         // Assert
@@ -296,7 +296,7 @@ class Sprint08AutomationTest extends KernelTestCase
     {
         // Arrange
         $rule = $this->createMockAutoReopenRule();
-        $ticket = $this->createTestTicket(EstadoDeTicket::RESOLVED->value);
+        $ticket = $this->createTestTicket(EstadoDeTicket::RESUELTO->value);
         $context = new RuleContext($ticket, null, 'outbound');
 
         // Assert
@@ -310,7 +310,7 @@ class Sprint08AutomationTest extends KernelTestCase
     {
         // Arrange
         $rule = $this->createMockAutoReopenRule();
-        $ticket = $this->createTestTicket(EstadoDeTicket::RESOLVED->value);
+        $ticket = $this->createTestTicket(EstadoDeTicket::RESUELTO->value);
         $message = $this->createTestMessage(123);
         $context = new RuleContext($ticket, $message, 'inbound');
 
@@ -337,7 +337,7 @@ class Sprint08AutomationTest extends KernelTestCase
     {
         // Arrange
         $rule = new KeywordTaggingRule($this->addTagUseCase);
-        $ticket = $this->createTestTicket(EstadoDeTicket::ACTIVE->value);
+        $ticket = $this->createTestTicket(EstadoDeTicket::ACTIVO->value);
         $message = $this->createTestMessage(123);
         $message->setContent('There is an error in the system');
         $context = new RuleContext($ticket, $message, 'inbound');
@@ -353,7 +353,7 @@ class Sprint08AutomationTest extends KernelTestCase
     {
         // Arrange
         $rule = new KeywordTaggingRule($this->addTagUseCase);
-        $ticket = $this->createTestTicket(EstadoDeTicket::ACTIVE->value);
+        $ticket = $this->createTestTicket(EstadoDeTicket::ACTIVO->value);
         $message = $this->createTestMessage(123);
         $message->setContent('ERROR detected in the logs');
         $context = new RuleContext($ticket, $message, 'inbound');
@@ -369,7 +369,7 @@ class Sprint08AutomationTest extends KernelTestCase
     {
         // Arrange - "error" is substring but not whole word
         $rule = new KeywordTaggingRule($this->addTagUseCase);
-        $ticket = $this->createTestTicket(EstadoDeTicket::ACTIVE->value);
+        $ticket = $this->createTestTicket(EstadoDeTicket::ACTIVO->value);
         $message = $this->createTestMessage(123);
         $message->setContent('The errorHandler crashed'); // contains "error" as substring
         $context = new RuleContext($ticket, $message, 'inbound');
@@ -385,7 +385,7 @@ class Sprint08AutomationTest extends KernelTestCase
     {
         // Arrange
         $rule = new KeywordTaggingRule($this->addTagUseCase);
-        $ticket = $this->createTestTicket(EstadoDeTicket::ACTIVE->value);
+        $ticket = $this->createTestTicket(EstadoDeTicket::ACTIVO->value);
         $message = $this->createTestMessage(123);
         $message->setContent('There is an error');
         $context = new RuleContext($ticket, $message, 'outbound');
@@ -414,9 +414,9 @@ class Sprint08AutomationTest extends KernelTestCase
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
-        $ticket->setContact($contact);
-        $ticket->setConversation($conversation);
-        $ticket->setStatus(EstadoDeTicket::RESOLVED->value);
+        $ticket->setContacto($contact);
+        $ticket->setConversacion($conversation);
+        $ticket->setEstado(EstadoDeTicket::RESUELTO->value);
         $this->em->persist($ticket);
         $this->em->flush();
 
@@ -443,7 +443,7 @@ class Sprint08AutomationTest extends KernelTestCase
         // Assert - ticket should NOT be transitioned (still resolved)
         $this->em->clear();
         $ticket = $this->ticketRepo->find($ticket->getId());
-        $this->assertEquals(EstadoDeTicket::RESOLVED->value, $ticket->getStatus());
+        $this->assertEquals(EstadoDeTicket::RESUELTO->value, $ticket->getEstado());
     }
 
     // ============================================
@@ -496,9 +496,9 @@ class Sprint08AutomationTest extends KernelTestCase
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
-        $ticket->setContact($contact);
-        $ticket->setConversation($conversation);
-        $ticket->setStatus(EstadoDeTicket::RESOLVED->value);
+        $ticket->setContacto($contact);
+        $ticket->setConversacion($conversation);
+        $ticket->setEstado(EstadoDeTicket::RESUELTO->value);
         $this->em->persist($ticket);
         $this->em->flush();
 
@@ -512,7 +512,7 @@ class Sprint08AutomationTest extends KernelTestCase
         // Assert - ticket should be waiting (auto-reopened)
         $this->em->clear();
         $ticket = $this->ticketRepo->find($result['ticket_id']);
-        $this->assertEquals(EstadoDeTicket::WAITING->value, $ticket->getStatus());
+        $this->assertEquals(EstadoDeTicket::EN_ESPERA->value, $ticket->getEstado());
     }
 
     // ============================================
@@ -522,9 +522,9 @@ class Sprint08AutomationTest extends KernelTestCase
     private function createTestTicket(string $status): Ticket
     {
         $ticket = new Ticket();
-        $ticket->setStatus($status);
-        $ticket->setCreatedAt(new \DateTimeImmutable());
-        $ticket->setUpdatedAt(new \DateTimeImmutable());
+        $ticket->setEstado($status);
+        $ticket->setCreadoAt(new \DateTimeImmutable());
+        $ticket->setActualizadoAt(new \DateTimeImmutable());
 
         // Set ID for testing (mock object behavior)
         $reflection = new \ReflectionProperty(Ticket::class, 'id');

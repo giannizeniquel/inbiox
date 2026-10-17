@@ -189,14 +189,14 @@ class ContactRepository extends ServiceEntityRepository
         // D6 allow-list: only the WhatsApp 24h window-compliance event types
         // plus the six manual closure/resolution audit types are surfaced.
         $typeParams = [
-            'window_expired_closed' => TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED,
-            'window_reopened' => TipoDeEventoDeTicket::WINDOW_REOPENED,
-            'manual_resolved_owner' => TipoDeEventoDeTicket::MANUAL_RESOLVED_OWNER,
-            'manual_resolved_override' => TipoDeEventoDeTicket::MANUAL_RESOLVED_OVERRIDE,
-            'manual_resolved_unowned' => TipoDeEventoDeTicket::MANUAL_RESOLVED_UNOWNED,
-            'manual_closed_owner' => TipoDeEventoDeTicket::MANUAL_CLOSED_OWNER,
-            'manual_closed_override' => TipoDeEventoDeTicket::MANUAL_CLOSED_OVERRIDE,
-            'manual_closed_unowned' => TipoDeEventoDeTicket::MANUAL_CLOSED_UNOWNED,
+            'window_expired_closed' => TipoDeEventoDeTicket::VENTANA_VENCIDA_CERRADO,
+            'window_reopened' => TipoDeEventoDeTicket::VENTANA_REABIERTO,
+            'manual_resolved_owner' => TipoDeEventoDeTicket::MANUAL_RESUELTO_RESPONSABLE,
+            'manual_resolved_override' => TipoDeEventoDeTicket::MANUAL_RESUELTO_FORZADO,
+            'manual_resolved_unowned' => TipoDeEventoDeTicket::MANUAL_RESUELTO_SIN_RESPONSABLE,
+            'manual_closed_owner' => TipoDeEventoDeTicket::MANUAL_CERRADO_RESPONSABLE,
+            'manual_closed_override' => TipoDeEventoDeTicket::MANUAL_CERRADO_FORZADO,
+            'manual_closed_unowned' => TipoDeEventoDeTicket::MANUAL_CERRADO_SIN_RESPONSABLE,
         ];
 
         $params = $typeParams + [

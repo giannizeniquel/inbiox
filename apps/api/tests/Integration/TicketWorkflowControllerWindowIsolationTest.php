@@ -100,9 +100,9 @@ class TicketWorkflowControllerWindowIsolationTest extends WebTestCase
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
-        $ticket->setContact($contact);
-        $ticket->setConversation($conversation);
-        $ticket->setStatus(EstadoDeTicket::CLOSED->value);
+        $ticket->setContacto($contact);
+        $ticket->setConversacion($conversation);
+        $ticket->setEstado(EstadoDeTicket::CERRADO->value);
         $this->em->persist($ticket);
         $this->em->flush();
 
@@ -111,7 +111,7 @@ class TicketWorkflowControllerWindowIsolationTest extends WebTestCase
 
         $this->em->getConnection()->executeStatement(
             'INSERT INTO ticket_events (ticket_id, type, source, created_at) VALUES (?, ?, ?, NOW())',
-            [$ticketId, TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED, 'system']
+            [$ticketId, TipoDeEventoDeTicket::VENTANA_VENCIDA_CERRADO, 'system']
         );
 
         return $ticketId;
@@ -145,10 +145,10 @@ class TicketWorkflowControllerWindowIsolationTest extends WebTestCase
     public static function targetStatusProvider(): array
     {
         return [
-            'to new' => [EstadoDeTicket::NEW->value],
-            'to active' => [EstadoDeTicket::ACTIVE->value],
-            'to waiting' => [EstadoDeTicket::WAITING->value],
-            'to resolved' => [EstadoDeTicket::RESOLVED->value],
+            'to new' => [EstadoDeTicket::NUEVO->value],
+            'to active' => [EstadoDeTicket::ACTIVO->value],
+            'to waiting' => [EstadoDeTicket::EN_ESPERA->value],
+            'to resolved' => [EstadoDeTicket::RESUELTO->value],
         ];
     }
 }

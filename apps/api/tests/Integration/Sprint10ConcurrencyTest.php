@@ -326,7 +326,7 @@ class Sprint10ConcurrencyTest extends KernelTestCase
         $this->em->persist($shift);
 
         $ticket = new Ticket();
-        $ticket->setStatus(EstadoDeTicket::NEW->value);
+        $ticket->setEstado(EstadoDeTicket::NUEVO->value);
         $this->em->persist($ticket);
         $this->em->flush();
         $ticketId = (int) $ticket->getId();

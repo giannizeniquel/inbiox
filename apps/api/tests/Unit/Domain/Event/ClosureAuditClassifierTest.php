@@ -30,7 +30,7 @@ class ClosureAuditClassifierTest extends TestCase
     {
         self::assertSame(
             $expected,
-            $this->classifier->classify($newStatus, $previousOwnerId, $actingAgentId)
+            $this->classifier->clasificar($newStatus, $previousOwnerId, $actingAgentId)
         );
     }
 
@@ -41,22 +41,22 @@ class ClosureAuditClassifierTest extends TestCase
     {
         return [
             // resolved — unowned: (null, any) → UNOWNED
-            'resolved unowned, acting agent set'    => ['resolved', null, 5, TipoDeEventoDeTicket::MANUAL_RESOLVED_UNOWNED],
-            'resolved unowned, no acting agent'     => ['resolved', null, null, TipoDeEventoDeTicket::MANUAL_RESOLVED_UNOWNED],
+            'resolved unowned, acting agent set'    => ['resolved', null, 5, TipoDeEventoDeTicket::MANUAL_RESUELTO_SIN_RESPONSABLE],
+            'resolved unowned, no acting agent'     => ['resolved', null, null, TipoDeEventoDeTicket::MANUAL_RESUELTO_SIN_RESPONSABLE],
             // resolved — owner: (7, 7) → OWNER
-            'resolved owner'                        => ['resolved', 7, 7, TipoDeEventoDeTicket::MANUAL_RESOLVED_OWNER],
+            'resolved owner'                        => ['resolved', 7, 7, TipoDeEventoDeTicket::MANUAL_RESUELTO_RESPONSABLE],
             // resolved — override: (7, 3|null) → OVERRIDE
-            'resolved override, different agent'    => ['resolved', 7, 3, TipoDeEventoDeTicket::MANUAL_RESOLVED_OVERRIDE],
-            'resolved override, no acting agent'    => ['resolved', 7, null, TipoDeEventoDeTicket::MANUAL_RESOLVED_OVERRIDE],
+            'resolved override, different agent'    => ['resolved', 7, 3, TipoDeEventoDeTicket::MANUAL_RESUELTO_FORZADO],
+            'resolved override, no acting agent'    => ['resolved', 7, null, TipoDeEventoDeTicket::MANUAL_RESUELTO_FORZADO],
 
             // closed — unowned: (null, any) → UNOWNED
-            'closed unowned, acting agent set'      => ['closed', null, 5, TipoDeEventoDeTicket::MANUAL_CLOSED_UNOWNED],
-            'closed unowned, no acting agent'       => ['closed', null, null, TipoDeEventoDeTicket::MANUAL_CLOSED_UNOWNED],
+            'closed unowned, acting agent set'      => ['closed', null, 5, TipoDeEventoDeTicket::MANUAL_CERRADO_SIN_RESPONSABLE],
+            'closed unowned, no acting agent'       => ['closed', null, null, TipoDeEventoDeTicket::MANUAL_CERRADO_SIN_RESPONSABLE],
             // closed — owner: (7, 7) → OWNER
-            'closed owner'                          => ['closed', 7, 7, TipoDeEventoDeTicket::MANUAL_CLOSED_OWNER],
+            'closed owner'                          => ['closed', 7, 7, TipoDeEventoDeTicket::MANUAL_CERRADO_RESPONSABLE],
             // closed — override: (7, 3|null) → OVERRIDE
-            'closed override, different agent'      => ['closed', 7, 3, TipoDeEventoDeTicket::MANUAL_CLOSED_OVERRIDE],
-            'closed override, no acting agent'      => ['closed', 7, null, TipoDeEventoDeTicket::MANUAL_CLOSED_OVERRIDE],
+            'closed override, different agent'      => ['closed', 7, 3, TipoDeEventoDeTicket::MANUAL_CERRADO_FORZADO],
+            'closed override, no acting agent'      => ['closed', 7, null, TipoDeEventoDeTicket::MANUAL_CERRADO_FORZADO],
         ];
     }
 
@@ -67,7 +67,7 @@ class ClosureAuditClassifierTest extends TestCase
         $prop->setAccessible(true);
         $prop->setValue($user, 9);
 
-        self::assertSame('u:9', $this->classifier->actorReference($user));
+        self::assertSame('u:9', $this->classifier->referenciaDeActor($user));
     }
 
     /**
@@ -76,12 +76,12 @@ class ClosureAuditClassifierTest extends TestCase
     public function testEveryConstantFitsTheColumnWidth(): void
     {
         $constants = [
-            TipoDeEventoDeTicket::MANUAL_RESOLVED_OWNER,
-            TipoDeEventoDeTicket::MANUAL_RESOLVED_OVERRIDE,
-            TipoDeEventoDeTicket::MANUAL_RESOLVED_UNOWNED,
-            TipoDeEventoDeTicket::MANUAL_CLOSED_OWNER,
-            TipoDeEventoDeTicket::MANUAL_CLOSED_OVERRIDE,
-            TipoDeEventoDeTicket::MANUAL_CLOSED_UNOWNED,
+            TipoDeEventoDeTicket::MANUAL_RESUELTO_RESPONSABLE,
+            TipoDeEventoDeTicket::MANUAL_RESUELTO_FORZADO,
+            TipoDeEventoDeTicket::MANUAL_RESUELTO_SIN_RESPONSABLE,
+            TipoDeEventoDeTicket::MANUAL_CERRADO_RESPONSABLE,
+            TipoDeEventoDeTicket::MANUAL_CERRADO_FORZADO,
+            TipoDeEventoDeTicket::MANUAL_CERRADO_SIN_RESPONSABLE,
         ];
 
         foreach ($constants as $constant) {
