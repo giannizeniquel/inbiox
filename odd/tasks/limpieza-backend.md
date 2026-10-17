@@ -74,6 +74,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
     - `agent-load` applies the phone filter only to tickets, so agents from other workspaces show up with load 0.
     - The attribution cutoff query runs twice per response-delay request (`getAttributionCutoff` and inside `getResponseDelayMetrics`).
     - `available-agents` runs one active-ticket count per agent (N+1).
+    - To check (verifier, L69): `response-delay` returns `partial_data: true` whenever the range starts before the first attributed message, even if every message in the range is attributed (`cutoff > from`); same before 4c.
     - Also seen in the map: dead `agent_id` override branches in the controller (the ownership scope is always null, R-V3); `recurring-customers` with `threshold=0` falls back to 3; Postgres branches in `ReportingRepository::detectPlatform` are dead on MySQL; R6/C-2 (per-agent resolved metrics empty because resolving unassigns).
 - **S7 — Docs policy (assumption, not explicitly confirmed by the user).** Each phase fixes the docs it invalidates in the same PR. A full docs pass happens in phase 6, after the renaming.
 
@@ -588,3 +589,17 @@ Later phases, each with its own branch and task list when it starts:
     - Reporting-related tests (`Reporting|Reports|AuthorizationTest`), four runs: the baseline `ReportingV2Test` failure plus one random JWT flake per run. In the first run the flake hit `ReportingControllerCharacterizationTest::testReopenedTickets`, whose message was not captured; that test passed in the other three grouped runs and three isolated runs, and a later run showed the same file's `testDateParameterErrors` failing with `401 Invalid JWT Token`.
     - Full suite: 948 tests, the 6 baseline failures plus two `401` flakes (`AgentLinkControllerTest::testLinkUserReturns404ForNonExistentUser`, `ReportsCsvExportTest::test_agent_is_denied`), both passing on an isolated rerun.
   - Phase 4c code is complete (T28–T34). Next: independent verifier over S11 (baseline `c96ffa6`), then a front smoke of the reports dashboard, push and PR #7 with the user's approval.
+- **L69 (2026-10-17), phase 4c independent verification:** User: "dale, lanzá el verificador".
+  - Verdict PASS for 4c-0 to 4c-6 and S11, no blockers. Baseline `c96ffa6` vs HEAD `1b5cba1`, both run from scratch copies (`mktemp -d`, own vendor), one test process at a time, no remote calls.
+    - 4c-0: the HEAD characterization file (30 tests, including the in-shift test) passes on the baseline tree.
+    - 4c-1: `ticketFilterClause` produces the same SQL text and parameters as the old blocks (order agent, workspace, team; `t2`/`t` aliases in agent performance; workspace before agent in agent load).
+    - 4c-2: `ListAvailableAgentsQuery` is the old controller body word for word.
+    - 4c-3/4c-4: same SQL in the same order; participation and response-delay bodies identical, scoped and unscoped.
+    - 4c-5: `is_in_shift` value and key position unchanged; a missing agent is false.
+    - 4c-6: 55 unassigned tickets are capped at 50 and 105 reopened events at 100, newest first, on both trees; bug F unchanged; docblocks match the real shapes; the updated doc references point at the right code.
+  - 7 probes (252 assertions, exact bodies with ids replaced by stable tokens) pass on both trees and are committed as `tests/Characterization/ReportingVerifierProbeTest.php` (`73802ff`). Parent spot check: `--filter 'ReportingVerifierProbeTest|ReportingControllerCharacterizationTest'` gives 37 tests OK; full suite 955 tests, exactly the 6 baseline failures.
+  - Advisories:
+    - The metrics table in `04-flujos.md` still had stale references (RT, agent performance, unassigned, and also reopened, response delay and participation, found by the parent): fixed in `a093968`.
+    - `response-delay` reports `partial_data: true` when the range starts before the first attributed message even if all messages in the range are attributed; same on the baseline, added to S11's list to check.
+  - Setup note: the verifier copied the ignored `apps/api/.env`, `.env.test.local` and `config/jwt` into its scratch trees (without reading them) because the `inbiox_php` environment has no `DATABASE_URL`; the scratch trees were removed and the workspace has no new files.
+  - Next: front smoke of the reports dashboard, then push and PR #7 (base `chore/limpieza-backend-fase-4b`), with the user's approval.
