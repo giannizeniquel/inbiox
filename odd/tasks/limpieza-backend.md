@@ -112,7 +112,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T28 | S11 | inline | done | 4c-0 reporting characterization tests (`094fffe`, L62) |
 | T29 | S11 | inline | done | 4c-1 shared filter helper in `ReportingRepository` (`525660d`, L63) |
 | T30 | S11 | inline | done | 4c-2 `availableAgents` into a `Reporte/Query/` class (`e966cbb`, L64) |
-| T31 | S11 | inline | pending | 4c-3 split `getTicketParticipation` |
+| T31 | S11 | inline | done | 4c-3 split `getTicketParticipation` (`21aa251`, L65) |
 | T32 | S11 | inline | pending | 4c-4 split `getResponseDelayMetrics` |
 | T33 | S11 | inline | pending | 4c-5 `is_in_shift` from the repository into the service |
 | T34 | S11 | inline | pending | 4c-6 why-comments, bound `LIMIT`, service docblocks |
@@ -557,3 +557,10 @@ Later phases, each with its own branch and task list when it starts:
     - `lint:container` OK; PHPStan level 0 identical (29 lines).
     - Reporting-related tests: 159 tests, only the baseline `ReportingV2Test` failure.
     - Full suite: 947 tests, exactly the 6 baseline failures.
+- **L65 (2026-10-17), T31:** User: "dale, seguí con la 4c-3".
+  - 4c-3 (`21aa251`): `ReportingRepository::getTicketParticipation` now reads as its steps, each a private method: `findParticipationEpisode` (ticket row and episode end), `getAttributionCutoff` (unchanged), `fetchParticipationPairRows` (the burst CTE), `countEpisodeMessagesBySender` (the rollup), `foldParticipationPairs` and `buildParticipants` (with the fallback agent-name lookup). The SQL text, the query order (ticket, episode end, cutoff, pairs, rollup, names) and the result are unchanged.
+  - Docs: line references into `ReportingRepository.php` in `docs/02_sistema-actual` (00 group F, 04 FRT row, 05, 08 C-2) were already shifted by 4c-1; they are updated once at the end of 4c, in the same PR (S7).
+  - Checks:
+    - `lint:container` OK; PHPStan level 0 identical (29 lines).
+    - Reporting-related tests: 149 tests, only the baseline `ReportingV2Test` failure.
+    - Full suite: 947 tests, the 6 baseline failures plus two `401` JWT flakes (`InboxControllerCharacterizationTest::testMarkReadOfUnassignedTicketByAdminWithoutAgentIsANoOp`, `AgentControllerTest::testUpdateAgentTimezone`), both passing on an isolated rerun.
