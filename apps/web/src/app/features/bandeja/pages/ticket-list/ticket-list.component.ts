@@ -256,11 +256,8 @@ export class TicketListComponent implements OnInit {
     const previousOwner = this.ticketStore.optimisticAssign(ticketId, agentId, agentName);
 
     // API call
+    // On success the TicketAssigned event reconciles the canonical owner.
     this.assignmentApi.assignTicket(ticketId, agentId, assignedBy).subscribe({
-      next: () => {
-        // Success: clear pending state (Mercure event will reconcile canonical owner)
-        this.ticketStore.clearPendingAssign(ticketId);
-      },
       error: (err) => {
         // Error: rollback optimistic update
         this.ticketStore.rollbackAssign(ticketId, previousOwner);

@@ -1,6 +1,8 @@
 import { TicketStore, TicketFilter } from './ticket.store';
 import { Ticket, TicketStatus } from './ticket.model';
-import { RealtimeEventType } from '../../core/realtime/realtime-event.model';
+import { RealtimeEvent, RealtimeEventType } from '../../core/realtime/realtime-event.model';
+import { WorkspaceStore } from '../administracion/workspace.store';
+import { applyTicketEvent } from './ticket-realtime.reducer';
 
 describe('TicketStore', () => {
   let store: TicketStore;
@@ -265,7 +267,6 @@ describe('TicketStore', () => {
 
     expect(previousOwner).toEqual({ id: 1, name: 'Agent A' });
     expect(store.tickets()[0].owner).toEqual({ id: 2, name: 'Agent B' });
-    expect(store.pendingAssignIds().has(1)).toBeTrue();
   });
 
   it('should return null when ticket not found', () => {
@@ -284,7 +285,6 @@ describe('TicketStore', () => {
     store.rollbackAssign('t1', { id: 1, name: 'Agent A' });
 
     expect(store.tickets()[0].owner).toEqual({ id: 1, name: 'Agent A' });
-    expect(store.pendingAssignIds().has(1)).toBeFalse();
   });
 
   it('should handle rollback with null previous owner', () => {
@@ -322,19 +322,6 @@ describe('TicketStore', () => {
     done();
   });
 
-  // ── clearPendingAssign() ──
-
-  it('should clear pending state', () => {
-    const ticket = makeTicket({ ticket_id: 't1', id: 't1' });
-    store.loadTickets([ticket]);
-
-    store.optimisticAssign('t1', 2, 'Agent B');
-    expect(store.pendingAssignIds().has(1)).toBeTrue();
-
-    store.clearPendingAssign('t1');
-    expect(store.pendingAssignIds().has(1)).toBeFalse();
-  });
-
   // ── reset() clears assignment state ──
 
   it('should clear assignment state on reset', () => {
@@ -345,16 +332,16 @@ describe('TicketStore', () => {
 
     store.reset();
 
-    expect(store.pendingAssignIds().size).toBe(0);
     expect(store.assignmentErrors().size).toBe(0);
   });
 
-  // ── onRealtimeEvent(MessageAdded) direction guard (message-agent-attribution, design.md D6) ──
+  // ── applyTicketEvent(MessageAdded) direction guard (message-agent-attribution, design.md D6) ──
   // Outbound messages now broadcast too (human-agent replies) — an agent's
   // own reply (or a colleague's) on a non-active ticket must never inflate
   // the unread badge; only genuine inbound (contact) messages should.
 
-  function makeMessageAddedEvent(direction: 'inbound' | 'outbound', ticketId = 't1') {
+  // Test tickets use string ids ('t1'), so the payload is cast to the wire type.
+  function makeMessageAddedEvent(direction: 'inbound' | 'outbound', ticketId = 't1'): RealtimeEvent {
     return {
       eventId: 'evt-1',
       eventType: RealtimeEventType.MessageAdded,
@@ -368,16 +355,14 @@ describe('TicketStore', () => {
         createdAt: '2024-01-01T00:00:00Z',
         externalId: null,
       },
-    };
+    } as unknown as RealtimeEvent;
   }
 
   it('should skip the unread bump for an outbound MessageAdded on a non-active ticket', () => {
     store.loadTickets([makeTicket({ ticket_id: 't1', id: 't1', metrics: { unread_count: 0 } })]);
     store.setActiveTicket(null); // no active ticket — t1 is not active
 
-    (store as unknown as { onRealtimeEvent(e: unknown): void }).onRealtimeEvent(
-      makeMessageAddedEvent('outbound')
-    );
+    applyTicketEvent(makeMessageAddedEvent('outbound'), store, {} as WorkspaceStore);
 
     expect(store.tickets()[0].metrics.unread_count).toBe(0);
   });
@@ -386,9 +371,7 @@ describe('TicketStore', () => {
     store.loadTickets([makeTicket({ ticket_id: 't1', id: 't1', metrics: { unread_count: 0 } })]);
     store.setActiveTicket(null);
 
-    (store as unknown as { onRealtimeEvent(e: unknown): void }).onRealtimeEvent(
-      makeMessageAddedEvent('inbound')
-    );
+    applyTicketEvent(makeMessageAddedEvent('inbound'), store, {} as WorkspaceStore);
 
     expect(store.tickets()[0].metrics.unread_count).toBe(1);
   });

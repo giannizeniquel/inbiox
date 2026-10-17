@@ -1,10 +1,9 @@
 import { Injectable, signal, computed, inject, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs';
-import { Ticket, TicketStatus } from './ticket.model';
-import { RealtimeEvent, RealtimeEventType,
-  MessageAddedPayload, TicketCreatedPayload, TicketStatusChangedPayload,
-  TicketAssignedPayload } from '../../core/realtime/realtime-event.model';
+import { Ticket } from './ticket.model';
+import { applyTicketEvent } from './ticket-realtime.reducer';
+import { RealtimeEventType } from '../../core/realtime/realtime-event.model';
 import { EventBusService } from '../../core/realtime/event-bus.service';
 import { AuthStore } from '../../core/auth/auth.store';
 import { WorkspaceStore } from '../administracion/workspace.store';
@@ -49,9 +48,6 @@ export class TicketStore {
   /** Loading state */
   readonly loading = signal<boolean>(false);
 
-  /** Tickets currently being assigned (optimistic update in progress) */
-  readonly pendingAssignIds = signal<Set<number>>(new Set());
-
   /** Assignment errors with auto-dismiss timestamps */
   readonly assignmentErrors = signal<Map<number, AssignmentError>>(new Map());
 
@@ -65,10 +61,10 @@ export class TicketStore {
     this.initEventBus();
   }
 
-
   /**
    * Set up EventBus subscription for realtime events.
-   * Handles: TicketCreated, TicketStatusChanged, TicketAssigned, MessageAdded.
+   * Handles: TicketCreated, TicketStatusChanged, TicketAssigned, MessageAdded, TicketRead
+   * (see `applyTicketEvent`).
    */
   private initEventBus(): void {
     const eventBus = inject(EventBusService);
@@ -83,109 +79,7 @@ export class TicketStore {
         || e.eventType === RealtimeEventType.TicketRead
       ),
       takeUntilDestroyed(destroyRef),
-    ).subscribe(e => this.onRealtimeEvent(e));
-  }
-
-  /**
-   * Handle realtime events dispatched via EventBus.
-   * Logic mirrors MercureService.handleEvent() for ticket-related types.
-   */
-  private onRealtimeEvent(event: RealtimeEvent): void {
-    switch (event.eventType) {
-      case RealtimeEventType.MessageAdded: {
-        const p = event.payload as MessageAddedPayload;
-        // Increment unread if not active ticket — inbound only (message-agent-
-        // attribution, design.md D6): outbound messages now broadcast too
-        // (human-agent replies), and an agent's own reply (or a colleague's)
-        // must never inflate the unread badge.
-        const activeTicket = this.activeTicket();
-        if (
-          p.direction === 'inbound'
-          && (!activeTicket || String(activeTicket.ticket_id) !== String(p.ticketId))
-        ) {
-          const current = this.tickets().find(t => String(t.ticket_id) === String(p.ticketId));
-          if (current) {
-            this.updateUnreadCount(String(p.ticketId), (current.metrics?.unread_count ?? 0) + 1);
-          }
-        }
-        // Workspace pending indicator: if inbound message from a different workspace
-        if (p.direction === 'inbound' && p.phoneNumberId) {
-          const activePhone = this.workspaceStore.activePhoneNumberId();
-          if (activePhone && activePhone !== p.phoneNumberId) {
-            // Find workspace by phone_number_id
-            const ws = this.workspaceStore.workspaces().find(
-              w => w.phone_number_id === p.phoneNumberId
-            );
-            if (ws) {
-              this.workspaceStore.setPending(ws.id, true);
-            }
-          }
-        }
-        break;
-      }
-
-      case RealtimeEventType.TicketCreated: {
-        const p = event.payload as TicketCreatedPayload;
-        this.addOrUpdateTicket({
-          ticket_id: String(p.ticketId),
-          id: String(p.ticketId),
-          status: p.status as TicketStatus,
-          priority: String(p.priority),
-          contact: null,
-          last_message: null,
-          owner: null,
-          metrics: { unread_count: 0 },
-          timestamps: { opened_at: p.createdAt, updated_at: p.createdAt },
-        });
-        break;
-      }
-
-      case RealtimeEventType.TicketStatusChanged: {
-        const p = event.payload as TicketStatusChangedPayload;
-        const existing = this.tickets().find(t => String(t.ticket_id) === String(p.ticketId));
-        if (existing) {
-          this.addOrUpdateTicket({
-            ...existing,
-            status: p.newStatus as TicketStatus,
-            timestamps: { ...existing.timestamps, updated_at: p.changedAt },
-          });
-        }
-        break;
-      }
-
-      case RealtimeEventType.TicketAssigned: {
-        const p = event.payload as TicketAssignedPayload;
-        const existing = this.tickets().find(t => String(t.ticket_id) === String(p.ticketId));
-        if (existing) {
-          // Only overwrite owner name when Mercure provides a real name.
-          // Otherwise keep the name from optimistic update (or existing owner).
-          const ownerName = p.assigneeName ?? existing.owner?.name ?? `Agent #${p.assigneeId}`;
-          // Implicit status transition: unassigned (new) → active on assignment
-          const wasUnassigned = existing.status === TicketStatus.New || existing.owner === null;
-          this.addOrUpdateTicket({
-            ...existing,
-            owner: { id: p.assigneeId, name: ownerName },
-            status: wasUnassigned ? TicketStatus.Active : existing.status,
-          });
-        }
-        // Clear pending state when Mercure confirms assignment
-        this.clearPendingAssign(String(p.ticketId));
-        // When a ticket is reassigned, clear the unread badge for the new owner
-        if (String(event.ticketId)) {
-          this.markAsRead(String(event.ticketId));
-        }
-        break;
-      }
-
-      case RealtimeEventType.TicketRead: {
-        // Another user marked this ticket as read — clear our badge
-        const ticketId = event.ticketId ? String(event.ticketId) : null;
-        if (ticketId) {
-          this.markAsRead(ticketId);
-        }
-        break;
-      }
-    }
+    ).subscribe(e => applyTicketEvent(e, this, this.workspaceStore));
   }
 
   /** Filtered tickets based on current filter */
@@ -295,7 +189,6 @@ export class TicketStore {
     this.filter.set('mine');
     this.selectedTeamId.set(null);
     this.loading.set(false);
-    this.pendingAssignIds.set(new Set());
     this.assignmentErrors.set(new Map());
   }
 
@@ -308,15 +201,6 @@ export class TicketStore {
    * @returns The previous owner (for rollback)
    */
   optimisticAssign(ticketId: string, agentId: number, agentName: string): TicketOwner | null {
-    const ticketIdNum = parseInt(ticketId, 10);
-
-    // Add to pending set
-    this.pendingAssignIds.update(ids => {
-      const newSet = new Set(ids);
-      newSet.add(ticketIdNum);
-      return newSet;
-    });
-
     // Find and update the ticket
     const current = this.tickets();
     const index = current.findIndex(t => String(t.ticket_id) === String(ticketId));
@@ -343,15 +227,6 @@ export class TicketStore {
    * @param previousOwner The previous owner to restore
    */
   rollbackAssign(ticketId: string, previousOwner: TicketOwner | null): void {
-    const ticketIdNum = parseInt(ticketId, 10);
-
-    // Remove from pending set
-    this.pendingAssignIds.update(ids => {
-      const newSet = new Set(ids);
-      newSet.delete(ticketIdNum);
-      return newSet;
-    });
-
     // Restore previous owner
     const current = this.tickets();
     const index = current.findIndex(t => String(t.ticket_id) === String(ticketId));
@@ -390,19 +265,5 @@ export class TicketStore {
         return newMap;
       });
     }, 5000);
-  }
-
-  /**
-   * Clear pending state for a ticket (called when Mercure event confirms assignment).
-   *
-   * @param ticketId The ticket ID to clear
-   */
-  clearPendingAssign(ticketId: string): void {
-    const ticketIdNum = parseInt(ticketId, 10);
-    this.pendingAssignIds.update(ids => {
-      const newSet = new Set(ids);
-      newSet.delete(ticketIdNum);
-      return newSet;
-    });
   }
 }
