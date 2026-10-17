@@ -401,12 +401,12 @@ Un mensaje `failed` no afecta el estado del ticket.
 | Métrica | Definición en código | Observación |
 |---|---|---|
 | FRT | `first_response_at − created_at` de tickets creados en el rango | `ReportingRepository.php:112-144` |
-| Resolución (RT) | `resolved_at − created_at` | `resolved_at` falta si se cerró directo sin pasar por `resolved` (`:139-185`). |
-| Rendimiento por agente | `LEFT JOIN tickets ON assigned_agent_id` | Resueltos/RT por agente quedan vacíos por R-T9 (`:332-445`). |
-| Sin asignar | `assigned_agent_id IS NULL`, sin filtrar estado | **Conteo siempre 0** (bug F, `:507-540`). |
-| Reabiertos | `ticket_events.type = 'auto_reopened'` | No cuenta `window_reopened` (`:734-786`). |
-| Demora de respuesta | Por episodio; ráfagas colapsadas; solo `sender_type='agent'` detiene el reloj; `partial_data` antes del corte de atribución | Spec `response-delay-metrics` (`:787-945`). |
-| Participación | Agentes que escribieron en el episodio | Spec `ticket-agent-participation` (`:946+`). |
+| Resolución (RT) | `resolved_at − created_at` | `resolved_at` falta si se cerró directo sin pasar por `resolved` (`:163-195`). |
+| Rendimiento por agente | `LEFT JOIN tickets ON assigned_agent_id` | Resueltos/RT por agente quedan vacíos por R-T9 (`:335-395`). |
+| Sin asignar | `assigned_agent_id IS NULL`, sin filtrar estado | **Conteo siempre 0** (bug F, `:463-497`). |
+| Reabiertos | `ticket_events.type = 'auto_reopened'` | No cuenta `window_reopened` (`:699-739`). |
+| Demora de respuesta | Por episodio; ráfagas colapsadas; solo `sender_type='agent'` detiene el reloj; `partial_data` antes del corte de atribución | Spec `response-delay-metrics` (`:753-925`). |
+| Participación | Agentes que escribieron en el episodio | Spec `ticket-agent-participation` (`:941+`). |
 | Export CSV | Streaming por keyset, filtros compartidos con la bandeja, anti CSV-injection | `Reporte/Query/ExportTicketsCsvQuery.php`; supervisor+. |
 
 - Ningún reporte se restringe por agente (`OwnershipScope` siempre `null`, decisión documentada). Se filtran por workspace activo y, en 5 casos, por equipo.
