@@ -130,7 +130,7 @@ Tablas técnicas sin relaciones de negocio (no incluidas en el diagrama): `outbo
 | Contact → Conversation | 1 : N (una por número) | Sí | |
 | Conversation → Message | 1 : N | Sí | |
 | Contact / Conversation → Ticket | 1 : N | Sí | A lo sumo un ticket no cerrado por contacto y número (regla en código, no en BD). |
-| Ticket → Team | N : 0..1 | **Solo en la base** (`Version20260912000002.php:57`, `SET NULL`); Doctrine lo mapea como columna plana. | Riesgo: un `migrations:diff` futuro podría proponer borrar la FK. |
+| Ticket → Team | N : 0..1 | `Ticket::$team` (`ManyToOne`, FK `ON DELETE SET NULL`). | — |
 | Ticket → Agent (dueño) | N : 0..1 | **No** | Motivo de no tener FK: **Regla no confirmada**. Desactivar un agente no le quita sus tickets. |
 | Message → Agent (autor) | N : 0..1 | **No** (por spec `message-attribution`, copiando la decisión anterior) | |
 | Ticket → Assignment | 1 : N | Sí (`CASCADE`) | |

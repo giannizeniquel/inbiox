@@ -103,7 +103,7 @@ Formato pedido por el método: qué es · por qué parece existir · ¿respaldad
 
 | Problema | Consecuencia |
 |---|---|
-| La base de test se crea desde el mapping de Doctrine, no con migraciones (0 migraciones registradas en la base de test). | Ningún test valida la cadena de migraciones; los índices y la FK creados solo por migraciones no existen en test. Un `doctrine:schema:update --force` en cualquier entorno los borraría. |
+| La base de test no tiene migraciones registradas (0 versiones). | Ningún test valida la migración base. Desde la fase 5-0 el mapping declara todos los índices y FK, así que un `doctrine:schema:update` ya no los borra. |
 | Sin aislamiento entre tests (no hay transacción por test; varios hacen `DELETE FROM` y reinician `AUTO_INCREMENT`). | Resultados dependientes del orden. |
 | Tests nombrados por sprint (`Sprint09B*`, `Sprint10*`, `Sprint14*`). | Describen entregas históricas; son los que más se desactualizan. |
 | Tests de seguridad que usan ADMIN. | No detectan fallas de autorización de roles menores (p. ej. [R3](00-estado-y-pendientes.md#r3-cualquier-agente-modifica-disponibilidad-y-turnos-de-cualquier-agente)). |
@@ -118,6 +118,5 @@ Clasificación detallada de los 45 fallos en [00](00-estado-y-pendientes.md#los-
 - Si en producción hay más de un workspace con equipos que no deban ver datos entre sí (define la severidad de R4, R7, R13).
 - Qué publicador del outbox corre en cada entorno y si `window-closer` está activo fuera de la máquina de desarrollo.
 - Configuración del hub Mercure en producción y forma de despliegue.
-- Si la cadena completa de migraciones funciona desde una base vacía (no se permitió ejecutar migraciones). La base de desarrollo local además está desincronizada: `Version20260912000002` (equipos) figura como no ejecutada aunque sus tablas y FK ya existen, así que un `migrate` en esa base fallaría (arreglo en [09 § 1.2](09-guia-de-pruebas-manuales.md#12-base-de-datos-y-usuarios)).
 - El motivo de: desasignar al resolver, la falta de FK en `assigned_agent_id`, el destino `waiting` en la reapertura, el rate-limit de 2 h, los tipos de mensaje soportados, la idempotencia por contenido, la ampliación de la lista blanca de media.
 - Comportamiento en ejecución de lo deducido por lectura (dead letters de `InboxUpdatedEvent`, envío de duplicados, bucle logout/refresh, estado residual tras logout).

@@ -14,7 +14,7 @@ Lista corta, en orden de urgencia. Nada de esto se resolvió en esta etapa (no s
 | 4 | Decidir si un agente puede cambiar la disponibilidad y los turnos de **otro** agente. | Hoy cualquier `ROLE_AGENT` puede, por un efecto colateral. | [R3](#r3-cualquier-agente-modifica-disponibilidad-y-turnos-de-cualquier-agente) |
 | 5 | Decidir el modelo de aislamiento en tiempo real (topic único `tickets` vs por workspace/ticket). | Todos los usuarios reciben eventos (con contenido de mensajes) de todos los workspaces. | [R4](#r4-tiempo-real-sin-aislamiento-entre-workspaces) |
 | 6 | Decidir si la auto-asignación debe limitarse al workspace del ticket. | Hoy elige agentes de cualquier workspace. | [R7](#r7-auto-asignación-sin-filtro-de-workspace) |
-| 7 | Hacer el **smoke test manual** de Sprint 17/18. **Antes**, registrar en tu base local la migración de equipos (está aplicada pero no registrada; un `migrate` fallaría). | Pasó tests automáticos, pero nadie lo probó en la app corriendo. | [09-guia-de-pruebas-manuales.md](09-guia-de-pruebas-manuales.md); arreglo de la base en [09 § 1.2](09-guia-de-pruebas-manuales.md#12-base-de-datos-y-usuarios) |
+| 7 | Hacer el **smoke test manual** de Sprint 17/18. | Pasó tests automáticos, pero nadie lo probó en la app corriendo. | [09-guia-de-pruebas-manuales.md](09-guia-de-pruebas-manuales.md) |
 | 8 | Hacer `git push` de `test` cuando se decida. | El merge `239ee15` es local. | [Estado de git](#estado-de-git) |
 
 ---
@@ -80,7 +80,7 @@ Pregunta clave en cada grupo: ¿el test está mal, o revela un problema del cód
 
 **Problemas estructurales de la suite** (detalle en [08](08-riesgos-contradicciones-y-complejidad.md#salud-estructural-de-la-suite-de-tests)):
 
-- La base de test se construye desde el mapping, no desde migraciones: ningún test valida la cadena de migraciones, y los índices/FK creados solo por migraciones no existen en test.
+- La base de test no tiene migraciones registradas: ningún test valida la migración base.
 - No hay aislamiento entre tests (no hay transacción por test; varios hacen `DELETE FROM`).
 - Tests nombrados por sprint (`Sprint09B*`, `Sprint10*`, `Sprint14*`) describen entregas históricas, no comportamiento actual.
 

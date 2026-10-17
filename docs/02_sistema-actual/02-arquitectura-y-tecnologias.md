@@ -236,16 +236,16 @@ Archivos: `apps/api/.env` (no versionado), `.env.dev` (**versionado, con credenc
 | `META_ACCESS_TOKEN`, `META_PHONE_NUMBER_ID`, `META_APP_SECRET`, `META_WEBHOOK_VERIFY_TOKEN` | WhatsApp | Sí. |
 | `S3_ENDPOINT`, `S3_PUBLIC_ENDPOINT`, `S3_REGION`, `S3_KEY`, `S3_SECRET`, `S3_BUCKET`, `MEDIA_URL_TTL` | Media | Sí. |
 | `CONVERSATION_WINDOW_SAFETY_MARGIN_MINUTES` | Margen de la ventana de 24 h (5 min) | Sí. |
-| `INITIAL_ADMIN_PASSWORD` | Contraseña del admin `admin@inbiox.local` sembrado por la migración `Version20260616000001` | Sí. **Obligatoria para migrar desde cero.** |
+| `INITIAL_ADMIN_PASSWORD` | Contraseña del admin `admin@inbiox.local` sembrado por la migración base (`Version20261017210004`) | Sí. **Obligatoria para migrar desde cero.** |
 | `TEST_TOKEN` | Sufijo de base en tests paralelos | Opcional. |
 
 ## Migraciones
 
-- 27 migraciones en `apps/api/migrations/`. El problema histórico (`Version20260612000002` asumía la tabla `messages`) **ya está reparado** por `Version20250503000002` (commit `c590982`).
-- Migrar desde cero exige `INITIAL_ADMIN_PASSWORD`. `Version20260616000001` también crea usuarios con contraseña aleatoria inutilizable para cada agente con email.
-- `Version20260728161023` siembra el workspace "Default" desde `META_PHONE_NUMBER_ID` y le asigna todos los agentes. Posible bug: `getenv()` devuelve `false` (no `null`) si falta la variable, y la guarda lo deja pasar.
-- Desde la fase 5-0 de la limpieza, el mapping de Doctrine declara los índices y la FK `tickets.team_id` (`ON DELETE SET NULL`) que crean las migraciones, todas las columnas tienen nombre explícito y `doctrine:schema:validate` da el mapeo como válido. `doctrine:schema:update --dump-sql` solo propone diferencias cosméticas de la base existente: comentarios `DC2Type` en `teams` (y en `tickets.last_read_at` en dev) y los nombres de los índices automáticos de `agent_team`.
-- No se verificó que la cadena completa funcione desde una base vacía (no se permitió ejecutar migraciones).
+- Una sola migración en `apps/api/migrations/`: la base `Version20261017210004`, generada desde el mapping de Doctrine en la fase 5-1 de la limpieza. Reemplazó a las 28 anteriores, que ya no aplicaban sobre una base vacía (`Version20260616000001` fallaba con "Illegal mix of collations" porque `agents` quedaba con el collation por defecto del servidor y `user` con `utf8mb4_unicode_ci`).
+- Las tablas se crean con `utf8mb4_unicode_ci`, fijado en `config/packages/doctrine.yaml` (`default_table_options`), el mismo collation que tenían las bases existentes.
+- Migrar desde cero exige `INITIAL_ADMIN_PASSWORD`: la migración base siembra `admin@inbiox.local` y, si hay `META_PHONE_NUMBER_ID`, el workspace "Default" (los mismos seeds que hacían `Version20260616000001` y `Version20260728161023`). Posible bug heredado: `getenv()` devuelve `false` (no `null`) si falta la variable, y la guarda lo deja pasar. `app:seed-users` necesita ese workspace.
+- El mapping de Doctrine declara los índices y la FK `tickets.team_id` (`ON DELETE SET NULL`), todas las columnas tienen nombre explícito y `doctrine:schema:validate` da mapeo y base en sync sobre una base creada con la migración base.
+- Las bases creadas con la cadena vieja (la de desarrollo local) tienen registrada la migración base con `doctrine:migrations:version --add --all`. En ellas `doctrine:schema:update --dump-sql` solo propone diferencias cosméticas: comentarios `DC2Type` en `teams` y `tickets.last_read_at`, y los nombres de los índices automáticos de `agent_team`.
 
 ---
 

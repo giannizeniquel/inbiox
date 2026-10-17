@@ -67,14 +67,14 @@ docker exec inbiox_php php bin/console cache:pool:clear cache.rate_limiter
 
 | Situación | Qué hacer |
 |---|---|
-| Base existente (máquina de desarrollo actual) | La base local está **desincronizada**: `Version20260912000002` (equipos) figura como `not migrated`, pero sus tablas (`teams`, `agent_team`), la columna `tickets.team_id` y las cuatro FK con los nombres exactos de esa migración ya existen (verificado el 2026-10-12; el SQL se ejecutó a mano durante Sprint 18 sin registrar la versión). Correr `make migrate` así falla con "table already exists". **Arreglo** (registra la versión sin ejecutar SQL):<br>`docker exec inbiox_php php bin/console doctrine:migrations:version 'DoctrineMigrations\Version20260912000002' --add --no-interaction`<br>Después, `doctrine:migrations:status` no debe mostrar pendientes. |
+| Base existente (máquina de desarrollo actual) | Creada con la cadena de migraciones anterior. Desde la fase 5-1 tiene registrada solo la migración base (`doctrine:migrations:version --add --all`; las 27 versiones viejas quedaron en `doctrine_migration_versions_backup_20261017`). `make migrate` no hace nada y `doctrine:migrations:status` no muestra pendientes. |
 | Base nueva | Definir `INITIAL_ADMIN_PASSWORD` en el entorno del contenedor (p. ej. en `apps/api/.env.local`, no versionado) y `META_PHONE_NUMBER_ID`; luego `make migrate`. |
 
 **Usuarios de prueba:**
 
 | Usuario | Cómo se obtiene | Contraseña |
 |---|---|---|
-| `admin@inbiox.local` (Admin) | Lo crea la migración `Version20260616000001`. | El valor de `INITIAL_ADMIN_PASSWORD` al migrar. |
+| `admin@inbiox.local` (Admin) | Lo crea la migración base (`Version20261017210004`). | El valor de `INITIAL_ADMIN_PASSWORD` al migrar. |
 | `admin1/2@inbiox.local` (Admin), `super1/2@inbiox.local` (Supervisor), `agent1…6@inbiox.local` (Agente) | `docker exec inbiox_php php bin/console app:seed-users` | Fija, en `apps/api/src/Administracion/Command/SeedUsersCommand.php:31`. |
 
 Notas sobre el seed:
