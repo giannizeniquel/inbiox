@@ -9,9 +9,9 @@ use App\Reporte\Query\ReportingService;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * Characterization of App\Reporte\Controller\ReportingController:
- * app_report_rt, app_report_counts, app_report_volume, app_report_agents,
- * plus the generic 500 envelope (shape S1, "no trace" variant).
+ * Characterization of App\Reporte\Controller\ReportingController: every
+ * JSON endpoint except export (covered by ReportsCsvExportTest), plus the
+ * generic 500 envelope (shape S1, "no trace" variant).
  */
 final class ReportingControllerCharacterizationTest extends CharacterizationTestCase
 {
@@ -159,6 +159,267 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
         $this->assertJsonResponse(200, [], $this->request('GET', '/api/reports/agents?' . self::WINDOW . '&agent_id=999999999', $token));
     }
 
+    // ── app_report_frt ──
+
+    public function testFirstResponseTime(): void
+    {
+        $this->seedTickets();
+        $token = $this->supervisorToken();
+
+        $this->assertJsonResponse(200, [
+            'avg_frt_seconds' => 1800,
+            'min_frt_seconds' => 1800,
+            'max_frt_seconds' => 1800,
+            'avg_frt_minutes' => 30,
+            'min_frt_minutes' => 30,
+            'max_frt_minutes' => 30,
+        ], $this->request('GET', '/api/reports/frt?' . self::WINDOW, $token));
+    }
+
+    // ── app_report_agent_load ──
+
+    public function testAgentLoad(): void
+    {
+        $this->seedTickets();
+        $token = $this->supervisorToken();
+
+        $this->assertJsonResponse(200, [[
+            'agent_id' => $this->owner->getId(),
+            'agent_name' => 'Report Owner',
+            'active_tickets' => 1,
+            'max_capacity' => 10,
+            'load_percent' => 10,
+        ]], $this->request('GET', '/api/reports/agent-load', $token));
+    }
+
+    // ── app_report_unassigned ──
+
+    public function testUnassignedListsTicketsButCountsZero(): void
+    {
+        // The count is always 0 today (group F / R8); pinned as current behavior.
+        $this->seedTickets();
+        $outside = $this->connection()->fetchOne("SELECT id FROM tickets WHERE status = 'new'");
+        $token = $this->supervisorToken();
+
+        $this->assertJsonResponse(200, [
+            'count' => 0,
+            'tickets' => [[
+                'id' => (int) $outside,
+                'contact_name' => null,
+                'created_at' => '2025-04-01 10:00:00',
+                'priority' => 'medium',
+            ]],
+        ], $this->request('GET', '/api/reports/unassigned', $token));
+        $this->assertJsonResponse(200, ['count' => 0, 'tickets' => []], $this->request('GET', '/api/reports/unassigned?' . self::WINDOW, $token));
+    }
+
+    public function testUnassignedRejectsAMalformedDate(): void
+    {
+        $token = $this->supervisorToken();
+
+        $this->assertJsonResponse(400, ['error' => 'Invalid datetime format: 2025-03-01. Expected: Y-m-d\TH:i:sZ'], $this->request('GET', '/api/reports/unassigned?from=2025-03-01', $token));
+    }
+
+    // ── app_report_available_agents ──
+
+    public function testAvailableAgentsForASupervisor(): void
+    {
+        $this->seedTickets();
+        $this->owner->setIsAvailableOverride(true);
+        $this->createAgent('Off Override')->setIsAvailableOverride(false);
+        $this->em->flush();
+        $token = $this->supervisorToken();
+
+        $this->assertJsonResponse(200, [[
+            'agent_id' => $this->owner->getId(),
+            'agent_name' => 'Report Owner',
+            'in_shift' => true,
+            'active_tickets' => 1,
+        ]], $this->request('GET', '/api/reports/available-agents', $token));
+    }
+
+    public function testAvailableAgentsAreFilteredByTheAgentsActiveWorkspace(): void
+    {
+        $this->seedTickets();
+        $this->owner->setIsAvailableOverride(true);
+        $workspace = $this->createWorkspace('char-rep-avail', 'Reports');
+        $member = $this->createAgent('Workspace Member');
+        $member->setIsAvailableOverride(true);
+        $member->addWorkspace($workspace);
+        $viewer = $this->createAgent('Viewer');
+        $viewer->addWorkspace($workspace);
+        $viewer->setActiveWorkspace($workspace);
+        $this->em->flush();
+        $token = $this->loginAs('reports-avail@characterization.local', ['ROLE_AGENT'], $viewer);
+
+        $this->assertJsonResponse(200, [[
+            'agent_id' => $member->getId(),
+            'agent_name' => 'Workspace Member',
+            'in_shift' => true,
+            'active_tickets' => 0,
+        ]], $this->request('GET', '/api/reports/available-agents', $token));
+    }
+
+    // ── app_report_frt_trend ──
+
+    public function testFirstResponseTimeTrend(): void
+    {
+        $this->seedTickets();
+        $token = $this->supervisorToken();
+
+        $this->assertJsonResponse(200, [
+            ['date' => '2025-03-01', 'avg_frt_seconds' => 1800, 'ticket_count' => 1],
+        ], $this->request('GET', '/api/reports/frt-trend?' . self::WINDOW, $token));
+    }
+
+    // ── app_report_heatmap ──
+
+    public function testHeatmap(): void
+    {
+        $this->seedTickets();
+        $token = $this->supervisorToken();
+
+        // 2025-03-01 is a Saturday (ISO 6), 2025-03-02 a Sunday (ISO 7).
+        $this->assertJsonResponse(200, [
+            ['day_of_week' => 6, 'hour' => 10, 'count' => 1],
+            ['day_of_week' => 7, 'hour' => 9, 'count' => 1],
+            ['day_of_week' => 7, 'hour' => 15, 'count' => 1],
+        ], $this->request('GET', '/api/reports/heatmap?' . self::WINDOW, $token));
+    }
+
+    // ── app_report_recurring ──
+
+    public function testRecurringCustomersAndTheirThreshold(): void
+    {
+        $frequent = $this->createContact('+5491100000701', 'Frequent');
+        $frequent->setEmail('frequent@example.com');
+        $twice = $this->createContact('+5491100000702', 'Twice');
+        $old = $this->createContact('+5491100000703', 'Old');
+        $lastAt = [];
+        foreach ([[$frequent, 1], [$frequent, 2], [$frequent, 3], [$twice, 4], [$twice, 5], [$old, 100], [$old, 101], [$old, 102]] as [$contact, $daysAgo]) {
+            $ticket = $this->createTicket('new', null, $contact);
+            $createdAt = (new \DateTimeImmutable('today'))->modify("-{$daysAgo} days")->format('Y-m-d H:i:s');
+            $this->connection()->executeStatement('UPDATE tickets SET created_at = ? WHERE id = ?', [$createdAt, $ticket->getId()]);
+            $lastAt[$contact->getName()] ??= $createdAt;
+        }
+        $token = $this->supervisorToken();
+
+        $frequentRow = [
+            'contact_id' => $frequent->getId(),
+            'contact_name' => 'Frequent',
+            'email' => 'frequent@example.com',
+            'ticket_count' => 3,
+            'last_ticket_at' => $lastAt['Frequent'],
+        ];
+        $twiceRow = [
+            'contact_id' => $twice->getId(),
+            'contact_name' => 'Twice',
+            'email' => null,
+            'ticket_count' => 2,
+            'last_ticket_at' => $lastAt['Twice'],
+        ];
+
+        $this->assertJsonResponse(200, [$frequentRow], $this->request('GET', '/api/reports/recurring-customers', $token));
+        $this->assertJsonResponse(200, [$frequentRow, $twiceRow], $this->request('GET', '/api/reports/recurring-customers?threshold=2', $token));
+        // threshold=0 is falsy and falls back to 3.
+        $this->assertJsonResponse(200, [$frequentRow], $this->request('GET', '/api/reports/recurring-customers?threshold=0', $token));
+    }
+
+    // ── app_report_reopened ──
+
+    public function testReopenedTickets(): void
+    {
+        $this->seedTickets();
+        $resolvedId = (int) $this->connection()->fetchOne("SELECT id FROM tickets WHERE status = 'resolved'");
+        foreach ([['auto_reopened', '2025-03-02 11:00:00'], ['auto_reopened', '2025-03-05 11:00:00'], ['status_changed', '2025-03-02 12:00:00']] as [$type, $at]) {
+            $this->connection()->executeStatement(
+                "INSERT INTO ticket_events (ticket_id, type, source, created_at) VALUES (?, ?, 'system', ?)",
+                [$resolvedId, $type, $at],
+            );
+        }
+        $token = $this->supervisorToken();
+
+        $this->assertJsonResponse(200, [[
+            'ticket_id' => $resolvedId,
+            'contact_name' => null,
+            'resolved_at' => '2025-03-01 12:00:00',
+            'reopened_at' => '2025-03-02 11:00:00',
+            'current_status' => 'resolved',
+        ]], $this->request('GET', '/api/reports/reopened?' . self::WINDOW, $token));
+    }
+
+    // ── app_report_response_delay and app_report_ticket_participation ──
+
+    /**
+     * One ticket inside the window: a burst of two inbound messages answered
+     * by the owner after 5 minutes, then an unanswered inbound message.
+     */
+    private function seedConversation(): int
+    {
+        $this->owner = $this->createAgent('Report Owner');
+        $ticket = $this->createTicket('active', $this->owner->getId());
+        $this->connection()->executeStatement('UPDATE tickets SET created_at = ? WHERE id = ?', ['2025-03-01 10:00:00', $ticket->getId()]);
+        $conversationId = $ticket->getConversation()->getId();
+        foreach ([
+            ['inbound', 'contact', null, '2025-03-01 10:00:00'],
+            ['inbound', 'contact', null, '2025-03-01 10:01:00'],
+            ['outbound', 'agent', $this->owner->getId(), '2025-03-01 10:06:00'],
+            ['inbound', 'contact', null, '2025-03-01 10:10:00'],
+        ] as [$direction, $senderType, $agentId, $at]) {
+            $this->connection()->executeStatement(
+                "INSERT INTO messages (conversation_id, direction, content, created_at, sender_agent_id, sender_type) VALUES (?, ?, 'msg', ?, ?, ?)",
+                [$conversationId, $direction, $at, $agentId, $senderType],
+            );
+        }
+
+        return $ticket->getId();
+    }
+
+    public function testResponseDelay(): void
+    {
+        $this->seedConversation();
+        $token = $this->supervisorToken();
+
+        $this->assertJsonResponse(200, [
+            'data_available_from' => '2025-03-01 10:00:00',
+            'partial_data' => true,
+            'aggregate' => ['avg_delay_seconds' => 360, 'sample_count' => 1, 'unanswered_inbound_count' => 1],
+            'per_agent' => [[
+                'agent_id' => $this->owner->getId(),
+                'agent_name' => 'Report Owner',
+                'avg_delay_seconds' => 360,
+                'sample_count' => 1,
+            ]],
+        ], $this->request('GET', '/api/reports/response-delay?' . self::WINDOW, $token));
+    }
+
+    public function testTicketParticipation(): void
+    {
+        $ticketId = $this->seedConversation();
+        $token = $this->supervisorToken();
+
+        $ownerId = $this->owner->getId();
+
+        $this->assertJsonResponse(200, [
+            'ticket_id' => $ticketId,
+            'data_available_from' => '2025-03-01 10:00:00',
+            'partial_data' => false,
+            'participants' => [[
+                'agent_id' => $ownerId,
+                'agent_name' => 'Report Owner',
+                'message_count' => 1,
+                'sample_count' => 1,
+                'avg_delay_seconds' => 360,
+            ]],
+            'automatic_message_count' => 0,
+            'unanswered_inbound_count' => 1,
+            'pairs' => [
+                ['run_start_at' => '2025-03-01 10:00:00', 'reply_at' => '2025-03-01 10:06:00', 'agent_id' => $ownerId, 'delay_seconds' => 360],
+                ['run_start_at' => '2025-03-01 10:10:00', 'reply_at' => null, 'agent_id' => null, 'delay_seconds' => null],
+            ],
+        ], $this->request('GET', '/api/reports/tickets/' . $ticketId . '/participation', $token));
+    }
+
     // ── shared parameter errors ──
 
     #[DataProvider('reportRoutes')]
@@ -178,6 +439,11 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
             'counts' => ['/api/reports/counts'],
             'volume' => ['/api/reports/volume'],
             'agents' => ['/api/reports/agents'],
+            'frt' => ['/api/reports/frt'],
+            'frt-trend' => ['/api/reports/frt-trend'],
+            'heatmap' => ['/api/reports/heatmap'],
+            'reopened' => ['/api/reports/reopened'],
+            'response-delay' => ['/api/reports/response-delay'],
         ];
     }
 
