@@ -114,7 +114,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T30 | S11 | inline | done | 4c-2 `availableAgents` into a `Reporte/Query/` class (`e966cbb`, L64) |
 | T31 | S11 | inline | done | 4c-3 split `getTicketParticipation` (`21aa251`, L65) |
 | T32 | S11 | inline | done | 4c-4 split `getResponseDelayMetrics` (`e41bd28`, L66) |
-| T33 | S11 | inline | pending | 4c-5 `is_in_shift` from the repository into the service |
+| T33 | S11 | inline | done | 4c-5 `is_in_shift` from the repository into the service (`5365bc0`, L67) |
 | T34 | S11 | inline | pending | 4c-6 why-comments, bound `LIMIT`, service docblocks |
 
 ### Baseline of failing tests (phase 0, after `1afba20`)
@@ -570,3 +570,10 @@ Later phases, each with its own branch and task list when it starts:
     - `lint:container` OK; PHPStan level 0 identical (29 lines).
     - Reporting-related tests: 149 tests, only the baseline `ReportingV2Test` failure.
     - Full suite: 947 tests, the 6 baseline failures plus two JWT flakes, both passing on an isolated rerun: `SettingsPageTest::testReplaceShiftsReplacesAll` (401) and `ReportsCsvExportTest::test_date_range_filters_on_created_at` (0 rows instead of 1; its `requestExport` helper does not check the status, so a 401 body parses as an empty CSV; export does not use the changed code).
+- **L67 (2026-10-17), T33:** User: "dale, seguí con la 4c-5".
+  - 4c-5 (`5365bc0`): `ReportingRepository::getAgentPerformance` returns only query data; the new private `ReportingService::addIsInShift` loads the agents with `AgentRepository::findByIds` (the same DQL the repository had inline), evaluates `AgentAvailabilityService::isInShift` with the current time, and inserts `is_in_shift` right after `current_load`, so the JSON key order is unchanged. An agent that cannot be loaded is still reported as not in shift. `ReportingRepository` no longer depends on `AgentAvailabilityService` or imports `Agent`.
+  - New characterization test `testAgentPerformanceReportsAnAgentInShift`: seven 00:00-00:00 shifts (read as cross-midnight shifts covering the whole day) make the result independent of the time; it asserts `is_in_shift` true and the key position. It passes on the pre-change code too.
+  - Checks:
+    - `lint:container` OK; PHPStan level 0 identical (29 lines).
+    - Reporting-related tests plus `Sprint10ControllerTest`: 166 tests, only the baseline `ReportingV2Test` failure.
+    - Full suite: 948 tests, exactly the 6 baseline failures.
