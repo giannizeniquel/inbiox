@@ -14,7 +14,7 @@ final readonly class TicketCreatedEvent extends DomainEvent
         \DateTimeImmutable $occurredAt,
         int $seq,
         int $version,
-        public TicketStatus $status,
+        public EstadoDeTicket $status,
         public int $priority
     ) {
         parent::__construct(

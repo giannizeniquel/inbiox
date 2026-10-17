@@ -8,7 +8,7 @@ use App\Asignacion\UseCase\AutoAssignTicketUseCase;
 use App\Agente\Agent;
 use App\Disponibilidad\AgentShift;
 use App\Ticket\Ticket;
-use App\Ticket\TicketStatus;
+use App\Ticket\EstadoDeTicket;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -326,7 +326,7 @@ class Sprint10ConcurrencyTest extends KernelTestCase
         $this->em->persist($shift);
 
         $ticket = new Ticket();
-        $ticket->setStatus(TicketStatus::NEW->value);
+        $ticket->setStatus(EstadoDeTicket::NEW->value);
         $this->em->persist($ticket);
         $this->em->flush();
         $ticketId = (int) $ticket->getId();

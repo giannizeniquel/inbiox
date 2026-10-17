@@ -89,9 +89,9 @@ Tablas técnicas sin relaciones de negocio (no incluidas en el diagrama): `outbo
 | `User` (`user`) | `Administracion/User.php` | Credenciales y roles. | `email` (UNIQUE), `password_hash`, `roles` (JSON, sin validar en el backend), `is_active` |
 | `Workspace` (`workspaces`) | `Administracion/Workspace.php` | Un número de WhatsApp Business. Ejemplo de negocio: un número para clientes y otro para contratistas (análisis de brecha, req. #0b). | `phone_number_id` (UNIQUE), `display_name`, `is_active`. **No guarda credenciales**: todos los números usan el mismo token de Meta. |
 | `Team` (`teams`) | `Agente/Team.php` | Área dentro de un workspace (Sprint 18). | `workspace_id`, `name` (UNIQUE por workspace), `is_active` |
-| `Tag` (`tags`) | `Ticket/Tag.php` | Etiqueta global (no por workspace). | `name` (minúsculas, normalizado, UNIQUE) |
-| `TicketTag` (`ticket_tags`) | `Ticket/TicketTag.php` | Relación ticket ↔ etiqueta. | Relación unidireccional: ni `Ticket` ni `Tag` tienen la colección inversa. |
-| `TicketEvent` (`ticket_events`) | `Ticket/TicketEvent.php` | Historial de hechos de un ticket: tags, cierres manuales (`manual_{resolved,closed}_{owner,override,unowned}`), cierre por ventana (`window_expired_closed`), reaperturas (`window_reopened`, `auto_reopened`). | `ticket_id` (sin FK), `type` (texto), `source` (`system`, `manual`, `u:{id}`) |
+| `Etiqueta` (`tags`) | `Ticket/Etiqueta.php` | Etiqueta global (no por workspace). | `name` (minúsculas, normalizado, UNIQUE) |
+| `EtiquetaDeTicket` (`ticket_tags`) | `Ticket/EtiquetaDeTicket.php` | Relación ticket ↔ etiqueta. | Relación unidireccional: ni `Ticket` ni `Etiqueta` tienen la colección inversa. |
+| `EventoDeTicket` (`ticket_events`) | `Ticket/EventoDeTicket.php` | Historial de hechos de un ticket: tags, cierres manuales (`manual_{resolved,closed}_{owner,override,unowned}`), cierre por ventana (`window_expired_closed`), reaperturas (`window_reopened`, `auto_reopened`). | `ticket_id` (sin FK), `type` (texto), `source` (`system`, `manual`, `u:{id}`) |
 
 ### Entidades técnicas
 
@@ -107,14 +107,14 @@ Tablas técnicas sin relaciones de negocio (no incluidas en el diagrama): `outbo
 
 | Enum | Archivo | Valores | Notas |
 |---|---|---|---|
-| `TicketStatus` | `Ticket/TicketStatus.php` | `new`, `active`, `waiting`, `resolved`, `closed` | `Ticket::setStatus()` acepta cualquier texto. Transiciones en [04 § F4](04-flujos.md#f4-transiciones-de-estado-del-ticket). |
+| `EstadoDeTicket` | `Ticket/EstadoDeTicket.php` | `new`, `active`, `waiting`, `resolved`, `closed` | `Ticket::setStatus()` acepta cualquier texto. Transiciones en [04 § F4](04-flujos.md#f4-transiciones-de-estado-del-ticket). |
 | `ConversationStatus` | `Conversacion/ConversationStatus.php` | `open`, `closed` | `closed` nunca se usa. |
 | `MessageDirection` | `Conversacion/MessageDirection.php` | `inbound`, `outbound` | Los casos de uso escriben el texto literal, no el enum. |
 | `MessageSenderType` | `Conversacion/MessageSenderType.php` | `agent`, `automatic`, `contact` | Spec `message-attribution`. El frontend todavía no lo usa. |
 | `AssignmentType` | `Asignacion/AssignmentType.php` | `AUTO_ASSIGN`, `MANUAL_ASSIGN`, `REASSIGN`, `UNASSIGN` | Solo `AssignmentService` crea filas de `Assignment`. |
 | Roles | strings en `User.roles` | `ROLE_ADMIN`, `ROLE_SUPERVISOR`, `ROLE_AGENT` | Jerarquía en `security.yaml` (el enum `Role`, sin uso, se borró en la fase 1). |
 | `MediaKind` | `Conversacion/MediaKind.php` | `image`, `video`, `audio`, `document` | |
-| `TicketEventType` | `Ticket/TicketEventType.php` | constantes de cierre/reapertura | `tag_added`, `tag_removed`, `auto_reopened`, `auto_closed` siguen como textos sueltos. |
+| `TipoDeEventoDeTicket` | `Ticket/TipoDeEventoDeTicket.php` | constantes de cierre/reapertura | `tag_added`, `tag_removed`, `auto_reopened`, `auto_closed` siguen como textos sueltos. |
 | Estado de entrega (textos) | `Conversacion/UseCase/HandleStatusUpdateUseCase.php:29-44` | `sending` → `sent` → `delivered` → `read`; `failed` | Solo avanza; `read` y `failed` son finales. |
 
 ## Relaciones: cardinalidad y claves foráneas
@@ -135,6 +135,6 @@ Tablas técnicas sin relaciones de negocio (no incluidas en el diagrama): `outbo
 | Message → Agent (autor) | N : 0..1 | **No** (por spec `message-attribution`, copiando la decisión anterior) | |
 | Ticket → Assignment | 1 : N | Sí (`CASCADE`) | |
 | Ticket ↔ Tag | N : M (`ticket_tags`) | Sí | |
-| Ticket → TicketEvent | 1 : N | **No** | |
+| Ticket → EventoDeTicket | 1 : N | **No** | |
 | Ticket / Conversation → Workspace | N : 1 | **No** (coincidencia de `phone_number_id`) | |
 | Contact → "owner" | ? | **No** | `contacts.owner_id` solo se usa como filtro en `ListContactsQuery.php:54`. A qué apunta: **Regla no confirmada.** |

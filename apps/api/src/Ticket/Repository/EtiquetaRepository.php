@@ -2,26 +2,26 @@
 
 namespace App\Ticket\Repository;
 
-use App\Ticket\Tag;
+use App\Ticket\Etiqueta;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\Persistence\ManagerRegistry;
 
-class TagRepository extends ServiceEntityRepository
+class EtiquetaRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, Tag::class);
+        parent::__construct($registry, Etiqueta::class);
     }
 
-    public function findById(int $id): ?Tag
+    public function findById(int $id): ?Etiqueta
     {
         return $this->find($id);
     }
 
-    public function findByName(string $name): ?Tag
+    public function findByName(string $name): ?Etiqueta
     {
-        return $this->findOneBy(['name' => Tag::normalize($name)]);
+        return $this->findOneBy(['name' => Etiqueta::normalize($name)]);
     }
 
     public function findAll(): array
@@ -32,7 +32,7 @@ class TagRepository extends ServiceEntityRepository
     /**
      * Persist and flush a tag entity
      */
-    public function save(Tag $tag): void
+    public function save(Etiqueta $tag): void
     {
         $this->getEntityManager()->persist($tag);
         $this->getEntityManager()->flush();
@@ -54,7 +54,7 @@ class TagRepository extends ServiceEntityRepository
     }
 
     /**
-     * Tag names attached to each of these tickets, ordered by ticket id and
+     * Etiqueta names attached to each of these tickets, ordered by ticket id and
      * then by the order the tags were attached (`ticket_tags.id`).
      *
      * @param int[] $ticketIds

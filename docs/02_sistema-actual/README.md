@@ -45,7 +45,7 @@ Una bandeja de atención compartida: los mensajes que llegan por **WhatsApp Clou
 | **Conversación** | Historial de mensajes de un contacto con **un** número de WhatsApp. En la práctica nunca se cierra. | `Conversacion/Conversation.php` |
 | **Mensaje** | Un mensaje entrante (`inbound`) o saliente (`outbound`). Pertenece a la conversación, **no** al ticket. | `Conversacion/Message.php` |
 | **Ticket** | Un caso de atención: un "episodio" dentro de una conversación. Hay a lo sumo un ticket no cerrado por contacto y número. | `Ticket/Ticket.php` |
-| **Estado del ticket** | `new` → `active` → `waiting` → `resolved` → `closed`. Ver la máquina de estados (FSM) en [04-flujos.md](04-flujos.md#f4-transiciones-de-estado-del-ticket). | `Ticket/TicketStateMachine.php` |
+| **Estado del ticket** | `new` → `active` → `waiting` → `resolved` → `closed`. Ver la máquina de estados (FSM) en [04-flujos.md](04-flujos.md#f4-transiciones-de-estado-del-ticket). | `Ticket/MaquinaDeEstadosDeTicket.php` |
 | **Dueño (owner)** | El agente asignado al ticket (`tickets.assigned_agent_id`). | `Asignacion/AssignmentService.php` |
 | **Usuario** | Credenciales y roles para iniciar sesión (`ROLE_AGENT`, `ROLE_SUPERVISOR`, `ROLE_ADMIN`). | `Administracion/User.php` |
 | **Agente** | La persona que atiende (turnos, capacidad, workspaces). Se vincula 1:1 y de forma opcional con un usuario. | `Agente/Agent.php` |
@@ -69,7 +69,7 @@ Una bandeja de atención compartida: los mensajes que llegan por **WhatsApp Clou
 | **Topic** | "Canal" de Mercure. Hoy casi todo se publica en un único topic: `tickets`. | `MercureJwtService.php` |
 | **Caso de uso (use case)** | Clase que implementa una operación de negocio completa (backend `<Modulo>/UseCase/`, frontend `core/application/`). | — |
 | **Voter** | Clase de Symfony que decide si un usuario puede hacer algo sobre un objeto concreto (p. ej. resolver un ticket). Viven en `<Modulo>/Security/` (`Ticket/Security/TicketVoter`, `Conversacion/Security/MessageVoter`). | `Ticket/Security/`, `Conversacion/Security/` |
-| **FSM** | *Finite State Machine*: tabla de transiciones de estado permitidas. | `TicketStateMachine.php` |
+| **FSM** | *Finite State Machine*: tabla de transiciones de estado permitidas. | `MaquinaDeEstadosDeTicket.php` |
 | **Store** | En Angular, servicio con *signals* que guarda el estado compartido de la pantalla. | `apps/web/src/app/core/stores/` |
 | **Tier 1 / Tier 2** | Prioridades del backlog definidas en el análisis de brecha. | [`analisis-brecha-requerimientos.md`](../../analisis-brecha-requerimientos.md) |
 

@@ -7,9 +7,9 @@ namespace App\Tests\Integration;
 use App\Agente\Agent;
 use App\Contacto\Contact;
 use App\Conversacion\Conversation;
-use App\Ticket\TicketEventType;
+use App\Ticket\TipoDeEventoDeTicket;
 use App\Ticket\Ticket;
-use App\Ticket\TicketStatus;
+use App\Ticket\EstadoDeTicket;
 use App\Administracion\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -21,7 +21,7 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
  * status on a `window_expired_closed` ticket must return 4xx.
  *
  * This is a structural regression test, not a behavior change —
- * `TransitionTicketStatusUseCase::execute()` only ever consults the shared
+ * `CambiarEstadoDeTicketUseCase::execute()` only ever consults the shared
  * FSM table, where `closed` has no outgoing transitions (task 0.9). It
  * proves `reopenDueToInboundMessage()` has exactly one call site and is
  * never human-reachable.
@@ -102,7 +102,7 @@ class TicketWorkflowControllerWindowIsolationTest extends WebTestCase
         $ticket = new Ticket();
         $ticket->setContact($contact);
         $ticket->setConversation($conversation);
-        $ticket->setStatus(TicketStatus::CLOSED->value);
+        $ticket->setStatus(EstadoDeTicket::CLOSED->value);
         $this->em->persist($ticket);
         $this->em->flush();
 
@@ -111,7 +111,7 @@ class TicketWorkflowControllerWindowIsolationTest extends WebTestCase
 
         $this->em->getConnection()->executeStatement(
             'INSERT INTO ticket_events (ticket_id, type, source, created_at) VALUES (?, ?, ?, NOW())',
-            [$ticketId, TicketEventType::WINDOW_EXPIRED_CLOSED, 'system']
+            [$ticketId, TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED, 'system']
         );
 
         return $ticketId;
@@ -145,10 +145,10 @@ class TicketWorkflowControllerWindowIsolationTest extends WebTestCase
     public static function targetStatusProvider(): array
     {
         return [
-            'to new' => [TicketStatus::NEW->value],
-            'to active' => [TicketStatus::ACTIVE->value],
-            'to waiting' => [TicketStatus::WAITING->value],
-            'to resolved' => [TicketStatus::RESOLVED->value],
+            'to new' => [EstadoDeTicket::NEW->value],
+            'to active' => [EstadoDeTicket::ACTIVE->value],
+            'to waiting' => [EstadoDeTicket::WAITING->value],
+            'to resolved' => [EstadoDeTicket::RESOLVED->value],
         ];
     }
 }

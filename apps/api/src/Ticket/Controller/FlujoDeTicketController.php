@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Ticket\Controller;
 
 use App\Ticket\Security\TicketVoter;
-use App\Ticket\UseCase\TransitionTicketStatusUseCase;
-use App\Ticket\UseCase\RecordClosureAuditUseCase;
-use App\Ticket\UseCase\ResolveTicketUseCase;
-use App\Ticket\ClosureAuditClassifier;
+use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
+use App\Ticket\UseCase\RegistrarAuditoriaDeCierreUseCase;
+use App\Ticket\UseCase\ResolverTicketUseCase;
+use App\Ticket\ClasificadorDeAuditoriaDeCierre;
 use App\Ticket\Ticket;
-use App\Ticket\TicketStatus;
+use App\Ticket\EstadoDeTicket;
 use App\Administracion\User;
 use App\Ticket\Repository\TicketRepository;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -21,15 +21,15 @@ use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_AGENT')]
-class TicketWorkflowController
+class FlujoDeTicketController
 {
     public function __construct(
-        private TransitionTicketStatusUseCase $transitionUseCase,
-        private ResolveTicketUseCase $resolveTicketUseCase,
+        private CambiarEstadoDeTicketUseCase $transitionUseCase,
+        private ResolverTicketUseCase $resolveTicketUseCase,
         private TicketRepository $ticketRepo,
         private Security $security,
-        private ClosureAuditClassifier $classifier,
-        private RecordClosureAuditUseCase $recordClosureAuditUseCase,
+        private ClasificadorDeAuditoriaDeCierre $classifier,
+        private RegistrarAuditoriaDeCierreUseCase $recordClosureAuditUseCase,
     ) {}
 
     #[Route('/api/tickets/{id}/transition', name: 'app_ticket_transition', methods: ['POST'])]
@@ -45,7 +45,7 @@ class TicketWorkflowController
 
             // Gate ownership only when the target status is resolved/closed
             // (design.md — "conditional" gating for transition()).
-            $isClosingTarget = $targetStatus === TicketStatus::RESOLVED->value || $targetStatus === TicketStatus::CLOSED->value;
+            $isClosingTarget = $targetStatus === EstadoDeTicket::RESOLVED->value || $targetStatus === EstadoDeTicket::CLOSED->value;
             if ($isClosingTarget) {
                 $denied = $this->denyUnlessGrantedClose($id, $user, 'transition');
                 if ($denied !== null) {
@@ -72,7 +72,7 @@ class TicketWorkflowController
             return new JsonResponse($result);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
-        } catch (\App\Ticket\InvalidTransitionException $e) {
+        } catch (\App\Ticket\TransicionInvalidaException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 422);
         }
     }
@@ -90,7 +90,7 @@ class TicketWorkflowController
             $result = $this->resolveTicketUseCase->execute($id, $actor);
 
             if ($user !== null) {
-                $this->recordClosureAuditUseCase->execute($id, TicketStatus::RESOLVED->value, $result['previous_assigned_agent_id'] ?? null, $user);
+                $this->recordClosureAuditUseCase->execute($id, EstadoDeTicket::RESOLVED->value, $result['previous_assigned_agent_id'] ?? null, $user);
             }
 
             unset($result['previous_assigned_agent_id']);
@@ -114,7 +114,7 @@ class TicketWorkflowController
             $result = $this->transitionUseCase->close($id, $actor);
 
             if ($user !== null) {
-                $this->recordClosureAuditUseCase->execute($id, TicketStatus::CLOSED->value, $result['previous_assigned_agent_id'] ?? null, $user);
+                $this->recordClosureAuditUseCase->execute($id, EstadoDeTicket::CLOSED->value, $result['previous_assigned_agent_id'] ?? null, $user);
             }
 
             unset($result['previous_assigned_agent_id']);

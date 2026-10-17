@@ -4,7 +4,7 @@ namespace App\Compartido\Controller;
 
 use App\Conversacion\UseCase\HandleInboundMessageUseCase;
 use App\Asignacion\UseCase\AssignTicketUseCase;
-use App\Ticket\UseCase\TransitionTicketStatusUseCase;
+use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\Routing\Attribute\Route;
@@ -19,7 +19,7 @@ class DebugController extends AbstractController
     public function __construct(
         private HandleInboundMessageUseCase $handleInbound,
         private AssignTicketUseCase $assignTicket,
-        private TransitionTicketStatusUseCase $transitionStatus,
+        private CambiarEstadoDeTicketUseCase $transitionStatus,
         private KernelInterface $kernel,
     ) {}
 

@@ -7,9 +7,9 @@ namespace App\Tests\Integration;
 use App\Contacto\Query\GetContactTimelineQuery;
 use App\Contacto\Contact;
 use App\Conversacion\Conversation;
-use App\Ticket\TicketEventType;
+use App\Ticket\TipoDeEventoDeTicket;
 use App\Ticket\Ticket;
-use App\Ticket\TicketStatus;
+use App\Ticket\EstadoDeTicket;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -52,7 +52,7 @@ class GetContactTimelineQueryWindowEventsTest extends KernelTestCase
         $ticket = new Ticket();
         $ticket->setContact($contact);
         $ticket->setConversation($conversation);
-        $ticket->setStatus(TicketStatus::CLOSED->value);
+        $ticket->setStatus(EstadoDeTicket::CLOSED->value);
         $this->em->persist($ticket);
         $this->em->flush();
 
@@ -76,8 +76,8 @@ class GetContactTimelineQueryWindowEventsTest extends KernelTestCase
 
     public function testWindowExpiredClosedAndWindowReopenedEventsAppearInTheTimeline(): void
     {
-        $this->addTicketEvent(TicketEventType::WINDOW_EXPIRED_CLOSED);
-        $this->addTicketEvent(TicketEventType::WINDOW_REOPENED);
+        $this->addTicketEvent(TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED);
+        $this->addTicketEvent(TipoDeEventoDeTicket::WINDOW_REOPENED);
 
         $query = static::getContainer()->get(GetContactTimelineQuery::class);
         $result = $query->execute($this->contactId, null, 50);

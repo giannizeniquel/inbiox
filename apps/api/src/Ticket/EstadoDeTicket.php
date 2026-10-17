@@ -2,7 +2,7 @@
 
 namespace App\Ticket;
 
-enum TicketStatus: string
+enum EstadoDeTicket: string
 {
     case NEW = 'new';
     case ACTIVE = 'active';

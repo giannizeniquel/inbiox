@@ -2,7 +2,7 @@
 
 namespace App\Ticket\Query;
 
-class TicketDetailDTO
+class DetalleDeTicketDTO
 {
     public function __construct(
         public int $ticketId,

@@ -6,16 +6,16 @@ namespace App\Tests\Integration\Repository;
 
 use App\Contacto\Contact;
 use App\Conversacion\Conversation;
-use App\Ticket\Repository\TagRepository;
-use App\Ticket\Tag;
+use App\Ticket\Repository\EtiquetaRepository;
+use App\Ticket\Etiqueta;
 use App\Ticket\Ticket;
-use App\Ticket\TicketStatus;
-use App\Ticket\TicketTag;
+use App\Ticket\EstadoDeTicket;
+use App\Ticket\EtiquetaDeTicket;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
- * TagRepository::isAttachedToTicket(), moved out of AddTagToTicketUseCase
+ * EtiquetaRepository::isAttachedToTicket(), moved out of AgregarEtiquetaATicketUseCase
  * in phase 3c-1.
  */
 class TagRepositorySqlTest extends KernelTestCase
@@ -24,7 +24,7 @@ class TagRepositorySqlTest extends KernelTestCase
     {
         self::bootKernel();
         $em = static::getContainer()->get(EntityManagerInterface::class);
-        $repo = static::getContainer()->get(TagRepository::class);
+        $repo = static::getContainer()->get(EtiquetaRepository::class);
         $conn = $em->getConnection();
 
         $contact = new Contact();
@@ -36,14 +36,14 @@ class TagRepositorySqlTest extends KernelTestCase
         $ticket = new Ticket();
         $ticket->setContact($contact);
         $ticket->setConversation($conversation);
-        $ticket->setStatus(TicketStatus::NEW->value);
+        $ticket->setStatus(EstadoDeTicket::NEW->value);
         $em->persist($ticket);
-        $attached = new Tag('repo-sql-attached-' . bin2hex(random_bytes(3)));
-        $other = new Tag('repo-sql-other-' . bin2hex(random_bytes(3)));
+        $attached = new Etiqueta('repo-sql-attached-' . bin2hex(random_bytes(3)));
+        $other = new Etiqueta('repo-sql-other-' . bin2hex(random_bytes(3)));
         $em->persist($attached);
         $em->persist($other);
         $em->flush();
-        $em->persist(new TicketTag($ticket, $attached));
+        $em->persist(new EtiquetaDeTicket($ticket, $attached));
         $em->flush();
 
         try {

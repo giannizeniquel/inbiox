@@ -13,7 +13,7 @@ use App\Conversacion\MessageSenderType;
 use App\Compartido\Outbox\OutboxEvent;
 use App\Compartido\Outbox\OutboxWriter;
 use App\Ticket\Ticket;
-use App\Ticket\TicketStatus;
+use App\Ticket\EstadoDeTicket;
 use App\Contacto\Repository\ContactRepository;
 use App\Conversacion\Repository\ConversationRepository;
 use App\Conversacion\Repository\MessageRepository;
@@ -23,7 +23,7 @@ use Doctrine\DBAL\LockMode;
 use App\Automatizacion\RuleExecutorService;
 use App\Automatizacion\AutoReplyService;
 use App\Automatizacion\RuleContext;
-use App\Ticket\UseCase\TransitionTicketStatusUseCase;
+use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
 use App\Conversacion\MediaDownloadService;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -39,7 +39,7 @@ class HandleInboundMessageUseCase
         private MessageRepository $messageRepo,
         private TicketRepository $ticketRepo,
         private EventDispatcherInterface $eventDispatcher,
-        private TransitionTicketStatusUseCase $transitionUseCase,
+        private CambiarEstadoDeTicketUseCase $transitionUseCase,
         private RuleExecutorService $ruleExecutor,
         private EventCollector $eventCollector,
         private readonly OutboxWriter $outboxWriter,
@@ -336,7 +336,7 @@ foreach ($events as $event) {
         // specifically by the window-expiry process reactivates on a new
         // inbound message instead of spawning a new ticket (design.md D1).
         // No human-facing endpoint can trigger this — see
-        // TransitionTicketStatusUseCase::reopenDueToInboundMessage()'s own
+        // CambiarEstadoDeTicketUseCase::reopenDueToInboundMessage()'s own
         // guard and TicketWorkflowControllerWindowIsolationTest.
         //
         // Known accepted limitation (proposal.md/design.md, deferred to a
@@ -362,7 +362,7 @@ foreach ($events as $event) {
             $ticket = new Ticket();
             $ticket->setContact($contact);
             $ticket->setConversation($conversation);
-            $ticket->setStatus(TicketStatus::NEW->value);
+            $ticket->setStatus(EstadoDeTicket::NEW->value);
             $ticket->setPriority('medium');
             if ($phoneNumberId !== null) {
                 $ticket->setPhoneNumberId($phoneNumberId);
@@ -393,13 +393,13 @@ foreach ($events as $event) {
      */
     private function moveWaitingTicketToActive(Ticket $ticket): ?string
     {
-        if ($ticket->getStatus() !== TicketStatus::WAITING->value) {
+        if ($ticket->getStatus() !== EstadoDeTicket::WAITING->value) {
             return null;
         }
 
         $this->transitionUseCase->execute(
             $ticket->getId(),
-            TicketStatus::ACTIVE->value,
+            EstadoDeTicket::ACTIVE->value,
             false, // don't set first_response - this is customer
             false  // don't set resolved
         );
@@ -435,7 +435,7 @@ foreach ($events as $event) {
                 occurredAt: new \DateTimeImmutable(),
                 seq: $ticket->incrementLastEventSeq(),
                 version: 1,
-                status: TicketStatus::NEW,
+                status: EstadoDeTicket::NEW,
                 priority: 1 // medium = 1
             ));
         }

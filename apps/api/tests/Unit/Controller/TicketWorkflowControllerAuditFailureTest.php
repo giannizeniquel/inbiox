@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Controller;
 
-use App\Ticket\UseCase\RecordClosureAuditUseCase;
-use App\Ticket\UseCase\ResolveTicketUseCase;
-use App\Ticket\UseCase\TransitionTicketStatusUseCase;
-use App\Ticket\Controller\TicketWorkflowController;
+use App\Ticket\UseCase\RegistrarAuditoriaDeCierreUseCase;
+use App\Ticket\UseCase\ResolverTicketUseCase;
+use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
+use App\Ticket\Controller\FlujoDeTicketController;
 use App\Agente\Agent;
-use App\Ticket\ClosureAuditClassifier;
+use App\Ticket\ClasificadorDeAuditoriaDeCierre;
 use App\Ticket\Ticket;
-use App\Ticket\TicketStatus;
+use App\Ticket\EstadoDeTicket;
 use App\Administracion\User;
 use App\Ticket\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -50,24 +50,24 @@ class TicketWorkflowControllerAuditFailureTest extends TestCase
         $security = $this->createMock(Security::class);
         $security->method('isGranted')->willReturn(true);
 
-        $transitionUseCase = $this->createMock(TransitionTicketStatusUseCase::class);
+        $transitionUseCase = $this->createMock(CambiarEstadoDeTicketUseCase::class);
         $transitionUseCase->method('close')->willReturn([
             'ticket_id' => 42,
-            'previous_status' => TicketStatus::RESOLVED->value,
-            'new_status' => TicketStatus::CLOSED->value,
+            'previous_status' => EstadoDeTicket::RESOLVED->value,
+            'new_status' => EstadoDeTicket::CLOSED->value,
             'previous_assigned_agent_id' => 7,
             'reason' => 'success',
         ]);
 
-        $resolveUseCase = $this->createMock(ResolveTicketUseCase::class);
+        $resolveUseCase = $this->createMock(ResolverTicketUseCase::class);
 
-        $controller = new TicketWorkflowController(
+        $controller = new FlujoDeTicketController(
             $transitionUseCase,
             $resolveUseCase,
             $ticketRepo,
             $security,
-            new ClosureAuditClassifier(),
-            new RecordClosureAuditUseCase($em, new ClosureAuditClassifier(), $logger),
+            new ClasificadorDeAuditoriaDeCierre(),
+            new RegistrarAuditoriaDeCierreUseCase($em, new ClasificadorDeAuditoriaDeCierre(), $logger),
         );
 
         return [$controller, $user];

@@ -4,7 +4,7 @@ namespace App\Conversacion\UseCase;
 
 use App\Asignacion\UseCase\AssignTicketUseCase;
 use App\Asignacion\UseCase\AutoAssignTicketUseCase;
-use App\Ticket\UseCase\TransitionTicketStatusUseCase;
+use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
 
 use App\Asignacion\AssignmentService;
 use App\Asignacion\AssignmentType;
@@ -21,11 +21,11 @@ use App\Compartido\Outbox\OutboxEvent;
 use App\Compartido\Outbox\OutboxWriter;
 use App\Compartido\ProcessedEvent;
 use App\Ticket\Ticket;
-use App\Ticket\TicketStatus;
+use App\Ticket\EstadoDeTicket;
 use App\Automatizacion\RuleExecutorService;
 use App\Automatizacion\RuleContext;
 use App\Conversacion\ConversationWindowPolicy;
-use App\Ticket\TicketOwnershipGuard;
+use App\Ticket\TicketResponsabilidadGuard;
 use App\Compartido\ConcurrencyException;
 use App\Conversacion\ConversationWindowExpiredException;
 use App\Compartido\StateConflictException;
@@ -51,7 +51,7 @@ class HandleOutboundMessageUseCase
         private ConversationRepository $conversationRepo,
         private MessageRepository $messageRepo,
         private TicketRepository $ticketRepo,
-        private TransitionTicketStatusUseCase $transitionUseCase,
+        private CambiarEstadoDeTicketUseCase $transitionUseCase,
         private ProcessedEventRepository $processedEventRepo,
         private RuleExecutorService $ruleExecutor,
         private AssignmentService $assignmentService,
@@ -194,7 +194,7 @@ class HandleOutboundMessageUseCase
                 throw new \InvalidArgumentException('Ticket not found');
             }
 
-            $skipOwnershipChange = TicketOwnershipGuard::isResolvedOrClosed($ticket->getStatus());
+            $skipOwnershipChange = TicketResponsabilidadGuard::isResolvedOrClosed($ticket->getStatus());
             $this->guardSend($ticket, $ticketId, $agentId, $senderIsPrivileged);
 
             // Get conversation
@@ -272,7 +272,7 @@ class HandleOutboundMessageUseCase
     private function guardSend(Ticket $ticket, int $ticketId, int $agentId, bool $senderIsPrivileged): void
     {
         $status = $ticket->getStatus();
-        if (TicketOwnershipGuard::blocksReassignment($status, $senderIsPrivileged, $agentId, $ticket->getAssignedAgentId())) {
+        if (TicketResponsabilidadGuard::blocksReassignment($status, $senderIsPrivileged, $agentId, $ticket->getAssignedAgentId())) {
             throw new StateConflictException(sprintf(
                 'Cannot send to ticket in "%s" state: sender is not the assigned owner',
                 $status
@@ -361,17 +361,17 @@ class HandleOutboundMessageUseCase
         $newStatus = $currentStatus;
         $transition = null;
 
-        if ($currentStatus === TicketStatus::NEW->value) {
+        if ($currentStatus === EstadoDeTicket::NEW->value) {
             // First agent response: new → active
-            $newStatus = TicketStatus::ACTIVE->value;
+            $newStatus = EstadoDeTicket::ACTIVE->value;
             $transition = 'new_to_active';
-        } elseif ($currentStatus === TicketStatus::ACTIVE->value) {
+        } elseif ($currentStatus === EstadoDeTicket::ACTIVE->value) {
             // Agent waiting for response: active → waiting
-            $newStatus = TicketStatus::WAITING->value;
+            $newStatus = EstadoDeTicket::WAITING->value;
             $transition = 'active_to_waiting';
-        } elseif ($currentStatus === TicketStatus::WAITING->value) {
+        } elseif ($currentStatus === EstadoDeTicket::WAITING->value) {
             // Agent replies while waiting: stays waiting (customer might respond)
-            $newStatus = TicketStatus::WAITING->value;
+            $newStatus = EstadoDeTicket::WAITING->value;
             $transition = 'waiting_remains';
         }
 

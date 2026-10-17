@@ -12,13 +12,13 @@ namespace App\Ticket;
  * `tag_removed`, ...) are intentionally left as-is — refactoring them is
  * out of scope for this change (design.md).
  */
-final class TicketEventType
+final class TipoDeEventoDeTicket
 {
     public const WINDOW_EXPIRED_CLOSED = 'window_expired_closed';
     public const WINDOW_REOPENED = 'window_reopened';
 
     // Manual closure/resolution audit trail (ticket-closure-authorization).
-    // See ClosureAuditClassifier for the truth table that reaches these.
+    // See ClasificadorDeAuditoriaDeCierre for the truth table that reaches these.
     public const MANUAL_RESOLVED_OWNER = 'manual_resolved_owner';
     public const MANUAL_RESOLVED_OVERRIDE = 'manual_resolved_override';
     public const MANUAL_RESOLVED_UNOWNED = 'manual_resolved_unowned';

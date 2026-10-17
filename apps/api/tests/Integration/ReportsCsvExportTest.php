@@ -8,11 +8,11 @@ use App\Reporte\Query\ExportTicketsCsvQuery;
 use App\Agente\Agent;
 use App\Contacto\Contact;
 use App\Conversacion\Conversation;
-use App\Ticket\Tag;
-use App\Ticket\TicketTag;
+use App\Ticket\Etiqueta;
+use App\Ticket\EtiquetaDeTicket;
 use App\Ticket\Ticket;
 use App\Administracion\User;
-use App\Ticket\Repository\TagRepository;
+use App\Ticket\Repository\EtiquetaRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use League\Csv\Reader;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -24,7 +24,7 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
  * - Role gating (403 agent, 200 supervisor/admin)
  * - Streamed CSV headers (Content-Type, Content-Disposition, X-Accel-Buffering)
  * - BOM + 14-column header row
- * - Filter scenarios reused from `ListTicketsQuery`/`TicketFilterBuilder`
+ * - Filter scenarios reused from `ListTicketsQuery`/`FiltrosDeTicketBuilder`
  * - Formula-injection escaping (Phase 4)
  * - 1200-row chunk-boundary proof (Phase 4, load-bearing)
  *
@@ -125,15 +125,15 @@ class ReportsCsvExportTest extends WebTestCase
         $this->em->persist($ticket);
         $this->em->flush();
 
-        $tagRepo = static::getContainer()->get(TagRepository::class);
+        $tagRepo = static::getContainer()->get(EtiquetaRepository::class);
         foreach ($tagNames as $tagName) {
             $tag = $tagRepo->findByName($tagName);
             if (!$tag) {
-                $tag = new Tag($tagName);
+                $tag = new Etiqueta($tagName);
                 $this->em->persist($tag);
                 $this->em->flush();
             }
-            $ticketTag = new TicketTag($ticket, $tag);
+            $ticketTag = new EtiquetaDeTicket($ticket, $tag);
             $this->em->persist($ticketTag);
         }
         $this->em->flush();

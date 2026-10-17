@@ -7,13 +7,13 @@ namespace App\Tests\Integration;
 use App\Ticket\Query\ListTicketsQuery;
 use App\Contacto\Contact;
 use App\Conversacion\Conversation;
-use App\Ticket\Tag;
-use App\Ticket\TicketTag;
+use App\Ticket\Etiqueta;
+use App\Ticket\EtiquetaDeTicket;
 use App\Agente\Team;
 use App\Ticket\Ticket;
-use App\Ticket\TicketStatus;
+use App\Ticket\EstadoDeTicket;
 use App\Administracion\Workspace;
-use App\Ticket\Repository\TagRepository;
+use App\Ticket\Repository\EtiquetaRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -75,15 +75,15 @@ class ListTicketsQueryFilterTest extends KernelTestCase
         $this->em->persist($ticket);
         $this->em->flush();
 
-        $tagRepo = static::getContainer()->get(TagRepository::class);
+        $tagRepo = static::getContainer()->get(EtiquetaRepository::class);
         foreach ($tagNames as $tagName) {
             $tag = $tagRepo->findByName($tagName);
             if (!$tag) {
-                $tag = new Tag($tagName);
+                $tag = new Etiqueta($tagName);
                 $this->em->persist($tag);
                 $this->em->flush();
             }
-            $ticketTag = new TicketTag($ticket, $tag);
+            $ticketTag = new EtiquetaDeTicket($ticket, $tag);
             $this->em->persist($ticketTag);
         }
         $this->em->flush();
@@ -110,7 +110,7 @@ class ListTicketsQueryFilterTest extends KernelTestCase
 
     public function test_waiting_status_is_returned(): void
     {
-        foreach (TicketStatus::cases() as $case) {
+        foreach (EstadoDeTicket::cases() as $case) {
             $this->createTicket($case->value);
         }
 

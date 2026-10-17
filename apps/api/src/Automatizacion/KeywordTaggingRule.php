@@ -2,14 +2,14 @@
 
 namespace App\Automatizacion;
 
-use App\Ticket\UseCase\AddTagToTicketUseCase;
+use App\Ticket\UseCase\AgregarEtiquetaATicketUseCase;
 
 class KeywordTaggingRule implements RuleInterface
 {
     private const KEYWORD = 'error';
 
     public function __construct(
-        private AddTagToTicketUseCase $addTagUseCase,
+        private AgregarEtiquetaATicketUseCase $addTagUseCase,
     ) {}
 
     public function supports(RuleContext $context): bool

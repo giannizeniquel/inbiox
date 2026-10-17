@@ -10,7 +10,7 @@ use App\Contacto\Contact;
 use App\Conversacion\Conversation;
 use App\Compartido\Outbox\OutboxEvent;
 use App\Ticket\Ticket;
-use App\Ticket\TicketStatus;
+use App\Ticket\EstadoDeTicket;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -66,7 +66,7 @@ class MessageAgentAttributionOutboxTest extends KernelTestCase
         $ticket = new Ticket();
         $ticket->setContact($contact);
         $ticket->setConversation($conversation);
-        $ticket->setStatus(TicketStatus::NEW->value);
+        $ticket->setStatus(EstadoDeTicket::NEW->value);
         $ticket->setLastInboundMessageAt(new \DateTimeImmutable('-1 hour'));
         $this->em->persist($ticket);
         $this->em->flush();

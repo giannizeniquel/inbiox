@@ -10,7 +10,7 @@ use App\Agente\Agent;
 use App\Disponibilidad\AgentShift;
 use App\Disponibilidad\Repository\AgentShiftRepository;
 use App\Ticket\Repository\TicketRepository;
-use App\Ticket\TicketStatus;
+use App\Ticket\EstadoDeTicket;
 use App\Administracion\Workspace;
 use App\Agente\Repository\AgentRepository;
 use PHPUnit\Framework\MockObject\MockObject;

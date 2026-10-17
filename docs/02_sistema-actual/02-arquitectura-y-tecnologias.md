@@ -69,7 +69,7 @@ Todo en `apps/api/src/`, organizado **por módulo de negocio** desde la fase 2 d
 
 | Módulo | Contiene | Ejemplos |
 |---|---|---|
-| `Ticket/` | Ticket, estados, máquina de estados, etiquetas, bandeja. | `Ticket.php`, `TicketStateMachine.php`, `Controller/InboxController`, `Controller/TicketWorkflowController`, `Query/ListTicketsQuery`, `Query/TicketFilterBuilder` |
+| `Ticket/` | Ticket, estados, máquina de estados, etiquetas, bandeja. | `Ticket.php`, `MaquinaDeEstadosDeTicket.php`, `Controller/BandejaController`, `Controller/FlujoDeTicketController`, `Query/ListTicketsQuery`, `Query/FiltrosDeTicketBuilder` |
 | `Conversacion/` | Conversación, mensajes, media, ventana de 24 h, webhook de Meta, envío. | `Controller/WebhookController`, `Controller/ProviderProxyController`, `UseCase/HandleInboundMessageUseCase`, `UseCase/ProcessWebhookPayloadUseCase`, `UseCase/SendOutboundMessageUseCase`, `UseCase/SendTemplateUseCase`, `UseCase/UploadMediaUseCase`, `ConversationWindowPolicy.php`, `MediaValidator.php` |
 | `Contacto/` | Contactos, importación, línea de tiempo. | `Controller/ContactController`, `Query/GetContactTimelineQuery`, `UseCase/ImportContactsFromCsvUseCase` |
 | `Agente/` | Agentes, equipos, perfil propio (`/api/me`). | `Agent.php`, `Team.php`, `Controller/MeController` (configuración, perfil y notificaciones; auto-respuesta, turnos y workspaces propios viven en Automatizacion, Disponibilidad y Administracion) |
@@ -160,7 +160,7 @@ sequenceDiagram
 | Paso | Archivos |
 |---|---|
 | Recolección de eventos | `Compartido/DomainEvent.php`, `Compartido/EventCollector.php` |
-| Escritura en outbox | Un solo escritor: `Compartido/Outbox/OutboxWriter::write()` (persist + flush, siempre después del commit del negocio). Cada caso de uso sigue armando **su propio payload** en `persistEventsToOutbox()`: `HandleInboundMessageUseCase.php:109-157`, `HandleOutboundMessageUseCase.php:371-428`, `AssignTicketUseCase.php:145-184`, `AutoAssignTicketUseCase.php:211-249`, `HandleStatusUpdateUseCase.php:216-257`. Disponibilidad, turnos y `MarkTicketReadUseCase` arman un `OutboxEvent` y lo pasan al mismo escritor. |
+| Escritura en outbox | Un solo escritor: `Compartido/Outbox/OutboxWriter::write()` (persist + flush, siempre después del commit del negocio). Cada caso de uso sigue armando **su propio payload** en `persistEventsToOutbox()`: `HandleInboundMessageUseCase.php:109-157`, `HandleOutboundMessageUseCase.php:371-428`, `AssignTicketUseCase.php:145-184`, `AutoAssignTicketUseCase.php:211-249`, `HandleStatusUpdateUseCase.php:216-257`. Disponibilidad, turnos y `MarcarTicketLeidoUseCase` arman un `OutboxEvent` y lo pasan al mismo escritor. |
 | Publicación | `Compartido/Command/OutboxPublishCommand.php` → `Compartido/Outbox/OutboxPublisherService.php` |
 | Contrato | `Compartido/Realtime/RealtimeEventFactory.php`, `EventTypeMapper.php`, `RealtimeEventType.php` (`ticket.created`, `ticket.status_changed`, `ticket.assigned`, `message.added`, `message.updated`, `conversation.updated`, `agent.availability_changed`, `agent.shift_changed`) |
 | Token de suscripción | `GET /api/mercure/token` → `MercureJwtService::issueForUser()`; en la práctica el frontend **no lo usa para suscribirse** (el hub es anónimo), solo para el resync. |
@@ -176,8 +176,8 @@ Deducidos de la lectura; confirmar con `SELECT event_type, status, COUNT(*) FROM
 | P-2 | `outbox_events.sequence` queda en 0 salvo en estados de entrega → el resync por `afterSequence` no devuelve casi nada. | `HandleStatusUpdateUseCase.php:245`; `OutboxEventRepository::findResyncRows` |
 | P-3 | El resync filtra por `aggregate_id` sin `aggregate_type` (mezcla eventos de agente y de ticket). Además es inalcanzable (401 del firewall). | `OutboxEventRepository::findResyncRows` |
 | P-4 | En el mensaje entrante, la auto-asignación se publica como `ticket.status_changed` vacío, no como `ticket.assigned`. | `HandleInboundMessageUseCase.php:124-142` |
-| P-5 | Resolver, cerrar, transicionar y el cierre por ventana **no escriben nada** en el outbox. | `TransitionTicketStatusUseCase.php` (no tiene `EventCollector`) |
-| P-6 | `ConversationUpdatedEvent` existía en el contrato sin que nadie lo emitiera; se borró en la fase 1 (el frontend todavía declara `conversation.updated`). (`ticket.read` sí se emite: lo inserta `InboxController::markRead` por SQL con el tipo ya en formato de contrato, que `RealtimeEventFactory::resolveEnum()` acepta.) | `InboxController.php:189-202`; `RealtimeEventFactory.php:42-53` |
+| P-5 | Resolver, cerrar, transicionar y el cierre por ventana **no escriben nada** en el outbox. | `CambiarEstadoDeTicketUseCase.php` (no tiene `EventCollector`) |
+| P-6 | `ConversationUpdatedEvent` existía en el contrato sin que nadie lo emitiera; se borró en la fase 1 (el frontend todavía declara `conversation.updated`). (`ticket.read` sí se emite: lo inserta `BandejaController::markRead` por SQL con el tipo ya en formato de contrato, que `RealtimeEventFactory::resolveEnum()` acepta.) | `BandejaController.php:189-202`; `RealtimeEventFactory.php:42-53` |
 | P-7 | Plantillas y reaperturas por ventana no emiten eventos (la segunda es una limitación aceptada y documentada en `HandleInboundMessageUseCase.php:342-350`). | — |
 | P-8 | Topics `agent/{id}/availability`, `agent/{id}/shifts`, `agents`: se publican o conceden, pero el frontend no los escucha. | `MercureJwtService.php:28-32` |
 | P-9 | El publicador lee el outbox sin bloqueo de filas: si corren dos a la vez (por ejemplo el servicio docker `publisher` y `POST /admin/outbox/publish`), se duplican eventos (el frontend deduplica por `eventId`). La unidad systemd alternativa se borró en la fase 1; el publicador solo corre en docker. | `OutboxPublisherService.php:65-78` |
@@ -268,7 +268,7 @@ Archivos: `apps/api/.env` (no versionado), `.env.dev` (**versionado, con credenc
 | # | Violación | Evidencia | Efecto observado |
 |---|---|---|---|
 | B1 | Controladores con lógica de negocio, SQL o `EntityManager` directo. | `ProviderProxyController` orquestaba el envío (resolvía el teléfono y llamaba a Graph); resuelto en la fase 4a. | La regla queda repartida; es difícil saber "dónde está" una operación. Fase 3d: ningún controlador usa `EntityManager` ni SQL y toda escritura pasa por un caso de uso; partir el flujo de envío queda para la fase 4. Fase 4a-2: el envío de texto y media (`send`) pasó a `SendOutboundMessageUseCase`; 4a-3: las plantillas pasaron a `SendTemplateUseCase`, y ambos resuelven el teléfono con `Ticket::recipientPhone()`. 4a-4: la subida de media pasó a `UploadMediaUseCase`; el controlador solo conserva la descarga como proxy a Graph. |
-| B2 | El dominio depende de aplicación e infraestructura. | `Automatizacion/AutoReopenRule.php:12-13` usa `TransitionTicketStatusUseCase` y el `EntityManager`. | Dirección de dependencias invertida. |
+| B2 | El dominio depende de aplicación e infraestructura. | `Automatizacion/AutoReopenRule.php:12-13` usa `CambiarEstadoDeTicketUseCase` y el `EntityManager`. | Dirección de dependencias invertida. |
 | B3 | Implementación concreta dentro de `Domain`. | `Disponibilidad/Repository/AgentShiftRepository.php` | Inconsistencia con `Repository/`. |
 | B4 | ~~Interfaces con una sola implementación.~~ **Resuelto en la fase 2.** | Se borraron 8 interfaces (7 de repositorio y `EventCollector`); se inyecta la clase concreta. | — |
 | B5 | WhatsApp no está detrás de un puerto (contradice ADR-004). | `GraphClient` concreto inyectado en un controlador y en dos servicios. | Cambiar de proveedor implica tocar varios lugares. |

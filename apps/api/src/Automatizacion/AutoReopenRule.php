@@ -2,15 +2,15 @@
 
 namespace App\Automatizacion;
 
-use App\Ticket\TicketEvent;
-use App\Ticket\TicketStatus;
-use App\Ticket\UseCase\TransitionTicketStatusUseCase;
+use App\Ticket\EventoDeTicket;
+use App\Ticket\EstadoDeTicket;
+use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
 use Doctrine\ORM\EntityManagerInterface;
 
 class AutoReopenRule implements RuleInterface
 {
     public function __construct(
-        private TransitionTicketStatusUseCase $transitionUseCase,
+        private CambiarEstadoDeTicketUseCase $transitionUseCase,
         private EntityManagerInterface $em,
     ) {}
 
@@ -23,11 +23,11 @@ class AutoReopenRule implements RuleInterface
 
         $ticket = $context->getTicket();
         // MUST return false for CLOSED tickets - don't reopen closed tickets
-        if ($ticket->getStatus() === TicketStatus::CLOSED->value) {
+        if ($ticket->getStatus() === EstadoDeTicket::CLOSED->value) {
             return false;
         }
 
-        return $ticket->getStatus() === TicketStatus::RESOLVED->value;
+        return $ticket->getStatus() === EstadoDeTicket::RESOLVED->value;
     }
 
     public function execute(RuleContext $context): void
@@ -35,13 +35,13 @@ class AutoReopenRule implements RuleInterface
         // Transition resolved → waiting (NOT to active)
         $this->transitionUseCase->execute(
             $context->getTicketId(),
-            TicketStatus::WAITING->value,
+            EstadoDeTicket::WAITING->value,
             false, // don't set first_response
             false  // don't set resolved
         );
 
         // Emit auto_reopened event
-        $event = new TicketEvent($context->getTicketId(), 'auto_reopened', 'system');
+        $event = new EventoDeTicket($context->getTicketId(), 'auto_reopened', 'system');
         $this->em->persist($event);
         $this->em->flush();
     }

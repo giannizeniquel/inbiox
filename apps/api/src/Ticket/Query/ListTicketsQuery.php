@@ -13,7 +13,7 @@ class ListTicketsQuery
         private AgentAvailabilityService $agentAvailabilityService,
         private TicketRepository $ticketRepository,
         private AgentRepository $agentRepository,
-        private TicketFilterBuilder $ticketFilterBuilder = new TicketFilterBuilder(),
+        private FiltrosDeTicketBuilder $ticketFilterBuilder = new FiltrosDeTicketBuilder(),
     ) {}
 
     /**
@@ -25,10 +25,10 @@ class ListTicketsQuery
      * @param string|null $search Search query (not implemented)
      * @param string $sort Sort order
      * @param int|null $scopeAgentId Ownership scope: forces WHERE assigned_agent_id = scopeAgentId
-     *                                Used by InboxController to restrict AGENT to own tickets.
+     *                                Used by BandejaController to restrict AGENT to own tickets.
      *                                null = no scope restriction (SUPERVISOR/ADMIN).
      * @param string|null $phoneNumberId Workspace scope: filters by ticket phone_number_id.
-     *                                   Used by InboxController via WorkspaceScope.
+     *                                   Used by BandejaController via WorkspaceScope.
      *                                   null = no workspace filter (SUPERVISOR/ADMIN).
      * @param string|null $tag Comma-separated tag names (AND semantics, max 5).
      *                         Each matched ticket must carry ALL specified tags.
@@ -114,7 +114,7 @@ class ListTicketsQuery
                 ];
             }
             
-            return new TicketListItemDTO(
+            return new TicketDeListaDTO(
                 ticketId: (int) $row['id'],
                 status: $row['status'],
                 priority: $row['priority'],

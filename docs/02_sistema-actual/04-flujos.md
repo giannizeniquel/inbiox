@@ -82,7 +82,7 @@ flowchart TD
 | 16 | Despacha `TicketNeedsAutoAssignmentEvent` → listener → `AutoAssignTicketUseCase::executeInTransaction()` **dentro de la misma transacción**. | `:466-468`; `Asignacion/EventListener/TicketAutoAssignmentRequestedListener.php:17-20` | ver F6 |
 | 17 | Commit. Después: `AutoReplyService::maybeSend()` y escritura de eventos en el outbox. | `:83-99`, `:107-156` | ver F9, F13 |
 
-- **Entidades:** Contact, Conversation, Message, Ticket, TicketEvent, Tag/TicketTag, Assignment, Agent, OutboxEvent, WebhookPayload, ProcessedEvent, RuleExecutionLog.
+- **Entidades:** Contact, Conversation, Message, Ticket, EventoDeTicket, Tag/EtiquetaDeTicket, Assignment, Agent, OutboxEvent, WebhookPayload, ProcessedEvent, RuleExecutionLog.
 - **Persistencia:** `webhook_payloads`, `contacts`, `conversations`, `messages`, `tickets`, `ticket_events`, `tags`/`ticket_tags`, `rule_execution_logs`, `assignments`, `processed_events`, `outbox_events`.
 - **Efectos laterales:** descarga de media de Meta; posible auto-respuesta por Graph API; eventos en tiempo real.
 - **Resultado:** el mensaje queda en la conversación; el ticket queda `new` (sin dueño), `active` (con dueño auto-asignado) o `waiting` (si estaba resuelto).
@@ -111,7 +111,7 @@ flowchart TD
 | 4 | `senderIsPrivileged = isGranted('ROLE_SUPERVISOR')`. | `:76` | |
 | 5 | Idempotencia: clave `outbound:{ticketId}:md5(texto o media)`; si ya existe, devuelve `duplicate_skipped` sin persistir. | `Conversacion/UseCase/HandleOutboundMessageUseCase.php:83-102` | R-M3 |
 | 6 | Hasta 3 intentos ante bloqueo optimista; transacción con `SELECT … FOR UPDATE`. | `:106-188` | |
-| 7 | **Guard de ticket resuelto/cerrado:** si el remitente no es supervisor/admin ni el dueño → 409 `TICKET_NOT_OWNED`. | `:197-204`; `Ticket/TicketOwnershipGuard.php:35-46` | R-A7 |
+| 7 | **Guard de ticket resuelto/cerrado:** si el remitente no es supervisor/admin ni el dueño → 409 `TICKET_NOT_OWNED`. | `:197-204`; `Ticket/TicketResponsabilidadGuard.php:35-46` | R-A7 |
 | 8 | **Guard de ventana de 24 h:** vencida o sin mensaje del cliente → 422 `CONVERSATION_WINDOW_EXPIRED`, sin persistir nada. | `:210-212`; `Conversacion/ConversationWindowPolicy.php:30-56` | R-W1 |
 | 9 | **Auto-claim:** si el ticket no está resuelto/cerrado y el remitente no es el dueño → `AUTO_ASSIGN` (sin dueño) o `REASSIGN` (otro dueño). No mira disponibilidad ni capacidad. | `:222-254` | R-A6 |
 | 10 | Crea el `Message` (`outbound`, `sender_type=agent`, `sender_agent_id`). | `:257-269` | R-M4 |
@@ -129,7 +129,7 @@ flowchart TD
 1. Respuesta HTTP: 422 = ventana de 24 h; 409 `TICKET_NOT_OWNED` = guard de resuelto ([R6](00-estado-y-pendientes.md#r6-resolver-quita-el-dueño-contradicción-autoinfligida)); 422/429/502 desde `mapGraphErrorCode` = error de Meta.
 2. `Conversacion/UseCase/SendOutboundMessageUseCase.php::execute`, y `Conversacion/Controller/ProviderProxyController.php::send` y `::mapGraphErrorCode` (`:301-323`).
 3. `Conversacion/UseCase/HandleOutboundMessageUseCase.php`.
-4. `Conversacion/ConversationWindowPolicy.php`, `Ticket/TicketOwnershipGuard.php`.
+4. `Conversacion/ConversationWindowPolicy.php`, `Ticket/TicketResponsabilidadGuard.php`.
 5. `Compartido/Graph/GraphClient.php` (incluye el workaround `normalizePhone()` para un número de prueba).
 6. Frontend: `message-sender.service.ts`, `core/providers/whatsapp-cloud.provider.ts` (rutas relativas `/api/provider/*`).
 
@@ -152,7 +152,7 @@ flowchart TD
 
 ## F4. Transiciones de estado del ticket
 
-**Máquina de estados** (`Ticket/TicketStateMachine.php:34-54`):
+**Máquina de estados** (`Ticket/MaquinaDeEstadosDeTicket.php:34-54`):
 
 ```mermaid
 stateDiagram-v2
@@ -176,24 +176,24 @@ stateDiagram-v2
 
 | Endpoint | Controlador | Quién puede |
 |---|---|---|
-| `POST /api/tickets/{id}/resolve` (botón "RESOLVER" de la conversación) | `TicketWorkflowController::resolve` (`:88`) | Dueño, supervisor, admin (voter `CLOSE`) |
+| `POST /api/tickets/{id}/resolve` (botón "RESOLVER" de la conversación) | `FlujoDeTicketController::resolve` (`:88`) | Dueño, supervisor, admin (voter `CLOSE`) |
 | `POST /api/tickets/{id}/close` (sin UI) | `::close` (`:116`) | Igual, pero solo acepta tickets `resolved`, que ya no tienen dueño → en la práctica **solo supervisor/admin** |
 | `POST /api/tickets/{id}/transition` `{status, set_first_response, set_resolved}` (sin UI) | `::transition` (`:39-85`) | Voter `CLOSE` solo si el destino es `resolved`/`closed`; **cualquier otra transición, cualquier agente** (R-T14) |
 
 | # | Paso (resolver) | Dónde | Regla |
 |---|---|---|---|
-| 1 | Voter `CLOSE`: supervisor/admin siempre; agente solo si es el dueño. | `Ticket/Security/TicketVoter.php:76-121`; `TicketWorkflowController.php:136-155` | R-T13 |
-| 2 | `TransitionTicketStatusUseCase::resolve()` → `execute()`: valida FSM, setea `resolved_at` y `first_response_at`. | `Ticket/UseCase/TransitionTicketStatusUseCase.php:72-139, 263-266` | R-T3, R-T12 |
+| 1 | Voter `CLOSE`: supervisor/admin siempre; agente solo si es el dueño. | `Ticket/Security/TicketVoter.php:76-121`; `FlujoDeTicketController.php:136-155` | R-T13 |
+| 2 | `CambiarEstadoDeTicketUseCase::resolve()` → `execute()`: valida FSM, setea `resolved_at` y `first_response_at`. | `Ticket/UseCase/CambiarEstadoDeTicketUseCase.php:72-139, 263-266` | R-T3, R-T12 |
 | 3 | **Si hay dueño: `UNASSIGN`** → `AssignmentService` pone `assigned_agent_id = null` y crea fila `Assignment`. | `:37-61` (llamado en `:99`, `:172`, `:289`); `Asignacion/AssignmentService.php:65` | R-T9 |
-| 4 | El controlador clasifica el cierre (`owner`/`override`/`unowned`) y guarda un `TicketEvent` con `source = u:{userId}`. Si falla, solo se loguea. | `Ticket/ClosureAuditClassifier.php:25-38`; `Ticket/UseCase/RecordClosureAuditUseCase.php` | R-T15 |
+| 4 | El controlador clasifica el cierre (`owner`/`override`/`unowned`) y guarda un `EventoDeTicket` con `source = u:{userId}`. Si falla, solo se loguea. | `Ticket/ClasificadorDeAuditoriaDeCierre.php:25-38`; `Ticket/UseCase/RegistrarAuditoriaDeCierreUseCase.php` | R-T15 |
 | 5 | **No se escribe nada en el outbox**: los demás navegadores no se enteran hasta recargar. | — | P-5 |
 
 **Quién más cambia `tickets.status`** (fuera de este flujo): `AssignmentService` (`new → active` al asignar), `HandleInboundMessageUseCase` (`waiting → active`), `HandleOutboundMessageUseCase` (`new → active`, `active → waiting`), `AutoReopenRule` (`resolved → waiting`), `closeDueToWindowExpiry` y `reopenDueToInboundMessage` (F8), `DebugController::status` (dev).
 
 **Si falla, revisar:**
 1. 403 → voter: `TicketVoter.php` (¿el usuario tiene agente vinculado? ¿es el dueño?).
-2. 409 / error de transición → `TicketStateMachine.php`.
-3. `TransitionTicketStatusUseCase.php`.
+2. 409 / error de transición → `MaquinaDeEstadosDeTicket.php`.
+3. `CambiarEstadoDeTicketUseCase.php`.
 4. Frontend: `features/inbox/containers/conversation/conversation.component.ts:295-322`, `core/api/workflow-api.service.ts:32-37`.
 
 ---
@@ -283,9 +283,9 @@ stateDiagram-v2
 |---|---|---|
 | 1 | El servicio docker `window-closer` (profile opcional) corre `app:conversation-window:close-expired` cada 900 s. | `docker-compose.yml`; `Conversacion/Command/CloseExpiredConversationWindowsCommand.php` |
 | 2 | Selecciona hasta 200 tickets `new`/`active`/`waiting`/`resolved` con ventana vencida. | `Conversacion/UseCase/ConversationWindowExpiryService.php:55-93` |
-| 3 | Por cada uno: `closeDueToWindowExpiry()` → FSM a `closed`, `UNASSIGN` si hay dueño, `closed_at`, `TicketEvent(window_expired_closed, system)`. Un error en un ticket no corta el lote. | `TransitionTicketStatusUseCase.php:152-192` |
+| 3 | Por cada uno: `closeDueToWindowExpiry()` → FSM a `closed`, `UNASSIGN` si hay dueño, `closed_at`, `EventoDeTicket(window_expired_closed, system)`. Un error en un ticket no corta el lote. | `CambiarEstadoDeTicketUseCase.php:152-192` |
 
-**Reapertura:** cuando llega un mensaje y no hay ticket no cerrado (F1 paso 11), si el **último** `ticket_event` del ticket cerrado es `window_expired_closed`, se reabre `closed → active` por SQL, `closed_at = NULL`, `TicketEvent(window_reopened)`; queda sin dueño y la auto-asignación del mismo mensaje lo reasigna (`TransitionTicketStatusUseCase.php:210-258`). Un cierre manual nunca se reabre: el siguiente mensaje crea un ticket nuevo. Si después del cierre por ventana se agregó otro evento (p. ej. un tag), ya no es reabrible.
+**Reapertura:** cuando llega un mensaje y no hay ticket no cerrado (F1 paso 11), si el **último** `ticket_event` del ticket cerrado es `window_expired_closed`, se reabre `closed → active` por SQL, `closed_at = NULL`, `EventoDeTicket(window_reopened)`; queda sin dueño y la auto-asignación del mismo mensaje lo reasigna (`CambiarEstadoDeTicketUseCase.php:210-258`). Un cierre manual nunca se reabre: el siguiente mensaje crea un ticket nuevo. Si después del cierre por ventana se agregó otro evento (p. ej. un tag), ya no es reabrible.
 
 **Si falla, revisar:** ¿está corriendo `inbiox_window_closer` (`docker ps`)? → ejecutar el comando con `--dry-run` → `ConversationWindowExpiryService.php` → `ConversationWindowPolicy.php` → `tickets.last_inbound_message_at` del ticket → `TicketRepository.php:105-132` (reapertura).
 
@@ -298,7 +298,7 @@ stateDiagram-v2
 | Regla | Disparador | Qué hace | ¿Corre? |
 |---|---|---|---|
 | `Automatizacion/KeywordTaggingRule.php` | `inbound` | Si el texto contiene "error" (subcadena) → tag `error`. | **Sí** (demo hardcodeada). |
-| `Automatizacion/AutoReopenRule.php` | `inbound` | `resolved → waiting` + `TicketEvent(auto_reopened)`. | **Sí.** |
+| `Automatizacion/AutoReopenRule.php` | `inbound` | `resolved → waiting` + `EventoDeTicket(auto_reopened)`. | **Sí.** |
 | ~~`Domain/Rule/AutoCloseRule.php`~~ | `manual` | `resolved → closed` si `updated_at` ≥ 24 h. | **Borrado en la fase 1 de la limpieza.** Nunca se disparaba. |
 
 **Auto-respuesta** (`Automatizacion/AutoReplyService.php`, post-commit del mensaje entrante):
@@ -316,10 +316,10 @@ stateDiagram-v2
 ## F10. Etiquetas
 
 - **Productor único hoy:** `KeywordTaggingRule` (tag `error`).
-- `AddTagToTicketUseCase` existe (normaliza a minúsculas, es idempotente, audita en `ticket_events`) y solo lo usa `KeywordTaggingRule`. **No hay forma HTTP de etiquetar a mano**: `TagController` (sin ruta) y `RemoveTagFromTicketUseCase` se borraron en la fase 1.
-- **Filtro:** `GET /api/tickets?tag=a,b` (AND, máximo 5) en `Ticket/Query/TicketFilterBuilder.php:79-87`, y columna `tags` del export CSV. **Sin UI.**
+- `AgregarEtiquetaATicketUseCase` existe (normaliza a minúsculas, es idempotente, audita en `ticket_events`) y solo lo usa `KeywordTaggingRule`. **No hay forma HTTP de etiquetar a mano**: `TagController` (sin ruta) y `RemoveTagFromTicketUseCase` se borraron en la fase 1.
+- **Filtro:** `GET /api/tickets?tag=a,b` (AND, máximo 5) en `Ticket/Query/FiltrosDeTicketBuilder.php:79-87`, y columna `tags` del export CSV. **Sin UI.**
 
-**Si falla, revisar:** `debug:router` (no hay ruta) → `TicketFilterBuilder.php` → `ticket_tags`.
+**Si falla, revisar:** `debug:router` (no hay ruta) → `FiltrosDeTicketBuilder.php` → `ticket_tags`.
 
 ---
 
@@ -349,7 +349,7 @@ Frontend: `features/contacts/` (pages, componentes de diálogo, `stores/contacts
 | Membresía | `PUT /api/admin/teams/{id}/agents` | `:247-287` | Reemplaza la lista completa; `Team::addAgent()` rechaza agentes de otro workspace; IDs inexistentes se ignoran. |
 | Equipos para filtros | `GET /api/teams` | `Agente/Controller/TeamController.php:38-65` | Equipos de los workspaces del agente, incluidos inactivos. |
 | Asignar equipo a ticket | `PUT /api/tickets/{id}/team` (cualquier agente) | `TicketController::setTeam` (`:88-137`) | Valida mismo workspace; **no** rechaza equipos inactivos (la spec dice que sí); no emite eventos. **Sin UI.** |
-| Filtro | `GET /api/tickets?teamId=N`; 5 reportes con `teamId` | `TicketFilterBuilder`, `ReportingRepository` | Primer filtro server-side de la bandeja. |
+| Filtro | `GET /api/tickets?teamId=N`; 5 reportes con `teamId` | `FiltrosDeTicketBuilder`, `ReportingRepository` | Primer filtro server-side de la bandeja. |
 
 El equipo **no participa en la asignación** (ni manual ni automática).
 
@@ -436,16 +436,16 @@ Un mensaje `failed` no afecta el estado del ticket.
 | # | Paso | Dónde |
 |---|---|---|
 | 1 | El shell, en la ruta `/inbox`, pinta directamente `TicketListComponent` + `ConversationComponent` (`InboxPageComponent` nunca se renderiza). | `shell/app-shell.component.html:24-37` |
-| 2 | `GET /api/tickets[?teamId=N]` **sin `page`/`limit`** → el backend devuelve 20. | `core/api/ticket-api.service.ts:20-34`; `Ticket/Controller/InboxController.php:43-44`; `Ticket/Query/ListTicketsQuery.php` |
+| 2 | `GET /api/tickets[?teamId=N]` **sin `page`/`limit`** → el backend devuelve 20. | `core/api/ticket-api.service.ts:20-34`; `Ticket/Controller/BandejaController.php:43-44`; `Ticket/Query/ListTicketsQuery.php` |
 | 3 | Pestañas Míos / Sin asignar / Todos y contadores: en el navegador sobre lo cargado. | `core/stores/ticket.store.ts:211-232` |
 | 4 | Abrir ticket: `GET /api/tickets/{id}/messages?limit=20&offset=0` (mensajes de toda la conversación); scroll hacia arriba pide más. | `ticket-list.component.ts:176-192`; `conversation.component.ts:370-403`; `Conversacion/Query/GetTicketMessagesQuery.php:22-52` |
-| 5 | Marcar leído: `PUT /api/tickets/{id}/mark-read` (HttpClient directo). Solo tiene efecto si el usuario es el dueño; emite `ticket.read`. | `conversation.component.ts:195-208`; `Ticket/UseCase/MarkTicketReadUseCase.php` (vía `OutboxWriter`) |
+| 5 | Marcar leído: `PUT /api/tickets/{id}/mark-read` (HttpClient directo). Solo tiene efecto si el usuario es el dueño; emite `ticket.read`. | `conversation.component.ts:195-208`; `Ticket/UseCase/MarcarTicketLeidoUseCase.php` (vía `OutboxWriter`) |
 | 6 | No leídos: +1 por `message.added` entrante si no es el ticket abierto; 0 con `ticket.read` o `ticket.assigned`. | `ticket.store.ts:114-129, 192-205` |
 | 7 | Deep link `/inbox?ticketId=X` (desde Contactos): `GET /api/tickets/{id}` + mensajes. | `shell/app-shell.component.ts:96-112` |
 
 En la respuesta del listado, `contact.id` es el **id de la conversación** (`ListTicketsQuery.php:163`), mientras que el detalle devuelve el id real del contacto.
 
-**Si falla, revisar:** ¿más de 20 tickets? → `ticket-api.service.ts` → `ListTicketsQuery.php` / `TicketFilterBuilder.php` → workspace activo del usuario (`agents.active_workspace_id`) y `tickets.phone_number_id` → `ticket.store.ts`.
+**Si falla, revisar:** ¿más de 20 tickets? → `ticket-api.service.ts` → `ListTicketsQuery.php` / `FiltrosDeTicketBuilder.php` → workspace activo del usuario (`agents.active_workspace_id`) y `tickets.phone_number_id` → `ticket.store.ts`.
 
 ---
 

@@ -2,17 +2,17 @@
 
 namespace App\Ticket\UseCase;
 
-use App\Ticket\TicketStatus;
+use App\Ticket\EstadoDeTicket;
 use App\Ticket\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
  * Resolves a ticket manually (agent marks as resolved).
  */
-class ResolveTicketUseCase
+class ResolverTicketUseCase
 {
     public function __construct(
-        private TransitionTicketStatusUseCase $transitionUseCase,
+        private CambiarEstadoDeTicketUseCase $transitionUseCase,
     ) {}
 
     /**

@@ -7,7 +7,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity]
 #[ORM\Table(name: 'ticket_tags')]
 #[ORM\UniqueConstraint(columns: ['ticket_id', 'tag_id'])]
-class TicketTag
+class EtiquetaDeTicket
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -18,14 +18,14 @@ class TicketTag
     #[ORM\JoinColumn(name: 'ticket_id', referencedColumnName: 'id')]
     private ?Ticket $ticket = null;
 
-    #[ORM\ManyToOne(targetEntity: Tag::class)]
+    #[ORM\ManyToOne(targetEntity: Etiqueta::class)]
     #[ORM\JoinColumn(name: 'tag_id', referencedColumnName: 'id')]
-    private ?Tag $tag = null;
+    private ?Etiqueta $tag = null;
 
     #[ORM\Column(name: 'created_at', type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
 
-    public function __construct(Ticket $ticket, Tag $tag)
+    public function __construct(Ticket $ticket, Etiqueta $tag)
     {
         $this->ticket = $ticket;
         $this->tag = $tag;
@@ -42,7 +42,7 @@ class TicketTag
         return $this->ticket;
     }
 
-    public function getTag(): ?Tag
+    public function getTag(): ?Etiqueta
     {
         return $this->tag;
     }

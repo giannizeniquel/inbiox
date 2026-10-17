@@ -7,7 +7,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity]
 #[ORM\Table(name: 'ticket_events')]
 #[ORM\Index(name: 'idx_ticket_events_ticket_created', columns: ['ticket_id', 'created_at', 'id'])]
-class TicketEvent
+class EventoDeTicket
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]

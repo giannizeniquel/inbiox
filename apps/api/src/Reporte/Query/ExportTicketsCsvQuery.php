@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Reporte\Query;
 
 use App\Ticket\Query\ListTicketsQuery;
-use App\Ticket\Query\TicketFilterBuilder;
+use App\Ticket\Query\FiltrosDeTicketBuilder;
 
-use App\Ticket\Repository\TagRepository;
+use App\Ticket\Repository\EtiquetaRepository;
 use App\Ticket\Repository\TicketRepository;
 use League\Csv\EscapeFormula;
 use League\Csv\Writer;
@@ -15,7 +15,7 @@ use League\Csv\Writer;
 /**
  * Streams the filtered ticket list as CSV rows into a `League\Csv\Writer`.
  *
- * Reuses `TicketFilterBuilder` for the shared filters (same semantics as
+ * Reuses `FiltrosDeTicketBuilder` for the shared filters (same semantics as
  * `ListTicketsQuery`); `TicketRepository::findExportChunk()` adds a
  * `t.created_at` date-range bound and a keyset cursor
  * (`t.id > :afterId ORDER BY t.id ASC LIMIT 500`) so results
@@ -48,9 +48,9 @@ class ExportTicketsCsvQuery
     private const ESCAPABLE_COLUMNS = ['contact_name', 'assigned_agent', 'tags'];
 
     public function __construct(
-        private TicketFilterBuilder $ticketFilterBuilder,
+        private FiltrosDeTicketBuilder $ticketFilterBuilder,
         private TicketRepository $ticketRepository,
-        private TagRepository $tagRepository,
+        private EtiquetaRepository $tagRepository,
     ) {}
 
     /**

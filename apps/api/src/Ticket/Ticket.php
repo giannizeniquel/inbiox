@@ -33,7 +33,7 @@ class Ticket
     private ?Conversation $conversation = null;
 
     #[ORM\Column(name: "status", type: "string", length: 20)]
-    private string $status = TicketStatus::NEW->value;
+    private string $status = EstadoDeTicket::NEW->value;
 
     #[ORM\Column(name: "priority", type: "string", length: 20)]
     private string $priority = "medium";

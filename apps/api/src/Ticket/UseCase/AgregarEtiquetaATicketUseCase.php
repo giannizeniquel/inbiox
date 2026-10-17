@@ -2,20 +2,20 @@
 
 namespace App\Ticket\UseCase;
 
-use App\Ticket\Tag;
-use App\Ticket\Repository\TagRepository;
-use App\Ticket\TicketTag;
-use App\Ticket\TicketEvent;
+use App\Ticket\Etiqueta;
+use App\Ticket\Repository\EtiquetaRepository;
+use App\Ticket\EtiquetaDeTicket;
+use App\Ticket\EventoDeTicket;
 use App\Ticket\Ticket;
 use App\Ticket\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
-class AddTagToTicketUseCase
+class AgregarEtiquetaATicketUseCase
 {
     public function __construct(
         private EntityManagerInterface $em,
-        private TagRepository $tagRepo,
+        private EtiquetaRepository $tagRepo,
         private TicketRepository $ticketRepo,
         private EventDispatcherInterface $eventDispatcher,
     ) {}
@@ -25,7 +25,7 @@ class AddTagToTicketUseCase
      */
     public function execute(int $ticketId, string $tagName, string $source = 'manual'): array
     {
-        $normalizedName = Tag::normalize($tagName);
+        $normalizedName = Etiqueta::normalize($tagName);
 
         return $this->em->getConnection()->transactional(function() use ($ticketId, $normalizedName, $source) {
             // Find ticket
@@ -37,7 +37,7 @@ class AddTagToTicketUseCase
             // Find or create tag
             $tag = $this->tagRepo->findByName($normalizedName);
             if (!$tag) {
-                $tag = new Tag($normalizedName);
+                $tag = new Etiqueta($normalizedName);
                 $this->em->persist($tag);
                 $this->em->flush();
             }
@@ -56,12 +56,12 @@ class AddTagToTicketUseCase
             }
 
             // Add tag
-            $ticketTag = new TicketTag($ticket, $tag);
+            $ticketTag = new EtiquetaDeTicket($ticket, $tag);
             $this->em->persist($ticketTag);
             $this->em->flush();
 
             // Emit event
-            $event = new TicketEvent($ticketId, 'tag_added', $source);
+            $event = new EventoDeTicket($ticketId, 'tag_added', $source);
             $this->em->persist($event);
             $this->em->flush();
 

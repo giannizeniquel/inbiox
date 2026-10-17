@@ -85,7 +85,7 @@ cd apps/web && ./node_modules/.bin/ng build --configuration production
 - States and fixed values are backed PHP enums, not catalog tables; use a table only when the business must configure the values without a deploy.
 - Effective permissions combine `access_control` in `security.yaml`, class-level `#[IsGranted]`, method-level `#[IsGranted]`, and voters. All of them must pass.
 - Frontend role checks are not hierarchical: `isAdmin()` and `isSupervisor()` are separate flags, so supervisor-gated UI must check `isAdmin() || isSupervisor()`.
-- Ticket status changes follow the FSM in `apps/api/src/Ticket/TicketStateMachine.php`.
+- Ticket status changes follow the FSM in `apps/api/src/Ticket/MaquinaDeEstadosDeTicket.php`.
 - Realtime events are written to the `outbox_events` table and published by the `publisher` service; use cases never publish to Mercure directly.
 
 ---

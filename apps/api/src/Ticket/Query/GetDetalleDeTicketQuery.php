@@ -4,13 +4,13 @@ namespace App\Ticket\Query;
 
 use App\Ticket\Repository\TicketRepository;
 
-class GetTicketDetailQuery
+class GetDetalleDeTicketQuery
 {
     public function __construct(
         private TicketRepository $ticketRepository,
     ) {}
 
-    public function execute(int $ticketId): ?TicketDetailDTO
+    public function execute(int $ticketId): ?DetalleDeTicketDTO
     {
         $row = $this->ticketRepository->findDetailRow($ticketId);
 
@@ -46,7 +46,7 @@ class GetTicketDetailQuery
                 : null,
         ];
 
-        return new TicketDetailDTO(
+        return new DetalleDeTicketDTO(
             ticketId: (int) $row['ticket_id'],
             status: $row['status'],
             priority: $row['priority'],

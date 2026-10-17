@@ -8,7 +8,7 @@ use App\Agente\Agent;
 use App\Contacto\Contact;
 use App\Conversacion\Conversation;
 use App\Ticket\Ticket;
-use App\Ticket\TicketStatus;
+use App\Ticket\EstadoDeTicket;
 use App\Administracion\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -102,7 +102,7 @@ class ProviderProxyControllerAutoClaimTest extends WebTestCase
         $ticket = new Ticket();
         $ticket->setContact($contact);
         $ticket->setConversation($conversation);
-        $ticket->setStatus(TicketStatus::RESOLVED->value);
+        $ticket->setStatus(EstadoDeTicket::RESOLVED->value);
         $ticket->setAssignedAgentId($owner->getId());
         $ticket->setLastInboundMessageAt(new \DateTimeImmutable('-1 hour'));
         $this->em->persist($ticket);

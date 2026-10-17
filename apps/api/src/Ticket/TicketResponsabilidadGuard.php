@@ -14,14 +14,14 @@ namespace App\Ticket;
  * `if` branch (strict-tdd Extract-Before-Mock rule). Behavior is identical
  * to the inlined contract in design.md.
  */
-final class TicketOwnershipGuard
+final class TicketResponsabilidadGuard
 {
     /**
      * A resolved/closed ticket freezes ownership for reply-driven changes.
      */
     public static function isResolvedOrClosed(string $status): bool
     {
-        return $status === TicketStatus::RESOLVED->value || $status === TicketStatus::CLOSED->value;
+        return $status === EstadoDeTicket::RESOLVED->value || $status === EstadoDeTicket::CLOSED->value;
     }
 
     /**

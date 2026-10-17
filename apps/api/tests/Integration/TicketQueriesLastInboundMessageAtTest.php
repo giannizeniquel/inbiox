@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Ticket\Query\GetTicketDetailQuery;
+use App\Ticket\Query\GetDetalleDeTicketQuery;
 use App\Ticket\Query\ListTicketsQuery;
 use App\Contacto\Contact;
 use App\Conversacion\Conversation;
@@ -14,7 +14,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
  * `timestamps.last_inbound_message_at` REST baseline (design.md Phase 5,
- * tasks 5.1/5.2): `GetTicketDetailQuery` and `ListTicketsQuery` must expose
+ * tasks 5.1/5.2): `GetDetalleDeTicketQuery` and `ListTicketsQuery` must expose
  * the new field, sourced from `tickets.last_inbound_message_at`.
  */
 class TicketQueriesLastInboundMessageAtTest extends KernelTestCase
@@ -72,7 +72,7 @@ class TicketQueriesLastInboundMessageAtTest extends KernelTestCase
         $lastInbound = new \DateTimeImmutable('2026-01-01 10:00:00');
         $ticketId = $this->createTicket($lastInbound);
 
-        $query = static::getContainer()->get(GetTicketDetailQuery::class);
+        $query = static::getContainer()->get(GetDetalleDeTicketQuery::class);
         $dto = $query->execute($ticketId);
 
         self::assertNotNull($dto);
@@ -84,7 +84,7 @@ class TicketQueriesLastInboundMessageAtTest extends KernelTestCase
     {
         $ticketId = $this->createTicket(null);
 
-        $query = static::getContainer()->get(GetTicketDetailQuery::class);
+        $query = static::getContainer()->get(GetDetalleDeTicketQuery::class);
         $dto = $query->execute($ticketId);
 
         self::assertNotNull($dto);

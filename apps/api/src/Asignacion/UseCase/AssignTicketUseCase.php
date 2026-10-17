@@ -12,7 +12,7 @@ use App\Ticket\InboxUpdatedEvent;
 use App\Ticket\TicketUpdatedEvent;
 use App\Compartido\Outbox\OutboxEvent;
 use App\Compartido\Outbox\OutboxWriter;
-use App\Ticket\TicketStatus;
+use App\Ticket\EstadoDeTicket;
 use App\Disponibilidad\AgentNotActiveException;
 use App\Agente\Repository\AgentRepository;
 use App\Asignacion\Repository\AssignmentRepository;

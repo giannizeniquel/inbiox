@@ -3,7 +3,7 @@
 namespace App\Tests\Integration;
 
 use App\Ticket\Ticket;
-use App\Ticket\TicketStatus;
+use App\Ticket\EstadoDeTicket;
 use App\Contacto\Contact;
 use App\Conversacion\Conversation;
 use App\Reporte\Repository\ReportingRepository;

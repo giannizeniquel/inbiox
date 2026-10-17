@@ -5,11 +5,11 @@ namespace App\Ticket\UseCase;
 use App\Asignacion\AssignmentService;
 use App\Agente\Agent;
 use App\Asignacion\AssignmentType;
-use App\Ticket\TicketEvent;
-use App\Ticket\TicketEventType;
+use App\Ticket\EventoDeTicket;
+use App\Ticket\TipoDeEventoDeTicket;
 use App\Ticket\Ticket;
-use App\Ticket\TicketStateMachine;
-use App\Ticket\TicketStatus;
+use App\Ticket\MaquinaDeEstadosDeTicket;
+use App\Ticket\EstadoDeTicket;
 use App\Agente\Repository\AgentRepository;
 use App\Ticket\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -21,12 +21,12 @@ use Doctrine\ORM\EntityManagerInterface;
  * On resolve/close, if the ticket has an owner, creates an UNASSIGN
  * Assignment audit row via AssignmentService to close the audit gap (W1).
  */
-class TransitionTicketStatusUseCase
+class CambiarEstadoDeTicketUseCase
 {
     public function __construct(
         private EntityManagerInterface $em,
         private TicketRepository $ticketRepo,
-        private TicketStateMachine $stateMachine,
+        private MaquinaDeEstadosDeTicket $stateMachine,
         private AssignmentService $assignmentService,
         private AgentRepository $agentRepository,
     ) {}
@@ -90,7 +90,7 @@ class TransitionTicketStatusUseCase
             $newStatus = $this->stateMachine->transition($currentStatus, $targetStatus);
 
             // Record UNASSIGN audit for resolve/close transitions
-            if (($newStatus === TicketStatus::RESOLVED->value || $newStatus === TicketStatus::CLOSED->value)
+            if (($newStatus === EstadoDeTicket::RESOLVED->value || $newStatus === EstadoDeTicket::CLOSED->value)
                 && !empty($ticket['assigned_agent_id'])
             ) {
                 $this->recordUnassignIfOwner($ticketId, $actor);
@@ -103,12 +103,12 @@ class TransitionTicketStatusUseCase
             $markFirstResponse = $setFirstResponse && empty($ticket['first_response_at']);
 
             // Set resolved_at if transitioning to resolved
-            $markResolved = $setResolved && $newStatus === TicketStatus::RESOLVED->value && empty($ticket['resolved_at']);
+            $markResolved = $setResolved && $newStatus === EstadoDeTicket::RESOLVED->value && empty($ticket['resolved_at']);
 
             // Set closed_at when landing on closed via this generic entry
             // point (design.md D7) — the agent's primary own-ticket close
             // path once /close is structurally unowned-only (D3).
-            $markClosed = $newStatus === TicketStatus::CLOSED->value && empty($ticket['closed_at']);
+            $markClosed = $newStatus === EstadoDeTicket::CLOSED->value && empty($ticket['closed_at']);
 
             $this->ticketRepo->updateStatusAfterTransition(
                 $ticketId,
@@ -136,7 +136,7 @@ class TransitionTicketStatusUseCase
      * Unlike `close()`, this does not require the ticket to be `resolved` —
      * validity is delegated entirely to the widened FSM
      * (`new|active|waiting|resolved → closed`, task 0.9). Writes a
-     * `TicketEvent(WINDOW_EXPIRED_CLOSED, 'system')` row so the closure is
+     * `EventoDeTicket(WINDOW_EXPIRED_CLOSED, 'system')` row so the closure is
      * distinguishable from a human close in the audit trail (ticket-closure-
      * audit capability).
      */
@@ -154,7 +154,7 @@ class TransitionTicketStatusUseCase
             // Validity delegated to the FSM (task 0.9's widening); rejects
             // an already-closed ticket via its own guard — no special-cased
             // check needed here.
-            $newStatus = $this->stateMachine->transition($currentStatus, TicketStatus::CLOSED->value);
+            $newStatus = $this->stateMachine->transition($currentStatus, EstadoDeTicket::CLOSED->value);
 
             if (!empty($ticket['assigned_agent_id'])) {
                 $this->recordUnassignIfOwner($ticketId);
@@ -163,7 +163,7 @@ class TransitionTicketStatusUseCase
 
             $this->ticketRepo->markClosed($ticketId, $newStatus);
 
-            $event = new TicketEvent($ticketId, TicketEventType::WINDOW_EXPIRED_CLOSED, 'system');
+            $event = new EventoDeTicket($ticketId, TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED, 'system');
             $this->em->persist($event);
             $this->em->flush();
 
@@ -181,7 +181,7 @@ class TransitionTicketStatusUseCase
      * process, in response to a new inbound customer message (design.md D1).
      *
      * This method deliberately NEVER calls `$this->stateMachine` — no
-     * `closed → *` entry exists in `TicketStateMachine::TRANSITIONS`, and
+     * `closed → *` entry exists in `MaquinaDeEstadosDeTicket::TRANSITIONS`, and
      * none is ever added, so this reopen path is structurally unreachable
      * from any human-facing endpoint (e.g. `POST /tickets/{id}/transition`).
      * It has its own independent guard, mirroring how `closeDueToWindowExpiry()`
@@ -202,7 +202,7 @@ class TransitionTicketStatusUseCase
             }
 
             // Guard 1: only a closed ticket is eligible.
-            if ($ticket['status'] !== TicketStatus::CLOSED->value) {
+            if ($ticket['status'] !== EstadoDeTicket::CLOSED->value) {
                 throw new \InvalidArgumentException('Only closed tickets can be reopened: ' . $ticketId);
             }
 
@@ -210,17 +210,17 @@ class TransitionTicketStatusUseCase
             // closure — re-checked here under the lock, not trusted from
             // the caller's earlier repository lookup.
             $latestType = $this->ticketRepo->findLatestEventType($ticketId);
-            if ($latestType !== TicketEventType::WINDOW_EXPIRED_CLOSED) {
+            if ($latestType !== TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED) {
                 throw new \InvalidArgumentException(
                     'Ticket ' . $ticketId . ' is not eligible for system-triggered reopen'
                 );
             }
 
-            $newStatus = TicketStatus::ACTIVE->value;
+            $newStatus = EstadoDeTicket::ACTIVE->value;
 
             $this->ticketRepo->markReopened($ticketId, $newStatus);
 
-            $event = new TicketEvent($ticketId, TicketEventType::WINDOW_REOPENED, 'system');
+            $event = new EventoDeTicket($ticketId, TipoDeEventoDeTicket::WINDOW_REOPENED, 'system');
             $this->em->persist($event);
             $this->em->flush();
 
@@ -238,7 +238,7 @@ class TransitionTicketStatusUseCase
      */
     public function resolve(int $ticketId, string $actor = 'system'): array
     {
-        return $this->execute($ticketId, TicketStatus::RESOLVED->value, true, true, $actor);
+        return $this->execute($ticketId, EstadoDeTicket::RESOLVED->value, true, true, $actor);
     }
 
     /**
@@ -253,7 +253,7 @@ class TransitionTicketStatusUseCase
                 throw new \InvalidArgumentException('Ticket not found: ' . $ticketId);
             }
 
-            if ($ticket['status'] !== TicketStatus::RESOLVED->value) {
+            if ($ticket['status'] !== EstadoDeTicket::RESOLVED->value) {
                 throw new \InvalidArgumentException('Only resolved tickets can be closed');
             }
 
@@ -263,12 +263,12 @@ class TransitionTicketStatusUseCase
                 $this->em->flush();
             }
 
-            $this->ticketRepo->markClosed($ticketId, TicketStatus::CLOSED->value);
+            $this->ticketRepo->markClosed($ticketId, EstadoDeTicket::CLOSED->value);
 
             return [
                 'ticket_id' => $ticketId,
                 'previous_status' => $ticket['status'],
-                'new_status' => TicketStatus::CLOSED->value,
+                'new_status' => EstadoDeTicket::CLOSED->value,
                 'previous_assigned_agent_id' => isset($ticket['assigned_agent_id'])
                     ? (int) $ticket['assigned_agent_id'] : null,
                 'reason' => 'success',

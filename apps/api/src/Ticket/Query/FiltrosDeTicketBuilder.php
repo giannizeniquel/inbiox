@@ -2,7 +2,7 @@
 
 namespace App\Ticket\Query;
 
-use App\Ticket\Repository\TicketFilters;
+use App\Ticket\Repository\FiltrosDeTicket;
 
 /**
  * Builds the normalized ticket list filters shared by `ListTicketsQuery`,
@@ -10,7 +10,7 @@ use App\Ticket\Repository\TicketFilters;
  * It holds no SQL: `TicketRepository::applyListFilters()` turns the result
  * into WHERE clauses.
  */
-class TicketFilterBuilder
+class FiltrosDeTicketBuilder
 {
     /**
      * @param string $filter 'all', 'unassigned', 'assigned', or 'mine'
@@ -31,8 +31,8 @@ class TicketFilterBuilder
         ?string $phoneNumberId = null,
         ?string $tag = null,
         ?int $teamId = null,
-    ): TicketFilters {
-        return new TicketFilters(
+    ): FiltrosDeTicket {
+        return new FiltrosDeTicket(
             filter: $filter,
             agentId: $agentId,
             status: $status,

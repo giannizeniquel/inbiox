@@ -8,7 +8,7 @@ use App\Conversacion\UseCase\HandleOutboundMessageUseCase;
 use App\Contacto\Contact;
 use App\Conversacion\Conversation;
 use App\Ticket\Ticket;
-use App\Ticket\TicketStatus;
+use App\Ticket\EstadoDeTicket;
 use App\Compartido\ConcurrencyException;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\ORM\EntityManagerInterface;
@@ -77,7 +77,7 @@ class AgentReplyAutoClaimConcurrencyTest extends KernelTestCase
      */
     public function testFindByIdForUpdateBlocksOnRowLockWhereasPlainFindByIdNever(): void
     {
-        $ticketId = $this->seedTicket(TicketStatus::ACTIVE->value, null);
+        $ticketId = $this->seedTicket(EstadoDeTicket::ACTIVE->value, null);
 
         $conn2 = DriverManager::getConnection($this->em->getConnection()->getParams());
         $conn2->beginTransaction();
@@ -135,7 +135,7 @@ class AgentReplyAutoClaimConcurrencyTest extends KernelTestCase
     public function testConcurrentReplyRollsBackCleanlyUnderLockContention(): void
     {
         $agentId = $this->seedAgent('Lock Proof Agent');
-        $ticketId = $this->seedTicket(TicketStatus::ACTIVE->value, null);
+        $ticketId = $this->seedTicket(EstadoDeTicket::ACTIVE->value, null);
 
         $conn2 = DriverManager::getConnection($this->em->getConnection()->getParams());
         $conn2->beginTransaction();
@@ -196,7 +196,7 @@ class AgentReplyAutoClaimConcurrencyTest extends KernelTestCase
 
         $agentA = $this->seedAgent('Agent A');
         $agentB = $this->seedAgent('Agent B');
-        $ticketId = $this->seedTicket(TicketStatus::ACTIVE->value, null);
+        $ticketId = $this->seedTicket(EstadoDeTicket::ACTIVE->value, null);
 
         // Release the parent's DB connection before forking — forked children
         // must never share a live socket/file descriptor with the parent.

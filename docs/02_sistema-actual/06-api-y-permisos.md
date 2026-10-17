@@ -50,17 +50,17 @@ Leyenda "Rol": **Público**, **Auth** (cualquier usuario autenticado), **Agente*
 
 | Método | Path | Controlador::acción | Rol | Delega en / nota |
 |---|---|---|---|---|
-| GET | `/api/tickets` | `InboxController::listTickets` (`:41`) | Agente | `ListTicketsQuery`. Parámetros: `page`, `limit` (default 20, máx. 100), `filter`, `agent_id`, `status`, `search`, `sort`, `tag`, `teamId`. Filtra por workspace activo. |
-| GET | `/api/tickets/{id}` | `InboxController::getTicket` (`:102`) | Agente | `GetTicketDetailQuery`. **Sin filtro de workspace.** |
-| GET | `/api/tickets/{id}/messages` | `InboxController::getMessages` (`:124`) | Agente | `GetTicketMessagesQuery` (toda la conversación). Sin filtro de workspace. |
-| PUT | `/api/tickets/{id}/mark-read` | `InboxController::markRead` (`:168-214`) | Agente; efecto solo si es el dueño | SQL directo + evento `ticket.read`. |
+| GET | `/api/tickets` | `BandejaController::listTickets` (`:41`) | Agente | `ListTicketsQuery`. Parámetros: `page`, `limit` (default 20, máx. 100), `filter`, `agent_id`, `status`, `search`, `sort`, `tag`, `teamId`. Filtra por workspace activo. |
+| GET | `/api/tickets/{id}` | `BandejaController::getTicket` (`:102`) | Agente | `GetDetalleDeTicketQuery`. **Sin filtro de workspace.** |
+| GET | `/api/tickets/{id}/messages` | `BandejaController::getMessages` (`:124`) | Agente | `GetTicketMessagesQuery` (toda la conversación). Sin filtro de workspace. |
+| PUT | `/api/tickets/{id}/mark-read` | `BandejaController::markRead` (`:168-214`) | Agente; efecto solo si es el dueño | SQL directo + evento `ticket.read`. |
 | POST | `/api/tickets/{id}/assign` | `TicketController::assign` (`:35-75`) | Agente + voter `ASSIGN` | `AssignTicketUseCase`. |
 | GET | `/api/tickets/{id}/assignment` | `TicketController::getAssignment` (`:140`) | Agente | `AssignmentRepository::findByTicket`. Sin UI. |
 | PUT | `/api/tickets/{id}/team` | `TicketController::setTeam` (`:88-137`) | Agente (sin voter, design D5) | EntityManager directo. Sin UI. |
 | POST | `/api/tickets/{id}/auto-assign` | `AutoAssignController::autoAssign` (`:22`) | Agente (sin voter) | `AutoAssignTicketUseCase::execute`. Sin UI. |
-| POST | `/api/tickets/{id}/transition` | `TicketWorkflowController::transition` (`:39-85`) | Agente; voter `CLOSE` solo hacia `resolved`/`closed` | `TransitionTicketStatusUseCase::execute`. Sin UI. |
-| POST | `/api/tickets/{id}/resolve` | `TicketWorkflowController::resolve` (`:88`) | Agente + voter `CLOSE` | `ResolveTicketUseCase`. Botón "RESOLVER". |
-| POST | `/api/tickets/{id}/close` | `TicketWorkflowController::close` (`:116`) | Agente + voter `CLOSE` → en la práctica Supervisor | Sin UI. |
+| POST | `/api/tickets/{id}/transition` | `FlujoDeTicketController::transition` (`:39-85`) | Agente; voter `CLOSE` solo hacia `resolved`/`closed` | `CambiarEstadoDeTicketUseCase::execute`. Sin UI. |
+| POST | `/api/tickets/{id}/resolve` | `FlujoDeTicketController::resolve` (`:88`) | Agente + voter `CLOSE` | `ResolverTicketUseCase`. Botón "RESOLVER". |
+| POST | `/api/tickets/{id}/close` | `FlujoDeTicketController::close` (`:116`) | Agente + voter `CLOSE` → en la práctica Supervisor | Sin UI. |
 | GET | `/api/tickets/{id}/events` | `TicketEventsController::listSince` (`:34-81`) | Agente **y** JWT de Mercure en la misma cabecera → **inalcanzable** | Resync. Ver [R5](00-estado-y-pendientes.md#r5-endpoint-de-resync-de-eventos-inseguro-y-además-inalcanzable). |
 
 ### C. Mensajería saliente (proxy a WhatsApp)
@@ -109,7 +109,7 @@ Todas **Agente**, salvo export. Filtran por workspace activo; nunca por agente.
 | `GET /api/reports/heatmap` | `heatmap` | `getHeatmap` | — |
 | `GET /api/reports/recurring-customers` | `recurringCustomers` | `getRecurringCustomers` | — |
 | `GET /api/reports/reopened` | `reopened` | `getReopened` | — |
-| `GET /api/reports/export` | `export` | `TicketFilterBuilder` + `ExportTicketsCsvQuery` — **Supervisor** | Filtros de la bandeja |
+| `GET /api/reports/export` | `export` | `FiltrosDeTicketBuilder` + `ExportTicketsCsvQuery` — **Supervisor** | Filtros de la bandeja |
 | `GET /api/reports/response-delay` | `responseDelay` | `getResponseDelay` | — |
 | `GET /api/reports/tickets/{id}/participation` | `ticketParticipation` | `getTicketParticipation` (sin workspace) | — |
 
@@ -230,4 +230,4 @@ Endpoints vivos **sin UI**: plantillas, asignar equipo a ticket, historial de as
 | Roles en el frontend (`core/stores/auth.store.ts:40-52`) | No jerárquicos (`isAdmin`, `isSupervisor`; no hay `isAgent`) | Jerárquicos | `roleGuard` lo compensa dejando pasar siempre al admin (`core/auth/auth.guard.ts:55-58`). Hoy no queda ninguna comprobación `isSupervisor()` sin `\|\| isAdmin()`. |
 | Informes (`/reports`) | Sin guard | Agente | Consistente: los agentes ven todos los reportes. |
 | Importar CSV / Exportar CSV | `isAdmin() \|\| isSupervisor()` | Supervisor | Consistente. |
-| Comentarios desactualizados | `contacts-page.component.ts:247` ("ROLE_SUPERVISOR only") | `Administracion/Controller/TeamController.php:29-36` dice que `AgentController` exige Admin (hoy exige Supervisor); `InboxController.php:53` dice "AGENT sees only own tickets" | Confunden al lector; no cambian comportamiento. |
+| Comentarios desactualizados | `contacts-page.component.ts:247` ("ROLE_SUPERVISOR only") | `Administracion/Controller/TeamController.php:29-36` dice que `AgentController` exige Admin (hoy exige Supervisor); `BandejaController.php:53` dice "AGENT sees only own tickets" | Confunden al lector; no cambian comportamiento. |

@@ -4,23 +4,23 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Domain\Event;
 
-use App\Ticket\ClosureAuditClassifier;
-use App\Ticket\TicketEventType;
+use App\Ticket\ClasificadorDeAuditoriaDeCierre;
+use App\Ticket\TipoDeEventoDeTicket;
 use App\Administracion\User;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Unit tests for `ClosureAuditClassifier` (design.md D2).
+ * Unit tests for `ClasificadorDeAuditoriaDeCierre` (design.md D2).
  *
  * Pure, dependency-free classifier: no Doctrine, no HTTP.
  */
 class ClosureAuditClassifierTest extends TestCase
 {
-    private ClosureAuditClassifier $classifier;
+    private ClasificadorDeAuditoriaDeCierre $classifier;
 
     protected function setUp(): void
     {
-        $this->classifier = new ClosureAuditClassifier();
+        $this->classifier = new ClasificadorDeAuditoriaDeCierre();
     }
 
     /**
@@ -41,22 +41,22 @@ class ClosureAuditClassifierTest extends TestCase
     {
         return [
             // resolved — unowned: (null, any) → UNOWNED
-            'resolved unowned, acting agent set'    => ['resolved', null, 5, TicketEventType::MANUAL_RESOLVED_UNOWNED],
-            'resolved unowned, no acting agent'     => ['resolved', null, null, TicketEventType::MANUAL_RESOLVED_UNOWNED],
+            'resolved unowned, acting agent set'    => ['resolved', null, 5, TipoDeEventoDeTicket::MANUAL_RESOLVED_UNOWNED],
+            'resolved unowned, no acting agent'     => ['resolved', null, null, TipoDeEventoDeTicket::MANUAL_RESOLVED_UNOWNED],
             // resolved — owner: (7, 7) → OWNER
-            'resolved owner'                        => ['resolved', 7, 7, TicketEventType::MANUAL_RESOLVED_OWNER],
+            'resolved owner'                        => ['resolved', 7, 7, TipoDeEventoDeTicket::MANUAL_RESOLVED_OWNER],
             // resolved — override: (7, 3|null) → OVERRIDE
-            'resolved override, different agent'    => ['resolved', 7, 3, TicketEventType::MANUAL_RESOLVED_OVERRIDE],
-            'resolved override, no acting agent'    => ['resolved', 7, null, TicketEventType::MANUAL_RESOLVED_OVERRIDE],
+            'resolved override, different agent'    => ['resolved', 7, 3, TipoDeEventoDeTicket::MANUAL_RESOLVED_OVERRIDE],
+            'resolved override, no acting agent'    => ['resolved', 7, null, TipoDeEventoDeTicket::MANUAL_RESOLVED_OVERRIDE],
 
             // closed — unowned: (null, any) → UNOWNED
-            'closed unowned, acting agent set'      => ['closed', null, 5, TicketEventType::MANUAL_CLOSED_UNOWNED],
-            'closed unowned, no acting agent'       => ['closed', null, null, TicketEventType::MANUAL_CLOSED_UNOWNED],
+            'closed unowned, acting agent set'      => ['closed', null, 5, TipoDeEventoDeTicket::MANUAL_CLOSED_UNOWNED],
+            'closed unowned, no acting agent'       => ['closed', null, null, TipoDeEventoDeTicket::MANUAL_CLOSED_UNOWNED],
             // closed — owner: (7, 7) → OWNER
-            'closed owner'                          => ['closed', 7, 7, TicketEventType::MANUAL_CLOSED_OWNER],
+            'closed owner'                          => ['closed', 7, 7, TipoDeEventoDeTicket::MANUAL_CLOSED_OWNER],
             // closed — override: (7, 3|null) → OVERRIDE
-            'closed override, different agent'      => ['closed', 7, 3, TicketEventType::MANUAL_CLOSED_OVERRIDE],
-            'closed override, no acting agent'      => ['closed', 7, null, TicketEventType::MANUAL_CLOSED_OVERRIDE],
+            'closed override, different agent'      => ['closed', 7, 3, TipoDeEventoDeTicket::MANUAL_CLOSED_OVERRIDE],
+            'closed override, no acting agent'      => ['closed', 7, null, TipoDeEventoDeTicket::MANUAL_CLOSED_OVERRIDE],
         ];
     }
 
@@ -76,12 +76,12 @@ class ClosureAuditClassifierTest extends TestCase
     public function testEveryConstantFitsTheColumnWidth(): void
     {
         $constants = [
-            TicketEventType::MANUAL_RESOLVED_OWNER,
-            TicketEventType::MANUAL_RESOLVED_OVERRIDE,
-            TicketEventType::MANUAL_RESOLVED_UNOWNED,
-            TicketEventType::MANUAL_CLOSED_OWNER,
-            TicketEventType::MANUAL_CLOSED_OVERRIDE,
-            TicketEventType::MANUAL_CLOSED_UNOWNED,
+            TipoDeEventoDeTicket::MANUAL_RESOLVED_OWNER,
+            TipoDeEventoDeTicket::MANUAL_RESOLVED_OVERRIDE,
+            TipoDeEventoDeTicket::MANUAL_RESOLVED_UNOWNED,
+            TipoDeEventoDeTicket::MANUAL_CLOSED_OWNER,
+            TipoDeEventoDeTicket::MANUAL_CLOSED_OVERRIDE,
+            TipoDeEventoDeTicket::MANUAL_CLOSED_UNOWNED,
         ];
 
         foreach ($constants as $constant) {

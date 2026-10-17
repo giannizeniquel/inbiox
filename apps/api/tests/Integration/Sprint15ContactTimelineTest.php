@@ -11,7 +11,7 @@ use App\Conversacion\Message;
 use App\Conversacion\MessageDirection;
 use App\Compartido\Outbox\OutboxEvent;
 use App\Ticket\Ticket;
-use App\Ticket\TicketStatus;
+use App\Ticket\EstadoDeTicket;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -144,7 +144,7 @@ class Sprint15ContactTimelineTest extends WebTestCase
         $ticket = new Ticket();
         $ticket->setContact($contact);
         $ticket->setConversation($conversation);
-        $ticket->setStatus(TicketStatus::ACTIVE->value);
+        $ticket->setStatus(EstadoDeTicket::ACTIVE->value);
         $this->em->persist($ticket);
         $this->em->flush();
         $ticketId = $ticket->getId();

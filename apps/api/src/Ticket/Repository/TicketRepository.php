@@ -2,9 +2,9 @@
 
 namespace App\Ticket\Repository;
 
-use App\Ticket\TicketEventType;
+use App\Ticket\TipoDeEventoDeTicket;
 use App\Ticket\Ticket;
-use App\Ticket\TicketStatus;
+use App\Ticket\EstadoDeTicket;
 use App\Contacto\Contact;
 use App\Conversacion\Conversation;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -28,9 +28,9 @@ class TicketRepository extends ServiceEntityRepository
             ->andWhere('t.status IN (:statuses)')
             ->setParameter('contact', $contact->getId() ?? 0)
             ->setParameter('statuses', [
-                TicketStatus::NEW->value,
-                TicketStatus::ACTIVE->value,
-                TicketStatus::WAITING->value,
+                EstadoDeTicket::NEW->value,
+                EstadoDeTicket::ACTIVE->value,
+                EstadoDeTicket::WAITING->value,
             ]);
 
         if ($phoneNumberId !== null) {
@@ -48,10 +48,10 @@ class TicketRepository extends ServiceEntityRepository
             ->andWhere('t.status IN (:statuses)')
             ->setParameter('contact', $contact->getId() ?? 0)
             ->setParameter('statuses', [
-                TicketStatus::NEW->value,
-                TicketStatus::ACTIVE->value,
-                TicketStatus::WAITING->value,
-                TicketStatus::RESOLVED->value,
+                EstadoDeTicket::NEW->value,
+                EstadoDeTicket::ACTIVE->value,
+                EstadoDeTicket::WAITING->value,
+                EstadoDeTicket::RESOLVED->value,
             ]);
 
         if ($phoneNumberId !== null) {
@@ -100,7 +100,7 @@ class TicketRepository extends ServiceEntityRepository
      * new ticket, exactly as it does today (design.md).
      *
      * DQL cannot express a correlated `ORDER BY ... LIMIT 1` subquery, so
-     * this uses the connection directly (precedent: `TransitionTicketStatusUseCase`),
+     * this uses the connection directly (precedent: `CambiarEstadoDeTicketUseCase`),
      * then rehydrates via `$this->find($id)` so the caller receives a
      * managed entity it can `lock()`.
      */
@@ -117,8 +117,8 @@ class TicketRepository extends ServiceEntityRepository
                        LIMIT 1) = :window_expired_closed';
         $params = [
             'contact_id' => $contact->getId() ?? 0,
-            'status' => TicketStatus::CLOSED->value,
-            'window_expired_closed' => TicketEventType::WINDOW_EXPIRED_CLOSED,
+            'status' => EstadoDeTicket::CLOSED->value,
+            'window_expired_closed' => TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED,
         ];
 
         if ($phoneNumberId !== null) {
@@ -152,9 +152,9 @@ class TicketRepository extends ServiceEntityRepository
             ->andWhere('t.status IN (:statuses)')
             ->setParameter('agentId', $agentId)
             ->setParameter('statuses', [
-                TicketStatus::NEW->value,
-                TicketStatus::ACTIVE->value,
-                TicketStatus::WAITING->value,
+                EstadoDeTicket::NEW->value,
+                EstadoDeTicket::ACTIVE->value,
+                EstadoDeTicket::WAITING->value,
             ])
             ->getQuery()
             ->getSingleScalarResult();
@@ -182,7 +182,7 @@ class TicketRepository extends ServiceEntityRepository
     }
 
     /**
-     * Status change written by TransitionTicketStatusUseCase::execute():
+     * Status change written by CambiarEstadoDeTicketUseCase::execute():
      * sets status and updated_at, plus each SLA timestamp the caller asks for,
      * in this SET order: first_response_at, resolved_at, closed_at.
      */
@@ -325,7 +325,7 @@ class TicketRepository extends ServiceEntityRepository
      *
      * @return list<array<string, mixed>>
      */
-    public function findListPage(TicketFilters $filters, int $limit, int $offset): array
+    public function findListPage(FiltrosDeTicket $filters, int $limit, int $offset): array
     {
         $qb = $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->select(
@@ -352,7 +352,7 @@ class TicketRepository extends ServiceEntityRepository
     /**
      * Total number of tickets matching the list filters (no joins needed).
      */
-    public function countList(TicketFilters $filters): int
+    public function countList(FiltrosDeTicket $filters): int
     {
         $qb = $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->select('COUNT(*)')
@@ -409,7 +409,7 @@ class TicketRepository extends ServiceEntityRepository
     }
 
     /**
-     * The ticket detail row (`GetTicketDetailQuery`): ticket, contact, the
+     * The ticket detail row (`GetDetalleDeTicketQuery`): ticket, contact, the
      * unread inbound count and the content of the latest message, or false
      * when the ticket does not exist.
      *
@@ -462,7 +462,7 @@ class TicketRepository extends ServiceEntityRepository
      *
      * @return list<array<string, mixed>>
      */
-    public function findExportChunk(TicketFilters $filters, string $from, string $to, int $afterId, int $limit): array
+    public function findExportChunk(FiltrosDeTicket $filters, string $from, string $to, int $afterId, int $limit): array
     {
         $qb = $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->select(
@@ -521,7 +521,7 @@ class TicketRepository extends ServiceEntityRepository
      * in this order: assignment or mine, ownership scope, workspace, status,
      * one EXISTS per tag (AND semantics), team.
      */
-    private function applyListFilters(QueryBuilder $qb, TicketFilters $filters): void
+    private function applyListFilters(QueryBuilder $qb, FiltrosDeTicket $filters): void
     {
         if ($filters->assignment === 'unassigned') {
             $qb->andWhere('t.assigned_agent_id IS NULL');

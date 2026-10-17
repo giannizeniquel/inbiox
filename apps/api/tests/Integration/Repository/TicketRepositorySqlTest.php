@@ -8,9 +8,9 @@ use App\Contacto\Contact;
 use App\Conversacion\Conversation;
 use App\Ticket\Repository\TicketRepository;
 use App\Ticket\Ticket;
-use App\Ticket\TicketEvent;
-use App\Ticket\TicketEventType;
-use App\Ticket\TicketStatus;
+use App\Ticket\EventoDeTicket;
+use App\Ticket\TipoDeEventoDeTicket;
+use App\Ticket\EstadoDeTicket;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\ORM\EntityManagerInterface;
@@ -91,7 +91,7 @@ class TicketRepositorySqlTest extends KernelTestCase
 
     public function testFindRowByIdForUpdateReturnsTheRawRow(): void
     {
-        $id = $this->createTicket(TicketStatus::ACTIVE->value, 'PN-1');
+        $id = $this->createTicket(EstadoDeTicket::ACTIVE->value, 'PN-1');
 
         $row = $this->repo->findRowByIdForUpdate($id);
 
@@ -109,7 +109,7 @@ class TicketRepositorySqlTest extends KernelTestCase
 
     public function testFindRowByIdForUpdateHoldsARowLockInsideTheCallersTransaction(): void
     {
-        $id = $this->createTicket(TicketStatus::ACTIVE->value);
+        $id = $this->createTicket(EstadoDeTicket::ACTIVE->value);
         $other = DriverManager::getConnection($this->conn->getParams());
 
         // Without the lock, another connection locks the row at once.
@@ -131,10 +131,10 @@ class TicketRepositorySqlTest extends KernelTestCase
 
     public function testUpdateStatusAfterTransitionSetsOnlyTheRequestedTimestamps(): void
     {
-        $id = $this->createTicket(TicketStatus::NEW->value);
+        $id = $this->createTicket(EstadoDeTicket::NEW->value);
         $this->conn->executeStatement('UPDATE tickets SET updated_at = ? WHERE id = ?', ['2000-01-01 00:00:00', $id]);
 
-        $this->repo->updateStatusAfterTransition($id, TicketStatus::ACTIVE->value, true, false, false);
+        $this->repo->updateStatusAfterTransition($id, EstadoDeTicket::ACTIVE->value, true, false, false);
 
         $row = $this->row($id);
         self::assertSame('active', $row['status']);
@@ -146,11 +146,11 @@ class TicketRepositorySqlTest extends KernelTestCase
 
     public function testUpdateStatusAfterTransitionCanSetResolvedAndClosed(): void
     {
-        $resolvedId = $this->createTicket(TicketStatus::ACTIVE->value);
-        $closedId = $this->createTicket(TicketStatus::ACTIVE->value);
+        $resolvedId = $this->createTicket(EstadoDeTicket::ACTIVE->value);
+        $closedId = $this->createTicket(EstadoDeTicket::ACTIVE->value);
 
-        $this->repo->updateStatusAfterTransition($resolvedId, TicketStatus::RESOLVED->value, false, true, false);
-        $this->repo->updateStatusAfterTransition($closedId, TicketStatus::CLOSED->value, false, false, true);
+        $this->repo->updateStatusAfterTransition($resolvedId, EstadoDeTicket::RESOLVED->value, false, true, false);
+        $this->repo->updateStatusAfterTransition($closedId, EstadoDeTicket::CLOSED->value, false, false, true);
 
         $resolved = $this->row($resolvedId);
         self::assertSame('resolved', $resolved['status']);
@@ -166,10 +166,10 @@ class TicketRepositorySqlTest extends KernelTestCase
 
     public function testUpdateStatusAfterTransitionOnlyTouchesTheGivenTicket(): void
     {
-        $id = $this->createTicket(TicketStatus::NEW->value);
-        $otherId = $this->createTicket(TicketStatus::NEW->value);
+        $id = $this->createTicket(EstadoDeTicket::NEW->value);
+        $otherId = $this->createTicket(EstadoDeTicket::NEW->value);
 
-        $this->repo->updateStatusAfterTransition($id, TicketStatus::ACTIVE->value, true, true, true);
+        $this->repo->updateStatusAfterTransition($id, EstadoDeTicket::ACTIVE->value, true, true, true);
 
         $other = $this->row($otherId);
         self::assertSame('new', $other['status']);
@@ -178,9 +178,9 @@ class TicketRepositorySqlTest extends KernelTestCase
 
     public function testMarkClosedSetsStatusAndClosedAt(): void
     {
-        $id = $this->createTicket(TicketStatus::RESOLVED->value);
+        $id = $this->createTicket(EstadoDeTicket::RESOLVED->value);
 
-        $this->repo->markClosed($id, TicketStatus::CLOSED->value);
+        $this->repo->markClosed($id, EstadoDeTicket::CLOSED->value);
 
         $row = $this->row($id);
         self::assertSame('closed', $row['status']);
@@ -189,10 +189,10 @@ class TicketRepositorySqlTest extends KernelTestCase
 
     public function testMarkReopenedSetsStatusAndClearsClosedAt(): void
     {
-        $id = $this->createTicket(TicketStatus::CLOSED->value);
+        $id = $this->createTicket(EstadoDeTicket::CLOSED->value);
         $this->conn->executeStatement('UPDATE tickets SET closed_at = NOW() WHERE id = ?', [$id]);
 
-        $this->repo->markReopened($id, TicketStatus::ACTIVE->value);
+        $this->repo->markReopened($id, EstadoDeTicket::ACTIVE->value);
 
         $row = $this->row($id);
         self::assertSame('active', $row['status']);
@@ -201,7 +201,7 @@ class TicketRepositorySqlTest extends KernelTestCase
 
     public function testMarkFirstResponseSetsFirstResponseAtWithoutChangingStatus(): void
     {
-        $id = $this->createTicket(TicketStatus::WAITING->value);
+        $id = $this->createTicket(EstadoDeTicket::WAITING->value);
 
         $this->repo->markFirstResponse($id);
 
@@ -212,11 +212,11 @@ class TicketRepositorySqlTest extends KernelTestCase
 
     public function testFindLatestEventTypeOrdersByCreatedAtThenId(): void
     {
-        $id = $this->createTicket(TicketStatus::CLOSED->value);
+        $id = $this->createTicket(EstadoDeTicket::CLOSED->value);
         self::assertFalse($this->repo->findLatestEventType($id));
 
-        foreach (['tag_added', TicketEventType::WINDOW_EXPIRED_CLOSED, 'tag_added'] as $type) {
-            $this->em->persist(new TicketEvent($id, $type, 'system'));
+        foreach (['tag_added', TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED, 'tag_added'] as $type) {
+            $this->em->persist(new EventoDeTicket($id, $type, 'system'));
             $this->em->flush();
         }
         // Same created_at for all three: the highest id wins.
@@ -225,14 +225,14 @@ class TicketRepositorySqlTest extends KernelTestCase
 
         // A newer created_at wins over a higher id.
         $firstEventId = $this->conn->fetchOne('SELECT MIN(id) FROM ticket_events WHERE ticket_id = ?', [$id]);
-        $this->conn->executeStatement('UPDATE ticket_events SET type = ?, created_at = ? WHERE id = ?', [TicketEventType::WINDOW_EXPIRED_CLOSED, '2026-02-01 00:00:00', $firstEventId]);
-        self::assertSame(TicketEventType::WINDOW_EXPIRED_CLOSED, $this->repo->findLatestEventType($id));
+        $this->conn->executeStatement('UPDATE ticket_events SET type = ?, created_at = ? WHERE id = ?', [TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED, '2026-02-01 00:00:00', $firstEventId]);
+        self::assertSame(TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED, $this->repo->findLatestEventType($id));
     }
 
     public function testFindPhoneNumberId(): void
     {
-        $withPhone = $this->createTicket(TicketStatus::NEW->value, 'PN-42');
-        $withoutPhone = $this->createTicket(TicketStatus::NEW->value);
+        $withPhone = $this->createTicket(EstadoDeTicket::NEW->value, 'PN-42');
+        $withoutPhone = $this->createTicket(EstadoDeTicket::NEW->value);
 
         self::assertSame('PN-42', $this->repo->findPhoneNumberId($withPhone));
         self::assertNull($this->repo->findPhoneNumberId($withoutPhone));
@@ -241,11 +241,11 @@ class TicketRepositorySqlTest extends KernelTestCase
 
     public function testFindIdsWithExpiredWindowFiltersOrdersAndLimits(): void
     {
-        $older = $this->createTicket(TicketStatus::ACTIVE->value, null, '1990-01-01 08:00:00');
-        $old = $this->createTicket(TicketStatus::RESOLVED->value, null, '1990-01-01 09:00:00');
-        $closed = $this->createTicket(TicketStatus::CLOSED->value, null, '1990-01-01 07:00:00');
-        $recent = $this->createTicket(TicketStatus::ACTIVE->value, null, '1990-01-03 00:00:00');
-        $noInbound = $this->createTicket(TicketStatus::ACTIVE->value);
+        $older = $this->createTicket(EstadoDeTicket::ACTIVE->value, null, '1990-01-01 08:00:00');
+        $old = $this->createTicket(EstadoDeTicket::RESOLVED->value, null, '1990-01-01 09:00:00');
+        $closed = $this->createTicket(EstadoDeTicket::CLOSED->value, null, '1990-01-01 07:00:00');
+        $recent = $this->createTicket(EstadoDeTicket::ACTIVE->value, null, '1990-01-03 00:00:00');
+        $noInbound = $this->createTicket(EstadoDeTicket::ACTIVE->value);
 
         $statuses = ['new', 'active', 'waiting', 'resolved'];
         $ids = array_map('intval', $this->repo->findIdsWithExpiredWindow($statuses, '1990-01-02 00:00:00', 100));

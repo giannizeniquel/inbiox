@@ -7,7 +7,7 @@ namespace App\Reporte\Command;
 use App\Agente\Agent;
 use App\Disponibilidad\AgentShift;
 use App\Contacto\Contact;
-use App\Ticket\TicketEvent;
+use App\Ticket\EventoDeTicket;
 use App\Ticket\Ticket;
 use App\Administracion\Workspace;
 use App\Reporte\Repository\ReportingRepository;
@@ -184,7 +184,7 @@ final class SeedReportsCommand extends Command
                 break;
             }
             if ($ticket->getResolvedAt() !== null) {
-                $event = new TicketEvent($ticket->getId(), 'auto_reopened', 'system');
+                $event = new EventoDeTicket($ticket->getId(), 'auto_reopened', 'system');
                 $this->em->persist($event);
                 $reopenedCount++;
             }

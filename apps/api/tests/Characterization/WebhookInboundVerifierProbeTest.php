@@ -15,7 +15,7 @@ use App\Conversacion\MessageUpdatedEvent;
 use App\Conversacion\UseCase\HandleInboundMessageUseCase;
 use App\Ticket\Ticket;
 use App\Ticket\TicketCreatedEvent;
-use App\Ticket\UseCase\TransitionTicketStatusUseCase;
+use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use Symfony\Component\HttpKernel\Log\Logger;
 use Symfony\Component\HttpFoundation\Response;
@@ -377,7 +377,7 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
     {
         $this->postValue(['messages' => [$this->text('wamid.probe-r1', 'uno')]]);
         $ticketId = (int) $this->connection()->fetchOne('SELECT id FROM tickets');
-        static::getContainer()->get(TransitionTicketStatusUseCase::class)->closeDueToWindowExpiry($ticketId);
+        static::getContainer()->get(CambiarEstadoDeTicketUseCase::class)->closeDueToWindowExpiry($ticketId);
         $this->connection()->executeStatement('DELETE FROM outbox_events');
 
         $this->assertAcknowledged($this->postValue(['messages' => [$this->text('wamid.probe-r2', 'dos')]]));

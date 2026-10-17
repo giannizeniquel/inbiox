@@ -2,20 +2,20 @@
 
 namespace App\Ticket\Repository;
 
-use App\Ticket\Tag;
+use App\Ticket\Etiqueta;
 
 /**
  * The ticket list filters shared by the inbox list and the CSV export,
  * already normalized. `TicketRepository::applyListFilters()` turns them into
  * WHERE clauses; this class holds no SQL.
  *
- * Normalization (unchanged from the old `TicketFilterBuilder`):
+ * Normalization (unchanged from the old `FiltrosDeTicketBuilder`):
  * - `mine` needs a truthy agent id, otherwise it adds nothing;
  * - unknown statuses are dropped, and an all-unknown list adds nothing;
- * - tags go through `Tag::normalize()`, blanks and duplicates are dropped,
+ * - tags go through `Etiqueta::normalize()`, blanks and duplicates are dropped,
  *   and more than 5 tags throw `\InvalidArgumentException`.
  */
-final class TicketFilters
+final class FiltrosDeTicket
 {
     private const KNOWN_STATUSES = ['new', 'active', 'waiting', 'resolved', 'closed'];
     private const MAX_TAGS = 5;
@@ -66,7 +66,7 @@ final class TicketFilters
         $tags = [];
         if (null !== $tag && '' !== trim($tag)) {
             $tags = array_values(array_unique(array_filter(
-                array_map(fn ($n) => Tag::normalize($n), explode(',', $tag)),
+                array_map(fn ($n) => Etiqueta::normalize($n), explode(',', $tag)),
                 fn ($n) => '' !== $n,
             )));
             if (count($tags) > self::MAX_TAGS) {

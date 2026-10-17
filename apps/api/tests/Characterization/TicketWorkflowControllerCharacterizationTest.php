@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Tests\Characterization;
 
-use App\Ticket\InvalidTransitionException;
-use App\Ticket\UseCase\ResolveTicketUseCase;
-use App\Ticket\UseCase\TransitionTicketStatusUseCase;
+use App\Ticket\TransicionInvalidaException;
+use App\Ticket\UseCase\ResolverTicketUseCase;
+use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
 
 /**
- * Characterization of the 500 envelope of App\Ticket\Controller\TicketWorkflowController.
+ * Characterization of the 500 envelope of App\Ticket\Controller\FlujoDeTicketController.
  * It was shape S2 in odd/fase-3/errores.md until phase 3b, which unified it into S1.
  * The other paths of this controller already have HTTP tests.
  */
@@ -33,9 +33,9 @@ final class TicketWorkflowControllerCharacterizationTest extends Characterizatio
     public function testTransitionUnexpectedFailure(): void
     {
         $token = $this->supervisorToken();
-        $useCase = $this->createMock(TransitionTicketStatusUseCase::class);
+        $useCase = $this->createMock(CambiarEstadoDeTicketUseCase::class);
         $useCase->method('execute')->willThrowException(new \RuntimeException('workflow exploded'));
-        static::getContainer()->set(TransitionTicketStatusUseCase::class, $useCase);
+        static::getContainer()->set(CambiarEstadoDeTicketUseCase::class, $useCase);
 
         $response = $this->request('POST', '/api/tickets/' . self::MISSING_TICKET_ID . '/transition', $token, ['status' => 'active']);
 
@@ -45,9 +45,9 @@ final class TicketWorkflowControllerCharacterizationTest extends Characterizatio
     public function testCloseUnexpectedFailure(): void
     {
         $token = $this->supervisorToken();
-        $useCase = $this->createMock(TransitionTicketStatusUseCase::class);
+        $useCase = $this->createMock(CambiarEstadoDeTicketUseCase::class);
         $useCase->method('close')->willThrowException(new \RuntimeException('workflow exploded'));
-        static::getContainer()->set(TransitionTicketStatusUseCase::class, $useCase);
+        static::getContainer()->set(CambiarEstadoDeTicketUseCase::class, $useCase);
 
         $response = $this->request('POST', '/api/tickets/' . self::MISSING_TICKET_ID . '/close', $token);
 
@@ -57,9 +57,9 @@ final class TicketWorkflowControllerCharacterizationTest extends Characterizatio
     public function testResolveUnexpectedFailure(): void
     {
         $token = $this->supervisorToken();
-        $useCase = $this->createMock(ResolveTicketUseCase::class);
+        $useCase = $this->createMock(ResolverTicketUseCase::class);
         $useCase->method('execute')->willThrowException(new \RuntimeException('workflow exploded'));
-        static::getContainer()->set(ResolveTicketUseCase::class, $useCase);
+        static::getContainer()->set(ResolverTicketUseCase::class, $useCase);
 
         $response = $this->request('POST', '/api/tickets/' . self::MISSING_TICKET_ID . '/resolve', $token);
 
@@ -69,17 +69,17 @@ final class TicketWorkflowControllerCharacterizationTest extends Characterizatio
     public function testInvalidTransitionIs422OnTransitionButGeneric500OnResolve(): void
     {
         $token = $this->supervisorToken();
-        $transition = $this->createMock(TransitionTicketStatusUseCase::class);
-        $transition->method('execute')->willThrowException(new InvalidTransitionException('Cannot go there'));
-        static::getContainer()->set(TransitionTicketStatusUseCase::class, $transition);
-        $resolve = $this->createMock(ResolveTicketUseCase::class);
-        $resolve->method('execute')->willThrowException(new InvalidTransitionException('Cannot go there'));
-        static::getContainer()->set(ResolveTicketUseCase::class, $resolve);
+        $transition = $this->createMock(CambiarEstadoDeTicketUseCase::class);
+        $transition->method('execute')->willThrowException(new TransicionInvalidaException('Cannot go there'));
+        static::getContainer()->set(CambiarEstadoDeTicketUseCase::class, $transition);
+        $resolve = $this->createMock(ResolverTicketUseCase::class);
+        $resolve->method('execute')->willThrowException(new TransicionInvalidaException('Cannot go there'));
+        static::getContainer()->set(ResolverTicketUseCase::class, $resolve);
 
         $this->assertJsonResponse(422, ['error' => 'Cannot go there'], $this->request('POST', '/api/tickets/' . self::MISSING_TICKET_ID . '/transition', $token, ['status' => 'active']));
 
         // Characterization: current behavior, not necessarily desired.
-        // resolve() has no InvalidTransitionException arm, so it falls into the 500.
+        // resolve() has no TransicionInvalidaException arm, so it falls into the 500.
         $response = $this->request('POST', '/api/tickets/' . self::MISSING_TICKET_ID . '/resolve', $token);
         // Phase 3b: S2 unified into S1.
         $this->assertInternalServerErrorEnvelope($response);

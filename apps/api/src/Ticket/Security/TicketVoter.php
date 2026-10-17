@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Ticket\Security;
 
 use App\Ticket\Ticket;
-use App\Ticket\TicketStatus;
+use App\Ticket\EstadoDeTicket;
 use App\Administracion\User;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
@@ -34,7 +34,7 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
  *   - ASSIGN: invoked by TicketController::assign(). Rejects with a 409
  *     `StateConflictException` when the ticket is already resolved/closed,
  *     for every role, before the role checks below even run.
- *   - CLOSE: invoked by TicketWorkflowController for resolve()/close()/
+ *   - CLOSE: invoked by FlujoDeTicketController for resolve()/close()/
  *     transition() (target resolved/closed). Does NOT hit the ASSIGN state
  *     guard — a resolved ticket is exactly the state a legitimate close
  *     targets (ticket-closure-authorization design.md D1/D3).
@@ -80,7 +80,7 @@ final class TicketVoter extends Voter
         // For ASSIGN attribute, reject resolved/closed tickets with 409
         if ($attribute === self::ASSIGN) {
             $status = $ticket->getStatus();
-            if ($status === TicketStatus::RESOLVED->value || $status === TicketStatus::CLOSED->value) {
+            if ($status === EstadoDeTicket::RESOLVED->value || $status === EstadoDeTicket::CLOSED->value) {
                 throw new \App\Compartido\StateConflictException(
                     \sprintf('Cannot assign ticket in "%s" state', $status)
                 );

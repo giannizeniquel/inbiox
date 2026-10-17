@@ -141,9 +141,9 @@ El hub Mercure acepta suscriptores anónimos (`docker-compose.yml`, `anonymous`)
 ### R6. Resolver quita el dueño (contradicción autoinfligida)
 
 **[PROD] · Confirmado.**
-Resolver o cerrar un ticket le quita el dueño: `TransitionTicketStatusUseCase::recordUnassignIfOwner()` (líneas 37-61, llamado en 99, 172 y 289) → `AssignmentService.php:65` pone `assigned_agent_id = null`. Consecuencias:
+Resolver o cerrar un ticket le quita el dueño: `CambiarEstadoDeTicketUseCase::recordUnassignIfOwner()` (líneas 37-61, llamado en 99, 172 y 289) → `AssignmentService.php:65` pone `assigned_agent_id = null`. Consecuencias:
 
-1. La regla de Sprint 17 (Tier 1 #6, `TicketOwnershipGuard`) dice que en un ticket resuelto/cerrado solo supervisor/admin **o el dueño** pueden enviar mensajes. Como el dueño siempre es `null` en ese estado, **ningún `ROLE_AGENT` puede responder un ticket resuelto**. Los tests de ese cambio construyeron a mano tickets resueltos *con* dueño, un estado que producción nunca genera.
+1. La regla de Sprint 17 (Tier 1 #6, `TicketResponsabilidadGuard`) dice que en un ticket resuelto/cerrado solo supervisor/admin **o el dueño** pueden enviar mensajes. Como el dueño siempre es `null` en ese estado, **ningún `ROLE_AGENT` puede responder un ticket resuelto**. Los tests de ese cambio construyeron a mano tickets resueltos *con* dueño, un estado que producción nunca genera.
 2. Los reportes por agente (`tickets_resolved`, tiempo medio de resolución) se calculan por `assigned_agent_id`: los tickets resueltos dejan de contar para quien los resolvió.
 3. El reporte "Sin asignar" (además de estar roto, R8) incluiría todos los resueltos/cerrados.
 4. `POST /close` solo acepta tickets `resolved` (que ya no tienen dueño): ningún agente puede usarlo.

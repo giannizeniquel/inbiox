@@ -10,7 +10,7 @@ use App\Contacto\Contact;
 use App\Conversacion\Conversation;
 use App\Automatizacion\RuleContext;
 use App\Ticket\Ticket;
-use App\Ticket\TicketStatus;
+use App\Ticket\EstadoDeTicket;
 use App\Compartido\StateConflictException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -58,7 +58,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
     public function testReplyClaimsAnUnassignedTicket(): void
     {
         $agentId = $this->seedAgent('Agent Five');
-        $ticketId = $this->seedTicket(TicketStatus::ACTIVE->value, null);
+        $ticketId = $this->seedTicket(EstadoDeTicket::ACTIVE->value, null);
 
         $useCase = static::getContainer()->get(HandleOutboundMessageUseCase::class);
         $result = $useCase->processOutboundMessage($ticketId, 'Hi, how can I help?', $agentId);
@@ -85,7 +85,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
     {
         $agentA = $this->seedAgent('Agent A');
         $agentB = $this->seedAgent('Agent B');
-        $ticketId = $this->seedTicket(TicketStatus::ACTIVE->value, $agentA);
+        $ticketId = $this->seedTicket(EstadoDeTicket::ACTIVE->value, $agentA);
 
         $useCase = static::getContainer()->get(HandleOutboundMessageUseCase::class);
         $result = $useCase->processOutboundMessage($ticketId, 'Taking over this one', $agentB);
@@ -108,7 +108,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
     public function testReplyByCurrentOwnerCausesNoReassignment(): void
     {
         $agentA = $this->seedAgent('Agent A');
-        $ticketId = $this->seedTicket(TicketStatus::ACTIVE->value, $agentA);
+        $ticketId = $this->seedTicket(EstadoDeTicket::ACTIVE->value, $agentA);
 
         $useCase = static::getContainer()->get(HandleOutboundMessageUseCase::class);
         $result = $useCase->processOutboundMessage($ticketId, 'Following up', $agentA);
@@ -151,7 +151,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
     public function testEventCollectorDoesNotLeakEventsFromARolledBackAttempt(): void
     {
         $agentId = $this->seedAgent('Agent Leak Proof');
-        $ticketId = $this->seedTicket(TicketStatus::ACTIVE->value, null);
+        $ticketId = $this->seedTicket(EstadoDeTicket::ACTIVE->value, null);
 
         $explodingRuleExecutor = new class(
             static::getContainer()->get(\App\Automatizacion\Repository\RuleExecutionLogRepository::class),
@@ -231,7 +231,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
     {
         $owner = $this->seedAgent('Owner Agent');
         $supervisor = $this->seedAgent('Supervisor Agent');
-        $ticketId = $this->seedTicket(TicketStatus::RESOLVED->value, $owner);
+        $ticketId = $this->seedTicket(EstadoDeTicket::RESOLVED->value, $owner);
 
         $useCase = static::getContainer()->get(HandleOutboundMessageUseCase::class);
         $result = $useCase->processOutboundMessage(
@@ -258,7 +258,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
     public function testOwningAgentReplyToOwnResolvedTicketIsDeliveredWithoutReassignment(): void
     {
         $owner = $this->seedAgent('Owner Agent');
-        $ticketId = $this->seedTicket(TicketStatus::RESOLVED->value, $owner);
+        $ticketId = $this->seedTicket(EstadoDeTicket::RESOLVED->value, $owner);
 
         $useCase = static::getContainer()->get(HandleOutboundMessageUseCase::class);
         $result = $useCase->processOutboundMessage(
@@ -281,7 +281,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
     {
         $owner = $this->seedAgent('Owner Agent');
         $intruder = $this->seedAgent('Non-Owning Agent');
-        $ticketId = $this->seedTicket(TicketStatus::RESOLVED->value, $owner);
+        $ticketId = $this->seedTicket(EstadoDeTicket::RESOLVED->value, $owner);
 
         $useCase = static::getContainer()->get(HandleOutboundMessageUseCase::class);
 
@@ -313,7 +313,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
     {
         $owner = $this->seedAgent('Owner Agent');
         $intruder = $this->seedAgent('Non-Owning Agent');
-        $ticketId = $this->seedTicket(TicketStatus::CLOSED->value, $owner);
+        $ticketId = $this->seedTicket(EstadoDeTicket::CLOSED->value, $owner);
 
         $useCase = static::getContainer()->get(HandleOutboundMessageUseCase::class);
 
@@ -330,7 +330,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
     public function testSystemCallerWithZeroAgentIdIsNeverBlockedByTheGuard(): void
     {
         $owner = $this->seedAgent('Owner Agent');
-        $ticketId = $this->seedTicket(TicketStatus::RESOLVED->value, $owner);
+        $ticketId = $this->seedTicket(EstadoDeTicket::RESOLVED->value, $owner);
 
         $useCase = static::getContainer()->get(HandleOutboundMessageUseCase::class);
         $result = $useCase->processOutboundMessage($ticketId, 'system message', 0);

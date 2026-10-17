@@ -7,9 +7,9 @@ namespace App\Tests\Integration;
 use App\Conversacion\UseCase\ConversationWindowExpiryService;
 use App\Contacto\Contact;
 use App\Conversacion\Conversation;
-use App\Ticket\TicketEventType;
+use App\Ticket\TipoDeEventoDeTicket;
 use App\Ticket\Ticket;
-use App\Ticket\TicketStatus;
+use App\Ticket\EstadoDeTicket;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -69,9 +69,9 @@ class ConversationWindowExpiryServiceTest extends KernelTestCase
 
     public function testClosesOnlyExpiredNonClosedTicketsWithAKnownLastInboundMessage(): void
     {
-        $expired = $this->createTicket(TicketStatus::ACTIVE->value, new \DateTimeImmutable('-25 hours'));
-        $notExpired = $this->createTicket(TicketStatus::ACTIVE->value, new \DateTimeImmutable('-1 hour'));
-        $nullInbound = $this->createTicket(TicketStatus::NEW->value, null);
+        $expired = $this->createTicket(EstadoDeTicket::ACTIVE->value, new \DateTimeImmutable('-25 hours'));
+        $notExpired = $this->createTicket(EstadoDeTicket::ACTIVE->value, new \DateTimeImmutable('-1 hour'));
+        $nullInbound = $this->createTicket(EstadoDeTicket::NEW->value, null);
 
         $service = static::getContainer()->get(ConversationWindowExpiryService::class);
         $count = $service->closeExpired(dryRun: false, limit: 200);
@@ -79,20 +79,20 @@ class ConversationWindowExpiryServiceTest extends KernelTestCase
         self::assertSame(1, $count);
 
         self::assertSame(
-            TicketStatus::CLOSED->value,
+            EstadoDeTicket::CLOSED->value,
             $this->em->getConnection()->fetchOne('SELECT status FROM tickets WHERE id = ?', [$expired])
         );
         self::assertSame(
-            TicketStatus::ACTIVE->value,
+            EstadoDeTicket::ACTIVE->value,
             $this->em->getConnection()->fetchOne('SELECT status FROM tickets WHERE id = ?', [$notExpired])
         );
         self::assertSame(
-            TicketStatus::NEW->value,
+            EstadoDeTicket::NEW->value,
             $this->em->getConnection()->fetchOne('SELECT status FROM tickets WHERE id = ?', [$nullInbound])
         );
 
         self::assertSame(
-            TicketEventType::WINDOW_EXPIRED_CLOSED,
+            TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED,
             $this->em->getConnection()->fetchOne(
                 'SELECT type FROM ticket_events WHERE ticket_id = ? ORDER BY created_at DESC, id DESC LIMIT 1',
                 [$expired]
@@ -102,28 +102,28 @@ class ConversationWindowExpiryServiceTest extends KernelTestCase
 
     public function testANeverWorkedNewTicketClosesLikeAnyOther(): void
     {
-        $ticketId = $this->createTicket(TicketStatus::NEW->value, new \DateTimeImmutable('-25 hours'));
+        $ticketId = $this->createTicket(EstadoDeTicket::NEW->value, new \DateTimeImmutable('-25 hours'));
 
         $service = static::getContainer()->get(ConversationWindowExpiryService::class);
         $count = $service->closeExpired(dryRun: false, limit: 200);
 
         self::assertSame(1, $count);
         self::assertSame(
-            TicketStatus::CLOSED->value,
+            EstadoDeTicket::CLOSED->value,
             $this->em->getConnection()->fetchOne('SELECT status FROM tickets WHERE id = ?', [$ticketId])
         );
     }
 
     public function testDryRunWritesNothing(): void
     {
-        $ticketId = $this->createTicket(TicketStatus::ACTIVE->value, new \DateTimeImmutable('-25 hours'));
+        $ticketId = $this->createTicket(EstadoDeTicket::ACTIVE->value, new \DateTimeImmutable('-25 hours'));
 
         $service = static::getContainer()->get(ConversationWindowExpiryService::class);
         $count = $service->closeExpired(dryRun: true, limit: 200);
 
         self::assertSame(1, $count);
         self::assertSame(
-            TicketStatus::ACTIVE->value,
+            EstadoDeTicket::ACTIVE->value,
             $this->em->getConnection()->fetchOne('SELECT status FROM tickets WHERE id = ?', [$ticketId]),
             'Dry-run must not mutate any ticket'
         );
@@ -137,7 +137,7 @@ class ConversationWindowExpiryServiceTest extends KernelTestCase
 
     public function testAPerTicketThrowableIsCaughtSoOneBadRowDoesNotAbortTheBatch(): void
     {
-        $good = $this->createTicket(TicketStatus::ACTIVE->value, new \DateTimeImmutable('-25 hours'));
+        $good = $this->createTicket(EstadoDeTicket::ACTIVE->value, new \DateTimeImmutable('-25 hours'));
         // Already-closed rows can't legally satisfy the WHERE clause used by the
         // service (status IN new/active/waiting/resolved), so simulate a bad
         // row by force-setting status to 'closed' AFTER the service's SELECT
@@ -145,10 +145,10 @@ class ConversationWindowExpiryServiceTest extends KernelTestCase
         // instead we assert the batch completes and processes the good ticket
         // even when a concurrently-closed row would throw inside
         // closeDueToWindowExpiry() due to the FSM guard.
-        $concurrentlyClosed = $this->createTicket(TicketStatus::ACTIVE->value, new \DateTimeImmutable('-26 hours'));
+        $concurrentlyClosed = $this->createTicket(EstadoDeTicket::ACTIVE->value, new \DateTimeImmutable('-26 hours'));
         $this->em->getConnection()->executeStatement(
             'UPDATE tickets SET status = ? WHERE id = ?',
-            [TicketStatus::CLOSED->value, $concurrentlyClosed]
+            [EstadoDeTicket::CLOSED->value, $concurrentlyClosed]
         );
 
         $service = static::getContainer()->get(ConversationWindowExpiryService::class);
@@ -159,7 +159,7 @@ class ConversationWindowExpiryServiceTest extends KernelTestCase
         // mainly proves the batch completes without throwing.
         self::assertSame(1, $count);
         self::assertSame(
-            TicketStatus::CLOSED->value,
+            EstadoDeTicket::CLOSED->value,
             $this->em->getConnection()->fetchOne('SELECT status FROM tickets WHERE id = ?', [$good])
         );
     }

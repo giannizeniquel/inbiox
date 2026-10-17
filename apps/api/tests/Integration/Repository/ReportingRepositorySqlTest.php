@@ -7,7 +7,7 @@ namespace App\Tests\Integration\Repository;
 use App\Agente\Agent;
 use App\Contacto\Contact;
 use App\Reporte\Repository\ReportingRepository;
-use App\Ticket\TicketEvent;
+use App\Ticket\EventoDeTicket;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -30,7 +30,7 @@ class ReportingRepositorySqlTest extends KernelTestCase
         $em->persist($contact);
         $em->persist(new Agent('Truncate Me'));
         $em->flush();
-        $em->persist(new TicketEvent(990099, 'tag_added', 'system'));
+        $em->persist(new EventoDeTicket(990099, 'tag_added', 'system'));
         $em->flush();
         $em->clear();
 

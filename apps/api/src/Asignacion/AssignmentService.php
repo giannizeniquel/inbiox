@@ -10,7 +10,7 @@ use App\Compartido\EventCollector;
 use App\Ticket\InboxUpdatedEvent;
 use App\Ticket\TicketUpdatedEvent;
 use App\Ticket\Ticket;
-use App\Ticket\TicketStatus;
+use App\Ticket\EstadoDeTicket;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -67,8 +67,8 @@ final class AssignmentService
 
         // If ticket was NEW, set to ACTIVE on assignment
         $statusChanged = false;
-        if ($ticket->getStatus() === TicketStatus::NEW->value) {
-            $ticket->setStatus(TicketStatus::ACTIVE->value);
+        if ($ticket->getStatus() === EstadoDeTicket::NEW->value) {
+            $ticket->setStatus(EstadoDeTicket::ACTIVE->value);
             $statusChanged = true;
         }
 
@@ -81,7 +81,7 @@ final class AssignmentService
             occurredAt: $now,
             seq: $ticket->incrementLastEventSeq(),
             version: 1,
-            status: $statusChanged ? TicketStatus::ACTIVE : null,
+            status: $statusChanged ? EstadoDeTicket::ACTIVE : null,
             ownerAgentId: $agent?->getId(),
         ));
 

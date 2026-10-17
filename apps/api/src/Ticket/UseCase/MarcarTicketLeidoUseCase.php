@@ -10,7 +10,7 @@ use App\Compartido\Realtime\RealtimeEventType;
 use App\Ticket\Ticket;
 use Doctrine\ORM\EntityManagerInterface;
 
-final class MarkTicketReadUseCase
+final class MarcarTicketLeidoUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,

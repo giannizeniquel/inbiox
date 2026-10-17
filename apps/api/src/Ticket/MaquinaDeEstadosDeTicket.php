@@ -22,33 +22,33 @@ namespace App\Ticket;
  * `resolved`, so `resolved_at` and resolution metrics stay uncontaminated).
  * This widening only affects the CLOSING side. `closed` remains strictly
  * terminal: no `closed → *` transition exists in this table, by design.
- * The system-triggered reopen path (`TransitionTicketStatusUseCase::
+ * The system-triggered reopen path (`CambiarEstadoDeTicketUseCase::
  * reopenDueToInboundMessage()`) never routes through this shared table —
  * see design.md D1.
  */
-class TicketStateMachine
+class MaquinaDeEstadosDeTicket
 {
     /**
      * @var array<string, array<string, true>> Valid transitions
      */
     private const TRANSITIONS = [
-        TicketStatus::NEW->value => [
-            TicketStatus::ACTIVE->value => true,
-            TicketStatus::CLOSED->value => true,
+        EstadoDeTicket::NEW->value => [
+            EstadoDeTicket::ACTIVE->value => true,
+            EstadoDeTicket::CLOSED->value => true,
         ],
-        TicketStatus::ACTIVE->value => [
-            TicketStatus::WAITING->value => true,
-            TicketStatus::RESOLVED->value => true,
-            TicketStatus::CLOSED->value => true,
+        EstadoDeTicket::ACTIVE->value => [
+            EstadoDeTicket::WAITING->value => true,
+            EstadoDeTicket::RESOLVED->value => true,
+            EstadoDeTicket::CLOSED->value => true,
         ],
-        TicketStatus::WAITING->value => [
-            TicketStatus::ACTIVE->value => true,
-            TicketStatus::RESOLVED->value => true,
-            TicketStatus::CLOSED->value => true,
+        EstadoDeTicket::WAITING->value => [
+            EstadoDeTicket::ACTIVE->value => true,
+            EstadoDeTicket::RESOLVED->value => true,
+            EstadoDeTicket::CLOSED->value => true,
         ],
-        TicketStatus::RESOLVED->value => [
-            TicketStatus::WAITING->value => true,
-            TicketStatus::CLOSED->value => true,
+        EstadoDeTicket::RESOLVED->value => [
+            EstadoDeTicket::WAITING->value => true,
+            EstadoDeTicket::CLOSED->value => true,
         ],
         // closed is terminal - no transitions allowed
     ];
@@ -71,12 +71,12 @@ class TicketStateMachine
      * @param string $currentStatus
      * @param string $targetStatus
      * @return string The new status
-     * @throws InvalidTransitionException If transition is invalid
+     * @throws TransicionInvalidaException If transition is invalid
      */
     public function transition(string $currentStatus, string $targetStatus): string
     {
         if (!$this->canTransition($currentStatus, $targetStatus)) {
-            throw new InvalidTransitionException(
+            throw new TransicionInvalidaException(
                 sprintf(
                     'Invalid transition from "%s" to "%s". Valid transitions from "%s" are: %s',
                     $currentStatus,
@@ -98,6 +98,6 @@ class TicketStateMachine
      */
     public function isTerminal(string $status): bool
     {
-        return $status === TicketStatus::CLOSED->value;
+        return $status === EstadoDeTicket::CLOSED->value;
     }
 }

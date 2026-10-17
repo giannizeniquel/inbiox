@@ -13,7 +13,7 @@ use App\Administracion\User;
  *
  * Pure, dependency-free — no Doctrine, no HTTP.
  */
-final class ClosureAuditClassifier
+final class ClasificadorDeAuditoriaDeCierre
 {
     /**
      * @param string   $newStatus       'resolved' | 'closed' (post-transition)
@@ -24,21 +24,21 @@ final class ClosureAuditClassifier
      */
     public function classify(string $newStatus, ?int $previousOwnerId, ?int $actingAgentId): string
     {
-        $isClosed = $newStatus === TicketStatus::CLOSED->value;
+        $isClosed = $newStatus === EstadoDeTicket::CLOSED->value;
 
         if ($previousOwnerId === null) {
-            return $isClosed ? TicketEventType::MANUAL_CLOSED_UNOWNED : TicketEventType::MANUAL_RESOLVED_UNOWNED;
+            return $isClosed ? TipoDeEventoDeTicket::MANUAL_CLOSED_UNOWNED : TipoDeEventoDeTicket::MANUAL_RESOLVED_UNOWNED;
         }
 
         if ($previousOwnerId === $actingAgentId) {
-            return $isClosed ? TicketEventType::MANUAL_CLOSED_OWNER : TicketEventType::MANUAL_RESOLVED_OWNER;
+            return $isClosed ? TipoDeEventoDeTicket::MANUAL_CLOSED_OWNER : TipoDeEventoDeTicket::MANUAL_RESOLVED_OWNER;
         }
 
-        return $isClosed ? TicketEventType::MANUAL_CLOSED_OVERRIDE : TicketEventType::MANUAL_RESOLVED_OVERRIDE;
+        return $isClosed ? TipoDeEventoDeTicket::MANUAL_CLOSED_OVERRIDE : TipoDeEventoDeTicket::MANUAL_RESOLVED_OVERRIDE;
     }
 
     /**
-     * Compact, namespaced actor reference for `TicketEvent.source` /
+     * Compact, namespaced actor reference for `EventoDeTicket.source` /
      * `Assignment.assignedBy` (design.md D5).
      */
     public function actorReference(User $user): string

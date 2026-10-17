@@ -6,10 +6,10 @@ namespace App\Tests\Integration;
 
 use App\Contacto\Contact;
 use App\Conversacion\Conversation;
-use App\Ticket\TicketEvent;
-use App\Ticket\TicketEventType;
+use App\Ticket\EventoDeTicket;
+use App\Ticket\TipoDeEventoDeTicket;
 use App\Ticket\Ticket;
-use App\Ticket\TicketStatus;
+use App\Ticket\EstadoDeTicket;
 use App\Ticket\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -63,7 +63,7 @@ class TicketRepositoryTest extends KernelTestCase
         $ticket = new Ticket();
         $ticket->setContact($this->contact);
         $ticket->setConversation($conversation);
-        $ticket->setStatus(TicketStatus::CLOSED->value);
+        $ticket->setStatus(EstadoDeTicket::CLOSED->value);
         if ($phoneNumberId !== null) {
             $ticket->setPhoneNumberId($phoneNumberId);
         }
@@ -78,7 +78,7 @@ class TicketRepositoryTest extends KernelTestCase
 
     private function addEvent(int $ticketId, string $type, ?\DateTimeImmutable $createdAt = null): void
     {
-        $event = new TicketEvent($ticketId, $type, 'system');
+        $event = new EventoDeTicket($ticketId, $type, 'system');
         $this->em->persist($event);
         $this->em->flush();
 
@@ -93,7 +93,7 @@ class TicketRepositoryTest extends KernelTestCase
     public function testMatchesAClosedTicketWhoseLatestEventIsWindowExpiredClosed(): void
     {
         $ticketId = $this->createClosedTicket();
-        $this->addEvent($ticketId, TicketEventType::WINDOW_EXPIRED_CLOSED);
+        $this->addEvent($ticketId, TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED);
 
         $found = $this->repo->findWindowExpiredClosedByContact($this->contact);
 
@@ -114,7 +114,7 @@ class TicketRepositoryTest extends KernelTestCase
     {
         $ticketId = $this->createClosedTicket();
         $this->addEvent($ticketId, 'tag_added', new \DateTimeImmutable('-2 hours'));
-        $this->addEvent($ticketId, TicketEventType::WINDOW_EXPIRED_CLOSED, new \DateTimeImmutable('-3 hours'));
+        $this->addEvent($ticketId, TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED, new \DateTimeImmutable('-3 hours'));
         // Latest by created_at is 'tag_added' (2h ago is more recent than 3h ago).
 
         $found = $this->repo->findWindowExpiredClosedByContact($this->contact);
@@ -139,7 +139,7 @@ class TicketRepositoryTest extends KernelTestCase
 
         // Insert WINDOW_EXPIRED_CLOSED first (lower id), then a disqualifying
         // event with the SAME created_at but a higher id — id DESC must win.
-        $this->addEvent($ticketId, TicketEventType::WINDOW_EXPIRED_CLOSED, $sameInstant);
+        $this->addEvent($ticketId, TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED, $sameInstant);
         $this->addEvent($ticketId, 'tag_added', $sameInstant);
 
         $found = $this->repo->findWindowExpiredClosedByContact($this->contact);
@@ -150,14 +150,14 @@ class TicketRepositoryTest extends KernelTestCase
     public function testReturnsTheMostRecentByUpdatedAtWhenMultipleTicketsAreEligible(): void
     {
         $olderTicketId = $this->createClosedTicket();
-        $this->addEvent($olderTicketId, TicketEventType::WINDOW_EXPIRED_CLOSED);
+        $this->addEvent($olderTicketId, TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED);
         $this->em->getConnection()->executeStatement(
             'UPDATE tickets SET updated_at = ? WHERE id = ?',
             [(new \DateTimeImmutable('-2 hours'))->format('Y-m-d H:i:s'), $olderTicketId]
         );
 
         $newerTicketId = $this->createClosedTicket();
-        $this->addEvent($newerTicketId, TicketEventType::WINDOW_EXPIRED_CLOSED);
+        $this->addEvent($newerTicketId, TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED);
         $this->em->getConnection()->executeStatement(
             'UPDATE tickets SET updated_at = ? WHERE id = ?',
             [(new \DateTimeImmutable('-1 hour'))->format('Y-m-d H:i:s'), $newerTicketId]
@@ -172,10 +172,10 @@ class TicketRepositoryTest extends KernelTestCase
     public function testOptionalPhoneNumberIdFilterScopesTheMatch(): void
     {
         $ticketA = $this->createClosedTicket('phone-a');
-        $this->addEvent($ticketA, TicketEventType::WINDOW_EXPIRED_CLOSED);
+        $this->addEvent($ticketA, TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED);
 
         $ticketB = $this->createClosedTicket('phone-b');
-        $this->addEvent($ticketB, TicketEventType::WINDOW_EXPIRED_CLOSED);
+        $this->addEvent($ticketB, TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED);
 
         $found = $this->repo->findWindowExpiredClosedByContact($this->contact, 'phone-b');
 

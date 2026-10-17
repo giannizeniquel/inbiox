@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Conversacion\UseCase;
 
-use App\Ticket\UseCase\TransitionTicketStatusUseCase;
+use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
 use App\Conversacion\ConversationWindowPolicy;
-use App\Ticket\TicketStatus;
+use App\Ticket\EstadoDeTicket;
 use App\Ticket\Repository\TicketRepository;
 use Psr\Log\LoggerInterface;
 
@@ -27,15 +27,15 @@ final class ConversationWindowExpiryService
      *                FSM's closing side (task 0.9).
      */
     private const ELIGIBLE_STATUSES = [
-        TicketStatus::NEW->value,
-        TicketStatus::ACTIVE->value,
-        TicketStatus::WAITING->value,
-        TicketStatus::RESOLVED->value,
+        EstadoDeTicket::NEW->value,
+        EstadoDeTicket::ACTIVE->value,
+        EstadoDeTicket::WAITING->value,
+        EstadoDeTicket::RESOLVED->value,
     ];
 
     public function __construct(
         private readonly TicketRepository $ticketRepo,
-        private readonly TransitionTicketStatusUseCase $transitionUseCase,
+        private readonly CambiarEstadoDeTicketUseCase $transitionUseCase,
         private readonly LoggerInterface $logger,
         private readonly int $safetyMarginMinutes = 0,
     ) {

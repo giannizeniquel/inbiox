@@ -7,7 +7,7 @@ use App\Automatizacion\AutoReplyService;
 use App\Compartido\Outbox\OutboxWriter;
 use App\Compartido\Graph\GraphClient;
 use App\Conversacion\UseCase\HandleInboundMessageUseCase;
-use App\Ticket\UseCase\TransitionTicketStatusUseCase;
+use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
 use App\Automatizacion\RuleExecutorService;
 use App\Disponibilidad\Repository\AgentShiftRepository;
 use App\Compartido\EventCollector;
@@ -32,7 +32,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
     private MessageRepository|MockObject $messageRepo;
     private TicketRepository|MockObject $ticketRepo;
     private EventDispatcherInterface|MockObject $eventDispatcher;
-    private TransitionTicketStatusUseCase|MockObject $transitionUseCase;
+    private CambiarEstadoDeTicketUseCase|MockObject $transitionUseCase;
     private RuleExecutorService|MockObject $ruleExecutor;
     private EventCollector|MockObject $eventCollector;
     private AutoReplyService $autoReplyService;
@@ -47,7 +47,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
         $this->messageRepo = $this->createMock(MessageRepository::class);
         $this->ticketRepo = $this->createMock(TicketRepository::class);
         $this->eventDispatcher = $this->createMock(EventDispatcherInterface::class);
-        $this->transitionUseCase = $this->createMock(TransitionTicketStatusUseCase::class);
+        $this->transitionUseCase = $this->createMock(CambiarEstadoDeTicketUseCase::class);
         $this->ruleExecutor = $this->createMock(RuleExecutorService::class);
         $this->eventCollector = $this->createMock(EventCollector::class);
         $this->logger = $this->createMock(LoggerInterface::class);
@@ -240,7 +240,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
 
         $existingTicket = $this->createMock(\App\Ticket\Ticket::class);
         $existingTicket->method('getId')->willReturn(20);
-        $existingTicket->method('getStatus')->willReturn(\App\Ticket\TicketStatus::ACTIVE->value);
+        $existingTicket->method('getStatus')->willReturn(\App\Ticket\EstadoDeTicket::ACTIVE->value);
         $existingTicket->method('getUpdatedAt')->willReturn(new \DateTimeImmutable());
         $existingTicket->method('incrementLastEventSeq')->willReturn(1);
 
@@ -293,7 +293,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
 
         $existingTicket = $this->createMock(\App\Ticket\Ticket::class);
         $existingTicket->method('getId')->willReturn(20);
-        $existingTicket->method('getStatus')->willReturn(\App\Ticket\TicketStatus::ACTIVE->value);
+        $existingTicket->method('getStatus')->willReturn(\App\Ticket\EstadoDeTicket::ACTIVE->value);
         $existingTicket->method('getUpdatedAt')->willReturn(new \DateTimeImmutable());
         $existingTicket->method('incrementLastEventSeq')->willReturn(1);
 

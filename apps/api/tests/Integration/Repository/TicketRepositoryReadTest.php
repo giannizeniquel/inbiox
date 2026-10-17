@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Repository;
 
-use App\Ticket\Repository\TicketFilters;
+use App\Ticket\Repository\FiltrosDeTicket;
 use App\Ticket\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
  * The read-side ticket SQL that phase 3c-2 moved out of ListTicketsQuery,
- * GetTicketDetailQuery, GetTicketMessagesQuery, ListContactsQuery and
+ * GetDetalleDeTicketQuery, GetTicketMessagesQuery, ListContactsQuery and
  * ExportTicketsCsvQuery into TicketRepository, plus countActiveForAgent().
  */
 class TicketRepositoryReadTest extends KernelTestCase
@@ -34,7 +34,7 @@ class TicketRepositoryReadTest extends KernelTestCase
     }
 
     /** @return list<int> */
-    private function listIds(TicketFilters $filters, int $limit = 20, int $offset = 0): array
+    private function listIds(FiltrosDeTicket $filters, int $limit = 20, int $offset = 0): array
     {
         return array_map(fn (array $row) => (int) $row['id'], $this->repo->findListPage($filters, $limit, $offset));
     }
@@ -43,19 +43,19 @@ class TicketRepositoryReadTest extends KernelTestCase
     {
         // Two workspaces cover every fixture ticket except 880005 (no workspace).
         return array_merge(
-            $this->listIds(new TicketFilters($filter, $agentId, $status, $scopeAgentId, 'repo-read-p1', $tag, $teamId)),
-            $this->listIds(new TicketFilters($filter, $agentId, $status, $scopeAgentId, 'repo-read-p2', $tag, $teamId)),
+            $this->listIds(new FiltrosDeTicket($filter, $agentId, $status, $scopeAgentId, 'repo-read-p1', $tag, $teamId)),
+            $this->listIds(new FiltrosDeTicket($filter, $agentId, $status, $scopeAgentId, 'repo-read-p2', $tag, $teamId)),
         );
     }
 
     public function testListPageOrdersByUpdatedAtThenIdDescending(): void
     {
-        self::assertSame([880006, 880002, 880001], $this->listIds(new TicketFilters(phoneNumberId: 'repo-read-p1')));
+        self::assertSame([880006, 880002, 880001], $this->listIds(new FiltrosDeTicket(phoneNumberId: 'repo-read-p1')));
     }
 
     public function testListPageRowColumns(): void
     {
-        $rows = $this->repo->findListPage(new TicketFilters(phoneNumberId: 'repo-read-p1'), 20, 0);
+        $rows = $this->repo->findListPage(new FiltrosDeTicket(phoneNumberId: 'repo-read-p1'), 20, 0);
         $row = $rows[2];
 
         self::assertSame(880001, (int) $row['id']);
@@ -79,7 +79,7 @@ class TicketRepositoryReadTest extends KernelTestCase
 
     public function testListPagePaginates(): void
     {
-        $filters = new TicketFilters(phoneNumberId: 'repo-read-p1');
+        $filters = new FiltrosDeTicket(phoneNumberId: 'repo-read-p1');
 
         self::assertSame([880006, 880002], $this->listIds($filters, 2, 0));
         self::assertSame([880001], $this->listIds($filters, 2, 2));
@@ -121,15 +121,15 @@ class TicketRepositoryReadTest extends KernelTestCase
     {
         self::assertSame(
             [880001],
-            $this->listIds(new TicketFilters('mine', '880001', 'new,active', 880001, 'repo-read-p1', 'repo-read-vip', 880001)),
+            $this->listIds(new FiltrosDeTicket('mine', '880001', 'new,active', 880001, 'repo-read-p1', 'repo-read-vip', 880001)),
         );
     }
 
     public function testCountListMatchesTheFilters(): void
     {
-        self::assertSame(3, $this->repo->countList(new TicketFilters(phoneNumberId: 'repo-read-p1')));
-        self::assertSame(1, $this->repo->countList(new TicketFilters(phoneNumberId: 'repo-read-p2', tag: 'repo-read-vip')));
-        self::assertSame(0, $this->repo->countList(new TicketFilters(phoneNumberId: 'repo-read-p2', status: 'new')));
+        self::assertSame(3, $this->repo->countList(new FiltrosDeTicket(phoneNumberId: 'repo-read-p1')));
+        self::assertSame(1, $this->repo->countList(new FiltrosDeTicket(phoneNumberId: 'repo-read-p2', tag: 'repo-read-vip')));
+        self::assertSame(0, $this->repo->countList(new FiltrosDeTicket(phoneNumberId: 'repo-read-p2', status: 'new')));
     }
 
     public function testCountUnreadInboundByConversation(): void
@@ -171,7 +171,7 @@ class TicketRepositoryReadTest extends KernelTestCase
 
     public function testExportChunkUsesKeysetAndDateRange(): void
     {
-        $filters = new TicketFilters(phoneNumberId: 'repo-read-p2');
+        $filters = new FiltrosDeTicket(phoneNumberId: 'repo-read-p2');
         $first = $this->repo->findExportChunk($filters, '2026-01-01 00:00:00', '2026-01-31 00:00:00', 0, 1);
         $next = $this->repo->findExportChunk($filters, '2026-01-01 00:00:00', '2026-01-31 00:00:00', 880003, 1);
 
@@ -182,7 +182,7 @@ class TicketRepositoryReadTest extends KernelTestCase
         self::assertSame('Agente Uno', $next[0]['agent_name']);
         self::assertSame('Yago Repo', $next[0]['contact_name']);
 
-        $narrow = $this->repo->findExportChunk(new TicketFilters(phoneNumberId: 'repo-read-p1'), '2026-01-01 00:00:00', '2026-01-01 08:59:59', 0, 500);
+        $narrow = $this->repo->findExportChunk(new FiltrosDeTicket(phoneNumberId: 'repo-read-p1'), '2026-01-01 00:00:00', '2026-01-01 08:59:59', 0, 500);
         self::assertSame([880002], array_map(fn ($r) => (int) $r['id'], $narrow));
     }
 

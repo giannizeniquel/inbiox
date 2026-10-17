@@ -6,11 +6,11 @@ namespace App\Tests\Characterization;
 
 use App\Conversacion\Message;
 use App\Conversacion\Query\GetTicketMessagesQuery;
-use App\Ticket\Query\GetTicketDetailQuery;
+use App\Ticket\Query\GetDetalleDeTicketQuery;
 use App\Ticket\Ticket;
 
 /**
- * Characterization of App\Ticket\Controller\InboxController:
+ * Characterization of App\Ticket\Controller\BandejaController:
  * app_inbox_ticket_detail, app_inbox_ticket_messages, app_ticket_mark_read,
  * plus the generic 500 envelope (shape S1) of this controller.
  */
@@ -90,9 +90,9 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
     public function testTicketDetailUnexpectedFailureReturnsGenericEnvelope(): void
     {
         $token = $this->loginAs('inbox@characterization.local', ['ROLE_AGENT'], $this->createAgent('Me'));
-        $query = $this->createMock(GetTicketDetailQuery::class);
+        $query = $this->createMock(GetDetalleDeTicketQuery::class);
         $query->method('execute')->willThrowException(new \RuntimeException('database exploded'));
-        static::getContainer()->set(GetTicketDetailQuery::class, $query);
+        static::getContainer()->set(GetDetalleDeTicketQuery::class, $query);
 
         $response = $this->request('GET', '/api/tickets/1', $token);
 

@@ -7,7 +7,7 @@ namespace App\Disponibilidad;
 use App\Disponibilidad\Query\AgentAvailabilityDTO;
 use App\Agente\Agent;
 use App\Disponibilidad\Repository\AgentShiftRepository;
-use App\Ticket\TicketStatus;
+use App\Ticket\EstadoDeTicket;
 use App\Administracion\Workspace;
 use App\Agente\Repository\AgentRepository;
 use App\Ticket\Repository\TicketRepository;

@@ -4,26 +4,26 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Application\Query;
 
-use App\Ticket\Query\TicketFilterBuilder;
-use App\Ticket\Repository\TicketFilters;
+use App\Ticket\Query\FiltrosDeTicketBuilder;
+use App\Ticket\Repository\FiltrosDeTicket;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Pure unit tests for `TicketFilterBuilder::build()` — no DB, no kernel.
+ * Pure unit tests for `FiltrosDeTicketBuilder::build()` — no DB, no kernel.
  *
- * Since phase 3c-2 it returns normalized `TicketFilters` and holds no SQL;
+ * Since phase 3c-2 it returns normalized `FiltrosDeTicket` and holds no SQL;
  * `TicketRepositoryReadTest` covers the WHERE clauses built from them.
  */
 class TicketFilterBuilderTest extends TestCase
 {
-    private TicketFilterBuilder $builder;
+    private FiltrosDeTicketBuilder $builder;
 
     protected function setUp(): void
     {
-        $this->builder = new TicketFilterBuilder();
+        $this->builder = new FiltrosDeTicketBuilder();
     }
 
-    private static function assertNoFilters(TicketFilters $f): void
+    private static function assertNoFilters(FiltrosDeTicket $f): void
     {
         self::assertNull($f->assignment);
         self::assertNull($f->mineAgentId);

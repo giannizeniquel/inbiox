@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Ticket\Controller;
 
 use App\Compartido\PaginationMetaDTO;
-use App\Ticket\Query\GetTicketDetailQuery;
+use App\Ticket\Query\GetDetalleDeTicketQuery;
 use App\Conversacion\Query\GetTicketMessagesQuery;
 use App\Ticket\Query\ListTicketsQuery;
 use App\Compartido\Security\OwnershipScope;
 use App\Compartido\Security\WorkspaceScope;
 use App\Ticket\Repository\TicketRepository;
-use App\Ticket\UseCase\MarkTicketReadUseCase;
+use App\Ticket\UseCase\MarcarTicketLeidoUseCase;
 use App\Administracion\User;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -22,17 +22,17 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Uid\Ulid;
 
 #[IsGranted('ROLE_AGENT')]
-class InboxController
+class BandejaController
 {
     public function __construct(
         private ListTicketsQuery $listTicketsQuery,
-        private GetTicketDetailQuery $getTicketDetailQuery,
+        private GetDetalleDeTicketQuery $getTicketDetailQuery,
         private GetTicketMessagesQuery $getTicketMessagesQuery,
         private OwnershipScope $ownershipScope,
         private WorkspaceScope $workspaceScope,
         private Security $security,
         private TicketRepository $ticketRepository,
-        private MarkTicketReadUseCase $markTicketReadUseCase,
+        private MarcarTicketLeidoUseCase $markTicketReadUseCase,
     ) {}
 
     #[Route('/api/tickets', name: 'app_inbox_tickets', methods: ['GET'])]

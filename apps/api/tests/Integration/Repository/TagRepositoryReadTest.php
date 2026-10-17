@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Repository;
 
-use App\Ticket\Repository\TagRepository;
+use App\Ticket\Repository\EtiquetaRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
- * TagRepository::findNamesByTicketIds(), moved out of ExportTicketsCsvQuery
+ * EtiquetaRepository::findNamesByTicketIds(), moved out of ExportTicketsCsvQuery
  * in phase 3c-2.
  */
 class TagRepositoryReadTest extends KernelTestCase
@@ -30,7 +30,7 @@ class TagRepositoryReadTest extends KernelTestCase
 
     public function testNamesAreOrderedByTicketThenAttachmentOrder(): void
     {
-        $rows = static::getContainer()->get(TagRepository::class)->findNamesByTicketIds([880004, 880003, 880001, 880002]);
+        $rows = static::getContainer()->get(EtiquetaRepository::class)->findNamesByTicketIds([880004, 880003, 880001, 880002]);
 
         self::assertSame([
             [880001, 'repo-read-vip'],

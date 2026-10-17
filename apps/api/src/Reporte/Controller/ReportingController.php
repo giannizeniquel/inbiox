@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Reporte\Controller;
 
 use App\Reporte\Query\ExportTicketsCsvQuery;
-use App\Ticket\Query\TicketFilterBuilder;
+use App\Ticket\Query\FiltrosDeTicketBuilder;
 use App\Compartido\Security\OwnershipScope;
 use App\Compartido\Security\WorkspaceScope;
 use App\Reporte\Query\ListAvailableAgentsQuery;
@@ -42,7 +42,7 @@ class ReportingController
         private OwnershipScope $ownershipScope,
         private WorkspaceScope $workspaceScope,
         private ExportTicketsCsvQuery $exportTicketsCsvQuery,
-        private TicketFilterBuilder $ticketFilterBuilder,
+        private FiltrosDeTicketBuilder $ticketFilterBuilder,
     ) {}
 
     /**
@@ -360,7 +360,7 @@ class ReportingController
      * Supervisor-gated (bulk PII export): `#[IsGranted('ROLE_SUPERVISOR')]`.
      * `ROLE_ADMIN` inherits via `security.yaml`'s `role_hierarchy`. Filter
      * semantics (status whitelist, tag AND-semantics, max 5 tags) match
-     * `ListTicketsQuery` exactly via the shared `TicketFilterBuilder`.
+     * `ListTicketsQuery` exactly via the shared `FiltrosDeTicketBuilder`.
      */
     #[IsGranted('ROLE_SUPERVISOR')]
     #[Route('/api/reports/export', name: 'app_report_export', methods: ['GET'])]

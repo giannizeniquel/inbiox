@@ -7,7 +7,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity]
 #[ORM\Table(name: 'tags')]
 #[ORM\UniqueConstraint(columns: ['name'])]
-class Tag
+class Etiqueta
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]

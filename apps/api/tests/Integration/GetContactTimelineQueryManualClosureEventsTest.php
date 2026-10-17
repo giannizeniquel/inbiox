@@ -9,9 +9,9 @@ use App\Contacto\Query\TimelineEventDTO;
 use App\Agente\Agent;
 use App\Contacto\Contact;
 use App\Conversacion\Conversation;
-use App\Ticket\TicketEventType;
+use App\Ticket\TipoDeEventoDeTicket;
 use App\Ticket\Ticket;
-use App\Ticket\TicketStatus;
+use App\Ticket\EstadoDeTicket;
 use App\Administracion\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -57,7 +57,7 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
         $ticket = new Ticket();
         $ticket->setContact($contact);
         $ticket->setConversation($conversation);
-        $ticket->setStatus(TicketStatus::CLOSED->value);
+        $ticket->setStatus(EstadoDeTicket::CLOSED->value);
         $this->em->persist($ticket);
         $this->em->flush();
 
@@ -133,12 +133,12 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
         [$userId, $agentId] = $this->createUserWithAgent('agent-actor@inbiox.local', ['ROLE_AGENT'], 'Agent Actor');
         $source = 'u:' . $userId;
 
-        $this->addTicketEvent(TicketEventType::MANUAL_RESOLVED_OWNER, $source);
-        $this->addTicketEvent(TicketEventType::MANUAL_RESOLVED_OVERRIDE, $source);
-        $this->addTicketEvent(TicketEventType::MANUAL_RESOLVED_UNOWNED, $source);
-        $this->addTicketEvent(TicketEventType::MANUAL_CLOSED_OWNER, $source);
-        $this->addTicketEvent(TicketEventType::MANUAL_CLOSED_OVERRIDE, $source);
-        $this->addTicketEvent(TicketEventType::MANUAL_CLOSED_UNOWNED, $source);
+        $this->addTicketEvent(TipoDeEventoDeTicket::MANUAL_RESOLVED_OWNER, $source);
+        $this->addTicketEvent(TipoDeEventoDeTicket::MANUAL_RESOLVED_OVERRIDE, $source);
+        $this->addTicketEvent(TipoDeEventoDeTicket::MANUAL_RESOLVED_UNOWNED, $source);
+        $this->addTicketEvent(TipoDeEventoDeTicket::MANUAL_CLOSED_OWNER, $source);
+        $this->addTicketEvent(TipoDeEventoDeTicket::MANUAL_CLOSED_OVERRIDE, $source);
+        $this->addTicketEvent(TipoDeEventoDeTicket::MANUAL_CLOSED_UNOWNED, $source);
 
         $events = $this->fetchEventsByType();
 
@@ -159,7 +159,7 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
     public function testAdminWithAlsoSupervisorRoleIsLabeledAdminNotSupervisor(): void
     {
         $userId = $this->createUser('admin-and-supervisor@inbiox.local', ['ROLE_ADMIN', 'ROLE_SUPERVISOR']);
-        $this->addTicketEvent(TicketEventType::MANUAL_CLOSED_OWNER, 'u:' . $userId);
+        $this->addTicketEvent(TipoDeEventoDeTicket::MANUAL_CLOSED_OWNER, 'u:' . $userId);
 
         $events = $this->fetchEventsByType();
 
@@ -169,7 +169,7 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
     public function testSupervisorOnlyActorIsLabeledSup(): void
     {
         $userId = $this->createUser('supervisor-only@inbiox.local', ['ROLE_SUPERVISOR']);
-        $this->addTicketEvent(TicketEventType::MANUAL_CLOSED_OVERRIDE, 'u:' . $userId);
+        $this->addTicketEvent(TipoDeEventoDeTicket::MANUAL_CLOSED_OVERRIDE, 'u:' . $userId);
 
         $events = $this->fetchEventsByType();
 
@@ -179,7 +179,7 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
     public function testActorWithNoLinkedAgentFallsBackToEmailAndNullAgentId(): void
     {
         $userId = $this->createUser('admin-no-agent@inbiox.local', ['ROLE_ADMIN']);
-        $this->addTicketEvent(TicketEventType::MANUAL_CLOSED_UNOWNED, 'u:' . $userId);
+        $this->addTicketEvent(TipoDeEventoDeTicket::MANUAL_CLOSED_UNOWNED, 'u:' . $userId);
 
         $events = $this->fetchEventsByType();
 
@@ -190,7 +190,7 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
     public function testDeletedAgentRowStillReturnsTheEventWithNullAgentId(): void
     {
         [$userId, ] = $this->createUserWithAgent('deleted-agent-actor@inbiox.local', ['ROLE_AGENT'], 'Soon Deleted');
-        $this->addTicketEvent(TicketEventType::MANUAL_RESOLVED_OWNER, 'u:' . $userId);
+        $this->addTicketEvent(TipoDeEventoDeTicket::MANUAL_RESOLVED_OWNER, 'u:' . $userId);
 
         $this->em->getConnection()->executeStatement('DELETE FROM agents WHERE user_id = ?', [$userId]);
 
@@ -202,8 +202,8 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
 
     public function testWindowEventsRemainUnaffectedByTheAddedJoins(): void
     {
-        $this->addTicketEvent(TicketEventType::WINDOW_EXPIRED_CLOSED, 'system');
-        $this->addTicketEvent(TicketEventType::WINDOW_REOPENED, 'system');
+        $this->addTicketEvent(TipoDeEventoDeTicket::WINDOW_EXPIRED_CLOSED, 'system');
+        $this->addTicketEvent(TipoDeEventoDeTicket::WINDOW_REOPENED, 'system');
 
         $events = $this->fetchEventsByType();
 
@@ -233,7 +233,7 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
     {
         $userId = $this->createUser('pagination-actor@inbiox.local', ['ROLE_SUPERVISOR']);
         for ($i = 0; $i < 3; ++$i) {
-            $this->addTicketEvent(TicketEventType::MANUAL_CLOSED_OWNER, 'u:' . $userId);
+            $this->addTicketEvent(TipoDeEventoDeTicket::MANUAL_CLOSED_OWNER, 'u:' . $userId);
         }
 
         $query = static::getContainer()->get(GetContactTimelineQuery::class);

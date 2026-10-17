@@ -7,7 +7,7 @@ namespace App\Tests\Integration;
 use App\Agente\Agent;
 use App\Disponibilidad\AgentShift;
 use App\Contacto\Contact;
-use App\Ticket\TicketEvent;
+use App\Ticket\EventoDeTicket;
 use App\Ticket\Ticket;
 use App\Administracion\User;
 use App\Reporte\Repository\ReportingRepository;
@@ -476,7 +476,7 @@ class ReportingV2Test extends WebTestCase
                 break;
             }
             if ($ticket->getResolvedAt() !== null) {
-                $event = new TicketEvent($ticket->getId(), 'auto_reopened', 'system');
+                $event = new EventoDeTicket($ticket->getId(), 'auto_reopened', 'system');
                 $this->em->persist($event);
                 $reopenedCount++;
             }
