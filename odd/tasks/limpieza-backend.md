@@ -115,7 +115,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T31 | S11 | inline | done | 4c-3 split `getTicketParticipation` (`21aa251`, L65) |
 | T32 | S11 | inline | done | 4c-4 split `getResponseDelayMetrics` (`e41bd28`, L66) |
 | T33 | S11 | inline | done | 4c-5 `is_in_shift` from the repository into the service (`5365bc0`, L67) |
-| T34 | S11 | inline | pending | 4c-6 why-comments, bound `LIMIT`, service docblocks |
+| T34 | S11 | inline | done | 4c-6 why-comments, bound `LIMIT`, service docblocks (`216be83`, L68) |
 
 ### Baseline of failing tests (phase 0, after `1afba20`)
 
@@ -577,3 +577,14 @@ Later phases, each with its own branch and task list when it starts:
     - `lint:container` OK; PHPStan level 0 identical (29 lines).
     - Reporting-related tests plus `Sprint10ControllerTest`: 166 tests, only the baseline `ReportingV2Test` failure.
     - Full suite: 948 tests, exactly the 6 baseline failures.
+- **L68 (2026-10-17), T34:** User: "dale, seguí con la 4c-6".
+  - 4c-6 (`216be83`):
+    - Every native query in `ReportingRepository` now says why it is native and which tests cover it: TIMESTAMPDIFF (frt, rt, agent performance, frt trend), DATE() (volume, frt trend), DAYOFWEEK()/HOUR() (heatmap), UNION ALL of `LIMIT 1` subqueries (attribution cutoff), CTEs and window functions (response delay), and MySQL-formatted date strings that DQL would hydrate into objects (unassigned, reopened). For agent load and recurring customers the comment says plainly that DQL could express them and that converting them is a separate change.
+    - `getUnassigned` and `getReopened` bind `LIMIT` as an integer parameter instead of concatenating it.
+    - `ReportingService` docblocks now describe the real return shapes (frt, rt, agent performance with `is_in_shift`, unassigned tickets, participation).
+    - Docs: line references into `ReportingRepository.php` updated (00 group F, 04 FRT row, 05 active tickets, 08 C-2), and the 08 row about `str_replace` counts now records that only `getUnassigned` uses it.
+  - Checks:
+    - `lint:container` OK; PHPStan level 0 identical (29 lines).
+    - Reporting-related tests (`Reporting|Reports|AuthorizationTest`), four runs: the baseline `ReportingV2Test` failure plus one random JWT flake per run. In the first run the flake hit `ReportingControllerCharacterizationTest::testReopenedTickets`, whose message was not captured; that test passed in the other three grouped runs and three isolated runs, and a later run showed the same file's `testDateParameterErrors` failing with `401 Invalid JWT Token`.
+    - Full suite: 948 tests, the 6 baseline failures plus two `401` flakes (`AgentLinkControllerTest::testLinkUserReturns404ForNonExistentUser`, `ReportsCsvExportTest::test_agent_is_denied`), both passing on an isolated rerun.
+  - Phase 4c code is complete (T28–T34). Next: independent verifier over S11 (baseline `c96ffa6`), then a front smoke of the reports dashboard, push and PR #7 with the user's approval.
