@@ -10,7 +10,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
  * Integration test for the Message Agent Attribution migration
- * (Version20260912000000).
+ * (Version20260912000000, folded into the baseline Version20261017210004).
  *
  * spec.md "Sender Attribution Schema":
  *   - `messages.sender_agent_id` (nullable BIGINT, no FK, indexed)

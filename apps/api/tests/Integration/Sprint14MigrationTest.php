@@ -10,7 +10,8 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
- * Integration tests for Sprint 14 migration (Version20260616000001).
+ * Integration tests for the schema first created by the Sprint 14 migration
+ * (Version20260616000001, folded into the baseline Version20261017210004).
  *
  * Covers:
  *   1. Migration up creates user, refresh_tokens tables, alters agents
