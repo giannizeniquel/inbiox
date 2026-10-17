@@ -5,6 +5,7 @@ namespace App\Reporte\Repository;
 use App\Ticket\Ticket;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ArrayParameterType;
+use Doctrine\DBAL\ParameterType;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Query\Expr\Join;
 use Doctrine\Persistence\ManagerRegistry;
@@ -97,6 +98,10 @@ class ReportingRepository extends ServiceEntityRepository
      * All values are in SECONDS (UTC-based).
      * Use _minutes convenience fields for UI.
      *
+     * Native SQL because the delay is a TIMESTAMPDIFF() between two columns,
+     * which DQL has no function for. Tested by Sprint09AReportingTest,
+     * ReportingRepositoryTeamFilterTest and ReportingControllerCharacterizationTest.
+     *
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
      * @param int|null $agentId Optional filter by assigned agent
@@ -138,11 +143,15 @@ class ReportingRepository extends ServiceEntityRepository
         ];
     }
 
-/**
+    /**
      * Get Resolution Time metrics.
      *
      * All values are in SECONDS (UTC-based).
      * Use _minutes convenience fields for UI.
+     *
+     * Native SQL because the delay is a TIMESTAMPDIFF() between two columns,
+     * which DQL has no function for. Tested by Sprint09AReportingTest,
+     * ReportingRepositoryTeamFilterTest and ReportingControllerCharacterizationTest.
      *
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
@@ -243,6 +252,10 @@ class ReportingRepository extends ServiceEntityRepository
     /**
      * Get ticket volume grouped by day.
      *
+     * Native SQL because it groups by DATE(), which DQL has no function for.
+     * Tested by Sprint09AReportingTest, ReportingRepositoryTeamFilterTest and
+     * ReportingControllerCharacterizationTest.
+     *
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
      * @param int|null $agentId Optional filter by assigned agent
@@ -307,6 +320,10 @@ class ReportingRepository extends ServiceEntityRepository
      *
      * All time values are in SECONDS (UTC-based).
      * Use _minutes convenience fields for UI.
+     *
+     * Native SQL because the averages use TIMESTAMPDIFF(), which DQL has no
+     * function for. Tested by Sprint09AReportingTest,
+     * ReportingRepositoryTeamFilterTest and ReportingControllerCharacterizationTest.
      *
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
@@ -380,6 +397,10 @@ class ReportingRepository extends ServiceEntityRepository
     /**
      * Get per-agent active ticket count vs max capacity.
      *
+     * Native SQL kept from the original implementation: DQL could express this
+     * query, and converting it is a separate change from this cleanup. Tested
+     * by ReportingV2Test and ReportingControllerCharacterizationTest.
+     *
      * @param int|null $agentId Optional filter by specific agent
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
      * @return array<int, array{agent_id: int, agent_name: string, active_tickets: int, max_capacity: int, load_percent: float}>
@@ -429,6 +450,10 @@ class ReportingRepository extends ServiceEntityRepository
     /**
      * Get tickets where assigned_agent_id IS NULL.
      *
+     * Native SQL because `created_at` is returned as MySQL formats it
+     * (`Y-m-d H:i:s`); DQL would hydrate it into a DateTime object. Tested by
+     * ReportingV2Test and ReportingControllerCharacterizationTest.
+     *
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
      * @param \DateTimeImmutable|null $from Optional start of date range
      * @param \DateTimeImmutable|null $to Optional end of date range
@@ -471,8 +496,9 @@ class ReportingRepository extends ServiceEntityRepository
         $countResult = $conn->fetchAssociative($countSql, $params);
         $count = (int) ($countResult['cnt'] ?? 0);
 
-        $sql .= ' ORDER BY t.created_at DESC LIMIT ' . $limit;
-        $results = $conn->fetchAllAssociative($sql, $params);
+        $sql .= ' ORDER BY t.created_at DESC LIMIT :limit';
+        $params['limit'] = $limit;
+        $results = $conn->fetchAllAssociative($sql, $params, ['limit' => ParameterType::INTEGER]);
 
         $tickets = [];
         foreach ($results as $row) {
@@ -492,6 +518,10 @@ class ReportingRepository extends ServiceEntityRepository
 
     /**
      * Get FRT aggregated by day within a date range.
+     *
+     * Native SQL because it uses TIMESTAMPDIFF() and groups by DATE(), which
+     * DQL has no functions for. Tested by ReportingV2Test and
+     * ReportingControllerCharacterizationTest.
      *
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
@@ -540,6 +570,10 @@ class ReportingRepository extends ServiceEntityRepository
      *
      * dayOfWeek is normalized to ISO: 1=Monday, 7=Sunday.
      * MySQL DAYOFWEEK: 1=Sunday, 7=Saturday → convert via (dow+5)%7+1
+     *
+     * Native SQL because it groups by DAYOFWEEK() and HOUR(), which DQL has
+     * no functions for. Tested by ReportingV2Test and
+     * ReportingControllerCharacterizationTest.
      *
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
@@ -598,6 +632,10 @@ class ReportingRepository extends ServiceEntityRepository
     /**
      * Get contacts with >= threshold tickets in the last N days.
      *
+     * Native SQL kept from the original implementation: DQL could express this
+     * query, and converting it is a separate change from this cleanup. Tested
+     * by ReportingV2Test and ReportingControllerCharacterizationTest.
+     *
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
      * @param int $threshold Minimum ticket count (default 3)
      * @param int $days Lookback window in days (default 90)
@@ -648,6 +686,10 @@ class ReportingRepository extends ServiceEntityRepository
     /**
      * Get tickets that transitioned out of resolved status (auto_reopened events).
      *
+     * Native SQL because `resolved_at` and `reopened_at` are returned as MySQL
+     * formats them (`Y-m-d H:i:s`); DQL would hydrate them into DateTime
+     * objects. Tested by ReportingV2Test and ReportingControllerCharacterizationTest.
+     *
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
@@ -677,9 +719,10 @@ class ReportingRepository extends ServiceEntityRepository
 
         $sql .= $this->ticketFilterClause($params, 't', null, $phoneNumberId, null);
 
-        $sql .= ' ORDER BY te.created_at DESC LIMIT ' . $limit;
+        $sql .= ' ORDER BY te.created_at DESC LIMIT :limit';
+        $params['limit'] = $limit;
 
-        $results = $conn->fetchAllAssociative($sql, $params);
+        $results = $conn->fetchAllAssociative($sql, $params, ['limit' => ParameterType::INTEGER]);
 
         $reopened = [];
         foreach ($results as $row) {
@@ -703,6 +746,9 @@ class ReportingRepository extends ServiceEntityRepository
      * pre-attribution-rollout rows) and must be excluded from response-delay
      * sampling and attribution everywhere. Returns null only when the whole
      * `messages` table is unattributed (no non-NULL sender_type row exists).
+     *
+     * Native SQL because it combines three `LIMIT 1` subqueries with UNION
+     * ALL, which DQL cannot express. Tested by ReportingResponseDelayTest.
      */
     public function getAttributionCutoff(): ?\DateTimeImmutable
     {
@@ -734,6 +780,11 @@ class ReportingRepository extends ServiceEntityRepository
      * clock. Legacy `sender_type IS NULL` rows (before the attribution
      * cutoff) are excluded from the whole stream. Range filter is on
      * `tickets.created_at` (episode start), not reply timestamp.
+     *
+     * Native SQL because the burst pairing needs CTEs and window functions
+     * (`LEAD() OVER`, `SUM() OVER`, `ROW_NUMBER() OVER`, `COUNT() OVER`), which
+     * neither DQL nor DBAL's QueryBuilder can express. Parameters are bound.
+     * Tested by ReportingResponseDelayTest and ReportingControllerCharacterizationTest.
      *
      * @return array{aggregate: array{avg_delay_seconds: float|null, sample_count: int, unanswered_inbound_count: int}, per_agent: array<int, array{agent_id: int, agent_name: string|null, avg_delay_seconds: float|null, sample_count: int}>}
      */

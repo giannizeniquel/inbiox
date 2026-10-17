@@ -400,7 +400,7 @@ Un mensaje `failed` no afecta el estado del ticket.
 
 | Métrica | Definición en código | Observación |
 |---|---|---|
-| FRT | `first_response_at − created_at` de tickets creados en el rango | `ReportingRepository.php:79-125` |
+| FRT | `first_response_at − created_at` de tickets creados en el rango | `ReportingRepository.php:112-144` |
 | Resolución (RT) | `resolved_at − created_at` | `resolved_at` falta si se cerró directo sin pasar por `resolved` (`:139-185`). |
 | Rendimiento por agente | `LEFT JOIN tickets ON assigned_agent_id` | Resueltos/RT por agente quedan vacíos por R-T9 (`:332-445`). |
 | Sin asignar | `assigned_agent_id IS NULL`, sin filtrar estado | **Conteo siempre 0** (bug F, `:507-540`). |
