@@ -58,6 +58,23 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
     - Topic `tickets` vs `ticket/{id}` and R4 workspace isolation (group G; product/security decision).
     - Product decisions: a duplicate WAMID can still create the contact/conversation (it runs after they are persisted; when the duplicate is the last message of a payload from a new sender, nothing is stored, L58); auto-reply window constant 2 h vs docblock 4 h.
     - Bug found in 4b-0: two messages in one payload on a `waiting` ticket lose the second one. The first moves the ticket to active with raw SQL, the managed entity still says waiting, and the second fails its waiting → active transition and is rolled back; Meta still gets 200.
+- **S11 — Phase 4c, reporting.** User: "ok, es logico que hayan tantos hallazgos porque el modulo de reportes fue una de las ultimas cosas que se agregaron junto con el modulo de teams y no hubo mucho analisis previo, anota todo donde venimos anotando los bugs/contradicciones para encarar todo lo acumulado ahi despues de la limpieza que estamos realizando. Arrancamos". Same rules as S9: behavior is preserved even where it looks wrong, characterization tests first. Branch `chore/limpieza-backend-fase-4c`, stacked on `chore/limpieza-backend-fase-4b`.
+  - 4c-0: exact-body HTTP characterization tests for the reporting endpoints not yet pinned (frt, agent-load, unassigned with today's `count` 0, available-agents, frt-trend, heatmap, recurring-customers, reopened, response-delay, ticket participation 200), with their own fixtures in a fixed date window (no seeder, no dependency on the current time where avoidable), plus the missing 400 date-parameter cases.
+  - 4c-1: one private `ReportingRepository` helper for the optional agent/phone/team filter block repeated in the native queries.
+  - 4c-2: `ReportingController::availableAgents` logic (workspace filtering, per-agent active count) into a `Reporte/Query/` class; same output, N+1 kept.
+  - 4c-3: split `ReportingRepository::getTicketParticipation` into private steps; same SQL.
+  - 4c-4: split `ReportingRepository::getResponseDelayMetrics` the same way (query vs PHP aggregation).
+  - 4c-5: `is_in_shift` enrichment moves from `getAgentPerformance` into `ReportingService`; the repository stops depending on `AgentAvailabilityService`.
+  - 4c-6: why-comments on the remaining native queries, `LIMIT` bound as a parameter, wrong return shapes fixed in the `ReportingService` docblocks.
+  - Not touched: `SeedReportsCommand` (test-only tooling); no conversion of the native SQL to a query builder (high risk, no gain).
+  - To the contradiction track, not changed in 4c (decided separately with the user after the cleanup):
+    - Bug F / R8: `GET /api/reports/unassigned` always returns `count` 0 (the `str_replace` on the SELECT never matches).
+    - Security: `GET /api/reports/tickets/{id}/participation` applies no workspace scope (a hole like R13, not listed there).
+    - `agent-load` and `recurring-customers` ignore the `teamId` the frontend sends.
+    - `agent-load` applies the phone filter only to tickets, so agents from other workspaces show up with load 0.
+    - The attribution cutoff query runs twice per response-delay request (`getAttributionCutoff` and inside `getResponseDelayMetrics`).
+    - `available-agents` runs one active-ticket count per agent (N+1).
+    - Also seen in the map: dead `agent_id` override branches in the controller (the ownership scope is always null, R-V3); `recurring-customers` with `threshold=0` falls back to 3; Postgres branches in `ReportingRepository::detectPlatform` are dead on MySQL; R6/C-2 (per-agent resolved metrics empty because resolving unassigns).
 - **S7 — Docs policy (assumption, not explicitly confirmed by the user).** Each phase fixes the docs it invalidates in the same PR. A full docs pass happens in phase 6, after the renaming.
 
 ## Tasks
@@ -92,6 +109,13 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T25 | S10 | inline | done | 4b-0 inbound webhook characterization tests (`3d72b65`, L55) |
 | T26 | S10 | inline | done | 4b-1 split `executeInternal` into private steps (`e9bbd90`, L56) |
 | T27 | S10 | inline | done | 4b-3 webhook payload parsing into `ProcessWebhookPayloadUseCase` (`8e0e099`, L57) |
+| T28 | S11 | inline | pending | 4c-0 reporting characterization tests |
+| T29 | S11 | inline | pending | 4c-1 shared filter helper in `ReportingRepository` |
+| T30 | S11 | inline | pending | 4c-2 `availableAgents` into a `Reporte/Query/` class |
+| T31 | S11 | inline | pending | 4c-3 split `getTicketParticipation` |
+| T32 | S11 | inline | pending | 4c-4 split `getResponseDelayMetrics` |
+| T33 | S11 | inline | pending | 4c-5 `is_in_shift` from the repository into the service |
+| T34 | S11 | inline | pending | 4c-6 why-comments, bound `LIMIT`, service docblocks |
 
 ### Baseline of failing tests (phase 0, after `1afba20`)
 
@@ -513,3 +537,6 @@ Later phases, each with its own branch and task list when it starts:
   - Notes, unchanged from before 4b: waiting/active transitions emit no ticket event (no outbox row, same as resolve and close). Meta sent no `read` status for the reply (only `sent` and `delivered`), most likely the phone's read receipts setting; not verified.
   - Phase 4b is verified. Next: push and PR #6 (base `chore/limpieza-backend-fase-4`), with the user's approval.
 - **L60 (2026-10-16):** User: "dale, hacé el push y abrí el PR #6". Pushed `chore/limpieza-backend-fase-4b` and opened PR #6 (https://github.com/giannizeniquel/inbiox/pull/6), base `chore/limpieza-backend-fase-4`, 10 commits from `eaa7cc6`. Phase 4b is closed. Next part: 4c (reporting), still to be planned.
+- **L61 (2026-10-16), phase 4c plan:**
+  - A read-only explorer mapped the `Reporte` module: 5 files; the controller has no EntityManager or SQL left; all native SQL lives in the 1155-line `ReportingRepository`, whose largest methods are `getTicketParticipation` (181 lines), `getResponseDelayMetrics` (117) and `getAgentPerformance` (108). Existing exact-body HTTP coverage is limited to rt, counts, volume and agents; `ReportingV2Test` is shape-only and seeder-based. Parent spot check confirmed the participation endpoint has no workspace scope (`ReportingController.php:480`).
+  - User accepted the plan and asked to log every finding in the contradiction list for after the cleanup (quote in S11). S11 and T28–T34 added. Route: inline for every task (no writer trigger). Forecast: above ~400 changed lines, mostly tests; delivered as one stacked PR like 4a and 4b.
