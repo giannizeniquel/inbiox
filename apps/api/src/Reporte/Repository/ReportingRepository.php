@@ -769,6 +769,19 @@ class ReportingRepository extends ServiceEntityRepository
      */
     public function getResponseDelayMetrics(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null): array
     {
+        $rows = $this->fetchResponseDelayRows($from, $to, $phoneNumberId);
+
+        return $this->aggregateResponseDelayRows($rows);
+    }
+
+    /**
+     * One row per replying agent (and one with a null agent for the bursts
+     * nobody answered), with its sample count, delay sum and unanswered count.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function fetchResponseDelayRows(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId): array
+    {
         $conn = $this->entityManager->getConnection();
         $timeDiff = $this->getTimeDiffExpression('b.inbound_at', 'r.reply_at');
 
@@ -844,8 +857,17 @@ class ReportingRepository extends ServiceEntityRepository
             GROUP BY r.sender_agent_id, a.name
             ORDER BY r.sender_agent_id";
 
-        $rows = $conn->fetchAllAssociative($sql, $params);
+        return $conn->fetchAllAssociative($sql, $params);
+    }
 
+    /**
+     * Fold the per-agent rows into the aggregate and the per-agent list.
+     *
+     * @param list<array<string, mixed>> $rows
+     * @return array{aggregate: array{avg_delay_seconds: float|null, sample_count: int, unanswered_inbound_count: int}, per_agent: array<int, array{agent_id: int, agent_name: string|null, avg_delay_seconds: float|null, sample_count: int}>}
+     */
+    private function aggregateResponseDelayRows(array $rows): array
+    {
         $aggregateSampleCount = 0;
         $aggregateSumDelay = 0.0;
         $unansweredInboundCount = 0;
