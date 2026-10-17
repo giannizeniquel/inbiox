@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Reporte\Query;
 
+use App\Agente\Repository\AgentRepository;
+use App\Disponibilidad\AgentAvailabilityService;
 use App\Reporte\Repository\ReportingRepository;
 
 /**
@@ -20,7 +22,9 @@ use App\Reporte\Repository\ReportingRepository;
 class ReportingService
 {
     public function __construct(
-        private ReportingRepository $reportingRepository
+        private ReportingRepository $reportingRepository,
+        private AgentRepository $agentRepository,
+        private AgentAvailabilityService $agentAvailabilityService,
     ) {}
 
     /**
@@ -31,7 +35,7 @@ class ReportingService
      * @param int|null $agentId Optional filter by assigned agent
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
      * @param int|null $teamId Optional filter by team (single-select)
-     * @return array{avg_frt: float|null, min_frt: int|null, max_frt: int|null}
+     * @return array{avg_frt_seconds: float|null, min_frt_seconds: int|null, max_frt_seconds: int|null, avg_frt_minutes: float|null, min_frt_minutes: int|null, max_frt_minutes: int|null}
      */
     public function getFrt(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
     {
@@ -48,7 +52,7 @@ class ReportingService
      * @param int|null $agentId Optional filter by assigned agent
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
      * @param int|null $teamId Optional filter by team (single-select)
-     * @return array{avg_rt: float|null, min_rt: int|null, max_rt: int|null}
+     * @return array{avg_rt_seconds: float|null, min_rt_seconds: int|null, max_rt_seconds: int|null, avg_rt_minutes: float|null, min_rt_minutes: int|null, max_rt_minutes: int|null}
      */
     public function getRt(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
     {
@@ -99,13 +103,54 @@ class ReportingService
      * @param int|null $agentId Optional filter by specific agent
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
      * @param int|null $teamId Optional filter by team (single-select)
-     * @return array<int, array{agent_id: int, tickets_assigned: int, tickets_resolved: int, avg_frt: float|null, avg_rt: float|null}>
+     * @return array<int, array{agent_id: int, agent_name: string|null, tickets_assigned: int, tickets_resolved: int, current_active_tickets: int, max_active_tickets: int, current_load: float, is_in_shift: bool, avg_frt_seconds: float|null, avg_frt_minutes: float|null, avg_rt_seconds: float|null, avg_rt_minutes: float|null}>
      */
     public function getAgentPerformance(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
     {
         $this->validateDateRange($from, $to);
 
-        return $this->reportingRepository->getAgentPerformance($from, $to, $agentId, $phoneNumberId, $teamId);
+        $rows = $this->reportingRepository->getAgentPerformance($from, $to, $agentId, $phoneNumberId, $teamId);
+
+        return $this->addIsInShift($rows);
+    }
+
+    /**
+     * Add `is_in_shift` (schedule only, evaluated now) right after
+     * `current_load` in each agent row. An agent that cannot be loaded is
+     * reported as not in shift.
+     *
+     * @param array<int, array<string, mixed>> $rows
+     * @return array<int, array<string, mixed>>
+     */
+    private function addIsInShift(array $rows): array
+    {
+        $now = new \DateTimeImmutable();
+        $agentMap = [];
+        if (!empty($rows)) {
+            $agentIds = array_map(fn($r) => (int) $r['agent_id'], $rows);
+            foreach ($this->agentRepository->findByIds($agentIds) as $agent) {
+                $agentMap[$agent->getId()] = $agent;
+            }
+        }
+
+        $enriched = [];
+        foreach ($rows as $row) {
+            $isInShift = false;
+            if (isset($agentMap[$row['agent_id']])) {
+                $isInShift = $this->agentAvailabilityService->isInShift($agentMap[$row['agent_id']], $now);
+            }
+
+            $enrichedRow = [];
+            foreach ($row as $key => $value) {
+                $enrichedRow[$key] = $value;
+                if ($key === 'current_load') {
+                    $enrichedRow['is_in_shift'] = $isInShift;
+                }
+            }
+            $enriched[] = $enrichedRow;
+        }
+
+        return $enriched;
     }
 
     /**
@@ -127,7 +172,7 @@ class ReportingService
      * @param \DateTimeImmutable|null $from Optional start of date range
      * @param \DateTimeImmutable|null $to Optional end of date range
      * @param int $limit Maximum results (default 50)
-     * @return array{count: int, tickets: array}
+     * @return array{count: int, tickets: array<int, array{id: int, contact_name: string|null, created_at: string, priority: string}>}
      */
     public function getUnassigned(?string $phoneNumberId = null, ?\DateTimeImmutable $from = null, ?\DateTimeImmutable $to = null, int $limit = 50): array
     {
@@ -222,7 +267,7 @@ class ReportingService
      * Get per-ticket participation drill-down.
      *
      * @param int $ticketId Ticket ID
-     * @return array|null null when the ticket does not exist
+     * @return array{ticket_id: int, data_available_from: string|null, partial_data: bool, participants: array<int, array{agent_id: int, agent_name: string|null, message_count: int, sample_count: int, avg_delay_seconds: float|null}>, automatic_message_count: int, unanswered_inbound_count: int, pairs: array<int, array{run_start_at: string, reply_at: string|null, agent_id: int|null, delay_seconds: float|null}>}|null null when the ticket does not exist or has no conversation
      */
     public function getTicketParticipation(int $ticketId): ?array
     {

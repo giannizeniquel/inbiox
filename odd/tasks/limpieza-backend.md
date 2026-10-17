@@ -58,6 +58,25 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
     - Topic `tickets` vs `ticket/{id}` and R4 workspace isolation (group G; product/security decision).
     - Product decisions: a duplicate WAMID can still create the contact/conversation (it runs after they are persisted; when the duplicate is the last message of a payload from a new sender, nothing is stored, L58); auto-reply window constant 2 h vs docblock 4 h.
     - Bug found in 4b-0: two messages in one payload on a `waiting` ticket lose the second one. The first moves the ticket to active with raw SQL, the managed entity still says waiting, and the second fails its waiting → active transition and is rolled back; Meta still gets 200.
+- **S11 — Phase 4c, reporting.** User: "ok, es logico que hayan tantos hallazgos porque el modulo de reportes fue una de las ultimas cosas que se agregaron junto con el modulo de teams y no hubo mucho analisis previo, anota todo donde venimos anotando los bugs/contradicciones para encarar todo lo acumulado ahi despues de la limpieza que estamos realizando. Arrancamos". Same rules as S9: behavior is preserved even where it looks wrong, characterization tests first. Branch `chore/limpieza-backend-fase-4c`, stacked on `chore/limpieza-backend-fase-4b`.
+  - 4c-0: exact-body HTTP characterization tests for the reporting endpoints not yet pinned (frt, agent-load, unassigned with today's `count` 0, available-agents, frt-trend, heatmap, recurring-customers, reopened, response-delay, ticket participation 200), with their own fixtures in a fixed date window (no seeder, no dependency on the current time where avoidable), plus the missing 400 date-parameter cases.
+  - 4c-1: one private `ReportingRepository` helper for the optional agent/phone/team filter block repeated in the native queries.
+  - 4c-2: `ReportingController::availableAgents` logic (workspace filtering, per-agent active count) into a `Reporte/Query/` class; same output, N+1 kept.
+  - 4c-3: split `ReportingRepository::getTicketParticipation` into private steps; same SQL.
+  - 4c-4: split `ReportingRepository::getResponseDelayMetrics` the same way (query vs PHP aggregation).
+  - 4c-5: `is_in_shift` enrichment moves from `getAgentPerformance` into `ReportingService`; the repository stops depending on `AgentAvailabilityService`.
+  - 4c-6: why-comments on the remaining native queries, `LIMIT` bound as a parameter, wrong return shapes fixed in the `ReportingService` docblocks.
+  - Not touched: `SeedReportsCommand` (test-only tooling); no conversion of the native SQL to a query builder (high risk, no gain).
+  - To the contradiction track, not changed in 4c (decided separately with the user after the cleanup):
+    - Bug F / R8: `GET /api/reports/unassigned` always returns `count` 0 (the `str_replace` on the SELECT never matches).
+    - Security: `GET /api/reports/tickets/{id}/participation` applies no workspace scope (a hole like R13, not listed there).
+    - `agent-load` and `recurring-customers` ignore the `teamId` the frontend sends.
+    - `agent-load` applies the phone filter only to tickets, so agents from other workspaces show up with load 0.
+    - The attribution cutoff query runs twice per response-delay request (`getAttributionCutoff` and inside `getResponseDelayMetrics`).
+    - `available-agents` runs one active-ticket count per agent (N+1).
+    - To check (verifier, L69): `response-delay` returns `partial_data: true` whenever the range starts before the first attributed message, even if every message in the range is attributed (`cutoff > from`); same before 4c.
+    - Frontend bug (front smoke, L70): the dashboard's "Volumen diario" shows 0 and the agent ranking is empty because the frontend reads `.data`/`.agents` while the API returns plain arrays.
+    - Also seen in the map: dead `agent_id` override branches in the controller (the ownership scope is always null, R-V3); `recurring-customers` with `threshold=0` falls back to 3; Postgres branches in `ReportingRepository::detectPlatform` are dead on MySQL; R6/C-2 (per-agent resolved metrics empty because resolving unassigns).
 - **S7 — Docs policy (assumption, not explicitly confirmed by the user).** Each phase fixes the docs it invalidates in the same PR. A full docs pass happens in phase 6, after the renaming.
 
 ## Tasks
@@ -92,6 +111,13 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T25 | S10 | inline | done | 4b-0 inbound webhook characterization tests (`3d72b65`, L55) |
 | T26 | S10 | inline | done | 4b-1 split `executeInternal` into private steps (`e9bbd90`, L56) |
 | T27 | S10 | inline | done | 4b-3 webhook payload parsing into `ProcessWebhookPayloadUseCase` (`8e0e099`, L57) |
+| T28 | S11 | inline | done | 4c-0 reporting characterization tests (`094fffe`, L62) |
+| T29 | S11 | inline | done | 4c-1 shared filter helper in `ReportingRepository` (`525660d`, L63) |
+| T30 | S11 | inline | done | 4c-2 `availableAgents` into a `Reporte/Query/` class (`e966cbb`, L64) |
+| T31 | S11 | inline | done | 4c-3 split `getTicketParticipation` (`21aa251`, L65) |
+| T32 | S11 | inline | done | 4c-4 split `getResponseDelayMetrics` (`e41bd28`, L66) |
+| T33 | S11 | inline | done | 4c-5 `is_in_shift` from the repository into the service (`5365bc0`, L67) |
+| T34 | S11 | inline | done | 4c-6 why-comments, bound `LIMIT`, service docblocks (`216be83`, L68) |
 
 ### Baseline of failing tests (phase 0, after `1afba20`)
 
@@ -513,3 +539,74 @@ Later phases, each with its own branch and task list when it starts:
   - Notes, unchanged from before 4b: waiting/active transitions emit no ticket event (no outbox row, same as resolve and close). Meta sent no `read` status for the reply (only `sent` and `delivered`), most likely the phone's read receipts setting; not verified.
   - Phase 4b is verified. Next: push and PR #6 (base `chore/limpieza-backend-fase-4`), with the user's approval.
 - **L60 (2026-10-16):** User: "dale, hacé el push y abrí el PR #6". Pushed `chore/limpieza-backend-fase-4b` and opened PR #6 (https://github.com/giannizeniquel/inbiox/pull/6), base `chore/limpieza-backend-fase-4`, 10 commits from `eaa7cc6`. Phase 4b is closed. Next part: 4c (reporting), still to be planned.
+- **L61 (2026-10-16), phase 4c plan:**
+  - A read-only explorer mapped the `Reporte` module: 5 files; the controller has no EntityManager or SQL left; all native SQL lives in the 1155-line `ReportingRepository`, whose largest methods are `getTicketParticipation` (181 lines), `getResponseDelayMetrics` (117) and `getAgentPerformance` (108). Existing exact-body HTTP coverage is limited to rt, counts, volume and agents; `ReportingV2Test` is shape-only and seeder-based. Parent spot check confirmed the participation endpoint has no workspace scope (`ReportingController.php:480`).
+  - User accepted the plan and asked to log every finding in the contradiction list for after the cleanup (quote in S11). S11 and T28–T34 added. Route: inline for every task (no writer trigger). Forecast: above ~400 changed lines, mostly tests; delivered as one stacked PR like 4a and 4b.
+- **L62 (2026-10-16), T28:**
+  - 4c-0 (`094fffe`, tests only): `ReportingControllerCharacterizationTest` now pins, with exact bodies over HTTP and its own fixtures in a fixed window: frt, agent-load, unassigned (with and without a window), available-agents (supervisor, and an agent filtered by its active workspace, using availability overrides so the result does not depend on the time), frt-trend, heatmap, recurring-customers (default threshold, `threshold=2`, and `threshold=0` falling back to 3), reopened, response-delay and ticket participation 200. The date-parameter error cases now also cover frt, frt-trend, heatmap, reopened and response-delay, plus a malformed date on unassigned. 29 tests in the file (was 12 methods).
+  - Findings pinned as-is: unassigned `count` is 0 while its `tickets` list is not empty (F); the default ticket priority in reports is `medium`; JSON floats with no fraction come out as integers (`JsonResponse` without `JSON_PRESERVE_ZERO_FRACTION`).
+  - Checks: the file passes (29 tests, 132 assertions); full suite 947 tests, the 6 baseline failures plus one `401` (expected 403) in `TicketClosureAuthorizationTest::testAgentWithNoLinkedAgentIsDenied`, the known JWT flake, which passes on an isolated rerun.
+- **L63 (2026-10-17), T29:** User: "estamos de vuelta, seguimos".
+  - 4c-1 (`525660d`): new private `ReportingRepository::ticketFilterClause(array &$params, string $alias, ?int $agentId, ?string $phoneNumberId, ?int $teamId): string` builds the optional ticket filters in the existing order (agent, workspace, team) and binds their parameters. It replaces the 12 copies in frt, rt, volume, agent performance (subquery `t2` and join `t`), agent load, unassigned, frt trend, heatmap, recurring customers, reopened and response delay. The generated SQL text and parameters are the same; `getAgentPerformance` now defines `$params` before the SQL (named parameters, so the order does not matter). The `a.id = :agentId` filters on agents stay as they are.
+  - Checks:
+    - `lint:container` OK; PHPStan level 0 identical (29 lines).
+    - Reporting-related tests (`Reporting|Reports|Sprint09AReporting|AuthorizationTest`): 149 tests, only the baseline `ReportingV2Test` failure.
+    - Full suite: 947 tests, the 6 baseline failures plus two known JWT flakes: `AgentControllerTest::testUpdateAgentOmittingTimezoneLeavesItUnchanged` (401 instead of 200) and `InboxControllerCharacterizationTest::testMessagesForwardDirection` (null body). Neither touches reporting, and both pass on an isolated rerun.
+- **L64 (2026-10-17), T30:** User: "dale, seguí con la 4c-2".
+  - 4c-2 (`e966cbb`): the body of `ReportingController::availableAgents` moved verbatim into the new final `Reporte/Query/ListAvailableAgentsQuery::execute(?string $phoneNumberId, \DateTimeImmutable $atUtc)`: the available-agents cascade, the workspace filter in PHP and one active ticket count per agent (N+1 kept). The controller passes the workspace scope and the current time, and no longer depends on `AgentAvailabilityService` or `TicketRepository`.
+  - Docs: the `available-agents` row in `06-api-y-permisos.md`.
+  - Checks:
+    - `lint:container` OK; PHPStan level 0 identical (29 lines).
+    - Reporting-related tests: 159 tests, only the baseline `ReportingV2Test` failure.
+    - Full suite: 947 tests, exactly the 6 baseline failures.
+- **L65 (2026-10-17), T31:** User: "dale, seguí con la 4c-3".
+  - 4c-3 (`21aa251`): `ReportingRepository::getTicketParticipation` now reads as its steps, each a private method: `findParticipationEpisode` (ticket row and episode end), `getAttributionCutoff` (unchanged), `fetchParticipationPairRows` (the burst CTE), `countEpisodeMessagesBySender` (the rollup), `foldParticipationPairs` and `buildParticipants` (with the fallback agent-name lookup). The SQL text, the query order (ticket, episode end, cutoff, pairs, rollup, names) and the result are unchanged.
+  - Docs: line references into `ReportingRepository.php` in `docs/02_sistema-actual` (00 group F, 04 FRT row, 05, 08 C-2) were already shifted by 4c-1; they are updated once at the end of 4c, in the same PR (S7).
+  - Checks:
+    - `lint:container` OK; PHPStan level 0 identical (29 lines).
+    - Reporting-related tests: 149 tests, only the baseline `ReportingV2Test` failure.
+    - Full suite: 947 tests, the 6 baseline failures plus two `401` JWT flakes (`InboxControllerCharacterizationTest::testMarkReadOfUnassignedTicketByAdminWithoutAgentIsANoOp`, `AgentControllerTest::testUpdateAgentTimezone`), both passing on an isolated rerun.
+- **L66 (2026-10-17), T32:** User: "dale, seguí con la 4c-4".
+  - 4c-4 (`e41bd28`): `ReportingRepository::getResponseDelayMetrics` is now its two steps: private `fetchResponseDelayRows` (the single CTE query, unchanged) and `aggregateResponseDelayRows` (the PHP fold into aggregate and per-agent). The duplicated cutoff probe stays inside the CTE (contradiction track).
+  - Checks:
+    - `lint:container` OK; PHPStan level 0 identical (29 lines).
+    - Reporting-related tests: 149 tests, only the baseline `ReportingV2Test` failure.
+    - Full suite: 947 tests, the 6 baseline failures plus two JWT flakes, both passing on an isolated rerun: `SettingsPageTest::testReplaceShiftsReplacesAll` (401) and `ReportsCsvExportTest::test_date_range_filters_on_created_at` (0 rows instead of 1; its `requestExport` helper does not check the status, so a 401 body parses as an empty CSV; export does not use the changed code).
+- **L67 (2026-10-17), T33:** User: "dale, seguí con la 4c-5".
+  - 4c-5 (`5365bc0`): `ReportingRepository::getAgentPerformance` returns only query data; the new private `ReportingService::addIsInShift` loads the agents with `AgentRepository::findByIds` (the same DQL the repository had inline), evaluates `AgentAvailabilityService::isInShift` with the current time, and inserts `is_in_shift` right after `current_load`, so the JSON key order is unchanged. An agent that cannot be loaded is still reported as not in shift. `ReportingRepository` no longer depends on `AgentAvailabilityService` or imports `Agent`.
+  - New characterization test `testAgentPerformanceReportsAnAgentInShift`: seven 00:00-00:00 shifts (read as cross-midnight shifts covering the whole day) make the result independent of the time; it asserts `is_in_shift` true and the key position. It passes on the pre-change code too.
+  - Checks:
+    - `lint:container` OK; PHPStan level 0 identical (29 lines).
+    - Reporting-related tests plus `Sprint10ControllerTest`: 166 tests, only the baseline `ReportingV2Test` failure.
+    - Full suite: 948 tests, exactly the 6 baseline failures.
+- **L68 (2026-10-17), T34:** User: "dale, seguí con la 4c-6".
+  - 4c-6 (`216be83`):
+    - Every native query in `ReportingRepository` now says why it is native and which tests cover it: TIMESTAMPDIFF (frt, rt, agent performance, frt trend), DATE() (volume, frt trend), DAYOFWEEK()/HOUR() (heatmap), UNION ALL of `LIMIT 1` subqueries (attribution cutoff), CTEs and window functions (response delay), and MySQL-formatted date strings that DQL would hydrate into objects (unassigned, reopened). For agent load and recurring customers the comment says plainly that DQL could express them and that converting them is a separate change.
+    - `getUnassigned` and `getReopened` bind `LIMIT` as an integer parameter instead of concatenating it.
+    - `ReportingService` docblocks now describe the real return shapes (frt, rt, agent performance with `is_in_shift`, unassigned tickets, participation).
+    - Docs: line references into `ReportingRepository.php` updated (00 group F, 04 FRT row, 05 active tickets, 08 C-2), and the 08 row about `str_replace` counts now records that only `getUnassigned` uses it.
+  - Checks:
+    - `lint:container` OK; PHPStan level 0 identical (29 lines).
+    - Reporting-related tests (`Reporting|Reports|AuthorizationTest`), four runs: the baseline `ReportingV2Test` failure plus one random JWT flake per run. In the first run the flake hit `ReportingControllerCharacterizationTest::testReopenedTickets`, whose message was not captured; that test passed in the other three grouped runs and three isolated runs, and a later run showed the same file's `testDateParameterErrors` failing with `401 Invalid JWT Token`.
+    - Full suite: 948 tests, the 6 baseline failures plus two `401` flakes (`AgentLinkControllerTest::testLinkUserReturns404ForNonExistentUser`, `ReportsCsvExportTest::test_agent_is_denied`), both passing on an isolated rerun.
+  - Phase 4c code is complete (T28–T34). Next: independent verifier over S11 (baseline `c96ffa6`), then a front smoke of the reports dashboard, push and PR #7 with the user's approval.
+- **L69 (2026-10-17), phase 4c independent verification:** User: "dale, lanzá el verificador".
+  - Verdict PASS for 4c-0 to 4c-6 and S11, no blockers. Baseline `c96ffa6` vs HEAD `1b5cba1`, both run from scratch copies (`mktemp -d`, own vendor), one test process at a time, no remote calls.
+    - 4c-0: the HEAD characterization file (30 tests, including the in-shift test) passes on the baseline tree.
+    - 4c-1: `ticketFilterClause` produces the same SQL text and parameters as the old blocks (order agent, workspace, team; `t2`/`t` aliases in agent performance; workspace before agent in agent load).
+    - 4c-2: `ListAvailableAgentsQuery` is the old controller body word for word.
+    - 4c-3/4c-4: same SQL in the same order; participation and response-delay bodies identical, scoped and unscoped.
+    - 4c-5: `is_in_shift` value and key position unchanged; a missing agent is false.
+    - 4c-6: 55 unassigned tickets are capped at 50 and 105 reopened events at 100, newest first, on both trees; bug F unchanged; docblocks match the real shapes; the updated doc references point at the right code.
+  - 7 probes (252 assertions, exact bodies with ids replaced by stable tokens) pass on both trees and are committed as `tests/Characterization/ReportingVerifierProbeTest.php` (`73802ff`). Parent spot check: `--filter 'ReportingVerifierProbeTest|ReportingControllerCharacterizationTest'` gives 37 tests OK; full suite 955 tests, exactly the 6 baseline failures.
+  - Advisories:
+    - The metrics table in `04-flujos.md` still had stale references (RT, agent performance, unassigned, and also reopened, response delay and participation, found by the parent): fixed in `a093968`.
+    - `response-delay` reports `partial_data: true` when the range starts before the first attributed message even if all messages in the range are attributed; same on the baseline, added to S11's list to check.
+  - Setup note: the verifier copied the ignored `apps/api/.env`, `.env.test.local` and `config/jwt` into its scratch trees (without reading them) because the `inbiox_php` environment has no `DATABASE_URL`; the scratch trees were removed and the workspace has no new files.
+  - Next: front smoke of the reports dashboard, then push and PR #7 (base `chore/limpieza-backend-fase-4b`), with the user's approval.
+- **L70 (2026-10-17), phase 4c front smoke:**
+  - Run by the front against `832e79e`. No differences caused by 4c; every `/api/reports/*` call returned 200 (no 500).
+    - API values match the SQL of the `c96ffa6` `ReportingRepository` for the cards, volume, agent performance with `is_in_shift`, agent load, FRT trend, heatmap, recurring customers, reopened and response delay, with and without team and workspace filters. `partial_data` is true only when the range starts before 2026-10-12 01:34:08 (the local attribution cutoff).
+    - CSV export and ticket participation are identical to the baseline.
+  - Notes for the contradiction track: "Volumen diario" at 0 and the empty agent ranking are a frontend bug (it reads `.data`/`.agents`; the API returns plain arrays), added to S11's list. 396 of the 400 local tickets belong to a number with no workspace.
+  - Phase 4c is verified. Next: push and PR #7 (base `chore/limpieza-backend-fase-4b`), with the user's approval.

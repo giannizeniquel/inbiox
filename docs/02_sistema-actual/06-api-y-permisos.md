@@ -104,7 +104,7 @@ Todas **Agente**, salvo export. Filtran por workspace activo; nunca por agente.
 | `GET /api/reports/agents` | `agents` | `getAgentPerformance` | Sí |
 | `GET /api/reports/agent-load` | `agentLoad` | `getAgentLoad` | — |
 | `GET /api/reports/unassigned` | `unassigned` | `getUnassigned` (**conteo roto**) | — |
-| `GET /api/reports/available-agents` | `availableAgents` | `AgentAvailabilityService::listAvailableAgents` + filtro de workspace en PHP | — |
+| `GET /api/reports/available-agents` | `availableAgents` | `Reporte/Query/ListAvailableAgentsQuery`: `AgentAvailabilityService::listAvailableAgents` + filtro de workspace en PHP + un conteo de tickets activos por agente | — |
 | `GET /api/reports/frt-trend` | `frtTrend` | `getFrtTrend` | — |
 | `GET /api/reports/heatmap` | `heatmap` | `getHeatmap` | — |
 | `GET /api/reports/recurring-customers` | `recurringCustomers` | `getRecurringCustomers` | — |

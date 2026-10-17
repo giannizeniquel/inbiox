@@ -2,11 +2,10 @@
 
 namespace App\Reporte\Repository;
 
-use App\Disponibilidad\AgentAvailabilityService;
-use App\Agente\Agent;
 use App\Ticket\Ticket;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ArrayParameterType;
+use Doctrine\DBAL\ParameterType;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Query\Expr\Join;
 use Doctrine\Persistence\ManagerRegistry;
@@ -30,7 +29,6 @@ class ReportingRepository extends ServiceEntityRepository
     public function __construct(
         ManagerRegistry $registry,
         private EntityManagerInterface $entityManager,
-        private AgentAvailabilityService $agentAvailabilityService,
     ) {
         parent::__construct($registry, Ticket::class);
         
@@ -65,10 +63,44 @@ class ReportingRepository extends ServiceEntityRepository
     }
 
     /**
+     * Build the optional ticket filters shared by the native report queries
+     * and bind their parameters. The clauses keep a fixed order: agent,
+     * workspace, team. Returns an empty string when no filter is set.
+     *
+     * @param array<string, mixed> $params Query parameters, extended in place
+     * @param string $alias Alias of the tickets table in the query
+     */
+    private function ticketFilterClause(array &$params, string $alias, ?int $agentId, ?string $phoneNumberId, ?int $teamId): string
+    {
+        $clause = '';
+
+        if ($agentId !== null) {
+            $clause .= " AND {$alias}.assigned_agent_id = :agentId";
+            $params['agentId'] = $agentId;
+        }
+
+        if ($phoneNumberId !== null) {
+            $clause .= " AND {$alias}.phone_number_id = :phoneNumberId";
+            $params['phoneNumberId'] = $phoneNumberId;
+        }
+
+        if ($teamId !== null) {
+            $clause .= " AND {$alias}.team_id = :teamId";
+            $params['teamId'] = $teamId;
+        }
+
+        return $clause;
+    }
+
+    /**
      * Get First Response Time metrics.
      *
      * All values are in SECONDS (UTC-based).
      * Use _minutes convenience fields for UI.
+     *
+     * Native SQL because the delay is a TIMESTAMPDIFF() between two columns,
+     * which DQL has no function for. Tested by Sprint09AReportingTest,
+     * ReportingRepositoryTeamFilterTest and ReportingControllerCharacterizationTest.
      *
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
@@ -93,20 +125,7 @@ class ReportingRepository extends ServiceEntityRepository
         
         $params = ['from' => $from->format('Y-m-d H:i:s'), 'to' => $to->format('Y-m-d H:i:s')];
         
-        if ($agentId !== null) {
-            $sql .= ' AND t.assigned_agent_id = :agentId';
-            $params['agentId'] = $agentId;
-        }
-
-        if ($phoneNumberId !== null) {
-            $sql .= ' AND t.phone_number_id = :phoneNumberId';
-            $params['phoneNumberId'] = $phoneNumberId;
-        }
-
-        if ($teamId !== null) {
-            $sql .= ' AND t.team_id = :teamId';
-            $params['teamId'] = $teamId;
-        }
+        $sql .= $this->ticketFilterClause($params, 't', $agentId, $phoneNumberId, $teamId);
 
         $result = $conn->fetchAssociative($sql, $params);
 
@@ -124,11 +143,15 @@ class ReportingRepository extends ServiceEntityRepository
         ];
     }
 
-/**
+    /**
      * Get Resolution Time metrics.
      *
      * All values are in SECONDS (UTC-based).
      * Use _minutes convenience fields for UI.
+     *
+     * Native SQL because the delay is a TIMESTAMPDIFF() between two columns,
+     * which DQL has no function for. Tested by Sprint09AReportingTest,
+     * ReportingRepositoryTeamFilterTest and ReportingControllerCharacterizationTest.
      *
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
@@ -153,20 +176,7 @@ class ReportingRepository extends ServiceEntityRepository
         
         $params = ['from' => $from->format('Y-m-d H:i:s'), 'to' => $to->format('Y-m-d H:i:s')];
         
-        if ($agentId !== null) {
-            $sql .= ' AND t.assigned_agent_id = :agentId';
-            $params['agentId'] = $agentId;
-        }
-
-        if ($phoneNumberId !== null) {
-            $sql .= ' AND t.phone_number_id = :phoneNumberId';
-            $params['phoneNumberId'] = $phoneNumberId;
-        }
-
-        if ($teamId !== null) {
-            $sql .= ' AND t.team_id = :teamId';
-            $params['teamId'] = $teamId;
-        }
+        $sql .= $this->ticketFilterClause($params, 't', $agentId, $phoneNumberId, $teamId);
 
         $result = $conn->fetchAssociative($sql, $params);
 
@@ -242,6 +252,10 @@ class ReportingRepository extends ServiceEntityRepository
     /**
      * Get ticket volume grouped by day.
      *
+     * Native SQL because it groups by DATE(), which DQL has no function for.
+     * Tested by Sprint09AReportingTest, ReportingRepositoryTeamFilterTest and
+     * ReportingControllerCharacterizationTest.
+     *
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
      * @param int|null $agentId Optional filter by assigned agent
@@ -254,28 +268,12 @@ class ReportingRepository extends ServiceEntityRepository
         $conn = $this->entityManager->getConnection();
         $params = ['from' => $from->format('Y-m-d H:i:s'), 'to' => $to->format('Y-m-d H:i:s')];
 
-        $agentClause = '';
-        if ($agentId !== null) {
-            $agentClause = ' AND t.assigned_agent_id = :agentId';
-            $params['agentId'] = $agentId;
-        }
-
-        $workspaceClause = '';
-        if ($phoneNumberId !== null) {
-            $workspaceClause = ' AND t.phone_number_id = :phoneNumberId';
-            $params['phoneNumberId'] = $phoneNumberId;
-        }
-
-        $teamClause = '';
-        if ($teamId !== null) {
-            $teamClause = ' AND t.team_id = :teamId';
-            $params['teamId'] = $teamId;
-        }
+        $filterClause = $this->ticketFilterClause($params, 't', $agentId, $phoneNumberId, $teamId);
 
         // Created tickets grouped by date
         $sqlCreated = 'SELECT DATE(t.created_at) as date, COUNT(t.id) as tickets_created
         FROM tickets t
-        WHERE t.created_at >= :from AND t.created_at < :to' . $agentClause . $workspaceClause . $teamClause . '
+        WHERE t.created_at >= :from AND t.created_at < :to' . $filterClause . '
         GROUP BY DATE(t.created_at)';
 
         $createdResults = $conn->fetchAllAssociative($sqlCreated, $params);
@@ -283,7 +281,7 @@ class ReportingRepository extends ServiceEntityRepository
         // Resolved tickets grouped by date
         $sqlResolved = 'SELECT DATE(t.resolved_at) as date, COUNT(t.id) as tickets_resolved
         FROM tickets t
-        WHERE t.resolved_at IS NOT NULL AND t.resolved_at >= :from AND t.resolved_at < :to' . $agentClause . $workspaceClause . $teamClause . '
+        WHERE t.resolved_at IS NOT NULL AND t.resolved_at >= :from AND t.resolved_at < :to' . $filterClause . '
         GROUP BY DATE(t.resolved_at)';
         
         $resolvedResults = $conn->fetchAllAssociative($sqlResolved, $params);
@@ -323,12 +321,16 @@ class ReportingRepository extends ServiceEntityRepository
      * All time values are in SECONDS (UTC-based).
      * Use _minutes convenience fields for UI.
      *
+     * Native SQL because the averages use TIMESTAMPDIFF(), which DQL has no
+     * function for. Tested by Sprint09AReportingTest,
+     * ReportingRepositoryTeamFilterTest and ReportingControllerCharacterizationTest.
+     *
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
      * @param int|null $agentId Optional filter by specific agent
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
      * @param int|null $teamId Optional filter by team (single-select)
-     * @return array<int, array{agent_id: int, agent_name: string|null, tickets_assigned: int, tickets_resolved: int, current_active_tickets: int, max_active_tickets: int, current_load: float, is_in_shift: bool, avg_frt_seconds: float|null, avg_frt_minutes: float|null, avg_rt_seconds: float|null, avg_rt_minutes: float|null}>
+     * @return array<int, array{agent_id: int, agent_name: string|null, tickets_assigned: int, tickets_resolved: int, current_active_tickets: int, max_active_tickets: int, current_load: float, avg_frt_seconds: float|null, avg_frt_minutes: float|null, avg_rt_seconds: float|null, avg_rt_minutes: float|null}>
      */
     public function getAgentPerformance(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
     {
@@ -337,19 +339,9 @@ class ReportingRepository extends ServiceEntityRepository
         $frtTimeDiff = $this->getTimeDiffExpression('t.created_at', 't.first_response_at');
         $rtTimeDiff = $this->getTimeDiffExpression('t.created_at', 't.resolved_at');
 
-        $workspaceSubClause = '';
-        $workspaceJoinClause = '';
-        if ($phoneNumberId !== null) {
-            $workspaceSubClause = ' AND t2.phone_number_id = :phoneNumberId';
-            $workspaceJoinClause = ' AND t.phone_number_id = :phoneNumberId';
-        }
-
-        $teamSubClause = '';
-        $teamJoinClause = '';
-        if ($teamId !== null) {
-            $teamSubClause = ' AND t2.team_id = :teamId';
-            $teamJoinClause = ' AND t.team_id = :teamId';
-        }
+        $params = ['from' => $from->format('Y-m-d H:i:s'), 'to' => $to->format('Y-m-d H:i:s')];
+        $subFilterClause = $this->ticketFilterClause($params, 't2', null, $phoneNumberId, $teamId);
+        $joinFilterClause = $this->ticketFilterClause($params, 't', null, $phoneNumberId, $teamId);
 
         $sql = "SELECT
             a.id as agent_id,
@@ -361,50 +353,20 @@ class ReportingRepository extends ServiceEntityRepository
             AVG(CASE WHEN t.resolved_at IS NOT NULL THEN {$rtTimeDiff} ELSE NULL END) as avg_rt,
             (SELECT COUNT(*) FROM tickets t2
              WHERE t2.assigned_agent_id = a.id
-             AND t2.status IN ('new', 'active', 'waiting'){$workspaceSubClause}{$teamSubClause}) as current_active_tickets
+             AND t2.status IN ('new', 'active', 'waiting'){$subFilterClause}) as current_active_tickets
         FROM agents a
         LEFT JOIN tickets t ON t.assigned_agent_id = a.id
-            AND t.created_at >= :from AND t.created_at < :to{$workspaceJoinClause}{$teamJoinClause}
+            AND t.created_at >= :from AND t.created_at < :to{$joinFilterClause}
         WHERE a.active = 1";
-
-        $params = ['from' => $from->format('Y-m-d H:i:s'), 'to' => $to->format('Y-m-d H:i:s')];
 
         if ($agentId !== null) {
             $sql .= ' AND a.id = :agentId';
             $params['agentId'] = $agentId;
         }
 
-        if ($phoneNumberId !== null) {
-            $params['phoneNumberId'] = $phoneNumberId;
-        }
-
-        if ($teamId !== null) {
-            $params['teamId'] = $teamId;
-        }
-
         $sql .= " GROUP BY a.id, a.name, a.max_active_tickets ORDER BY a.id ASC";
         
         $results = $conn->fetchAllAssociative($sql, $params);
-        
-        // Preload agent entities for is_in_shift evaluation
-        $now = new \DateTimeImmutable();
-        $agentEntities = [];
-        if (!empty($results)) {
-            $agentIds = array_map(fn($r) => (int) $r['agent_id'], $results);
-            $agentEntities = $this->entityManager
-                ->createQueryBuilder()
-                ->select('a')
-                ->from(Agent::class, 'a')
-                ->where('a.id IN (:ids)')
-                ->setParameter('ids', $agentIds)
-                ->getQuery()
-                ->getResult();
-        }
-        /** @var array<int, Agent> $agentMap */
-        $agentMap = [];
-        foreach ($agentEntities as $agent) {
-            $agentMap[$agent->getId()] = $agent;
-        }
         
         $agentMetrics = [];
         foreach ($results as $row) {
@@ -414,12 +376,6 @@ class ReportingRepository extends ServiceEntityRepository
             $maxActive = (int) ($row['max_active_tickets'] ?? 10);
             $currentActive = (int) ($row['current_active_tickets'] ?? 0);
             
-            // Compute is_in_shift via AgentAvailabilityService (schedule only)
-            $isInShift = false;
-            if (isset($agentMap[$agentId])) {
-                $isInShift = $this->agentAvailabilityService->isInShift($agentMap[$agentId], $now);
-            }
-            
             $agentMetrics[] = [
                 'agent_id' => $agentId,
                 'agent_name' => $row['agent_name'],
@@ -428,7 +384,6 @@ class ReportingRepository extends ServiceEntityRepository
                 'current_active_tickets' => $currentActive,
                 'max_active_tickets' => $maxActive,
                 'current_load' => $maxActive > 0 ? round($currentActive / $maxActive, 2) : 0.0,
-                'is_in_shift' => $isInShift,
                 'avg_frt_seconds' => $avgFrt,
                 'avg_frt_minutes' => $avgFrt !== null ? round($avgFrt / 60, 2) : null,
                 'avg_rt_seconds' => $avgRt,
@@ -442,6 +397,10 @@ class ReportingRepository extends ServiceEntityRepository
     /**
      * Get per-agent active ticket count vs max capacity.
      *
+     * Native SQL kept from the original implementation: DQL could express this
+     * query, and converting it is a separate change from this cleanup. Tested
+     * by ReportingV2Test and ReportingControllerCharacterizationTest.
+     *
      * @param int|null $agentId Optional filter by specific agent
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
      * @return array<int, array{agent_id: int, agent_name: string, active_tickets: int, max_capacity: int, load_percent: float}>
@@ -450,12 +409,8 @@ class ReportingRepository extends ServiceEntityRepository
     {
         $conn = $this->entityManager->getConnection();
 
-        $workspaceClause = '';
         $params = [];
-        if ($phoneNumberId !== null) {
-            $workspaceClause = ' AND t.phone_number_id = :phoneNumberId';
-            $params['phoneNumberId'] = $phoneNumberId;
-        }
+        $workspaceClause = $this->ticketFilterClause($params, 't', null, $phoneNumberId, null);
 
         $agentClause = '';
         if ($agentId !== null) {
@@ -495,6 +450,10 @@ class ReportingRepository extends ServiceEntityRepository
     /**
      * Get tickets where assigned_agent_id IS NULL.
      *
+     * Native SQL because `created_at` is returned as MySQL formats it
+     * (`Y-m-d H:i:s`); DQL would hydrate it into a DateTime object. Tested by
+     * ReportingV2Test and ReportingControllerCharacterizationTest.
+     *
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
      * @param \DateTimeImmutable|null $from Optional start of date range
      * @param \DateTimeImmutable|null $to Optional end of date range
@@ -516,10 +475,7 @@ class ReportingRepository extends ServiceEntityRepository
 
         $params = [];
 
-        if ($phoneNumberId !== null) {
-            $sql .= ' AND t.phone_number_id = :phoneNumberId';
-            $params['phoneNumberId'] = $phoneNumberId;
-        }
+        $sql .= $this->ticketFilterClause($params, 't', null, $phoneNumberId, null);
 
         if ($from !== null) {
             $sql .= ' AND t.created_at >= :from';
@@ -540,8 +496,9 @@ class ReportingRepository extends ServiceEntityRepository
         $countResult = $conn->fetchAssociative($countSql, $params);
         $count = (int) ($countResult['cnt'] ?? 0);
 
-        $sql .= ' ORDER BY t.created_at DESC LIMIT ' . $limit;
-        $results = $conn->fetchAllAssociative($sql, $params);
+        $sql .= ' ORDER BY t.created_at DESC LIMIT :limit';
+        $params['limit'] = $limit;
+        $results = $conn->fetchAllAssociative($sql, $params, ['limit' => ParameterType::INTEGER]);
 
         $tickets = [];
         foreach ($results as $row) {
@@ -561,6 +518,10 @@ class ReportingRepository extends ServiceEntityRepository
 
     /**
      * Get FRT aggregated by day within a date range.
+     *
+     * Native SQL because it uses TIMESTAMPDIFF() and groups by DATE(), which
+     * DQL has no functions for. Tested by ReportingV2Test and
+     * ReportingControllerCharacterizationTest.
      *
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
@@ -586,10 +547,7 @@ class ReportingRepository extends ServiceEntityRepository
             'to' => $to->format('Y-m-d H:i:s'),
         ];
 
-        if ($phoneNumberId !== null) {
-            $sql .= ' AND t.phone_number_id = :phoneNumberId';
-            $params['phoneNumberId'] = $phoneNumberId;
-        }
+        $sql .= $this->ticketFilterClause($params, 't', null, $phoneNumberId, null);
 
         $sql .= ' GROUP BY DATE(t.created_at) ORDER BY date ASC';
 
@@ -612,6 +570,10 @@ class ReportingRepository extends ServiceEntityRepository
      *
      * dayOfWeek is normalized to ISO: 1=Monday, 7=Sunday.
      * MySQL DAYOFWEEK: 1=Sunday, 7=Saturday → convert via (dow+5)%7+1
+     *
+     * Native SQL because it groups by DAYOFWEEK() and HOUR(), which DQL has
+     * no functions for. Tested by ReportingV2Test and
+     * ReportingControllerCharacterizationTest.
      *
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
@@ -646,10 +608,7 @@ class ReportingRepository extends ServiceEntityRepository
             'to' => $to->format('Y-m-d H:i:s'),
         ];
 
-        if ($phoneNumberId !== null) {
-            $sql .= ' AND t.phone_number_id = :phoneNumberId';
-            $params['phoneNumberId'] = $phoneNumberId;
-        }
+        $sql .= $this->ticketFilterClause($params, 't', null, $phoneNumberId, null);
 
         $sql .= ' GROUP BY day_of_week, hour ORDER BY day_of_week ASC, hour ASC';
 
@@ -672,6 +631,10 @@ class ReportingRepository extends ServiceEntityRepository
 
     /**
      * Get contacts with >= threshold tickets in the last N days.
+     *
+     * Native SQL kept from the original implementation: DQL could express this
+     * query, and converting it is a separate change from this cleanup. Tested
+     * by ReportingV2Test and ReportingControllerCharacterizationTest.
      *
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
      * @param int $threshold Minimum ticket count (default 3)
@@ -696,10 +659,7 @@ class ReportingRepository extends ServiceEntityRepository
 
         $params = ['since' => $since->format('Y-m-d H:i:s')];
 
-        if ($phoneNumberId !== null) {
-            $sql .= ' AND t.phone_number_id = :phoneNumberId';
-            $params['phoneNumberId'] = $phoneNumberId;
-        }
+        $sql .= $this->ticketFilterClause($params, 't', null, $phoneNumberId, null);
 
         $sql .= ' GROUP BY c.id, c.name, c.email
                   HAVING COUNT(t.id) >= :threshold
@@ -725,6 +685,10 @@ class ReportingRepository extends ServiceEntityRepository
 
     /**
      * Get tickets that transitioned out of resolved status (auto_reopened events).
+     *
+     * Native SQL because `resolved_at` and `reopened_at` are returned as MySQL
+     * formats them (`Y-m-d H:i:s`); DQL would hydrate them into DateTime
+     * objects. Tested by ReportingV2Test and ReportingControllerCharacterizationTest.
      *
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
@@ -753,14 +717,12 @@ class ReportingRepository extends ServiceEntityRepository
             'to' => $to->format('Y-m-d H:i:s'),
         ];
 
-        if ($phoneNumberId !== null) {
-            $sql .= ' AND t.phone_number_id = :phoneNumberId';
-            $params['phoneNumberId'] = $phoneNumberId;
-        }
+        $sql .= $this->ticketFilterClause($params, 't', null, $phoneNumberId, null);
 
-        $sql .= ' ORDER BY te.created_at DESC LIMIT ' . $limit;
+        $sql .= ' ORDER BY te.created_at DESC LIMIT :limit';
+        $params['limit'] = $limit;
 
-        $results = $conn->fetchAllAssociative($sql, $params);
+        $results = $conn->fetchAllAssociative($sql, $params, ['limit' => ParameterType::INTEGER]);
 
         $reopened = [];
         foreach ($results as $row) {
@@ -784,6 +746,9 @@ class ReportingRepository extends ServiceEntityRepository
      * pre-attribution-rollout rows) and must be excluded from response-delay
      * sampling and attribution everywhere. Returns null only when the whole
      * `messages` table is unattributed (no non-NULL sender_type row exists).
+     *
+     * Native SQL because it combines three `LIMIT 1` subqueries with UNION
+     * ALL, which DQL cannot express. Tested by ReportingResponseDelayTest.
      */
     public function getAttributionCutoff(): ?\DateTimeImmutable
     {
@@ -816,9 +781,27 @@ class ReportingRepository extends ServiceEntityRepository
      * cutoff) are excluded from the whole stream. Range filter is on
      * `tickets.created_at` (episode start), not reply timestamp.
      *
+     * Native SQL because the burst pairing needs CTEs and window functions
+     * (`LEAD() OVER`, `SUM() OVER`, `ROW_NUMBER() OVER`, `COUNT() OVER`), which
+     * neither DQL nor DBAL's QueryBuilder can express. Parameters are bound.
+     * Tested by ReportingResponseDelayTest and ReportingControllerCharacterizationTest.
+     *
      * @return array{aggregate: array{avg_delay_seconds: float|null, sample_count: int, unanswered_inbound_count: int}, per_agent: array<int, array{agent_id: int, agent_name: string|null, avg_delay_seconds: float|null, sample_count: int}>}
      */
     public function getResponseDelayMetrics(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null): array
+    {
+        $rows = $this->fetchResponseDelayRows($from, $to, $phoneNumberId);
+
+        return $this->aggregateResponseDelayRows($rows);
+    }
+
+    /**
+     * One row per replying agent (and one with a null agent for the bursts
+     * nobody answered), with its sample count, delay sum and unanswered count.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function fetchResponseDelayRows(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId): array
     {
         $conn = $this->entityManager->getConnection();
         $timeDiff = $this->getTimeDiffExpression('b.inbound_at', 'r.reply_at');
@@ -828,11 +811,7 @@ class ReportingRepository extends ServiceEntityRepository
             'to' => $to->format('Y-m-d H:i:s'),
         ];
 
-        $workspaceClause = '';
-        if ($phoneNumberId !== null) {
-            $workspaceClause = ' AND t.phone_number_id = :phoneNumberId';
-            $params['phoneNumberId'] = $phoneNumberId;
-        }
+        $workspaceClause = $this->ticketFilterClause($params, 't', null, $phoneNumberId, null);
 
         $sql = "WITH cutoff AS (
                 SELECT MIN(c) AS data_available_from FROM (
@@ -899,8 +878,17 @@ class ReportingRepository extends ServiceEntityRepository
             GROUP BY r.sender_agent_id, a.name
             ORDER BY r.sender_agent_id";
 
-        $rows = $conn->fetchAllAssociative($sql, $params);
+        return $conn->fetchAllAssociative($sql, $params);
+    }
 
+    /**
+     * Fold the per-agent rows into the aggregate and the per-agent list.
+     *
+     * @param list<array<string, mixed>> $rows
+     * @return array{aggregate: array{avg_delay_seconds: float|null, sample_count: int, unanswered_inbound_count: int}, per_agent: array<int, array{agent_id: int, agent_name: string|null, avg_delay_seconds: float|null, sample_count: int}>}
+     */
+    private function aggregateResponseDelayRows(array $rows): array
+    {
         $aggregateSampleCount = 0;
         $aggregateSumDelay = 0.0;
         $unansweredInboundCount = 0;
@@ -952,6 +940,37 @@ class ReportingRepository extends ServiceEntityRepository
      */
     public function getTicketParticipation(int $ticketId): ?array
     {
+        $episode = $this->findParticipationEpisode($ticketId);
+        if ($episode === null) {
+            return null;
+        }
+
+        $cutoff = $this->getAttributionCutoff();
+        $pairRows = $this->fetchParticipationPairRows($episode, $cutoff);
+        $messageCounts = $this->countEpisodeMessagesBySender($episode);
+        [$pairs, $participantStats, $unansweredInboundCount] = $this->foldParticipationPairs($pairRows);
+        $participants = $this->buildParticipants($messageCounts['by_agent'], $participantStats);
+
+        return [
+            'ticket_id' => $ticketId,
+            'data_available_from' => $cutoff,
+            'partial_data' => $messageCounts['unattributed'] > 0 || $cutoff === null,
+            'participants' => $participants,
+            'automatic_message_count' => $messageCounts['automatic'],
+            'unanswered_inbound_count' => $unansweredInboundCount,
+            'pairs' => $pairs,
+        ];
+    }
+
+    /**
+     * The ticket's episode: its conversation, its own creation time as the
+     * start, and the next ticket's creation time on that conversation as the
+     * end (null for the latest ticket).
+     *
+     * @return array{conversation_id: int, start: string, end: string|null}|null null when the ticket does not exist or has no conversation
+     */
+    private function findParticipationEpisode(int $ticketId): ?array
+    {
         $conn = $this->entityManager->getConnection();
 
         $ticketRow = $conn->fetchAssociative(
@@ -976,20 +995,35 @@ class ReportingRepository extends ServiceEntityRepository
                     OR (t2.created_at = :episodeStart AND t2.id > :ticketId))',
             ['conversationId' => $conversationId, 'episodeStart' => $episodeStart, 'ticketId' => $ticketId]
         );
-        $episodeEnd = $episodeEndRow['episode_end'] ?? null;
 
-        $cutoff = $this->getAttributionCutoff();
+        return [
+            'conversation_id' => $conversationId,
+            'start' => $episodeStart,
+            'end' => $episodeEndRow['episode_end'] ?? null,
+        ];
+    }
+
+    /**
+     * One row per inbound burst of the episode (attributed messages after
+     * the cutoff only), joined to the agent reply that closed it, if any.
+     *
+     * @param array{conversation_id: int, start: string, end: string|null} $episode
+     * @return list<array<string, mixed>>
+     */
+    private function fetchParticipationPairRows(array $episode, ?\DateTimeImmutable $cutoff): array
+    {
+        $conn = $this->entityManager->getConnection();
         $timeDiff = $this->getTimeDiffExpression('b.inbound_at', 'r.reply_at');
 
         $params = [
-            'conversationId' => $conversationId,
-            'episodeStart' => $episodeStart,
+            'conversationId' => $episode['conversation_id'],
+            'episodeStart' => $episode['start'],
             'cutoff' => $cutoff !== null ? $cutoff->format('Y-m-d H:i:s') : '1970-01-01 00:00:00',
         ];
         $episodeEndClause = '';
-        if ($episodeEnd !== null) {
+        if ($episode['end'] !== null) {
             $episodeEndClause = ' AND m.created_at < :episodeEnd';
-            $params['episodeEnd'] = $episodeEnd;
+            $params['episodeEnd'] = $episode['end'];
         }
 
         $sql = "WITH msgs AS (
@@ -1027,16 +1061,26 @@ class ReportingRepository extends ServiceEntityRepository
             LEFT JOIN agents a ON a.id = r.sender_agent_id
             ORDER BY b.inbound_at";
 
-        $pairRows = $conn->fetchAllAssociative($sql, $params);
+        return $conn->fetchAllAssociative($sql, $params);
+    }
 
-        // Rollup over ALL episode messages (including legacy sender_type IS
-        // NULL rows) for message counts / automatic activity / unattributed
-        // detection — independent of the cutoff-filtered seq/bursts pipeline.
-        $rollupParams = ['conversationId' => $conversationId, 'episodeStart' => $episodeStart];
+    /**
+     * Rollup over ALL episode messages (including legacy sender_type IS
+     * NULL rows) for message counts / automatic activity / unattributed
+     * detection — independent of the cutoff-filtered seq/bursts pipeline.
+     *
+     * @param array{conversation_id: int, start: string, end: string|null} $episode
+     * @return array{by_agent: array<int, int>, automatic: int, unattributed: int}
+     */
+    private function countEpisodeMessagesBySender(array $episode): array
+    {
+        $conn = $this->entityManager->getConnection();
+
+        $rollupParams = ['conversationId' => $episode['conversation_id'], 'episodeStart' => $episode['start']];
         $rollupEpisodeEndClause = '';
-        if ($episodeEnd !== null) {
+        if ($episode['end'] !== null) {
             $rollupEpisodeEndClause = ' AND m.created_at < :episodeEnd';
-            $rollupParams['episodeEnd'] = $episodeEnd;
+            $rollupParams['episodeEnd'] = $episode['end'];
         }
         $rollupSql = "SELECT m.sender_type, m.sender_agent_id, COUNT(*) AS message_count
             FROM messages m
@@ -1060,6 +1104,22 @@ class ReportingRepository extends ServiceEntityRepository
             }
         }
 
+        return [
+            'by_agent' => $messageCountByAgent,
+            'automatic' => $automaticMessageCount,
+            'unattributed' => $unattributedCount,
+        ];
+    }
+
+    /**
+     * Turn the burst rows into the public pairs, per-agent delay totals and
+     * the number of bursts nobody answered.
+     *
+     * @param list<array<string, mixed>> $pairRows
+     * @return array{0: list<array{run_start_at: string, reply_at: string|null, agent_id: int|null, delay_seconds: float|null}>, 1: array<int, array{agent_name: string|null, sample_count: int, sum_delay: float}>, 2: int}
+     */
+    private function foldParticipationPairs(array $pairRows): array
+    {
         $participantStats = [];
         $unansweredInboundCount = 0;
         $pairs = [];
@@ -1091,6 +1151,21 @@ class ReportingRepository extends ServiceEntityRepository
             $participantStats[$agentId]['sum_delay'] += $delaySeconds ?? 0.0;
         }
 
+        return [$pairs, $participantStats, $unansweredInboundCount];
+    }
+
+    /**
+     * One entry per agent who wrote in the episode or answered a burst,
+     * sorted by agent id.
+     *
+     * @param array<int, int> $messageCountByAgent
+     * @param array<int, array{agent_name: string|null, sample_count: int, sum_delay: float}> $participantStats
+     * @return list<array{agent_id: int, agent_name: string|null, message_count: int, sample_count: int, avg_delay_seconds: float|null}>
+     */
+    private function buildParticipants(array $messageCountByAgent, array $participantStats): array
+    {
+        $conn = $this->entityManager->getConnection();
+
         // Fallback agent-name lookup: an agent who replied without a
         // preceding unanswered burst (unprompted message) has message_count
         // but never appears in $participantStats.
@@ -1121,15 +1196,7 @@ class ReportingRepository extends ServiceEntityRepository
             ];
         }
 
-        return [
-            'ticket_id' => $ticketId,
-            'data_available_from' => $cutoff,
-            'partial_data' => $unattributedCount > 0 || $cutoff === null,
-            'participants' => $participants,
-            'automatic_message_count' => $automaticMessageCount,
-            'unanswered_inbound_count' => $unansweredInboundCount,
-            'pairs' => $pairs,
-        ];
+        return $participants;
     }
 
     /**

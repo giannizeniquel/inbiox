@@ -158,7 +158,7 @@ Detalle en [07](07-frontend.md#lógica-de-negocio-que-vive-en-el-frontend).
 |---|---|---|
 | "Está en turno" | `AgentAvailabilityService::hasShiftAtTime` (`:262-290`) y `AgentAvailabilityController::isAgentInShift` (`:340-369`) | No del todo: la del controlador no mira `active`. |
 | Cascada de disponibilidad | `isAvailable()`, `listAvailableAgents()`, re-filtro en `AutoAssignTicketUseCase.php:135-139` | No: el re-filtro aplica capacidad también con override. |
-| "Tickets activos" = `new`/`active`/`waiting` | `AgentAvailabilityService.php:297-317`, `TicketRepository::countActiveForAgent` (`:146-160`), `ReportingRepository.php:363-365`, `TicketStateMachine::isActiveForSLA` (sin uso), frontend `get-reports-dashboard.use-case.ts` | Sí (cinco copias). |
+| "Tickets activos" = `new`/`active`/`waiting` | `AgentAvailabilityService.php:297-317`, `TicketRepository::countActiveForAgent` (`:146-160`), `ReportingRepository.php:354-356`, `TicketStateMachine::isActiveForSLA` (sin uso), frontend `get-reports-dashboard.use-case.ts` | Sí (cinco copias). |
 | Normalización de teléfono | entrante, `PhoneNormalizer`, `UpdateContactUseCase` | **No** (umbrales distintos). |
 | Cierre automático | `ConversationWindowExpiryService` (vivo). `AutoCloseRule` y `AutoCloseTicketUseCase` se borraron en la fase 1. | Resuelto: queda un solo criterio. |
 | Validación de turnos | `CreateAgentShiftUseCase`, `ReplaceAgentShiftsUseCase`, `ShiftInputDTO`, CHECK de la tabla | Mismas reglas, distintos nombres de campo y mensajes. |
