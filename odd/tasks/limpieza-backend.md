@@ -111,7 +111,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T27 | S10 | inline | done | 4b-3 webhook payload parsing into `ProcessWebhookPayloadUseCase` (`8e0e099`, L57) |
 | T28 | S11 | inline | done | 4c-0 reporting characterization tests (`094fffe`, L62) |
 | T29 | S11 | inline | done | 4c-1 shared filter helper in `ReportingRepository` (`525660d`, L63) |
-| T30 | S11 | inline | pending | 4c-2 `availableAgents` into a `Reporte/Query/` class |
+| T30 | S11 | inline | done | 4c-2 `availableAgents` into a `Reporte/Query/` class (`e966cbb`, L64) |
 | T31 | S11 | inline | pending | 4c-3 split `getTicketParticipation` |
 | T32 | S11 | inline | pending | 4c-4 split `getResponseDelayMetrics` |
 | T33 | S11 | inline | pending | 4c-5 `is_in_shift` from the repository into the service |
@@ -550,3 +550,10 @@ Later phases, each with its own branch and task list when it starts:
     - `lint:container` OK; PHPStan level 0 identical (29 lines).
     - Reporting-related tests (`Reporting|Reports|Sprint09AReporting|AuthorizationTest`): 149 tests, only the baseline `ReportingV2Test` failure.
     - Full suite: 947 tests, the 6 baseline failures plus two known JWT flakes: `AgentControllerTest::testUpdateAgentOmittingTimezoneLeavesItUnchanged` (401 instead of 200) and `InboxControllerCharacterizationTest::testMessagesForwardDirection` (null body). Neither touches reporting, and both pass on an isolated rerun.
+- **L64 (2026-10-17), T30:** User: "dale, seguí con la 4c-2".
+  - 4c-2 (`e966cbb`): the body of `ReportingController::availableAgents` moved verbatim into the new final `Reporte/Query/ListAvailableAgentsQuery::execute(?string $phoneNumberId, \DateTimeImmutable $atUtc)`: the available-agents cascade, the workspace filter in PHP and one active ticket count per agent (N+1 kept). The controller passes the workspace scope and the current time, and no longer depends on `AgentAvailabilityService` or `TicketRepository`.
+  - Docs: the `available-agents` row in `06-api-y-permisos.md`.
+  - Checks:
+    - `lint:container` OK; PHPStan level 0 identical (29 lines).
+    - Reporting-related tests: 159 tests, only the baseline `ReportingV2Test` failure.
+    - Full suite: 947 tests, exactly the 6 baseline failures.
