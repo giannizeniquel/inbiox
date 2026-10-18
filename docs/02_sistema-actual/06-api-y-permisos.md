@@ -83,13 +83,13 @@ Leyenda "Rol": **Público**, **Auth** (cualquier usuario autenticado), **Agente*
 
 | Método | Path | Controlador::acción | Rol | Delega en |
 |---|---|---|---|---|
-| GET | `/api/contacts` | `ContactoController::list` | Agente | `ListContactosQuery` (con workspace) |
+| GET | `/api/contacts` | `ContactoController::listar` | Agente | `ListContactosQuery` (con workspace) |
 | GET | `/api/contacts/{id}` | `::get` | Agente | `GetDetalleDeContactoQuery` (sin workspace) |
 | POST | `/api/contacts` | `::create` | Agente | `CreateContactoUseCase` |
 | POST | `/api/contacts/import` | `::import` | **Supervisor** | `ImportarContactosDesdeCsvUseCase` |
 | PUT | `/api/contacts/{id}` | `::update` | Agente | `UpdateContactoUseCase` |
 | DELETE | `/api/contacts/{id}` | `::delete` | Agente (cualquiera, cualquier contacto) | `DeleteContactoUseCase`. Sin UI. |
-| GET | `/api/contacts/{id}/timeline` | `LineaDeTiempoDeContactoController::getTimeline` | Agente | `GetLineaDeTiempoDeContactoQuery` |
+| GET | `/api/contacts/{id}/timeline` | `LineaDeTiempoDeContactoController::getLineaDeTiempo` | Agente | `GetLineaDeTiempoDeContactoQuery` |
 
 ### F. Reportes (`ReportingController`)
 
