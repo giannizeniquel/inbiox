@@ -7,7 +7,7 @@ use App\Ticket\Repository\FiltrosDeTicket;
 /**
  * Builds the normalized ticket list filters shared by `ListTicketsQuery`,
  * `ExportTicketsCsvQuery`, and the export endpoint's up-front validation.
- * It holds no SQL: `TicketRepository::applyListFilters()` turns the result
+ * It holds no SQL: `TicketRepository::aplicarFiltrosDeLista()` turns the result
  * into WHERE clauses.
  */
 class FiltrosDeTicketBuilder

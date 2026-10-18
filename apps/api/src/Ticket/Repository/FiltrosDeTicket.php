@@ -6,13 +6,13 @@ use App\Ticket\Etiqueta;
 
 /**
  * The ticket list filters shared by the inbox list and the CSV export,
- * already normalized. `TicketRepository::applyListFilters()` turns them into
+ * already normalized. `TicketRepository::aplicarFiltrosDeLista()` turns them into
  * WHERE clauses; this class holds no SQL.
  *
  * Normalization (unchanged from the old `FiltrosDeTicketBuilder`):
  * - `mine` needs a truthy agent id, otherwise it adds nothing;
  * - unknown statuses are dropped, and an all-unknown list adds nothing;
- * - tags go through `Etiqueta::normalize()`, blanks and duplicates are dropped,
+ * - tags go through `Etiqueta::normalizar()`, blanks and duplicates are dropped,
  *   and more than 5 tags throw `\InvalidArgumentException`.
  */
 final class FiltrosDeTicket
