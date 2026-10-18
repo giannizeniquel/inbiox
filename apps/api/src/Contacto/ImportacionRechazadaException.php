@@ -10,7 +10,7 @@ namespace App\Contacto;
  * Thrown when the uploaded file itself is unusable (missing, too large, wrong
  * type, missing required column, empty, or exceeding the row cap) — never for
  * per-row validation failures, which are reported in the partial-success
- * result instead. The controller maps `getReason()` to HTTP 400.
+ * result instead. The controller maps `getMotivo()` to HTTP 400.
  */
 class ImportacionRechazadaException extends \RuntimeException
 {

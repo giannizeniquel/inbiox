@@ -7,8 +7,8 @@ namespace App\Contacto;
 /**
  * Shared phone normalization rule.
  *
- * Used by both single-contact creation (CreateContactUseCase) and bulk CSV
- * import (ImportContactsFromCsvUseCase) so in-file dedupe and persisted
+ * Used by both single-contact creation (CreateContactoUseCase) and bulk CSV
+ * import (ImportarContactosDesdeCsvUseCase) so in-file dedupe and persisted
  * contacts always agree on what "the same phone" means.
  */
 final class NormalizadorDeTelefono

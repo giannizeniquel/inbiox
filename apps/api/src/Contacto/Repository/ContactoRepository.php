@@ -57,7 +57,7 @@ class ContactoRepository extends ServiceEntityRepository
     }
 
     /**
-     * Total number of contacts matching the same filters as findListPage().
+     * Total number of contacts matching the same filters as findPaginaDeLista().
      */
     public function countLista(?string $search, ?string $estado, ?string $canal, ?int $responsableId, ?string $email): int
     {

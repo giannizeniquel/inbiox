@@ -175,7 +175,7 @@ final class ImportarContactosDesdeCsvUseCase
             }
 
             // Defense-in-depth: a concurrent unique-constraint violation that
-            // escapes CreateContactUseCase's own catch could still close the
+            // escapes CreateContactoUseCase's own catch could still close the
             // EntityManager. Recover it so subsequent rows are not poisoned.
             if (!$this->entityManager->isOpen()) {
                 $this->managerRegistry->resetManager();
