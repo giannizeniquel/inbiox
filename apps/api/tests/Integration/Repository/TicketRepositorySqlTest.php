@@ -39,7 +39,7 @@ class TicketRepositorySqlTest extends KernelTestCase
         $this->repo = static::getContainer()->get(TicketRepository::class);
 
         $this->contact = new Contacto();
-        $this->contact->setPhone('+5491100009901');
+        $this->contact->setTelefono('+5491100009901');
         $this->em->persist($this->contact);
         $this->em->flush();
     }

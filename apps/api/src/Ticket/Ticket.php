@@ -103,7 +103,7 @@ class Ticket
             throw new RecipientPhoneNotFoundException('Ticket has no associated contact');
         }
 
-        $telefono = $this->contacto->getPhone();
+        $telefono = $this->contacto->getTelefono();
         if ($telefono === null || $telefono === '') {
             throw new RecipientPhoneNotFoundException('Contact has no phone number');
         }

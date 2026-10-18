@@ -87,7 +87,7 @@ class ProviderProxyControllerConversationWindowTest extends WebTestCase
     private function createTicketWithLastInboundHoursAgo(float $hoursAgo): int
     {
         $contact = new Contacto();
-        $contact->setPhone('+5491100000099');
+        $contact->setTelefono('+5491100000099');
         $this->em->persist($contact);
 
         $conversation = new Conversation();

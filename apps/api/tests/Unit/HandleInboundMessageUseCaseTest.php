@@ -178,8 +178,8 @@ class HandleInboundMessageUseCaseTest extends TestCase
 
         $contact = $this->createMock(\App\Contacto\Contacto::class);
         $contact->method('getId')->willReturn(1);
-        $contact->method('getName')->willReturn(null);
-        $contact->method('getUpdatedAt')->willReturn(new \DateTimeImmutable());
+        $contact->method('getNombre')->willReturn(null);
+        $contact->method('getActualizadoAt')->willReturn(new \DateTimeImmutable());
 
         // Make the EM transaction execute the closure
         $connection = $this->createMock(\Doctrine\DBAL\Connection::class);
@@ -188,7 +188,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
 
         $this->enableEntityIdAutoGeneration();
 
-        $this->contactRepo->method('findOneByPhone')->willReturn($contact);
+        $this->contactRepo->method('findOneByTelefono')->willReturn($contact);
 
         // No open conversation in workspace B -> must create new
         $this->conversationRepo
@@ -223,8 +223,8 @@ class HandleInboundMessageUseCaseTest extends TestCase
 
         $contact = $this->createMock(\App\Contacto\Contacto::class);
         $contact->method('getId')->willReturn(1);
-        $contact->method('getName')->willReturn(null);
-        $contact->method('getUpdatedAt')->willReturn(new \DateTimeImmutable());
+        $contact->method('getNombre')->willReturn(null);
+        $contact->method('getActualizadoAt')->willReturn(new \DateTimeImmutable());
 
         $connection = $this->createMock(\Doctrine\DBAL\Connection::class);
         $connection->method('transactional')->willReturnCallback(fn(callable $cb) => $cb());
@@ -232,7 +232,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
 
         $this->enableEntityIdAutoGeneration();
 
-        $this->contactRepo->method('findOneByPhone')->willReturn($contact);
+        $this->contactRepo->method('findOneByTelefono')->willReturn($contact);
 
         $existingConversation = $this->createMock(\App\Conversacion\Conversation::class);
         $existingConversation->method('getId')->willReturn(10);
@@ -276,8 +276,8 @@ class HandleInboundMessageUseCaseTest extends TestCase
 
         $contact = $this->createMock(\App\Contacto\Contacto::class);
         $contact->method('getId')->willReturn(1);
-        $contact->method('getName')->willReturn(null);
-        $contact->method('getUpdatedAt')->willReturn(new \DateTimeImmutable());
+        $contact->method('getNombre')->willReturn(null);
+        $contact->method('getActualizadoAt')->willReturn(new \DateTimeImmutable());
 
         $connection = $this->createMock(\Doctrine\DBAL\Connection::class);
         $connection->method('transactional')->willReturnCallback(fn(callable $cb) => $cb());
@@ -285,7 +285,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
 
         $this->enableEntityIdAutoGeneration();
 
-        $this->contactRepo->method('findOneByPhone')->willReturn($contact);
+        $this->contactRepo->method('findOneByTelefono')->willReturn($contact);
 
         $existingConversation = $this->createMock(\App\Conversacion\Conversation::class);
         $existingConversation->method('getId')->willReturn(10);

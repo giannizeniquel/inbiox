@@ -16,7 +16,7 @@ class Conversation
     #[ORM\Column(name: 'id', type: 'bigint')]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(targetEntity: Contacto::class, inversedBy: 'conversations')]
+    #[ORM\ManyToOne(targetEntity: Contacto::class, inversedBy: 'conversaciones')]
     #[ORM\JoinColumn(name: 'contact_id', referencedColumnName: 'id')]
     private ?Contacto $contact = null;
 

@@ -51,7 +51,7 @@ class MessageAttributionWriteSiteTest extends KernelTestCase
     private function createTicket(): int
     {
         $contact = new Contacto();
-        $contact->setPhone('+5491100000200');
+        $contact->setTelefono('+5491100000200');
         $this->em->persist($contact);
 
         $conversation = new Conversation();

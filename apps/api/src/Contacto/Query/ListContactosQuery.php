@@ -28,8 +28,8 @@ class ListContactosQuery
 
         // Contacts are shared across workspaces — only conversations/tickets
         // are segregated. No phone_number_id filter on the contact list.
-        $results = $this->contactRepository->findListPage($search, $status, $channel, $ownerId, $email, $limit, $offset);
-        $total = $this->contactRepository->countList($search, $status, $channel, $ownerId, $email);
+        $results = $this->contactRepository->findPaginaDeLista($search, $status, $channel, $ownerId, $email, $limit, $offset);
+        $total = $this->contactRepository->countLista($search, $status, $channel, $ownerId, $email);
 
         $items = array_map(function ($row) {
             return new ContactoDeListaDTO(
@@ -50,7 +50,7 @@ class ListContactosQuery
         // Resolve activeTicketId in a second pass to avoid SQL parameter ordering issues
         if (!empty($items)) {
             $contactIds = array_map(fn($dto) => $dto->id, $items);
-            $this->resolveActiveTicketIds($items, $contactIds, $phoneNumberId);
+            $this->agregarTicketsActivos($items, $contactIds, $phoneNumberId);
         }
 
         return [
@@ -65,7 +65,7 @@ class ListContactosQuery
      * Resolve the active (non-closed) ticket ID for each contact.
      * Done in a separate query after the contact page is known.
      */
-    private function resolveActiveTicketIds(array $items, array $contactIds, ?string $phoneNumberId): void
+    private function agregarTicketsActivos(array $items, array $contactIds, ?string $phoneNumberId): void
     {
         if (empty($contactIds)) return;
 

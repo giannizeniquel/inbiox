@@ -118,7 +118,7 @@ class ImportContactsFromCsvUseCaseTest extends TestCase
             $this->useCase->execute($path, 'roster.csv');
             $this->fail('Expected ImportRejectedException');
         } catch (ImportacionRechazadaException $e) {
-            $this->assertSame('missing_phone_column', $e->getReason());
+            $this->assertSame('missing_phone_column', $e->getMotivo());
         }
     }
 
@@ -133,7 +133,7 @@ class ImportContactsFromCsvUseCaseTest extends TestCase
             $this->useCase->execute($path, 'roster.csv');
             $this->fail('Expected ImportRejectedException');
         } catch (ImportacionRechazadaException $e) {
-            $this->assertSame('empty_file', $e->getReason());
+            $this->assertSame('empty_file', $e->getMotivo());
         }
     }
 
@@ -152,7 +152,7 @@ class ImportContactsFromCsvUseCaseTest extends TestCase
             $this->useCase->execute($path, 'roster.csv');
             $this->fail('Expected ImportRejectedException');
         } catch (ImportacionRechazadaException $e) {
-            $this->assertSame('too_many_rows', $e->getReason());
+            $this->assertSame('too_many_rows', $e->getMotivo());
         }
     }
 

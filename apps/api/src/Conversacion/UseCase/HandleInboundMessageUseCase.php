@@ -211,17 +211,17 @@ foreach ($events as $event) {
 
     private function findOrCreateContact(string $phone, ?string $contactName): Contacto
     {
-        $contact = $this->contactRepo->findOneByPhone($phone);
+        $contact = $this->contactRepo->findOneByTelefono($phone);
         if (!$contact) {
             $contact = new Contacto();
-            $contact->setPhone($phone);
+            $contact->setTelefono($phone);
             if ($contactName !== null) {
-                $contact->setName($contactName);
+                $contact->setNombre($contactName);
             }
             $this->em->persist($contact);
-        } elseif ($contactName !== null && $contact->getName() === null) {
+        } elseif ($contactName !== null && $contact->getNombre() === null) {
             // Update name on existing contact if it was missing
-            $contact->setName($contactName);
+            $contact->setNombre($contactName);
         }
 
         return $contact;
@@ -411,7 +411,7 @@ foreach ($events as $event) {
     {
         $conversation->setLastMessageAt($msg->getCreatedAt());
         $conversation->setUpdatedAt(new \DateTimeImmutable());
-        $contact->setUpdatedAt(new \DateTimeImmutable());
+        $contact->setActualizadoAt(new \DateTimeImmutable());
         $ticket->setActualizadoAt(new \DateTimeImmutable());
 
         // WhatsApp 24h conversation-window compliance: this is the single
@@ -449,7 +449,7 @@ foreach ($events as $event) {
             direction: \App\Conversacion\MessageDirection::INBOUND,
             messageId: $msg->getId(),
             content: $message,
-            senderName: $contact->getName(),
+            senderName: $contact->getNombre(),
             media: $msg->getMedia(),
         ));
     }

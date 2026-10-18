@@ -112,7 +112,7 @@ class AutoReplyServiceTest extends TestCase
     private function createContact(int $id = 1, string $phone = '+5493625123456'): Contacto
     {
         $contact = new Contacto();
-        $contact->setPhone($phone);
+        $contact->setTelefono($phone);
 
         $prop = new \ReflectionProperty($contact, 'id');
         $prop->setAccessible(true);

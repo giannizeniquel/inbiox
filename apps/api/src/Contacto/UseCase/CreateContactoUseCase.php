@@ -22,30 +22,30 @@ class CreateContactoUseCase
             throw new \InvalidArgumentException('Phone is required');
         }
 
-        $phone = NormalizadorDeTelefono::normalize($data['phone']);
+        $phone = NormalizadorDeTelefono::normalizar($data['phone']);
 
-        $existing = $this->contactRepository->findOneByPhone($phone);
+        $existing = $this->contactRepository->findOneByTelefono($phone);
         if ($existing) {
             throw new \InvalidArgumentException('Contact with this phone already exists');
         }
 
         $contact = new Contacto();
-        $contact->setPhone($phone);
+        $contact->setTelefono($phone);
 
         if (isset($data['name'])) {
-            $contact->setName($data['name']);
+            $contact->setNombre($data['name']);
         }
 
         if (isset($data['status']) && in_array($data['status'], ['active', 'inactive'])) {
-            $contact->setStatus($data['status']);
+            $contact->setEstado($data['status']);
         }
 
         if (isset($data['channel']) && in_array($data['channel'], ['whatsapp', 'other'])) {
-            $contact->setChannel($data['channel']);
+            $contact->setCanal($data['channel']);
         }
 
         if (isset($data['owner_id']) && is_numeric($data['owner_id'])) {
-            $contact->setOwnerId((int) $data['owner_id']);
+            $contact->setResponsableId((int) $data['owner_id']);
         }
 
         if (isset($data['email'])) {
@@ -67,15 +67,15 @@ class CreateContactoUseCase
 
         return new DetalleDeContactoDTO(
             id: $contact->getId(),
-            phone: $contact->getPhone(),
-            name: $contact->getName(),
-            status: $contact->getStatus(),
-            channel: $contact->getChannel(),
-            ownerId: $contact->getOwnerId(),
+            phone: $contact->getTelefono(),
+            name: $contact->getNombre(),
+            status: $contact->getEstado(),
+            channel: $contact->getCanal(),
+            ownerId: $contact->getResponsableId(),
             email: $contact->getEmail(),
             timestamps: [
-                'created_at' => $contact->getCreatedAt()->format('Y-m-d H:i:s'),
-                'updated_at' => $contact->getUpdatedAt()->format('Y-m-d H:i:s'),
+                'created_at' => $contact->getCreadoAt()->format('Y-m-d H:i:s'),
+                'updated_at' => $contact->getActualizadoAt()->format('Y-m-d H:i:s'),
             ],
         );
     }

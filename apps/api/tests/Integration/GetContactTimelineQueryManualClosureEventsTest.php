@@ -47,7 +47,7 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
         $conn->executeStatement('DELETE FROM `user`');
 
         $contact = new Contacto();
-        $contact->setPhone('+5491100000700');
+        $contact->setTelefono('+5491100000700');
         $this->em->persist($contact);
 
         $conversation = new Conversation();

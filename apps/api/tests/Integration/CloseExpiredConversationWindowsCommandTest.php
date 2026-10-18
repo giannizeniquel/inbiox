@@ -47,7 +47,7 @@ class CloseExpiredConversationWindowsCommandTest extends KernelTestCase
     private function createTicket(string $status, ?\DateTimeImmutable $lastInboundMessageAt): int
     {
         $contact = new Contacto();
-        $contact->setPhone('+549110001' . random_int(1000, 9999));
+        $contact->setTelefono('+549110001' . random_int(1000, 9999));
         $this->em->persist($contact);
 
         $conversation = new Conversation();

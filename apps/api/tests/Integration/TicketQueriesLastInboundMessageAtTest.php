@@ -46,7 +46,7 @@ class TicketQueriesLastInboundMessageAtTest extends KernelTestCase
     private function createTicket(?\DateTimeImmutable $lastInboundMessageAt): int
     {
         $contact = new Contacto();
-        $contact->setPhone('+5491100000700');
+        $contact->setTelefono('+5491100000700');
         $this->em->persist($contact);
 
         $conversation = new Conversation();

@@ -42,7 +42,7 @@ class GetContactTimelineQueryWindowEventsTest extends KernelTestCase
         $conn->executeStatement('DELETE FROM contacts');
 
         $contact = new Contacto();
-        $contact->setPhone('+5491100000600');
+        $contact->setTelefono('+5491100000600');
         $this->em->persist($contact);
 
         $conversation = new Conversation();

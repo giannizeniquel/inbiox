@@ -12,7 +12,7 @@ class GetDetalleDeContactoQuery
 
     public function execute(int $id): ?DetalleDeContactoDTO
     {
-        $row = $this->contactRepository->findDetailRow($id);
+        $row = $this->contactRepository->findFilaDeDetalle($id);
 
         if (!$row) {
             return null;

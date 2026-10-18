@@ -104,8 +104,8 @@ class ReportsCsvExportTest extends WebTestCase
         $this->phoneSeq++;
 
         $contact = new Contacto();
-        $contact->setPhone('+549110000' . str_pad((string) $this->phoneSeq, 4, '0', STR_PAD_LEFT));
-        $contact->setName($contactName);
+        $contact->setTelefono('+549110000' . str_pad((string) $this->phoneSeq, 4, '0', STR_PAD_LEFT));
+        $contact->setNombre($contactName);
         $this->em->persist($contact);
 
         $conversation = new Conversation();

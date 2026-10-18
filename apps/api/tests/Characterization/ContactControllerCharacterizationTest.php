@@ -91,7 +91,7 @@ final class ContactControllerCharacterizationTest extends CharacterizationTestCa
     public function testUpdateWithNullOwnerClearsIt(): void
     {
         $contact = $this->createContact('+5491133334444', 'Carla');
-        $contact->setOwnerId(5);
+        $contact->setResponsableId(5);
         $this->em->flush();
         $token = $this->agentToken();
 

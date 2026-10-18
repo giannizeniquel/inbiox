@@ -356,7 +356,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
     private function seedTicket(string $status, ?int $assignedAgentId): int
     {
         $contact = new Contacto();
-        $contact->setPhone('+549' . random_int(100000000, 999999999));
+        $contact->setTelefono('+549' . random_int(100000000, 999999999));
         $this->em->persist($contact);
 
         $conversation = new Conversation();

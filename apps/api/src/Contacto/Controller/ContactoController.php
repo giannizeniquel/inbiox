@@ -33,7 +33,7 @@ class ContactoController
     ) {}
 
     #[Route('/api/contacts', name: 'app_contacts_list', methods: ['GET'])]
-    public function list(Request $request): JsonResponse
+    public function listar(Request $request): JsonResponse
     {
         $page = max(1, (int) $request->query->get('page', 1));
         $limit = min(100, max(1, (int) $request->query->get('limit', 20)));
@@ -129,7 +129,7 @@ class ContactoController
      */
     #[IsGranted('ROLE_SUPERVISOR')]
     #[Route('/api/contacts/import', name: 'app_contacts_import', methods: ['POST'])]
-    public function import(Request $request): JsonResponse
+    public function importar(Request $request): JsonResponse
     {
         /** @var UploadedFile|null $file */
         $file = $request->files->get('file');
@@ -149,7 +149,7 @@ class ContactoController
 
             return new JsonResponse($result->toArray(), 200);
         } catch (ImportacionRechazadaException $e) {
-            return new JsonResponse(['error' => $e->getReason(), 'message' => $e->getMessage()], 400);
+            return new JsonResponse(['error' => $e->getMotivo(), 'message' => $e->getMessage()], 400);
         }
     }
 

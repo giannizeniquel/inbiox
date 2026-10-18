@@ -144,8 +144,8 @@ abstract class CharacterizationTestCase extends WebTestCase
     protected function createContact(string $phone, ?string $name = null): Contacto
     {
         $contact = new Contacto();
-        $contact->setPhone($phone);
-        $contact->setName($name);
+        $contact->setTelefono($phone);
+        $contact->setNombre($name);
         $this->em->persist($contact);
         $this->em->flush();
 

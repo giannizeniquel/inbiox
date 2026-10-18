@@ -113,7 +113,7 @@ final class AutoReplyService
 
         // 5. Send the message
         $phoneNumberId = $ticket->getPhoneNumberId();
-        $to = $contact->getPhone();
+        $to = $contact->getTelefono();
 
         if ($to === null || $to === '') {
             $this->logger->warning('AutoReply skipped: contact has no phone number', [

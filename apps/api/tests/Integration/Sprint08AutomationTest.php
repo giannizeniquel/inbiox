@@ -137,7 +137,7 @@ class Sprint08AutomationTest extends KernelTestCase
     {
         // Arrange - create ticket and tag
         $contact = new Contacto();
-        $contact->setPhone('+543711234567');
+        $contact->setTelefono('+543711234567');
         $this->em->persist($contact);
 
         $conversation = new Conversation();
@@ -178,7 +178,7 @@ class Sprint08AutomationTest extends KernelTestCase
     {
         // Arrange - create ticket
         $contact = new Contacto();
-        $contact->setPhone('+543711234567');
+        $contact->setTelefono('+543711234567');
         $this->em->persist($contact);
 
         $conversation = new Conversation();
@@ -405,7 +405,7 @@ class Sprint08AutomationTest extends KernelTestCase
     {
         // Arrange - create a resolved ticket
         $contact = new Contacto();
-        $contact->setPhone('+543711234567');
+        $contact->setTelefono('+543711234567');
         $this->em->persist($contact);
 
         $conversation = new Conversation();
@@ -487,7 +487,7 @@ class Sprint08AutomationTest extends KernelTestCase
     {
         // Arrange - create resolved ticket first
         $contact = new Contacto();
-        $contact->setPhone('+543711234567');
+        $contact->setTelefono('+543711234567');
         $this->em->persist($contact);
 
         $conversation = new Conversation();

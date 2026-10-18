@@ -116,8 +116,8 @@ final class SeedReportsCommand extends Command
         $contacts = [];
         for ($i = 1; $i <= 10; $i++) {
             $contact = new Contacto();
-            $contact->setPhone(sprintf('+54911%07d', $i));
-            $contact->setName("Contacto {$i}");
+            $contact->setTelefono(sprintf('+54911%07d', $i));
+            $contact->setNombre("Contacto {$i}");
             $contact->setEmail("contacto{$i}@test.com");
             $this->em->persist($contact);
             $contacts[] = $contact;

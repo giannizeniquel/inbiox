@@ -52,7 +52,7 @@ class GetTicketMessagesQueryAttributionTest extends KernelTestCase
         \assert($agentId !== null);
 
         $contact = new Contacto();
-        $contact->setPhone('+5491100000500');
+        $contact->setTelefono('+5491100000500');
         $this->em->persist($contact);
 
         $conversation = new Conversation();

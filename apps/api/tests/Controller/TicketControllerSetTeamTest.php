@@ -119,7 +119,7 @@ class TicketControllerSetTeamTest extends WebTestCase
     private function createTicket(?string $phoneNumberId = null): Ticket
     {
         $contact = new Contacto();
-        $contact->setPhone('+549110000' . random_int(1000, 9999));
+        $contact->setTelefono('+549110000' . random_int(1000, 9999));
         $this->em->persist($contact);
 
         $conversation = new Conversation();

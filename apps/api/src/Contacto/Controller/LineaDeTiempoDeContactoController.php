@@ -21,7 +21,7 @@ class LineaDeTiempoDeContactoController
     ) {}
 
     #[Route('/api/contacts/{id}/timeline', name: 'app_contacts_timeline', methods: ['GET'])]
-    public function getTimeline(int $id, Request $request): JsonResponse
+    public function getLineaDeTiempo(int $id, Request $request): JsonResponse
     {
         $before = $request->query->get('before');
         $limit = min(50, max(1, (int) $request->query->get('limit', 20)));

@@ -87,7 +87,7 @@ class CreateContactUseCaseTest extends TestCase
 
     public function testNormalizesPhoneBeforePersisting(): void
     {
-        $this->contactRepository->method('findOneByPhone')->willReturn(null);
+        $this->contactRepository->method('findOneByTelefono')->willReturn(null);
         $this->enableEntityIdAutoGeneration();
 
         $result = $this->useCase->execute(['phone' => '+54 371 234 5678']);
@@ -106,7 +106,7 @@ class CreateContactUseCaseTest extends TestCase
     public function testThrowsForDuplicatePhoneOnPreCheck(): void
     {
         $existing = $this->createMock(Contacto::class);
-        $this->contactRepository->method('findOneByPhone')->willReturn($existing);
+        $this->contactRepository->method('findOneByTelefono')->willReturn($existing);
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Contact with this phone already exists');
@@ -116,7 +116,7 @@ class CreateContactUseCaseTest extends TestCase
 
     public function testAppliesOptionalFieldWhitelist(): void
     {
-        $this->contactRepository->method('findOneByPhone')->willReturn(null);
+        $this->contactRepository->method('findOneByTelefono')->willReturn(null);
         $this->enableEntityIdAutoGeneration();
 
         $result = $this->useCase->execute([
@@ -139,7 +139,7 @@ class CreateContactUseCaseTest extends TestCase
     public function testConvertsUniqueConstraintViolationOnFlushIntoDuplicateError(): void
     {
         // Pre-check passes (no known duplicate) but a concurrent request wins the race at flush time.
-        $this->contactRepository->method('findOneByPhone')->willReturn(null);
+        $this->contactRepository->method('findOneByTelefono')->willReturn(null);
         $this->entityManager->method('persist');
 
         $driverException = $this->createMock(DriverException::class);
@@ -155,7 +155,7 @@ class CreateContactUseCaseTest extends TestCase
 
     public function testReturnsDetailDtoOnSuccess(): void
     {
-        $this->contactRepository->method('findOneByPhone')->willReturn(null);
+        $this->contactRepository->method('findOneByTelefono')->willReturn(null);
         $this->enableEntityIdAutoGeneration();
 
         $result = $this->useCase->execute(['phone' => '+543712345678']);

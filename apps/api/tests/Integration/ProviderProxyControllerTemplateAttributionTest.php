@@ -80,7 +80,7 @@ class ProviderProxyControllerTemplateAttributionTest extends WebTestCase
     private function createTicketWithContact(): int
     {
         $contact = new Contacto();
-        $contact->setPhone('+5491100000400');
+        $contact->setTelefono('+5491100000400');
         $this->em->persist($contact);
 
         $conversation = new Conversation();

@@ -56,7 +56,7 @@ class MessageAgentAttributionOutboxTest extends KernelTestCase
         \assert($agentId !== null);
 
         $contact = new Contacto();
-        $contact->setPhone('+5491100000300');
+        $contact->setTelefono('+5491100000300');
         $this->em->persist($contact);
 
         $conversation = new Conversation();

@@ -94,8 +94,8 @@ class ReportingResponseDelayTest extends WebTestCase
     private function createConversation(): Conversation
     {
         $contact = new Contacto();
-        $contact->setPhone('+5491100000000');
-        $contact->setName('Test Contact');
+        $contact->setTelefono('+5491100000000');
+        $contact->setNombre('Test Contact');
         $this->em->persist($contact);
 
         $conversation = new Conversation();

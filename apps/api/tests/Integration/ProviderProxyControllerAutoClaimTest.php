@@ -92,7 +92,7 @@ class ProviderProxyControllerAutoClaimTest extends WebTestCase
         $this->em->flush();
 
         $contact = new Contacto();
-        $contact->setPhone('+5491100000098');
+        $contact->setTelefono('+5491100000098');
         $this->em->persist($contact);
 
         $conversation = new Conversation();

@@ -85,7 +85,7 @@ class ContactImportEmRecoveryTest extends KernelTestCase
             public function prePersist(PrePersistEventArgs $args): void
             {
                 $entity = $args->getObject();
-                if ($this->triggered || !$entity instanceof Contacto || $entity->getPhone() !== $this->targetPhone) {
+                if ($this->triggered || !$entity instanceof Contacto || $entity->getTelefono() !== $this->targetPhone) {
                     return;
                 }
                 $this->triggered = true;

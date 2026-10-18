@@ -18,7 +18,7 @@ class GetLineaDeTiempoDeContactoQuery
     public function execute(int $contactId, ?string $before, int $limit, ?string $phoneNumberId = null): array
     {
         // Fetch limit+1 to determine hasMore
-        $rows = $this->contactRepository->findTimelineRows($contactId, $before, $limit + 1, $phoneNumberId);
+        $rows = $this->contactRepository->findFilasDeLineaDeTiempo($contactId, $before, $limit + 1, $phoneNumberId);
 
         $hasMore = count($rows) > $limit;
         if ($hasMore) {

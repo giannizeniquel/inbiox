@@ -23,7 +23,7 @@ class UpdateContactoUseCase
         }
 
         if (isset($data['name'])) {
-            $contact->setName($data['name']);
+            $contact->setNombre($data['name']);
         }
 
         if (isset($data['phone'])) {
@@ -32,33 +32,33 @@ class UpdateContactoUseCase
                 throw new \InvalidArgumentException('Invalid phone number');
             }
 
-            $existing = $this->contactRepository->findOneByPhone($phone);
+            $existing = $this->contactRepository->findOneByTelefono($phone);
             if ($existing && $existing->getId() !== $id) {
                 throw new \InvalidArgumentException('Another contact with this phone already exists');
             }
 
-            $contact->setPhone($phone);
+            $contact->setTelefono($phone);
         }
 
         if (isset($data['status'])) {
             if (!in_array($data['status'], ['active', 'inactive'])) {
                 throw new \InvalidArgumentException('Invalid status. Must be "active" or "inactive"');
             }
-            $contact->setStatus($data['status']);
+            $contact->setEstado($data['status']);
         }
 
         if (isset($data['channel'])) {
             if (!in_array($data['channel'], ['whatsapp', 'other'])) {
                 throw new \InvalidArgumentException('Invalid channel. Must be "whatsapp" or "other"');
             }
-            $contact->setChannel($data['channel']);
+            $contact->setCanal($data['channel']);
         }
 
         if (array_key_exists('owner_id', $data)) {
             if ($data['owner_id'] === null) {
-                $contact->setOwnerId(null);
+                $contact->setResponsableId(null);
             } elseif (is_numeric($data['owner_id'])) {
-                $contact->setOwnerId((int) $data['owner_id']);
+                $contact->setResponsableId((int) $data['owner_id']);
             }
         }
 
@@ -66,20 +66,20 @@ class UpdateContactoUseCase
             $contact->setEmail($data['email'] ?? null);
         }
 
-        $contact->setUpdatedAt(new \DateTimeImmutable());
+        $contact->setActualizadoAt(new \DateTimeImmutable());
         $this->entityManager->flush();
 
         return new DetalleDeContactoDTO(
             id: $contact->getId(),
-            phone: $contact->getPhone(),
-            name: $contact->getName(),
-            status: $contact->getStatus(),
-            channel: $contact->getChannel(),
-            ownerId: $contact->getOwnerId(),
+            phone: $contact->getTelefono(),
+            name: $contact->getNombre(),
+            status: $contact->getEstado(),
+            channel: $contact->getCanal(),
+            ownerId: $contact->getResponsableId(),
             email: $contact->getEmail(),
             timestamps: [
-                'created_at' => $contact->getCreatedAt()->format('Y-m-d H:i:s'),
-                'updated_at' => $contact->getUpdatedAt()->format('Y-m-d H:i:s'),
+                'created_at' => $contact->getCreadoAt()->format('Y-m-d H:i:s'),
+                'updated_at' => $contact->getActualizadoAt()->format('Y-m-d H:i:s'),
             ],
         );
     }

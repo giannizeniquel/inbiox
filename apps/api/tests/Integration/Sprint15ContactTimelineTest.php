@@ -125,10 +125,10 @@ class Sprint15ContactTimelineTest extends WebTestCase
     {
         // Contact
         $contact = new Contacto();
-        $contact->setPhone('+5491112345678');
-        $contact->setName('Timeline Test Contact');
-        $contact->setStatus('active');
-        $contact->setChannel('whatsapp');
+        $contact->setTelefono('+5491112345678');
+        $contact->setNombre('Timeline Test Contact');
+        $contact->setEstado('active');
+        $contact->setCanal('whatsapp');
         $this->em->persist($contact);
         $this->em->flush();
         $contactId = $contact->getId();

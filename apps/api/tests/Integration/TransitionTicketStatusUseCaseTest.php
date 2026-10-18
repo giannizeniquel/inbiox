@@ -53,7 +53,7 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
     private function createTicket(string $status): int
     {
         $contact = new Contacto();
-        $contact->setPhone('+5491100000100');
+        $contact->setTelefono('+5491100000100');
         $this->em->persist($contact);
 
         $conversation = new Conversation();
@@ -243,7 +243,7 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
     private function createTicketWithOwner(string $status, int $agentId): int
     {
         $contact = new Contacto();
-        $contact->setPhone('+5491100000200');
+        $contact->setTelefono('+5491100000200');
         $this->em->persist($contact);
 
         $conversation = new Conversation();

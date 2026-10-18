@@ -320,7 +320,7 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
             $ticket = $this->createTicket('new', null, $contact);
             $createdAt = (new \DateTimeImmutable('today'))->modify("-{$daysAgo} days")->format('Y-m-d H:i:s');
             $this->connection()->executeStatement('UPDATE tickets SET created_at = ? WHERE id = ?', [$createdAt, $ticket->getId()]);
-            $lastAt[$contact->getName()] ??= $createdAt;
+            $lastAt[$contact->getNombre()] ??= $createdAt;
         }
         $token = $this->supervisorToken();
 

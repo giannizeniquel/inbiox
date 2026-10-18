@@ -22,12 +22,12 @@ use League\Csv\Reader;
  */
 final class ImportarContactosDesdeCsvUseCase
 {
-    public const MAX_ROWS = 1000;
+    public const MAX_FILAS = 1000;
     public const MAX_BYTES = 2_097_152; // 2 MB
-    public const MAX_ERRORS = 100;
+    public const MAX_ERRORES = 100;
 
-    private const ALLOWED_MIME_TYPES = ['text/csv', 'text/plain', 'application/vnd.ms-excel'];
-    private const OPTIONAL_COLUMNS = ['name', 'email', 'status', 'channel', 'owner_id'];
+    private const MIME_TYPES_PERMITIDOS = ['text/csv', 'text/plain', 'application/vnd.ms-excel'];
+    private const COLUMNAS_OPCIONALES = ['name', 'email', 'status', 'channel', 'owner_id'];
 
     public function __construct(
         private readonly CreateContactoUseCase $createContactUseCase,
@@ -40,12 +40,12 @@ final class ImportarContactosDesdeCsvUseCase
      */
     public function execute(string $path, ?string $originalName): ResultadoDeImportacionDeContactosDTO
     {
-        $this->assertFileConstraints($path, $originalName);
+        $this->validarRestriccionesDeArchivo($path, $originalName);
 
         $reader = Reader::createFromPath($path, 'r');
         $reader->skipInputBOM();
 
-        $delimiter = $this->detectDelimiter($reader);
+        $delimiter = $this->detectarDelimitador($reader);
         $reader->setDelimiter($delimiter);
         $reader->setHeaderOffset(0);
 
@@ -58,16 +58,16 @@ final class ImportarContactosDesdeCsvUseCase
             throw new ImportacionRechazadaException('missing_phone_column', 'CSV is missing the required "phone" column');
         }
 
-        $rows = $this->materializeRows($reader, $normalizedHeader);
+        $rows = $this->leerFilas($reader, $normalizedHeader);
 
         if (count($rows) === 0) {
             throw new ImportacionRechazadaException('empty_file', 'CSV contains no data rows');
         }
 
-        return $this->processRows($rows);
+        return $this->procesarFilas($rows);
     }
 
-    private function assertFileConstraints(string $path, ?string $originalName): void
+    private function validarRestriccionesDeArchivo(string $path, ?string $originalName): void
     {
         if (!is_file($path) || !is_readable($path)) {
             throw new ImportacionRechazadaException('file_missing', 'Uploaded file could not be read');
@@ -87,14 +87,14 @@ final class ImportarContactosDesdeCsvUseCase
         $mimeType = @mime_content_type($path) ?: null;
 
         $extensionOk = $extension === 'csv';
-        $mimeOk = $mimeType !== null && in_array($mimeType, self::ALLOWED_MIME_TYPES, true);
+        $mimeOk = $mimeType !== null && in_array($mimeType, self::MIME_TYPES_PERMITIDOS, true);
 
         if (!$extensionOk && !$mimeOk) {
             throw new ImportacionRechazadaException('invalid_file_type', 'Only CSV files are accepted');
         }
     }
 
-    private function detectDelimiter(Reader $reader): string
+    private function detectarDelimitador(Reader $reader): string
     {
         $stats = Info::getDelimiterStats($reader, [',', ';'], 1);
         arsort($stats);
@@ -111,7 +111,7 @@ final class ImportarContactosDesdeCsvUseCase
      * @param list<string> $normalizedHeader
      * @return list<array{row: int, data: array<string, string>}>
      */
-    private function materializeRows(Reader $reader, array $normalizedHeader): array
+    private function leerFilas(Reader $reader, array $normalizedHeader): array
     {
         $rows = [];
         $rowNumber = 1; // row 1 is the header itself
@@ -119,10 +119,10 @@ final class ImportarContactosDesdeCsvUseCase
         foreach ($reader->getRecords($normalizedHeader) as $record) {
             $rowNumber++;
 
-            if (count($rows) >= self::MAX_ROWS) {
+            if (count($rows) >= self::MAX_FILAS) {
                 throw new ImportacionRechazadaException(
                     'too_many_rows',
-                    sprintf('CSV exceeds the maximum of %d data rows', self::MAX_ROWS),
+                    sprintf('CSV exceeds the maximum of %d data rows', self::MAX_FILAS),
                 );
             }
 
@@ -136,7 +136,7 @@ final class ImportarContactosDesdeCsvUseCase
     /**
      * @param list<array{row: int, data: array<string, string>}> $rows
      */
-    private function processRows(array $rows): ResultadoDeImportacionDeContactosDTO
+    private function procesarFilas(array $rows): ResultadoDeImportacionDeContactosDTO
     {
         $imported = 0;
         $errors = [];
@@ -148,30 +148,30 @@ final class ImportarContactosDesdeCsvUseCase
             $rawPhone = trim($entry['data']['phone'] ?? '');
 
             if ($rawPhone === '') {
-                $errors[] = $this->buildError($row, $rawPhone, 'phone_missing', 'Phone is required');
+                $errors[] = $this->armarError($row, $rawPhone, 'phone_missing', 'Phone is required');
                 continue;
             }
 
             try {
-                $normalizedPhone = NormalizadorDeTelefono::normalize($rawPhone);
+                $normalizedPhone = NormalizadorDeTelefono::normalizar($rawPhone);
             } catch (\InvalidArgumentException $e) {
-                $errors[] = $this->buildError($row, $rawPhone, 'invalid_phone', $e->getMessage());
+                $errors[] = $this->armarError($row, $rawPhone, 'invalid_phone', $e->getMessage());
                 continue;
             }
 
             if (isset($seenPhones[$normalizedPhone])) {
-                $errors[] = $this->buildError($row, $rawPhone, 'duplicate_in_file', 'Duplicate phone within this file');
+                $errors[] = $this->armarError($row, $rawPhone, 'duplicate_in_file', 'Duplicate phone within this file');
                 continue;
             }
             $seenPhones[$normalizedPhone] = $row;
 
             try {
-                $this->createContactUseCase->execute($this->buildContactData($entry['data']));
+                $this->createContactUseCase->execute($this->armarDatosDeContacto($entry['data']));
                 $imported++;
             } catch (\InvalidArgumentException $e) {
-                $errors[] = $this->buildError($row, $rawPhone, $this->mapReason($e->getMessage()), $e->getMessage());
+                $errors[] = $this->armarError($row, $rawPhone, $this->mapearMotivo($e->getMessage()), $e->getMessage());
             } catch (\Throwable $e) {
-                $errors[] = $this->buildError($row, $rawPhone, 'unknown_error', 'Unexpected error while importing this row');
+                $errors[] = $this->armarError($row, $rawPhone, 'unknown_error', 'Unexpected error while importing this row');
             }
 
             // Defense-in-depth: a concurrent unique-constraint violation that
@@ -184,13 +184,13 @@ final class ImportarContactosDesdeCsvUseCase
 
         $totalRows = count($rows);
         $failed = $totalRows - $imported;
-        $errorsTruncated = count($errors) > self::MAX_ERRORS;
+        $errorsTruncated = count($errors) > self::MAX_ERRORES;
 
         return new ResultadoDeImportacionDeContactosDTO(
             totalRows: $totalRows,
             imported: $imported,
             failed: $failed,
-            errors: $errorsTruncated ? array_slice($errors, 0, self::MAX_ERRORS) : $errors,
+            errors: $errorsTruncated ? array_slice($errors, 0, self::MAX_ERRORES) : $errors,
             errorsTruncated: $errorsTruncated,
         );
     }
@@ -199,11 +199,11 @@ final class ImportarContactosDesdeCsvUseCase
      * @param array<string, string> $row
      * @return array<string, string>
      */
-    private function buildContactData(array $row): array
+    private function armarDatosDeContacto(array $row): array
     {
         $data = ['phone' => trim($row['phone'] ?? '')];
 
-        foreach (self::OPTIONAL_COLUMNS as $column) {
+        foreach (self::COLUMNAS_OPCIONALES as $column) {
             if (isset($row[$column]) && trim($row[$column]) !== '') {
                 $data[$column] = trim($row[$column]);
             }
@@ -212,7 +212,7 @@ final class ImportarContactosDesdeCsvUseCase
         return $data;
     }
 
-    private function mapReason(string $message): string
+    private function mapearMotivo(string $message): string
     {
         return match ($message) {
             'Phone is required' => 'phone_missing',
@@ -225,7 +225,7 @@ final class ImportarContactosDesdeCsvUseCase
     /**
      * @return array{row: int, phone: string, reason: string, message: string}
      */
-    private function buildError(int $row, string $phone, string $reason, string $message): array
+    private function armarError(int $row, string $phone, string $reason, string $message): array
     {
         return ['row' => $row, 'phone' => $phone, 'reason' => $reason, 'message' => $message];
     }

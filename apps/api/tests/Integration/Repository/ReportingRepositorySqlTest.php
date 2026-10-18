@@ -26,7 +26,7 @@ class ReportingRepositorySqlTest extends KernelTestCase
         $conn = $em->getConnection();
 
         $contact = new Contacto();
-        $contact->setPhone('+5491100009903');
+        $contact->setTelefono('+5491100009903');
         $em->persist($contact);
         $em->persist(new Agent('Truncate Me'));
         $em->flush();

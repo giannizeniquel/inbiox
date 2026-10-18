@@ -17,9 +17,9 @@ class ContactoRepository extends ServiceEntityRepository
         parent::__construct($registry, Contacto::class);
     }
 
-    public function findOneByPhone(string $phone): ?Contacto
+    public function findOneByTelefono(string $phone): ?Contacto
     {
-        return $this->findOneBy(['phone' => $phone]);
+        return $this->findOneBy(['telefono' => $phone]);
     }
 
     public function findById(int $id): ?Contacto
@@ -34,7 +34,7 @@ class ContactoRepository extends ServiceEntityRepository
      *
      * @return list<array<string, mixed>>
      */
-    public function findListPage(
+    public function findPaginaDeLista(
         ?string $search,
         ?string $status,
         ?string $channel,
@@ -47,7 +47,7 @@ class ContactoRepository extends ServiceEntityRepository
             ->select('c.id', 'c.phone', 'c.name', 'c.status', 'c.channel', 'c.owner_id', 'c.email', 'c.created_at', 'c.updated_at')
             ->from('contacts', 'c');
 
-        $this->applyListFilters($qb, $search, $status, $channel, $ownerId, $email);
+        $this->aplicarFiltrosDeLista($qb, $search, $status, $channel, $ownerId, $email);
 
         return $qb->orderBy('c.updated_at', 'DESC')
             ->addOrderBy('c.id', 'DESC')
@@ -59,13 +59,13 @@ class ContactoRepository extends ServiceEntityRepository
     /**
      * Total number of contacts matching the same filters as findListPage().
      */
-    public function countList(?string $search, ?string $status, ?string $channel, ?int $ownerId, ?string $email): int
+    public function countLista(?string $search, ?string $status, ?string $channel, ?int $ownerId, ?string $email): int
     {
         $qb = $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->select('COUNT(*)')
             ->from('contacts', 'c');
 
-        $this->applyListFilters($qb, $search, $status, $channel, $ownerId, $email);
+        $this->aplicarFiltrosDeLista($qb, $search, $status, $channel, $ownerId, $email);
 
         return (int) $qb->fetchOne();
     }
@@ -76,7 +76,7 @@ class ContactoRepository extends ServiceEntityRepository
      *
      * @return array<string, mixed>|false
      */
-    public function findDetailRow(int $id): array|false
+    public function findFilaDeDetalle(int $id): array|false
     {
         return $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->select('c.id', 'c.phone', 'c.name', 'c.status', 'c.channel', 'c.owner_id', 'c.email', 'c.created_at', 'c.updated_at')
@@ -100,7 +100,7 @@ class ContactoRepository extends ServiceEntityRepository
      *
      * @return list<array{type: string, occurred_at: string, content: null, ticket_id: mixed, ticket_status: ?string, assigned_to: ?string, agent_id: mixed, direction: null}>
      */
-    public function findTimelineRows(int $contactId, ?string $before, int $limit, ?string $phoneNumberId): array
+    public function findFilasDeLineaDeTiempo(int $contactId, ?string $before, int $limit, ?string $phoneNumberId): array
     {
         $sql = <<<'SQL'
         SELECT type, occurred_at, content, ticket_id, ticket_status, assigned_to, agent_id, direction
@@ -219,7 +219,7 @@ class ContactoRepository extends ServiceEntityRepository
             ->fetchAllAssociative();
     }
 
-    private function applyListFilters(
+    private function aplicarFiltrosDeLista(
         QueryBuilder $qb,
         ?string $search,
         ?string $status,

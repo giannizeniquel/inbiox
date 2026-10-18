@@ -21,7 +21,7 @@ class ImportacionRechazadaException extends \RuntimeException
         parent::__construct($message);
     }
 
-    public function getReason(): string
+    public function getMotivo(): string
     {
         return $this->reason;
     }

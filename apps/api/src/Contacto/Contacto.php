@@ -16,37 +16,37 @@ class Contacto
     private ?int $id = null;
 
     #[ORM\Column(name: 'phone', type: 'string', length: 20, unique: true)]
-    private string $phone;
+    private string $telefono;
 
     #[ORM\Column(name: 'name', type: 'string', length: 255, nullable: true)]
-    private ?string $name = null;
+    private ?string $nombre = null;
 
     #[ORM\OneToMany(mappedBy: 'contact', targetEntity: \App\Conversacion\Conversation::class, cascade: ['persist', 'remove'])]
-    private Collection $conversations;
+    private Collection $conversaciones;
 
     #[ORM\Column(name: 'status', type: 'string', length: 20, nullable: true)]
-    private ?string $status = 'active';
+    private ?string $estado = 'active';
 
     #[ORM\Column(name: 'channel', type: 'string', length: 20, nullable: true)]
-    private ?string $channel = 'whatsapp';
+    private ?string $canal = 'whatsapp';
 
     #[ORM\Column(name: 'owner_id', type: 'bigint', nullable: true)]
-    private ?int $ownerId = null;
+    private ?int $responsableId = null;
 
     #[ORM\Column(name: 'email', type: 'string', length: 255, nullable: true)]
     private ?string $email = null;
 
     #[ORM\Column(name: 'created_at', type: 'datetime_immutable')]
-    private \DateTimeImmutable $createdAt;
+    private \DateTimeImmutable $creadoAt;
 
     #[ORM\Column(name: 'updated_at', type: 'datetime_immutable')]
-    private \DateTimeImmutable $updatedAt;
+    private \DateTimeImmutable $actualizadoAt;
 
     public function __construct()
     {
-        $this->createdAt = new \DateTimeImmutable();
-        $this->updatedAt = new \DateTimeImmutable();
-        $this->conversations = new ArrayCollection();
+        $this->creadoAt = new \DateTimeImmutable();
+        $this->actualizadoAt = new \DateTimeImmutable();
+        $this->conversaciones = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -54,63 +54,63 @@ class Contacto
         return $this->id;
     }
 
-    public function getPhone(): string
+    public function getTelefono(): string
     {
-        return $this->phone;
+        return $this->telefono;
     }
 
-    public function setPhone(string $phone): self
+    public function setTelefono(string $phone): self
     {
-        $this->phone = $phone;
+        $this->telefono = $phone;
         return $this;
     }
 
-    public function getName(): ?string
+    public function getNombre(): ?string
     {
-        return $this->name;
+        return $this->nombre;
     }
 
-    public function setName(?string $name): self
+    public function setNombre(?string $name): self
     {
-        $this->name = $name;
+        $this->nombre = $name;
         return $this;
     }
 
-    public function getConversations(): Collection
+    public function getConversaciones(): Collection
     {
-        return $this->conversations;
+        return $this->conversaciones;
     }
 
-    public function getStatus(): ?string
+    public function getEstado(): ?string
     {
-        return $this->status;
+        return $this->estado;
     }
 
-    public function setStatus(?string $status): self
+    public function setEstado(?string $status): self
     {
-        $this->status = $status;
+        $this->estado = $status;
         return $this;
     }
 
-    public function getChannel(): ?string
+    public function getCanal(): ?string
     {
-        return $this->channel;
+        return $this->canal;
     }
 
-    public function setChannel(?string $channel): self
+    public function setCanal(?string $channel): self
     {
-        $this->channel = $channel;
+        $this->canal = $channel;
         return $this;
     }
 
-    public function getOwnerId(): ?int
+    public function getResponsableId(): ?int
     {
-        return $this->ownerId;
+        return $this->responsableId;
     }
 
-    public function setOwnerId(?int $ownerId): self
+    public function setResponsableId(?int $ownerId): self
     {
-        $this->ownerId = $ownerId;
+        $this->responsableId = $ownerId;
         return $this;
     }
 
@@ -125,19 +125,19 @@ class Contacto
         return $this;
     }
 
-    public function getCreatedAt(): \DateTimeImmutable
+    public function getCreadoAt(): \DateTimeImmutable
     {
-        return $this->createdAt;
+        return $this->creadoAt;
     }
 
-    public function getUpdatedAt(): \DateTimeImmutable
+    public function getActualizadoAt(): \DateTimeImmutable
     {
-        return $this->updatedAt;
+        return $this->actualizadoAt;
     }
 
-    public function setUpdatedAt(\DateTimeImmutable $updatedAt): self
+    public function setActualizadoAt(\DateTimeImmutable $updatedAt): self
     {
-        $this->updatedAt = $updatedAt;
+        $this->actualizadoAt = $updatedAt;
         return $this;
     }
 }

@@ -22,8 +22,8 @@ class DeleteContactoUseCase
         }
 
         // Soft delete: set status to inactive
-        $contact->setStatus('inactive');
-        $contact->setUpdatedAt(new \DateTimeImmutable());
+        $contact->setEstado('inactive');
+        $contact->setActualizadoAt(new \DateTimeImmutable());
 
         $this->entityManager->flush();
     }

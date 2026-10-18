@@ -41,7 +41,7 @@ class TicketRepositoryTest extends KernelTestCase
         $conn->executeStatement('DELETE FROM contacts');
 
         $this->contact = new Contacto();
-        $this->contact->setPhone('+5491100000200');
+        $this->contact->setTelefono('+5491100000200');
         $this->em->persist($this->contact);
         $this->em->flush();
     }

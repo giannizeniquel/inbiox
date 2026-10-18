@@ -55,7 +55,7 @@ class ListTicketsQueryFilterTest extends KernelTestCase
         $this->phoneSeq++;
 
         $contact = new Contacto();
-        $contact->setPhone('+549110000' . str_pad((string) $this->phoneSeq, 4, '0', STR_PAD_LEFT));
+        $contact->setTelefono('+549110000' . str_pad((string) $this->phoneSeq, 4, '0', STR_PAD_LEFT));
         $this->em->persist($contact);
 
         $conversation = new Conversation();

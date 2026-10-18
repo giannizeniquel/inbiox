@@ -645,7 +645,7 @@ class Sprint09AReportingTest extends KernelTestCase
         ?string $phoneNumberId = null
     ): Ticket {
         $contact = new Contacto();
-        $contact->setPhone('+54' . random_int(3710000000, 3719999999));
+        $contact->setTelefono('+54' . random_int(3710000000, 3719999999));
         $this->em->persist($contact);
 
         $conversation = new Conversation();
@@ -692,7 +692,7 @@ class Sprint09AReportingTest extends KernelTestCase
     private function createTestTicketWithStatus(string $status): Ticket
     {
         $contact = new Contacto();
-        $contact->setPhone('+54' . random_int(3710000000, 3719999999));
+        $contact->setTelefono('+54' . random_int(3710000000, 3719999999));
         $this->em->persist($contact);
 
         $conversation = new Conversation();

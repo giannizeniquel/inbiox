@@ -426,8 +426,8 @@ class ReportingV2Test extends WebTestCase
         $contacts = [];
         for ($i = 1; $i <= 10; $i++) {
             $contact = new Contacto();
-            $contact->setPhone("+54911{$i}000000");
-            $contact->setName("Test Contact {$i}");
+            $contact->setTelefono("+54911{$i}000000");
+            $contact->setNombre("Test Contact {$i}");
             $contact->setEmail("test{$i}@test.com");
             $this->em->persist($contact);
             $contacts[] = $contact;

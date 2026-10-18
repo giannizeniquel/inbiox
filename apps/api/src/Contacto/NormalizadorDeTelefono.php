@@ -16,7 +16,7 @@ final class NormalizadorDeTelefono
     /**
      * @throws \InvalidArgumentException when the normalized phone has fewer than 10 digits
      */
-    public static function normalize(string $raw): string
+    public static function normalizar(string $raw): string
     {
         $normalized = '+' . preg_replace('/[^0-9]/', '', $raw);
 
