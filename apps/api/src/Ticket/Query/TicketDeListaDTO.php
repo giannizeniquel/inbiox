@@ -6,26 +6,26 @@ class TicketDeListaDTO
 {
     public function __construct(
         public int $ticketId,
-        public string $status,
-        public string $priority,
-        public array $contact,
-        public ?array $lastMessage,
-        public ?array $owner,
-        public array $metrics,
-        public array $timestamps,
+        public string $estado,
+        public string $prioridad,
+        public array $contacto,
+        public ?array $ultimoMensaje,
+        public ?array $responsable,
+        public array $metricas,
+        public array $marcasDeTiempo,
     ) {}
 
     public function toArray(): array
     {
         return [
             'ticket_id' => $this->ticketId,
-            'status' => $this->status,
-            'priority' => $this->priority,
-            'contact' => $this->contact,
-            'last_message' => $this->lastMessage,
-            'owner' => $this->owner,
-            'metrics' => $this->metrics,
-            'timestamps' => $this->timestamps,
+            'status' => $this->estado,
+            'priority' => $this->prioridad,
+            'contact' => $this->contacto,
+            'last_message' => $this->ultimoMensaje,
+            'owner' => $this->responsable,
+            'metrics' => $this->metricas,
+            'timestamps' => $this->marcasDeTiempo,
         ];
     }
 }

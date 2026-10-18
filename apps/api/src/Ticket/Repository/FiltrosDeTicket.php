@@ -21,60 +21,60 @@ final class FiltrosDeTicket
     private const MAX_TAGS = 5;
 
     /** 'unassigned', 'assigned', or null for no assignment filter. */
-    public readonly ?string $assignment;
-    public readonly ?string $mineAgentId;
-    public readonly ?string $scopeAgentId;
+    public readonly ?string $asignacion;
+    public readonly ?string $misAgenteId;
+    public readonly ?string $scopeAgenteId;
     public readonly ?string $phoneNumberId;
     /** @var list<string> */
-    public readonly array $statuses;
+    public readonly array $estados;
     /** @var list<string> */
-    public readonly array $tags;
-    public readonly ?string $teamId;
+    public readonly array $etiquetas;
+    public readonly ?string $equipoId;
 
     /**
-     * @param string $filter 'all', 'unassigned', 'assigned', or 'mine'
-     * @param string|null $agentId Agent ID for the 'mine' filter
-     * @param string|null $status Comma-separated status filter
-     * @param int|null $scopeAgentId Ownership scope: only tickets assigned to this agent
+     * @param string $filtro 'all', 'unassigned', 'assigned', or 'mine'
+     * @param string|null $agenteId Agent ID for the 'mine' filter
+     * @param string|null $estado Comma-separated status filter
+     * @param int|null $scopeAgenteId Ownership scope: only tickets assigned to this agent
      * @param string|null $phoneNumberId Workspace scope
-     * @param string|null $tag Comma-separated tag names (AND semantics, max 5)
-     * @param int|null $teamId Single-select team filter
+     * @param string|null $etiqueta Comma-separated tag names (AND semantics, max 5)
+     * @param int|null $equipoId Single-select team filter
      */
     public function __construct(
-        string $filter = 'all',
-        ?string $agentId = null,
-        ?string $status = null,
-        ?int $scopeAgentId = null,
+        string $filtro = 'all',
+        ?string $agenteId = null,
+        ?string $estado = null,
+        ?int $scopeAgenteId = null,
         ?string $phoneNumberId = null,
-        ?string $tag = null,
-        ?int $teamId = null,
+        ?string $etiqueta = null,
+        ?int $equipoId = null,
     ) {
-        $this->assignment = in_array($filter, ['unassigned', 'assigned'], true) ? $filter : null;
-        $this->mineAgentId = ($filter === 'mine' && $agentId) ? $agentId : null;
-        $this->scopeAgentId = $scopeAgentId !== null ? (string) $scopeAgentId : null;
+        $this->asignacion = in_array($filtro, ['unassigned', 'assigned'], true) ? $filtro : null;
+        $this->misAgenteId = ($filtro === 'mine' && $agenteId) ? $agenteId : null;
+        $this->scopeAgenteId = $scopeAgenteId !== null ? (string) $scopeAgenteId : null;
         $this->phoneNumberId = $phoneNumberId;
 
-        $statuses = [];
-        if ($status) {
-            $statuses = array_values(array_filter(
-                array_map('trim', explode(',', $status)),
+        $estados = [];
+        if ($estado) {
+            $estados = array_values(array_filter(
+                array_map('trim', explode(',', $estado)),
                 fn ($s) => in_array($s, self::KNOWN_STATUSES),
             ));
         }
-        $this->statuses = $statuses;
+        $this->estados = $estados;
 
-        $tags = [];
-        if (null !== $tag && '' !== trim($tag)) {
-            $tags = array_values(array_unique(array_filter(
-                array_map(fn ($n) => Etiqueta::normalizar($n), explode(',', $tag)),
+        $etiquetas = [];
+        if (null !== $etiqueta && '' !== trim($etiqueta)) {
+            $etiquetas = array_values(array_unique(array_filter(
+                array_map(fn ($n) => Etiqueta::normalizar($n), explode(',', $etiqueta)),
                 fn ($n) => '' !== $n,
             )));
-            if (count($tags) > self::MAX_TAGS) {
+            if (count($etiquetas) > self::MAX_TAGS) {
                 throw new \InvalidArgumentException('A maximum of 5 tags may be filtered at once');
             }
         }
-        $this->tags = $tags;
+        $this->etiquetas = $etiquetas;
 
-        $this->teamId = $teamId !== null ? (string) $teamId : null;
+        $this->equipoId = $equipoId !== null ? (string) $equipoId : null;
     }
 }

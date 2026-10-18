@@ -26,11 +26,11 @@ class EventoDeTicket
     #[ORM\Column(name: 'created_at', type: 'datetime_immutable')]
     private \DateTimeImmutable $creadoAt;
 
-    public function __construct(int $ticketId, string $type, string $source = 'system')
+    public function __construct(int $ticketId, string $tipo, string $origen = 'system')
     {
         $this->ticketId = $ticketId;
-        $this->tipo = $type;
-        $this->origen = $source;
+        $this->tipo = $tipo;
+        $this->origen = $origen;
         $this->creadoAt = new \DateTimeImmutable();
     }
 

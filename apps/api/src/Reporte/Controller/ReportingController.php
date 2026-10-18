@@ -384,12 +384,12 @@ class ReportingController
         // >5 tags) fails with 400 before any streaming/headers are sent.
         try {
             $this->ticketFilterBuilder->build(
-                filter: $agentId ? 'mine' : 'all',
-                agentId: $agentId,
-                status: $status,
+                filtro: $agentId ? 'mine' : 'all',
+                agenteId: $agentId,
+                estado: $status,
                 phoneNumberId: $phoneNumberId,
-                tag: $tag,
-                teamId: $teamId,
+                etiqueta: $tag,
+                equipoId: $teamId,
             );
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);

@@ -77,12 +77,12 @@ class ExportTicketsCsvQuery
         $escapeFormula = new EscapeFormula();
 
         $filters = $this->ticketFilterBuilder->build(
-            filter: $agentId ? 'mine' : 'all',
-            agentId: $agentId,
-            status: $status,
+            filtro: $agentId ? 'mine' : 'all',
+            agenteId: $agentId,
+            estado: $status,
             phoneNumberId: $phoneNumberId,
-            tag: $tag,
-            teamId: $teamId,
+            etiqueta: $tag,
+            equipoId: $teamId,
         );
         $fromBound = $from->format('Y-m-d H:i:s');
         $toBound = $to->format('Y-m-d H:i:s');

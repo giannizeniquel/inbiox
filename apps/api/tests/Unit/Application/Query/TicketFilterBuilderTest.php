@@ -25,49 +25,49 @@ class TicketFilterBuilderTest extends TestCase
 
     private static function assertNoFilters(FiltrosDeTicket $f): void
     {
-        self::assertNull($f->assignment);
-        self::assertNull($f->mineAgentId);
-        self::assertNull($f->scopeAgentId);
+        self::assertNull($f->asignacion);
+        self::assertNull($f->misAgenteId);
+        self::assertNull($f->scopeAgenteId);
         self::assertNull($f->phoneNumberId);
-        self::assertSame([], $f->statuses);
-        self::assertSame([], $f->tags);
-        self::assertNull($f->teamId);
+        self::assertSame([], $f->estados);
+        self::assertSame([], $f->etiquetas);
+        self::assertNull($f->equipoId);
     }
 
     public function test_no_filters(): void
     {
         self::assertNoFilters($this->builder->build());
-        self::assertNoFilters($this->builder->build(filter: 'all'));
+        self::assertNoFilters($this->builder->build(filtro: 'all'));
     }
 
     public function test_unassigned_and_assigned_filters(): void
     {
-        self::assertSame('unassigned', $this->builder->build(filter: 'unassigned')->assignment);
-        self::assertSame('assigned', $this->builder->build(filter: 'assigned')->assignment);
+        self::assertSame('unassigned', $this->builder->build(filtro: 'unassigned')->asignacion);
+        self::assertSame('assigned', $this->builder->build(filtro: 'assigned')->asignacion);
     }
 
     public function test_mine_filter_with_agent_id(): void
     {
-        $f = $this->builder->build(filter: 'mine', agentId: '7');
+        $f = $this->builder->build(filtro: 'mine', agenteId: '7');
 
-        self::assertSame('7', $f->mineAgentId);
-        self::assertNull($f->assignment);
+        self::assertSame('7', $f->misAgenteId);
+        self::assertNull($f->asignacion);
     }
 
     public function test_mine_filter_without_a_truthy_agent_id_adds_nothing(): void
     {
-        self::assertNoFilters($this->builder->build(filter: 'mine', agentId: null));
-        self::assertNoFilters($this->builder->build(filter: 'mine', agentId: '0'));
+        self::assertNoFilters($this->builder->build(filtro: 'mine', agenteId: null));
+        self::assertNoFilters($this->builder->build(filtro: 'mine', agenteId: '0'));
     }
 
     public function test_agent_id_is_ignored_without_the_mine_filter(): void
     {
-        self::assertNoFilters($this->builder->build(filter: 'all', agentId: '7'));
+        self::assertNoFilters($this->builder->build(filtro: 'all', agenteId: '7'));
     }
 
     public function test_ownership_scope_is_kept_as_a_string(): void
     {
-        self::assertSame('42', $this->builder->build(scopeAgentId: 42)->scopeAgentId);
+        self::assertSame('42', $this->builder->build(scopeAgenteId: 42)->scopeAgenteId);
     }
 
     public function test_workspace_scope(): void
@@ -77,37 +77,37 @@ class TicketFilterBuilderTest extends TestCase
 
     public function test_status_whitelist_keeps_only_known_statuses_trimmed(): void
     {
-        self::assertSame(['new', 'active'], $this->builder->build(status: 'new, bogus ,active ')->statuses);
+        self::assertSame(['new', 'active'], $this->builder->build(estado: 'new, bogus ,active ')->estados);
     }
 
     public function test_status_all_unknown_or_empty_adds_nothing(): void
     {
-        self::assertSame([], $this->builder->build(status: 'bogus,nope')->statuses);
-        self::assertSame([], $this->builder->build(status: '')->statuses);
-        self::assertSame([], $this->builder->build(status: '0')->statuses);
+        self::assertSame([], $this->builder->build(estado: 'bogus,nope')->estados);
+        self::assertSame([], $this->builder->build(estado: '')->estados);
+        self::assertSame([], $this->builder->build(estado: '0')->estados);
     }
 
     public function test_tags_are_normalized(): void
     {
-        self::assertSame(['vip'], $this->builder->build(tag: 'VIP')->tags);
-        self::assertSame(['vip', 'muy urgente'], $this->builder->build(tag: ' vip , Muy   Urgente ')->tags);
+        self::assertSame(['vip'], $this->builder->build(etiqueta: 'VIP')->etiquetas);
+        self::assertSame(['vip', 'muy urgente'], $this->builder->build(etiqueta: ' vip , Muy   Urgente ')->etiquetas);
     }
 
     public function test_blank_tag_segments_are_discarded(): void
     {
-        self::assertSame(['vip', 'urgente'], $this->builder->build(tag: 'vip,,urgente')->tags);
+        self::assertSame(['vip', 'urgente'], $this->builder->build(etiqueta: 'vip,,urgente')->etiquetas);
     }
 
     public function test_duplicate_tags_are_deduplicated(): void
     {
-        self::assertSame(['vip'], $this->builder->build(tag: 'vip,vip')->tags);
+        self::assertSame(['vip'], $this->builder->build(etiqueta: 'vip,vip')->etiquetas);
     }
 
     public function test_empty_blank_or_null_tag_applies_no_filter(): void
     {
-        self::assertSame([], $this->builder->build(tag: '')->tags);
-        self::assertSame([], $this->builder->build(tag: ' , ')->tags);
-        self::assertSame([], $this->builder->build(tag: null)->tags);
+        self::assertSame([], $this->builder->build(etiqueta: '')->etiquetas);
+        self::assertSame([], $this->builder->build(etiqueta: ' , ')->etiquetas);
+        self::assertSame([], $this->builder->build(etiqueta: null)->etiquetas);
     }
 
     public function test_more_than_five_tags_throws(): void
@@ -115,43 +115,43 @@ class TicketFilterBuilderTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('A maximum of 5 tags may be filtered at once');
 
-        $this->builder->build(tag: 'a,b,c,d,e,f');
+        $this->builder->build(etiqueta: 'a,b,c,d,e,f');
     }
 
     public function test_exactly_five_tags_does_not_throw(): void
     {
-        self::assertCount(5, $this->builder->build(tag: 'a,b,c,d,e')->tags);
+        self::assertCount(5, $this->builder->build(etiqueta: 'a,b,c,d,e')->etiquetas);
     }
 
     public function test_six_tags_that_deduplicate_to_five_do_not_throw(): void
     {
-        self::assertCount(5, $this->builder->build(tag: 'a,b,c,d,e,a')->tags);
+        self::assertCount(5, $this->builder->build(etiqueta: 'a,b,c,d,e,a')->etiquetas);
     }
 
     public function test_team_id_is_kept_as_a_string(): void
     {
-        self::assertNull($this->builder->build(teamId: null)->teamId);
-        self::assertSame('7', $this->builder->build(teamId: 7)->teamId);
+        self::assertNull($this->builder->build(equipoId: null)->equipoId);
+        self::assertSame('7', $this->builder->build(equipoId: 7)->equipoId);
     }
 
     public function test_all_filters_together(): void
     {
         $f = $this->builder->build(
-            filter: 'mine',
-            agentId: '9',
-            scopeAgentId: 42,
+            filtro: 'mine',
+            agenteId: '9',
+            scopeAgenteId: 42,
             phoneNumberId: 'phone-1',
-            status: 'active,waiting',
-            tag: 'vip,urgente',
-            teamId: 3,
+            estado: 'active,waiting',
+            etiqueta: 'vip,urgente',
+            equipoId: 3,
         );
 
-        self::assertNull($f->assignment);
-        self::assertSame('9', $f->mineAgentId);
-        self::assertSame('42', $f->scopeAgentId);
+        self::assertNull($f->asignacion);
+        self::assertSame('9', $f->misAgenteId);
+        self::assertSame('42', $f->scopeAgenteId);
         self::assertSame('phone-1', $f->phoneNumberId);
-        self::assertSame(['active', 'waiting'], $f->statuses);
-        self::assertSame(['vip', 'urgente'], $f->tags);
-        self::assertSame('3', $f->teamId);
+        self::assertSame(['active', 'waiting'], $f->estados);
+        self::assertSame(['vip', 'urgente'], $f->etiquetas);
+        self::assertSame('3', $f->equipoId);
     }
 }

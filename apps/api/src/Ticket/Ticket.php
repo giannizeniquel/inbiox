@@ -103,17 +103,17 @@ class Ticket
             throw new RecipientPhoneNotFoundException('Ticket has no associated contact');
         }
 
-        $phone = $this->contacto->getPhone();
-        if ($phone === null || $phone === '') {
+        $telefono = $this->contacto->getPhone();
+        if ($telefono === null || $telefono === '') {
             throw new RecipientPhoneNotFoundException('Contact has no phone number');
         }
 
-        return $phone;
+        return $telefono;
     }
 
-    public function setContacto(Contact $contact): self
+    public function setContacto(Contact $contacto): self
     {
-        $this->contacto = $contact;
+        $this->contacto = $contacto;
         return $this;
     }
 
@@ -122,9 +122,9 @@ class Ticket
         return $this->conversacion;
     }
 
-    public function setConversacion(Conversation $conversation): self
+    public function setConversacion(Conversation $conversacion): self
     {
-        $this->conversacion = $conversation;
+        $this->conversacion = $conversacion;
         return $this;
     }
 
@@ -133,9 +133,9 @@ class Ticket
         return $this->estado;
     }
 
-    public function setEstado(string $status): self
+    public function setEstado(string $estado): self
     {
-        $this->estado = $status;
+        $this->estado = $estado;
         return $this;
     }
 
@@ -144,9 +144,9 @@ class Ticket
         return $this->prioridad;
     }
 
-    public function setPrioridad(string $priority): self
+    public function setPrioridad(string $prioridad): self
     {
-        $this->prioridad = $priority;
+        $this->prioridad = $prioridad;
         return $this;
     }
 
@@ -155,9 +155,9 @@ class Ticket
         return $this->agenteAsignadoId;
     }
 
-    public function setAgenteAsignadoId(?int $assignedAgentId): self
+    public function setAgenteAsignadoId(?int $agenteAsignadoId): self
     {
-        $this->agenteAsignadoId = $assignedAgentId;
+        $this->agenteAsignadoId = $agenteAsignadoId;
         return $this;
     }
 
@@ -166,9 +166,9 @@ class Ticket
         return $this->primeraRespuestaAt;
     }
 
-    public function setPrimeraRespuestaAt(?\DateTimeImmutable $firstResponseAt): self
+    public function setPrimeraRespuestaAt(?\DateTimeImmutable $primeraRespuestaAt): self
     {
-        $this->primeraRespuestaAt = $firstResponseAt;
+        $this->primeraRespuestaAt = $primeraRespuestaAt;
         return $this;
     }
 
@@ -177,9 +177,9 @@ class Ticket
         return $this->resueltoAt;
     }
 
-    public function setResueltoAt(?\DateTimeImmutable $resolvedAt): self
+    public function setResueltoAt(?\DateTimeImmutable $resueltoAt): self
     {
-        $this->resueltoAt = $resolvedAt;
+        $this->resueltoAt = $resueltoAt;
         return $this;
     }
 
@@ -188,9 +188,9 @@ class Ticket
         return $this->cerradoAt;
     }
 
-    public function setCerradoAt(?\DateTimeImmutable $closedAt): self
+    public function setCerradoAt(?\DateTimeImmutable $cerradoAt): self
     {
-        $this->cerradoAt = $closedAt;
+        $this->cerradoAt = $cerradoAt;
         return $this;
     }
 
@@ -199,9 +199,9 @@ class Ticket
         return $this->creadoAt;
     }
 
-    public function setCreadoAt(\DateTimeImmutable $createdAt): self
+    public function setCreadoAt(\DateTimeImmutable $creadoAt): self
     {
-        $this->creadoAt = $createdAt;
+        $this->creadoAt = $creadoAt;
         return $this;
     }
 
@@ -210,9 +210,9 @@ class Ticket
         return $this->actualizadoAt;
     }
 
-    public function setActualizadoAt(\DateTimeImmutable $updatedAt): self
+    public function setActualizadoAt(\DateTimeImmutable $actualizadoAt): self
     {
-        $this->actualizadoAt = $updatedAt;
+        $this->actualizadoAt = $actualizadoAt;
         return $this;
     }
 
@@ -254,9 +254,9 @@ class Ticket
         return $this->equipo?->getId();
     }
 
-    public function setEquipo(?Team $team): self
+    public function setEquipo(?Team $equipo): self
     {
-        $this->equipo = $team;
+        $this->equipo = $equipo;
         return $this;
     }
 
@@ -265,9 +265,9 @@ class Ticket
         return $this->ultimaLecturaAt;
     }
 
-    public function setUltimaLecturaAt(?\DateTimeImmutable $lastReadAt): self
+    public function setUltimaLecturaAt(?\DateTimeImmutable $ultimaLecturaAt): self
     {
-        $this->ultimaLecturaAt = $lastReadAt;
+        $this->ultimaLecturaAt = $ultimaLecturaAt;
         return $this;
     }
 
@@ -276,9 +276,9 @@ class Ticket
         return $this->ultimoMensajeEntranteAt;
     }
 
-    public function setUltimoMensajeEntranteAt(?\DateTimeImmutable $lastInboundMessageAt): self
+    public function setUltimoMensajeEntranteAt(?\DateTimeImmutable $ultimoMensajeEntranteAt): self
     {
-        $this->ultimoMensajeEntranteAt = $lastInboundMessageAt;
+        $this->ultimoMensajeEntranteAt = $ultimoMensajeEntranteAt;
         return $this;
     }
 

@@ -25,10 +25,10 @@ class EtiquetaDeTicket
     #[ORM\Column(name: 'created_at', type: 'datetime_immutable')]
     private \DateTimeImmutable $creadoAt;
 
-    public function __construct(Ticket $ticket, Etiqueta $tag)
+    public function __construct(Ticket $ticket, Etiqueta $etiqueta)
     {
         $this->ticket = $ticket;
-        $this->etiqueta = $tag;
+        $this->etiqueta = $etiqueta;
         $this->creadoAt = new \DateTimeImmutable();
     }
 

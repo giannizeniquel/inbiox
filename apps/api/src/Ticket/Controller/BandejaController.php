@@ -26,13 +26,13 @@ class BandejaController
 {
     public function __construct(
         private ListTicketsQuery $listTicketsQuery,
-        private GetDetalleDeTicketQuery $getTicketDetailQuery,
+        private GetDetalleDeTicketQuery $getDetalleDeTicketQuery,
         private GetTicketMessagesQuery $getTicketMessagesQuery,
         private OwnershipScope $ownershipScope,
         private WorkspaceScope $workspaceScope,
         private Security $security,
         private TicketRepository $ticketRepository,
-        private MarcarTicketLeidoUseCase $markTicketReadUseCase,
+        private MarcarTicketLeidoUseCase $marcarTicketLeidoUseCase,
     ) {}
 
     #[Route('/api/tickets', name: 'app_inbox_tickets', methods: ['GET'])]
@@ -41,17 +41,17 @@ class BandejaController
         try {
             $page = max(1, (int) $request->query->get('page', 1));
             $limit = min(100, max(1, (int) $request->query->get('limit', 20)));
-            $filter = $request->query->get('filter', 'all');
-            $agentId = $request->query->get('agent_id');
-            $status = $request->query->get('status');
+            $filtro = $request->query->get('filter', 'all');
+            $agenteId = $request->query->get('agent_id');
+            $estado = $request->query->get('status');
             $search = $request->query->get('search');
             $sort = $request->query->get('sort', 'last_message_desc');
-            $tag = $request->query->get('tag');
-            $teamIdRaw = $request->query->get('teamId');
-            $teamId = null !== $teamIdRaw ? (int) $teamIdRaw : null;
+            $etiqueta = $request->query->get('tag');
+            $equipoIdRaw = $request->query->get('teamId');
+            $equipoId = null !== $equipoIdRaw ? (int) $equipoIdRaw : null;
 
             // Ownership scope: AGENT sees only own tickets; SUPERVISOR/ADMIN see all
-            $scopeAgentId = $this->ownershipScope->getAgentId();
+            $scopeAgenteId = $this->ownershipScope->getAgentId();
 
             // Workspace scope: AGENT sees only active workspace's tickets
             $phoneNumberId = $this->workspaceScope->getActivePhoneNumberId();
@@ -59,15 +59,15 @@ class BandejaController
             $result = $this->listTicketsQuery->execute(
                 page: $page,
                 limit: $limit,
-                filter: $filter,
-                agentId: $agentId,
-                status: $status,
+                filtro: $filtro,
+                agenteId: $agenteId,
+                estado: $estado,
                 search: $search,
                 sort: $sort,
-                scopeAgentId: $scopeAgentId,
+                scopeAgenteId: $scopeAgenteId,
                 phoneNumberId: $phoneNumberId,
-                tag: $tag,
-                teamId: $teamId,
+                etiqueta: $etiqueta,
+                equipoId: $equipoId,
             );
 
             $items = array_map(fn($dto) => $dto->toArray(), $result['items']);
@@ -91,7 +91,7 @@ class BandejaController
     #[Route('/api/tickets/{id}', name: 'app_inbox_ticket_detail', methods: ['GET'])]
     public function getTicket(int $id): JsonResponse
     {
-        $dto = $this->getTicketDetailQuery->execute($id);
+        $dto = $this->getDetalleDeTicketQuery->execute($id);
 
         if ($dto === null) {
             return new JsonResponse(['error' => 'Ticket not found'], 404);
@@ -106,14 +106,14 @@ class BandejaController
         try {
             $cursor = $request->query->get('cursor');
             $limit = min(200, max(1, (int) $request->query->get('limit', 20)));
-            $direction = $request->query->get('direction', 'backward');
+            $direccion = $request->query->get('direction', 'backward');
             $offset = max(0, (int) $request->query->get('offset', 0));
 
             $result = $this->getTicketMessagesQuery->execute(
                 ticketId: $id,
                 cursor: $cursor,
                 limit: $limit,
-                direction: $direction,
+                direction: $direccion,
                 offset: $offset,
             );
 
@@ -144,10 +144,10 @@ class BandejaController
             return new JsonResponse(['error' => 'Ticket not found'], Response::HTTP_NOT_FOUND);
         }
 
-        $user = $this->security->getUser();
-        $currentAgentId = $user instanceof User ? $user->getAgent()?->getId() : null;
+        $usuario = $this->security->getUser();
+        $agenteActualId = $usuario instanceof User ? $usuario->getAgent()?->getId() : null;
 
-        $this->markTicketReadUseCase->execute($ticket, $currentAgentId);
+        $this->marcarTicketLeidoUseCase->execute($ticket, $agenteActualId);
 
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }

@@ -12,7 +12,7 @@ use Doctrine\ORM\EntityManagerInterface;
 class ResolverTicketUseCase
 {
     public function __construct(
-        private CambiarEstadoDeTicketUseCase $transitionUseCase,
+        private CambiarEstadoDeTicketUseCase $cambiarEstadoUseCase,
     ) {}
 
     /**
@@ -23,6 +23,6 @@ class ResolverTicketUseCase
      */
     public function execute(int $ticketId, string $actor = 'system'): array
     {
-        return $this->transitionUseCase->resolver($ticketId, $actor);
+        return $this->cambiarEstadoUseCase->resolver($ticketId, $actor);
     }
 }

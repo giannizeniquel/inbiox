@@ -19,29 +19,29 @@ final class TicketResponsabilidadGuard
     /**
      * A resolved/closed ticket freezes ownership for reply-driven changes.
      */
-    public static function isResueltoOCerrado(string $status): bool
+    public static function isResueltoOCerrado(string $estado): bool
     {
-        return $status === EstadoDeTicket::RESUELTO->value || $status === EstadoDeTicket::CERRADO->value;
+        return $estado === EstadoDeTicket::RESUELTO->value || $estado === EstadoDeTicket::CERRADO->value;
     }
 
     /**
-     * Whether an outbound reply from $agentId must be BLOCKED (StateConflictException)
+     * Whether an outbound reply from $agenteId must be BLOCKED (StateConflictException)
      * because the ticket is resolved/closed, the sender is not privileged, and the
      * sender is not the current owner.
      *
-     * `$agentId <= 0` (system/no-agent callers) never blocks — preserves every
+     * `$agenteId <= 0` (system/no-agent callers) never blocks — preserves every
      * existing `agentId: 0` call site.
      */
     public static function bloqueaReasignacion(
-        string $status,
-        bool $senderIsPrivileged,
-        int $agentId,
-        ?int $assignedAgentId,
+        string $estado,
+        bool $remitenteEsPrivilegiado,
+        int $agenteId,
+        ?int $agenteAsignadoId,
     ): bool {
-        if (!self::isResueltoOCerrado($status)) {
+        if (!self::isResueltoOCerrado($estado)) {
             return false;
         }
 
-        return !$senderIsPrivileged && $agentId > 0 && $assignedAgentId !== $agentId;
+        return !$remitenteEsPrivilegiado && $agenteId > 0 && $agenteAsignadoId !== $agenteId;
     }
 }

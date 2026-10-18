@@ -115,10 +115,10 @@ class ListTicketsQueryFilterTest extends KernelTestCase
         }
 
         $query = static::getContainer()->get(ListTicketsQuery::class);
-        $result = $query->execute(page: 1, limit: 20, status: 'waiting');
+        $result = $query->execute(page: 1, limit: 20, estado: 'waiting');
 
         self::assertCount(1, $result['items']);
-        self::assertSame('waiting', $result['items'][0]->status);
+        self::assertSame('waiting', $result['items'][0]->estado);
     }
 
     // --- Phase 3/4: tag filter ---
@@ -129,7 +129,7 @@ class ListTicketsQueryFilterTest extends KernelTestCase
         $this->createTicket('active');
 
         $query = static::getContainer()->get(ListTicketsQuery::class);
-        $result = $query->execute(page: 1, limit: 20, tag: 'vip');
+        $result = $query->execute(page: 1, limit: 20, etiqueta: 'vip');
 
         self::assertCount(1, $result['items']);
         self::assertSame($tagged, $result['items'][0]->ticketId);
@@ -141,7 +141,7 @@ class ListTicketsQueryFilterTest extends KernelTestCase
         $this->createTicket('active', ['vip']);
 
         $query = static::getContainer()->get(ListTicketsQuery::class);
-        $result = $query->execute(page: 1, limit: 20, tag: 'vip,urgente');
+        $result = $query->execute(page: 1, limit: 20, etiqueta: 'vip,urgente');
 
         self::assertCount(1, $result['items']);
         self::assertSame($both, $result['items'][0]->ticketId);
@@ -155,7 +155,7 @@ class ListTicketsQueryFilterTest extends KernelTestCase
         $this->createTicket('active', ['vip']);
 
         $query = static::getContainer()->get(ListTicketsQuery::class);
-        $result = $query->execute(page: 1, limit: 2, tag: 'vip,urgente');
+        $result = $query->execute(page: 1, limit: 2, etiqueta: 'vip,urgente');
 
         self::assertCount(2, $result['items']);
         self::assertSame(3, $result['total']);
@@ -166,7 +166,7 @@ class ListTicketsQueryFilterTest extends KernelTestCase
         $this->createTicket('active', ['vip']);
 
         $query = static::getContainer()->get(ListTicketsQuery::class);
-        $result = $query->execute(page: 1, limit: 20, tag: 'doesnotexist');
+        $result = $query->execute(page: 1, limit: 20, etiqueta: 'doesnotexist');
 
         self::assertCount(0, $result['items']);
         self::assertSame(0, $result['total']);
@@ -178,7 +178,7 @@ class ListTicketsQueryFilterTest extends KernelTestCase
         $this->createTicket('active', ['vip']);
 
         $query = static::getContainer()->get(ListTicketsQuery::class);
-        $result = $query->execute(page: 1, limit: 20, tag: 'vip,,urgente');
+        $result = $query->execute(page: 1, limit: 20, etiqueta: 'vip,,urgente');
 
         self::assertCount(1, $result['items']);
         self::assertSame($both, $result['items'][0]->ticketId);
@@ -190,8 +190,8 @@ class ListTicketsQueryFilterTest extends KernelTestCase
         $this->createTicket('active');
 
         $query = static::getContainer()->get(ListTicketsQuery::class);
-        $resultEmpty = $query->execute(page: 1, limit: 20, tag: '');
-        $resultAbsent = $query->execute(page: 1, limit: 20, tag: null);
+        $resultEmpty = $query->execute(page: 1, limit: 20, etiqueta: '');
+        $resultAbsent = $query->execute(page: 1, limit: 20, etiqueta: null);
 
         self::assertCount(2, $resultEmpty['items']);
         self::assertCount(2, $resultAbsent['items']);
@@ -202,14 +202,14 @@ class ListTicketsQueryFilterTest extends KernelTestCase
         $query = static::getContainer()->get(ListTicketsQuery::class);
 
         $this->expectException(\InvalidArgumentException::class);
-        $query->execute(page: 1, limit: 20, tag: 'a,b,c,d,e,f');
+        $query->execute(page: 1, limit: 20, etiqueta: 'a,b,c,d,e,f');
     }
 
     public function test_tag_cap_of_five_does_not_throw(): void
     {
         $query = static::getContainer()->get(ListTicketsQuery::class);
 
-        $result = $query->execute(page: 1, limit: 20, tag: 'a,b,c,d,e');
+        $result = $query->execute(page: 1, limit: 20, etiqueta: 'a,b,c,d,e');
 
         self::assertSame(0, $result['total']);
     }
@@ -220,7 +220,7 @@ class ListTicketsQueryFilterTest extends KernelTestCase
         $this->createTicket('active', ['vip'], 99);
 
         $query = static::getContainer()->get(ListTicketsQuery::class);
-        $result = $query->execute(page: 1, limit: 20, tag: 'vip', scopeAgentId: 42);
+        $result = $query->execute(page: 1, limit: 20, etiqueta: 'vip', scopeAgenteId: 42);
 
         self::assertCount(1, $result['items']);
         self::assertSame($ownTagged, $result['items'][0]->ticketId);
@@ -235,7 +235,7 @@ class ListTicketsQueryFilterTest extends KernelTestCase
         $this->createTicket('active');
 
         $query = static::getContainer()->get(ListTicketsQuery::class);
-        $result = $query->execute(page: 1, limit: 20, teamId: $team->getId());
+        $result = $query->execute(page: 1, limit: 20, equipoId: $team->getId());
 
         self::assertCount(1, $result['items']);
         self::assertSame($inTeam, $result['items'][0]->ticketId);
@@ -247,7 +247,7 @@ class ListTicketsQueryFilterTest extends KernelTestCase
         $this->createTicket('active');
 
         $query = static::getContainer()->get(ListTicketsQuery::class);
-        $result = $query->execute(page: 1, limit: 20, teamId: $team->getId());
+        $result = $query->execute(page: 1, limit: 20, equipoId: $team->getId());
 
         self::assertCount(0, $result['items']);
         self::assertSame(0, $result['total']);
@@ -272,7 +272,7 @@ class ListTicketsQueryFilterTest extends KernelTestCase
         $this->createTicket('active', ['vip'], null, $team->getId()); // right team, missing a tag
 
         $query = static::getContainer()->get(ListTicketsQuery::class);
-        $result = $query->execute(page: 1, limit: 20, tag: 'vip,urgente', teamId: $team->getId());
+        $result = $query->execute(page: 1, limit: 20, etiqueta: 'vip,urgente', equipoId: $team->getId());
 
         self::assertCount(1, $result['items']);
         self::assertSame($matchesBoth, $result['items'][0]->ticketId);

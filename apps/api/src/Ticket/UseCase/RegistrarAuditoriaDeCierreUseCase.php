@@ -22,26 +22,26 @@ final class RegistrarAuditoriaDeCierreUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly ClasificadorDeAuditoriaDeCierre $classifier,
+        private readonly ClasificadorDeAuditoriaDeCierre $clasificador,
         private readonly LoggerInterface $logger,
     ) {}
 
-    public function execute(int $ticketId, string $newStatus, ?int $previousOwnerId, User $user): void
+    public function execute(int $ticketId, string $nuevoEstado, ?int $responsableAnteriorId, User $usuario): void
     {
-        $actingAgentId = $user->getAgent()?->getId();
+        $agenteActuanteId = $usuario->getAgent()?->getId();
 
-        $type = $this->classifier->clasificar($newStatus, $previousOwnerId, $actingAgentId);
-        $source = $this->classifier->referenciaDeActor($user);
+        $tipo = $this->clasificador->clasificar($nuevoEstado, $responsableAnteriorId, $agenteActuanteId);
+        $origen = $this->clasificador->referenciaDeActor($usuario);
 
         try {
-            $event = new EventoDeTicket($ticketId, $type, $source);
-            $this->entityManager->persist($event);
+            $evento = new EventoDeTicket($ticketId, $tipo, $origen);
+            $this->entityManager->persist($evento);
             $this->entityManager->flush();
         } catch (\Throwable $e) {
             $this->logger->error('Failed to persist closure audit event', [
                 'ticket_id' => $ticketId,
-                'type' => $type,
-                'source' => $source,
+                'type' => $tipo,
+                'source' => $origen,
                 'exception' => $e->getMessage(),
             ]);
         }

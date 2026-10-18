@@ -13,33 +13,33 @@ use App\Ticket\Repository\FiltrosDeTicket;
 class FiltrosDeTicketBuilder
 {
     /**
-     * @param string $filter 'all', 'unassigned', 'assigned', or 'mine'
-     * @param string|null $agentId Agent ID for 'mine' filter
-     * @param string|null $status Comma-separated status filter
-     * @param int|null $scopeAgentId Ownership scope: forces WHERE assigned_agent_id = scopeAgentId
+     * @param string $filtro 'all', 'unassigned', 'assigned', or 'mine'
+     * @param string|null $agenteId Agent ID for 'mine' filter
+     * @param string|null $estado Comma-separated status filter
+     * @param int|null $scopeAgenteId Ownership scope: forces WHERE assigned_agent_id = scopeAgentId
      * @param string|null $phoneNumberId Workspace scope: filters by ticket phone_number_id
-     * @param string|null $tag Comma-separated tag names (AND semantics, max 5)
-     * @param int|null $teamId Single-select team filter
+     * @param string|null $etiqueta Comma-separated tag names (AND semantics, max 5)
+     * @param int|null $equipoId Single-select team filter
      *
      * @throws \InvalidArgumentException when more than 5 tags are given
      */
     public function build(
-        string $filter = 'all',
-        ?string $agentId = null,
-        ?string $status = null,
-        ?int $scopeAgentId = null,
+        string $filtro = 'all',
+        ?string $agenteId = null,
+        ?string $estado = null,
+        ?int $scopeAgenteId = null,
         ?string $phoneNumberId = null,
-        ?string $tag = null,
-        ?int $teamId = null,
+        ?string $etiqueta = null,
+        ?int $equipoId = null,
     ): FiltrosDeTicket {
         return new FiltrosDeTicket(
-            filter: $filter,
-            agentId: $agentId,
-            status: $status,
-            scopeAgentId: $scopeAgentId,
+            filtro: $filtro,
+            agenteId: $agenteId,
+            estado: $estado,
+            scopeAgenteId: $scopeAgenteId,
             phoneNumberId: $phoneNumberId,
-            tag: $tag,
-            teamId: $teamId,
+            etiqueta: $etiqueta,
+            equipoId: $equipoId,
         );
     }
 }

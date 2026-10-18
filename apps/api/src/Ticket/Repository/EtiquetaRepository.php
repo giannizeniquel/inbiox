@@ -19,9 +19,9 @@ class EtiquetaRepository extends ServiceEntityRepository
         return $this->find($id);
     }
 
-    public function findByNombre(string $name): ?Etiqueta
+    public function findByNombre(string $nombre): ?Etiqueta
     {
-        return $this->findOneBy(['nombre' => Etiqueta::normalizar($name)]);
+        return $this->findOneBy(['nombre' => Etiqueta::normalizar($nombre)]);
     }
 
     public function findAll(): array
@@ -32,16 +32,16 @@ class EtiquetaRepository extends ServiceEntityRepository
     /**
      * Persist and flush a tag entity
      */
-    public function guardar(Etiqueta $tag): void
+    public function guardar(Etiqueta $etiqueta): void
     {
-        $this->getEntityManager()->persist($tag);
+        $this->getEntityManager()->persist($etiqueta);
         $this->getEntityManager()->flush();
     }
 
     /**
      * Whether a `ticket_tags` row links this ticket and tag.
      */
-    public function isAsociadaATicket(int $ticketId, int $tagId): bool
+    public function isAsociadaATicket(int $ticketId, int $etiquetaId): bool
     {
         return (bool) $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->select('1')
@@ -49,7 +49,7 @@ class EtiquetaRepository extends ServiceEntityRepository
             ->where('ticket_id = :ticketId')
             ->andWhere('tag_id = :tagId')
             ->setParameter('ticketId', $ticketId)
-            ->setParameter('tagId', $tagId)
+            ->setParameter('tagId', $etiquetaId)
             ->fetchOne();
     }
 

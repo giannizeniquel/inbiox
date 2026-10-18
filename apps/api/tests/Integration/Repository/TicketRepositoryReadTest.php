@@ -128,8 +128,8 @@ class TicketRepositoryReadTest extends KernelTestCase
     public function testCountListMatchesTheFilters(): void
     {
         self::assertSame(3, $this->repo->countLista(new FiltrosDeTicket(phoneNumberId: 'repo-read-p1')));
-        self::assertSame(1, $this->repo->countLista(new FiltrosDeTicket(phoneNumberId: 'repo-read-p2', tag: 'repo-read-vip')));
-        self::assertSame(0, $this->repo->countLista(new FiltrosDeTicket(phoneNumberId: 'repo-read-p2', status: 'new')));
+        self::assertSame(1, $this->repo->countLista(new FiltrosDeTicket(phoneNumberId: 'repo-read-p2', etiqueta: 'repo-read-vip')));
+        self::assertSame(0, $this->repo->countLista(new FiltrosDeTicket(phoneNumberId: 'repo-read-p2', estado: 'new')));
     }
 
     public function testCountUnreadInboundByConversation(): void

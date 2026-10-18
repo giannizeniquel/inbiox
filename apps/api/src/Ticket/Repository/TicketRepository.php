@@ -21,12 +21,12 @@ class TicketRepository extends ServiceEntityRepository
         parent::__construct($registry, Ticket::class);
     }
 
-    public function findAbiertoByContacto(Contact $contact, ?string $phoneNumberId = null): ?Ticket
+    public function findAbiertoByContacto(Contact $contacto, ?string $phoneNumberId = null): ?Ticket
     {
         $qb = $this->createQueryBuilder('t')
             ->where('t.contacto = :contact')
             ->andWhere('t.estado IN (:statuses)')
-            ->setParameter('contact', $contact->getId() ?? 0)
+            ->setParameter('contact', $contacto->getId() ?? 0)
             ->setParameter('statuses', [
                 EstadoDeTicket::NUEVO->value,
                 EstadoDeTicket::ACTIVO->value,
@@ -41,12 +41,12 @@ class TicketRepository extends ServiceEntityRepository
         return $qb->getQuery()->getOneOrNullResult();
     }
 
-    public function findNoCerradoByContacto(Contact $contact, ?string $phoneNumberId = null): ?Ticket
+    public function findNoCerradoByContacto(Contact $contacto, ?string $phoneNumberId = null): ?Ticket
     {
         $qb = $this->createQueryBuilder('t')
             ->where('t.contacto = :contact')
             ->andWhere('t.estado IN (:statuses)')
-            ->setParameter('contact', $contact->getId() ?? 0)
+            ->setParameter('contact', $contacto->getId() ?? 0)
             ->setParameter('statuses', [
                 EstadoDeTicket::NUEVO->value,
                 EstadoDeTicket::ACTIVO->value,
@@ -104,7 +104,7 @@ class TicketRepository extends ServiceEntityRepository
      * then rehydrates via `$this->find($id)` so the caller receives a
      * managed entity it can `lock()`.
      */
-    public function findCerradoPorVentanaVencidaByContacto(Contact $contact, ?string $phoneNumberId = null): ?Ticket
+    public function findCerradoPorVentanaVencidaByContacto(Contact $contacto, ?string $phoneNumberId = null): ?Ticket
     {
         $sql = 'SELECT t.id
                 FROM tickets t
@@ -116,7 +116,7 @@ class TicketRepository extends ServiceEntityRepository
                        ORDER BY te.created_at DESC, te.id DESC
                        LIMIT 1) = :window_expired_closed';
         $params = [
-            'contact_id' => $contact->getId() ?? 0,
+            'contact_id' => $contacto->getId() ?? 0,
             'status' => EstadoDeTicket::CERRADO->value,
             'window_expired_closed' => TipoDeEventoDeTicket::VENTANA_VENCIDA_CERRADO,
         ];
@@ -133,9 +133,9 @@ class TicketRepository extends ServiceEntityRepository
         return $id !== false ? $this->find((int) $id) : null;
     }
 
-    public function findByConversacion(Conversation $conversation): ?Ticket
+    public function findByConversacion(Conversation $conversacion): ?Ticket
     {
-        return $this->findOneBy(['conversacion' => $conversation]);
+        return $this->findOneBy(['conversacion' => $conversacion]);
     }
 
     /**
@@ -144,13 +144,13 @@ class TicketRepository extends ServiceEntityRepository
      * Active tickets are those with status IN ('new', 'active', 'waiting').
      * Uses index idx_tickets_owner_status (assigned_agent_id, status).
      */
-    public function countActivosDeAgente(int $agentId): int
+    public function countActivosDeAgente(int $agenteId): int
     {
         return (int) $this->createQueryBuilder('t')
             ->select('COUNT(t.id)')
             ->where('t.agenteAsignadoId = :agentId')
             ->andWhere('t.estado IN (:statuses)')
-            ->setParameter('agentId', $agentId)
+            ->setParameter('agentId', $agenteId)
             ->setParameter('statuses', [
                 EstadoDeTicket::NUEVO->value,
                 EstadoDeTicket::ACTIVO->value,
@@ -188,28 +188,28 @@ class TicketRepository extends ServiceEntityRepository
      */
     public function updateEstadoTrasTransicion(
         int $id,
-        string $status,
-        bool $setFirstResponse,
-        bool $setResolved,
-        bool $setClosed,
+        string $estado,
+        bool $setPrimeraRespuesta,
+        bool $setResuelto,
+        bool $setCerrado,
     ): void {
         $qb = $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->update('tickets')
             ->set('status', ':status')
             ->set('updated_at', 'NOW()');
 
-        if ($setFirstResponse) {
+        if ($setPrimeraRespuesta) {
             $qb->set('first_response_at', 'NOW()');
         }
-        if ($setResolved) {
+        if ($setResuelto) {
             $qb->set('resolved_at', 'NOW()');
         }
-        if ($setClosed) {
+        if ($setCerrado) {
             $qb->set('closed_at', 'NOW()');
         }
 
         $qb->where('id = :id')
-            ->setParameter('status', $status)
+            ->setParameter('status', $estado)
             ->setParameter('id', $id)
             ->executeStatement();
     }
@@ -217,7 +217,7 @@ class TicketRepository extends ServiceEntityRepository
     /**
      * Close write: status, closed_at = NOW(), updated_at = NOW().
      */
-    public function marcarCerrado(int $id, string $status): void
+    public function marcarCerrado(int $id, string $estado): void
     {
         $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->update('tickets')
@@ -225,7 +225,7 @@ class TicketRepository extends ServiceEntityRepository
             ->set('closed_at', 'NOW()')
             ->set('updated_at', 'NOW()')
             ->where('id = :id')
-            ->setParameter('status', $status)
+            ->setParameter('status', $estado)
             ->setParameter('id', $id)
             ->executeStatement();
     }
@@ -233,7 +233,7 @@ class TicketRepository extends ServiceEntityRepository
     /**
      * Reopen write: status, closed_at = NULL, updated_at = NOW().
      */
-    public function marcarReabierto(int $id, string $status): void
+    public function marcarReabierto(int $id, string $estado): void
     {
         $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->update('tickets')
@@ -241,7 +241,7 @@ class TicketRepository extends ServiceEntityRepository
             ->set('closed_at', 'NULL')
             ->set('updated_at', 'NOW()')
             ->where('id = :id')
-            ->setParameter('status', $status)
+            ->setParameter('status', $estado)
             ->setParameter('id', $id)
             ->executeStatement();
     }
@@ -296,14 +296,14 @@ class TicketRepository extends ServiceEntityRepository
     }
 
     /**
-     * Ids of tickets in one of `$statuses` whose last inbound message is
+     * Ids of tickets in one of `$estados` whose last inbound message is
      * older than `$threshold` (`Y-m-d H:i:s`), oldest first, at most `$limit`.
      * Tickets with a null `last_inbound_message_at` never match.
      *
-     * @param string[] $statuses
+     * @param string[] $estados
      * @return list<mixed>
      */
-    public function findIdsConVentanaVencida(array $statuses, string $threshold, int $limit): array
+    public function findIdsConVentanaVencida(array $estados, string $threshold, int $limit): array
     {
         return $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->select('id')
@@ -313,7 +313,7 @@ class TicketRepository extends ServiceEntityRepository
             ->andWhere('last_inbound_message_at < :threshold')
             ->orderBy('last_inbound_message_at', 'ASC')
             ->setMaxResults($limit)
-            ->setParameter('statuses', $statuses, ArrayParameterType::STRING)
+            ->setParameter('statuses', $estados, ArrayParameterType::STRING)
             ->setParameter('threshold', $threshold)
             ->fetchFirstColumn();
     }
@@ -325,7 +325,7 @@ class TicketRepository extends ServiceEntityRepository
      *
      * @return list<array<string, mixed>>
      */
-    public function findPaginaDeLista(FiltrosDeTicket $filters, int $limit, int $offset): array
+    public function findPaginaDeLista(FiltrosDeTicket $filtros, int $limit, int $offset): array
     {
         $qb = $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->select(
@@ -340,7 +340,7 @@ class TicketRepository extends ServiceEntityRepository
             ->innerJoin('t', 'contacts', 'c', 'conv.contact_id = c.id')
             ->leftJoin('t', 'agents', 'a', 't.assigned_agent_id = a.id');
 
-        $this->aplicarFiltrosDeLista($qb, $filters);
+        $this->aplicarFiltrosDeLista($qb, $filtros);
 
         return $qb->orderBy('t.updated_at', 'DESC')
             ->addOrderBy('t.id', 'DESC')
@@ -352,13 +352,13 @@ class TicketRepository extends ServiceEntityRepository
     /**
      * Total number of tickets matching the list filters (no joins needed).
      */
-    public function countLista(FiltrosDeTicket $filters): int
+    public function countLista(FiltrosDeTicket $filtros): int
     {
         $qb = $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->select('COUNT(*)')
             ->from('tickets', 't');
 
-        $this->aplicarFiltrosDeLista($qb, $filters);
+        $this->aplicarFiltrosDeLista($qb, $filtros);
 
         return (int) $qb->fetchOne();
     }
@@ -368,10 +368,10 @@ class TicketRepository extends ServiceEntityRepository
      * when it is null), per conversation. Conversations without unread
      * messages are absent from the result.
      *
-     * @param int[] $conversationIds
+     * @param int[] $conversacionIds
      * @return list<array{conversation_id: mixed, cnt: mixed}>
      */
-    public function countEntrantesNoLeidosByConversacion(array $conversationIds): array
+    public function countEntrantesNoLeidosByConversacion(array $conversacionIds): array
     {
         return $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->select('m2.conversation_id', 'COUNT(*) AS cnt')
@@ -381,7 +381,7 @@ class TicketRepository extends ServiceEntityRepository
             ->andWhere("m2.direction = 'inbound'")
             ->andWhere("m2.created_at > COALESCE(t2.last_read_at, '1970-01-01 00:00:00')")
             ->groupBy('m2.conversation_id')
-            ->setParameter('conversationIds', $conversationIds, ArrayParameterType::INTEGER)
+            ->setParameter('conversationIds', $conversacionIds, ArrayParameterType::INTEGER)
             ->fetchAllAssociative();
     }
 
@@ -390,7 +390,7 @@ class TicketRepository extends ServiceEntityRepository
      * that was never read or has an inbound message newer than its last read
      * (`has_pending` in `GET /api/me/workspaces`).
      */
-    public function hasPendientesDeAgente(string $phoneNumberId, int $agentId): bool
+    public function hasPendientesDeAgente(string $phoneNumberId, int $agenteId): bool
     {
         return false !== $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->select('1')
@@ -401,7 +401,7 @@ class TicketRepository extends ServiceEntityRepository
             ->andWhere('t.status IN (:statuses)')
             ->andWhere('t.last_read_at IS NULL OR EXISTS (SELECT 1 FROM messages m WHERE m.conversation_id = conv.id AND m.direction = :inbound AND m.created_at > t.last_read_at)')
             ->setParameter('phone', $phoneNumberId)
-            ->setParameter('agentId', $agentId)
+            ->setParameter('agentId', $agenteId)
             ->setParameter('statuses', ['new', 'active', 'waiting'], ArrayParameterType::STRING)
             ->setParameter('inbound', 'inbound')
             ->setMaxResults(1)
@@ -441,18 +441,18 @@ class TicketRepository extends ServiceEntityRepository
      */
     public function findConversacionId(int $id): int|false|null
     {
-        $conversationId = $this->getEntityManager()->getConnection()->createQueryBuilder()
+        $conversacionId = $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->select('conversation_id')
             ->from('tickets')
             ->where('id = :id')
             ->setParameter('id', $id)
             ->fetchOne();
 
-        if ($conversationId === false || $conversationId === null) {
-            return $conversationId;
+        if ($conversacionId === false || $conversacionId === null) {
+            return $conversacionId;
         }
 
-        return (int) $conversationId;
+        return (int) $conversacionId;
     }
 
     /**
@@ -462,7 +462,7 @@ class TicketRepository extends ServiceEntityRepository
      *
      * @return list<array<string, mixed>>
      */
-    public function findBloqueDeExportacion(FiltrosDeTicket $filters, string $from, string $to, int $afterId, int $limit): array
+    public function findBloqueDeExportacion(FiltrosDeTicket $filtros, string $from, string $to, int $afterId, int $limit): array
     {
         $qb = $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->select(
@@ -478,7 +478,7 @@ class TicketRepository extends ServiceEntityRepository
             ->innerJoin('t', 'contacts', 'c', 'conv.contact_id = c.id')
             ->leftJoin('t', 'agents', 'a', 't.assigned_agent_id = a.id');
 
-        $this->aplicarFiltrosDeLista($qb, $filters);
+        $this->aplicarFiltrosDeLista($qb, $filtros);
 
         return $qb->andWhere('t.created_at >= :from')
             ->andWhere('t.created_at <= :to')
@@ -496,17 +496,17 @@ class TicketRepository extends ServiceEntityRepository
      * nor resolved, optionally limited to one workspace (`phone_number_id`).
      * Contacts without such a ticket are absent from the result.
      *
-     * @param int[] $contactIds
+     * @param int[] $contactoIds
      * @return list<array{contact_id: mixed, ticket_id: mixed}>
      */
-    public function findUltimosTicketIdsAbiertosByContacto(array $contactIds, ?string $phoneNumberId): array
+    public function findUltimosTicketIdsAbiertosByContacto(array $contactoIds, ?string $phoneNumberId): array
     {
         $qb = $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->select('t.contact_id', 'MAX(t.id) AS ticket_id')
             ->from('tickets', 't')
             ->where('t.contact_id IN (:contactIds)')
             ->andWhere("t.status NOT IN ('closed', 'resolved')")
-            ->setParameter('contactIds', $contactIds, ArrayParameterType::INTEGER);
+            ->setParameter('contactIds', $contactoIds, ArrayParameterType::INTEGER);
 
         if ($phoneNumberId !== null) {
             $qb->andWhere('t.phone_number_id = :phoneNumberId')
@@ -521,40 +521,40 @@ class TicketRepository extends ServiceEntityRepository
      * in this order: assignment or mine, ownership scope, workspace, status,
      * one EXISTS per tag (AND semantics), team.
      */
-    private function aplicarFiltrosDeLista(QueryBuilder $qb, FiltrosDeTicket $filters): void
+    private function aplicarFiltrosDeLista(QueryBuilder $qb, FiltrosDeTicket $filtros): void
     {
-        if ($filters->assignment === 'unassigned') {
+        if ($filtros->asignacion === 'unassigned') {
             $qb->andWhere('t.assigned_agent_id IS NULL');
-        } elseif ($filters->assignment === 'assigned') {
+        } elseif ($filtros->asignacion === 'assigned') {
             $qb->andWhere('t.assigned_agent_id IS NOT NULL');
-        } elseif ($filters->mineAgentId !== null) {
+        } elseif ($filtros->misAgenteId !== null) {
             $qb->andWhere('t.assigned_agent_id = :mineAgentId')
-                ->setParameter('mineAgentId', $filters->mineAgentId);
+                ->setParameter('mineAgentId', $filtros->misAgenteId);
         }
 
-        if ($filters->scopeAgentId !== null) {
+        if ($filtros->scopeAgenteId !== null) {
             $qb->andWhere('t.assigned_agent_id = :scopeAgentId')
-                ->setParameter('scopeAgentId', $filters->scopeAgentId);
+                ->setParameter('scopeAgentId', $filtros->scopeAgenteId);
         }
 
-        if ($filters->phoneNumberId !== null) {
+        if ($filtros->phoneNumberId !== null) {
             $qb->andWhere('t.phone_number_id = :phoneNumberId')
-                ->setParameter('phoneNumberId', $filters->phoneNumberId);
+                ->setParameter('phoneNumberId', $filtros->phoneNumberId);
         }
 
-        if ($filters->statuses !== []) {
+        if ($filtros->estados !== []) {
             $qb->andWhere('t.status IN (:statuses)')
-                ->setParameter('statuses', $filters->statuses, ArrayParameterType::STRING);
+                ->setParameter('statuses', $filtros->estados, ArrayParameterType::STRING);
         }
 
-        foreach ($filters->tags as $i => $name) {
+        foreach ($filtros->etiquetas as $i => $nombre) {
             $qb->andWhere("EXISTS (SELECT 1 FROM ticket_tags tt JOIN tags tg ON tg.id = tt.tag_id WHERE tt.ticket_id = t.id AND tg.name = :tag{$i})")
-                ->setParameter("tag{$i}", $name);
+                ->setParameter("tag{$i}", $nombre);
         }
 
-        if ($filters->teamId !== null) {
+        if ($filtros->equipoId !== null) {
             $qb->andWhere('t.team_id = :teamId')
-                ->setParameter('teamId', $filters->teamId);
+                ->setParameter('teamId', $filtros->equipoId);
         }
     }
 }

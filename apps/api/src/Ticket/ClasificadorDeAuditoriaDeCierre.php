@@ -16,33 +16,33 @@ use App\Administracion\User;
 final class ClasificadorDeAuditoriaDeCierre
 {
     /**
-     * @param string   $newStatus       'resolved' | 'closed' (post-transition)
-     * @param int|null $previousOwnerId ticket.assigned_agent_id captured under
+     * @param string   $nuevoEstado       'resolved' | 'closed' (post-transition)
+     * @param int|null $responsableAnteriorId ticket.assigned_agent_id captured under
      *                                  the use case's own `FOR UPDATE` lock (D4)
-     * @param int|null $actingAgentId   $user->getAgent()?->getId(), null for an
+     * @param int|null $agenteActuanteId   $usuario->getAgent()?->getId(), null for an
      *                                  agentless admin/supervisor
      */
-    public function clasificar(string $newStatus, ?int $previousOwnerId, ?int $actingAgentId): string
+    public function clasificar(string $nuevoEstado, ?int $responsableAnteriorId, ?int $agenteActuanteId): string
     {
-        $isClosed = $newStatus === EstadoDeTicket::CERRADO->value;
+        $isCerrado = $nuevoEstado === EstadoDeTicket::CERRADO->value;
 
-        if ($previousOwnerId === null) {
-            return $isClosed ? TipoDeEventoDeTicket::MANUAL_CERRADO_SIN_RESPONSABLE : TipoDeEventoDeTicket::MANUAL_RESUELTO_SIN_RESPONSABLE;
+        if ($responsableAnteriorId === null) {
+            return $isCerrado ? TipoDeEventoDeTicket::MANUAL_CERRADO_SIN_RESPONSABLE : TipoDeEventoDeTicket::MANUAL_RESUELTO_SIN_RESPONSABLE;
         }
 
-        if ($previousOwnerId === $actingAgentId) {
-            return $isClosed ? TipoDeEventoDeTicket::MANUAL_CERRADO_RESPONSABLE : TipoDeEventoDeTicket::MANUAL_RESUELTO_RESPONSABLE;
+        if ($responsableAnteriorId === $agenteActuanteId) {
+            return $isCerrado ? TipoDeEventoDeTicket::MANUAL_CERRADO_RESPONSABLE : TipoDeEventoDeTicket::MANUAL_RESUELTO_RESPONSABLE;
         }
 
-        return $isClosed ? TipoDeEventoDeTicket::MANUAL_CERRADO_FORZADO : TipoDeEventoDeTicket::MANUAL_RESUELTO_FORZADO;
+        return $isCerrado ? TipoDeEventoDeTicket::MANUAL_CERRADO_FORZADO : TipoDeEventoDeTicket::MANUAL_RESUELTO_FORZADO;
     }
 
     /**
      * Compact, namespaced actor reference for `EventoDeTicket.source` /
      * `Assignment.assignedBy` (design.md D5).
      */
-    public function referenciaDeActor(User $user): string
+    public function referenciaDeActor(User $usuario): string
     {
-        return \sprintf('u:%d', $user->getId());
+        return \sprintf('u:%d', $usuario->getId());
     }
 }

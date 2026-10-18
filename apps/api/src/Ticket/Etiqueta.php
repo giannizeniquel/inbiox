@@ -20,9 +20,9 @@ class Etiqueta
     #[ORM\Column(name: 'created_at', type: 'datetime_immutable')]
     private \DateTimeImmutable $creadoAt;
 
-    public function __construct(string $name)
+    public function __construct(string $nombre)
     {
-        $this->nombre = self::normalizar($name);
+        $this->nombre = self::normalizar($nombre);
         $this->creadoAt = new \DateTimeImmutable();
     }
 
@@ -36,9 +36,9 @@ class Etiqueta
         return $this->nombre;
     }
 
-    public function setNombre(string $name): self
+    public function setNombre(string $nombre): self
     {
-        $this->nombre = self::normalizar($name);
+        $this->nombre = self::normalizar($nombre);
         return $this;
     }
 
@@ -50,8 +50,8 @@ class Etiqueta
     /**
      * Normalize tag name: lowercase + trim + reduce multiple spaces
      */
-    public static function normalizar(string $name): string
+    public static function normalizar(string $nombre): string
     {
-        return preg_replace('/\s+/', ' ', trim(strtolower($name)));
+        return preg_replace('/\s+/', ' ', trim(strtolower($nombre)));
     }
 }

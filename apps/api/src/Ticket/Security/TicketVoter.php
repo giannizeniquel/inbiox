@@ -68,9 +68,9 @@ final class TicketVoter extends Voter
 
     protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token): bool
     {
-        $user = $token->getUser();
+        $usuario = $token->getUser();
 
-        if (!$user instanceof User) {
+        if (!$usuario instanceof User) {
             return false;
         }
 
@@ -79,10 +79,10 @@ final class TicketVoter extends Voter
 
         // For ASSIGN attribute, reject resolved/closed tickets with 409
         if ($attribute === self::ASSIGN) {
-            $status = $ticket->getEstado();
-            if ($status === EstadoDeTicket::RESUELTO->value || $status === EstadoDeTicket::CERRADO->value) {
+            $estado = $ticket->getEstado();
+            if ($estado === EstadoDeTicket::RESUELTO->value || $estado === EstadoDeTicket::CERRADO->value) {
                 throw new \App\Compartido\StateConflictException(
-                    \sprintf('Cannot assign ticket in "%s" state', $status)
+                    \sprintf('Cannot assign ticket in "%s" state', $estado)
                 );
             }
         }
@@ -94,9 +94,9 @@ final class TicketVoter extends Voter
 
         // AGENT can only act on own tickets
         if ($this->security->isGranted('ROLE_AGENT')) {
-            $agent = $user->getAgent();
+            $agente = $usuario->getAgent();
 
-            if (null === $agent) {
+            if (null === $agente) {
                 return false; // R1: no linked agent → 403
             }
 
@@ -107,7 +107,7 @@ final class TicketVoter extends Voter
                 return false;
             }
 
-            return $ticket->getAgenteAsignadoId() === $agent->getId();
+            return $ticket->getAgenteAsignadoId() === $agente->getId();
         }
 
         return false;

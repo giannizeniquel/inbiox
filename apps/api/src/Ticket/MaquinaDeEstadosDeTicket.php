@@ -68,36 +68,36 @@ class MaquinaDeEstadosDeTicket
     /**
      * Validate and return new status, or throw exception
      *
-     * @param string $currentStatus
-     * @param string $targetStatus
+     * @param string $estadoActual
+     * @param string $estadoDestino
      * @return string The new status
      * @throws TransicionInvalidaException If transition is invalid
      */
-    public function transicionar(string $currentStatus, string $targetStatus): string
+    public function transicionar(string $estadoActual, string $estadoDestino): string
     {
-        if (!$this->puedeTransicionar($currentStatus, $targetStatus)) {
+        if (!$this->puedeTransicionar($estadoActual, $estadoDestino)) {
             throw new TransicionInvalidaException(
                 sprintf(
                     'Invalid transition from "%s" to "%s". Valid transitions from "%s" are: %s',
-                    $currentStatus,
-                    $targetStatus,
-                    $currentStatus,
-                    implode(', ', array_keys(self::TRANSICIONES[$currentStatus] ?? [])) ?: 'none'
+                    $estadoActual,
+                    $estadoDestino,
+                    $estadoActual,
+                    implode(', ', array_keys(self::TRANSICIONES[$estadoActual] ?? [])) ?: 'none'
                 )
             );
         }
 
-        return $targetStatus;
+        return $estadoDestino;
     }
 
     /**
      * Check if status is terminal (no more transitions)
      *
-     * @param string $status
+     * @param string $estado
      * @return bool
      */
-    public function isTerminal(string $status): bool
+    public function isTerminal(string $estado): bool
     {
-        return $status === EstadoDeTicket::CERRADO->value;
+        return $estado === EstadoDeTicket::CERRADO->value;
     }
 }

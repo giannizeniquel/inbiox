@@ -21,11 +21,11 @@ final class MarcarTicketLeidoUseCase
      * Only the assigned agent marks the ticket as read. Other users can view
      * it without affecting the read state, so for them this does nothing.
      */
-    public function execute(Ticket $ticket, ?int $currentAgentId): void
+    public function execute(Ticket $ticket, ?int $agenteActualId): void
     {
         $ownerAgentId = $ticket->getAgenteAsignadoId();
 
-        if ($currentAgentId === null || $ownerAgentId === null || $currentAgentId !== $ownerAgentId) {
+        if ($agenteActualId === null || $ownerAgentId === null || $agenteActualId !== $ownerAgentId) {
             return;
         }
 
