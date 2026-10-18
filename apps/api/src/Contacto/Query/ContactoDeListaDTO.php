@@ -4,31 +4,31 @@ namespace App\Contacto\Query;
 
 class ContactoDeListaDTO
 {
-    public ?int $activeTicketId = null;
+    public ?int $ticketActivoId = null;
 
     public function __construct(
         public int $id,
-        public string $phone,
-        public ?string $name,
-        public ?string $status,
-        public ?string $channel,
-        public ?int $ownerId,
+        public string $telefono,
+        public ?string $nombre,
+        public ?string $estado,
+        public ?string $canal,
+        public ?int $responsableId,
         public ?string $email,
-        public array $timestamps,
+        public array $marcasDeTiempo,
     ) {}
 
     public function toArray(): array
     {
         return [
             'id' => $this->id,
-            'phone' => $this->phone,
-            'name' => $this->name,
-            'status' => $this->status,
-            'channel' => $this->channel,
-            'owner_id' => $this->ownerId,
+            'phone' => $this->telefono,
+            'name' => $this->nombre,
+            'status' => $this->estado,
+            'channel' => $this->canal,
+            'owner_id' => $this->responsableId,
             'email' => $this->email,
-            'timestamps' => $this->timestamps,
-            'activeTicketId' => $this->activeTicketId,
+            'timestamps' => $this->marcasDeTiempo,
+            'activeTicketId' => $this->ticketActivoId,
         ];
     }
 }

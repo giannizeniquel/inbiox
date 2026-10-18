@@ -7,12 +7,12 @@ use App\Contacto\Repository\ContactoRepository;
 class GetDetalleDeContactoQuery
 {
     public function __construct(
-        private ContactoRepository $contactRepository,
+        private ContactoRepository $contactoRepository,
     ) {}
 
     public function execute(int $id): ?DetalleDeContactoDTO
     {
-        $row = $this->contactRepository->findFilaDeDetalle($id);
+        $row = $this->contactoRepository->findFilaDeDetalle($id);
 
         if (!$row) {
             return null;
@@ -20,13 +20,13 @@ class GetDetalleDeContactoQuery
 
         return new DetalleDeContactoDTO(
             id: (int) $row['id'],
-            phone: $row['phone'],
-            name: $row['name'],
-            status: $row['status'],
-            channel: $row['channel'],
-            ownerId: $row['owner_id'] ? (int) $row['owner_id'] : null,
+            telefono: $row['phone'],
+            nombre: $row['name'],
+            estado: $row['status'],
+            canal: $row['channel'],
+            responsableId: $row['owner_id'] ? (int) $row['owner_id'] : null,
             email: $row['email'],
-            timestamps: [
+            marcasDeTiempo: [
                 'created_at' => $row['created_at'],
                 'updated_at' => $row['updated_at'],
             ],

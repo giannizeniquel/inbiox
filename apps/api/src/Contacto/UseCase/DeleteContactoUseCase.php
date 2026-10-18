@@ -10,20 +10,20 @@ class DeleteContactoUseCase
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
-        private ContactoRepository $contactRepository,
+        private ContactoRepository $contactoRepository,
     ) {}
 
     public function execute(int $id): void
     {
-        $contact = $this->contactRepository->findById($id);
+        $contacto = $this->contactoRepository->findById($id);
 
-        if (!$contact) {
+        if (!$contacto) {
             throw new \InvalidArgumentException('Contact not found');
         }
 
         // Soft delete: set status to inactive
-        $contact->setEstado('inactive');
-        $contact->setActualizadoAt(new \DateTimeImmutable());
+        $contacto->setEstado('inactive');
+        $contacto->setActualizadoAt(new \DateTimeImmutable());
 
         $this->entityManager->flush();
     }

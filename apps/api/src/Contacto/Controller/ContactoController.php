@@ -23,12 +23,12 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class ContactoController
 {
     public function __construct(
-        private ListContactosQuery $listContactsQuery,
-        private GetDetalleDeContactoQuery $getContactDetailQuery,
-        private CreateContactoUseCase $createContactUseCase,
-        private UpdateContactoUseCase $updateContactUseCase,
-        private DeleteContactoUseCase $deleteContactUseCase,
-        private ImportarContactosDesdeCsvUseCase $importContactsFromCsvUseCase,
+        private ListContactosQuery $listContactosQuery,
+        private GetDetalleDeContactoQuery $getDetalleDeContactoQuery,
+        private CreateContactoUseCase $createContactoUseCase,
+        private UpdateContactoUseCase $updateContactoUseCase,
+        private DeleteContactoUseCase $deleteContactoUseCase,
+        private ImportarContactosDesdeCsvUseCase $importarContactosDesdeCsvUseCase,
         private WorkspaceScope $workspaceScope,
     ) {}
 
@@ -38,21 +38,21 @@ class ContactoController
         $page = max(1, (int) $request->query->get('page', 1));
         $limit = min(100, max(1, (int) $request->query->get('limit', 20)));
         $search = $request->query->get('search');
-        $status = $request->query->get('status');
-        $channel = $request->query->get('channel');
-        $ownerId = $request->query->get('ownerId');
+        $estado = $request->query->get('status');
+        $canal = $request->query->get('channel');
+        $responsableId = $request->query->get('ownerId');
         $email = $request->query->get('email');
 
         // Workspace scope: AGENT sees only contacts with conversations in active workspace
         $phoneNumberId = $this->workspaceScope->getActivePhoneNumberId();
 
-        $result = $this->listContactsQuery->execute(
+        $result = $this->listContactosQuery->execute(
             page: $page,
             limit: $limit,
             search: $search,
-            status: $status,
-            channel: $channel,
-            ownerId: $ownerId ? (int) $ownerId : null,
+            estado: $estado,
+            canal: $canal,
+            responsableId: $responsableId ? (int) $responsableId : null,
             email: $email,
             phoneNumberId: $phoneNumberId,
         );
@@ -75,7 +75,7 @@ class ContactoController
     #[Route('/api/contacts/{id}', name: 'app_contacts_detail', methods: ['GET'])]
     public function get(int $id): JsonResponse
     {
-        $dto = $this->getContactDetailQuery->execute($id);
+        $dto = $this->getDetalleDeContactoQuery->execute($id);
 
         if ($dto === null) {
             return new JsonResponse(['error' => 'Contact not found'], 404);
@@ -94,7 +94,7 @@ class ContactoController
                 return new JsonResponse(['error' => 'Invalid JSON body'], 400);
             }
 
-            $dto = $this->createContactUseCase->execute($data);
+            $dto = $this->createContactoUseCase->execute($data);
 
             return new JsonResponse($dto->toArray(), 201);
         } catch (\InvalidArgumentException $e) {
@@ -112,7 +112,7 @@ class ContactoController
                 return new JsonResponse(['error' => 'Invalid JSON body'], 400);
             }
 
-            $dto = $this->updateContactUseCase->execute($id, $data);
+            $dto = $this->updateContactoUseCase->execute($id, $data);
 
             return new JsonResponse($dto->toArray());
         } catch (\InvalidArgumentException $e) {
@@ -142,7 +142,7 @@ class ContactoController
         }
 
         try {
-            $result = $this->importContactsFromCsvUseCase->execute(
+            $result = $this->importarContactosDesdeCsvUseCase->execute(
                 $file->getPathname(),
                 $file->getClientOriginalName(),
             );
@@ -157,7 +157,7 @@ class ContactoController
     public function delete(int $id): JsonResponse
     {
         try {
-            $this->deleteContactUseCase->execute($id);
+            $this->deleteContactoUseCase->execute($id);
 
             return new JsonResponse(null, 204);
         } catch (\InvalidArgumentException $e) {

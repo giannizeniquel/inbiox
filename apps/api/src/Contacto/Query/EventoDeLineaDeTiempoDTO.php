@@ -5,27 +5,27 @@ namespace App\Contacto\Query;
 class EventoDeLineaDeTiempoDTO
 {
     public function __construct(
-        public string  $type,         // 'message.sent'|'message.received'|'ticket.created'|'ticket.status_changed'|'ticket.assigned'|'ticket.reassigned'
-        public string  $occurredAt,   // ISO 8601
-        public ?string $content,      // preview, truncated to 100 chars
+        public string  $tipo,         // 'message.sent'|'message.received'|'ticket.created'|'ticket.status_changed'|'ticket.assigned'|'ticket.reassigned'
+        public string  $ocurridoAt,   // ISO 8601
+        public ?string $contenido,      // preview, truncated to 100 chars
         public ?int    $ticketId,
-        public ?string $ticketStatus,
-        public ?string $assignedTo,   // agent name (assignments)
-        public ?int    $agentId = null, // agent ID (assignments only)
-        public ?string $direction,    // 'inbound'|'outbound' (messages only)
+        public ?string $estadoDeTicket,
+        public ?string $asignadoA,   // agent name (assignments)
+        public ?int    $agenteId = null, // agent ID (assignments only)
+        public ?string $direccion,    // 'inbound'|'outbound' (messages only)
     ) {}
 
     public function toArray(): array
     {
         return [
-            'type' => $this->type,
-            'occurredAt' => $this->occurredAt,
-            'content' => $this->content,
+            'type' => $this->tipo,
+            'occurredAt' => $this->ocurridoAt,
+            'content' => $this->contenido,
             'ticketId' => $this->ticketId,
-            'ticketStatus' => $this->ticketStatus,
-            'assignedTo' => $this->assignedTo,
-            'agentId' => $this->agentId,
-            'direction' => $this->direction,
+            'ticketStatus' => $this->estadoDeTicket,
+            'assignedTo' => $this->asignadoA,
+            'agentId' => $this->agenteId,
+            'direction' => $this->direccion,
         ];
     }
 }

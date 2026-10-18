@@ -59,9 +59,9 @@ class Contacto
         return $this->telefono;
     }
 
-    public function setTelefono(string $phone): self
+    public function setTelefono(string $telefono): self
     {
-        $this->telefono = $phone;
+        $this->telefono = $telefono;
         return $this;
     }
 
@@ -70,9 +70,9 @@ class Contacto
         return $this->nombre;
     }
 
-    public function setNombre(?string $name): self
+    public function setNombre(?string $nombre): self
     {
-        $this->nombre = $name;
+        $this->nombre = $nombre;
         return $this;
     }
 
@@ -86,9 +86,9 @@ class Contacto
         return $this->estado;
     }
 
-    public function setEstado(?string $status): self
+    public function setEstado(?string $estado): self
     {
-        $this->estado = $status;
+        $this->estado = $estado;
         return $this;
     }
 
@@ -97,9 +97,9 @@ class Contacto
         return $this->canal;
     }
 
-    public function setCanal(?string $channel): self
+    public function setCanal(?string $canal): self
     {
-        $this->canal = $channel;
+        $this->canal = $canal;
         return $this;
     }
 
@@ -108,9 +108,9 @@ class Contacto
         return $this->responsableId;
     }
 
-    public function setResponsableId(?int $ownerId): self
+    public function setResponsableId(?int $responsableId): self
     {
-        $this->responsableId = $ownerId;
+        $this->responsableId = $responsableId;
         return $this;
     }
 
@@ -135,9 +135,9 @@ class Contacto
         return $this->actualizadoAt;
     }
 
-    public function setActualizadoAt(\DateTimeImmutable $updatedAt): self
+    public function setActualizadoAt(\DateTimeImmutable $actualizadoAt): self
     {
-        $this->actualizadoAt = $updatedAt;
+        $this->actualizadoAt = $actualizadoAt;
         return $this;
     }
 }

@@ -12,24 +12,24 @@ namespace App\Contacto\UseCase;
 final class ResultadoDeImportacionDeContactosDTO
 {
     /**
-     * @param list<array{row: int, phone: string, reason: string, message: string}> $errors
+     * @param list<array{row: int, phone: string, reason: string, message: string}> $errores
      */
     public function __construct(
-        public readonly int $totalRows,
-        public readonly int $imported,
-        public readonly int $failed,
-        public readonly array $errors,
-        public readonly bool $errorsTruncated,
+        public readonly int $totalDeFilas,
+        public readonly int $importados,
+        public readonly int $fallidos,
+        public readonly array $errores,
+        public readonly bool $erroresTruncados,
     ) {}
 
     public function toArray(): array
     {
         return [
-            'totalRows' => $this->totalRows,
-            'imported' => $this->imported,
-            'failed' => $this->failed,
-            'errors' => $this->errors,
-            'errorsTruncated' => $this->errorsTruncated,
+            'totalRows' => $this->totalDeFilas,
+            'imported' => $this->importados,
+            'failed' => $this->fallidos,
+            'errors' => $this->errores,
+            'errorsTruncated' => $this->erroresTruncados,
         ];
     }
 }

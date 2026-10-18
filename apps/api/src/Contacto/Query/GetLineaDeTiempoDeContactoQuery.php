@@ -7,7 +7,7 @@ use App\Contacto\Repository\ContactoRepository;
 class GetLineaDeTiempoDeContactoQuery
 {
     public function __construct(
-        private ContactoRepository $contactRepository,
+        private ContactoRepository $contactoRepository,
     ) {}
 
     /**
@@ -15,26 +15,26 @@ class GetLineaDeTiempoDeContactoQuery
      *
      * @return array{events: EventoDeLineaDeTiempoDTO[], cursor: string|null, hasMore: bool}
      */
-    public function execute(int $contactId, ?string $before, int $limit, ?string $phoneNumberId = null): array
+    public function execute(int $contactoId, ?string $before, int $limit, ?string $phoneNumberId = null): array
     {
         // Fetch limit+1 to determine hasMore
-        $rows = $this->contactRepository->findFilasDeLineaDeTiempo($contactId, $before, $limit + 1, $phoneNumberId);
+        $rows = $this->contactoRepository->findFilasDeLineaDeTiempo($contactoId, $before, $limit + 1, $phoneNumberId);
 
         $hasMore = count($rows) > $limit;
         if ($hasMore) {
             $rows = \array_slice($rows, 0, $limit);
         }
 
-        $events = array_map(
+        $eventos = array_map(
             fn (array $row): EventoDeLineaDeTiempoDTO => new EventoDeLineaDeTiempoDTO(
-                type: $row['type'],
-                occurredAt: $row['occurred_at'],
-                content: $row['content'],
+                tipo: $row['type'],
+                ocurridoAt: $row['occurred_at'],
+                contenido: $row['content'],
                 ticketId: $row['ticket_id'] !== null ? (int) $row['ticket_id'] : null,
-                ticketStatus: $row['ticket_status'],
-                assignedTo: $row['assigned_to'],
-                agentId: $row['agent_id'] !== null ? (int) $row['agent_id'] : null,
-                direction: $row['direction'],
+                estadoDeTicket: $row['ticket_status'],
+                asignadoA: $row['assigned_to'],
+                agenteId: $row['agent_id'] !== null ? (int) $row['agent_id'] : null,
+                direccion: $row['direction'],
             ),
             $rows,
         );
@@ -47,7 +47,7 @@ class GetLineaDeTiempoDeContactoQuery
         }
 
         return [
-            'events' => $events,
+            'events' => $eventos,
             'cursor' => $cursor,
             'hasMore' => $hasMore,
         ];

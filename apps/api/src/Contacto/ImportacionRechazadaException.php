@@ -15,7 +15,7 @@ namespace App\Contacto;
 class ImportacionRechazadaException extends \RuntimeException
 {
     public function __construct(
-        private readonly string $reason,
+        private readonly string $motivo,
         string $message,
     ) {
         parent::__construct($message);
@@ -23,6 +23,6 @@ class ImportacionRechazadaException extends \RuntimeException
 
     public function getMotivo(): string
     {
-        return $this->reason;
+        return $this->motivo;
     }
 }

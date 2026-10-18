@@ -17,9 +17,9 @@ class ContactoRepository extends ServiceEntityRepository
         parent::__construct($registry, Contacto::class);
     }
 
-    public function findOneByTelefono(string $phone): ?Contacto
+    public function findOneByTelefono(string $telefono): ?Contacto
     {
-        return $this->findOneBy(['telefono' => $phone]);
+        return $this->findOneBy(['telefono' => $telefono]);
     }
 
     public function findById(int $id): ?Contacto
@@ -36,9 +36,9 @@ class ContactoRepository extends ServiceEntityRepository
      */
     public function findPaginaDeLista(
         ?string $search,
-        ?string $status,
-        ?string $channel,
-        ?int $ownerId,
+        ?string $estado,
+        ?string $canal,
+        ?int $responsableId,
         ?string $email,
         int $limit,
         int $offset,
@@ -47,7 +47,7 @@ class ContactoRepository extends ServiceEntityRepository
             ->select('c.id', 'c.phone', 'c.name', 'c.status', 'c.channel', 'c.owner_id', 'c.email', 'c.created_at', 'c.updated_at')
             ->from('contacts', 'c');
 
-        $this->aplicarFiltrosDeLista($qb, $search, $status, $channel, $ownerId, $email);
+        $this->aplicarFiltrosDeLista($qb, $search, $estado, $canal, $responsableId, $email);
 
         return $qb->orderBy('c.updated_at', 'DESC')
             ->addOrderBy('c.id', 'DESC')
@@ -59,13 +59,13 @@ class ContactoRepository extends ServiceEntityRepository
     /**
      * Total number of contacts matching the same filters as findListPage().
      */
-    public function countLista(?string $search, ?string $status, ?string $channel, ?int $ownerId, ?string $email): int
+    public function countLista(?string $search, ?string $estado, ?string $canal, ?int $responsableId, ?string $email): int
     {
         $qb = $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->select('COUNT(*)')
             ->from('contacts', 'c');
 
-        $this->aplicarFiltrosDeLista($qb, $search, $status, $channel, $ownerId, $email);
+        $this->aplicarFiltrosDeLista($qb, $search, $estado, $canal, $responsableId, $email);
 
         return (int) $qb->fetchOne();
     }
@@ -100,7 +100,7 @@ class ContactoRepository extends ServiceEntityRepository
      *
      * @return list<array{type: string, occurred_at: string, content: null, ticket_id: mixed, ticket_status: ?string, assigned_to: ?string, agent_id: mixed, direction: null}>
      */
-    public function findFilasDeLineaDeTiempo(int $contactId, ?string $before, int $limit, ?string $phoneNumberId): array
+    public function findFilasDeLineaDeTiempo(int $contactoId, ?string $before, int $limit, ?string $phoneNumberId): array
     {
         $sql = <<<'SQL'
         SELECT type, occurred_at, content, ticket_id, ticket_status, assigned_to, agent_id, direction
@@ -200,7 +200,7 @@ class ContactoRepository extends ServiceEntityRepository
         ];
 
         $params = $typeParams + [
-            'contact_id' => $contactId,
+            'contact_id' => $contactoId,
             'allowed_types' => array_values($typeParams),
             'before_date' => $before,
             'phone_number_id' => $phoneNumberId,
@@ -222,9 +222,9 @@ class ContactoRepository extends ServiceEntityRepository
     private function aplicarFiltrosDeLista(
         QueryBuilder $qb,
         ?string $search,
-        ?string $status,
-        ?string $channel,
-        ?int $ownerId,
+        ?string $estado,
+        ?string $canal,
+        ?int $responsableId,
         ?string $email,
     ): void {
         if ($search) {
@@ -232,19 +232,19 @@ class ContactoRepository extends ServiceEntityRepository
                 ->setParameter('search', "%{$search}%");
         }
 
-        if ($status && in_array($status, ['active', 'inactive'])) {
+        if ($estado && in_array($estado, ['active', 'inactive'])) {
             $qb->andWhere('c.status = :status')
-                ->setParameter('status', $status);
+                ->setParameter('status', $estado);
         }
 
-        if ($channel && in_array($channel, ['whatsapp', 'other'])) {
+        if ($canal && in_array($canal, ['whatsapp', 'other'])) {
             $qb->andWhere('c.channel = :channel')
-                ->setParameter('channel', $channel);
+                ->setParameter('channel', $canal);
         }
 
-        if ($ownerId) {
+        if ($responsableId) {
             $qb->andWhere('c.owner_id = :ownerId')
-                ->setParameter('ownerId', $ownerId);
+                ->setParameter('ownerId', $responsableId);
         }
 
         if ($email) {

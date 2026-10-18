@@ -92,7 +92,7 @@ class CreateContactUseCaseTest extends TestCase
 
         $result = $this->useCase->execute(['phone' => '+54 371 234 5678']);
 
-        $this->assertSame('+543712345678', $result->phone);
+        $this->assertSame('+543712345678', $result->telefono);
     }
 
     public function testThrowsForPhoneShorterThanTenDigits(): void
@@ -128,11 +128,11 @@ class CreateContactUseCaseTest extends TestCase
             'email' => 'jane@example.com',
         ]);
 
-        $this->assertSame('Jane Doe', $result->name);
+        $this->assertSame('Jane Doe', $result->nombre);
         // Invalid status is ignored -> entity keeps its default 'active'
-        $this->assertSame('active', $result->status);
-        $this->assertSame('whatsapp', $result->channel);
-        $this->assertSame(7, $result->ownerId);
+        $this->assertSame('active', $result->estado);
+        $this->assertSame('whatsapp', $result->canal);
+        $this->assertSame(7, $result->responsableId);
         $this->assertSame('jane@example.com', $result->email);
     }
 
@@ -161,6 +161,6 @@ class CreateContactUseCaseTest extends TestCase
         $result = $this->useCase->execute(['phone' => '+543712345678']);
 
         $this->assertInstanceOf(DetalleDeContactoDTO::class, $result);
-        $this->assertSame('+543712345678', $result->phone);
+        $this->assertSame('+543712345678', $result->telefono);
     }
 }

@@ -16,7 +16,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class LineaDeTiempoDeContactoController
 {
     public function __construct(
-        private GetLineaDeTiempoDeContactoQuery $getContactTimelineQuery,
+        private GetLineaDeTiempoDeContactoQuery $getLineaDeTiempoDeContactoQuery,
         private WorkspaceScope $workspaceScope,
     ) {}
 
@@ -27,20 +27,20 @@ class LineaDeTiempoDeContactoController
         $limit = min(50, max(1, (int) $request->query->get('limit', 20)));
         $phoneNumberId = $this->workspaceScope->getActivePhoneNumberId();
 
-        $result = $this->getContactTimelineQuery->execute(
-            contactId: $id,
+        $result = $this->getLineaDeTiempoDeContactoQuery->execute(
+            contactoId: $id,
             before: $before,
             limit: $limit,
             phoneNumberId: $phoneNumberId,
         );
 
-        $events = array_map(
+        $eventos = array_map(
             fn (EventoDeLineaDeTiempoDTO $dto) => $dto->toArray(),
             $result['events'],
         );
 
         return new JsonResponse([
-            'events' => $events,
+            'events' => $eventos,
             'cursor' => $result['cursor'],
             'hasMore' => $result['hasMore'],
         ]);

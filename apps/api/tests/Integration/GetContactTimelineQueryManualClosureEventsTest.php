@@ -122,7 +122,7 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
 
         $byType = [];
         foreach ($result['events'] as $event) {
-            $byType[$event->type] = $event;
+            $byType[$event->tipo] = $event;
         }
 
         return $byType;
@@ -151,8 +151,8 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
             'ticket.manual_closed_unowned',
         ] as $expectedType) {
             self::assertArrayHasKey($expectedType, $events, "missing timeline type {$expectedType}");
-            self::assertSame('Agente Agent Actor', $events[$expectedType]->assignedTo);
-            self::assertSame($agentId, $events[$expectedType]->agentId);
+            self::assertSame('Agente Agent Actor', $events[$expectedType]->asignadoA);
+            self::assertSame($agentId, $events[$expectedType]->agenteId);
         }
     }
 
@@ -163,7 +163,7 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
 
         $events = $this->fetchEventsByType();
 
-        self::assertStringStartsWith('Admin ', $events['ticket.manual_closed_owner']->assignedTo);
+        self::assertStringStartsWith('Admin ', $events['ticket.manual_closed_owner']->asignadoA);
     }
 
     public function testSupervisorOnlyActorIsLabeledSup(): void
@@ -173,7 +173,7 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
 
         $events = $this->fetchEventsByType();
 
-        self::assertStringStartsWith('Sup ', $events['ticket.manual_closed_override']->assignedTo);
+        self::assertStringStartsWith('Sup ', $events['ticket.manual_closed_override']->asignadoA);
     }
 
     public function testActorWithNoLinkedAgentFallsBackToEmailAndNullAgentId(): void
@@ -183,8 +183,8 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
 
         $events = $this->fetchEventsByType();
 
-        self::assertSame('Admin admin-no-agent@inbiox.local', $events['ticket.manual_closed_unowned']->assignedTo);
-        self::assertNull($events['ticket.manual_closed_unowned']->agentId);
+        self::assertSame('Admin admin-no-agent@inbiox.local', $events['ticket.manual_closed_unowned']->asignadoA);
+        self::assertNull($events['ticket.manual_closed_unowned']->agenteId);
     }
 
     public function testDeletedAgentRowStillReturnsTheEventWithNullAgentId(): void
@@ -197,7 +197,7 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
         $events = $this->fetchEventsByType();
 
         self::assertArrayHasKey('ticket.manual_resolved_owner', $events);
-        self::assertNull($events['ticket.manual_resolved_owner']->agentId);
+        self::assertNull($events['ticket.manual_resolved_owner']->agenteId);
     }
 
     public function testWindowEventsRemainUnaffectedByTheAddedJoins(): void
@@ -208,12 +208,12 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
         $events = $this->fetchEventsByType();
 
         self::assertArrayHasKey('ticket.window_expired_closed', $events);
-        self::assertNull($events['ticket.window_expired_closed']->assignedTo);
-        self::assertNull($events['ticket.window_expired_closed']->agentId);
+        self::assertNull($events['ticket.window_expired_closed']->asignadoA);
+        self::assertNull($events['ticket.window_expired_closed']->agenteId);
 
         self::assertArrayHasKey('ticket.window_reopened', $events);
-        self::assertNull($events['ticket.window_reopened']->assignedTo);
-        self::assertNull($events['ticket.window_reopened']->agentId);
+        self::assertNull($events['ticket.window_reopened']->asignadoA);
+        self::assertNull($events['ticket.window_reopened']->agenteId);
     }
 
     public function testLegacyEventTypesRemainExcludedByTheAllowList(): void

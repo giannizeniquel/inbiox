@@ -82,7 +82,7 @@ class GetContactTimelineQueryWindowEventsTest extends KernelTestCase
         $query = static::getContainer()->get(GetLineaDeTiempoDeContactoQuery::class);
         $result = $query->execute($this->contactId, null, 50);
 
-        $types = array_map(fn ($e) => $e->type, $result['events']);
+        $types = array_map(fn ($e) => $e->tipo, $result['events']);
 
         self::assertContains('ticket.window_expired_closed', $types);
         self::assertContains('ticket.window_reopened', $types);
@@ -96,7 +96,7 @@ class GetContactTimelineQueryWindowEventsTest extends KernelTestCase
         $query = static::getContainer()->get(GetLineaDeTiempoDeContactoQuery::class);
         $result = $query->execute($this->contactId, null, 50);
 
-        $types = array_map(fn ($e) => $e->type, $result['events']);
+        $types = array_map(fn ($e) => $e->tipo, $result['events']);
 
         self::assertNotContains('tag_added', $types);
         self::assertNotContains('ticket.tag_added', $types);

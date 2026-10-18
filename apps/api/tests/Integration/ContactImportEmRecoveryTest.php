@@ -114,12 +114,12 @@ class ContactImportEmRecoveryTest extends KernelTestCase
         // Row 2 lost the race and is reported as a duplicate, but rows 3-5
         // must still have been evaluated and imported — no cascading failure,
         // no uncaught exception (which would have surfaced as a PHPUnit error).
-        $this->assertSame(5, $result->totalRows);
-        $this->assertSame(4, $result->imported);
-        $this->assertSame(1, $result->failed);
+        $this->assertSame(5, $result->totalDeFilas);
+        $this->assertSame(4, $result->importados);
+        $this->assertSame(1, $result->fallidos);
 
         $rowTwoError = null;
-        foreach ($result->errors as $error) {
+        foreach ($result->errores as $error) {
             if ($error['row'] === 3) { // 1-based, header included: row 2 data = file row 3
                 $rowTwoError = $error;
             }

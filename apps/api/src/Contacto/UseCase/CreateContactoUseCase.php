@@ -13,7 +13,7 @@ class CreateContactoUseCase
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
-        private ContactoRepository $contactRepository,
+        private ContactoRepository $contactoRepository,
     ) {}
 
     public function execute(array $data): DetalleDeContactoDTO
@@ -22,37 +22,37 @@ class CreateContactoUseCase
             throw new \InvalidArgumentException('Phone is required');
         }
 
-        $phone = NormalizadorDeTelefono::normalizar($data['phone']);
+        $telefono = NormalizadorDeTelefono::normalizar($data['phone']);
 
-        $existing = $this->contactRepository->findOneByTelefono($phone);
+        $existing = $this->contactoRepository->findOneByTelefono($telefono);
         if ($existing) {
             throw new \InvalidArgumentException('Contact with this phone already exists');
         }
 
-        $contact = new Contacto();
-        $contact->setTelefono($phone);
+        $contacto = new Contacto();
+        $contacto->setTelefono($telefono);
 
         if (isset($data['name'])) {
-            $contact->setNombre($data['name']);
+            $contacto->setNombre($data['name']);
         }
 
         if (isset($data['status']) && in_array($data['status'], ['active', 'inactive'])) {
-            $contact->setEstado($data['status']);
+            $contacto->setEstado($data['status']);
         }
 
         if (isset($data['channel']) && in_array($data['channel'], ['whatsapp', 'other'])) {
-            $contact->setCanal($data['channel']);
+            $contacto->setCanal($data['channel']);
         }
 
         if (isset($data['owner_id']) && is_numeric($data['owner_id'])) {
-            $contact->setResponsableId((int) $data['owner_id']);
+            $contacto->setResponsableId((int) $data['owner_id']);
         }
 
         if (isset($data['email'])) {
-            $contact->setEmail($data['email']);
+            $contacto->setEmail($data['email']);
         }
 
-        $this->entityManager->persist($contact);
+        $this->entityManager->persist($contacto);
 
         try {
             $this->entityManager->flush();
@@ -66,16 +66,16 @@ class CreateContactoUseCase
         }
 
         return new DetalleDeContactoDTO(
-            id: $contact->getId(),
-            phone: $contact->getTelefono(),
-            name: $contact->getNombre(),
-            status: $contact->getEstado(),
-            channel: $contact->getCanal(),
-            ownerId: $contact->getResponsableId(),
-            email: $contact->getEmail(),
-            timestamps: [
-                'created_at' => $contact->getCreadoAt()->format('Y-m-d H:i:s'),
-                'updated_at' => $contact->getActualizadoAt()->format('Y-m-d H:i:s'),
+            id: $contacto->getId(),
+            telefono: $contacto->getTelefono(),
+            nombre: $contacto->getNombre(),
+            estado: $contacto->getEstado(),
+            canal: $contacto->getCanal(),
+            responsableId: $contacto->getResponsableId(),
+            email: $contacto->getEmail(),
+            marcasDeTiempo: [
+                'created_at' => $contacto->getCreadoAt()->format('Y-m-d H:i:s'),
+                'updated_at' => $contacto->getActualizadoAt()->format('Y-m-d H:i:s'),
             ],
         );
     }

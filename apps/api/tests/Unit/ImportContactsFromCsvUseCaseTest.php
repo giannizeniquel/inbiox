@@ -63,13 +63,13 @@ class ImportContactsFromCsvUseCaseTest extends TestCase
     {
         return new DetalleDeContactoDTO(
             id: 1,
-            phone: $phone,
-            name: null,
-            status: 'active',
-            channel: 'whatsapp',
-            ownerId: null,
+            telefono: $phone,
+            nombre: null,
+            estado: 'active',
+            canal: 'whatsapp',
+            responsableId: null,
             email: null,
-            timestamps: ['created_at' => 'now', 'updated_at' => 'now'],
+            marcasDeTiempo: ['created_at' => 'now', 'updated_at' => 'now'],
         );
     }
 
@@ -85,11 +85,11 @@ class ImportContactsFromCsvUseCaseTest extends TestCase
         $result = $this->useCase->execute($path, 'roster.csv');
 
         $this->assertInstanceOf(ResultadoDeImportacionDeContactosDTO::class, $result);
-        $this->assertSame(2, $result->totalRows);
-        $this->assertSame(2, $result->imported);
-        $this->assertSame(0, $result->failed);
-        $this->assertSame([], $result->errors);
-        $this->assertFalse($result->errorsTruncated);
+        $this->assertSame(2, $result->totalDeFilas);
+        $this->assertSame(2, $result->importados);
+        $this->assertSame(0, $result->fallidos);
+        $this->assertSame([], $result->errores);
+        $this->assertFalse($result->erroresTruncados);
     }
 
     public function testBomAndSemicolonDelimiterAreHandled(): void
@@ -103,8 +103,8 @@ class ImportContactsFromCsvUseCaseTest extends TestCase
 
         $result = $this->useCase->execute($path, 'roster.csv');
 
-        $this->assertSame(1, $result->totalRows);
-        $this->assertSame(1, $result->imported);
+        $this->assertSame(1, $result->totalDeFilas);
+        $this->assertSame(1, $result->importados);
     }
 
     public function testMissingPhoneHeaderRejectsWholeFile(): void
@@ -168,11 +168,11 @@ class ImportContactsFromCsvUseCaseTest extends TestCase
 
         $result = $this->useCase->execute($path, 'roster.csv');
 
-        $this->assertSame(2, $result->totalRows);
-        $this->assertSame(1, $result->imported);
-        $this->assertSame(1, $result->failed);
-        $this->assertSame('duplicate_in_file', $result->errors[0]['reason']);
-        $this->assertSame(3, $result->errors[0]['row']); // 1-based, header included
+        $this->assertSame(2, $result->totalDeFilas);
+        $this->assertSame(1, $result->importados);
+        $this->assertSame(1, $result->fallidos);
+        $this->assertSame('duplicate_in_file', $result->errores[0]['reason']);
+        $this->assertSame(3, $result->errores[0]['row']); // 1-based, header included
     }
 
     public function testDbDuplicatePhoneIsReportedAndDoesNotStopProcessing(): void
@@ -191,12 +191,12 @@ class ImportContactsFromCsvUseCaseTest extends TestCase
 
         $result = $this->useCase->execute($path, 'roster.csv');
 
-        $this->assertSame(2, $result->totalRows);
-        $this->assertSame(1, $result->imported);
-        $this->assertSame(1, $result->failed);
-        $this->assertSame('duplicate_phone', $result->errors[0]['reason']);
+        $this->assertSame(2, $result->totalDeFilas);
+        $this->assertSame(1, $result->importados);
+        $this->assertSame(1, $result->fallidos);
+        $this->assertSame('duplicate_phone', $result->errores[0]['reason']);
         // Second (valid) row must still import despite the first row's failure.
-        $this->assertFalse($result->errorsTruncated);
+        $this->assertFalse($result->erroresTruncados);
     }
 
     public function testMissingAndInvalidPhoneRowsAreReported(): void
@@ -210,11 +210,11 @@ class ImportContactsFromCsvUseCaseTest extends TestCase
 
         $result = $this->useCase->execute($path, 'roster.csv');
 
-        $this->assertSame(3, $result->totalRows);
-        $this->assertSame(1, $result->imported);
-        $this->assertSame(2, $result->failed);
+        $this->assertSame(3, $result->totalDeFilas);
+        $this->assertSame(1, $result->importados);
+        $this->assertSame(2, $result->fallidos);
 
-        $reasons = array_column($result->errors, 'reason');
+        $reasons = array_column($result->errores, 'reason');
         $this->assertContains('phone_missing', $reasons);
         $this->assertContains('invalid_phone', $reasons);
     }
@@ -231,10 +231,10 @@ class ImportContactsFromCsvUseCaseTest extends TestCase
 
         $result = $this->useCase->execute($path, 'roster.csv');
 
-        $this->assertSame(150, $result->totalRows);
-        $this->assertSame(0, $result->imported);
-        $this->assertSame(150, $result->failed);
-        $this->assertCount(100, $result->errors);
-        $this->assertTrue($result->errorsTruncated);
+        $this->assertSame(150, $result->totalDeFilas);
+        $this->assertSame(0, $result->importados);
+        $this->assertSame(150, $result->fallidos);
+        $this->assertCount(100, $result->errores);
+        $this->assertTrue($result->erroresTruncados);
     }
 }

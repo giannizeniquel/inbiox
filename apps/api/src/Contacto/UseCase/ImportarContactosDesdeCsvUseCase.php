@@ -30,7 +30,7 @@ final class ImportarContactosDesdeCsvUseCase
     private const COLUMNAS_OPCIONALES = ['name', 'email', 'status', 'channel', 'owner_id'];
 
     public function __construct(
-        private readonly CreateContactoUseCase $createContactUseCase,
+        private readonly CreateContactoUseCase $createContactoUseCase,
         private readonly EntityManagerInterface $entityManager,
         private readonly ManagerRegistry $managerRegistry,
     ) {}
@@ -114,10 +114,10 @@ final class ImportarContactosDesdeCsvUseCase
     private function leerFilas(Reader $reader, array $normalizedHeader): array
     {
         $rows = [];
-        $rowNumber = 1; // row 1 is the header itself
+        $numeroDeFila = 1; // row 1 is the header itself
 
         foreach ($reader->getRecords($normalizedHeader) as $record) {
-            $rowNumber++;
+            $numeroDeFila++;
 
             if (count($rows) >= self::MAX_FILAS) {
                 throw new ImportacionRechazadaException(
@@ -127,7 +127,7 @@ final class ImportarContactosDesdeCsvUseCase
             }
 
             /** @var array<string, string> $record */
-            $rows[] = ['row' => $rowNumber, 'data' => $record];
+            $rows[] = ['row' => $numeroDeFila, 'data' => $record];
         }
 
         return $rows;
@@ -138,40 +138,40 @@ final class ImportarContactosDesdeCsvUseCase
      */
     private function procesarFilas(array $rows): ResultadoDeImportacionDeContactosDTO
     {
-        $imported = 0;
-        $errors = [];
-        /** @var array<string, int> $seenPhones normalizedPhone => first row number */
-        $seenPhones = [];
+        $importados = 0;
+        $errores = [];
+        /** @var array<string, int> $telefonosVistos normalizedPhone => first row number */
+        $telefonosVistos = [];
 
         foreach ($rows as $entry) {
             $row = $entry['row'];
-            $rawPhone = trim($entry['data']['phone'] ?? '');
+            $telefonoCrudo = trim($entry['data']['phone'] ?? '');
 
-            if ($rawPhone === '') {
-                $errors[] = $this->armarError($row, $rawPhone, 'phone_missing', 'Phone is required');
+            if ($telefonoCrudo === '') {
+                $errores[] = $this->armarError($row, $telefonoCrudo, 'phone_missing', 'Phone is required');
                 continue;
             }
 
             try {
-                $normalizedPhone = NormalizadorDeTelefono::normalizar($rawPhone);
+                $telefonoNormalizado = NormalizadorDeTelefono::normalizar($telefonoCrudo);
             } catch (\InvalidArgumentException $e) {
-                $errors[] = $this->armarError($row, $rawPhone, 'invalid_phone', $e->getMessage());
+                $errores[] = $this->armarError($row, $telefonoCrudo, 'invalid_phone', $e->getMessage());
                 continue;
             }
 
-            if (isset($seenPhones[$normalizedPhone])) {
-                $errors[] = $this->armarError($row, $rawPhone, 'duplicate_in_file', 'Duplicate phone within this file');
+            if (isset($telefonosVistos[$telefonoNormalizado])) {
+                $errores[] = $this->armarError($row, $telefonoCrudo, 'duplicate_in_file', 'Duplicate phone within this file');
                 continue;
             }
-            $seenPhones[$normalizedPhone] = $row;
+            $telefonosVistos[$telefonoNormalizado] = $row;
 
             try {
-                $this->createContactUseCase->execute($this->armarDatosDeContacto($entry['data']));
-                $imported++;
+                $this->createContactoUseCase->execute($this->armarDatosDeContacto($entry['data']));
+                $importados++;
             } catch (\InvalidArgumentException $e) {
-                $errors[] = $this->armarError($row, $rawPhone, $this->mapearMotivo($e->getMessage()), $e->getMessage());
+                $errores[] = $this->armarError($row, $telefonoCrudo, $this->mapearMotivo($e->getMessage()), $e->getMessage());
             } catch (\Throwable $e) {
-                $errors[] = $this->armarError($row, $rawPhone, 'unknown_error', 'Unexpected error while importing this row');
+                $errores[] = $this->armarError($row, $telefonoCrudo, 'unknown_error', 'Unexpected error while importing this row');
             }
 
             // Defense-in-depth: a concurrent unique-constraint violation that
@@ -182,16 +182,16 @@ final class ImportarContactosDesdeCsvUseCase
             }
         }
 
-        $totalRows = count($rows);
-        $failed = $totalRows - $imported;
-        $errorsTruncated = count($errors) > self::MAX_ERRORES;
+        $totalDeFilas = count($rows);
+        $fallidos = $totalDeFilas - $importados;
+        $erroresTruncados = count($errores) > self::MAX_ERRORES;
 
         return new ResultadoDeImportacionDeContactosDTO(
-            totalRows: $totalRows,
-            imported: $imported,
-            failed: $failed,
-            errors: $errorsTruncated ? array_slice($errors, 0, self::MAX_ERRORES) : $errors,
-            errorsTruncated: $errorsTruncated,
+            totalDeFilas: $totalDeFilas,
+            importados: $importados,
+            fallidos: $fallidos,
+            errores: $erroresTruncados ? array_slice($errores, 0, self::MAX_ERRORES) : $errores,
+            erroresTruncados: $erroresTruncados,
         );
     }
 
@@ -225,8 +225,8 @@ final class ImportarContactosDesdeCsvUseCase
     /**
      * @return array{row: int, phone: string, reason: string, message: string}
      */
-    private function armarError(int $row, string $phone, string $reason, string $message): array
+    private function armarError(int $row, string $telefono, string $motivo, string $message): array
     {
-        return ['row' => $row, 'phone' => $phone, 'reason' => $reason, 'message' => $message];
+        return ['row' => $row, 'phone' => $telefono, 'reason' => $motivo, 'message' => $message];
     }
 }
