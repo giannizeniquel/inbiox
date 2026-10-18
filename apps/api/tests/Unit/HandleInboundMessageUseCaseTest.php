@@ -13,7 +13,7 @@ use App\Disponibilidad\Repository\AgentShiftRepository;
 use App\Compartido\EventCollector;
 use App\Conversacion\ConversationWindowPolicy;
 use App\Agente\Repository\AgentRepository;
-use App\Contacto\Repository\ContactRepository;
+use App\Contacto\Repository\ContactoRepository;
 use App\Conversacion\Repository\ConversationRepository;
 use App\Conversacion\Repository\MessageRepository;
 use App\Compartido\Repository\ProcessedEventRepository;
@@ -27,7 +27,7 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 class HandleInboundMessageUseCaseTest extends TestCase
 {
     private EntityManagerInterface|MockObject $em;
-    private ContactRepository|MockObject $contactRepo;
+    private ContactoRepository|MockObject $contactRepo;
     private ConversationRepository|MockObject $conversationRepo;
     private MessageRepository|MockObject $messageRepo;
     private TicketRepository|MockObject $ticketRepo;
@@ -42,7 +42,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
     protected function setUp(): void
     {
         $this->em = $this->createMock(EntityManagerInterface::class);
-        $this->contactRepo = $this->createMock(ContactRepository::class);
+        $this->contactRepo = $this->createMock(ContactoRepository::class);
         $this->conversationRepo = $this->createMock(ConversationRepository::class);
         $this->messageRepo = $this->createMock(MessageRepository::class);
         $this->ticketRepo = $this->createMock(TicketRepository::class);
@@ -176,7 +176,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
         $message = 'Hello';
         $phoneNumberId = 'B';
 
-        $contact = $this->createMock(\App\Contacto\Contact::class);
+        $contact = $this->createMock(\App\Contacto\Contacto::class);
         $contact->method('getId')->willReturn(1);
         $contact->method('getName')->willReturn(null);
         $contact->method('getUpdatedAt')->willReturn(new \DateTimeImmutable());
@@ -221,7 +221,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
         $message = 'Hello again';
         $phoneNumberId = 'A';
 
-        $contact = $this->createMock(\App\Contacto\Contact::class);
+        $contact = $this->createMock(\App\Contacto\Contacto::class);
         $contact->method('getId')->willReturn(1);
         $contact->method('getName')->willReturn(null);
         $contact->method('getUpdatedAt')->willReturn(new \DateTimeImmutable());
@@ -274,7 +274,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
         $phone = '+543712345678';
         $message = 'Hello with null workspace';
 
-        $contact = $this->createMock(\App\Contacto\Contact::class);
+        $contact = $this->createMock(\App\Contacto\Contacto::class);
         $contact->method('getId')->willReturn(1);
         $contact->method('getName')->willReturn(null);
         $contact->method('getUpdatedAt')->willReturn(new \DateTimeImmutable());

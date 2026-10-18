@@ -2,7 +2,7 @@
 
 namespace App\Conversacion;
 
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -16,9 +16,9 @@ class Conversation
     #[ORM\Column(name: 'id', type: 'bigint')]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(targetEntity: Contact::class, inversedBy: 'conversations')]
+    #[ORM\ManyToOne(targetEntity: Contacto::class, inversedBy: 'conversations')]
     #[ORM\JoinColumn(name: 'contact_id', referencedColumnName: 'id')]
-    private ?Contact $contact = null;
+    private ?Contacto $contact = null;
 
     #[ORM\OneToMany(mappedBy: 'conversation', targetEntity: Message::class, cascade: ['persist', 'remove'])]
     private Collection $messages;
@@ -50,12 +50,12 @@ class Conversation
         return $this->id;
     }
 
-    public function getContact(): ?Contact
+    public function getContact(): ?Contacto
     {
         return $this->contact;
     }
 
-    public function setContact(Contact $contact): self
+    public function setContact(Contacto $contact): self
     {
         $this->contact = $contact;
         return $this;

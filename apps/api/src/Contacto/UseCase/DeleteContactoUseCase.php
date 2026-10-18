@@ -2,15 +2,15 @@
 
 namespace App\Contacto\UseCase;
 
-use App\Contacto\Contact;
-use App\Contacto\Repository\ContactRepository;
+use App\Contacto\Contacto;
+use App\Contacto\Repository\ContactoRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
-class DeleteContactUseCase
+class DeleteContactoUseCase
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
-        private ContactRepository $contactRepository,
+        private ContactoRepository $contactRepository,
     ) {}
 
     public function execute(int $id): void

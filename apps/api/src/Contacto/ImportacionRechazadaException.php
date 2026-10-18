@@ -12,7 +12,7 @@ namespace App\Contacto;
  * per-row validation failures, which are reported in the partial-success
  * result instead. The controller maps `getReason()` to HTTP 400.
  */
-class ImportRejectedException extends \RuntimeException
+class ImportacionRechazadaException extends \RuntimeException
 {
     public function __construct(
         private readonly string $reason,

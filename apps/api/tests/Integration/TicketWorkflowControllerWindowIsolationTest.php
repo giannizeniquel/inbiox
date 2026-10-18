@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Integration;
 
 use App\Agente\Agent;
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Ticket\TipoDeEventoDeTicket;
 use App\Ticket\Ticket;
@@ -91,7 +91,7 @@ class TicketWorkflowControllerWindowIsolationTest extends WebTestCase
 
     private function createWindowExpiredClosedTicket(): int
     {
-        $contact = new Contact();
+        $contact = new Contacto();
         $contact->setPhone('+5491100000300');
         $this->em->persist($contact);
 

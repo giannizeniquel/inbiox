@@ -2,7 +2,7 @@
 
 namespace App\Contacto\Repository;
 
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use App\Ticket\TipoDeEventoDeTicket;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ArrayParameterType;
@@ -10,19 +10,19 @@ use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
-class ContactRepository extends ServiceEntityRepository
+class ContactoRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, Contact::class);
+        parent::__construct($registry, Contacto::class);
     }
 
-    public function findOneByPhone(string $phone): ?Contact
+    public function findOneByPhone(string $phone): ?Contacto
     {
         return $this->findOneBy(['phone' => $phone]);
     }
 
-    public function findById(int $id): ?Contact
+    public function findById(int $id): ?Contacto
     {
         return $this->find($id);
     }

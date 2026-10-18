@@ -2,19 +2,19 @@
 
 namespace App\Contacto\UseCase;
 
-use App\Contacto\Query\ContactDetailDTO;
-use App\Contacto\Contact;
-use App\Contacto\Repository\ContactRepository;
+use App\Contacto\Query\DetalleDeContactoDTO;
+use App\Contacto\Contacto;
+use App\Contacto\Repository\ContactoRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
-class UpdateContactUseCase
+class UpdateContactoUseCase
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
-        private ContactRepository $contactRepository,
+        private ContactoRepository $contactRepository,
     ) {}
 
-    public function execute(int $id, array $data): ContactDetailDTO
+    public function execute(int $id, array $data): DetalleDeContactoDTO
     {
         $contact = $this->contactRepository->findById($id);
 
@@ -69,7 +69,7 @@ class UpdateContactUseCase
         $contact->setUpdatedAt(new \DateTimeImmutable());
         $this->entityManager->flush();
 
-        return new ContactDetailDTO(
+        return new DetalleDeContactoDTO(
             id: $contact->getId(),
             phone: $contact->getPhone(),
             name: $contact->getName(),

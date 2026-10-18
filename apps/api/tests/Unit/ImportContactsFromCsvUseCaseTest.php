@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit;
 
-use App\Contacto\Query\ContactDetailDTO;
-use App\Contacto\UseCase\ImportContactsResultDTO;
-use App\Contacto\UseCase\CreateContactUseCase;
-use App\Contacto\UseCase\ImportContactsFromCsvUseCase;
-use App\Contacto\ImportRejectedException;
+use App\Contacto\Query\DetalleDeContactoDTO;
+use App\Contacto\UseCase\ResultadoDeImportacionDeContactosDTO;
+use App\Contacto\UseCase\CreateContactoUseCase;
+use App\Contacto\UseCase\ImportarContactosDesdeCsvUseCase;
+use App\Contacto\ImportacionRechazadaException;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -16,24 +16,24 @@ use PHPUnit\Framework\TestCase;
 
 class ImportContactsFromCsvUseCaseTest extends TestCase
 {
-    private CreateContactUseCase|MockObject $createContactUseCase;
+    private CreateContactoUseCase|MockObject $createContactUseCase;
     private EntityManagerInterface|MockObject $entityManager;
     private ManagerRegistry|MockObject $managerRegistry;
-    private ImportContactsFromCsvUseCase $useCase;
+    private ImportarContactosDesdeCsvUseCase $useCase;
 
     /** @var list<string> temp files created during a test, removed in tearDown */
     private array $tempFiles = [];
 
     protected function setUp(): void
     {
-        $this->createContactUseCase = $this->createMock(CreateContactUseCase::class);
+        $this->createContactUseCase = $this->createMock(CreateContactoUseCase::class);
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
         $this->managerRegistry = $this->createMock(ManagerRegistry::class);
 
         // Default: EM stays open — most tests never expect resetManager() to fire.
         $this->entityManager->method('isOpen')->willReturn(true);
 
-        $this->useCase = new ImportContactsFromCsvUseCase(
+        $this->useCase = new ImportarContactosDesdeCsvUseCase(
             $this->createContactUseCase,
             $this->entityManager,
             $this->managerRegistry,
@@ -59,9 +59,9 @@ class ImportContactsFromCsvUseCaseTest extends TestCase
         return $path;
     }
 
-    private function fakeContact(string $phone): ContactDetailDTO
+    private function fakeContact(string $phone): DetalleDeContactoDTO
     {
-        return new ContactDetailDTO(
+        return new DetalleDeContactoDTO(
             id: 1,
             phone: $phone,
             name: null,
@@ -84,7 +84,7 @@ class ImportContactsFromCsvUseCaseTest extends TestCase
 
         $result = $this->useCase->execute($path, 'roster.csv');
 
-        $this->assertInstanceOf(ImportContactsResultDTO::class, $result);
+        $this->assertInstanceOf(ResultadoDeImportacionDeContactosDTO::class, $result);
         $this->assertSame(2, $result->totalRows);
         $this->assertSame(2, $result->imported);
         $this->assertSame(0, $result->failed);
@@ -117,7 +117,7 @@ class ImportContactsFromCsvUseCaseTest extends TestCase
         try {
             $this->useCase->execute($path, 'roster.csv');
             $this->fail('Expected ImportRejectedException');
-        } catch (ImportRejectedException $e) {
+        } catch (ImportacionRechazadaException $e) {
             $this->assertSame('missing_phone_column', $e->getReason());
         }
     }
@@ -132,7 +132,7 @@ class ImportContactsFromCsvUseCaseTest extends TestCase
         try {
             $this->useCase->execute($path, 'roster.csv');
             $this->fail('Expected ImportRejectedException');
-        } catch (ImportRejectedException $e) {
+        } catch (ImportacionRechazadaException $e) {
             $this->assertSame('empty_file', $e->getReason());
         }
     }
@@ -151,7 +151,7 @@ class ImportContactsFromCsvUseCaseTest extends TestCase
         try {
             $this->useCase->execute($path, 'roster.csv');
             $this->fail('Expected ImportRejectedException');
-        } catch (ImportRejectedException $e) {
+        } catch (ImportacionRechazadaException $e) {
             $this->assertSame('too_many_rows', $e->getReason());
         }
     }

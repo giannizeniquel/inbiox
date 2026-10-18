@@ -2,34 +2,34 @@
 
 namespace App\Contacto\UseCase;
 
-use App\Contacto\Query\ContactDetailDTO;
-use App\Contacto\Contact;
-use App\Contacto\Repository\ContactRepository;
-use App\Contacto\PhoneNormalizer;
+use App\Contacto\Query\DetalleDeContactoDTO;
+use App\Contacto\Contacto;
+use App\Contacto\Repository\ContactoRepository;
+use App\Contacto\NormalizadorDeTelefono;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 
-class CreateContactUseCase
+class CreateContactoUseCase
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
-        private ContactRepository $contactRepository,
+        private ContactoRepository $contactRepository,
     ) {}
 
-    public function execute(array $data): ContactDetailDTO
+    public function execute(array $data): DetalleDeContactoDTO
     {
         if (empty($data['phone'])) {
             throw new \InvalidArgumentException('Phone is required');
         }
 
-        $phone = PhoneNormalizer::normalize($data['phone']);
+        $phone = NormalizadorDeTelefono::normalize($data['phone']);
 
         $existing = $this->contactRepository->findOneByPhone($phone);
         if ($existing) {
             throw new \InvalidArgumentException('Contact with this phone already exists');
         }
 
-        $contact = new Contact();
+        $contact = new Contacto();
         $contact->setPhone($phone);
 
         if (isset($data['name'])) {
@@ -65,7 +65,7 @@ class CreateContactUseCase
             throw new \InvalidArgumentException('Contact with this phone already exists');
         }
 
-        return new ContactDetailDTO(
+        return new DetalleDeContactoDTO(
             id: $contact->getId(),
             phone: $contact->getPhone(),
             name: $contact->getName(),

@@ -79,7 +79,7 @@ Tablas técnicas sin relaciones de negocio (no incluidas en el diagrama): `outbo
 
 | Entidad (tabla) | Archivo | Qué representa en el negocio | Campos clave |
 |---|---|---|---|
-| `Contact` (`contacts`) | `Contacto/Contact.php` | La persona que escribe por WhatsApp. **Global**: compartido por todos los números. | `phone` (UNIQUE global), `name`, `status` (`active`/`inactive`; "borrar" = `inactive`), `channel` (`whatsapp`/`other`), `email`, `owner_id` (sin FK; **destino desconocido: Regla no confirmada**) |
+| `Contacto` (`contacts`) | `Contacto/Contacto.php` | La persona que escribe por WhatsApp. **Global**: compartido por todos los números. | `phone` (UNIQUE global), `name`, `status` (`active`/`inactive`; "borrar" = `inactive`), `channel` (`whatsapp`/`other`), `email`, `owner_id` (sin FK; **destino desconocido: Regla no confirmada**) |
 | `Conversation` (`conversations`) | `Conversacion/Conversation.php` | Todo el historial de un contacto con un número. | `contact_id`, `status` (`open`/`closed`, pero `closed` **nunca se escribe**), `last_message_at`, `phone_number_id` |
 | `Message` (`messages`) | `Conversacion/Message.php` | Un mensaje entrante o saliente. | `conversation_id`, `direction`, `external_id` (WAMID), `content`, `delivery_status` (default `sent`), `failed_reason`, `media` (JSON), `sender_agent_id` (sin FK), `sender_type` (desde 12/09/2026; filas anteriores en `NULL`, sin backfill a propósito) |
 | `Ticket` (`tickets`) | `Ticket/Ticket.php` | Un caso de atención (episodio). | `contact_id`, `conversation_id`, `status`, `priority` (siempre `medium`, sin uso), `assigned_agent_id` (sin FK), `first_response_at`, `resolved_at`, `closed_at`, `version` (bloqueo optimista), `last_event_seq`, `phone_number_id`, `team_id`, `last_read_at`, `last_inbound_message_at` |
@@ -137,4 +137,4 @@ Tablas técnicas sin relaciones de negocio (no incluidas en el diagrama): `outbo
 | Ticket ↔ Tag | N : M (`ticket_tags`) | Sí | |
 | Ticket → EventoDeTicket | 1 : N | **No** | |
 | Ticket / Conversation → Workspace | N : 1 | **No** (coincidencia de `phone_number_id`) | |
-| Contact → "owner" | ? | **No** | `contacts.owner_id` solo se usa como filtro en `ListContactsQuery.php:54`. A qué apunta: **Regla no confirmada.** |
+| Contact → "owner" | ? | **No** | `contacts.owner_id` solo se usa como filtro en `ListContactosQuery.php:54`. A qué apunta: **Regla no confirmada.** |

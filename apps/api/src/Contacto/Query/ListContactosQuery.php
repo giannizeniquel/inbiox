@@ -2,13 +2,13 @@
 
 namespace App\Contacto\Query;
 
-use App\Contacto\Repository\ContactRepository;
+use App\Contacto\Repository\ContactoRepository;
 use App\Ticket\Repository\TicketRepository;
 
-class ListContactsQuery
+class ListContactosQuery
 {
     public function __construct(
-        private ContactRepository $contactRepository,
+        private ContactoRepository $contactRepository,
         private TicketRepository $ticketRepository,
     ) {}
 
@@ -32,7 +32,7 @@ class ListContactsQuery
         $total = $this->contactRepository->countList($search, $status, $channel, $ownerId, $email);
 
         $items = array_map(function ($row) {
-            return new ContactListItemDTO(
+            return new ContactoDeListaDTO(
                 id: (int) $row['id'],
                 phone: $row['phone'],
                 name: $row['name'],

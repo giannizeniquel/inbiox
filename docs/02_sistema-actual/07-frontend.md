@@ -99,7 +99,7 @@ Contenedor: `features/inbox/containers/conversation/conversation.component.ts`. 
 | Detalle | `ContactDetailComponent`; si no está en caché, API directa | `GET /api/contacts/{id}` | — | Todos |
 | Línea de tiempo | `ContactTimelineComponent` → `ContactTimelineStore` (hace HTTP) | `GET /api/contacts/{id}/timeline?before&limit=20` | Servidor | Todos |
 | Abrir ticket desde el contacto | navega a `/inbox?ticketId=…`; sin ticket activo, solo a `/inbox` (`TODO`) | — | — | Todos |
-| Crear / editar | diálogos → `CreateContactUseCase` / `UpdateContactUseCase` | `POST` / `PUT /api/contacts` | — | Todos |
+| Crear / editar | diálogos → `CreateContactoUseCase` / `UpdateContactoUseCase` | `POST` / `PUT /api/contacts` | — | Todos |
 | Importar CSV | `ContactImportDialogComponent` → API directa | `POST /api/contacts/import` | — | Admin, supervisor |
 | Borrar | **sin UI** | — | — | — |
 

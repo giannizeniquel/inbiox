@@ -2,7 +2,7 @@
 
 namespace App\Conversacion\Repository;
 
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Conversacion\ConversationStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -15,7 +15,7 @@ class ConversationRepository extends ServiceEntityRepository
         parent::__construct($registry, Conversation::class);
     }
 
-    public function findOpenByContact(Contact $contact, ?string $phoneNumberId = null): ?Conversation
+    public function findOpenByContact(Contacto $contact, ?string $phoneNumberId = null): ?Conversation
     {
         $criteria = ['contact' => $contact, 'status' => ConversationStatus::OPEN->value];
         if ($phoneNumberId !== null) {

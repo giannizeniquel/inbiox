@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace App\Contacto\Controller;
 
 use App\Compartido\PaginationMetaDTO;
-use App\Contacto\Query\GetContactDetailQuery;
-use App\Contacto\Query\ListContactsQuery;
+use App\Contacto\Query\GetDetalleDeContactoQuery;
+use App\Contacto\Query\ListContactosQuery;
 use App\Compartido\Security\WorkspaceScope;
-use App\Contacto\UseCase\CreateContactUseCase;
-use App\Contacto\UseCase\DeleteContactUseCase;
-use App\Contacto\UseCase\ImportContactsFromCsvUseCase;
-use App\Contacto\UseCase\UpdateContactUseCase;
-use App\Contacto\ImportRejectedException;
+use App\Contacto\UseCase\CreateContactoUseCase;
+use App\Contacto\UseCase\DeleteContactoUseCase;
+use App\Contacto\UseCase\ImportarContactosDesdeCsvUseCase;
+use App\Contacto\UseCase\UpdateContactoUseCase;
+use App\Contacto\ImportacionRechazadaException;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -20,15 +20,15 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_AGENT')]
-class ContactController
+class ContactoController
 {
     public function __construct(
-        private ListContactsQuery $listContactsQuery,
-        private GetContactDetailQuery $getContactDetailQuery,
-        private CreateContactUseCase $createContactUseCase,
-        private UpdateContactUseCase $updateContactUseCase,
-        private DeleteContactUseCase $deleteContactUseCase,
-        private ImportContactsFromCsvUseCase $importContactsFromCsvUseCase,
+        private ListContactosQuery $listContactsQuery,
+        private GetDetalleDeContactoQuery $getContactDetailQuery,
+        private CreateContactoUseCase $createContactUseCase,
+        private UpdateContactoUseCase $updateContactUseCase,
+        private DeleteContactoUseCase $deleteContactUseCase,
+        private ImportarContactosDesdeCsvUseCase $importContactsFromCsvUseCase,
         private WorkspaceScope $workspaceScope,
     ) {}
 
@@ -148,7 +148,7 @@ class ContactController
             );
 
             return new JsonResponse($result->toArray(), 200);
-        } catch (ImportRejectedException $e) {
+        } catch (ImportacionRechazadaException $e) {
             return new JsonResponse(['error' => $e->getReason(), 'message' => $e->getMessage()], 400);
         }
     }

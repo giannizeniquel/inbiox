@@ -2,7 +2,7 @@
 
 namespace App\Contacto\Query;
 
-class ContactListItemDTO
+class ContactoDeListaDTO
 {
     public ?int $activeTicketId = null;
 

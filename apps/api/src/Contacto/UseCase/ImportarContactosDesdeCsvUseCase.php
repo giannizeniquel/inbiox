@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Contacto\UseCase;
 
-use App\Contacto\PhoneNormalizer;
-use App\Contacto\ImportRejectedException;
+use App\Contacto\NormalizadorDeTelefono;
+use App\Contacto\ImportacionRechazadaException;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
 use League\Csv\Info;
@@ -15,12 +15,12 @@ use League\Csv\Reader;
  * Bulk CSV contact import.
  *
  * Parses the uploaded file, enforces file/row limits before any write, then
- * calls CreateContactUseCase once per row — reusing its phone/whitelist
+ * calls CreateContactoUseCase once per row — reusing its phone/whitelist
  * validation instead of duplicating it. Continues past per-row failures and
  * reports a partial-success summary (see design.md § EntityManager survival
  * across a duplicate row for the isOpen()/resetManager() defense-in-depth).
  */
-final class ImportContactsFromCsvUseCase
+final class ImportarContactosDesdeCsvUseCase
 {
     public const MAX_ROWS = 1000;
     public const MAX_BYTES = 2_097_152; // 2 MB
@@ -30,15 +30,15 @@ final class ImportContactsFromCsvUseCase
     private const OPTIONAL_COLUMNS = ['name', 'email', 'status', 'channel', 'owner_id'];
 
     public function __construct(
-        private readonly CreateContactUseCase $createContactUseCase,
+        private readonly CreateContactoUseCase $createContactUseCase,
         private readonly EntityManagerInterface $entityManager,
         private readonly ManagerRegistry $managerRegistry,
     ) {}
 
     /**
-     * @throws ImportRejectedException whole-file reason -> HTTP 400
+     * @throws ImportacionRechazadaException whole-file reason -> HTTP 400
      */
-    public function execute(string $path, ?string $originalName): ImportContactsResultDTO
+    public function execute(string $path, ?string $originalName): ResultadoDeImportacionDeContactosDTO
     {
         $this->assertFileConstraints($path, $originalName);
 
@@ -55,13 +55,13 @@ final class ImportContactsFromCsvUseCase
         );
 
         if (!in_array('phone', $normalizedHeader, true)) {
-            throw new ImportRejectedException('missing_phone_column', 'CSV is missing the required "phone" column');
+            throw new ImportacionRechazadaException('missing_phone_column', 'CSV is missing the required "phone" column');
         }
 
         $rows = $this->materializeRows($reader, $normalizedHeader);
 
         if (count($rows) === 0) {
-            throw new ImportRejectedException('empty_file', 'CSV contains no data rows');
+            throw new ImportacionRechazadaException('empty_file', 'CSV contains no data rows');
         }
 
         return $this->processRows($rows);
@@ -70,12 +70,12 @@ final class ImportContactsFromCsvUseCase
     private function assertFileConstraints(string $path, ?string $originalName): void
     {
         if (!is_file($path) || !is_readable($path)) {
-            throw new ImportRejectedException('file_missing', 'Uploaded file could not be read');
+            throw new ImportacionRechazadaException('file_missing', 'Uploaded file could not be read');
         }
 
         $size = filesize($path);
         if ($size === false || $size > self::MAX_BYTES) {
-            throw new ImportRejectedException(
+            throw new ImportacionRechazadaException(
                 'file_too_large',
                 sprintf('File exceeds maximum size of %d bytes', self::MAX_BYTES),
             );
@@ -90,7 +90,7 @@ final class ImportContactsFromCsvUseCase
         $mimeOk = $mimeType !== null && in_array($mimeType, self::ALLOWED_MIME_TYPES, true);
 
         if (!$extensionOk && !$mimeOk) {
-            throw new ImportRejectedException('invalid_file_type', 'Only CSV files are accepted');
+            throw new ImportacionRechazadaException('invalid_file_type', 'Only CSV files are accepted');
         }
     }
 
@@ -120,7 +120,7 @@ final class ImportContactsFromCsvUseCase
             $rowNumber++;
 
             if (count($rows) >= self::MAX_ROWS) {
-                throw new ImportRejectedException(
+                throw new ImportacionRechazadaException(
                     'too_many_rows',
                     sprintf('CSV exceeds the maximum of %d data rows', self::MAX_ROWS),
                 );
@@ -136,7 +136,7 @@ final class ImportContactsFromCsvUseCase
     /**
      * @param list<array{row: int, data: array<string, string>}> $rows
      */
-    private function processRows(array $rows): ImportContactsResultDTO
+    private function processRows(array $rows): ResultadoDeImportacionDeContactosDTO
     {
         $imported = 0;
         $errors = [];
@@ -153,7 +153,7 @@ final class ImportContactsFromCsvUseCase
             }
 
             try {
-                $normalizedPhone = PhoneNormalizer::normalize($rawPhone);
+                $normalizedPhone = NormalizadorDeTelefono::normalize($rawPhone);
             } catch (\InvalidArgumentException $e) {
                 $errors[] = $this->buildError($row, $rawPhone, 'invalid_phone', $e->getMessage());
                 continue;
@@ -186,7 +186,7 @@ final class ImportContactsFromCsvUseCase
         $failed = $totalRows - $imported;
         $errorsTruncated = count($errors) > self::MAX_ERRORS;
 
-        return new ImportContactsResultDTO(
+        return new ResultadoDeImportacionDeContactosDTO(
             totalRows: $totalRows,
             imported: $imported,
             failed: $failed,

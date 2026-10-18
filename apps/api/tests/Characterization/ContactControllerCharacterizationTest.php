@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Characterization;
 
 /**
- * Characterization of App\Contacto\Controller\ContactController:
+ * Characterization of App\Contacto\Controller\ContactoController:
  * app_contacts_detail, app_contacts_update, app_contacts_delete.
  */
 final class ContactControllerCharacterizationTest extends CharacterizationTestCase

@@ -6,7 +6,7 @@ namespace App\Tests\Integration;
 
 use App\Ticket\Query\GetDetalleDeTicketQuery;
 use App\Ticket\Query\ListTicketsQuery;
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Ticket\Ticket;
 use Doctrine\ORM\EntityManagerInterface;
@@ -45,7 +45,7 @@ class TicketQueriesLastInboundMessageAtTest extends KernelTestCase
 
     private function createTicket(?\DateTimeImmutable $lastInboundMessageAt): int
     {
-        $contact = new Contact();
+        $contact = new Contacto();
         $contact->setPhone('+5491100000700');
         $this->em->persist($contact);
 

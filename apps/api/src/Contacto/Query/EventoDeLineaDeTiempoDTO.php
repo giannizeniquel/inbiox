@@ -2,7 +2,7 @@
 
 namespace App\Contacto\Query;
 
-class TimelineEventDTO
+class EventoDeLineaDeTiempoDTO
 {
     public function __construct(
         public string  $type,         // 'message.sent'|'message.received'|'ticket.created'|'ticket.status_changed'|'ticket.assigned'|'ticket.reassigned'

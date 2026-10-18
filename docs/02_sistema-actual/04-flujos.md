@@ -327,17 +327,17 @@ stateDiagram-v2
 
 | Operación | Endpoint | Caso de uso / clase | Notas |
 |---|---|---|---|
-| Listar | `GET /api/contacts?page&limit` | `ListContactsQuery` (con `WorkspaceScope`) | Frontend: 20 por página, búsqueda y filtros **en el navegador**. |
-| Detalle | `GET /api/contacts/{id}` | `GetContactDetailQuery` | Sin filtro de workspace. |
-| Crear | `POST /api/contacts` | `CreateContactUseCase.php:19-81` | Teléfono obligatorio, normalizado con `PhoneNormalizer`, único global; valores inválidos de `status`/`channel` se ignoran. |
-| Editar | `PUT /api/contacts/{id}` | `UpdateContactUseCase.php:17-85` | Normaliza el teléfono con **código propio**; valores inválidos lanzan error (inconsistente con crear). |
-| Borrar | `DELETE /api/contacts/{id}` | `DeleteContactUseCase.php:16-29` | Borrado lógico (`inactive`). Sin UI. El contacto sigue generando tickets. |
-| Importar | `POST /api/contacts/import` (supervisor+) | `ImportContactsFromCsvUseCase.php` | Máx. 2 MB y 1000 filas (rechazo total antes de escribir); delimitador `,` o `;`; columna `phone` obligatoria; duplicados se saltean (nunca actualiza); errores truncados a 100; cada fila pasa por `CreateContactUseCase`. Spec `contact-import`. |
-| Línea de tiempo | `GET /api/contacts/{id}/timeline?before&limit` | `GetContactTimelineQuery` | Tickets, mensajes y `ticket_events`. |
+| Listar | `GET /api/contacts?page&limit` | `ListContactosQuery` (con `WorkspaceScope`) | Frontend: 20 por página, búsqueda y filtros **en el navegador**. |
+| Detalle | `GET /api/contacts/{id}` | `GetDetalleDeContactoQuery` | Sin filtro de workspace. |
+| Crear | `POST /api/contacts` | `CreateContactoUseCase.php:19-81` | Teléfono obligatorio, normalizado con `NormalizadorDeTelefono`, único global; valores inválidos de `status`/`channel` se ignoran. |
+| Editar | `PUT /api/contacts/{id}` | `UpdateContactoUseCase.php:17-85` | Normaliza el teléfono con **código propio**; valores inválidos lanzan error (inconsistente con crear). |
+| Borrar | `DELETE /api/contacts/{id}` | `DeleteContactoUseCase.php:16-29` | Borrado lógico (`inactive`). Sin UI. El contacto sigue generando tickets. |
+| Importar | `POST /api/contacts/import` (supervisor+) | `ImportarContactosDesdeCsvUseCase.php` | Máx. 2 MB y 1000 filas (rechazo total antes de escribir); delimitador `,` o `;`; columna `phone` obligatoria; duplicados se saltean (nunca actualiza); errores truncados a 100; cada fila pasa por `CreateContactoUseCase`. Spec `contact-import`. |
+| Línea de tiempo | `GET /api/contacts/{id}/timeline?before&limit` | `GetLineaDeTiempoDeContactoQuery` | Tickets, mensajes y `ticket_events`. |
 
 Frontend: `features/contacts/` (pages, componentes de diálogo, `stores/contacts.store.ts`, `stores/contact-timeline.store.ts`).
 
-**Si falla, revisar:** el caso de uso de la tabla → `PhoneNormalizer` (umbral de dígitos) → `features/contacts/components/contact-import-dialog/` (el import llama a la API directo).
+**Si falla, revisar:** el caso de uso de la tabla → `NormalizadorDeTelefono` (umbral de dígitos) → `features/contacts/components/contact-import-dialog/` (el import llama a la API directo).
 
 ---
 

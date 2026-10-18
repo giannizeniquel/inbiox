@@ -6,7 +6,7 @@ namespace App\Tests\Integration;
 
 use App\Conversacion\UseCase\HandleOutboundMessageUseCase;
 use App\Agente\Agent;
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Compartido\Outbox\OutboxEvent;
 use App\Ticket\Ticket;
@@ -55,7 +55,7 @@ class MessageAgentAttributionOutboxTest extends KernelTestCase
         $agentId = $agent->getId();
         \assert($agentId !== null);
 
-        $contact = new Contact();
+        $contact = new Contacto();
         $contact->setPhone('+5491100000300');
         $this->em->persist($contact);
 

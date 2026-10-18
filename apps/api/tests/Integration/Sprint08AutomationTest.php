@@ -14,7 +14,7 @@ use App\Ticket\EstadoDeTicket;
 use App\Conversacion\Message;
 use App\Ticket\Repository\EtiquetaRepository;
 use App\Ticket\Repository\TicketRepository;
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -136,7 +136,7 @@ class Sprint08AutomationTest extends KernelTestCase
     public function testAddTagToTicketIdempotencyNoDuplicate(): void
     {
         // Arrange - create ticket and tag
-        $contact = new Contact();
+        $contact = new Contacto();
         $contact->setPhone('+543711234567');
         $this->em->persist($contact);
 
@@ -177,7 +177,7 @@ class Sprint08AutomationTest extends KernelTestCase
     public function testAddDifferentTagsCreatesMultipleRelations(): void
     {
         // Arrange - create ticket
-        $contact = new Contact();
+        $contact = new Contacto();
         $contact->setPhone('+543711234567');
         $this->em->persist($contact);
 
@@ -404,7 +404,7 @@ class Sprint08AutomationTest extends KernelTestCase
     public function testRuleExecutorServiceIdempotencyCheck(): void
     {
         // Arrange - create a resolved ticket
-        $contact = new Contact();
+        $contact = new Contacto();
         $contact->setPhone('+543711234567');
         $this->em->persist($contact);
 
@@ -486,7 +486,7 @@ class Sprint08AutomationTest extends KernelTestCase
     public function testHandleInboundMessageResolvesTicketTriggersReopen(): void
     {
         // Arrange - create resolved ticket first
-        $contact = new Contact();
+        $contact = new Contacto();
         $contact->setPhone('+543711234567');
         $this->em->persist($contact);
 

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Contacto\Controller;
 
-use App\Contacto\Query\TimelineEventDTO;
-use App\Contacto\Query\GetContactTimelineQuery;
+use App\Contacto\Query\EventoDeLineaDeTiempoDTO;
+use App\Contacto\Query\GetLineaDeTiempoDeContactoQuery;
 use App\Compartido\Security\WorkspaceScope;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -13,10 +13,10 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_AGENT')]
-class ContactTimelineController
+class LineaDeTiempoDeContactoController
 {
     public function __construct(
-        private GetContactTimelineQuery $getContactTimelineQuery,
+        private GetLineaDeTiempoDeContactoQuery $getContactTimelineQuery,
         private WorkspaceScope $workspaceScope,
     ) {}
 
@@ -35,7 +35,7 @@ class ContactTimelineController
         );
 
         $events = array_map(
-            fn (TimelineEventDTO $dto) => $dto->toArray(),
+            fn (EventoDeLineaDeTiempoDTO $dto) => $dto->toArray(),
             $result['events'],
         );
 

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Contacto\UseCase\ImportContactsFromCsvUseCase;
-use App\Contacto\Contact;
+use App\Contacto\UseCase\ImportarContactosDesdeCsvUseCase;
+use App\Contacto\Contacto;
 use Doctrine\ORM\Event\PrePersistEventArgs;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Events;
@@ -16,7 +16,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
  * survival across a duplicate row).
  *
  * A genuine TOCTOU race is simulated with a prePersist listener: right before
- * Doctrine issues the INSERT for one target row's Contact, a raw SQL insert
+ * Doctrine issues the INSERT for one target row's Contacto, a raw SQL insert
  * for the *same* phone is executed directly against the connection — a row
  * the in-memory pre-check in CreateContactUseCase could not have seen. This
  * makes Doctrine's own INSERT collide with the DB's unique constraint,
@@ -85,7 +85,7 @@ class ContactImportEmRecoveryTest extends KernelTestCase
             public function prePersist(PrePersistEventArgs $args): void
             {
                 $entity = $args->getObject();
-                if ($this->triggered || !$entity instanceof Contact || $entity->getPhone() !== $this->targetPhone) {
+                if ($this->triggered || !$entity instanceof Contacto || $entity->getPhone() !== $this->targetPhone) {
                     return;
                 }
                 $this->triggered = true;
@@ -106,8 +106,8 @@ class ContactImportEmRecoveryTest extends KernelTestCase
             . "+5491100000005\n";
         $path = $this->csvFile($csv);
 
-        /** @var ImportContactsFromCsvUseCase $useCase */
-        $useCase = static::getContainer()->get(ImportContactsFromCsvUseCase::class);
+        /** @var ImportarContactosDesdeCsvUseCase $useCase */
+        $useCase = static::getContainer()->get(ImportarContactosDesdeCsvUseCase::class);
 
         $result = $useCase->execute($path, 'roster.csv');
 

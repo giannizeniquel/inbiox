@@ -9,7 +9,7 @@ namespace App\Contacto\UseCase;
  *
  * @phpstan-type ImportErrorEntry array{row: int, phone: string, reason: string, message: string}
  */
-final class ImportContactsResultDTO
+final class ResultadoDeImportacionDeContactosDTO
 {
     /**
      * @param list<array{row: int, phone: string, reason: string, message: string}> $errors

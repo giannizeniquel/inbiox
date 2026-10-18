@@ -2,18 +2,18 @@
 
 namespace App\Contacto\Query;
 
-use App\Contacto\Repository\ContactRepository;
+use App\Contacto\Repository\ContactoRepository;
 
-class GetContactTimelineQuery
+class GetLineaDeTiempoDeContactoQuery
 {
     public function __construct(
-        private ContactRepository $contactRepository,
+        private ContactoRepository $contactRepository,
     ) {}
 
     /**
      * Execute the timeline query for a given contact.
      *
-     * @return array{events: TimelineEventDTO[], cursor: string|null, hasMore: bool}
+     * @return array{events: EventoDeLineaDeTiempoDTO[], cursor: string|null, hasMore: bool}
      */
     public function execute(int $contactId, ?string $before, int $limit, ?string $phoneNumberId = null): array
     {
@@ -26,7 +26,7 @@ class GetContactTimelineQuery
         }
 
         $events = array_map(
-            fn (array $row): TimelineEventDTO => new TimelineEventDTO(
+            fn (array $row): EventoDeLineaDeTiempoDTO => new EventoDeLineaDeTiempoDTO(
                 type: $row['type'],
                 occurredAt: $row['occurred_at'],
                 content: $row['content'],

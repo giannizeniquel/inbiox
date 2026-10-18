@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Ticket\EventoDeTicket;
 use App\Ticket\TipoDeEventoDeTicket;
@@ -22,7 +22,7 @@ class TicketRepositoryTest extends KernelTestCase
 {
     private ?EntityManagerInterface $em = null;
     private ?TicketRepository $repo = null;
-    private ?Contact $contact = null;
+    private ?Contacto $contact = null;
 
     protected function setUp(): void
     {
@@ -40,7 +40,7 @@ class TicketRepositoryTest extends KernelTestCase
         $conn->executeStatement('DELETE FROM conversations');
         $conn->executeStatement('DELETE FROM contacts');
 
-        $this->contact = new Contact();
+        $this->contact = new Contacto();
         $this->contact->setPhone('+5491100000200');
         $this->em->persist($this->contact);
         $this->em->flush();

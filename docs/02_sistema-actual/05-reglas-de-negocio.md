@@ -128,11 +128,11 @@ Estas son las preguntas que solo el desarrollador (o el cliente) puede responder
 
 | ID | Regla | Dónde | Clasif. | Estado |
 |---|---|---|---|---|
-| R-C1 | El teléfono identifica al contacto y es único en todo el sistema. | `Contacto/Contact.php:18-19`; `CreateContactUseCase.php:27-30` | Negocio | Regla no confirmada (nada dice que un contacto se comparta entre números). |
-| R-C2 | Normalización de teléfono: solo dígitos con `+`; el mínimo de dígitos cambia según el punto de entrada (ver [08](08-riesgos-contradicciones-y-complejidad.md#contradicciones-e-inconsistencias), C-5). | `HandleInboundMessageUseCase.php:69-75`; `PhoneNormalizer.php:19-28`; `UpdateContactUseCase.php:29-41` | Técnica | Regla no confirmada (el umbral). |
-| R-C3 | Borrar un contacto lo marca `inactive`; un contacto inactivo sigue recibiendo tickets. | `DeleteContactUseCase.php:24-28` | Técnica | Regla no confirmada. |
-| R-C4 | Importación CSV: 2 MB / 1000 filas, duplicados se saltean sin actualizar, solo supervisor/admin. | `ImportContactsFromCsvUseCase.php:25-27, 162-165`; `ContactController::import` | Negocio | **Confirmada** — spec `contact-import`. |
-| R-C5 | `contacts.owner_id` existe y se puede filtrar, sin destino conocido. | `Contact.php:33-34`; `ListContactsQuery.php:54` | ? | Regla no confirmada. |
+| R-C1 | El teléfono identifica al contacto y es único en todo el sistema. | `Contacto/Contacto.php:18-19`; `CreateContactoUseCase.php:27-30` | Negocio | Regla no confirmada (nada dice que un contacto se comparta entre números). |
+| R-C2 | Normalización de teléfono: solo dígitos con `+`; el mínimo de dígitos cambia según el punto de entrada (ver [08](08-riesgos-contradicciones-y-complejidad.md#contradicciones-e-inconsistencias), C-5). | `HandleInboundMessageUseCase.php:69-75`; `NormalizadorDeTelefono.php:19-28`; `UpdateContactoUseCase.php:29-41` | Técnica | Regla no confirmada (el umbral). |
+| R-C3 | Borrar un contacto lo marca `inactive`; un contacto inactivo sigue recibiendo tickets. | `DeleteContactoUseCase.php:24-28` | Técnica | Regla no confirmada. |
+| R-C4 | Importación CSV: 2 MB / 1000 filas, duplicados se saltean sin actualizar, solo supervisor/admin. | `ImportarContactosDesdeCsvUseCase.php:25-27, 162-165`; `ContactoController::import` | Negocio | **Confirmada** — spec `contact-import`. |
+| R-C5 | `contacts.owner_id` existe y se puede filtrar, sin destino conocido. | `Contacto.php:33-34`; `ListContactosQuery.php:54` | ? | Regla no confirmada. |
 | R-G1 | Las etiquetas son globales y se normalizan en minúsculas. | `Ticket/Etiqueta.php:17, 53-56` | Técnica | Regla no confirmada. |
 | R-E1 | Un equipo pertenece a un workspace; su nombre es único dentro de él. | `Agente/Team.php:15, 23-25`; `Administracion/UseCase/CreateTeamUseCase.php`, `UpdateTeamUseCase.php` | Negocio | **Confirmada** — spec `team-management`. |
 | R-E2 | Solo se agregan a un equipo agentes del mismo workspace. | `Team.php:115-124` | Negocio | **Confirmada** — spec "Agent Team Membership Requires Workspace Membership". |
@@ -159,7 +159,7 @@ Detalle en [07](07-frontend.md#lógica-de-negocio-que-vive-en-el-frontend).
 | "Está en turno" | `AgentAvailabilityService::hasShiftAtTime` (`:262-290`) y `AgentAvailabilityController::isAgentInShift` (`:340-369`) | No del todo: la del controlador no mira `active`. |
 | Cascada de disponibilidad | `isAvailable()`, `listAvailableAgents()`, re-filtro en `AutoAssignTicketUseCase.php:135-139` | No: el re-filtro aplica capacidad también con override. |
 | "Tickets activos" = `new`/`active`/`waiting` | `AgentAvailabilityService.php:297-317`, `TicketRepository::countActivosDeAgente` (`:146-160`), `ReportingRepository.php:354-356`, `MaquinaDeEstadosDeTicket::isActiveForSLA` (sin uso), frontend `get-reports-dashboard.use-case.ts` | Sí (cinco copias). |
-| Normalización de teléfono | entrante, `PhoneNormalizer`, `UpdateContactUseCase` | **No** (umbrales distintos). |
+| Normalización de teléfono | entrante, `NormalizadorDeTelefono`, `UpdateContactoUseCase` | **No** (umbrales distintos). |
 | Cierre automático | `ConversationWindowExpiryService` (vivo). `AutoCloseRule` y `AutoCloseTicketUseCase` se borraron en la fase 1. | Resuelto: queda un solo criterio. |
 | Validación de turnos | `CreateAgentShiftUseCase`, `ReplaceAgentShiftsUseCase`, `ShiftInputDTO`, CHECK de la tabla | Mismas reglas, distintos nombres de campo y mensajes. |
 | Ventana de 24 h | `HandleOutboundMessageUseCase.php:214`, `AutoReplyService.php:129`, frontend `composer.component.ts:70-76` | Sí (el frontend usa el reloj del navegador; el backend manda). |

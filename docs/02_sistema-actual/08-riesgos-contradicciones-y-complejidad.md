@@ -15,7 +15,7 @@ Ordenadas por severidad (impacto en el comportamiento del producto).
 | C-2 | Alta | **Reportes por agente vs desasignación al resolver.** `tickets_resolved` y el tiempo medio de resolución por agente se calculan por `assigned_agent_id`, que es `NULL` en todo ticket resuelto/cerrado. El reporte "sin asignar" incluiría todos los resueltos/cerrados. | `Reporte/Repository/ReportingRepository.php:346-360, 467-474` |
 | C-3 | Alta | **¿Bandeja compartida o cada agente ve lo suyo?** La spec `authorization` ("ROLE_AGENT: only tickets where assigned_agent_id = user's agent.id") y el análisis de brecha (§4.3: "la cola sin asignar está oculta a propósito") dicen una cosa; `OwnershipScope.php:13-27` y `TicketVoter.php:19-23` dicen "SHARED inbox by design (confirmed product decision, sprint 16)". El código no filtra por agente. | archivos citados |
 | C-4 | Alta | **Multi-número vs auto-asignación global.** El workspace es la unidad de alcance (bandeja, contactos, reportes), pero la auto-asignación y la asignación manual no lo verifican. Existió un `listAvailableAgentsInWorkspace()` que fue removido (comentario `AgentAvailabilityService.php:173`); el motivo no está documentado. | `AgentAvailabilityService.php:114, 173`; `AssignTicketUseCase.php` |
-| C-5 | Media | **Tres umbrales de teléfono.** El mensaje entrante exige ≥10 dígitos (cuenta antes de agregar `+`); `PhoneNormalizer` y `UpdateContactUseCase` cuentan el `+` (≥9 dígitos). Un contacto cargado a mano con 9 dígitos nunca coincide con un mensaje entrante de ese número. | `HandleInboundMessageUseCase.php:70-75`; `PhoneNormalizer.php:21-24`; `UpdateContactUseCase.php:30-31` |
+| C-5 | Media | **Tres umbrales de teléfono.** El mensaje entrante exige ≥10 dígitos (cuenta antes de agregar `+`); `NormalizadorDeTelefono` y `UpdateContactoUseCase` cuentan el `+` (≥9 dígitos). Un contacto cargado a mano con 9 dígitos nunca coincide con un mensaje entrante de ese número. | `HandleInboundMessageUseCase.php:70-75`; `NormalizadorDeTelefono.php:21-24`; `UpdateContactoUseCase.php:30-31` |
 | C-6 | Media | **"Decoupled" no es desacoplado.** La auto-asignación corre en la misma transacción del mensaje entrante; un fallo revierte el mensaje y el webhook responde 200 igual. | `HandleInboundMessageUseCase.php:461-469`; `Asignacion/EventListener/TicketAutoAssignmentRequestedListener.php:19` |
 | C-7 | Media | **Mensaje "enviado" que no se envió.** El comentario del caso de uso promete "never a phantom sent message" (para la ventana), pero si Graph falla después, el mensaje persiste como `sent`. | `HandleOutboundMessageUseCase.php:210-213`; `Conversacion/UseCase/SendOutboundMessageUseCase.php:86-97` |
 | C-8 | Media | **Auto-respuesta de "ausente" a un agente que está trabajando.** Un agente en turno pero al tope de capacidad es "Activo" para asignar a mano, "no disponible" para auto-asignar y "no disponible" para auto-responder. | `AgentAvailabilityService.php:39-101`; `Automatizacion/AutoReplyService.php:91-95` |
@@ -41,7 +41,7 @@ Ordenadas por severidad (impacto en el comportamiento del producto).
 | `authorization` — visibilidad del agente | El agente ve solo sus tickets. | Bandeja compartida (C-3). |
 | `reply-auto-assignment` — guard de resuelto | El dueño puede responder. | No hay dueño (C-1). |
 | `team-management` | Excluir equipos inactivos de nuevas asignaciones. | Solo el frontend (C-15). |
-| `contacts` | Manejar eventos `contact.created/updated`; `meta.hasMore`. | Nadie los publica; el campo real es `hasNext` (`ContactController.php:69`). |
+| `contacts` | Manejar eventos `contact.created/updated`; `meta.hasMore`. | Nadie los publica; el campo real es `hasNext` (`ContactoController.php:69`). |
 | `conversation-virtual-scroll`, `virtual-scroll-variable` | Viewport propio con tope de 200 mensajes. | Se usa `CdkVirtualScrollViewport` y el tope se quitó. |
 | `message-attribution` | Exponer `sender_type`. | Cumplido en el backend; el frontend no lo usa (pendiente registrado). |
 
@@ -92,7 +92,7 @@ Formato pedido por el método: qué es · por qué parece existir · ¿respaldad
 | `WebhookPayload.processed` | Nunca se pone en `true`. | búsqueda de `setProcessed` |
 | `ConversationStatus::CLOSED` | Nunca escrito. | búsqueda |
 | Reglas con disparador `outbound` | El motor se invoca; ninguna regla lo soporta. | `HandleOutboundMessageUseCase.php:352-353` |
-| `Contact.owner_id` | Se guarda y filtra; **no se sabe a qué apunta ni para qué sirve.** | `Contact.php:33-34` |
+| `Contacto.owner_id` | Se guarda y filtra; **no se sabe a qué apunta ni para qué sirve.** | `Contacto.php:33-34` |
 | `Ticket.priority` | Siempre `medium`; el evento envía `priority: 1` fijo. **Propósito no confirmado.** | `HandleInboundMessageUseCase.php:366, 439` |
 | `extra_hosts: localhost:172.19.0.1` del servicio `php` | **Propósito no confirmado.** | `docker-compose.yml` |
 | `DebugController::outbound` | Mal nombrado (genera un mensaje entrante). | `DebugController.php:94` |
@@ -108,7 +108,7 @@ Formato pedido por el método: qué es · por qué parece existir · ¿respaldad
 | Tests nombrados por sprint (`Sprint09B*`, `Sprint10*`, `Sprint14*`). | Describen entregas históricas; son los que más se desactualizan. |
 | Tests de seguridad que usan ADMIN. | No detectan fallas de autorización de roles menores (p. ej. [R3](00-estado-y-pendientes.md#r3-cualquier-agente-modifica-disponibilidad-y-turnos-de-cualquier-agente)). |
 | Tests de Sprint 17 con datos que producción no genera. | Ocultaron C-1. |
-| Deprecación PHP en `Contacto/Query/TimelineEventDTO.php:13-14` (parámetro opcional antes de uno obligatorio) y 12 deprecaciones de PHPUnit. | Inocuas hoy. |
+| Deprecación PHP en `Contacto/Query/EventoDeLineaDeTiempoDTO.php:13-14` (parámetro opcional antes de uno obligatorio) y 12 deprecaciones de PHPUnit. | Inocuas hoy. |
 | Frontend: 31 specs sin poder ejecutarse en este entorno; las zonas más frágiles no tienen specs. | Estado real desconocido. |
 
 Clasificación detallada de los 45 fallos en [00](00-estado-y-pendientes.md#los-45-fallos-agrupados-por-causa-raíz).

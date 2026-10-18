@@ -6,7 +6,7 @@ namespace App\Tests\Integration;
 
 use App\Compartido\Graph\GraphClient;
 use App\Agente\Agent;
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Conversacion\MessageSenderType;
 use App\Ticket\Ticket;
@@ -79,7 +79,7 @@ class ProviderProxyControllerTemplateAttributionTest extends WebTestCase
 
     private function createTicketWithContact(): int
     {
-        $contact = new Contact();
+        $contact = new Contacto();
         $contact->setPhone('+5491100000400');
         $this->em->persist($contact);
 

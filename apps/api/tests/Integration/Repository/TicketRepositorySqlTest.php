@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Repository;
 
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Ticket\Repository\TicketRepository;
 use App\Ticket\Ticket;
@@ -25,7 +25,7 @@ class TicketRepositorySqlTest extends KernelTestCase
     private EntityManagerInterface $em;
     private Connection $conn;
     private TicketRepository $repo;
-    private Contact $contact;
+    private Contacto $contact;
     /** @var int[] */
     private array $ticketIds = [];
     /** @var int[] */
@@ -38,7 +38,7 @@ class TicketRepositorySqlTest extends KernelTestCase
         $this->conn = $this->em->getConnection();
         $this->repo = static::getContainer()->get(TicketRepository::class);
 
-        $this->contact = new Contact();
+        $this->contact = new Contacto();
         $this->contact->setPhone('+5491100009901');
         $this->em->persist($this->contact);
         $this->em->flush();

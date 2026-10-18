@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Agente\Team;
 use App\Ticket\Ticket;
@@ -73,7 +73,7 @@ class ReportingRepositoryTeamFilterTest extends KernelTestCase
     ): int {
         $this->phoneSeq++;
 
-        $contact = new Contact();
+        $contact = new Contacto();
         $contact->setPhone('+549110000' . str_pad((string) $this->phoneSeq, 4, '0', STR_PAD_LEFT));
         $this->em->persist($contact);
 

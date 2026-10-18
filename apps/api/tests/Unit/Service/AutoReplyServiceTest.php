@@ -10,7 +10,7 @@ use App\Compartido\Graph\GraphClient;
 use App\Agente\Agent;
 use App\Disponibilidad\AgentShift;
 use App\Disponibilidad\Repository\AgentShiftRepository;
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Compartido\EventCollector;
 use App\Conversacion\ConversationWindowPolicy;
@@ -109,9 +109,9 @@ class AutoReplyServiceTest extends TestCase
         return $agent;
     }
 
-    private function createContact(int $id = 1, string $phone = '+5493625123456'): Contact
+    private function createContact(int $id = 1, string $phone = '+5493625123456'): Contacto
     {
-        $contact = new Contact();
+        $contact = new Contacto();
         $contact->setPhone($phone);
 
         $prop = new \ReflectionProperty($contact, 'id');
@@ -123,7 +123,7 @@ class AutoReplyServiceTest extends TestCase
 
     private function createTicket(
         ?Agent $agent = null,
-        ?Contact $contact = null,
+        ?Contacto $contact = null,
         ?string $phoneNumberId = '123456789',
         ?Conversation $conversation = null,
         ?\DateTimeImmutable $lastInboundMessageAt = new \DateTimeImmutable('-1 hour'),

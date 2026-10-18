@@ -6,7 +6,7 @@ namespace App\Tests\Integration;
 
 use App\Agente\Agent;
 use App\Disponibilidad\AgentShift;
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use App\Ticket\EventoDeTicket;
 use App\Ticket\Ticket;
 use App\Administracion\User;
@@ -425,7 +425,7 @@ class ReportingV2Test extends WebTestCase
         // Create 10 contacts
         $contacts = [];
         for ($i = 1; $i <= 10; $i++) {
-            $contact = new Contact();
+            $contact = new Contacto();
             $contact->setPhone("+54911{$i}000000");
             $contact->setName("Test Contact {$i}");
             $contact->setEmail("test{$i}@test.com");

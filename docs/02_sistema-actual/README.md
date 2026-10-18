@@ -41,7 +41,7 @@ Una bandeja de atención compartida: los mensajes que llegan por **WhatsApp Clou
 
 | Término | Qué significa en Inbiox | Dónde vive |
 |---|---|---|
-| **Contacto** | La persona del otro lado de WhatsApp. Se identifica por teléfono, **único en todo el sistema** (no por workspace). | `apps/api/src/Contacto/Contact.php` |
+| **Contacto** | La persona del otro lado de WhatsApp. Se identifica por teléfono, **único en todo el sistema** (no por workspace). | `apps/api/src/Contacto/Contacto.php` |
 | **Conversación** | Historial de mensajes de un contacto con **un** número de WhatsApp. En la práctica nunca se cierra. | `Conversacion/Conversation.php` |
 | **Mensaje** | Un mensaje entrante (`inbound`) o saliente (`outbound`). Pertenece a la conversación, **no** al ticket. | `Conversacion/Message.php` |
 | **Ticket** | Un caso de atención: un "episodio" dentro de una conversación. Hay a lo sumo un ticket no cerrado por contacto y número. | `Ticket/Ticket.php` |

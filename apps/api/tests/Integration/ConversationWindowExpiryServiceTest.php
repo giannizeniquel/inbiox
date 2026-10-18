@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Integration;
 
 use App\Conversacion\UseCase\ConversationWindowExpiryService;
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Ticket\TipoDeEventoDeTicket;
 use App\Ticket\Ticket;
@@ -45,7 +45,7 @@ class ConversationWindowExpiryServiceTest extends KernelTestCase
 
     private function createTicket(string $status, ?\DateTimeImmutable $lastInboundMessageAt): int
     {
-        $contact = new Contact();
+        $contact = new Contacto();
         $contact->setPhone('+549110000' . random_int(1000, 9999));
         $this->em->persist($contact);
 

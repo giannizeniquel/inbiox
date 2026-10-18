@@ -6,7 +6,7 @@ namespace App\Tests\Integration;
 
 use App\Automatizacion\RuleExecutorService;
 use App\Conversacion\UseCase\HandleOutboundMessageUseCase;
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Automatizacion\RuleContext;
 use App\Ticket\Ticket;
@@ -355,7 +355,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
 
     private function seedTicket(string $status, ?int $assignedAgentId): int
     {
-        $contact = new Contact();
+        $contact = new Contacto();
         $contact->setPhone('+549' . random_int(100000000, 999999999));
         $this->em->persist($contact);
 

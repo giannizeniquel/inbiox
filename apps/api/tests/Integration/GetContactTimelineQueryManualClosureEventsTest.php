@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Contacto\Query\GetContactTimelineQuery;
-use App\Contacto\Query\TimelineEventDTO;
+use App\Contacto\Query\GetLineaDeTiempoDeContactoQuery;
+use App\Contacto\Query\EventoDeLineaDeTiempoDTO;
 use App\Agente\Agent;
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Ticket\TipoDeEventoDeTicket;
 use App\Ticket\Ticket;
@@ -17,7 +17,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
- * `GetContactTimelineQuery`'s widened `ticket_events` branch (design.md
+ * `GetLineaDeTiempoDeContactoQuery`'s widened `ticket_events` branch (design.md
  * D5/D6, tasks.md 5.1): the six manual closure/resolution audit types must
  * appear with a role-labeled `assigned_to`, and the pre-existing window
  * event rows must remain byte-identical (no `assigned_to`/`agent_id`
@@ -46,7 +46,7 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
         $conn->executeStatement('DELETE FROM agents');
         $conn->executeStatement('DELETE FROM `user`');
 
-        $contact = new Contact();
+        $contact = new Contacto();
         $contact->setPhone('+5491100000700');
         $this->em->persist($contact);
 
@@ -114,10 +114,10 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
         return [$userId, $agentId];
     }
 
-    /** @return array<string, TimelineEventDTO> keyed by `type` */
+    /** @return array<string, EventoDeLineaDeTiempoDTO> keyed by `type` */
     private function fetchEventsByType(): array
     {
-        $query = static::getContainer()->get(GetContactTimelineQuery::class);
+        $query = static::getContainer()->get(GetLineaDeTiempoDeContactoQuery::class);
         $result = $query->execute($this->contactId, null, 50);
 
         $byType = [];
@@ -236,7 +236,7 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
             $this->addTicketEvent(TipoDeEventoDeTicket::MANUAL_CERRADO_RESPONSABLE, 'u:' . $userId);
         }
 
-        $query = static::getContainer()->get(GetContactTimelineQuery::class);
+        $query = static::getContainer()->get(GetLineaDeTiempoDeContactoQuery::class);
         $result = $query->execute($this->contactId, null, 2);
 
         self::assertCount(2, $result['events']);

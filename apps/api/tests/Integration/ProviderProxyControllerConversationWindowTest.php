@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Integration;
 
 use App\Agente\Agent;
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Ticket\Ticket;
 use App\Administracion\User;
@@ -86,7 +86,7 @@ class ProviderProxyControllerConversationWindowTest extends WebTestCase
 
     private function createTicketWithLastInboundHoursAgo(float $hoursAgo): int
     {
-        $contact = new Contact();
+        $contact = new Contacto();
         $contact->setPhone('+5491100000099');
         $this->em->persist($contact);
 

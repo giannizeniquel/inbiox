@@ -6,7 +6,7 @@ namespace App\Tests\Integration;
 
 use App\Conversacion\Query\GetTicketMessagesQuery;
 use App\Agente\Agent;
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Conversacion\Message;
 use App\Conversacion\MessageSenderType;
@@ -51,7 +51,7 @@ class GetTicketMessagesQueryAttributionTest extends KernelTestCase
         $agentId = $agent->getId();
         \assert($agentId !== null);
 
-        $contact = new Contact();
+        $contact = new Contacto();
         $contact->setPhone('+5491100000500');
         $this->em->persist($contact);
 

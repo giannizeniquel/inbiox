@@ -3,7 +3,7 @@
 namespace App\Ticket;
 
 use App\Agente\Team;
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Conversacion\RecipientPhoneNotFoundException;
 use Doctrine\ORM\Mapping as ORM;
@@ -24,9 +24,9 @@ class Ticket
     #[ORM\Column(name: "id", type: "bigint")]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(targetEntity: Contact::class)]
+    #[ORM\ManyToOne(targetEntity: Contacto::class)]
     #[ORM\JoinColumn(name: "contact_id", referencedColumnName: "id")]
-    private ?Contact $contacto = null;
+    private ?Contacto $contacto = null;
 
     #[ORM\ManyToOne(targetEntity: Conversation::class)]
     #[ORM\JoinColumn(name: "conversation_id", referencedColumnName: "id")]
@@ -87,7 +87,7 @@ class Ticket
         return $this->id;
     }
 
-    public function getContacto(): ?Contact
+    public function getContacto(): ?Contacto
     {
         return $this->contacto;
     }
@@ -111,7 +111,7 @@ class Ticket
         return $telefono;
     }
 
-    public function setContacto(Contact $contacto): self
+    public function setContacto(Contacto $contacto): self
     {
         $this->contacto = $contacto;
         return $this;

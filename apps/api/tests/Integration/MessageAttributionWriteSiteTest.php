@@ -7,7 +7,7 @@ namespace App\Tests\Integration;
 use App\Conversacion\UseCase\HandleInboundMessageUseCase;
 use App\Conversacion\UseCase\HandleOutboundMessageUseCase;
 use App\Agente\Agent;
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Conversacion\MessageSenderType;
 use App\Ticket\Ticket;
@@ -17,7 +17,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
  * Integration tests for sender attribution at the write sites (spec.md
- * "Attribution at Human Agent Reply" / "Attribution at Inbound Contact
+ * "Attribution at Human Agent Reply" / "Attribution at Inbound Contacto
  * Message", design.md D3).
  */
 class MessageAttributionWriteSiteTest extends KernelTestCase
@@ -50,7 +50,7 @@ class MessageAttributionWriteSiteTest extends KernelTestCase
 
     private function createTicket(): int
     {
-        $contact = new Contact();
+        $contact = new Contacto();
         $contact->setPhone('+5491100000200');
         $this->em->persist($contact);
 

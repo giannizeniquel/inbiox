@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit;
 
-use App\Contacto\Query\ContactDetailDTO;
-use App\Contacto\UseCase\CreateContactUseCase;
-use App\Contacto\Contact;
-use App\Contacto\Repository\ContactRepository;
+use App\Contacto\Query\DetalleDeContactoDTO;
+use App\Contacto\UseCase\CreateContactoUseCase;
+use App\Contacto\Contacto;
+use App\Contacto\Repository\ContactoRepository;
 use Doctrine\DBAL\Driver\Exception as DriverException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
@@ -15,7 +15,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Greenfield coverage for CreateContactUseCase (first-ever tests for this class).
+ * Greenfield coverage for CreateContactoUseCase (first-ever tests for this class).
  *
  * Covers existing behavior (phone required/normalization/duplicate pre-check/
  * optional-field whitelist) as approval tests, plus the new TOCTOU hardening:
@@ -26,24 +26,24 @@ use PHPUnit\Framework\TestCase;
 class CreateContactUseCaseTest extends TestCase
 {
     private EntityManagerInterface|MockObject $entityManager;
-    private ContactRepository|MockObject $contactRepository;
-    private CreateContactUseCase $useCase;
+    private ContactoRepository|MockObject $contactRepository;
+    private CreateContactoUseCase $useCase;
 
     protected function setUp(): void
     {
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
-        $this->contactRepository = $this->createMock(ContactRepository::class);
+        $this->contactRepository = $this->createMock(ContactoRepository::class);
 
-        $this->useCase = new CreateContactUseCase(
+        $this->useCase = new CreateContactoUseCase(
             $this->entityManager,
             $this->contactRepository,
         );
     }
 
     /**
-     * Configure the EM mock to auto-generate an ID on the persisted Contact when flushed.
-     * Without this, the real Contact entity created inside execute() would have a null ID
-     * after a mock flush, causing a TypeError when building ContactDetailDTO.
+     * Configure the EM mock to auto-generate an ID on the persisted Contacto when flushed.
+     * Without this, the real Contacto entity created inside execute() would have a null ID
+     * after a mock flush, causing a TypeError when building DetalleDeContactoDTO.
      */
     private function enableEntityIdAutoGeneration(): void
     {
@@ -105,7 +105,7 @@ class CreateContactUseCaseTest extends TestCase
 
     public function testThrowsForDuplicatePhoneOnPreCheck(): void
     {
-        $existing = $this->createMock(Contact::class);
+        $existing = $this->createMock(Contacto::class);
         $this->contactRepository->method('findOneByPhone')->willReturn($existing);
 
         $this->expectException(\InvalidArgumentException::class);
@@ -160,7 +160,7 @@ class CreateContactUseCaseTest extends TestCase
 
         $result = $this->useCase->execute(['phone' => '+543712345678']);
 
-        $this->assertInstanceOf(ContactDetailDTO::class, $result);
+        $this->assertInstanceOf(DetalleDeContactoDTO::class, $result);
         $this->assertSame('+543712345678', $result->phone);
     }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Conversacion\UseCase;
 
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Conversacion\ConversationStatus;
 use App\Compartido\EventCollector;
@@ -14,7 +14,7 @@ use App\Compartido\Outbox\OutboxEvent;
 use App\Compartido\Outbox\OutboxWriter;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
-use App\Contacto\Repository\ContactRepository;
+use App\Contacto\Repository\ContactoRepository;
 use App\Conversacion\Repository\ConversationRepository;
 use App\Conversacion\Repository\MessageRepository;
 use App\Ticket\Repository\TicketRepository;
@@ -34,7 +34,7 @@ class HandleInboundMessageUseCase
 {
     public function __construct(
         private EntityManagerInterface $em,
-        private ContactRepository $contactRepo,
+        private ContactoRepository $contactRepo,
         private ConversationRepository $conversationRepo,
         private MessageRepository $messageRepo,
         private TicketRepository $ticketRepo,
@@ -209,11 +209,11 @@ foreach ($events as $event) {
         ];
     }
 
-    private function findOrCreateContact(string $phone, ?string $contactName): Contact
+    private function findOrCreateContact(string $phone, ?string $contactName): Contacto
     {
         $contact = $this->contactRepo->findOneByPhone($phone);
         if (!$contact) {
-            $contact = new Contact();
+            $contact = new Contacto();
             $contact->setPhone($phone);
             if ($contactName !== null) {
                 $contact->setName($contactName);
@@ -227,7 +227,7 @@ foreach ($events as $event) {
         return $contact;
     }
 
-    private function findOrCreateOpenConversation(Contact $contact, ?string $phoneNumberId): Conversation
+    private function findOrCreateOpenConversation(Contacto $contact, ?string $phoneNumberId): Conversation
     {
         $conversation = $this->conversationRepo->findOpenByContact($contact, $phoneNumberId);
         if (!$conversation) {
@@ -327,7 +327,7 @@ foreach ($events as $event) {
      *
      * @return array{0: Ticket, 1: bool} the ticket and whether it is new
      */
-    private function findOrReopenOrCreateTicketAndLock(Contact $contact, Conversation $conversation, ?string $phoneNumberId): array
+    private function findOrReopenOrCreateTicketAndLock(Contacto $contact, Conversation $conversation, ?string $phoneNumberId): array
     {
         $ticket = $this->ticketRepo->findNoCerradoByContacto($contact, $phoneNumberId);
         $wasReopened = false;
@@ -407,7 +407,7 @@ foreach ($events as $event) {
         return 'waiting_to_active';
     }
 
-    private function touchTimestamps(Conversation $conversation, Contact $contact, Ticket $ticket, Message $msg): void
+    private function touchTimestamps(Conversation $conversation, Contacto $contact, Ticket $ticket, Message $msg): void
     {
         $conversation->setLastMessageAt($msg->getCreatedAt());
         $conversation->setUpdatedAt(new \DateTimeImmutable());
@@ -426,7 +426,7 @@ foreach ($events as $event) {
      * Collected after the last flush, so the ticket has its id. The sequence
      * increments are saved by the outbox writer's flush.
      */
-    private function collectInboundEvents(Ticket $ticket, bool $isNewTicket, Message $msg, string $message, Contact $contact): void
+    private function collectInboundEvents(Ticket $ticket, bool $isNewTicket, Message $msg, string $message, Contacto $contact): void
     {
         if ($isNewTicket) {
             $this->eventCollector->collect(new TicketCreatedEvent(

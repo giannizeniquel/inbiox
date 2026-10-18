@@ -6,7 +6,7 @@ use App\Conversacion\UseCase\HandleInboundMessageUseCase;
 use App\Asignacion\UseCase\AssignTicketUseCase;
 use App\Compartido\Outbox\OutboxEvent;
 use App\Ticket\Ticket;
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;

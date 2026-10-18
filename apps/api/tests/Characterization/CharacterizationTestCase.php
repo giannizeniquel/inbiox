@@ -7,7 +7,7 @@ namespace App\Tests\Characterization;
 use App\Administracion\User;
 use App\Administracion\Workspace;
 use App\Agente\Agent;
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Ticket\Ticket;
 use Doctrine\DBAL\Connection;
@@ -141,9 +141,9 @@ abstract class CharacterizationTestCase extends WebTestCase
         return $workspace;
     }
 
-    protected function createContact(string $phone, ?string $name = null): Contact
+    protected function createContact(string $phone, ?string $name = null): Contacto
     {
-        $contact = new Contact();
+        $contact = new Contacto();
         $contact->setPhone($phone);
         $contact->setName($name);
         $this->em->persist($contact);
@@ -152,7 +152,7 @@ abstract class CharacterizationTestCase extends WebTestCase
         return $contact;
     }
 
-    protected function createTicket(string $status, ?int $assignedAgentId = null, ?Contact $contact = null): Ticket
+    protected function createTicket(string $status, ?int $assignedAgentId = null, ?Contacto $contact = null): Ticket
     {
         $contact ??= $this->createContact('+54911' . \random_int(10000000, 99999999));
 

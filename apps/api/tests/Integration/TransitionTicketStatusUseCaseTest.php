@@ -7,7 +7,7 @@ namespace App\Tests\Integration;
 use App\Ticket\UseCase\ResolverTicketUseCase;
 use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
 use App\Agente\Agent;
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Ticket\TipoDeEventoDeTicket;
 use App\Ticket\Ticket;
@@ -52,7 +52,7 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
 
     private function createTicket(string $status): int
     {
-        $contact = new Contact();
+        $contact = new Contacto();
         $contact->setPhone('+5491100000100');
         $this->em->persist($contact);
 
@@ -242,7 +242,7 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
 
     private function createTicketWithOwner(string $status, int $agentId): int
     {
-        $contact = new Contact();
+        $contact = new Contacto();
         $contact->setPhone('+5491100000200');
         $this->em->persist($contact);
 

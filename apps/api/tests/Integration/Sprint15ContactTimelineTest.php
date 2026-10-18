@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Integration;
 
 use App\Asignacion\Assignment;
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Conversacion\Message;
 use App\Conversacion\MessageDirection;
@@ -17,7 +17,7 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
- * HTTP-level integration tests for the Contact Timeline endpoint.
+ * HTTP-level integration tests for the Contacto Timeline endpoint.
  *
  * Covers:
  *   GET /api/contacts/{id}/timeline
@@ -124,7 +124,7 @@ class Sprint15ContactTimelineTest extends WebTestCase
     private function createTestFixtures(): array
     {
         // Contact
-        $contact = new Contact();
+        $contact = new Contacto();
         $contact->setPhone('+5491112345678');
         $contact->setName('Timeline Test Contact');
         $contact->setStatus('active');

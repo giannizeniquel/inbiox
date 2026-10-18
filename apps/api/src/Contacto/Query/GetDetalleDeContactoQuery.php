@@ -2,15 +2,15 @@
 
 namespace App\Contacto\Query;
 
-use App\Contacto\Repository\ContactRepository;
+use App\Contacto\Repository\ContactoRepository;
 
-class GetContactDetailQuery
+class GetDetalleDeContactoQuery
 {
     public function __construct(
-        private ContactRepository $contactRepository,
+        private ContactoRepository $contactRepository,
     ) {}
 
-    public function execute(int $id): ?ContactDetailDTO
+    public function execute(int $id): ?DetalleDeContactoDTO
     {
         $row = $this->contactRepository->findDetailRow($id);
 
@@ -18,7 +18,7 @@ class GetContactDetailQuery
             return null;
         }
 
-        return new ContactDetailDTO(
+        return new DetalleDeContactoDTO(
             id: (int) $row['id'],
             phone: $row['phone'],
             name: $row['name'],

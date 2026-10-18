@@ -6,7 +6,7 @@ namespace App\Tests\Integration;
 
 use App\Reporte\Query\ExportTicketsCsvQuery;
 use App\Agente\Agent;
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Ticket\Etiqueta;
 use App\Ticket\EtiquetaDeTicket;
@@ -67,7 +67,7 @@ class ExportTicketsCsvQueryTest extends KernelTestCase
     ): int {
         $this->phoneSeq++;
 
-        $contact = new Contact();
+        $contact = new Contacto();
         $contact->setPhone('+549110000' . str_pad((string) $this->phoneSeq, 4, '0', STR_PAD_LEFT));
         $contact->setName($contactName);
         $this->em->persist($contact);

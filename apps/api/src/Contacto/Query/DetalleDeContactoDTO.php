@@ -2,7 +2,7 @@
 
 namespace App\Contacto\Query;
 
-class ContactDetailDTO
+class DetalleDeContactoDTO
 {
     public function __construct(
         public int $id,

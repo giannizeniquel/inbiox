@@ -8,7 +8,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'contacts')]
-class Contact
+class Contacto
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]

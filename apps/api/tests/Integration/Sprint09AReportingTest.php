@@ -4,7 +4,7 @@ namespace App\Tests\Integration;
 
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Reporte\Repository\ReportingRepository;
 use App\Reporte\Query\ReportingService;
@@ -644,7 +644,7 @@ class Sprint09AReportingTest extends KernelTestCase
         ?int $assignedAgentId = null,
         ?string $phoneNumberId = null
     ): Ticket {
-        $contact = new Contact();
+        $contact = new Contacto();
         $contact->setPhone('+54' . random_int(3710000000, 3719999999));
         $this->em->persist($contact);
 
@@ -691,7 +691,7 @@ class Sprint09AReportingTest extends KernelTestCase
 
     private function createTestTicketWithStatus(string $status): Ticket
     {
-        $contact = new Contact();
+        $contact = new Contacto();
         $contact->setPhone('+54' . random_int(3710000000, 3719999999));
         $this->em->persist($contact);
 

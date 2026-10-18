@@ -83,13 +83,13 @@ Leyenda "Rol": **Público**, **Auth** (cualquier usuario autenticado), **Agente*
 
 | Método | Path | Controlador::acción | Rol | Delega en |
 |---|---|---|---|---|
-| GET | `/api/contacts` | `ContactController::list` | Agente | `ListContactsQuery` (con workspace) |
-| GET | `/api/contacts/{id}` | `::get` | Agente | `GetContactDetailQuery` (sin workspace) |
-| POST | `/api/contacts` | `::create` | Agente | `CreateContactUseCase` |
-| POST | `/api/contacts/import` | `::import` | **Supervisor** | `ImportContactsFromCsvUseCase` |
-| PUT | `/api/contacts/{id}` | `::update` | Agente | `UpdateContactUseCase` |
-| DELETE | `/api/contacts/{id}` | `::delete` | Agente (cualquiera, cualquier contacto) | `DeleteContactUseCase`. Sin UI. |
-| GET | `/api/contacts/{id}/timeline` | `ContactTimelineController::getTimeline` | Agente | `GetContactTimelineQuery` |
+| GET | `/api/contacts` | `ContactoController::list` | Agente | `ListContactosQuery` (con workspace) |
+| GET | `/api/contacts/{id}` | `::get` | Agente | `GetDetalleDeContactoQuery` (sin workspace) |
+| POST | `/api/contacts` | `::create` | Agente | `CreateContactoUseCase` |
+| POST | `/api/contacts/import` | `::import` | **Supervisor** | `ImportarContactosDesdeCsvUseCase` |
+| PUT | `/api/contacts/{id}` | `::update` | Agente | `UpdateContactoUseCase` |
+| DELETE | `/api/contacts/{id}` | `::delete` | Agente (cualquiera, cualquier contacto) | `DeleteContactoUseCase`. Sin UI. |
+| GET | `/api/contacts/{id}/timeline` | `LineaDeTiempoDeContactoController::getTimeline` | Agente | `GetLineaDeTiempoDeContactoQuery` |
 
 ### F. Reportes (`ReportingController`)
 

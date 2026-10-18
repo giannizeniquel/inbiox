@@ -5,7 +5,7 @@ namespace App\Ticket\Repository;
 use App\Ticket\TipoDeEventoDeTicket;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ArrayParameterType;
@@ -21,7 +21,7 @@ class TicketRepository extends ServiceEntityRepository
         parent::__construct($registry, Ticket::class);
     }
 
-    public function findAbiertoByContacto(Contact $contacto, ?string $phoneNumberId = null): ?Ticket
+    public function findAbiertoByContacto(Contacto $contacto, ?string $phoneNumberId = null): ?Ticket
     {
         $qb = $this->createQueryBuilder('t')
             ->where('t.contacto = :contact')
@@ -41,7 +41,7 @@ class TicketRepository extends ServiceEntityRepository
         return $qb->getQuery()->getOneOrNullResult();
     }
 
-    public function findNoCerradoByContacto(Contact $contacto, ?string $phoneNumberId = null): ?Ticket
+    public function findNoCerradoByContacto(Contacto $contacto, ?string $phoneNumberId = null): ?Ticket
     {
         $qb = $this->createQueryBuilder('t')
             ->where('t.contacto = :contact')
@@ -104,7 +104,7 @@ class TicketRepository extends ServiceEntityRepository
      * then rehydrates via `$this->find($id)` so the caller receives a
      * managed entity it can `lock()`.
      */
-    public function findCerradoPorVentanaVencidaByContacto(Contact $contacto, ?string $phoneNumberId = null): ?Ticket
+    public function findCerradoPorVentanaVencidaByContacto(Contacto $contacto, ?string $phoneNumberId = null): ?Ticket
     {
         $sql = 'SELECT t.id
                 FROM tickets t

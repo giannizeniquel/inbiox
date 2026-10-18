@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Controller;
 
 use App\Agente\Agent;
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Agente\Team;
 use App\Ticket\Ticket;
@@ -118,7 +118,7 @@ class TicketControllerSetTeamTest extends WebTestCase
 
     private function createTicket(?string $phoneNumberId = null): Ticket
     {
-        $contact = new Contact();
+        $contact = new Contacto();
         $contact->setPhone('+549110000' . random_int(1000, 9999));
         $this->em->persist($contact);
 

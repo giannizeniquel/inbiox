@@ -6,7 +6,7 @@ namespace App\Reporte\Command;
 
 use App\Agente\Agent;
 use App\Disponibilidad\AgentShift;
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use App\Ticket\EventoDeTicket;
 use App\Ticket\Ticket;
 use App\Administracion\Workspace;
@@ -115,7 +115,7 @@ final class SeedReportsCommand extends Command
         $output->writeln('Creating 10 contacts...');
         $contacts = [];
         for ($i = 1; $i <= 10; $i++) {
-            $contact = new Contact();
+            $contact = new Contacto();
             $contact->setPhone(sprintf('+54911%07d', $i));
             $contact->setName("Contacto {$i}");
             $contact->setEmail("contacto{$i}@test.com");

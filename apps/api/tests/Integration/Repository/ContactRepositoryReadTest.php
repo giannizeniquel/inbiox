@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Repository;
 
-use App\Contacto\Repository\ContactRepository;
+use App\Contacto\Repository\ContactoRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -16,13 +16,13 @@ class ContactRepositoryReadTest extends KernelTestCase
 {
     use ReadModelFixture;
 
-    private ContactRepository $repo;
+    private ContactoRepository $repo;
 
     protected function setUp(): void
     {
         self::bootKernel();
         $this->beginFixture(static::getContainer()->get(EntityManagerInterface::class)->getConnection());
-        $this->repo = static::getContainer()->get(ContactRepository::class);
+        $this->repo = static::getContainer()->get(ContactoRepository::class);
     }
 
     protected function tearDown(): void

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Integration\Repository;
 
 use App\Agente\Agent;
-use App\Contacto\Contact;
+use App\Contacto\Contacto;
 use App\Reporte\Repository\ReportingRepository;
 use App\Ticket\EventoDeTicket;
 use Doctrine\ORM\EntityManagerInterface;
@@ -25,7 +25,7 @@ class ReportingRepositorySqlTest extends KernelTestCase
         $repo = static::getContainer()->get(ReportingRepository::class);
         $conn = $em->getConnection();
 
-        $contact = new Contact();
+        $contact = new Contacto();
         $contact->setPhone('+5491100009903');
         $em->persist($contact);
         $em->persist(new Agent('Truncate Me'));

@@ -71,7 +71,7 @@ Todo en `apps/api/src/`, organizado **por módulo de negocio** desde la fase 2 d
 |---|---|---|
 | `Ticket/` | Ticket, estados, máquina de estados, etiquetas, bandeja. | `Ticket.php`, `MaquinaDeEstadosDeTicket.php`, `Controller/BandejaController`, `Controller/FlujoDeTicketController`, `Query/ListTicketsQuery`, `Query/FiltrosDeTicketBuilder` |
 | `Conversacion/` | Conversación, mensajes, media, ventana de 24 h, webhook de Meta, envío. | `Controller/WebhookController`, `Controller/ProviderProxyController`, `UseCase/HandleInboundMessageUseCase`, `UseCase/ProcessWebhookPayloadUseCase`, `UseCase/SendOutboundMessageUseCase`, `UseCase/SendTemplateUseCase`, `UseCase/UploadMediaUseCase`, `ConversationWindowPolicy.php`, `MediaValidator.php` |
-| `Contacto/` | Contactos, importación, línea de tiempo. | `Controller/ContactController`, `Query/GetContactTimelineQuery`, `UseCase/ImportContactsFromCsvUseCase` |
+| `Contacto/` | Contactos, importación, línea de tiempo. | `Controller/ContactoController`, `Query/GetLineaDeTiempoDeContactoQuery`, `UseCase/ImportarContactosDesdeCsvUseCase` |
 | `Agente/` | Agentes, equipos, perfil propio (`/api/me`). | `Agent.php`, `Team.php`, `Controller/MeController` (configuración, perfil y notificaciones; auto-respuesta, turnos y workspaces propios viven en Automatizacion, Disponibilidad y Administracion) |
 | `Disponibilidad/` | Turnos, disponibilidad manual. | `AgentShift.php`, `AgentAvailabilityService.php`, `UseCase/SetAgentAvailabilityUseCase` |
 | `Asignacion/` | Asignación manual y automática. | `AssignmentService.php`, `UseCase/AssignTicketUseCase`, `UseCase/AutoAssignTicketUseCase`, `EventListener/TicketAutoAssignmentRequestedListener` |
