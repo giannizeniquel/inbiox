@@ -9,22 +9,22 @@ class GetMensajesDeTicketQuery
 {
     public function __construct(
         private TicketRepository $ticketRepository,
-        private MensajeRepository $messageRepository,
+        private MensajeRepository $mensajeRepository,
     ) {}
 
     public function execute(
         int $ticketId,
         ?string $cursor = null,
         int $limit = 20,
-        string $direction = 'forward',
+        string $direccion = 'forward',
         int $offset = 0,
     ): array {
         $limit = min(200, max(1, $limit));
         
         // Get ticket's conversation
-        $conversationId = $this->ticketRepository->findConversacionId($ticketId);
+        $conversacionId = $this->ticketRepository->findConversacionId($ticketId);
 
-        if ($conversationId === false) {
+        if ($conversacionId === false) {
             return ['items' => [], 'has_more' => false, 'next_cursor' => null];
         }
         
@@ -37,18 +37,18 @@ class GetMensajesDeTicketQuery
             }
         }
         
-        if ($direction === 'backward') {
-            return $this->getMensajesHaciaAtras($conversationId, $cursorData, $limit, $offset);
+        if ($direccion === 'backward') {
+            return $this->getMensajesHaciaAtras($conversacionId, $cursorData, $limit, $offset);
         }
         
-        return $this->getMensajesHaciaAdelante($conversationId, $cursorData, $limit);
+        return $this->getMensajesHaciaAdelante($conversacionId, $cursorData, $limit);
     }
     
-    private function getMensajesHaciaAdelante(int $conversationId, ?array $cursorData, int $limit): array
+    private function getMensajesHaciaAdelante(int $conversacionId, ?array $cursorData, int $limit): array
     {
         $hasCursor = $cursorData && isset($cursorData['created_at'], $cursorData['id']);
-        $results = $this->messageRepository->findPaginaAscendente(
-            $conversationId,
+        $results = $this->mensajeRepository->findPaginaAscendente(
+            $conversacionId,
             $hasCursor ? $cursorData['created_at'] : null,
             $hasCursor ? (int) $cursorData['id'] : null,
             $limit + 1,
@@ -69,23 +69,23 @@ class GetMensajesDeTicketQuery
         }
 
         $items = array_map(fn($row) => new MensajeDTO(
-            messageId: (int) $row['id'],
-            direction: $row['direction'],
-            content: $row['content'],
-            createdAt: (new \DateTimeImmutable($row['created_at']))->format('Y-m-d\TH:i:s\Z'),
-            media: is_string($row['media'] ?? null) ? json_decode($row['media'], true) : $row['media'] ?? null,
-            senderAgentId: isset($row['sender_agent_id']) ? (int) $row['sender_agent_id'] : null,
-            senderType: $row['sender_type'] ?? null,
+            mensajeId: (int) $row['id'],
+            direccion: $row['direction'],
+            contenido: $row['content'],
+            creadoAt: (new \DateTimeImmutable($row['created_at']))->format('Y-m-d\TH:i:s\Z'),
+            adjunto: is_string($row['media'] ?? null) ? json_decode($row['media'], true) : $row['media'] ?? null,
+            agenteRemitenteId: isset($row['sender_agent_id']) ? (int) $row['sender_agent_id'] : null,
+            tipoDeRemitente: $row['sender_type'] ?? null,
         ), $results);
 
         return ['items' => $items, 'has_more' => $hasMore, 'next_cursor' => $nextCursor];
     }
 
-    private function getMensajesHaciaAtras(int $conversationId, ?array $cursorData, int $limit, int $offset = 0): array
+    private function getMensajesHaciaAtras(int $conversacionId, ?array $cursorData, int $limit, int $offset = 0): array
     {
         $hasCursor = $cursorData && isset($cursorData['created_at'], $cursorData['id']);
-        $results = $this->messageRepository->findPaginaDescendente(
-            $conversationId,
+        $results = $this->mensajeRepository->findPaginaDescendente(
+            $conversacionId,
             $hasCursor ? $cursorData['created_at'] : null,
             $hasCursor ? (int) $cursorData['id'] : null,
             $limit + 1,
@@ -110,13 +110,13 @@ class GetMensajesDeTicketQuery
         }
 
         $items = array_map(fn($row) => new MensajeDTO(
-            messageId: (int) $row['id'],
-            direction: $row['direction'],
-            content: $row['content'],
-            createdAt: (new \DateTimeImmutable($row['created_at']))->format('Y-m-d\TH:i:s\Z'),
-            media: is_string($row['media'] ?? null) ? json_decode($row['media'], true) : $row['media'] ?? null,
-            senderAgentId: isset($row['sender_agent_id']) ? (int) $row['sender_agent_id'] : null,
-            senderType: $row['sender_type'] ?? null,
+            mensajeId: (int) $row['id'],
+            direccion: $row['direction'],
+            contenido: $row['content'],
+            creadoAt: (new \DateTimeImmutable($row['created_at']))->format('Y-m-d\TH:i:s\Z'),
+            adjunto: is_string($row['media'] ?? null) ? json_decode($row['media'], true) : $row['media'] ?? null,
+            agenteRemitenteId: isset($row['sender_agent_id']) ? (int) $row['sender_agent_id'] : null,
+            tipoDeRemitente: $row['sender_type'] ?? null,
         ), $results);
 
         return ['items' => $items, 'has_more' => $hasMore, 'next_cursor' => $nextCursor];

@@ -26,8 +26,8 @@ use Psr\Log\LoggerInterface;
 final class ProcesarPayloadWebhookUseCase
 {
     public function __construct(
-        private readonly ProcesarMensajeEntranteUseCase $handleInboundMessage,
-        private readonly ProcesarActualizacionDeEstadoUseCase $handleStatusUpdate,
+        private readonly ProcesarMensajeEntranteUseCase $procesarMensajeEntrante,
+        private readonly ProcesarActualizacionDeEstadoUseCase $procesarActualizacionDeEstado,
         private readonly LoggerInterface $logger,
     ) {}
 
@@ -52,11 +52,11 @@ final class ProcesarPayloadWebhookUseCase
                 // Handle inbound messages — process via HandleInboundMessageUseCase
                 if (isset($value['messages']) && is_array($value['messages'])) {
                     // Build phone→name lookup from contacts[] (Meta sends wa_id + profile.name)
-                    $contactNames = [];
+                    $nombresDeContacto = [];
                     if (isset($value['contacts']) && is_array($value['contacts'])) {
-                        foreach ($value['contacts'] as $contact) {
-                            if (isset($contact['wa_id'])) {
-                                $contactNames[$contact['wa_id']] = $contact['profile']['name'] ?? null;
+                        foreach ($value['contacts'] as $contacto) {
+                            if (isset($contacto['wa_id'])) {
+                                $nombresDeContacto[$contacto['wa_id']] = $contacto['profile']['name'] ?? null;
                             }
                         }
                     }
@@ -71,7 +71,7 @@ final class ProcesarPayloadWebhookUseCase
                             continue;
                         }
 
-                        $contactName = $contactNames[$from] ?? null;
+                        $nombreDeContacto = $nombresDeContacto[$from] ?? null;
 
                         // Supported message types: text, document, image, audio, video
                         $supportedTypes = ['text', 'document', 'image', 'audio', 'video'];
@@ -85,7 +85,7 @@ final class ProcesarPayloadWebhookUseCase
                         }
 
                         // Extract message content based on type
-                        $mediaDownloadPayload = null;
+                        $datosDeDescargaDeAdjunto = null;
                         if ($msgType === 'text') {
                             $text = $msg['text']['body'] ?? '';
                         } else {
@@ -93,7 +93,7 @@ final class ProcesarPayloadWebhookUseCase
                         $mediaId = $msg[$msgType]['id'] ?? null;
                         $filename = $msg[$msgType]['filename'] ?? null;
                         $mimeType = $msg[$msgType]['mime_type'] ?? null;
-                        $caption = $msg[$msgType]['caption'] ?? null;
+                        $leyenda = $msg[$msgType]['caption'] ?? null;
 
                         $typeLabels = [
                             'document' => '📎 Documento',
@@ -103,27 +103,27 @@ final class ProcesarPayloadWebhookUseCase
                         ];
                         $typeLabel = $typeLabels[$msgType] ?? '📁 ' . ucfirst($msgType);
 
-                        $text = $caption
-                            ? "{$typeLabel}: {$filename} — \"{$caption}\""
+                        $text = $leyenda
+                            ? "{$typeLabel}: {$filename} — \"{$leyenda}\""
                             : "{$typeLabel}: {$filename}";
 
                         // Build media download payload for storage
-                        $mediaDownloadPayload = $mediaId ? [
+                        $datosDeDescargaDeAdjunto = $mediaId ? [
                             'mediaId' => $mediaId,
                             'mimeType' => $mimeType,
                             'filename' => $filename,
-                            'caption' => $caption,
+                            'caption' => $leyenda,
                         ] : null;
                         }
 
                         try {
-                            $result = $this->handleInboundMessage->procesarMensajeEntrante(
+                            $result = $this->procesarMensajeEntrante->procesarMensajeEntrante(
                                 $from,
                                 $text,
                                 $wamid,
                                 $phoneNumberId,
-                                $contactName,
-                                $mediaDownloadPayload,
+                                $nombreDeContacto,
+                                $datosDeDescargaDeAdjunto,
                             );
 
                             $this->logger->info('Inbound message processed', [
@@ -146,7 +146,7 @@ final class ProcesarPayloadWebhookUseCase
                 // Handle status updates — pass phoneNumberId for multi-number (CAP-7)
                 if (isset($value['statuses']) && is_array($value['statuses'])) {
                     foreach ($value['statuses'] as $statusEntry) {
-                        $this->handleStatusUpdate->procesarActualizacionDeEstado($statusEntry, $phoneNumberId);
+                        $this->procesarActualizacionDeEstado->procesarActualizacionDeEstado($statusEntry, $phoneNumberId);
                     }
                 }
             }

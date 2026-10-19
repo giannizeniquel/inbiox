@@ -28,9 +28,9 @@ enum TipoDeAdjunto: string
     /**
      * Map a TipoDeAdjunto to its file extension.
      */
-    public static function toExtension(TipoDeAdjunto $kind): string
+    public static function toExtension(TipoDeAdjunto $tipo): string
     {
-        return match ($kind) {
+        return match ($tipo) {
             self::IMAGEN => 'jpg',
             self::VIDEO => 'mp4',
             self::AUDIO => 'ogg',

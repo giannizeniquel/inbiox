@@ -23,8 +23,8 @@ final class EnviarMensajeSalienteUseCase
     public function __construct(
         private readonly TicketRepository $ticketRepository,
         private readonly GraphClient $graphClient,
-        private readonly ProcesarMensajeSalienteUseCase $outboundUseCase,
-        private readonly MarcarMensajeSalienteEnviadoUseCase $markOutboundMessageSent,
+        private readonly ProcesarMensajeSalienteUseCase $procesarMensajeSalienteUseCase,
+        private readonly MarcarMensajeSalienteEnviadoUseCase $marcarMensajeSalienteEnviado,
     ) {}
 
     /**
@@ -40,38 +40,38 @@ final class EnviarMensajeSalienteUseCase
      */
     public function execute(
         int $ticketId,
-        string $content,
-        int $agentId,
-        bool $senderIsPrivileged,
+        string $contenido,
+        int $agenteId,
+        bool $remitenteEsPrivilegiado,
         mixed $mediaId = null,
         mixed $mimeType = null,
-        mixed $caption = null,
+        mixed $leyenda = null,
         mixed $mediaKey = null,
         mixed $filename = null,
-        mixed $size = null,
+        mixed $tamanio = null,
     ): array {
         $isMedia = $mediaId !== null && $mimeType !== null;
 
-        $mediaMetadata = null;
+        $metadatosDeAdjunto = null;
         if ($isMedia) {
-            $mediaMetadata = [
+            $metadatosDeAdjunto = [
                 'providerId' => $mediaId,
                 'mimeType' => $mimeType,
                 'key' => $mediaKey,
-                'caption' => $caption,
+                'caption' => $leyenda,
                 'filename' => $filename,
-                'size' => $size,
+                'size' => $tamanio,
                 'kind' => TipoDeAdjunto::fromMime($mimeType)->value,
             ];
         }
 
         // Creates the Message and applies the assignment and status changes.
-        $result = $this->outboundUseCase->procesarMensajeSaliente(
+        $result = $this->procesarMensajeSalienteUseCase->procesarMensajeSaliente(
             ticketId: $ticketId,
-            content: $content,
-            agentId: $agentId,
-            mediaMetadata: $mediaMetadata,
-            senderIsPrivileged: $senderIsPrivileged,
+            contenido: $contenido,
+            agenteId: $agenteId,
+            metadatosDeAdjunto: $metadatosDeAdjunto,
+            remitenteEsPrivilegiado: $remitenteEsPrivilegiado,
         );
 
         $ticket = $this->ticketRepository->find($ticketId);
@@ -79,21 +79,21 @@ final class EnviarMensajeSalienteUseCase
             throw new NotFoundException('Ticket not found');
         }
 
-        $phone = $ticket->telefonoDestinatario();
+        $telefono = $ticket->telefonoDestinatario();
 
         // Each ticket replies from the WhatsApp number it came in on (CAP-7 / META-018).
         $phoneNumberId = $ticket->getPhoneNumberId();
 
         if ($isMedia) {
-            $graphResponse = $this->graphClient->sendMediaMessage($phone, $mediaId, $mimeType, $caption ?? $content, $phoneNumberId, $filename);
+            $graphResponse = $this->graphClient->sendMediaMessage($telefono, $mediaId, $mimeType, $leyenda ?? $contenido, $phoneNumberId, $filename);
         } else {
-            $graphResponse = $this->graphClient->sendMessage($phone, $content, $phoneNumberId);
+            $graphResponse = $this->graphClient->sendMessage($telefono, $contenido, $phoneNumberId);
         }
 
         $wamid = $graphResponse['messages'][0]['id'] ?? null;
 
         if ($wamid !== null && !empty($result['message_id'])) {
-            $this->markOutboundMessageSent->execute($result['message_id'], $wamid);
+            $this->marcarMensajeSalienteEnviado->execute($result['message_id'], $wamid);
         }
 
         return [

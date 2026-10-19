@@ -26,8 +26,8 @@ class WebhookController extends AbstractController
     public function __construct(
         private readonly string $verifyToken,
         private readonly string $appSecret,
-        private readonly ProcesarPayloadWebhookUseCase $processWebhookPayload,
-        private readonly RegistrarPayloadWebhookUseCase $recordWebhookPayload,
+        private readonly ProcesarPayloadWebhookUseCase $procesarPayloadWebhook,
+        private readonly RegistrarPayloadWebhookUseCase $registrarPayloadWebhook,
         private readonly LoggerInterface $logger,
     ) {}
 
@@ -121,7 +121,7 @@ class WebhookController extends AbstractController
         // Step 4: Persist raw webhook payload BEFORE processing
         // This ensures we have a record even if the processor crashes (T-02)
         try {
-            $this->recordWebhookPayload->execute($payload);
+            $this->registrarPayloadWebhook->execute($payload);
         } catch (\Throwable $e) {
             // Don't crash the webhook — log and continue
             $this->logger->error('Failed to persist webhook payload', [
@@ -131,7 +131,7 @@ class WebhookController extends AbstractController
 
         // Step 5: Dispatch to handlers
         try {
-            $this->processWebhookPayload->execute($payload);
+            $this->procesarPayloadWebhook->execute($payload);
         } catch (\Throwable $e) {
             // Log but always return 200 — Meta retries on failure
             $this->logger->error('Webhook dispatch error', [

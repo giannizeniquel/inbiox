@@ -19,7 +19,7 @@ use Symfony\Component\Uid\Ulid;
 final class SubirAdjuntoUseCase
 {
     public function __construct(
-        private readonly ValidadorDeAdjunto $mediaValidator,
+        private readonly ValidadorDeAdjunto $validadorDeAdjunto,
         private readonly GraphClient $graphClient,
         private readonly MediaStorageService $mediaStorageService,
     ) {}
@@ -36,9 +36,9 @@ final class SubirAdjuntoUseCase
      * @throws MimeDeAdjuntoNoPermitidoException
      * @throws GraphApiException
      */
-    public function execute(string $filePath, string $mimeType, int $fileSize, string $filename, mixed $ticketId): array
+    public function execute(string $filePath, string $mimeType, int $tamanioDeArchivo, string $filename, mixed $ticketId): array
     {
-        $this->mediaValidator->validar($mimeType, $fileSize);
+        $this->validadorDeAdjunto->validar($mimeType, $tamanioDeArchivo);
 
         $graphResult = $this->graphClient->uploadMedia($filePath, $mimeType);
         $mediaId = $graphResult['id'] ?? '';

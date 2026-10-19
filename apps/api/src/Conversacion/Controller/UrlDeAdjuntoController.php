@@ -17,8 +17,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class UrlDeAdjuntoController extends AbstractController
 {
     public function __construct(
-        private readonly MensajeRepository $messageRepository,
-        private readonly UrlDeAdjuntoService $mediaUrlService,
+        private readonly MensajeRepository $mensajeRepository,
+        private readonly UrlDeAdjuntoService $urlDeAdjuntoService,
     ) {}
 
     /**
@@ -30,18 +30,18 @@ class UrlDeAdjuntoController extends AbstractController
      * @return JsonResponse
      */
     #[IsGranted('ACCESS', subject: 'message')]
-    public function __invoke(Mensaje $message): JsonResponse
+    public function __invoke(Mensaje $mensaje): JsonResponse
     {
-        $media = $message->getAdjunto();
+        $adjunto = $mensaje->getAdjunto();
 
-        if ($media === null || !isset($media['key'])) {
+        if ($adjunto === null || !isset($adjunto['key'])) {
             return new JsonResponse(
                 ['error' => 'No media attached to this message'],
                 Response::HTTP_NOT_FOUND
             );
         }
 
-        $urlData = $this->mediaUrlService->getUrlTemporal($media['key']);
+        $urlData = $this->urlDeAdjuntoService->getUrlTemporal($adjunto['key']);
 
         return new JsonResponse([
             'url' => $urlData['url'],

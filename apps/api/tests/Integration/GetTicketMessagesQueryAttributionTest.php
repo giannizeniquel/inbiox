@@ -96,7 +96,7 @@ class GetTicketMessagesQueryAttributionTest extends KernelTestCase
         $ticketId = $this->createTicketWithMessages();
 
         $query = static::getContainer()->get(GetMensajesDeTicketQuery::class);
-        $result = $query->execute($ticketId, direction: 'forward');
+        $result = $query->execute($ticketId, direccion: 'forward');
 
         self::assertCount(2, $result['items']);
 
@@ -117,7 +117,7 @@ class GetTicketMessagesQueryAttributionTest extends KernelTestCase
         $ticketId = $this->createTicketWithMessages();
 
         $query = static::getContainer()->get(GetMensajesDeTicketQuery::class);
-        $result = $query->execute($ticketId, direction: 'backward');
+        $result = $query->execute($ticketId, direccion: 'backward');
 
         self::assertCount(2, $result['items']);
 

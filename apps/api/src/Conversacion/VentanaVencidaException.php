@@ -19,7 +19,7 @@ class VentanaVencidaException extends \RuntimeException
 {
     public function __construct(
         private readonly int $ticketId,
-        private readonly ?\DateTimeImmutable $lastInboundMessageAt,
+        private readonly ?\DateTimeImmutable $ultimoMensajeEntranteAt,
         string $message = 'Conversation window has expired; free-text sending is not allowed.',
         ?\Throwable $previous = null,
     ) {
@@ -33,6 +33,6 @@ class VentanaVencidaException extends \RuntimeException
 
     public function getUltimoMensajeEntranteAt(): ?\DateTimeImmutable
     {
-        return $this->lastInboundMessageAt;
+        return $this->ultimoMensajeEntranteAt;
     }
 }

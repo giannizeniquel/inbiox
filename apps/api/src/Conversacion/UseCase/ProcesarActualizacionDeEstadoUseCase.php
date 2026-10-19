@@ -49,7 +49,7 @@ class ProcesarActualizacionDeEstadoUseCase
 
     public function __construct(
         private readonly EntityManagerInterface $em,
-        private readonly MensajeRepository $messageRepo,
+        private readonly MensajeRepository $mensajeRepo,
         private readonly TicketRepository $ticketRepo,
         private readonly EventCollector $eventCollector,
         private readonly OutboxWriter $outboxWriter,
@@ -69,10 +69,10 @@ class ProcesarActualizacionDeEstadoUseCase
 
         // 1. Extract fields
         $wamid = $statusEntry['id'] ?? null;
-        $newStatusRaw = $statusEntry['status'] ?? null;
+        $nuevoEstadoCrudo = $statusEntry['status'] ?? null;
         $errors = $statusEntry['errors'] ?? [];
 
-        if (!$wamid || !$newStatusRaw) {
+        if (!$wamid || !$nuevoEstadoCrudo) {
             $this->logger->warning('Status update missing id or status field', [
                 'entry' => $statusEntry,
             ]);
@@ -81,11 +81,11 @@ class ProcesarActualizacionDeEstadoUseCase
         }
 
         // 2. Map Meta status → Inbiox deliveryStatus
-        $newStatus = self::META_TO_INBIOX[$newStatusRaw] ?? null;
+        $nuevoEstado = self::META_TO_INBIOX[$nuevoEstadoCrudo] ?? null;
 
-        if (!$newStatus) {
+        if (!$nuevoEstado) {
             $this->logger->warning('Unknown Meta status value received', [
-                'status' => $newStatusRaw,
+                'status' => $nuevoEstadoCrudo,
                 'wamid' => $wamid,
             ]);
 
@@ -93,44 +93,44 @@ class ProcesarActualizacionDeEstadoUseCase
         }
 
         // 3. Find Message by WAMID
-        $message = $this->messageRepo->findByExternalId($wamid);
+        $mensaje = $this->mensajeRepo->findByExternalId($wamid);
 
-        if (!$message) {
+        if (!$mensaje) {
             $this->logger->warning('Status update received for unknown WAMID', [
                 'wamid' => $wamid,
-                'status' => $newStatusRaw,
+                'status' => $nuevoEstadoCrudo,
             ]);
 
             return;
         }
 
         // 4. Validate transition (forward-only FSM, terminal-aware)
-        $currentStatus = $message->getEstadoDeEntrega();
+        $estadoActual = $mensaje->getEstadoDeEntrega();
 
-        if (!$this->isTransicionValida($currentStatus, $newStatus)) {
+        if (!$this->isTransicionValida($estadoActual, $nuevoEstado)) {
             $this->logger->info('Skipping invalid status transition', [
                 'wamid' => $wamid,
-                'from' => $currentStatus,
-                'to' => $newStatus,
+                'from' => $estadoActual,
+                'to' => $nuevoEstado,
             ]);
 
             return;
         }
 
         // 5. Update Message entity
-        $message->setEstadoDeEntrega($newStatus);
+        $mensaje->setEstadoDeEntrega($nuevoEstado);
 
-        if ($newStatus === 'failed' && !empty($errors)) {
-            $message->setMotivoDeFallo($errors[0]['title'] ?? 'Unknown error');
+        if ($nuevoEstado === 'failed' && !empty($errors)) {
+            $mensaje->setMotivoDeFallo($errors[0]['title'] ?? 'Unknown error');
         }
 
-        $message->setActualizadoAt(new \DateTimeImmutable());
+        $mensaje->setActualizadoAt(new \DateTimeImmutable());
 
         // 6. Persist the message update
         $this->em->flush();
 
         // 7. Publish MessageUpdatedEvent via Outbox → Mercure
-        $this->registrarMessageUpdatedEvent($message, $newStatus);
+        $this->registrarMessageUpdatedEvent($mensaje, $nuevoEstado);
     }
 
     /**
@@ -163,26 +163,26 @@ class ProcesarActualizacionDeEstadoUseCase
     /**
      * Persist a MessageUpdatedEvent to the outbox for Mercure delivery.
      */
-    private function registrarMessageUpdatedEvent(\App\Conversacion\Mensaje $message, string $newStatus): void
+    private function registrarMessageUpdatedEvent(\App\Conversacion\Mensaje $mensaje, string $nuevoEstado): void
     {
         // Resolve ticket ID through the conversation chain
-        $conversation = $message->getConversacion();
+        $conversacion = $mensaje->getConversacion();
 
-        if (!$conversation) {
+        if (!$conversacion) {
             $this->logger->warning('Cannot publish MessageUpdatedEvent: message has no conversation', [
-                'messageId' => $message->getId(),
-                'wamid' => $message->getExternalId(),
+                'messageId' => $mensaje->getId(),
+                'wamid' => $mensaje->getExternalId(),
             ]);
 
             return;
         }
 
-        $ticket = $this->ticketRepo->findByConversacion($conversation);
+        $ticket = $this->ticketRepo->findByConversacion($conversacion);
 
         if (!$ticket) {
             $this->logger->warning('Cannot publish MessageUpdatedEvent: conversation has no associated ticket', [
-                'messageId' => $message->getId(),
-                'conversationId' => $conversation->getId(),
+                'messageId' => $mensaje->getId(),
+                'conversationId' => $conversacion->getId(),
             ]);
 
             return;
@@ -199,9 +199,9 @@ class ProcesarActualizacionDeEstadoUseCase
             occurredAt: $occurredAt,
             seq: $seq,
             version: 1,
-            messageId: (int) $message->getId(),
-            deliveryStatus: $newStatus,
-            failedReason: $message->getMotivoDeFallo(),
+            messageId: (int) $mensaje->getId(),
+            deliveryStatus: $nuevoEstado,
+            failedReason: $mensaje->getMotivoDeFallo(),
         ));
 
         // Persist collected events to the outbox table

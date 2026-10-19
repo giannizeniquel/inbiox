@@ -67,10 +67,10 @@ class ValidadorDeAdjunto
      * @throws AdjuntoDemasiadoGrandeException if file exceeds kind-specific cap
      * @throws MimeDeAdjuntoNoPermitidoException if MIME type is not in whitelist
      */
-    public function validar(string $mimeType, int $fileSize): void
+    public function validar(string $mimeType, int $tamanioDeArchivo): void
     {
         $this->validarMime($mimeType);
-        $this->validarTamanio($mimeType, $fileSize);
+        $this->validarTamanio($mimeType, $tamanioDeArchivo);
     }
 
     /**
@@ -78,8 +78,8 @@ class ValidadorDeAdjunto
      */
     public function getTamanioMaximo(string $mimeType): int
     {
-        $kind = TipoDeAdjunto::fromMime($mimeType);
-        return self::TAMANIO_MAXIMO[$kind->value];
+        $tipo = TipoDeAdjunto::fromMime($mimeType);
+        return self::TAMANIO_MAXIMO[$tipo->value];
     }
 
     private function validarMime(string $mimeType): void
@@ -100,13 +100,13 @@ class ValidadorDeAdjunto
         return strtolower(trim(explode(';', $mimeType)[0]));
     }
 
-    private function validarTamanio(string $mimeType, int $fileSize): void
+    private function validarTamanio(string $mimeType, int $tamanioDeArchivo): void
     {
-        $kind = TipoDeAdjunto::fromMime($mimeType);
-        $maxSize = self::TAMANIO_MAXIMO[$kind->value];
+        $tipo = TipoDeAdjunto::fromMime($mimeType);
+        $tamanioMaximo = self::TAMANIO_MAXIMO[$tipo->value];
 
-        if ($fileSize > $maxSize) {
-            throw new AdjuntoDemasiadoGrandeException($maxSize, $kind->value);
+        if ($tamanioDeArchivo > $tamanioMaximo) {
+            throw new AdjuntoDemasiadoGrandeException($tamanioMaximo, $tipo->value);
         }
     }
 }

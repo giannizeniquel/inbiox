@@ -23,7 +23,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class CerrarVentanasVencidasCommand extends Command
 {
     public function __construct(
-        private readonly VencimientoDeVentanaService $expiryService,
+        private readonly VencimientoDeVentanaService $vencimientoDeVentanaService,
     ) {
         parent::__construct();
     }
@@ -50,7 +50,7 @@ class CerrarVentanasVencidasCommand extends Command
             $safetyMargin !== null ? sprintf(', safety-margin=%d', $safetyMargin) : ''
         ));
 
-        $count = $this->expiryService->cerrarVencidos($dryRun, $limit, $safetyMargin);
+        $count = $this->vencimientoDeVentanaService->cerrarVencidos($dryRun, $limit, $safetyMargin);
 
         $output->writeln(sprintf(
             '%s %d ticket(s) with an expired conversation window',

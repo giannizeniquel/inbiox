@@ -236,9 +236,9 @@ class AgentReplyAutoClaimTest extends KernelTestCase
         $useCase = static::getContainer()->get(ProcesarMensajeSalienteUseCase::class);
         $result = $useCase->procesarMensajeSaliente(
             ticketId: $ticketId,
-            content: 'Closing remarks from a supervisor',
-            agentId: $supervisor,
-            senderIsPrivileged: true,
+            contenido: 'Closing remarks from a supervisor',
+            agenteId: $supervisor,
+            remitenteEsPrivilegiado: true,
         );
 
         self::assertSame('ok', $result['status']);
@@ -263,9 +263,9 @@ class AgentReplyAutoClaimTest extends KernelTestCase
         $useCase = static::getContainer()->get(ProcesarMensajeSalienteUseCase::class);
         $result = $useCase->procesarMensajeSaliente(
             ticketId: $ticketId,
-            content: 'One more thing',
-            agentId: $owner,
-            senderIsPrivileged: false,
+            contenido: 'One more thing',
+            agenteId: $owner,
+            remitenteEsPrivilegiado: false,
         );
 
         self::assertSame('ok', $result['status']);
@@ -290,9 +290,9 @@ class AgentReplyAutoClaimTest extends KernelTestCase
         try {
             $useCase->procesarMensajeSaliente(
                 ticketId: $ticketId,
-                content: 'I am taking this ticket',
-                agentId: $intruder,
-                senderIsPrivileged: false,
+                contenido: 'I am taking this ticket',
+                agenteId: $intruder,
+                remitenteEsPrivilegiado: false,
             );
         } finally {
             $this->em->clear();
@@ -320,9 +320,9 @@ class AgentReplyAutoClaimTest extends KernelTestCase
         $this->expectException(StateConflictException::class);
         $useCase->procesarMensajeSaliente(
             ticketId: $ticketId,
-            content: 'I am taking this ticket',
-            agentId: $intruder,
-            senderIsPrivileged: false,
+            contenido: 'I am taking this ticket',
+            agenteId: $intruder,
+            remitenteEsPrivilegiado: false,
         );
     }
 

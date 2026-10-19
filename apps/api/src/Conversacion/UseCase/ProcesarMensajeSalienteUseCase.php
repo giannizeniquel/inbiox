@@ -48,17 +48,17 @@ class ProcesarMensajeSalienteUseCase
 {
     public function __construct(
         private EntityManagerInterface $em,
-        private ConversacionRepository $conversationRepo,
-        private MensajeRepository $messageRepo,
+        private ConversacionRepository $conversacionRepo,
+        private MensajeRepository $mensajeRepo,
         private TicketRepository $ticketRepo,
-        private CambiarEstadoDeTicketUseCase $transitionUseCase,
+        private CambiarEstadoDeTicketUseCase $cambiarEstadoDeTicketUseCase,
         private ProcessedEventRepository $processedEventRepo,
-        private EjecutorDeReglas $ruleExecutor,
-        private ResponsabilidadDeTicketService $assignmentService,
-        private AgenteRepository $agentRepo,
+        private EjecutorDeReglas $ejecutorDeReglas,
+        private ResponsabilidadDeTicketService $responsabilidadDeTicketService,
+        private AgenteRepository $agenteRepo,
         private EventCollector $eventCollector,
         private readonly OutboxWriter $outboxWriter,
-        private PoliticaDeVentana $windowPolicy,
+        private PoliticaDeVentana $politicaDeVentana,
     ) {}
 
     /**
@@ -67,23 +67,23 @@ class ProcesarMensajeSalienteUseCase
      * Implements optimistic locking retry with exponential backoff.
      *
      * @param int $ticketId
-     * @param string $content
-     * @param int $agentId
-     * @param array|null $mediaMetadata Optional media metadata: {key, mimeType, filename, size, kind, providerId, caption}
+     * @param string $contenido
+     * @param int $agenteId
+     * @param array|null $metadatosDeAdjunto Optional media metadata: {key, mimeType, filename, size, kind, providerId, caption}
      * @return array
      */
     public function procesarMensajeSaliente(
         int $ticketId,
-        string $content,
-        int $agentId,
-        ?array $mediaMetadata = null,
-        bool $senderIsPrivileged = false,
+        string $contenido,
+        int $agenteId,
+        ?array $metadatosDeAdjunto = null,
+        bool $remitenteEsPrivilegiado = false,
     ): array {
         // Generate deterministic event key: outbound:{ticketId}:{contentHash}
         // Media messages have empty content (caption lives in media metadata), so
         // hash the provider media ID (unique per upload) to avoid dedup collisions.
-        $mediaId = $mediaMetadata['providerId'] ?? null;
-        $hashSource = $mediaId !== null ? 'media:' . $mediaId : 'text:' . $content;
+        $mediaId = $metadatosDeAdjunto['providerId'] ?? null;
+        $hashSource = $mediaId !== null ? 'media:' . $mediaId : 'text:' . $contenido;
         $contentHash = md5($hashSource);
         $eventKey = sprintf('outbound:%d:%s', $ticketId, $contentHash);
 
@@ -111,7 +111,7 @@ class ProcesarMensajeSalienteUseCase
 
         while ($attempt < $maxRetries) {
             try {
-                $result = $this->executeTransactionWithRetry($ticketId, $content, $eventKey, $agentId, $ticket, $mediaMetadata, $senderIsPrivileged);
+                $result = $this->executeTransactionWithRetry($ticketId, $contenido, $eventKey, $agenteId, $ticket, $metadatosDeAdjunto, $remitenteEsPrivilegiado);
                 break;
             } catch (OptimisticLockException $e) {
                 // A rolled-back attempt must not leak its collected events
@@ -174,14 +174,14 @@ class ProcesarMensajeSalienteUseCase
      */
     private function executeTransactionWithRetry(
         int $ticketId,
-        string $content,
+        string $contenido,
         string $eventKey,
-        int $agentId,
+        int $agenteId,
         ?Ticket &$ticket,
-        ?array $mediaMetadata = null,
-        bool $senderIsPrivileged = false,
+        ?array $metadatosDeAdjunto = null,
+        bool $remitenteEsPrivilegiado = false,
     ): array {
-        return $this->em->getConnection()->transactional(function() use ($ticketId, $content, $eventKey, $agentId, &$ticket, $mediaMetadata, $senderIsPrivileged) {
+        return $this->em->getConnection()->transactional(function() use ($ticketId, $contenido, $eventKey, $agenteId, &$ticket, $metadatosDeAdjunto, $remitenteEsPrivilegiado) {
             // Get ticket — pessimistic locking read as the FIRST statement of
             // the transaction (design.md D1). Under MySQL REPEATABLE READ, a
             // plain findById() opens a consistent-read snapshot BEFORE any
@@ -194,37 +194,37 @@ class ProcesarMensajeSalienteUseCase
                 throw new \InvalidArgumentException('Ticket not found');
             }
 
-            $skipOwnershipChange = TicketResponsabilidadGuard::isResueltoOCerrado($ticket->getEstado());
-            $this->verificarEnvio($ticket, $ticketId, $agentId, $senderIsPrivileged);
+            $omitirCambioDeResponsable = TicketResponsabilidadGuard::isResueltoOCerrado($ticket->getEstado());
+            $this->verificarEnvio($ticket, $ticketId, $agenteId, $remitenteEsPrivilegiado);
 
             // Get conversation
-            $conversation = $ticket->getConversacion();
-            if (!$conversation) {
+            $conversacion = $ticket->getConversacion();
+            if (!$conversacion) {
                 throw new \InvalidArgumentException('Ticket has no conversation');
             }
 
             // Skipped on resolved/closed tickets — ownership is frozen there.
-            if (!$skipOwnershipChange) {
-                $this->tomarTicketParaAgenteQueResponde($ticket, $agentId);
+            if (!$omitirCambioDeResponsable) {
+                $this->tomarTicketParaAgenteQueResponde($ticket, $agenteId);
             }
 
-            $msg = $this->createMensajeSaliente($conversation, $content, $agentId, $mediaMetadata);
+            $mensaje = $this->createMensajeSaliente($conversacion, $contenido, $agenteId, $metadatosDeAdjunto);
 
-            [$currentStatus, $newStatus, $transition, $shouldSetFirstResponse] = $this->aplicarTransicionDeRespuesta($ticket, $ticketId);
+            [$estadoActual, $nuevoEstado, $transicion, $debeRegistrarPrimeraRespuesta] = $this->aplicarTransicionDeRespuesta($ticket, $ticketId);
 
             // Update conversation timestamps
-            $conversation->setUltimoMensajeAt($msg->getCreadoAt());
-            $conversation->setActualizadoAt(new \DateTimeImmutable());
+            $conversacion->setUltimoMensajeAt($mensaje->getCreadoAt());
+            $conversacion->setActualizadoAt(new \DateTimeImmutable());
             $ticket->marcarActualizado();
 
             // Store processed event for idempotency
             $resultData = [
                 'ticket_id' => $ticketId,
-                'message_id' => $msg->getId(),
-                'previous_status' => $currentStatus,
-                'new_status' => $newStatus,
-                'first_response_set' => $shouldSetFirstResponse,
-                'transition' => $transition ?? 'none',
+                'message_id' => $mensaje->getId(),
+                'previous_status' => $estadoActual,
+                'new_status' => $nuevoEstado,
+                'first_response_set' => $debeRegistrarPrimeraRespuesta,
+                'transition' => $transicion ?? 'none',
             ];
             $processedEvent = new ProcessedEvent($eventKey);
             $processedEvent->setResultData($resultData);
@@ -232,22 +232,22 @@ class ProcesarMensajeSalienteUseCase
 
             $this->em->flush();
 
-            $this->registrarMessageCreatedEvent($ticket, $ticketId, $msg, $content, $agentId);
+            $this->registrarMessageCreatedEvent($ticket, $ticketId, $mensaje, $contenido, $agenteId);
 
             // Flush again to persist the bumped lastEventSeq (design.md D5).
             $this->em->flush();
 
             // Execute automation rules (outbound trigger)
-            $ruleContext = new ContextoDeRegla($ticket, $msg, 'outbound');
-            $this->ruleExecutor->execute($ruleContext);
+            $contextoDeRegla = new ContextoDeRegla($ticket, $mensaje, 'outbound');
+            $this->ejecutorDeReglas->execute($contextoDeRegla);
 
             return [
                 'ticket_id' => $ticketId,
-                'message_id' => $msg->getId(),
-                'previous_status' => $currentStatus,
-                'new_status' => $newStatus,
-                'first_response_set' => $shouldSetFirstResponse,
-                'transition' => $transition ?? 'none',
+                'message_id' => $mensaje->getId(),
+                'previous_status' => $estadoActual,
+                'new_status' => $nuevoEstado,
+                'first_response_set' => $debeRegistrarPrimeraRespuesta,
+                'transition' => $transicion ?? 'none',
                 'status' => 'ok',
                 'event_key' => $eventKey,
             ];
@@ -269,17 +269,17 @@ class ProcesarMensajeSalienteUseCase
      * message row is persisted and before any FSM transition — never a
      * phantom "sent" message.
      */
-    private function verificarEnvio(Ticket $ticket, int $ticketId, int $agentId, bool $senderIsPrivileged): void
+    private function verificarEnvio(Ticket $ticket, int $ticketId, int $agenteId, bool $remitenteEsPrivilegiado): void
     {
-        $status = $ticket->getEstado();
-        if (TicketResponsabilidadGuard::bloqueaReasignacion($status, $senderIsPrivileged, $agentId, $ticket->getAgenteAsignadoId())) {
+        $estado = $ticket->getEstado();
+        if (TicketResponsabilidadGuard::bloqueaReasignacion($estado, $remitenteEsPrivilegiado, $agenteId, $ticket->getAgenteAsignadoId())) {
             throw new StateConflictException(sprintf(
                 'Cannot send to ticket in "%s" state: sender is not the assigned owner',
-                $status
+                $estado
             ));
         }
 
-        if (!$this->windowPolicy->isAbiertaParaEnviar($ticket->getUltimoMensajeEntranteAt(), new \DateTimeImmutable())) {
+        if (!$this->politicaDeVentana->isAbiertaParaEnviar($ticket->getUltimoMensajeEntranteAt(), new \DateTimeImmutable())) {
             throw new VentanaVencidaException($ticketId, $ticket->getUltimoMensajeEntranteAt());
         }
     }
@@ -288,32 +288,32 @@ class ProcesarMensajeSalienteUseCase
      * Assigns the ticket to the replying agent when someone else (or nobody)
      * owns it. An unknown agent, or agent id 0, leaves the ticket as it is.
      */
-    private function tomarTicketParaAgenteQueResponde(Ticket $ticket, int $agentId): void
+    private function tomarTicketParaAgenteQueResponde(Ticket $ticket, int $agenteId): void
     {
-        $currentAssigneeId = $ticket->getAgenteAsignadoId();
-        if ($agentId <= 0 || $currentAssigneeId === $agentId) {
+        $responsableActualId = $ticket->getAgenteAsignadoId();
+        if ($agenteId <= 0 || $responsableActualId === $agenteId) {
             return;
         }
 
-        $agent = $this->agentRepo->findById($agentId);
-        if ($agent === null) {
+        $agente = $this->agenteRepo->findById($agenteId);
+        if ($agente === null) {
             return;
         }
 
-        $previousAgent = null;
-        if ($currentAssigneeId !== null) {
-            $previousAgent = $this->agentRepo->findById($currentAssigneeId);
+        $agenteAnterior = null;
+        if ($responsableActualId !== null) {
+            $agenteAnterior = $this->agenteRepo->findById($responsableActualId);
         }
 
-        $type = $currentAssigneeId !== null
+        $tipo = $responsableActualId !== null
             ? TipoDeAsignacion::REASIGNACION
             : TipoDeAsignacion::AUTOMATICA;
 
-        $this->assignmentService->registrarCambioDeResponsable(
+        $this->responsabilidadDeTicketService->registrarCambioDeResponsable(
             ticket: $ticket,
-            agente: $agent,
-            agenteAnterior: $previousAgent,
-            tipo: $type,
+            agente: $agente,
+            agenteAnterior: $agenteAnterior,
+            tipo: $tipo,
             asignadoPor: 'system',
             notas: 'Auto-assigned on agent reply',
         );
@@ -329,23 +329,23 @@ class ProcesarMensajeSalienteUseCase
         $this->em->flush();
     }
 
-    private function createMensajeSaliente(Conversacion $conversation, string $content, int $agentId, ?array $mediaMetadata): Mensaje
+    private function createMensajeSaliente(Conversacion $conversacion, string $contenido, int $agenteId, ?array $metadatosDeAdjunto): Mensaje
     {
-        $msg = new Mensaje();
-        $msg->setConversacion($conversation);
-        $msg->setDireccion('outbound');
-        $msg->setContenido($content);
-        $msg->setAgenteRemitenteId($agentId > 0 ? $agentId : null);
-        $msg->setTipoDeRemitente(TipoDeRemitente::AGENTE);
+        $mensaje = new Mensaje();
+        $mensaje->setConversacion($conversacion);
+        $mensaje->setDireccion('outbound');
+        $mensaje->setContenido($contenido);
+        $mensaje->setAgenteRemitenteId($agenteId > 0 ? $agenteId : null);
+        $mensaje->setTipoDeRemitente(TipoDeRemitente::AGENTE);
 
         // Attach media metadata if provided
-        if ($mediaMetadata !== null) {
-            $msg->setAdjunto($mediaMetadata);
+        if ($metadatosDeAdjunto !== null) {
+            $mensaje->setAdjunto($metadatosDeAdjunto);
         }
 
-        $this->em->persist($msg);
+        $this->em->persist($mensaje);
 
-        return $msg;
+        return $mensaje;
     }
 
     /**
@@ -356,39 +356,39 @@ class ProcesarMensajeSalienteUseCase
      */
     private function aplicarTransicionDeRespuesta(Ticket $ticket, int $ticketId): array
     {
-        $currentStatus = $ticket->getEstado();
-        $shouldSetFirstResponse = empty($ticket->getPrimeraRespuestaAt());
-        $newStatus = $currentStatus;
-        $transition = null;
+        $estadoActual = $ticket->getEstado();
+        $debeRegistrarPrimeraRespuesta = empty($ticket->getPrimeraRespuestaAt());
+        $nuevoEstado = $estadoActual;
+        $transicion = null;
 
-        if ($currentStatus === EstadoDeTicket::NUEVO->value) {
+        if ($estadoActual === EstadoDeTicket::NUEVO->value) {
             // First agent response: new → active
-            $newStatus = EstadoDeTicket::ACTIVO->value;
-            $transition = 'new_to_active';
-        } elseif ($currentStatus === EstadoDeTicket::ACTIVO->value) {
+            $nuevoEstado = EstadoDeTicket::ACTIVO->value;
+            $transicion = 'new_to_active';
+        } elseif ($estadoActual === EstadoDeTicket::ACTIVO->value) {
             // Agent waiting for response: active → waiting
-            $newStatus = EstadoDeTicket::EN_ESPERA->value;
-            $transition = 'active_to_waiting';
-        } elseif ($currentStatus === EstadoDeTicket::EN_ESPERA->value) {
+            $nuevoEstado = EstadoDeTicket::EN_ESPERA->value;
+            $transicion = 'active_to_waiting';
+        } elseif ($estadoActual === EstadoDeTicket::EN_ESPERA->value) {
             // Agent replies while waiting: stays waiting (customer might respond)
-            $newStatus = EstadoDeTicket::EN_ESPERA->value;
-            $transition = 'waiting_remains';
+            $nuevoEstado = EstadoDeTicket::EN_ESPERA->value;
+            $transicion = 'waiting_remains';
         }
 
         // Execute transition if needed
-        if ($transition && $newStatus !== $currentStatus) {
-            $this->transitionUseCase->execute(
+        if ($transicion && $nuevoEstado !== $estadoActual) {
+            $this->cambiarEstadoDeTicketUseCase->execute(
                 $ticketId,
-                $newStatus,
-                $shouldSetFirstResponse,
+                $nuevoEstado,
+                $debeRegistrarPrimeraRespuesta,
                 false
             );
-        } else if ($shouldSetFirstResponse) {
+        } else if ($debeRegistrarPrimeraRespuesta) {
             // Just set first_response_at without status change
             $this->ticketRepo->marcarPrimeraRespuesta($ticketId);
         }
 
-        return [$currentStatus, $newStatus, $transition, $shouldSetFirstResponse];
+        return [$estadoActual, $nuevoEstado, $transicion, $debeRegistrarPrimeraRespuesta];
     }
 
     /**
@@ -396,9 +396,9 @@ class ProcesarMensajeSalienteUseCase
      * outbound messages are broadcast over Mercure. The message must already
      * be flushed, because the event carries its id.
      */
-    private function registrarMessageCreatedEvent(Ticket $ticket, int $ticketId, Mensaje $msg, string $content, int $agentId): void
+    private function registrarMessageCreatedEvent(Ticket $ticket, int $ticketId, Mensaje $mensaje, string $contenido, int $agenteId): void
     {
-        $senderName = $agentId > 0 ? $this->agentRepo->findById($agentId)?->getNombre() : null;
+        $nombreDelRemitente = $agenteId > 0 ? $this->agenteRepo->findById($agenteId)?->getNombre() : null;
         $this->eventCollector->collect(new MessageCreatedEvent(
             eventId: new Ulid(),
             ticketId: $ticketId,
@@ -406,10 +406,10 @@ class ProcesarMensajeSalienteUseCase
             seq: $ticket->incrementLastEventSeq(),
             version: 1,
             direction: DireccionDeMensaje::SALIENTE,
-            messageId: $msg->getId(),
-            content: $content,
-            senderName: $senderName,
-            media: $msg->getAdjunto(),
+            messageId: $mensaje->getId(),
+            content: $contenido,
+            senderName: $nombreDelRemitente,
+            media: $mensaje->getAdjunto(),
         ));
     }
 
@@ -441,9 +441,9 @@ class ProcesarMensajeSalienteUseCase
                 if ($event->ownerAgentId !== null) {
                     $payload['assignee_id'] = $event->ownerAgentId;
                     // Fetch agent name for the frontend
-                    $agent = $this->agentRepo->findById($event->ownerAgentId);
-                    if ($agent !== null) {
-                        $payload['assignee_name'] = $agent->getNombre();
+                    $agente = $this->agenteRepo->findById($event->ownerAgentId);
+                    if ($agente !== null) {
+                        $payload['assignee_name'] = $agente->getNombre();
                     }
                 }
             } elseif ($event instanceof InboxUpdatedEvent) {

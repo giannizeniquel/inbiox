@@ -9,22 +9,22 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 class AdjuntoDemasiadoGrandeException extends HttpException
 {
     public function __construct(
-        private readonly int $maxSize,
-        private readonly string $kind,
+        private readonly int $tamanioMaximo,
+        private readonly string $tipo,
     ) {
         parent::__construct(
             413,
-            sprintf('File exceeds maximum size for %s: %d bytes', $kind, $maxSize),
+            sprintf('File exceeds maximum size for %s: %d bytes', $tipo, $tamanioMaximo),
         );
     }
 
     public function getTamanioMaximo(): int
     {
-        return $this->maxSize;
+        return $this->tamanioMaximo;
     }
 
     public function getTipo(): string
     {
-        return $this->kind;
+        return $this->tipo;
     }
 }

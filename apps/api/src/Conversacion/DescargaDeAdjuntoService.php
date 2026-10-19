@@ -16,7 +16,7 @@ class DescargaDeAdjuntoService
     public function __construct(
         private readonly GraphClient $graphClient,
         private readonly MediaStorageService $storageService,
-        private readonly ValidadorDeAdjunto $validator,
+        private readonly ValidadorDeAdjunto $validadorDeAdjunto,
         private readonly LoggerInterface $logger,
     ) {}
 
@@ -53,12 +53,12 @@ class DescargaDeAdjuntoService
             return null;
         }
 
-        $size = strlen($binary);
-        $kind = TipoDeAdjunto::fromMime($mimeType);
+        $tamanio = strlen($binary);
+        $tipo = TipoDeAdjunto::fromMime($mimeType);
 
         // Validate size (skip validation if graph already sent it — we still enforce)
         try {
-            $this->validator->validar($mimeType, $size);
+            $this->validadorDeAdjunto->validar($mimeType, $tamanio);
         } catch (\Throwable $e) {
             $this->logger->warning('Downloaded media failed validation', [
                 'mediaId' => $mediaId,
@@ -86,9 +86,9 @@ class DescargaDeAdjuntoService
 
         return [
             'key' => $key,
-            'size' => $size,
+            'size' => $tamanio,
             'mimeType' => $mimeType,
-            'kind' => $kind->value,
+            'kind' => $tipo->value,
         ];
     }
 }

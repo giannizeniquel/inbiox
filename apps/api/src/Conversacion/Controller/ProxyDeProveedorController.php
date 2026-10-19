@@ -34,14 +34,14 @@ class ProxyDeProveedorController extends AbstractController
 
     public function __construct(
         private readonly GraphClient $graphClient,
-        private readonly EnviarMensajeSalienteUseCase $sendOutboundMessage,
-        private readonly EnviarPlantillaUseCase $sendTemplateUseCase,
-        private readonly AsegurarAgenteDeUsuarioUseCase $ensureAgentForUser,
-        private readonly SubirAdjuntoUseCase $uploadMediaUseCase,
+        private readonly EnviarMensajeSalienteUseCase $enviarMensajeSaliente,
+        private readonly EnviarPlantillaUseCase $enviarPlantillaUseCase,
+        private readonly AsegurarAgenteDeUsuarioUseCase $asegurarAgenteDeUsuario,
+        private readonly SubirAdjuntoUseCase $subirAdjuntoUseCase,
     ) {}
 
     #[Route('/api/provider/send', name: 'app_provider_send', methods: ['POST'])]
-    public function enviar(Request $request, #[CurrentUser] ?Usuario $user): JsonResponse
+    public function enviar(Request $request, #[CurrentUser] ?Usuario $usuario): JsonResponse
     {
         $payload = json_decode($request->getContent(), true);
 
@@ -53,34 +53,34 @@ class ProxyDeProveedorController extends AbstractController
         }
 
         $ticketId = (int) $payload['ticketId'];
-        $content = $payload['content'];
+        $contenido = $payload['content'];
         $mediaId = $payload['mediaId'] ?? null;
         $mimeType = $payload['mimeType'] ?? null;
-        $caption = $payload['caption'] ?? null;
+        $leyenda = $payload['caption'] ?? null;
         $mediaKey = $payload['mediaKey'] ?? null;
         $filename = $payload['filename'] ?? null;
-        $size = $payload['size'] ?? null;
+        $tamanio = $payload['size'] ?? null;
 
         // Resolve agent ID from authenticated user (degrades to null, never
         // fails the send — design.md D4).
-        $agentId = $this->getAgenteQueActuaId($user) ?? 0;
+        $agenteId = $this->getAgenteQueActuaId($usuario) ?? 0;
 
         // Resolved/closed ownership guard (design.md D3): role_hierarchy makes
         // ROLE_ADMIN inherit ROLE_SUPERVISOR, so this single check covers both.
-        $senderIsPrivileged = $this->isGranted('ROLE_SUPERVISOR');
+        $remitenteEsPrivilegiado = $this->isGranted('ROLE_SUPERVISOR');
 
         try {
-            $result = $this->sendOutboundMessage->execute(
+            $result = $this->enviarMensajeSaliente->execute(
                 ticketId: $ticketId,
-                content: $content,
-                agentId: $agentId,
-                senderIsPrivileged: $senderIsPrivileged,
+                contenido: $contenido,
+                agenteId: $agenteId,
+                remitenteEsPrivilegiado: $remitenteEsPrivilegiado,
                 mediaId: $mediaId,
                 mimeType: $mimeType,
-                caption: $caption,
+                leyenda: $leyenda,
                 mediaKey: $mediaKey,
                 filename: $filename,
-                size: $size,
+                tamanio: $tamanio,
             );
         } catch (VentanaVencidaException $e) {
             return new JsonResponse(
@@ -142,21 +142,21 @@ class ProxyDeProveedorController extends AbstractController
      * find one so they can be assigned to tickets. Extracted from send()'s
      * original inline fallback (design.md D4).
      */
-    private function getAgenteQueActuaId(?Usuario $user): ?int
+    private function getAgenteQueActuaId(?Usuario $usuario): ?int
     {
-        if ($user === null) {
+        if ($usuario === null) {
             return null;
         }
 
         try {
-            return $this->ensureAgentForUser->execute($user)->getId();
+            return $this->asegurarAgenteDeUsuario->execute($usuario)->getId();
         } catch (\Throwable) {
             return null;
         }
     }
 
     #[Route('/api/provider/template/send', name: 'app_provider_template_send', methods: ['POST'])]
-    public function enviarPlantilla(Request $request, #[CurrentUser] ?Usuario $user): JsonResponse
+    public function enviarPlantilla(Request $request, #[CurrentUser] ?Usuario $usuario): JsonResponse
     {
         $payload = json_decode($request->getContent(), true);
 
@@ -172,11 +172,11 @@ class ProxyDeProveedorController extends AbstractController
         }
 
         $ticketId = (int) $payload['ticketId'];
-        $templateName = $payload['templateName'];
-        $language = $payload['language'];
-        $parameters = $payload['parameters'] ?? [];
+        $nombreDePlantilla = $payload['templateName'];
+        $idioma = $payload['language'];
+        $parametros = $payload['parameters'] ?? [];
 
-        if (!is_array($parameters)) {
+        if (!is_array($parametros)) {
             return new JsonResponse(
                 ['error' => 'Parameters must be an array of strings'],
                 Response::HTTP_BAD_REQUEST
@@ -184,12 +184,12 @@ class ProxyDeProveedorController extends AbstractController
         }
 
         try {
-            $wamid = $this->sendTemplateUseCase->execute(
+            $wamid = $this->enviarPlantillaUseCase->execute(
                 ticketId: $ticketId,
-                templateName: $templateName,
-                language: $language,
-                parameters: $parameters,
-                resolveSenderAgentId: fn (): ?int => $this->getAgenteQueActuaId($user),
+                nombreDePlantilla: $nombreDePlantilla,
+                idioma: $idioma,
+                parametros: $parametros,
+                resolverAgenteRemitenteId: fn (): ?int => $this->getAgenteQueActuaId($usuario),
             );
         } catch (NotFoundException $e) {
             return new JsonResponse(
@@ -225,7 +225,7 @@ class ProxyDeProveedorController extends AbstractController
     }
 
     #[Route('/api/provider/media/upload', name: 'app_provider_media_upload', methods: ['POST'])]
-    public function subirAdjunto(Request $request, #[CurrentUser] ?Usuario $user): JsonResponse
+    public function subirAdjunto(Request $request, #[CurrentUser] ?Usuario $usuario): JsonResponse
     {
         /** @var UploadedFile|null $file */
         $file = $request->files->get('file');
@@ -238,10 +238,10 @@ class ProxyDeProveedorController extends AbstractController
         }
 
         try {
-            $result = $this->uploadMediaUseCase->execute(
+            $result = $this->subirAdjuntoUseCase->execute(
                 filePath: $file->getPathname(),
                 mimeType: $file->getMimeType() ?? 'application/octet-stream',
-                fileSize: $file->getSize(),
+                tamanioDeArchivo: $file->getSize(),
                 filename: $file->getClientOriginalName(),
                 ticketId: $request->request->all()['ticketId'] ?? null,
             );
@@ -280,9 +280,9 @@ class ProxyDeProveedorController extends AbstractController
     public function descargarAdjunto(string $mediaId): Response
     {
         try {
-            $content = $this->graphClient->downloadMedia($mediaId);
+            $contenido = $this->graphClient->downloadMedia($mediaId);
 
-            return new Response($content, Response::HTTP_OK);
+            return new Response($contenido, Response::HTTP_OK);
         } catch (GraphApiException $e) {
             return new JsonResponse(
                 [

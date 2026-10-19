@@ -22,16 +22,16 @@ final class EnviarPlantillaUseCase
     public function __construct(
         private readonly TicketRepository $ticketRepository,
         private readonly GraphClient $graphClient,
-        private readonly RegistrarPlantillaEnviadaUseCase $recordSentTemplate,
+        private readonly RegistrarPlantillaEnviadaUseCase $registrarPlantillaEnviada,
     ) {}
 
     /**
-     * `$templateName` and `$language` are passed as the client sent them.
-     * `$resolveSenderAgentId` is called only after a send that returned a
+     * `$nombreDePlantilla` and `$idioma` are passed as the client sent them.
+     * `$resolverAgenteRemitenteId` is called only after a send that returned a
      * WAMID, because resolving the agent can create one.
      *
-     * @param array<mixed>        $parameters
-     * @param \Closure(): ?int    $resolveSenderAgentId
+     * @param array<mixed>        $parametros
+     * @param \Closure(): ?int    $resolverAgenteRemitenteId
      *
      * @return ?string the WAMID
      *
@@ -41,26 +41,26 @@ final class EnviarPlantillaUseCase
      */
     public function execute(
         int $ticketId,
-        mixed $templateName,
-        mixed $language,
-        array $parameters,
-        \Closure $resolveSenderAgentId,
+        mixed $nombreDePlantilla,
+        mixed $idioma,
+        array $parametros,
+        \Closure $resolverAgenteRemitenteId,
     ): ?string {
         $ticket = $this->ticketRepository->find($ticketId);
         if (!$ticket) {
             throw new NotFoundException('Ticket not found');
         }
 
-        $phone = $ticket->telefonoDestinatario();
+        $telefono = $ticket->telefonoDestinatario();
 
         // Each ticket replies from the WhatsApp number it came in on (CAP-7 / META-018).
-        $graphResponse = $this->graphClient->sendTemplate($phone, $templateName, $language, $parameters, $ticket->getPhoneNumberId());
+        $graphResponse = $this->graphClient->sendTemplate($telefono, $nombreDePlantilla, $idioma, $parametros, $ticket->getPhoneNumberId());
 
         $wamid = $graphResponse['messages'][0]['id'] ?? null;
 
         // Stored with the WAMID as external id so status webhooks can find it.
         if ($wamid !== null) {
-            $this->recordSentTemplate->execute($ticket, $templateName, $parameters, $wamid, $resolveSenderAgentId());
+            $this->registrarPlantillaEnviada->execute($ticket, $nombreDePlantilla, $parametros, $wamid, $resolverAgenteRemitenteId());
         }
 
         return $wamid;

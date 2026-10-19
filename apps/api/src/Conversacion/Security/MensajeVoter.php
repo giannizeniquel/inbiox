@@ -34,17 +34,17 @@ final class MensajeVoter extends Voter
 
     protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token): bool
     {
-        $user = $token->getUser();
+        $usuario = $token->getUser();
 
-        if (!$user instanceof Usuario) {
+        if (!$usuario instanceof Usuario) {
             return false;
         }
 
-        /** @var Mensaje $message */
-        $message = $subject;
-        $conversation = $message->getConversacion();
+        /** @var Mensaje $mensaje */
+        $mensaje = $subject;
+        $conversacion = $mensaje->getConversacion();
 
-        if ($conversation === null) {
+        if ($conversacion === null) {
             return false;
         }
 
@@ -55,21 +55,21 @@ final class MensajeVoter extends Voter
 
         // AGENT can access messages on tickets they're assigned to
         if ($this->security->isGranted('ROLE_AGENT')) {
-            $agent = $user->getAgente();
+            $agente = $usuario->getAgente();
 
-            if ($agent === null) {
+            if ($agente === null) {
                 return false;
             }
 
             // Find the ticket for this conversation
-            $ticket = $this->ticketRepository->findByConversacion($conversation);
+            $ticket = $this->ticketRepository->findByConversacion($conversacion);
 
             if ($ticket === null) {
                 return false;
             }
 
             // Agent can access if assigned to this ticket
-            return $ticket->getAgenteAsignadoId() === $agent->getId();
+            return $ticket->getAgenteAsignadoId() === $agente->getId();
         }
 
         return false;

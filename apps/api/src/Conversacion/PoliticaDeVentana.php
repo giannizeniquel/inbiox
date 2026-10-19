@@ -13,9 +13,9 @@ namespace App\Conversacion;
  * latency on the send path (design.md D3).
  *
  * Null semantics are deliberately asymmetric (design.md D8):
- *   - Sending:  a null `$lastInboundMessageAt` is treated as fail closed —
+ *   - Sending:  a null `$ultimoMensajeEntranteAt` is treated as fail closed —
  *               never send free text we cannot prove is inside the window.
- *   - Closing:  a null `$lastInboundMessageAt` is treated as fail open —
+ *   - Closing:  a null `$ultimoMensajeEntranteAt` is treated as fail open —
  *               never auto-close a ticket with no known inbound message
  *               (mass-close mitigation for pre-existing tickets).
  */
@@ -28,29 +28,29 @@ final class PoliticaDeVentana
     }
 
     /** Sending: null => false (fail closed). */
-    public function isAbiertaParaEnviar(?\DateTimeImmutable $lastInboundMessageAt, \DateTimeImmutable $now): bool
+    public function isAbiertaParaEnviar(?\DateTimeImmutable $ultimoMensajeEntranteAt, \DateTimeImmutable $now): bool
     {
-        if ($lastInboundMessageAt === null) {
+        if ($ultimoMensajeEntranteAt === null) {
             return false;
         }
 
-        return $now < $this->getVenceAt($lastInboundMessageAt);
+        return $now < $this->getVenceAt($ultimoMensajeEntranteAt);
     }
 
     /** Expiry-closing: null => false (fail open — do not close tickets with no known inbound). */
-    public function isVencidaParaCerrar(?\DateTimeImmutable $lastInboundMessageAt, \DateTimeImmutable $now): bool
+    public function isVencidaParaCerrar(?\DateTimeImmutable $ultimoMensajeEntranteAt, \DateTimeImmutable $now): bool
     {
-        if ($lastInboundMessageAt === null) {
+        if ($ultimoMensajeEntranteAt === null) {
             return false;
         }
 
-        return $now >= $this->getVenceAt($lastInboundMessageAt);
+        return $now >= $this->getVenceAt($ultimoMensajeEntranteAt);
     }
 
     /** Effective deadline = lastInbound + 24h - safetyMargin. */
-    public function getVenceAt(\DateTimeImmutable $lastInboundMessageAt): \DateTimeImmutable
+    public function getVenceAt(\DateTimeImmutable $ultimoMensajeEntranteAt): \DateTimeImmutable
     {
-        return $lastInboundMessageAt
+        return $ultimoMensajeEntranteAt
             ->modify(sprintf('+%d hours', self::HORAS_DE_VENTANA))
             ->modify(sprintf('-%d minutes', $this->safetyMarginMinutes));
     }

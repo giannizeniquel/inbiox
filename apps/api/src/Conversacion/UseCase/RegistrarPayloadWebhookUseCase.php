@@ -44,14 +44,14 @@ final class RegistrarPayloadWebhookUseCase
             }
         }
 
-        $webhookPayload = new PayloadWebhook(
+        $payloadWebhook = new PayloadWebhook(
             tipoDeEvento: $eventType,
             payload: $payload,
             recibidoAt: new \DateTimeImmutable(),
             phoneNumberId: $phoneNumberId
         );
 
-        $this->entityManager->persist($webhookPayload);
+        $this->entityManager->persist($payloadWebhook);
         $this->entityManager->flush();
     }
 }

@@ -113,7 +113,7 @@ class BandejaController
                 ticketId: $id,
                 cursor: $cursor,
                 limit: $limit,
-                direction: $direccion,
+                direccion: $direccion,
                 offset: $offset,
             );
 

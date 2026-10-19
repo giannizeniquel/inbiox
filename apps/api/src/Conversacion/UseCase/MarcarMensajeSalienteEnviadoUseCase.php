@@ -16,18 +16,18 @@ final class MarcarMensajeSalienteEnviadoUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly MensajeRepository $messageRepository,
+        private readonly MensajeRepository $mensajeRepository,
     ) {}
 
-    public function execute(int|string $messageId, string $wamid): void
+    public function execute(int|string $mensajeId, string $wamid): void
     {
-        $message = $this->messageRepository->find($messageId);
-        if (!$message) {
+        $mensaje = $this->mensajeRepository->find($mensajeId);
+        if (!$mensaje) {
             return;
         }
 
-        $message->setExternalId($wamid);
-        $message->setEstadoDeEntrega('sent');
+        $mensaje->setExternalId($wamid);
+        $mensaje->setEstadoDeEntrega('sent');
         $this->entityManager->flush();
     }
 }

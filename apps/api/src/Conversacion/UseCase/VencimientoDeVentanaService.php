@@ -35,7 +35,7 @@ final class VencimientoDeVentanaService
 
     public function __construct(
         private readonly TicketRepository $ticketRepo,
-        private readonly CambiarEstadoDeTicketUseCase $transitionUseCase,
+        private readonly CambiarEstadoDeTicketUseCase $cambiarEstadoDeTicketUseCase,
         private readonly LoggerInterface $logger,
         private readonly int $safetyMarginMinutes = 0,
     ) {
@@ -67,11 +67,11 @@ final class VencimientoDeVentanaService
             return count($ids);
         }
 
-        $closedCount = 0;
+        $cantidadDeCerrados = 0;
         foreach ($ids as $id) {
             try {
-                $this->transitionUseCase->cerrarPorVentanaVencida((int) $id);
-                $closedCount++;
+                $this->cambiarEstadoDeTicketUseCase->cerrarPorVentanaVencida((int) $id);
+                $cantidadDeCerrados++;
             } catch (\Throwable $e) {
                 // One bad row must not abort the batch — log and continue.
                 $this->logger->error('ConversationWindowExpiryService: failed to close ticket {ticketId}: {message}', [
@@ -82,6 +82,6 @@ final class VencimientoDeVentanaService
             }
         }
 
-        return $closedCount;
+        return $cantidadDeCerrados;
     }
 }

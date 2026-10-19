@@ -34,50 +34,50 @@ class ProcesarMensajeEntranteUseCase
 {
     public function __construct(
         private EntityManagerInterface $em,
-        private ContactoRepository $contactRepo,
-        private ConversacionRepository $conversationRepo,
-        private MensajeRepository $messageRepo,
+        private ContactoRepository $contactoRepo,
+        private ConversacionRepository $conversacionRepo,
+        private MensajeRepository $mensajeRepo,
         private TicketRepository $ticketRepo,
         private EventDispatcherInterface $eventDispatcher,
-        private CambiarEstadoDeTicketUseCase $transitionUseCase,
-        private EjecutorDeReglas $ruleExecutor,
+        private CambiarEstadoDeTicketUseCase $cambiarEstadoDeTicketUseCase,
+        private EjecutorDeReglas $ejecutorDeReglas,
         private EventCollector $eventCollector,
         private readonly OutboxWriter $outboxWriter,
-        private RespuestaAutomaticaService $autoReplyService,
+        private RespuestaAutomaticaService $respuestaAutomaticaService,
         private LoggerInterface $logger,
-        private readonly ?DescargaDeAdjuntoService $mediaDownloadService = null,
+        private readonly ?DescargaDeAdjuntoService $descargaDeAdjuntoService = null,
     ) {}
 
     /**
      * Process an incoming message from a webhook or API call.
      *
-     * @param string      $phone           Sender's phone number in E.164 format
-     * @param string      $message         Message content
+     * @param string      $telefono           Sender's phone number in E.164 format
+     * @param string      $texto         Message content
      * @param string|null $externalId      WAMID from Meta (for idempotency)
      * @param string|null $phoneNumberId   WhatsApp phone number ID that received this message (CAP-7)
-     * @param string|null $contactName     Optional contact name to set on new/existing contacts
-     * @param array|null  $mediaDownloadPayload  Optional media payload: {mediaId, mimeType, filename, caption}
+     * @param string|null $nombreDeContacto     Optional contact name to set on new/existing contacts
+     * @param array|null  $datosDeDescargaDeAdjunto  Optional media payload: {mediaId, mimeType, filename, caption}
      *
      * @return array{contact_id: int, conversation_id: int, message_id: int, ticket_id: int|null, status: string}
      */
     public function procesarMensajeEntrante(
-        string $phone,
-        string $message,
+        string $telefono,
+        string $texto,
         ?string $externalId = null,
         ?string $phoneNumberId = null,
-        ?string $contactName = null,
-        ?array $mediaDownloadPayload = null,
+        ?string $nombreDeContacto = null,
+        ?array $datosDeDescargaDeAdjunto = null,
     ): array {
         // 1. Normalize phone: strip non-digits, keep format as-is (WhatsApp sends correct prefix)
-        $normalizedPhone = preg_replace('/[^0-9]/', '', $phone);
-        if (strlen($normalizedPhone) < 10) {
+        $telefonoNormalizado = preg_replace('/[^0-9]/', '', $telefono);
+        if (strlen($telefonoNormalizado) < 10) {
             throw new \InvalidArgumentException('Invalid phone number');
         }
 
-        $normalizedPhone = '+' . $normalizedPhone;
+        $telefonoNormalizado = '+' . $telefonoNormalizado;
 
-        $result = $this->em->getConnection()->transactional(function() use ($normalizedPhone, $message, $externalId, $phoneNumberId, $contactName, $mediaDownloadPayload) {
-            return $this->executeInternal($normalizedPhone, $message, $externalId, $phoneNumberId, $contactName, $mediaDownloadPayload);
+        $result = $this->em->getConnection()->transactional(function() use ($telefonoNormalizado, $texto, $externalId, $phoneNumberId, $nombreDeContacto, $datosDeDescargaDeAdjunto) {
+            return $this->executeInternal($telefonoNormalizado, $texto, $externalId, $phoneNumberId, $nombreDeContacto, $datosDeDescargaDeAdjunto);
         });
 
         // After commit, attempt auto-reply (fire-and-forget)
@@ -87,7 +87,7 @@ class ProcesarMensajeEntranteUseCase
             if ($ticketId !== null) {
                 $ticket = $this->ticketRepo->find($ticketId);
                 if ($ticket !== null) {
-                    $this->autoReplyService->enviarSiCorresponde($ticket);
+                    $this->respuestaAutomaticaService->enviarSiCorresponde($ticket);
                 }
             }
         } catch (\Throwable $e) {
@@ -163,84 +163,84 @@ foreach ($events as $event) {
      * increments after the last flush.
      */
     private function executeInternal(
-        string $phone,
-        string $message,
+        string $telefono,
+        string $texto,
         ?string $externalId,
         ?string $phoneNumberId = null,
-        ?string $contactName = null,
-        ?array $mediaDownloadPayload = null,
+        ?string $nombreDeContacto = null,
+        ?array $datosDeDescargaDeAdjunto = null,
     ): array {
-        $contact = $this->findOrCreateContacto($phone, $contactName);
-        $conversation = $this->findOrCreateConversacionAbierta($contact, $phoneNumberId);
+        $contacto = $this->findOrCreateContacto($telefono, $nombreDeContacto);
+        $conversacion = $this->findOrCreateConversacionAbierta($contacto, $phoneNumberId);
 
         // Idempotency by WAMID. It runs after the contact and conversation
         // may have been created, so a duplicate still stores those.
-        $existingMessage = $this->findMensajeYaGuardado($externalId);
-        if ($existingMessage) {
+        $mensajeExistente = $this->findMensajeYaGuardado($externalId);
+        if ($mensajeExistente) {
             return [
-                'contact_id' => $contact->getId(),
-                'conversation_id' => $conversation->getId(),
-                'message_id' => $existingMessage->getId(),
-                'ticket_id' => $this->getTicketDeConversacion($conversation)?->getId(),
+                'contact_id' => $contacto->getId(),
+                'conversation_id' => $conversacion->getId(),
+                'message_id' => $mensajeExistente->getId(),
+                'ticket_id' => $this->getTicketDeConversacion($conversacion)?->getId(),
                 'status' => 'ok'
             ];
         }
 
-        $msg = $this->guardarMensajeEntrante($conversation, $message, $externalId);
-        $this->descargarAdjuntoEnLaTransaccion($msg, $mediaDownloadPayload);
+        $mensaje = $this->guardarMensajeEntrante($conversacion, $texto, $externalId);
+        $this->descargarAdjuntoEnLaTransaccion($mensaje, $datosDeDescargaDeAdjunto);
 
-        [$ticket, $isNewTicket] = $this->findOrReabrirOrCreateTicketBloqueado($contact, $conversation, $phoneNumberId);
-        $transition = $this->activarTicketEnEspera($ticket);
+        [$ticket, $ticketNuevo] = $this->findOrReabrirOrCreateTicketBloqueado($contacto, $conversacion, $phoneNumberId);
+        $transicion = $this->activarTicketEnEspera($ticket);
 
-        $this->actualizarFechas($conversation, $contact, $ticket, $msg);
+        $this->actualizarFechas($conversacion, $contacto, $ticket, $mensaje);
         $this->em->flush();
 
-        $this->registrarEventosDeEntrada($ticket, $isNewTicket, $msg, $message, $contact);
-        $this->ejecutarReglasYPedirAsignacionAutomatica($ticket, $msg);
+        $this->registrarEventosDeEntrada($ticket, $ticketNuevo, $mensaje, $texto, $contacto);
+        $this->ejecutarReglasYPedirAsignacionAutomatica($ticket, $mensaje);
 
         return [
-            'contact_id' => $contact->getId(),
-            'conversation_id' => $conversation->getId(),
-            'message_id' => $msg->getId(),
+            'contact_id' => $contacto->getId(),
+            'conversation_id' => $conversacion->getId(),
+            'message_id' => $mensaje->getId(),
             'ticket_id' => $ticket->getId(),
             'ticket_status' => $ticket->getEstado(),
-            'transition' => $transition,
+            'transition' => $transicion,
             'status' => 'ok'
         ];
     }
 
-    private function findOrCreateContacto(string $phone, ?string $contactName): Contacto
+    private function findOrCreateContacto(string $telefono, ?string $nombreDeContacto): Contacto
     {
-        $contact = $this->contactRepo->findOneByTelefono($phone);
-        if (!$contact) {
-            $contact = new Contacto();
-            $contact->setTelefono($phone);
-            if ($contactName !== null) {
-                $contact->setNombre($contactName);
+        $contacto = $this->contactoRepo->findOneByTelefono($telefono);
+        if (!$contacto) {
+            $contacto = new Contacto();
+            $contacto->setTelefono($telefono);
+            if ($nombreDeContacto !== null) {
+                $contacto->setNombre($nombreDeContacto);
             }
-            $this->em->persist($contact);
-        } elseif ($contactName !== null && $contact->getNombre() === null) {
+            $this->em->persist($contacto);
+        } elseif ($nombreDeContacto !== null && $contacto->getNombre() === null) {
             // Update name on existing contact if it was missing
-            $contact->setNombre($contactName);
+            $contacto->setNombre($nombreDeContacto);
         }
 
-        return $contact;
+        return $contacto;
     }
 
-    private function findOrCreateConversacionAbierta(Contacto $contact, ?string $phoneNumberId): Conversacion
+    private function findOrCreateConversacionAbierta(Contacto $contacto, ?string $phoneNumberId): Conversacion
     {
-        $conversation = $this->conversationRepo->findAbiertaByContacto($contact, $phoneNumberId);
-        if (!$conversation) {
-            $conversation = new Conversacion();
-            $conversation->setContacto($contact);
-            $conversation->setEstado(EstadoDeConversacion::ABIERTA->value);
+        $conversacion = $this->conversacionRepo->findAbiertaByContacto($contacto, $phoneNumberId);
+        if (!$conversacion) {
+            $conversacion = new Conversacion();
+            $conversacion->setContacto($contacto);
+            $conversacion->setEstado(EstadoDeConversacion::ABIERTA->value);
             if ($phoneNumberId !== null) {
-                $conversation->setPhoneNumberId($phoneNumberId);
+                $conversacion->setPhoneNumberId($phoneNumberId);
             }
-            $this->em->persist($conversation);
+            $this->em->persist($conversacion);
         }
 
-        return $conversation;
+        return $conversacion;
     }
 
     private function findMensajeYaGuardado(?string $externalId): ?Mensaje
@@ -249,25 +249,25 @@ foreach ($events as $event) {
             return null;
         }
 
-        return $this->messageRepo->findByExternalId($externalId);
+        return $this->mensajeRepo->findByExternalId($externalId);
     }
 
     /** Persists the message and flushes (first flush), so it has an id for the media key. */
-    private function guardarMensajeEntrante(Conversacion $conversation, string $message, ?string $externalId): Mensaje
+    private function guardarMensajeEntrante(Conversacion $conversacion, string $texto, ?string $externalId): Mensaje
     {
-        $msg = new Mensaje();
-        $msg->setConversacion($conversation);
-        $msg->setDireccion('inbound');
-        $msg->setContenido($message);
+        $mensaje = new Mensaje();
+        $mensaje->setConversacion($conversacion);
+        $mensaje->setDireccion('inbound');
+        $mensaje->setContenido($texto);
         if ($externalId) {
-            $msg->setExternalId($externalId);
+            $mensaje->setExternalId($externalId);
         }
-        $msg->setTipoDeRemitente(TipoDeRemitente::CONTACTO);
+        $mensaje->setTipoDeRemitente(TipoDeRemitente::CONTACTO);
 
-        $this->em->persist($msg);
+        $this->em->persist($mensaje);
         $this->em->flush();
 
-        return $msg;
+        return $mensaje;
     }
 
     /**
@@ -275,23 +275,23 @@ foreach ($events as $event) {
      * transaction is open (contradiction track, S10). A failure only logs:
      * the message stays stored without media. Success flushes (second flush).
      */
-    private function descargarAdjuntoEnLaTransaccion(Mensaje $msg, ?array $mediaDownloadPayload): void
+    private function descargarAdjuntoEnLaTransaccion(Mensaje $mensaje, ?array $datosDeDescargaDeAdjunto): void
     {
-        if (!$mediaDownloadPayload || $this->mediaDownloadService === null) {
+        if (!$datosDeDescargaDeAdjunto || $this->descargaDeAdjuntoService === null) {
             return;
         }
 
         try {
-            $mediaId = $mediaDownloadPayload['mediaId'];
-            $mimeType = $mediaDownloadPayload['mimeType'] ?? 'application/octet-stream';
-            $filename = $mediaDownloadPayload['filename'] ?? 'file';
-            $caption = $mediaDownloadPayload['caption'] ?? null;
+            $mediaId = $datosDeDescargaDeAdjunto['mediaId'];
+            $mimeType = $datosDeDescargaDeAdjunto['mimeType'] ?? 'application/octet-stream';
+            $filename = $datosDeDescargaDeAdjunto['filename'] ?? 'file';
+            $leyenda = $datosDeDescargaDeAdjunto['caption'] ?? null;
 
             // Determine tenant and ticket for the object key
             $tenantId = 'default'; // Default tenant prefix
-            $ticketId = $msg->getId(); // Use message ID as part of key
+            $ticketId = $mensaje->getId(); // Use message ID as part of key
 
-            $mediaResult = $this->mediaDownloadService->descargarYGuardar(
+            $resultadoDeAdjunto = $this->descargaDeAdjuntoService->descargarYGuardar(
                 mediaId: $mediaId,
                 mimeType: $mimeType,
                 tenantId: $tenantId,
@@ -299,22 +299,22 @@ foreach ($events as $event) {
                 filename: $filename,
             );
 
-            if ($mediaResult !== null) {
-                $msg->setAdjunto([
-                    'key' => $mediaResult['key'],
+            if ($resultadoDeAdjunto !== null) {
+                $mensaje->setAdjunto([
+                    'key' => $resultadoDeAdjunto['key'],
                     'mimeType' => $mimeType,
                     'filename' => $filename,
-                    'size' => $mediaResult['size'],
-                    'kind' => $mediaResult['kind'],
+                    'size' => $resultadoDeAdjunto['size'],
+                    'kind' => $resultadoDeAdjunto['kind'],
                     'providerId' => $mediaId,
-                    'caption' => $caption,
+                    'caption' => $leyenda,
                 ]);
                 $this->em->flush();
             }
         } catch (\Throwable $e) {
             $this->logger->error('Failed to process inbound media', [
                 'error' => $e->getMessage(),
-                'mediaId' => $mediaDownloadPayload['mediaId'] ?? null,
+                'mediaId' => $datosDeDescargaDeAdjunto['mediaId'] ?? null,
             ]);
             // Continue without media — message is already persisted
         }
@@ -327,10 +327,10 @@ foreach ($events as $event) {
      *
      * @return array{0: Ticket, 1: bool} the ticket and whether it is new
      */
-    private function findOrReabrirOrCreateTicketBloqueado(Contacto $contact, Conversacion $conversation, ?string $phoneNumberId): array
+    private function findOrReabrirOrCreateTicketBloqueado(Contacto $contacto, Conversacion $conversacion, ?string $phoneNumberId): array
     {
-        $ticket = $this->ticketRepo->findNoCerradoByContacto($contact, $phoneNumberId);
-        $wasReopened = false;
+        $ticket = $this->ticketRepo->findNoCerradoByContacto($contacto, $phoneNumberId);
+        $fueReabierto = false;
 
         // WhatsApp 24h conversation-window compliance: a ticket closed
         // specifically by the window-expiry process reactivates on a new
@@ -349,19 +349,19 @@ foreach ($events as $event) {
         // event emission here to close this gap — it is out of scope for
         // this change.
         if (!$ticket) {
-            $reopenable = $this->ticketRepo->findCerradoPorVentanaVencidaByContacto($contact, $phoneNumberId);
-            if ($reopenable !== null
-                && $reopenable->getConversacion()?->getId() === $conversation->getId()) {
-                $this->transitionUseCase->reabrirPorMensajeEntrante((int) $reopenable->getId());
-                $ticket = $reopenable;
-                $wasReopened = true;
+            $reabrible = $this->ticketRepo->findCerradoPorVentanaVencidaByContacto($contacto, $phoneNumberId);
+            if ($reabrible !== null
+                && $reabrible->getConversacion()?->getId() === $conversacion->getId()) {
+                $this->cambiarEstadoDeTicketUseCase->reabrirPorMensajeEntrante((int) $reabrible->getId());
+                $ticket = $reabrible;
+                $fueReabierto = true;
             }
         }
 
         if (!$ticket) {
             $ticket = new Ticket();
-            $ticket->setContacto($contact);
-            $ticket->setConversacion($conversation);
+            $ticket->setContacto($contacto);
+            $ticket->setConversacion($conversacion);
             $ticket->setEstado(EstadoDeTicket::NUEVO->value);
             $ticket->setPrioridad('medium');
             if ($phoneNumberId !== null) {
@@ -380,7 +380,7 @@ foreach ($events as $event) {
         // `status = 'closed'`. Without this refresh, the waiting→active
         // step (and the returned `ticket_status`) would read/report the
         // wrong status.
-        if ($wasReopened) {
+        if ($fueReabierto) {
             $this->em->refresh($ticket);
         }
 
@@ -397,7 +397,7 @@ foreach ($events as $event) {
             return null;
         }
 
-        $this->transitionUseCase->execute(
+        $this->cambiarEstadoDeTicketUseCase->execute(
             $ticket->getId(),
             EstadoDeTicket::ACTIVO->value,
             false, // don't set first_response - this is customer
@@ -407,11 +407,11 @@ foreach ($events as $event) {
         return 'waiting_to_active';
     }
 
-    private function actualizarFechas(Conversacion $conversation, Contacto $contact, Ticket $ticket, Mensaje $msg): void
+    private function actualizarFechas(Conversacion $conversacion, Contacto $contacto, Ticket $ticket, Mensaje $mensaje): void
     {
-        $conversation->setUltimoMensajeAt($msg->getCreadoAt());
-        $conversation->setActualizadoAt(new \DateTimeImmutable());
-        $contact->setActualizadoAt(new \DateTimeImmutable());
+        $conversacion->setUltimoMensajeAt($mensaje->getCreadoAt());
+        $conversacion->setActualizadoAt(new \DateTimeImmutable());
+        $contacto->setActualizadoAt(new \DateTimeImmutable());
         $ticket->setActualizadoAt(new \DateTimeImmutable());
 
         // WhatsApp 24h conversation-window compliance: this is the single
@@ -419,16 +419,16 @@ foreach ($events as $event) {
         // must fire on every inbound message, for both a brand-new ticket
         // and a reused/reopened one, and on no other path (outbound sends
         // and auto-replies never touch this field).
-        $ticket->setUltimoMensajeEntranteAt($msg->getCreadoAt());
+        $ticket->setUltimoMensajeEntranteAt($mensaje->getCreadoAt());
     }
 
     /**
      * Collected after the last flush, so the ticket has its id. The sequence
      * increments are saved by the outbox writer's flush.
      */
-    private function registrarEventosDeEntrada(Ticket $ticket, bool $isNewTicket, Mensaje $msg, string $message, Contacto $contact): void
+    private function registrarEventosDeEntrada(Ticket $ticket, bool $ticketNuevo, Mensaje $mensaje, string $texto, Contacto $contacto): void
     {
-        if ($isNewTicket) {
+        if ($ticketNuevo) {
             $this->eventCollector->collect(new TicketCreatedEvent(
                 eventId: new Ulid(),
                 ticketId: $ticket->getId(),
@@ -447,10 +447,10 @@ foreach ($events as $event) {
             seq: $ticket->incrementLastEventSeq(),
             version: 1,
             direction: \App\Conversacion\DireccionDeMensaje::ENTRANTE,
-            messageId: $msg->getId(),
-            content: $message,
-            senderName: $contact->getNombre(),
-            media: $msg->getAdjunto(),
+            messageId: $mensaje->getId(),
+            content: $texto,
+            senderName: $contacto->getNombre(),
+            media: $mensaje->getAdjunto(),
         ));
     }
 
@@ -458,18 +458,18 @@ foreach ($events as $event) {
      * Inbound automation rules, then the auto-assignment request. Its
      * listener runs synchronously, inside the inbound transaction.
      */
-    private function ejecutarReglasYPedirAsignacionAutomatica(Ticket $ticket, Mensaje $msg): void
+    private function ejecutarReglasYPedirAsignacionAutomatica(Ticket $ticket, Mensaje $mensaje): void
     {
-        $ruleContext = new ContextoDeRegla($ticket, $msg, 'inbound');
-        $this->ruleExecutor->execute($ruleContext);
+        $contextoDeRegla = new ContextoDeRegla($ticket, $mensaje, 'inbound');
+        $this->ejecutorDeReglas->execute($contextoDeRegla);
 
         if ($ticket->getId()) {
             $this->eventDispatcher->dispatch(new TicketRequiereAsignacionAutomaticaEvent($ticket->getId()));
         }
     }
 
-    private function getTicketDeConversacion(Conversacion $conversation): ?Ticket
+    private function getTicketDeConversacion(Conversacion $conversacion): ?Ticket
     {
-        return $this->ticketRepo->findByConversacion($conversation);
+        return $this->ticketRepo->findByConversacion($conversacion);
     }
 }

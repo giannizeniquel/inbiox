@@ -21,23 +21,23 @@ final class RegistrarPlantillaEnviadaUseCase
     ) {}
 
     /**
-     * @param array<mixed> $parameters the template parameters sent to Graph
+     * @param array<mixed> $parametros the template parameters sent to Graph
      */
-    public function execute(Ticket $ticket, string $templateName, array $parameters, string $wamid, ?int $senderAgentId): void
+    public function execute(Ticket $ticket, string $nombreDePlantilla, array $parametros, string $wamid, ?int $agenteRemitenteId): void
     {
-        $content = "Template: {$templateName}" . (!empty($parameters) ? ' (' . implode(', ', $parameters) . ')' : '');
-        $message = new Mensaje();
-        $message->setContenido($content);
-        $message->setExternalId($wamid);
-        $message->setDireccion(DireccionDeMensaje::SALIENTE->value);
-        $message->setEstadoDeEntrega('sent');
-        $message->setActualizadoAt(new \DateTimeImmutable());
-        $message->setAgenteRemitenteId($senderAgentId);
-        $message->setTipoDeRemitente(TipoDeRemitente::AGENTE);
+        $contenido = "Template: {$nombreDePlantilla}" . (!empty($parametros) ? ' (' . implode(', ', $parametros) . ')' : '');
+        $mensaje = new Mensaje();
+        $mensaje->setContenido($contenido);
+        $mensaje->setExternalId($wamid);
+        $mensaje->setDireccion(DireccionDeMensaje::SALIENTE->value);
+        $mensaje->setEstadoDeEntrega('sent');
+        $mensaje->setActualizadoAt(new \DateTimeImmutable());
+        $mensaje->setAgenteRemitenteId($agenteRemitenteId);
+        $mensaje->setTipoDeRemitente(TipoDeRemitente::AGENTE);
         if ($ticket->getConversacion()) {
-            $message->setConversacion($ticket->getConversacion());
+            $mensaje->setConversacion($ticket->getConversacion());
         }
-        $this->entityManager->persist($message);
+        $this->entityManager->persist($mensaje);
         $this->entityManager->flush();
     }
 }
