@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Controller;
 
 use App\Agente\Agent;
-use App\Disponibilidad\AgentShift;
+use App\Disponibilidad\Turno;
 use App\Administracion\User;
 use App\Administracion\Workspace;
 use Doctrine\ORM\EntityManagerInterface;
@@ -100,12 +100,12 @@ class WorkspaceAgentControllerTest extends WebTestCase
         int $dayOfWeek,
         string $start,
         string $end,
-    ): AgentShift {
+    ): Turno {
         $startTime = \DateTimeImmutable::createFromFormat('H:i:s', $start.':00');
         $endTime = \DateTimeImmutable::createFromFormat('H:i:s', $end.':00');
         \assert($startTime !== false && $endTime !== false);
 
-        $shift = new AgentShift($agent, $dayOfWeek, $startTime, $endTime);
+        $shift = new Turno($agent, $dayOfWeek, $startTime, $endTime);
         $agent->addShift($shift);
         $this->em->persist($shift);
         $this->em->flush();

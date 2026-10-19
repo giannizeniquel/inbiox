@@ -6,7 +6,7 @@ namespace App\Disponibilidad\UseCase;
 
 use Symfony\Component\Validator\Constraints as Assert;
 
-class ShiftInputDTO
+class DatosDeTurnoDTO
 {
     #[Assert\NotNull(message: 'dayOfWeek is required')]
     #[Assert\Range(

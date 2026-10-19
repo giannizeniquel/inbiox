@@ -52,7 +52,7 @@ Una bandeja de atención compartida: los mensajes que llegan por **WhatsApp Clou
 | **Workspace** | Un número de WhatsApp Business (`phone_number_id` de Meta). Los agentes pertenecen a uno o varios. | `Administracion/Workspace.php` |
 | **Workspace activo** | El workspace que el usuario eligió en el selector; filtra la bandeja, contactos y reportes. | `Compartido/Security/WorkspaceScope.php` |
 | **Equipo (team)** | Área dentro de un workspace (Sprint 18). Hoy solo sirve para filtrar; **no** participa en la asignación. | `Agente/Team.php` |
-| **Turno (shift)** | Franja semanal de trabajo de un agente, en su zona horaria. | `Disponibilidad/AgentShift.php` |
+| **Turno (shift)** | Franja semanal de trabajo de un agente, en su zona horaria. | `Disponibilidad/Turno.php` |
 | **Override** | Disponibilidad forzada a mano ("disponible"/"no disponible"), con vencimiento opcional. Tiene prioridad sobre el turno. | `Agent.php` (`is_available_override`, `override_until`) |
 | **Capacidad** | Máximo de tickets activos (`new`/`active`/`waiting`) por agente; por defecto 10. | `Agent.php` (`max_active_tickets`) |
 | **Auto-asignación** | El sistema elige un agente disponible con menos carga cuando llega un mensaje. | `Asignacion/UseCase/AutoAssignTicketUseCase.php` |

@@ -9,7 +9,7 @@ use App\Agente\Agent;
 /**
  * Data Transfer Object for agent availability in workspace listing.
  */
-class AgentAvailabilityDTO
+class DisponibilidadDeAgenteDTO
 {
     public function __construct(
         public readonly int $id,

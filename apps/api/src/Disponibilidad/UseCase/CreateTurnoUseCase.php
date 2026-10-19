@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Disponibilidad\UseCase;
 
-use App\Disponibilidad\AgentShift;
+use App\Disponibilidad\Turno;
 use App\Disponibilidad\AgentShiftChangedEvent;
 use App\Compartido\Outbox\OutboxEvent;
 use App\Compartido\Outbox\OutboxWriter;
 use App\Agente\Repository\AgentRepository;
-use App\Disponibilidad\Repository\AgentShiftRepository;
+use App\Disponibilidad\Repository\TurnoRepository;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -17,17 +17,17 @@ use Doctrine\ORM\EntityManagerInterface;
  * Create a weekly shift for an agent.
  *
  * Validates day_of_week (1-7), time format (HH:MM), and start != end.
- * Creates an AgentShift entity, persists it, and emits an
+ * Creates an Turno entity, persists it, and emits an
  * agent.shift_changed outbox event.
  */
-final class CreateAgentShiftUseCase
+final class CreateTurnoUseCase
 {
     private ?array $pendingOutboxEvent = null;
 
     public function __construct(
         private EntityManagerInterface $em,
         private AgentRepository $agentRepo,
-        private AgentShiftRepository $agentShiftRepo,
+        private TurnoRepository $agentShiftRepo,
         private readonly OutboxWriter $outboxWriter,
     ) {}
 
@@ -65,7 +65,7 @@ final class CreateAgentShiftUseCase
                 throw new \InvalidArgumentException('Invalid time format (use HH:MM)');
             }
 
-            $shift = new AgentShift($agent, $dayOfWeek, $start, $end);
+            $shift = new Turno($agent, $dayOfWeek, $start, $end);
             $agent->addShift($shift);
 
             // 3. Persist

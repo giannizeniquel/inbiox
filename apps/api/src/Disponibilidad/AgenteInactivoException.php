@@ -8,7 +8,7 @@ use App\Compartido\StateConflictException;
 
 /**
  * Exception thrown when a ticket assignment targets an agent that is not
- * currently Activo (per AgentAvailabilityService::isActiveNow()).
+ * currently Activo (per DisponibilidadDeAgenteService::isActiveNow()).
  *
  * HARD BLOCK for every role (ROLE_AGENT, ROLE_SUPERVISOR, ROLE_ADMIN) — no
  * bypass. Thrown inside AssignTicketUseCase's transaction, after the
@@ -20,7 +20,7 @@ use App\Compartido\StateConflictException;
  * gets a machine-readable discriminator (AGENT_NOT_ACTIVE) via a
  * subclass-first catch arm.
  */
-class AgentNotActiveException extends StateConflictException
+class AgenteInactivoException extends StateConflictException
 {
     public static function forAgent(int $agentId, string $agentName): self
     {

@@ -85,7 +85,7 @@ Tablas técnicas sin relaciones de negocio (no incluidas en el diagrama): `outbo
 | `Ticket` (`tickets`) | `Ticket/Ticket.php` | Un caso de atención (episodio). | `contact_id`, `conversation_id`, `status`, `priority` (siempre `medium`, sin uso), `assigned_agent_id` (sin FK), `first_response_at`, `resolved_at`, `closed_at`, `version` (bloqueo optimista), `last_event_seq`, `phone_number_id`, `team_id`, `last_read_at`, `last_inbound_message_at` |
 | `Assignment` (`assignments`) | `Asignacion/Assignment.php` | Auditoría de cada cambio de dueño. | `ticket_id`, `agent_id`, `previous_agent_id`, `type`, `assigned_at`, `assigned_by` (texto libre: `system`, `u:{id}` o lo que mande el cliente), `notes` |
 | `Agent` (`agents`) | `Agente/Agent.php` | La persona que atiende. | `name`, `user_id`, `active`, `is_available` (**legacy, nunca se escribe**), `max_active_tickets` (default 10, mínimo 1), `timezone`, `is_available_override` + `override_until`, `signature`, `notification_sound`, `desktop_notifications`, `auto_reply_enabled`, `auto_reply_message`, `active_workspace_id` |
-| `AgentShift` (`agent_shifts`) | `Disponibilidad/AgentShift.php` | Turno semanal recurrente en hora local del agente. | `day_of_week` (1-7), `start_time`, `end_time` (distintos; si fin < inicio, cruza medianoche); UNIQUE (agente, día, inicio, fin) |
+| `Turno` (`agent_shifts`) | `Disponibilidad/Turno.php` | Turno semanal recurrente en hora local del agente. | `day_of_week` (1-7), `start_time`, `end_time` (distintos; si fin < inicio, cruza medianoche); UNIQUE (agente, día, inicio, fin) |
 | `User` (`user`) | `Administracion/User.php` | Credenciales y roles. | `email` (UNIQUE), `password_hash`, `roles` (JSON, sin validar en el backend), `is_active` |
 | `Workspace` (`workspaces`) | `Administracion/Workspace.php` | Un número de WhatsApp Business. Ejemplo de negocio: un número para clientes y otro para contratistas (análisis de brecha, req. #0b). | `phone_number_id` (UNIQUE), `display_name`, `is_active`. **No guarda credenciales**: todos los números usan el mismo token de Meta. |
 | `Team` (`teams`) | `Agente/Team.php` | Área dentro de un workspace (Sprint 18). | `workspace_id`, `name` (UNIQUE por workspace), `is_active` |
@@ -126,7 +126,7 @@ Tablas técnicas sin relaciones de negocio (no incluidas en el diagrama): `outbo
 | Agent → Workspace activo | N : 0..1 | Sí (`SET NULL`) | Preferencia del selector. |
 | Team → Workspace | N : 1 | Sí (`CASCADE`) | |
 | Agent ↔ Team | N : M (`agent_team`) | Sí | Solo agentes del mismo workspace (`Team::addAgent()`). |
-| Agent → AgentShift | 1 : N | Sí (`CASCADE`) | |
+| Agent → Turno | 1 : N | Sí (`CASCADE`) | |
 | Contact → Conversation | 1 : N (una por número) | Sí | |
 | Conversation → Message | 1 : N | Sí | |
 | Contact / Conversation → Ticket | 1 : N | Sí | A lo sumo un ticket no cerrado por contacto y número (regla en código, no en BD). |

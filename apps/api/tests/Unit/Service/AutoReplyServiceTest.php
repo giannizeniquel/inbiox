@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Service;
 
-use App\Disponibilidad\AgentAvailabilityService;
+use App\Disponibilidad\DisponibilidadDeAgenteService;
 use App\Automatizacion\RespuestaAutomaticaService;
 use App\Compartido\Graph\GraphClient;
 use App\Agente\Agent;
-use App\Disponibilidad\AgentShift;
-use App\Disponibilidad\Repository\AgentShiftRepository;
+use App\Disponibilidad\Turno;
+use App\Disponibilidad\Repository\TurnoRepository;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Compartido\EventCollector;
@@ -39,16 +39,16 @@ use Psr\Log\LoggerInterface;
  * 5. Sends when all conditions met
  * 6. GraphClient exception is caught silently
  *
- * Uses a real AgentAvailabilityService with mocked repository dependencies
+ * Uses a real DisponibilidadDeAgenteService with mocked repository dependencies
  * to avoid PHPUnit's restriction on mocking final classes.
  */
 class AutoReplyServiceTest extends TestCase
 {
     private AgentRepository&MockObject $agentRepo;
-    private AgentShiftRepository&MockObject $agentShiftRepo;
+    private TurnoRepository&MockObject $agentShiftRepo;
     private EntityManagerInterface&MockObject $em;
     private TicketRepository&MockObject $ticketRepo;
-    private AgentAvailabilityService $availabilityService;
+    private DisponibilidadDeAgenteService $availabilityService;
     private GraphClient&MockObject $graphClient;
     private ProcessedEventRepository&MockObject $processedEventRepo;
     private EventCollector&MockObject $eventCollector;
@@ -59,7 +59,7 @@ class AutoReplyServiceTest extends TestCase
     protected function setUp(): void
     {
         $this->agentRepo = $this->createMock(AgentRepository::class);
-        $this->agentShiftRepo = $this->createMock(AgentShiftRepository::class);
+        $this->agentShiftRepo = $this->createMock(TurnoRepository::class);
         $this->em = $this->createMock(EntityManagerInterface::class);
         $this->graphClient = $this->createMock(GraphClient::class);
         $this->processedEventRepo = $this->createMock(ProcessedEventRepository::class);
@@ -68,7 +68,7 @@ class AutoReplyServiceTest extends TestCase
 
         // Create REAL AgentAvailabilityService with mocked deps
         $this->ticketRepo = $this->createMock(TicketRepository::class);
-        $this->availabilityService = new AgentAvailabilityService(
+        $this->availabilityService = new DisponibilidadDeAgenteService(
             $this->agentRepo,
             $this->agentShiftRepo,
             $this->ticketRepo,
@@ -164,7 +164,7 @@ class AutoReplyServiceTest extends TestCase
         $endTime = \DateTimeImmutable::createFromFormat('H:i', \sprintf('%02d:00', \min(23, $hour + 2)));
         \assert($startTime !== false && $endTime !== false);
 
-        $shift = new AgentShift($agent, $dow, $startTime, $endTime);
+        $shift = new Turno($agent, $dow, $startTime, $endTime);
         $agent->addShift($shift);
     }
 

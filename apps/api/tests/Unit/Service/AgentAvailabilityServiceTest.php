@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Service;
 
-use App\Disponibilidad\Query\AgentAvailabilityDTO;
-use App\Disponibilidad\AgentAvailabilityService;
+use App\Disponibilidad\Query\DisponibilidadDeAgenteDTO;
+use App\Disponibilidad\DisponibilidadDeAgenteService;
 use App\Agente\Agent;
-use App\Disponibilidad\AgentShift;
-use App\Disponibilidad\Repository\AgentShiftRepository;
+use App\Disponibilidad\Turno;
+use App\Disponibilidad\Repository\TurnoRepository;
 use App\Ticket\Repository\TicketRepository;
 use App\Ticket\EstadoDeTicket;
 use App\Administracion\Workspace;
@@ -17,7 +17,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Comprehensive unit tests for AgentAvailabilityService.
+ * Comprehensive unit tests for DisponibilidadDeAgenteService.
  *
  * Covers all 34 spec scenarios from agent-availability/spec.md that are
  * testable at the service layer, plus mandatory boundary cases from the
@@ -35,17 +35,17 @@ use PHPUnit\Framework\TestCase;
 class AgentAvailabilityServiceTest extends TestCase
 {
     private AgentRepository&MockObject $agentRepository;
-    private AgentShiftRepository&MockObject $agentShiftRepository;
+    private TurnoRepository&MockObject $agentShiftRepository;
     private TicketRepository&MockObject $ticketRepository;
-    private AgentAvailabilityService $service;
+    private DisponibilidadDeAgenteService $service;
 
     protected function setUp(): void
     {
         $this->agentRepository = $this->createMock(AgentRepository::class);
-        $this->agentShiftRepository = $this->createMock(AgentShiftRepository::class);
+        $this->agentShiftRepository = $this->createMock(TurnoRepository::class);
         $this->ticketRepository = $this->createMock(TicketRepository::class);
 
-        $this->service = new AgentAvailabilityService(
+        $this->service = new DisponibilidadDeAgenteService(
             $this->agentRepository,
             $this->agentShiftRepository,
             $this->ticketRepository,
@@ -89,12 +89,12 @@ class AgentAvailabilityServiceTest extends TestCase
         string $start,
         string $end,
         int $id = 1,
-    ): AgentShift {
+    ): Turno {
         $startTime = \DateTimeImmutable::createFromFormat('H:i:s', $start.':00');
         $endTime = \DateTimeImmutable::createFromFormat('H:i:s', $end.':00');
         \assert($startTime !== false && $endTime !== false);
 
-        $shift = new AgentShift($agent, $dayOfWeek, $startTime, $endTime);
+        $shift = new Turno($agent, $dayOfWeek, $startTime, $endTime);
         $agent->addShift($shift);
 
         $this->setEntityId($shift, $id);
@@ -1432,7 +1432,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $result = $this->service->listWorkspaceAgentRoster($workspace, new \DateTimeImmutable('now'));
 
         self::assertCount(1, $result);
-        self::assertInstanceOf(AgentAvailabilityDTO::class, $result[0]);
+        self::assertInstanceOf(DisponibilidadDeAgenteDTO::class, $result[0]);
         self::assertSame(1, $result[0]->id);
         self::assertSame('Agent-1', $result[0]->name);
         self::assertTrue($result[0]->isActiveNow);

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Asignacion\UseCase;
 
-use App\Disponibilidad\AgentAvailabilityService;
+use App\Disponibilidad\DisponibilidadDeAgenteService;
 use App\Asignacion\AssignmentService;
 use App\Agente\Agent;
 use App\Asignacion\AssignmentType;
@@ -22,7 +22,7 @@ use Doctrine\ORM\EntityManagerInterface;
  *
  * Pipeline (single transaction):
  *   1. SELECT ticket FOR UPDATE (idempotent)
- *   2. listAvailableAgents() via AgentAvailabilityService (SOLE eligibility check)
+ *   2. listAvailableAgents() via DisponibilidadDeAgenteService (SOLE eligibility check)
  *   3. SELECT agents FOR UPDATE WHERE id IN (...)
  *   4. Re-filter capacity inside lock (COUNT may have changed)
  *   5. Tiebreaker: lowest active count → fewest AUTO_ASSIGN today → lowest id
@@ -30,7 +30,7 @@ use Doctrine\ORM\EntityManagerInterface;
  *   7. Collect outbox events for PR4 Mercure
  *
  * The old hardcoded "WHERE active = 1 AND is_available = 1" filter is REMOVED.
- * AgentAvailabilityService is the SOLE eligibility check.
+ * DisponibilidadDeAgenteService is the SOLE eligibility check.
  */
 final class AutoAssignTicketUseCase
 {
@@ -41,7 +41,7 @@ final class AutoAssignTicketUseCase
         private EntityManagerInterface $em,
         private TicketRepository $ticketRepo,
         private AssignmentRepository $assignmentRepo,
-        private AgentAvailabilityService $availabilityService,
+        private DisponibilidadDeAgenteService $availabilityService,
         private AssignmentService $assignmentService,
         private EventCollector $eventCollector,
         private readonly OutboxWriter $outboxWriter,

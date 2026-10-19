@@ -21,7 +21,7 @@ use Doctrine\ORM\Mapping as ORM;
         ],
     ]
 )]
-class AgentShift
+class Turno
 {
     #[ORM\Id]
     #[ORM\Column(name: 'id', type: Types::BIGINT)]

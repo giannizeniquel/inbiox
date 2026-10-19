@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Disponibilidad\Controller;
 
-use App\Disponibilidad\AgentAvailabilityService;
+use App\Disponibilidad\DisponibilidadDeAgenteService;
 use App\Administracion\Workspace;
 use App\Administracion\Repository\WorkspaceRepository;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -18,10 +18,10 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * GET /api/workspaces/{id}/available-agents — returns agents available for assignment
  */
 #[IsGranted('ROLE_AGENT')]
-final class WorkspaceAgentController
+final class AgentesDisponiblesController
 {
     public function __construct(
-        private readonly AgentAvailabilityService $agentAvailabilityService,
+        private readonly DisponibilidadDeAgenteService $agentAvailabilityService,
         private readonly WorkspaceRepository $workspaceRepository,
     ) {}
 

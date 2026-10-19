@@ -6,7 +6,7 @@ namespace App\Disponibilidad\Controller;
 
 use Symfony\Component\Validator\Constraints as Assert;
 
-class SetAgentAvailabilityRequest
+class SetDisponibilidadManualRequest
 {
     #[Assert\NotNull(message: 'is_available is required')]
     #[Assert\Type(type: 'bool', message: 'is_available must be a boolean')]

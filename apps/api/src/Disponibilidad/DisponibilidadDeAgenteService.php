@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Disponibilidad;
 
-use App\Disponibilidad\Query\AgentAvailabilityDTO;
+use App\Disponibilidad\Query\DisponibilidadDeAgenteDTO;
 use App\Agente\Agent;
-use App\Disponibilidad\Repository\AgentShiftRepository;
+use App\Disponibilidad\Repository\TurnoRepository;
 use App\Ticket\EstadoDeTicket;
 use App\Administracion\Workspace;
 use App\Agente\Repository\AgentRepository;
@@ -22,11 +22,11 @@ use App\Ticket\Repository\TicketRepository;
  *   4. Capacity check        → COUNT active tickets, compare to max
  *   5. Default               → return true
  */
-final class AgentAvailabilityService
+final class DisponibilidadDeAgenteService
 {
     public function __construct(
         private AgentRepository $agentRepository,
-        private AgentShiftRepository $agentShiftRepository,
+        private TurnoRepository $agentShiftRepository,
         private TicketRepository $ticketRepository,
     ) {}
 
@@ -78,7 +78,7 @@ final class AgentAvailabilityService
      * findByAgents()) and a single-agent guard check can call this with no
      * N+1 query.
      *
-     * @param AgentShift[] $shifts
+     * @param Turno[] $shifts
      */
     public function isActiveNow(Agent $agent, array $shifts, \DateTimeImmutable $atUtc): bool
     {
@@ -120,7 +120,7 @@ final class AgentAvailabilityService
         $agentIds = \array_map(fn (Agent $a): ?int => $a->getId(), $agents);
         $allShifts = $this->agentShiftRepository->findByAgents(\array_filter($agentIds));
 
-        /** @var array<int, AgentShift[]> $shiftsByAgent */
+        /** @var array<int, Turno[]> $shiftsByAgent */
         $shiftsByAgent = [];
         foreach ($allShifts as $shift) {
             $agentId = $shift->getAgent()?->getId();
@@ -175,7 +175,7 @@ final class AgentAvailabilityService
      * UI can show who exists and why they are or aren't currently assignable.
      * Capacity is NEVER consulted for eligibility (only reported for display).
      *
-     * @return AgentAvailabilityDTO[]
+     * @return DisponibilidadDeAgenteDTO[]
      */
     public function listWorkspaceAgentRoster(Workspace $workspace, \DateTimeImmutable $atUtc): array
     {
@@ -191,7 +191,7 @@ final class AgentAvailabilityService
         $agentIds = \array_map(fn (Agent $a): ?int => $a->getId(), $activeAgents);
         $allShifts = $this->agentShiftRepository->findByAgents(\array_filter($agentIds));
 
-        /** @var array<int, AgentShift[]> $shiftsByAgent */
+        /** @var array<int, Turno[]> $shiftsByAgent */
         $shiftsByAgent = [];
         foreach ($allShifts as $shift) {
             $agentId = $shift->getAgent()?->getId();
@@ -207,11 +207,11 @@ final class AgentAvailabilityService
             $isActiveNow = $this->isActiveNow($agent, $shiftsByAgent[$agentId] ?? [], $atUtc);
             $activeCount = $this->countActiveTickets($agentId);
 
-            $roster[] = AgentAvailabilityDTO::fromEntity($agent, $activeCount, $isActiveNow);
+            $roster[] = DisponibilidadDeAgenteDTO::fromEntity($agent, $activeCount, $isActiveNow);
         }
 
         // 4. Sort: Activo first, then id ASC (stable order within each tier)
-        \usort($roster, function (AgentAvailabilityDTO $a, AgentAvailabilityDTO $b): int {
+        \usort($roster, function (DisponibilidadDeAgenteDTO $a, DisponibilidadDeAgenteDTO $b): int {
             if ($a->isActiveNow !== $b->isActiveNow) {
                 return $a->isActiveNow ? -1 : 1;
             }
@@ -256,7 +256,7 @@ final class AgentAvailabilityService
      * Handles both normal shifts (end > start) and cross-midnight shifts
      * (end < start, e.g. 22:00-06:00). The interval is half-open: [start, end).
      *
-     * @param AgentShift[] $shifts
+     * @param Turno[] $shifts
      */
     private function hasShiftAtTime(\DateTimeImmutable $localDateTime, array $shifts): bool
     {

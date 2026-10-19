@@ -205,11 +205,11 @@ stateDiagram-v2
 | # | Paso | Dónde | Regla |
 |---|---|---|---|
 | 1 | (Frontend) El desplegable se muestra si el usuario es supervisor/admin, o si es agente y dueño; solo en `new`/`active`/`waiting`. Excluye al propio usuario. Los agentes "Inactivo" no se pueden elegir. | `features/inbox/containers/ticket-list/ticket-list.component.ts:121-149, 219-236`; `features/inbox/components/ticket-card/ticket-card.component.ts:51-59, 138-150` | |
-| 2 | (Frontend) Roster: `GET /api/workspaces/{wsId}/available-agents` → agentes activos del workspace con `is_active_now`, "Activo" primero. | `Disponibilidad/Controller/WorkspaceAgentController.php:29-47`; `AgentAvailabilityService::listWorkspaceAgentRoster()` (`:181-224`) | |
+| 2 | (Frontend) Roster: `GET /api/workspaces/{wsId}/available-agents` → agentes activos del workspace con `is_active_now`, "Activo" primero. | `Disponibilidad/Controller/AgentesDisponiblesController.php:29-47`; `DisponibilidadDeAgenteService::listWorkspaceAgentRoster()` (`:181-224`) | |
 | 3 | Voter `ASSIGN`: ticket `resolved`/`closed` → 409 para todos; supervisor/admin pasan; agente solo si ya es el dueño. | `TicketVoter.php:88-118` | R-A9, R-A10 |
 | 4 | Valida `agentId > 0` y `assignedBy` (texto **enviado por el cliente**). | `Asignacion/UseCase/AssignTicketUseCase.php:57-66` | R-A11 |
 | 5 | Transacción; carga ticket y luego `lock()` (patrón con riesgo TOCTOU, [R16](00-estado-y-pendientes.md#r16-concurrencia-en-asignación-manual-toctou)). | `:70-84` | |
-| 6 | **Guard "Activo":** `isActiveNow()` (cuenta activa → override → turno; **sin capacidad**). Si no → 409 `AGENT_NOT_ACTIVE`. Sin excepción para ningún rol. | `:86-95`; `AgentAvailabilityService.php:83-101` | R-A8 |
+| 6 | **Guard "Activo":** `isActiveNow()` (cuenta activa → override → turno; **sin capacidad**). Si no → 409 `AGENT_NOT_ACTIVE`. Sin excepción para ningún rol. | `:86-95`; `DisponibilidadDeAgenteService.php:83-101` | R-A8 |
 | 7 | `REASSIGN` si ya tenía dueño, si no `MANUAL_ASSIGN` → `AssignmentService::recordOwnershipChange()` (fila `Assignment`, `new → active`, eventos). | `:97-117`; `AssignmentService.php:45-111` | R-A1, R-T4 |
 | 8 | Post-commit: eventos al outbox (los `InboxUpdatedEvent` terminan en dead letter). | `:135, 143-180` | P-1 |
 | 9 | (Frontend) Actualización optimista; si falla, rollback y mensaje 5 s; si 409 `AGENT_NOT_ACTIVE`, recarga el roster. | `ticket-list.component.ts:242-277` | |
@@ -229,7 +229,7 @@ stateDiagram-v2
 |---|---|---|---|
 | 1 | `SELECT … FOR UPDATE` del ticket. | `Asignacion/UseCase/AutoAssignTicketUseCase.php:85-88` | |
 | 2 | Si ya tiene dueño → `already_assigned`. **No mira el estado**: un ticket resuelto sin dueño es candidato. | `:100-107` | R-A5 |
-| 3 | `listAvailableAgents()`: **todos** los agentes activos del sistema (sin filtro de workspace ni equipo), con cascada override → turno → capacidad. | `:112`; `AgentAvailabilityService.php:111-166` | R-A4, R-D1 |
+| 3 | `listAvailableAgents()`: **todos** los agentes activos del sistema (sin filtro de workspace ni equipo), con cascada override → turno → capacidad. | `:112`; `DisponibilidadDeAgenteService.php:111-166` | R-A4, R-D1 |
 | 4 | Bloquea las filas de esos agentes y recalcula la carga (`new`/`active`/`waiting`) dentro del lock; descarta los que están al tope (incluso con override). | `:126-151` | R-A3 |
 | 5 | Desempate: menor carga → menos `AUTO_ASSIGN` hoy (UTC) → menor `agent.id`. | `:163-174` | R-A2 |
 | 6 | `recordOwnershipChange(..., AUTO_ASSIGN, 'system')`. | `:194-200` | |
@@ -238,13 +238,13 @@ stateDiagram-v2
 - **Razones de no asignación:** `ticket_not_found`, `already_assigned`, `no_agents_available`, `all_agents_at_capacity`.
 - **No hay rebalanceo**: si nadie estaba disponible, el ticket queda sin dueño hasta que el cliente vuelva a escribir o alguien lo asigne. Existía `RebalanceUnassignedTicketsUseCase`, sin llamadores; se borró en la fase 1. Regla no confirmada.
 
-**Si falla, revisar:** `AutoAssignTicketUseCase.php` → `AgentAvailabilityService::listAvailableAgents()` → turnos y zona horaria de los agentes (`agent_shifts`, `agents.timezone`) → `max_active_tickets`.
+**Si falla, revisar:** `AutoAssignTicketUseCase.php` → `DisponibilidadDeAgenteService::listAvailableAgents()` → turnos y zona horaria de los agentes (`agent_shifts`, `agents.timezone`) → `max_active_tickets`.
 
 ---
 
 ## F7. Disponibilidad, override y turnos
 
-**Cuatro criterios distintos de "disponible"** conviven (más una copia duplicada). Verificado en `Disponibilidad/AgentAvailabilityService.php`:
+**Cuatro criterios distintos de "disponible"** conviven (más una copia duplicada). Verificado en `Disponibilidad/DisponibilidadDeAgenteService.php`:
 
 | Criterio | Qué mira | Dónde | Lo usa |
 |---|---|---|---|
@@ -252,7 +252,7 @@ stateDiagram-v2
 | `isAvailable()` / `listAvailableAgents()` | activo → override → turno → **capacidad** | `:40-68`, `:112-167` | Auto-asignación, auto-respuesta, `GET /api/agents/{id}/availability`, reporte de disponibles |
 | `isActiveNow()` ("Activo/Inactivo") | activo → override → turno (**sin capacidad**) | `:84-102` | Guard de asignación manual y roster del desplegable |
 | `isInShift()` | activo → turno (sin override ni capacidad) | `:233-242` | Listado de tickets y reporte de rendimiento |
-| *(copia)* `AgentAvailabilityController::isAgentInShift()` | turno (no mira `active`) | `Disponibilidad/Controller/AgentAvailabilityController.php:338-367` | Campo `is_in_shift` de `GET /api/agents/{id}/availability` |
+| *(copia)* `DisponibilidadDeAgenteController::isAgentInShift()` | turno (no mira `active`) | `Disponibilidad/Controller/DisponibilidadDeAgenteController.php:338-367` | Campo `is_in_shift` de `GET /api/agents/{id}/availability` |
 
 > Corrección: un informe previo hablaba de "cinco definiciones". Son **cuatro criterios** (contando la columna legacy, que en realidad no evalúa nada) más **una copia** del criterio de turno en un controlador.
 
@@ -260,16 +260,16 @@ stateDiagram-v2
 
 | Operación | Endpoint | Caso de uso | Desde la UI |
 |---|---|---|---|
-| Reemplazar mis turnos | `PUT /api/me/shifts` | `ReplaceAgentShiftsUseCase` (`:56-90`) | Sí, `/settings` → Horario laboral |
-| Crear/borrar turno de un agente | `POST /api/agents/{id}/shifts`, `DELETE …/shifts/{shiftId}` | `CreateAgentShiftUseCase` (`:105-137`), `DeleteAgentShiftUseCase` | **No** (página rota) |
-| Override | `POST/DELETE /api/agents/{id}/availability` | `SetAgentAvailabilityUseCase` (`:42-91`), `ClearAgentAvailabilityUseCase` | **No** |
+| Reemplazar mis turnos | `PUT /api/me/shifts` | `ReemplazarTurnosUseCase` (`:56-90`) | Sí, `/settings` → Horario laboral |
+| Crear/borrar turno de un agente | `POST /api/agents/{id}/shifts`, `DELETE …/shifts/{shiftId}` | `CreateTurnoUseCase` (`:105-137`), `DeleteTurnoUseCase` | **No** (página rota) |
+| Override | `POST/DELETE /api/agents/{id}/availability` | `SetDisponibilidadManualUseCase` (`:42-91`), `QuitarDisponibilidadManualUseCase` | **No** |
 | Zona horaria | `PUT /api/admin/agents/{id}` | `Administracion/Controller/AgentController::update` | Sí, Admin → Agentes |
 
-- Los turnos se interpretan en la zona horaria del agente, intervalo `[inicio, fin)`, con cruce de medianoche (`AgentAvailabilityService.php:261-289`). No se validan turnos superpuestos. Las validaciones están duplicadas en dos casos de uso con nombres de campo distintos (`day_of_week` vs `dayOfWeek`).
+- Los turnos se interpretan en la zona horaria del agente, intervalo `[inicio, fin)`, con cruce de medianoche (`DisponibilidadDeAgenteService.php:261-289`). No se validan turnos superpuestos. Las validaciones están duplicadas en dos casos de uso con nombres de campo distintos (`day_of_week` vs `dayOfWeek`).
 - Override y turnos escriben eventos `agent.*` en el outbox que el frontend no escucha.
 - **Seguridad:** cualquier agente puede llamar estos endpoints sobre cualquier otro ([R3](00-estado-y-pendientes.md#r3-cualquier-agente-modifica-disponibilidad-y-turnos-de-cualquier-agente)).
 
-**Si falla, revisar:** `AgentAvailabilityService.php` (qué criterio usa el caso concreto) → `agent_shifts` + `agents.timezone` + `agents.is_available_override/override_until` → `Disponibilidad/Controller/AgentAvailabilityController.php` / `Disponibilidad/Controller/MeShiftsController.php::replaceShifts`.
+**Si falla, revisar:** `DisponibilidadDeAgenteService.php` (qué criterio usa el caso concreto) → `agent_shifts` + `agents.timezone` + `agents.is_available_override/override_until` → `Disponibilidad/Controller/DisponibilidadDeAgenteController.php` / `Disponibilidad/Controller/MisTurnosController.php::replaceShifts`.
 
 ---
 

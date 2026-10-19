@@ -2,7 +2,7 @@
 
 namespace App\Ticket\Query;
 
-use App\Disponibilidad\AgentAvailabilityService;
+use App\Disponibilidad\DisponibilidadDeAgenteService;
 use App\Agente\Agent;
 use App\Agente\Repository\AgentRepository;
 use App\Ticket\Repository\TicketRepository;
@@ -10,7 +10,7 @@ use App\Ticket\Repository\TicketRepository;
 class ListTicketsQuery
 {
     public function __construct(
-        private AgentAvailabilityService $agentAvailabilityService,
+        private DisponibilidadDeAgenteService $agentAvailabilityService,
         private TicketRepository $ticketRepository,
         private AgentRepository $agentRepository,
         private FiltrosDeTicketBuilder $filtrosDeTicketBuilder = new FiltrosDeTicketBuilder(),

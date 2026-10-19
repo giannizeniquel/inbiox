@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace App\Disponibilidad\Repository;
 
-use App\Disponibilidad\AgentShift;
+use App\Disponibilidad\Turno;
 
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
-class AgentShiftRepository extends ServiceEntityRepository
+class TurnoRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, AgentShift::class);
+        parent::__construct($registry, Turno::class);
     }
 
-    /** @return AgentShift[] */
+    /** @return Turno[] */
     public function findByAgent(int $agentId): array
     {
         return $this->createQueryBuilder('s')
@@ -28,7 +28,7 @@ class AgentShiftRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    /** @param int[] $agentIds @return AgentShift[] */
+    /** @param int[] $agentIds @return Turno[] */
     public function findByAgents(array $agentIds): array
     {
         return $this->createQueryBuilder('s')

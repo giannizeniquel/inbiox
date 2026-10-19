@@ -6,7 +6,7 @@ namespace App\Disponibilidad\Controller;
 
 use Symfony\Component\Validator\Constraints as Assert;
 
-class CreateAgentShiftRequest
+class CreateTurnoRequest
 {
     #[Assert\NotNull(message: 'day_of_week is required')]
     #[Assert\Range(

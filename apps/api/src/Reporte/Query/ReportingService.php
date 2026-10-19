@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Reporte\Query;
 
 use App\Agente\Repository\AgentRepository;
-use App\Disponibilidad\AgentAvailabilityService;
+use App\Disponibilidad\DisponibilidadDeAgenteService;
 use App\Reporte\Repository\ReportingRepository;
 
 /**
@@ -24,7 +24,7 @@ class ReportingService
     public function __construct(
         private ReportingRepository $reportingRepository,
         private AgentRepository $agentRepository,
-        private AgentAvailabilityService $agentAvailabilityService,
+        private DisponibilidadDeAgenteService $agentAvailabilityService,
     ) {}
 
     /**

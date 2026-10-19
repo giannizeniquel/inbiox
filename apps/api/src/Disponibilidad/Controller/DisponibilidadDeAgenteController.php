@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Disponibilidad\Controller;
 
 use App\Compartido\Security\OwnershipScope;
-use App\Disponibilidad\AgentAvailabilityService;
-use App\Disponibilidad\UseCase\ClearAgentAvailabilityUseCase;
-use App\Disponibilidad\UseCase\CreateAgentShiftUseCase;
-use App\Disponibilidad\UseCase\DeleteAgentShiftUseCase;
-use App\Disponibilidad\UseCase\SetAgentAvailabilityUseCase;
-use App\Disponibilidad\Repository\AgentShiftRepository;
+use App\Disponibilidad\DisponibilidadDeAgenteService;
+use App\Disponibilidad\UseCase\QuitarDisponibilidadManualUseCase;
+use App\Disponibilidad\UseCase\CreateTurnoUseCase;
+use App\Disponibilidad\UseCase\DeleteTurnoUseCase;
+use App\Disponibilidad\UseCase\SetDisponibilidadManualUseCase;
+use App\Disponibilidad\Repository\TurnoRepository;
 use App\Agente\Repository\AgentRepository;
 use App\Ticket\Repository\TicketRepository;
 use Doctrine\DBAL\Exception\LockWaitTimeoutException;
@@ -32,16 +32,16 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * - Admin/Supervisor can view/manage any agent
  */
 #[IsGranted('ROLE_AGENT')]
-class AgentAvailabilityController
+class DisponibilidadDeAgenteController
 {
     public function __construct(
-        private SetAgentAvailabilityUseCase $setAgentAvailabilityUseCase,
-        private ClearAgentAvailabilityUseCase $clearAgentAvailabilityUseCase,
-        private CreateAgentShiftUseCase $createAgentShiftUseCase,
-        private DeleteAgentShiftUseCase $deleteAgentShiftUseCase,
-        private AgentAvailabilityService $agentAvailabilityService,
+        private SetDisponibilidadManualUseCase $setAgentAvailabilityUseCase,
+        private QuitarDisponibilidadManualUseCase $clearAgentAvailabilityUseCase,
+        private CreateTurnoUseCase $createAgentShiftUseCase,
+        private DeleteTurnoUseCase $deleteAgentShiftUseCase,
+        private DisponibilidadDeAgenteService $agentAvailabilityService,
         private AgentRepository $agentRepo,
-        private AgentShiftRepository $agentShiftRepo,
+        private TurnoRepository $agentShiftRepo,
         private TicketRepository $ticketRepo,
         private OwnershipScope $ownershipScope,
     ) {}
@@ -55,7 +55,7 @@ class AgentAvailabilityController
     #[Route('/api/agents/{id}/availability', name: 'app_agent_set_availability', methods: ['POST'])]
     public function setAvailability(
         int $id,
-        #[MapRequestPayload] SetAgentAvailabilityRequest $request,
+        #[MapRequestPayload] SetDisponibilidadManualRequest $request,
     ): JsonResponse {
         // Ownership check: AGENT can only modify their own availability
         if (false === $this->isGrantedForAgent($id)) {
@@ -120,7 +120,7 @@ class AgentAvailabilityController
      * GET /agents/{id}/availability
      *
      * Read the full availability state for an agent.
-     * Reuses AgentAvailabilityService for determination. Read-only.
+     * Reuses DisponibilidadDeAgenteService for determination. Read-only.
      */
     #[Route('/api/agents/{id}/availability', name: 'app_agent_get_availability', methods: ['GET'])]
     public function getAvailability(int $id): JsonResponse
@@ -182,7 +182,7 @@ class AgentAvailabilityController
     #[Route('/api/agents/{id}/shifts', name: 'app_agent_create_shift', methods: ['POST'])]
     public function createShift(
         int $id,
-        #[MapRequestPayload] CreateAgentShiftRequest $request,
+        #[MapRequestPayload] CreateTurnoRequest $request,
     ): JsonResponse {
         // Ownership check: AGENT can only modify their own shifts
         if (false === $this->isGrantedForAgent($id)) {
@@ -283,7 +283,7 @@ class AgentAvailabilityController
     /**
      * Check if an agent has a shift at the given local time.
      *
-     * Reuses the same cross-midnight logic as AgentAvailabilityService
+     * Reuses the same cross-midnight logic as DisponibilidadDeAgenteService
      * but checks schedule only — no override, no capacity.
      */
     private function isAgentInShift(\App\Agente\Agent $agent, \DateTimeImmutable $localDateTime): bool

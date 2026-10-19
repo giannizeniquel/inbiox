@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Agente;
 
-use App\Disponibilidad\AgentShift;
+use App\Disponibilidad\Turno;
 
 use App\Administracion\User;
 use App\Administracion\Workspace;
@@ -69,7 +69,7 @@ class Agent
     #[ORM\Column(name: 'updated_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $updatedAt;
 
-    #[ORM\OneToMany(targetEntity: AgentShift::class, mappedBy: 'agent', orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: Turno::class, mappedBy: 'agent', orphanRemoval: true)]
     private Collection $shifts;
 
     #[ORM\ManyToMany(targetEntity: Workspace::class, inversedBy: 'agents')]
@@ -200,13 +200,13 @@ class Agent
         return $this;
     }
 
-    /** @return Collection<int, AgentShift> */
+    /** @return Collection<int, Turno> */
     public function getShifts(): Collection
     {
         return $this->shifts;
     }
 
-    public function addShift(AgentShift $shift): self
+    public function addShift(Turno $shift): self
     {
         if (!$this->shifts->contains($shift)) {
             $this->shifts->add($shift);
@@ -215,7 +215,7 @@ class Agent
         return $this;
     }
 
-    public function removeShift(AgentShift $shift): self
+    public function removeShift(Turno $shift): self
     {
         if ($this->shifts->removeElement($shift)) {
             if ($shift->getAgent() === $this) {

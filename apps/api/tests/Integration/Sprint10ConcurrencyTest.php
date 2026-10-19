@@ -6,7 +6,7 @@ namespace App\Tests\Integration;
 
 use App\Asignacion\UseCase\AutoAssignTicketUseCase;
 use App\Agente\Agent;
-use App\Disponibilidad\AgentShift;
+use App\Disponibilidad\Turno;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
 use Doctrine\ORM\EntityManagerInterface;
@@ -322,7 +322,7 @@ class Sprint10ConcurrencyTest extends KernelTestCase
         $agent->setIsAvailableOverride(false); // explicitly blocked
         $this->em->persist($agent);
 
-        $shift = new AgentShift($agent, 1, new \DateTimeImmutable('00:00:00'), new \DateTimeImmutable('23:59:59'));
+        $shift = new Turno($agent, 1, new \DateTimeImmutable('00:00:00'), new \DateTimeImmutable('23:59:59'));
         $this->em->persist($shift);
 
         $ticket = new Ticket();

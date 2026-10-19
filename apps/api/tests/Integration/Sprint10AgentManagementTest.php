@@ -6,7 +6,7 @@ namespace App\Tests\Integration;
 
 use App\Asignacion\UseCase\AutoAssignTicketUseCase;
 use App\Agente\Agent;
-use App\Disponibilidad\AgentShift;
+use App\Disponibilidad\Turno;
 use App\Asignacion\Assignment;
 use App\Compartido\Outbox\OutboxEvent;
 use App\Ticket\Ticket;
@@ -142,7 +142,7 @@ class Sprint10AgentManagementTest extends WebTestCase
         $shiftStart = new \DateTimeImmutable('00:00:00');
         $shiftEnd = new \DateTimeImmutable('23:59:59');
         for ($dow = 1; $dow <= 7; $dow++) {
-            $shift = new AgentShift($agent, $dow, $shiftStart, $shiftEnd);
+            $shift = new Turno($agent, $dow, $shiftStart, $shiftEnd);
             $this->em->persist($shift);
         }
         $this->em->flush();
@@ -225,7 +225,7 @@ class Sprint10AgentManagementTest extends WebTestCase
         $shiftEnd = new \DateTimeImmutable('23:59:59');
         foreach ($agents as $agent) {
             for ($dow = 1; $dow <= 7; $dow++) {
-                $shift = new AgentShift($agent, $dow, $shiftStart, $shiftEnd);
+                $shift = new Turno($agent, $dow, $shiftStart, $shiftEnd);
                 $this->em->persist($shift);
             }
         }
@@ -289,7 +289,7 @@ class Sprint10AgentManagementTest extends WebTestCase
         $shiftEnd = new \DateTimeImmutable('23:59:59');
         foreach ([$agentLow, $agentHigh] as $agent) {
             for ($dow = 1; $dow <= 7; $dow++) {
-                $shift = new AgentShift($agent, $dow, $shiftStart, $shiftEnd);
+                $shift = new Turno($agent, $dow, $shiftStart, $shiftEnd);
                 $this->em->persist($shift);
             }
         }
@@ -339,7 +339,7 @@ class Sprint10AgentManagementTest extends WebTestCase
         $shiftStart = new \DateTimeImmutable('00:00:00');
         $shiftEnd = new \DateTimeImmutable('23:59:59');
         for ($dow = 1; $dow <= 7; $dow++) {
-            $shift = new AgentShift($agent, $dow, $shiftStart, $shiftEnd);
+            $shift = new Turno($agent, $dow, $shiftStart, $shiftEnd);
             $this->em->persist($shift);
         }
         $this->em->flush();
@@ -386,7 +386,7 @@ class Sprint10AgentManagementTest extends WebTestCase
         $this->em->persist($agent);
         $this->em->flush();
 
-        $shift = new AgentShift($agent, (int) date('N'), new \DateTimeImmutable('00:00:00'), new \DateTimeImmutable('23:59:59'));
+        $shift = new Turno($agent, (int) date('N'), new \DateTimeImmutable('00:00:00'), new \DateTimeImmutable('23:59:59'));
         $this->em->persist($shift);
 
         // Create an already-assigned ticket

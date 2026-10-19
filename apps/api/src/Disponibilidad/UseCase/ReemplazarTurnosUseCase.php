@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Disponibilidad\UseCase;
 
 use App\Agente\Agent;
-use App\Disponibilidad\AgentShift;
-use App\Disponibilidad\Repository\AgentShiftRepository;
+use App\Disponibilidad\Turno;
+use App\Disponibilidad\Repository\TurnoRepository;
 use App\Agente\Repository\AgentRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -17,16 +17,16 @@ use Doctrine\ORM\EntityManagerInterface;
  * then recreates them from the supplied array. Partial state is
  * never visible.
  */
-final class ReplaceAgentShiftsUseCase
+final class ReemplazarTurnosUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly AgentRepository $agentRepo,
-        private readonly AgentShiftRepository $agentShiftRepo,
+        private readonly TurnoRepository $agentShiftRepo,
     ) {}
 
     /**
-     * @param ShiftInputDTO[] $shifts
+     * @param DatosDeTurnoDTO[] $shifts
      *
      * @return array<int, array{dayOfWeek: int, start: string, end: string}>
      *
@@ -55,7 +55,7 @@ final class ReplaceAgentShiftsUseCase
                     throw new \InvalidArgumentException('Invalid time format');
                 }
 
-                $shift = new AgentShift($agent, $input->dayOfWeek, $start, $end);
+                $shift = new Turno($agent, $input->dayOfWeek, $start, $end);
                 $this->em->persist($shift);
 
                 $created[] = [

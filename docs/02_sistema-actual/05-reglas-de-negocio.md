@@ -69,8 +69,8 @@ Estas son las preguntas que solo el desarrollador (o el cliente) puede responder
 |---|---|---|---|---|
 | R-A1 | Todo cambio de dueño pasa por `AssignmentService` y deja una fila de auditoría. | `AssignmentService.php:16-25, 45-111` | Técnica | Regla no confirmada como regla de negocio (es convención de código; se cumple). |
 | R-A2 | La auto-asignación elige al agente disponible con menos tickets activos; desempata por menos auto-asignaciones hoy y luego por menor id. | `Asignacion/UseCase/AutoAssignTicketUseCase.php:135-174` | Negocio | **Confirmada** — análisis de brecha filas #2a, #2e. |
-| R-A3 | La auto-asignación respeta la capacidad máxima (`max_active_tickets`, default 10). | `AutoAssignTicketUseCase.php:136-139`; `AgentAvailabilityService.php:60-63` | Negocio | **Confirmada** — fila #2a. |
-| R-A4 | La auto-asignación considera agentes de **cualquier** workspace. | `AgentAvailabilityService.php:114` | Accidental (probable bug) | Regla no confirmada; contradice el scope por workspace (fila #0b). |
+| R-A3 | La auto-asignación respeta la capacidad máxima (`max_active_tickets`, default 10). | `AutoAssignTicketUseCase.php:136-139`; `DisponibilidadDeAgenteService.php:60-63` | Negocio | **Confirmada** — fila #2a. |
+| R-A4 | La auto-asignación considera agentes de **cualquier** workspace. | `DisponibilidadDeAgenteService.php:114` | Accidental (probable bug) | Regla no confirmada; contradice el scope por workspace (fila #0b). |
 | R-A5 | Un ticket ya asignado no se auto-reasigna; un resuelto sin dueño sí se auto-asigna. | `AutoAssignTicketUseCase.php:100-107` | Técnica | Regla no confirmada. |
 | R-A6 | El agente que responde un ticket no resuelto/cerrado pasa a ser su dueño (todos los roles), sin chequear disponibilidad ni capacidad. | `HandleOutboundMessageUseCase.php:226-258` | Negocio | **Confirmada** — spec `reply-auto-assignment` y fila #3 ("decisión de producto explícita del usuario"). |
 | R-A7 | En un ticket resuelto/cerrado, responder no cambia el dueño; solo supervisor/admin o el dueño actual pueden responder. | `Ticket/TicketResponsabilidadGuard.php:35-46` | Negocio | **Confirmada** — spec "Resolved/Closed Ticket Ownership Guard". **Efecto real contradictorio** por R-T9. |
@@ -93,13 +93,13 @@ Estas son las preguntas que solo el desarrollador (o el cliente) puede responder
 
 | ID | Regla | Dónde | Clasif. | Estado |
 |---|---|---|---|---|
-| R-D1 | Disponible = cuenta activa → override vigente → turno → capacidad. | `AgentAvailabilityService.php:39-67` | Negocio | **Confirmada** — análisis de brecha §1. |
-| R-D2 | "Activo" para asignar manualmente = cuenta activa → override → turno (sin capacidad). | `AgentAvailabilityService.php:83-101` | Negocio | **Confirmada** — spec `agent-assignment-eligibility`. |
-| R-D3 | Los turnos son semanales, en hora local del agente, semiabiertos `[inicio, fin)` y admiten cruce de medianoche. | `AgentAvailabilityService.php:261-289`; `Disponibilidad/AgentShift.php:15-23` | Negocio | **Confirmada** — fila #6a. |
-| R-D4 | Un agente solo gestiona su propio override/turnos; supervisor/admin, los de cualquiera. | Intención en el docblock de `Disponibilidad/Controller/AgentAvailabilityController.php:29-33, 314-318`; **no se aplica** (`:321-333`) | Negocio | Regla no confirmada, y hoy **no se cumple** ([R3](00-estado-y-pendientes.md#r3-cualquier-agente-modifica-disponibilidad-y-turnos-de-cualquier-agente)). |
+| R-D1 | Disponible = cuenta activa → override vigente → turno → capacidad. | `DisponibilidadDeAgenteService.php:39-67` | Negocio | **Confirmada** — análisis de brecha §1. |
+| R-D2 | "Activo" para asignar manualmente = cuenta activa → override → turno (sin capacidad). | `DisponibilidadDeAgenteService.php:83-101` | Negocio | **Confirmada** — spec `agent-assignment-eligibility`. |
+| R-D3 | Los turnos son semanales, en hora local del agente, semiabiertos `[inicio, fin)` y admiten cruce de medianoche. | `DisponibilidadDeAgenteService.php:261-289`; `Disponibilidad/Turno.php:15-23` | Negocio | **Confirmada** — fila #6a. |
+| R-D4 | Un agente solo gestiona su propio override/turnos; supervisor/admin, los de cualquiera. | Intención en el docblock de `Disponibilidad/Controller/DisponibilidadDeAgenteController.php:29-33, 314-318`; **no se aplica** (`:321-333`) | Negocio | Regla no confirmada, y hoy **no se cumple** ([R3](00-estado-y-pendientes.md#r3-cualquier-agente-modifica-disponibilidad-y-turnos-de-cualquier-agente)). |
 | R-D5 | `max_active_tickets ≥ 1`; la zona horaria debe ser válida. | `Agente/Agent.php:152-177` | Técnica | Regla no confirmada. |
 | R-D6 | Desactivar un agente no le quita sus tickets. | `Administracion/UseCase/DeactivateAgentUseCase.php` | Técnica (omisión) | Regla no confirmada. |
-| R-D7 | El override domina sobre el turno y la capacidad. | `AgentAvailabilityService.php:39-67` | Negocio | **Confirmada** en la cascada; **no se cumple del todo**: la auto-asignación vuelve a filtrar por capacidad dentro del lock (`AutoAssignTicketUseCase.php:135-139`). |
+| R-D7 | El override domina sobre el turno y la capacidad. | `DisponibilidadDeAgenteService.php:39-67` | Negocio | **Confirmada** en la cascada; **no se cumple del todo**: la auto-asignación vuelve a filtrar por capacidad dentro del lock (`AutoAssignTicketUseCase.php:135-139`). |
 
 ## Mensajería
 
@@ -156,12 +156,12 @@ Detalle en [07](07-frontend.md#lógica-de-negocio-que-vive-en-el-frontend).
 
 | Regla | Lugares | ¿Consistentes? |
 |---|---|---|
-| "Está en turno" | `AgentAvailabilityService::hasShiftAtTime` (`:262-290`) y `AgentAvailabilityController::isAgentInShift` (`:340-369`) | No del todo: la del controlador no mira `active`. |
+| "Está en turno" | `DisponibilidadDeAgenteService::hasShiftAtTime` (`:262-290`) y `DisponibilidadDeAgenteController::isAgentInShift` (`:340-369`) | No del todo: la del controlador no mira `active`. |
 | Cascada de disponibilidad | `isAvailable()`, `listAvailableAgents()`, re-filtro en `AutoAssignTicketUseCase.php:135-139` | No: el re-filtro aplica capacidad también con override. |
-| "Tickets activos" = `new`/`active`/`waiting` | `AgentAvailabilityService.php:297-317`, `TicketRepository::countActivosDeAgente` (`:146-160`), `ReportingRepository.php:354-356`, `MaquinaDeEstadosDeTicket::isActiveForSLA` (sin uso), frontend `get-reports-dashboard.use-case.ts` | Sí (cinco copias). |
+| "Tickets activos" = `new`/`active`/`waiting` | `DisponibilidadDeAgenteService.php:297-317`, `TicketRepository::countActivosDeAgente` (`:146-160`), `ReportingRepository.php:354-356`, `MaquinaDeEstadosDeTicket::isActiveForSLA` (sin uso), frontend `get-reports-dashboard.use-case.ts` | Sí (cinco copias). |
 | Normalización de teléfono | entrante, `NormalizadorDeTelefono`, `UpdateContactoUseCase` | **No** (umbrales distintos). |
 | Cierre automático | `ConversationWindowExpiryService` (vivo). `AutoCloseRule` y `AutoCloseTicketUseCase` se borraron en la fase 1. | Resuelto: queda un solo criterio. |
-| Validación de turnos | `CreateAgentShiftUseCase`, `ReplaceAgentShiftsUseCase`, `ShiftInputDTO`, CHECK de la tabla | Mismas reglas, distintos nombres de campo y mensajes. |
+| Validación de turnos | `CreateTurnoUseCase`, `ReemplazarTurnosUseCase`, `DatosDeTurnoDTO`, CHECK de la tabla | Mismas reglas, distintos nombres de campo y mensajes. |
 | Ventana de 24 h | `HandleOutboundMessageUseCase.php:214`, `RespuestaAutomaticaService.php:129`, frontend `composer.component.ts:70-76` | Sí (el frontend usa el reloj del navegador; el backend manda). |
 | FSM del ticket | `MaquinaDeEstadosDeTicket.php`; frontend `status-actions.component.ts:21-27` (componente sin uso) y `ticket.store.ts:182-187` (`new → active` al asignar) | La copia del frontend no se usa; la transición implícita sí. |
 | Ticket resuelto/cerrado bloquea cambios de dueño | `TicketVoter` (asignación manual, 409 para todos) y `TicketResponsabilidadGuard` (respuesta, permite a privilegiados) | Distintos a propósito; documentado en cada lugar. |

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Integration;
 
 use App\Agente\Agent;
-use App\Disponibilidad\AgentShift;
+use App\Disponibilidad\Turno;
 use App\Contacto\Contacto;
 use App\Ticket\EventoDeTicket;
 use App\Ticket\Ticket;
@@ -411,7 +411,7 @@ class ReportingV2Test extends WebTestCase
         // Create agent shifts
         foreach ($agents as $agent) {
             for ($day = 1; $day <= 5; $day++) {
-                $shift = new AgentShift(
+                $shift = new Turno(
                     $agent,
                     $day,
                     new \DateTimeImmutable('09:00:00'),

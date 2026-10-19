@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Characterization;
 
 use App\Agente\Agent;
-use App\Disponibilidad\AgentShift;
+use App\Disponibilidad\Turno;
 use App\Reporte\Query\ReportingService;
 use PHPUnit\Framework\Attributes\DataProvider;
 
@@ -158,7 +158,7 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
         // A 00:00-00:00 shift is read as a cross-midnight shift that covers the
         // whole day, so one per weekday keeps the agent in shift at any time.
         foreach (range(1, 7) as $dayOfWeek) {
-            $shift = new AgentShift($this->owner, $dayOfWeek, new \DateTimeImmutable('00:00:00'), new \DateTimeImmutable('00:00:00'));
+            $shift = new Turno($this->owner, $dayOfWeek, new \DateTimeImmutable('00:00:00'), new \DateTimeImmutable('00:00:00'));
             $this->owner->addShift($shift);
             $this->em->persist($shift);
         }

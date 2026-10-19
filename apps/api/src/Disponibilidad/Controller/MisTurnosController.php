@@ -6,7 +6,7 @@ namespace App\Disponibilidad\Controller;
 
 use App\Administracion\User;
 use App\Agente\Agent;
-use App\Disponibilidad\UseCase\ReplaceAgentShiftsUseCase;
+use App\Disponibilidad\UseCase\ReemplazarTurnosUseCase;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -21,11 +21,11 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * PUT /api/me/shifts — replace all shifts
  */
 #[IsGranted('IS_AUTHENTICATED_FULLY')]
-final class MeShiftsController
+final class MisTurnosController
 {
     public function __construct(
         private readonly Security $security,
-        private readonly ReplaceAgentShiftsUseCase $replaceAgentShiftsUseCase,
+        private readonly ReemplazarTurnosUseCase $replaceAgentShiftsUseCase,
     ) {}
 
     #[IsGranted('ROLE_AGENT')]
@@ -56,7 +56,7 @@ final class MeShiftsController
 
     #[IsGranted('ROLE_AGENT')]
     #[Route('/api/me/shifts', name: 'app_me_shifts_replace', methods: ['PUT'])]
-    public function replaceShifts(#[MapRequestPayload] ReplaceShiftsRequest $request): JsonResponse
+    public function replaceShifts(#[MapRequestPayload] ReemplazarTurnosRequest $request): JsonResponse
     {
         $agent = $this->getAgent();
         if (null === $agent) {

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Automatizacion;
 
-use App\Disponibilidad\AgentAvailabilityService;
+use App\Disponibilidad\DisponibilidadDeAgenteService;
 use App\Compartido\Graph\GraphClient;
 
 use App\Agente\Agent;
@@ -42,7 +42,7 @@ final class RespuestaAutomaticaService
 
     public function __construct(
         private readonly AgentRepository $agentRepo,
-        private readonly AgentAvailabilityService $availabilityService,
+        private readonly DisponibilidadDeAgenteService $availabilityService,
         private readonly GraphClient $graphClient,
         private readonly ProcessedEventRepository $processedEventRepo,
         private readonly EventCollector $eventCollector,

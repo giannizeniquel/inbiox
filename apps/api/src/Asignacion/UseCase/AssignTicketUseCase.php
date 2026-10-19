@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Asignacion\UseCase;
 
-use App\Disponibilidad\AgentAvailabilityService;
+use App\Disponibilidad\DisponibilidadDeAgenteService;
 use App\Asignacion\AssignmentService;
 use App\Asignacion\AssignmentType;
 use App\Compartido\EventCollector;
@@ -13,7 +13,7 @@ use App\Ticket\TicketUpdatedEvent;
 use App\Compartido\Outbox\OutboxEvent;
 use App\Compartido\Outbox\OutboxWriter;
 use App\Ticket\EstadoDeTicket;
-use App\Disponibilidad\AgentNotActiveException;
+use App\Disponibilidad\AgenteInactivoException;
 use App\Agente\Repository\AgentRepository;
 use App\Asignacion\Repository\AssignmentRepository;
 use App\Ticket\Repository\TicketRepository;
@@ -43,7 +43,7 @@ class AssignTicketUseCase
         private EventCollector $eventCollector,
         private readonly OutboxWriter $outboxWriter,
         private AssignmentService $assignmentService,
-        private AgentAvailabilityService $agentAvailabilityService,
+        private DisponibilidadDeAgenteService $agentAvailabilityService,
     ) {}
 
     /**
@@ -93,7 +93,7 @@ class AssignTicketUseCase
                 new \DateTimeImmutable('now', new \DateTimeZone('UTC')),
             );
             if (!$isActiveNow) {
-                throw AgentNotActiveException::forAgent($agentId, $agent->getName());
+                throw AgenteInactivoException::forAgent($agentId, $agent->getName());
             }
 
             // Detect assignment type from current ownership

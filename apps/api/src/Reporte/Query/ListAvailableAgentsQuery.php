@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Reporte\Query;
 
-use App\Disponibilidad\AgentAvailabilityService;
+use App\Disponibilidad\DisponibilidadDeAgenteService;
 use App\Ticket\Repository\TicketRepository;
 
 /**
@@ -15,7 +15,7 @@ use App\Ticket\Repository\TicketRepository;
 final class ListAvailableAgentsQuery
 {
     public function __construct(
-        private readonly AgentAvailabilityService $agentAvailabilityService,
+        private readonly DisponibilidadDeAgenteService $agentAvailabilityService,
         private readonly TicketRepository $ticketRepository,
     ) {}
 

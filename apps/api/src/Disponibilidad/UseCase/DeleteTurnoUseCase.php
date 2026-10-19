@@ -8,7 +8,7 @@ use App\Disponibilidad\AgentShiftChangedEvent;
 use App\Compartido\Outbox\OutboxEvent;
 use App\Compartido\Outbox\OutboxWriter;
 use App\Agente\Repository\AgentRepository;
-use App\Disponibilidad\Repository\AgentShiftRepository;
+use App\Disponibilidad\Repository\TurnoRepository;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -18,14 +18,14 @@ use Doctrine\ORM\EntityManagerInterface;
  * Finds the shift, verifies it belongs to the agent, removes it,
  * and emits an agent.shift_changed outbox event.
  */
-final class DeleteAgentShiftUseCase
+final class DeleteTurnoUseCase
 {
     private ?array $pendingOutboxEvent = null;
 
     public function __construct(
         private EntityManagerInterface $em,
         private AgentRepository $agentRepo,
-        private AgentShiftRepository $agentShiftRepo,
+        private TurnoRepository $agentShiftRepo,
         private readonly OutboxWriter $outboxWriter,
     ) {}
 

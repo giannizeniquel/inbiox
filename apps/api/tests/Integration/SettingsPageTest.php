@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Integration;
 
 use App\Agente\Agent;
-use App\Disponibilidad\AgentShift;
+use App\Disponibilidad\Turno;
 use App\Administracion\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -360,13 +360,13 @@ class SettingsPageTest extends WebTestCase
         return $agent;
     }
 
-    private function createShift(Agent $agent, int $dayOfWeek, string $start, string $end): AgentShift
+    private function createShift(Agent $agent, int $dayOfWeek, string $start, string $end): Turno
     {
         $startTime = \DateTimeImmutable::createFromFormat('H:i', $start);
         $endTime = \DateTimeImmutable::createFromFormat('H:i', $end);
         \assert($startTime !== false && $endTime !== false);
 
-        $shift = new AgentShift($agent, $dayOfWeek, $startTime, $endTime);
+        $shift = new Turno($agent, $dayOfWeek, $startTime, $endTime);
         $this->em->persist($shift);
         $this->em->flush();
 

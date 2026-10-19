@@ -69,7 +69,7 @@ Pregunta clave en cada grupo: ¿el test está mal, o revela un problema del cód
 | A | `AuthorizationTest` (7) | 7 | Usan rutas sin `/api` (`/tickets`, `/contacts`, `/reports/frt`). | Test roto (ruta obsoleta). |
 | B | `Sprint10ControllerTest` (15) | 15 | Usan `/agents/{id}/…` sin `/api`. Los `JsonException` son el mismo 404 devuelto en HTML. | Test roto. Aun arreglado, usa un ADMIN: **no detectaría** [R3](#r3-cualquier-agente-modifica-disponibilidad-y-turnos-de-cualquier-agente). |
 | C | `Sprint09BConcurrencyTest` (3), `Sprint10ConcurrencyTest` (2) | 5 | Fixtures con `INSERT INTO agents (..., email, ...)`; esa columna se eliminó en `Version20260616000001`. | Test roto (esquema viejo). Además borra `agents` y contamina otros tests. |
-| D | `WorkspaceAgentControllerTest::testAvailableAgentsReturned` | 1 | Fixture: `AgentShift` sin `persist()`. | Test roto. |
+| D | `WorkspaceAgentControllerTest::testAvailableAgentsReturned` | 1 | Fixture: `Turno` sin `persist()`. | Test roto. |
 | E | `ReportingV2Test::testHttp*` | 7 | `bootKernel()` en `setUp()` + `createClient()` → `LogicException`; además no envían token. | Test roto. |
 | I | `OwnershipScopeTest::testAgentWithLinkedAgentReturnsId` | 1 | `OwnershipScope::getAgentId()` devuelve siempre `null` por decisión documentada (Sprint 16). | Test obsoleto, pero esa decisión causó [R3](#r3-cualquier-agente-modifica-disponibilidad-y-turnos-de-cualquier-agente). |
 | J | `Sprint14MigrationTest::testAdminSeedExists`, `::testAdminSeedIsIdempotent` | 2 | La base de test se crea desde el mapping de Doctrine, no con migraciones; el admin se siembra en una migración. | Test roto por entorno. |
@@ -126,7 +126,7 @@ Leyenda: **[SEG]** seguridad · **[DATOS]** pérdida o corrupción de datos · *
 ### R3. Cualquier agente modifica disponibilidad y turnos de cualquier agente
 
 **[SEG] · Confirmado (lectura).**
-`AgentAvailabilityController::isGrantedForAgent()` (`apps/api/src/Disponibilidad/Controller/AgentAvailabilityController.php:319-331`) interpreta "scope `null`" como "supervisor/admin", pero `OwnershipScope::getAgentId()` (`apps/api/src/Compartido/Security/OwnershipScope.php:42-55`) devuelve `null` **siempre** desde Sprint 16. Resultado: cualquier `ROLE_AGENT` puede, vía API, marcar a otro agente como no disponible, crearle o borrarle turnos. Eso altera la auto-asignación y bloquea asignaciones manuales. Endpoints: `POST/DELETE/GET /api/agents/{id}/availability`, `POST /api/agents/{id}/shifts`, `DELETE /api/agents/{id}/shifts/{shiftId}`. Sin test que lo cubra. (Hoy la UI no expone estas pantallas, ver [07](07-frontend.md#disponibilidad-y-turnos-agentsagentid), así que el abuso requiere llamar a la API directamente.)
+`DisponibilidadDeAgenteController::isGrantedForAgent()` (`apps/api/src/Disponibilidad/Controller/DisponibilidadDeAgenteController.php:319-331`) interpreta "scope `null`" como "supervisor/admin", pero `OwnershipScope::getAgentId()` (`apps/api/src/Compartido/Security/OwnershipScope.php:42-55`) devuelve `null` **siempre** desde Sprint 16. Resultado: cualquier `ROLE_AGENT` puede, vía API, marcar a otro agente como no disponible, crearle o borrarle turnos. Eso altera la auto-asignación y bloquea asignaciones manuales. Endpoints: `POST/DELETE/GET /api/agents/{id}/availability`, `POST /api/agents/{id}/shifts`, `DELETE /api/agents/{id}/shifts/{shiftId}`. Sin test que lo cubra. (Hoy la UI no expone estas pantallas, ver [07](07-frontend.md#disponibilidad-y-turnos-agentsagentid), así que el abuso requiere llamar a la API directamente.)
 
 ### R4. Tiempo real sin aislamiento entre workspaces
 
@@ -153,7 +153,7 @@ Si "desasignar al resolver" es una regla de negocio: **Regla no confirmada** (el
 ### R7. Auto-asignación sin filtro de workspace
 
 **[PROD]/[DATOS] · Probable** (depende de que haya más de un workspace en uso).
-`AgentAvailabilityService::listAvailableAgents()` (`apps/api/src/Disponibilidad/AgentAvailabilityService.php:111-114`) toma **todos** los agentes activos del sistema. Un ticket del número A puede asignarse a un agente que solo pertenece al número B y que no lo ve en su bandeja. Un comentario en la línea 174 menciona un método `listAvailableAgentsInWorkspace()` "(removed)": existió una variante por workspace y se quitó; el motivo no está documentado. La asignación manual tampoco verifica workspace.
+`DisponibilidadDeAgenteService::listAvailableAgents()` (`apps/api/src/Disponibilidad/DisponibilidadDeAgenteService.php:111-114`) toma **todos** los agentes activos del sistema. Un ticket del número A puede asignarse a un agente que solo pertenece al número B y que no lo ve en su bandeja. Un comentario en la línea 174 menciona un método `listAvailableAgentsInWorkspace()` "(removed)": existió una variante por workspace y se quitó; el motivo no está documentado. La asignación manual tampoco verifica workspace.
 
 ### R8. KPI "Sin asignar" siempre en 0
 
