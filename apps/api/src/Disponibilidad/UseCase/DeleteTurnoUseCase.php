@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Disponibilidad\UseCase;
 
 use App\Disponibilidad\AgentShiftChangedEvent;
-use App\Compartido\Outbox\OutboxEvent;
+use App\Compartido\Outbox\EventoOutbox;
 use App\Compartido\Outbox\OutboxWriter;
 use App\Agente\Repository\AgenteRepository;
 use App\Disponibilidad\Repository\TurnoRepository;
@@ -113,7 +113,7 @@ final class DeleteTurnoUseCase
 
         $data = $this->pendingOutboxEvent;
 
-        $outboxEvent = new OutboxEvent(
+        $outboxEvent = new EventoOutbox(
             aggregateType: 'agent',
             aggregateId: $data['aggregate_id'],
             topic: \sprintf('agent/%d/shifts', $data['aggregate_id']),

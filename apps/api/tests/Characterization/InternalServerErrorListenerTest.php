@@ -40,8 +40,8 @@ final class InternalServerErrorListenerTest extends CharacterizationTestCase
 
     public function testUncaughtExceptionInAnActionWithoutCatchAllReturnsTheGenericEnvelope(): void
     {
-        // TicketEventsController has no try/catch: an outbox row with an
-        // unmapped event_type makes RealtimeEventFactory throw an
+        // EventosDeTicketController has no try/catch: an outbox row with an
+        // unmapped event_type makes EventoEnTiempoRealFactory throw an
         // \InvalidArgumentException. Before phase 3b, Symfony rendered it as a
         // problem+json 500 that leaked the exception message.
         $this->connection()->insert('outbox_events', [

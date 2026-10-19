@@ -71,7 +71,7 @@ Pregunta clave en cada grupo: ¿el test está mal, o revela un problema del cód
 | C | `Sprint09BConcurrencyTest` (3), `Sprint10ConcurrencyTest` (2) | 5 | Fixtures con `INSERT INTO agents (..., email, ...)`; esa columna se eliminó en `Version20260616000001`. | Test roto (esquema viejo). Además borra `agents` y contamina otros tests. |
 | D | `WorkspaceAgentControllerTest::testAvailableAgentsReturned` | 1 | Fixture: `Turno` sin `persist()`. | Test roto. |
 | E | `ReportingV2Test::testHttp*` | 7 | `bootKernel()` en `setUp()` + `createClient()` → `LogicException`; además no envían token. | Test roto. |
-| I | `OwnershipScopeTest::testAgentWithLinkedAgentReturnsId` | 1 | `OwnershipScope::getAgentId()` devuelve siempre `null` por decisión documentada (Sprint 16). | Test obsoleto, pero esa decisión causó [R3](#r3-cualquier-agente-modifica-disponibilidad-y-turnos-de-cualquier-agente). |
+| I | `OwnershipScopeTest::testAgentWithLinkedAgentReturnsId` | 1 | `AlcanceDeResponsabilidad::getAgentId()` devuelve siempre `null` por decisión documentada (Sprint 16). | Test obsoleto, pero esa decisión causó [R3](#r3-cualquier-agente-modifica-disponibilidad-y-turnos-de-cualquier-agente). |
 | J | `Sprint14MigrationTest::testAdminSeedExists`, `::testAdminSeedIsIdempotent` | 2 | La base de test se crea desde el mapping de Doctrine, no con migraciones; el admin se siembra en una migración. | Test roto por entorno. |
 | K | `Sprint14MigrationTest::testUniqueConstraintOnAgentUserId` | 1 | `INSERT INTO agents` sin `created_at` (NOT NULL). | Test roto (fixture). |
 | | **Total** | **45** | **1 bug real + 5 donde el código derivó + 39 tests rotos** | |
@@ -126,7 +126,7 @@ Leyenda: **[SEG]** seguridad · **[DATOS]** pérdida o corrupción de datos · *
 ### R3. Cualquier agente modifica disponibilidad y turnos de cualquier agente
 
 **[SEG] · Confirmado (lectura).**
-`DisponibilidadDeAgenteController::isPermitidoParaAgente()` (`apps/api/src/Disponibilidad/Controller/DisponibilidadDeAgenteController.php:319-331`) interpreta "scope `null`" como "supervisor/admin", pero `OwnershipScope::getAgentId()` (`apps/api/src/Compartido/Security/OwnershipScope.php:42-55`) devuelve `null` **siempre** desde Sprint 16. Resultado: cualquier `ROLE_AGENT` puede, vía API, marcar a otro agente como no disponible, crearle o borrarle turnos. Eso altera la auto-asignación y bloquea asignaciones manuales. Endpoints: `POST/DELETE/GET /api/agents/{id}/availability`, `POST /api/agents/{id}/shifts`, `DELETE /api/agents/{id}/shifts/{shiftId}`. Sin test que lo cubra. (Hoy la UI no expone estas pantallas, ver [07](07-frontend.md#disponibilidad-y-turnos-agentsagentid), así que el abuso requiere llamar a la API directamente.)
+`DisponibilidadDeAgenteController::isPermitidoParaAgente()` (`apps/api/src/Disponibilidad/Controller/DisponibilidadDeAgenteController.php:319-331`) interpreta "scope `null`" como "supervisor/admin", pero `AlcanceDeResponsabilidad::getAgentId()` (`apps/api/src/Compartido/Security/AlcanceDeResponsabilidad.php:42-55`) devuelve `null` **siempre** desde Sprint 16. Resultado: cualquier `ROLE_AGENT` puede, vía API, marcar a otro agente como no disponible, crearle o borrarle turnos. Eso altera la auto-asignación y bloquea asignaciones manuales. Endpoints: `POST/DELETE/GET /api/agents/{id}/availability`, `POST /api/agents/{id}/shifts`, `DELETE /api/agents/{id}/shifts/{shiftId}`. Sin test que lo cubra. (Hoy la UI no expone estas pantallas, ver [07](07-frontend.md#disponibilidad-y-turnos-agentsagentid), así que el abuso requiere llamar a la API directamente.)
 
 ### R4. Tiempo real sin aislamiento entre workspaces
 
@@ -136,7 +136,7 @@ El hub Mercure acepta suscriptores anónimos (`docker-compose.yml`, `anonymous`)
 ### R5. Endpoint de resync de eventos inseguro y, además, inalcanzable
 
 **[SEG]/[PROD] · Confirmado.**
-`GET /api/tickets/{id}/events` (`apps/api/src/Compartido/Controller/TicketEventsController.php`) valida solo la firma del JWT de Mercure (no el vencimiento), no verifica workspace y no filtra por `aggregate_type`. En la práctica el frontend envía el token de Mercure en `Authorization` y el firewall de la API lo rechaza con 401 antes de llegar al controlador. Ni la seguridad ni el resync funcionan.
+`GET /api/tickets/{id}/events` (`apps/api/src/Compartido/Controller/EventosDeTicketController.php`) valida solo la firma del JWT de Mercure (no el vencimiento), no verifica workspace y no filtra por `aggregate_type`. En la práctica el frontend envía el token de Mercure en `Authorization` y el firewall de la API lo rechaza con 401 antes de llegar al controlador. Ni la seguridad ni el resync funcionan.
 
 ### R6. Resolver quita el dueño (contradicción autoinfligida)
 
@@ -183,7 +183,7 @@ Resolver, cerrar, transicionar y el cierre por ventana **no publican eventos**; 
 ### R13. Lecturas por ID sin filtro de workspace
 
 **[SEG] · Confirmado (lectura).**
-`GET /api/tickets/{id}`, `/messages`, `/assignment`, `GET|PUT|DELETE /api/contacts/{id}` y otros no aplican `WorkspaceScope`. Con IDs secuenciales, un agente puede leer datos de otro workspace. `GET /api/provider/media/{mediaId}` descarga cualquier adjunto sin chequeo. Un agente sin workspace activo ve **todos** los workspaces.
+`GET /api/tickets/{id}`, `/messages`, `/assignment`, `GET|PUT|DELETE /api/contacts/{id}` y otros no aplican `AlcanceDeEspacioDeTrabajo`. Con IDs secuenciales, un agente puede leer datos de otro workspace. `GET /api/provider/media/{mediaId}` descarga cualquier adjunto sin chequeo. Un agente sin workspace activo ve **todos** los workspaces.
 
 ### R14. Bugs del frontend con impacto directo
 

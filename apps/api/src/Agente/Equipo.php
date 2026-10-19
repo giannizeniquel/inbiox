@@ -105,7 +105,7 @@ class Equipo
      *
      * Invariant: the agent MUST already belong to the team's workspace.
      * This is a HARD REJECT (design.md D3) — not a warning, not a
-     * StateConflictException. There is no use-case precedent for the
+     * ConflictoDeEstadoException. There is no use-case precedent for the
      * workspace-membership equivalent (that logic is inline in
      * GestionDeEspaciosDeTrabajoController::asignarAgentes), and \InvalidArgumentException
      * already maps to 400 in Controller/Admin/* via the existing catch

@@ -5,9 +5,9 @@ namespace App\Compartido\Realtime;
 /**
  * Backed enum of realtime event types for the RealtimeEventContract v1.
  * These string values are used on the wire (Mercure SSE) and must match
- * the frontend RealtimeEventType enum exactly.
+ * the frontend TipoDeEventoEnTiempoReal enum exactly.
  */
-enum RealtimeEventType: string
+enum TipoDeEventoEnTiempoReal: string
 {
     case TicketCreated         = 'ticket.created';
     case TicketStatusChanged   = 'ticket.status_changed';

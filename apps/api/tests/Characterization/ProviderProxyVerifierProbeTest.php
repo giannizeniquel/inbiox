@@ -6,7 +6,7 @@ namespace App\Tests\Characterization;
 
 use App\Compartido\Graph\GraphApiException;
 use App\Compartido\Graph\GraphClient;
-use App\Compartido\Storage\MediaStorageService;
+use App\Compartido\Storage\AdjuntoStorageService;
 use App\Conversacion\Conversacion;
 use App\Ticket\Ticket;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -24,7 +24,7 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
     private const CONTACT_PHONE = '+5491100000888';
 
     private GraphClient&MockObject $graph;
-    private MediaStorageService&MockObject $storage;
+    private AdjuntoStorageService&MockObject $storage;
     /** @var list<string> */
     private array $tempFiles = [];
 
@@ -34,8 +34,8 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
         $this->connection()->executeStatement("DELETE FROM processed_events WHERE event_id LIKE 'outbound:%'");
         $this->graph = $this->createMock(GraphClient::class);
         static::getContainer()->set(GraphClient::class, $this->graph);
-        $this->storage = $this->createMock(MediaStorageService::class);
-        static::getContainer()->set(MediaStorageService::class, $this->storage);
+        $this->storage = $this->createMock(AdjuntoStorageService::class);
+        static::getContainer()->set(AdjuntoStorageService::class, $this->storage);
     }
 
     protected function tearDown(): void

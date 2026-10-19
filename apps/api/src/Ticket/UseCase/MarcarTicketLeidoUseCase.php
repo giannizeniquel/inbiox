@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Ticket\UseCase;
 
-use App\Compartido\Outbox\OutboxEvent;
+use App\Compartido\Outbox\EventoOutbox;
 use App\Compartido\Outbox\OutboxWriter;
-use App\Compartido\Realtime\RealtimeEventType;
+use App\Compartido\Realtime\TipoDeEventoEnTiempoReal;
 use App\Ticket\Ticket;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -34,13 +34,13 @@ final class MarcarTicketLeidoUseCase
 
         // Emit real-time event so other clients clear their unread badge
         $ticketId = (int) $ticket->getId();
-        $this->outboxWriter->write(new OutboxEvent(
+        $this->outboxWriter->write(new EventoOutbox(
             aggregateType: 'ticket',
             aggregateId: $ticketId,
             topic: 'tickets',
-            eventType: RealtimeEventType::TicketRead->value,
+            eventType: TipoDeEventoEnTiempoReal::TicketRead->value,
             payload: [
-                'eventType' => RealtimeEventType::TicketRead->value,
+                'eventType' => TipoDeEventoEnTiempoReal::TicketRead->value,
                 'ticketId' => $ticketId,
             ],
         ));

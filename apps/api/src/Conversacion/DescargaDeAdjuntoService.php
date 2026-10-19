@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Conversacion;
 
-use App\Compartido\Storage\MediaStorageService;
+use App\Compartido\Storage\AdjuntoStorageService;
 
 use App\Compartido\Graph\GraphClient;
 use App\Compartido\Graph\GraphApiException;
@@ -15,7 +15,7 @@ class DescargaDeAdjuntoService
 {
     public function __construct(
         private readonly GraphClient $graphClient,
-        private readonly MediaStorageService $storageService,
+        private readonly AdjuntoStorageService $storageService,
         private readonly ValidadorDeAdjunto $validadorDeAdjunto,
         private readonly LoggerInterface $logger,
     ) {}

@@ -9,7 +9,7 @@ use App\Contacto\Contacto;
 use App\Conversacion\Conversacion;
 use App\Conversacion\Mensaje;
 use App\Conversacion\DireccionDeMensaje;
-use App\Compartido\Outbox\OutboxEvent;
+use App\Compartido\Outbox\EventoOutbox;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
 use Doctrine\ORM\EntityManagerInterface;
@@ -168,7 +168,7 @@ class Sprint15ContactTimelineTest extends WebTestCase
         );
 
         // Outbox event: ticket.created (2nd newest)
-        $ticketCreatedEvent = new OutboxEvent(
+        $ticketCreatedEvent = new EventoOutbox(
             aggregateType: 'Ticket',
             aggregateId: $ticketId,
             topic: 'tickets',
@@ -187,7 +187,7 @@ class Sprint15ContactTimelineTest extends WebTestCase
         $this->em->flush();
 
         // Outbox event: ticket.status_changed (3rd oldest)
-        $statusChangedEvent = new OutboxEvent(
+        $statusChangedEvent = new EventoOutbox(
             aggregateType: 'Ticket',
             aggregateId: $ticketId,
             topic: 'tickets',
@@ -223,12 +223,12 @@ class Sprint15ContactTimelineTest extends WebTestCase
     }
 
     /**
-     * Override the created_at of an OutboxEvent via reflection since it's set
+     * Override the created_at of an EventoOutbox via reflection since it's set
      * in the constructor to "now".
      */
-    private function overrideOutboxCreatedAt(OutboxEvent $event, string $modify): void
+    private function overrideOutboxCreatedAt(EventoOutbox $event, string $modify): void
     {
-        $prop = new \ReflectionProperty(OutboxEvent::class, 'createdAt');
+        $prop = new \ReflectionProperty(EventoOutbox::class, 'createdAt');
         $prop->setAccessible(true);
         $prop->setValue($event, (new \DateTimeImmutable())->modify($modify));
     }

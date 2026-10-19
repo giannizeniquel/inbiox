@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Characterization;
 
-use App\Compartido\Storage\MediaStorageService;
+use App\Compartido\Storage\AdjuntoStorageService;
 use App\Conversacion\Mensaje;
 use App\Ticket\Ticket;
 
@@ -19,9 +19,9 @@ final class MessageMediaUrlControllerCharacterizationTest extends Characterizati
     protected function setUp(): void
     {
         parent::setUp();
-        $storage = $this->createMock(MediaStorageService::class);
+        $storage = $this->createMock(AdjuntoStorageService::class);
         $storage->method('temporaryUrl')->willReturnCallback(fn (string $key) => 'https://media.test/' . $key . '?signed');
-        static::getContainer()->set(MediaStorageService::class, $storage);
+        static::getContainer()->set(AdjuntoStorageService::class, $storage);
     }
 
     public function testAssignedAgentGetsTheSignedUrl(): void

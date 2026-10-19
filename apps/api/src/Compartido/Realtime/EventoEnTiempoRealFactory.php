@@ -2,25 +2,25 @@
 
 namespace App\Compartido\Realtime;
 
-use App\Compartido\Outbox\OutboxEvent;
+use App\Compartido\Outbox\EventoOutbox;
 
 /**
- * Builds RealtimeEventContract v1 JSON arrays from OutboxEvent entities.
+ * Builds RealtimeEventContract v1 JSON arrays from EventoOutbox entities.
  *
  * Reads the stored snake_case payload and transforms it into the camelCase
  * wire format. The stored payload column remains unchanged — only the
  * output of build() is published to Mercure.
  */
-final readonly class RealtimeEventFactory
+final readonly class EventoEnTiempoRealFactory
 {
-    public function __construct(private EventTypeMapper $mapper) {}
+    public function __construct(private TipoDeEventoMapper $mapper) {}
 
     /**
-     * Build a RealtimeEventContract v1 array from an OutboxEvent.
+     * Build a RealtimeEventContract v1 array from an EventoOutbox.
      *
      * @return array{eventId: string, sequence: int, timestamp: string, eventType: string, ticketId: string, payload: array}
      */
-    public function build(OutboxEvent $event): array
+    public function build(EventoOutbox $event): array
     {
         $stored   = $event->getPayload();
         $phpClass = $event->getEventType();
@@ -37,28 +37,28 @@ final readonly class RealtimeEventFactory
     }
 
     /**
-     * Resolve the PHP FQCN + payload to the correct RealtimeEventType.
+     * Resolve the PHP FQCN + payload to the correct TipoDeEventoEnTiempoReal.
      * TicketUpdatedEvent with assignee_id maps to TicketAssigned.
      */
-    private function resolveEnum(string $phpClass, array $stored): RealtimeEventType
+    private function resolveEnum(string $phpClass, array $stored): TipoDeEventoEnTiempoReal
     {
         if ($this->mapper->isTicketAssigned($phpClass, $stored)) {
-            return RealtimeEventType::TicketAssigned;
+            return TipoDeEventoEnTiempoReal::TicketAssigned;
         }
         // Handle wire-format event types (already enum values, not FQCNs)
         if (str_starts_with($phpClass, 'ticket.') || str_starts_with($phpClass, 'message.') || str_starts_with($phpClass, 'agent.') || str_starts_with($phpClass, 'conversation.')) {
-            return RealtimeEventType::from($phpClass);
+            return TipoDeEventoEnTiempoReal::from($phpClass);
         }
-        return RealtimeEventType::from($this->mapper->toEnum($phpClass));
+        return TipoDeEventoEnTiempoReal::from($this->mapper->toEnum($phpClass));
     }
 
     /**
      * Build the typed payload section per event type.
      */
-    private function buildPayload(RealtimeEventType $type, array $s, int $ticketId): array
+    private function buildPayload(TipoDeEventoEnTiempoReal $type, array $s, int $ticketId): array
     {
         return match ($type) {
-            RealtimeEventType::TicketCreated => [
+            TipoDeEventoEnTiempoReal::TicketCreated => [
                 'ticketId'       => $ticketId,
                 'contactId'      => (int) ($s['contact_id'] ?? 0),
                 'conversationId' => (int) ($s['conversation_id'] ?? 0),
@@ -66,7 +66,7 @@ final readonly class RealtimeEventFactory
                 'priority'       => (int) ($s['priority'] ?? 0),
                 'createdAt'      => $s['created_at'] ?? $s['occurred_at'] ?? '',
             ],
-            RealtimeEventType::MessageAdded => [
+            TipoDeEventoEnTiempoReal::MessageAdded => [
                 'messageId'  => (int) ($s['message_id'] ?? 0),
                 'ticketId'   => $ticketId,
                 'content'    => $s['content'] ?? '',
@@ -77,20 +77,20 @@ final readonly class RealtimeEventFactory
                 'phoneNumberId' => $s['phone_number_id'] ?? null,
                 'media'      => $s['media'] ?? null,
             ],
-            RealtimeEventType::TicketStatusChanged => [
+            TipoDeEventoEnTiempoReal::TicketStatusChanged => [
                 'ticketId'       => $ticketId,
                 'previousStatus' => $s['previous_status'] ?? null,
                 'newStatus'      => $s['status'] ?? '',
                 'changedAt'      => $s['changed_at'] ?? $s['occurred_at'] ?? '',
             ],
-            RealtimeEventType::TicketAssigned => [
+            TipoDeEventoEnTiempoReal::TicketAssigned => [
                 'ticketId'        => $ticketId,
                 'assigneeId'      => (int) ($s['assignee_id'] ?? $s['ownerAgentId'] ?? 0),
                 'assigneeName'    => $s['assignee_name'] ?? null,
                 'assignmentType'  => $s['assignment_type'] ?? 'MANUAL_ASSIGN',
                 'assignedAt'      => $s['assigned_at'] ?? $s['occurred_at'] ?? '',
             ],
-            RealtimeEventType::AGENT_AVAILABILITY_CHANGED => [
+            TipoDeEventoEnTiempoReal::AGENT_AVAILABILITY_CHANGED => [
                 'agent_id'        => (int) ($s['agent_id'] ?? 0),
                 'is_available'    => (bool) ($s['is_available'] ?? false),
                 'override_active' => (bool) ($s['override_active'] ?? false),
@@ -98,7 +98,7 @@ final readonly class RealtimeEventFactory
                 'max_capacity'    => (int) ($s['max_capacity'] ?? 0),
                 'timestamp'       => $s['timestamp'] ?? '',
             ],
-            RealtimeEventType::AGENT_SHIFT_CHANGED => [
+            TipoDeEventoEnTiempoReal::AGENT_SHIFT_CHANGED => [
                 'agent_id'    => (int) ($s['agent_id'] ?? 0),
                 'shift_id'    => (int) ($s['shift_id'] ?? 0),
                 'action'      => $s['action'] ?? '',
@@ -107,14 +107,14 @@ final readonly class RealtimeEventFactory
                 'end_time'    => $s['end_time'] ?? '',
                 'timestamp'   => $s['timestamp'] ?? '',
             ],
-            RealtimeEventType::MessageUpdated => [
+            TipoDeEventoEnTiempoReal::MessageUpdated => [
                 'messageId'    => (int) ($s['message_id'] ?? 0),
                 'ticketId'     => $ticketId,
                 'status'       => $s['delivery_status'] ?? null,
                 'failedReason' => $s['failed_reason'] ?? null,
                 'updatedAt'    => $s['occurred_at'] ?? '',
             ],
-            RealtimeEventType::TicketRead => [
+            TipoDeEventoEnTiempoReal::TicketRead => [
                 'ticketId' => $ticketId,
             ],
         };

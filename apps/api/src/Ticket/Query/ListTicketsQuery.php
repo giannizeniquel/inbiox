@@ -28,7 +28,7 @@ class ListTicketsQuery
      *                                Used by BandejaController to restrict AGENT to own tickets.
      *                                null = no scope restriction (SUPERVISOR/ADMIN).
      * @param string|null $phoneNumberId Workspace scope: filters by ticket phone_number_id.
-     *                                   Used by BandejaController via WorkspaceScope.
+     *                                   Used by BandejaController via AlcanceDeEspacioDeTrabajo.
      *                                   null = no workspace filter (SUPERVISOR/ADMIN).
      * @param string|null $etiqueta Comma-separated tag names (AND semantics, max 5).
      *                         Each matched ticket must carry ALL specified tags.

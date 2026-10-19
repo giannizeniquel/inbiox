@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Realtime;
 
-use App\Compartido\Realtime\EventTypeMapper;
-use App\Compartido\Realtime\RealtimeEventFactory;
+use App\Compartido\Realtime\TipoDeEventoMapper;
+use App\Compartido\Realtime\EventoEnTiempoRealFactory;
 use App\Disponibilidad\AgentAvailabilityChangedEvent;
 use App\Disponibilidad\AgentShiftChangedEvent;
 use App\Ticket\TicketUpdatedEvent;
-use App\Compartido\Outbox\OutboxEvent;
+use App\Compartido\Outbox\EventoOutbox;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Unit tests for RealtimeEventFactory — frozen event contract verification.
+ * Unit tests for EventoEnTiempoRealFactory — frozen event contract verification.
  *
  * Each test verifies that the payload shape returned by ::build() matches
  * the RealtimeEventContract v1 specification for that event type.
@@ -23,14 +23,14 @@ use PHPUnit\Framework\TestCase;
  */
 class RealtimeEventFactoryTest extends TestCase
 {
-    private RealtimeEventFactory $factory;
+    private EventoEnTiempoRealFactory $factory;
 
-    private EventTypeMapper $mapper;
+    private TipoDeEventoMapper $mapper;
 
     protected function setUp(): void
     {
-        $this->mapper = new EventTypeMapper();
-        $this->factory = new RealtimeEventFactory($this->mapper);
+        $this->mapper = new TipoDeEventoMapper();
+        $this->factory = new EventoEnTiempoRealFactory($this->mapper);
     }
 
     // ────────────────────────────────────────────────────────────
@@ -53,7 +53,7 @@ class RealtimeEventFactoryTest extends TestCase
             'occurred_at'     => '2026-06-14T15:30:00Z',
         ];
 
-        $event = new OutboxEvent(
+        $event = new EventoOutbox(
             aggregateType: 'ticket',
             aggregateId: 100,
             topic: 'ticket.100.assigned',
@@ -105,7 +105,7 @@ class RealtimeEventFactoryTest extends TestCase
             'occurred_at'     => '2026-06-14T16:00:00Z',
         ];
 
-        $event = new OutboxEvent(
+        $event = new EventoOutbox(
             aggregateType: 'ticket',
             aggregateId: 101,
             topic: 'ticket.101.assigned',
@@ -136,7 +136,7 @@ class RealtimeEventFactoryTest extends TestCase
             'occurred_at'     => '2026-06-14T17:00:00Z',
         ];
 
-        $event = new OutboxEvent(
+        $event = new EventoOutbox(
             aggregateType: 'ticket',
             aggregateId: 102,
             topic: 'ticket.102.assigned',
@@ -174,7 +174,7 @@ class RealtimeEventFactoryTest extends TestCase
             'timestamp'       => '2026-06-15T10:00:00Z',
         ];
 
-        $event = new OutboxEvent(
+        $event = new EventoOutbox(
             aggregateType: 'agent',
             aggregateId: 5,
             topic: 'agent.5.availability_changed',
@@ -226,7 +226,7 @@ class RealtimeEventFactoryTest extends TestCase
             'timestamp'       => '2026-06-15T12:00:00Z',
         ];
 
-        $event = new OutboxEvent(
+        $event = new EventoOutbox(
             aggregateType: 'agent',
             aggregateId: 7,
             topic: 'agent.7.availability_changed',
@@ -266,7 +266,7 @@ class RealtimeEventFactoryTest extends TestCase
             'timestamp'   => '2026-06-15T08:00:00Z',
         ];
 
-        $event = new OutboxEvent(
+        $event = new EventoOutbox(
             aggregateType: 'agent',
             aggregateId: 5,
             topic: 'agent.5.shift_changed',
@@ -322,7 +322,7 @@ class RealtimeEventFactoryTest extends TestCase
             'timestamp'   => '2026-06-19T22:00:00Z',
         ];
 
-        $event = new OutboxEvent(
+        $event = new EventoOutbox(
             aggregateType: 'agent',
             aggregateId: 3,
             topic: 'agent.3.shift_changed',

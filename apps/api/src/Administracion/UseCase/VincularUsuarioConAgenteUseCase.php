@@ -8,7 +8,7 @@ use App\Administracion\Repository\UsuarioRepository;
 use App\Administracion\Usuario;
 use App\Agente\Agente;
 use App\Compartido\NotFoundException;
-use App\Compartido\StateConflictException;
+use App\Compartido\ConflictoDeEstadoException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -25,7 +25,7 @@ final class VincularUsuarioConAgenteUseCase
      * @throws \InvalidArgumentException when user_id is invalid, the user is
      *                                   deactivated, or either side is already linked
      * @throws NotFoundException         when the user does not exist
-     * @throws StateConflictException    when the database rejects the link as a duplicate
+     * @throws ConflictoDeEstadoException    when the database rejects the link as a duplicate
      */
     public function execute(Agente $agente, array $data): Usuario
     {
@@ -62,7 +62,7 @@ final class VincularUsuarioConAgenteUseCase
             $this->entityManager->flush();
         } catch (UniqueConstraintViolationException $e) {
             // Defensive: the checks above should prevent it.
-            throw new StateConflictException('Link conflict: agent or user already linked', 0, $e);
+            throw new ConflictoDeEstadoException('Link conflict: agent or user already linked', 0, $e);
         }
 
         return $usuario;

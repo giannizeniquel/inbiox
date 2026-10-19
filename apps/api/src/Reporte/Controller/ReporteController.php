@@ -6,8 +6,8 @@ namespace App\Reporte\Controller;
 
 use App\Reporte\Query\ExportarTicketsCsvQuery;
 use App\Ticket\Query\FiltrosDeTicketBuilder;
-use App\Compartido\Security\OwnershipScope;
-use App\Compartido\Security\WorkspaceScope;
+use App\Compartido\Security\AlcanceDeResponsabilidad;
+use App\Compartido\Security\AlcanceDeEspacioDeTrabajo;
 use App\Reporte\Query\ListarAgentesDisponiblesQuery;
 use App\Reporte\Query\ReporteService;
 use League\Csv\Bom;
@@ -28,7 +28,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * every endpoint here. Reports/metrics are NOT restricted by agent — this
  * is an intentional product decision (see docs/04_sprints/sprint_16
  * (Production Readiness).md), not a bug. `getAgenteIdDeAlcance()` below always
- * returns null (see OwnershipScope), so no per-agent filtering is applied
+ * returns null (see AlcanceDeResponsabilidad), so no per-agent filtering is applied
  * to any query.
  */
 #[IsGranted('ROLE_AGENT')]
@@ -39,8 +39,8 @@ class ReporteController
     public function __construct(
         private ReporteService $reporteService,
         private ListarAgentesDisponiblesQuery $listarAgentesDisponibles,
-        private OwnershipScope $ownershipScope,
-        private WorkspaceScope $workspaceScope,
+        private AlcanceDeResponsabilidad $ownershipScope,
+        private AlcanceDeEspacioDeTrabajo $workspaceScope,
         private ExportarTicketsCsvQuery $exportarTicketsCsvQuery,
         private FiltrosDeTicketBuilder $filtrosDeTicketBuilder,
     ) {}
@@ -66,7 +66,7 @@ class ReporteController
      * Get the scoped agent ID for ownership filtering.
      *
      * Always null today for every role (including AGENT) — see
-     * OwnershipScope for why this is intentional and not a bug.
+     * AlcanceDeResponsabilidad for why this is intentional and not a bug.
      */
     private function getAgenteIdDeAlcance(): ?int
     {

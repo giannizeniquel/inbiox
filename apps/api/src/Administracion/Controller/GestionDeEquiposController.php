@@ -11,7 +11,7 @@ use App\Administracion\UseCase\UpdateEquipoUseCase;
 use App\Agente\Agente;
 use App\Agente\Repository\EquipoRepository;
 use App\Agente\Equipo;
-use App\Compartido\StateConflictException;
+use App\Compartido\ConflictoDeEstadoException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -80,7 +80,7 @@ final class GestionDeEquiposController
 
         try {
             $equipo = $this->createEquipoUseCase->execute(\is_array($data) ? $data : []);
-        } catch (StateConflictException $e) {
+        } catch (ConflictoDeEstadoException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 409);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
@@ -118,7 +118,7 @@ final class GestionDeEquiposController
 
         try {
             $this->updateEquipoUseCase->execute($equipo, \is_array($data) ? $data : []);
-        } catch (StateConflictException $e) {
+        } catch (ConflictoDeEstadoException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 409);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);

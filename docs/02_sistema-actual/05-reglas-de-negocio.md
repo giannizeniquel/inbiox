@@ -20,7 +20,7 @@ Estas son las preguntas que solo el desarrollador (o el cliente) puede responder
 |---|---|---|---|
 | 1 | ¿Resolver/cerrar debe quitar el dueño del ticket? | R-T9 | Rompe R-A7 (el dueño no puede responder un resuelto) y los reportes por agente. |
 | 2 | ¿La auto-asignación debe limitarse al workspace (y/o equipo) del ticket? | R-A4 | Hoy puede asignar a alguien que no ve el ticket. |
-| 3 | ¿Bandeja compartida o cada agente ve solo lo suyo? | R-V1 | La spec `authorization` y el análisis de brecha dicen una cosa; el código y `OwnershipScope` dicen "compartida (decisión Sprint 16)". |
+| 3 | ¿Bandeja compartida o cada agente ve solo lo suyo? | R-V1 | La spec `authorization` y el análisis de brecha dicen una cosa; el código y `AlcanceDeResponsabilidad` dicen "compartida (decisión Sprint 16)". |
 | 4 | ¿Un agente puede gestionar disponibilidad/turnos de otros? | R-D4 | Hoy sí, por accidente ([R3](00-estado-y-pendientes.md#r3-cualquier-agente-modifica-disponibilidad-y-turnos-de-cualquier-agente)). |
 | 5 | ¿Qué significa "disponible" para cada caso (asignar, auto-asignar, auto-responder)? | R-D1, R-D2 | Un agente en turno pero lleno recibe auto-respuesta de "ausente". |
 | 6 | ¿Cuándo el cliente escribe en un ticket resuelto, debe ir a `waiting` o a `active`? | R-T8 | Las otras dos reaperturas van a `active`. |
@@ -84,9 +84,9 @@ Estas son las preguntas que solo el desarrollador (o el cliente) puede responder
 
 | ID | Regla | Dónde | Clasif. | Estado |
 |---|---|---|---|---|
-| R-V1 | Bandeja compartida: todos los usuarios ven todos los tickets del workspace activo (no solo los propios). | `Compartido/Security/OwnershipScope.php:13-55`; `TicketVoter.php:19-23` | Negocio | **Contradicción documental.** `OwnershipScope` dice "confirmed product decision, sprint 16"; la spec `authorization` dice que el agente solo ve sus tickets; el análisis de brecha (§4.3) dice que la cola "sin asignar" estaba oculta a propósito. |
-| R-V2 | Sin workspace activo, el usuario ve datos de todos los workspaces. | `Compartido/Security/WorkspaceScope.php:43-64` | Técnica | Regla no confirmada (posible caso no previsto). |
-| R-V3 | Los reportes no se restringen por agente. | `OwnershipScope.php`; docblock de `ReporteController` | Negocio | **Confirmada** como decisión documentada en el código (Sprint 16). |
+| R-V1 | Bandeja compartida: todos los usuarios ven todos los tickets del workspace activo (no solo los propios). | `Compartido/Security/AlcanceDeResponsabilidad.php:13-55`; `TicketVoter.php:19-23` | Negocio | **Contradicción documental.** `AlcanceDeResponsabilidad` dice "confirmed product decision, sprint 16"; la spec `authorization` dice que el agente solo ve sus tickets; el análisis de brecha (§4.3) dice que la cola "sin asignar" estaba oculta a propósito. |
+| R-V2 | Sin workspace activo, el usuario ve datos de todos los workspaces. | `Compartido/Security/AlcanceDeEspacioDeTrabajo.php:43-64` | Técnica | Regla no confirmada (posible caso no previsto). |
+| R-V3 | Los reportes no se restringen por agente. | `AlcanceDeResponsabilidad.php`; docblock de `ReporteController` | Negocio | **Confirmada** como decisión documentada en el código (Sprint 16). |
 | R-V4 | Solo el agente asignado puede obtener la URL de un adjunto; cualquier agente puede leer el texto. | `src/Conversacion/Security/MensajeVoter.php` | Técnica | Regla no confirmada (inconsistente con R-V1). |
 
 ## Disponibilidad y turnos

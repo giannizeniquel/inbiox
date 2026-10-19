@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Contacto\Controller;
 
-use App\Compartido\PaginationMetaDTO;
+use App\Compartido\MetadatosDePaginacionDTO;
 use App\Contacto\Query\GetDetalleDeContactoQuery;
 use App\Contacto\Query\ListContactosQuery;
-use App\Compartido\Security\WorkspaceScope;
+use App\Compartido\Security\AlcanceDeEspacioDeTrabajo;
 use App\Contacto\UseCase\CreateContactoUseCase;
 use App\Contacto\UseCase\DeleteContactoUseCase;
 use App\Contacto\UseCase\ImportarContactosDesdeCsvUseCase;
@@ -29,7 +29,7 @@ class ContactoController
         private UpdateContactoUseCase $updateContactoUseCase,
         private DeleteContactoUseCase $deleteContactoUseCase,
         private ImportarContactosDesdeCsvUseCase $importarContactosDesdeCsvUseCase,
-        private WorkspaceScope $workspaceScope,
+        private AlcanceDeEspacioDeTrabajo $workspaceScope,
     ) {}
 
     #[Route('/api/contacts', name: 'app_contacts_list', methods: ['GET'])]
@@ -59,7 +59,7 @@ class ContactoController
 
         $items = array_map(fn($dto) => $dto->toArray(), $result['items']);
 
-        $meta = new PaginationMetaDTO(
+        $meta = new MetadatosDePaginacionDTO(
             page: $result['page'],
             limit: $result['limit'],
             total: $result['total'],

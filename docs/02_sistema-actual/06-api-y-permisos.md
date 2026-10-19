@@ -61,7 +61,7 @@ Leyenda "Rol": **Público**, **Auth** (cualquier usuario autenticado), **Agente*
 | POST | `/api/tickets/{id}/transition` | `FlujoDeTicketController::transicionar` (`:39-85`) | Agente; voter `CLOSE` solo hacia `resolved`/`closed` | `CambiarEstadoDeTicketUseCase::execute`. Sin UI. |
 | POST | `/api/tickets/{id}/resolve` | `FlujoDeTicketController::resolver` (`:88`) | Agente + voter `CLOSE` | `ResolverTicketUseCase`. Botón "RESOLVER". |
 | POST | `/api/tickets/{id}/close` | `FlujoDeTicketController::cerrar` (`:116`) | Agente + voter `CLOSE` → en la práctica Supervisor | Sin UI. |
-| GET | `/api/tickets/{id}/events` | `TicketEventsController::listSince` (`:34-81`) | Agente **y** JWT de Mercure en la misma cabecera → **inalcanzable** | Resync. Ver [R5](00-estado-y-pendientes.md#r5-endpoint-de-resync-de-eventos-inseguro-y-además-inalcanzable). |
+| GET | `/api/tickets/{id}/events` | `EventosDeTicketController::listSince` (`:34-81`) | Agente **y** JWT de Mercure en la misma cabecera → **inalcanzable** | Resync. Ver [R5](00-estado-y-pendientes.md#r5-endpoint-de-resync-de-eventos-inseguro-y-además-inalcanzable). |
 
 ### C. Mensajería saliente (proxy a WhatsApp)
 
@@ -69,7 +69,7 @@ Leyenda "Rol": **Público**, **Auth** (cualquier usuario autenticado), **Agente*
 |---|---|---|---|---|
 | POST | `/api/provider/send` | `ProxyDeProveedorController::enviar` (`:44-135`) | Agente | `EnviarMensajeSalienteUseCase` (`ProcesarMensajeSalienteUseCase` + `GraphClient`). Crea un agente si el usuario no tiene. |
 | POST | `/api/provider/template/send` | `::enviarPlantilla` (`:159-225`) | Agente | `EnviarPlantillaUseCase` (`GraphClient::sendTemplate`); persiste el mensaje directo. Sin UI. |
-| POST | `/api/provider/media/upload` | `::subirAdjunto` (`:228-277`) | Agente | `SubirAdjuntoUseCase`: `ValidadorDeAdjunto` → `GraphClient::uploadMedia` (siempre con el número por defecto) → `MediaStorageService`. |
+| POST | `/api/provider/media/upload` | `::subirAdjunto` (`:228-277`) | Agente | `SubirAdjuntoUseCase`: `ValidadorDeAdjunto` → `GraphClient::uploadMedia` (siempre con el número por defecto) → `AdjuntoStorageService`. |
 | GET | `/api/provider/media/{mediaId}` | `::descargarAdjunto` (`:280-296`) | Agente | **Sin chequeo de pertenencia** (esquiva `MensajeVoter`). |
 | GET | `/api/messages/{id}/media` | `UrlDeAdjuntoController::__invoke` | Agente + `MensajeVoter::ACCESS` (solo el asignado o supervisor+) | URL prefirmada de S3. |
 

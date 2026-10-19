@@ -10,16 +10,16 @@ use App\Asignacion\ResponsabilidadDeTicketService;
 use App\Asignacion\TipoDeAsignacion;
 use App\Conversacion\Conversacion;
 use App\Conversacion\EstadoDeConversacion;
-use App\Compartido\EventCollector;
+use App\Compartido\RecolectorDeEventos;
 use App\Ticket\InboxUpdatedEvent;
 use App\Ticket\TicketUpdatedEvent;
 use App\Conversacion\MessageCreatedEvent;
 use App\Conversacion\Mensaje;
 use App\Conversacion\DireccionDeMensaje;
 use App\Conversacion\TipoDeRemitente;
-use App\Compartido\Outbox\OutboxEvent;
+use App\Compartido\Outbox\EventoOutbox;
 use App\Compartido\Outbox\OutboxWriter;
-use App\Compartido\ProcessedEvent;
+use App\Compartido\EventoProcesado;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
 use App\Automatizacion\EjecutorDeReglas;
@@ -28,11 +28,11 @@ use App\Conversacion\PoliticaDeVentana;
 use App\Ticket\TicketResponsabilidadGuard;
 use App\Compartido\ConcurrencyException;
 use App\Conversacion\VentanaVencidaException;
-use App\Compartido\StateConflictException;
+use App\Compartido\ConflictoDeEstadoException;
 use App\Agente\Repository\AgenteRepository;
 use App\Conversacion\Repository\ConversacionRepository;
 use App\Conversacion\Repository\MensajeRepository;
-use App\Compartido\Repository\ProcessedEventRepository;
+use App\Compartido\Repository\EventoProcesadoRepository;
 use App\Ticket\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\OptimisticLockException;
@@ -52,11 +52,11 @@ class ProcesarMensajeSalienteUseCase
         private MensajeRepository $mensajeRepo,
         private TicketRepository $ticketRepo,
         private CambiarEstadoDeTicketUseCase $cambiarEstadoDeTicketUseCase,
-        private ProcessedEventRepository $processedEventRepo,
+        private EventoProcesadoRepository $processedEventRepo,
         private EjecutorDeReglas $ejecutorDeReglas,
         private ResponsabilidadDeTicketService $responsabilidadDeTicketService,
         private AgenteRepository $agenteRepo,
-        private EventCollector $eventCollector,
+        private RecolectorDeEventos $eventCollector,
         private readonly OutboxWriter $outboxWriter,
         private PoliticaDeVentana $politicaDeVentana,
     ) {}
@@ -141,7 +141,7 @@ class ProcesarMensajeSalienteUseCase
                 // Clear entity manager to avoid stale state
                 $this->em->clear();
             } catch (\Throwable $e) {
-                // Any other abort (e.g. StateConflictException,
+                // Any other abort (e.g. ConflictoDeEstadoException,
                 // VentanaVencidaException) must also discard
                 // whatever this attempt collected before propagating —
                 // there is no retry for these, but the collector must not
@@ -226,7 +226,7 @@ class ProcesarMensajeSalienteUseCase
                 'first_response_set' => $debeRegistrarPrimeraRespuesta,
                 'transition' => $transicion ?? 'none',
             ];
-            $processedEvent = new ProcessedEvent($eventKey);
+            $processedEvent = new EventoProcesado($eventKey);
             $processedEvent->setResultData($resultData);
             $this->em->persist($processedEvent);
 
@@ -273,7 +273,7 @@ class ProcesarMensajeSalienteUseCase
     {
         $estado = $ticket->getEstado();
         if (TicketResponsabilidadGuard::bloqueaReasignacion($estado, $remitenteEsPrivilegiado, $agenteId, $ticket->getAgenteAsignadoId())) {
-            throw new StateConflictException(sprintf(
+            throw new ConflictoDeEstadoException(sprintf(
                 'Cannot send to ticket in "%s" state: sender is not the assigned owner',
                 $estado
             ));
@@ -462,7 +462,7 @@ class ProcesarMensajeSalienteUseCase
                 }
             }
 
-            $outboxEvent = new OutboxEvent(
+            $outboxEvent = new EventoOutbox(
                 aggregateType: 'ticket',
                 aggregateId: (int) $event->ticketId,
                 topic: 'tickets',

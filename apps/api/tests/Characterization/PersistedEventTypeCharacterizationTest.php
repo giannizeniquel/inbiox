@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Tests\Characterization;
 
 use App\Compartido\DomainEvent;
-use App\Compartido\Outbox\OutboxEvent;
-use App\Compartido\Realtime\EventTypeMapper;
-use App\Compartido\Realtime\RealtimeEventFactory;
+use App\Compartido\Outbox\EventoOutbox;
+use App\Compartido\Realtime\TipoDeEventoMapper;
+use App\Compartido\Realtime\EventoEnTiempoRealFactory;
 use App\Conversacion\MessageCreatedEvent;
 use App\Conversacion\MessageUpdatedEvent;
 use App\Disponibilidad\AgentAvailabilityChangedEvent;
@@ -88,7 +88,7 @@ final class PersistedEventTypeCharacterizationTest extends TestCase
     #[DataProvider('storedRows')]
     public function testStoredRowBuildsTheSameMercureMessage(string $storedEventType, array $stored, array $expected): void
     {
-        $row = new OutboxEvent(
+        $row = new EventoOutbox(
             aggregateType: 'ticket',
             aggregateId: 100,
             topic: 'tickets',
@@ -97,7 +97,7 @@ final class PersistedEventTypeCharacterizationTest extends TestCase
             sequence: 1,
         );
 
-        $message = (new RealtimeEventFactory(new EventTypeMapper()))->build($row);
+        $message = (new EventoEnTiempoRealFactory(new TipoDeEventoMapper()))->build($row);
 
         self::assertSame([
             'eventId' => $stored['event_id'],

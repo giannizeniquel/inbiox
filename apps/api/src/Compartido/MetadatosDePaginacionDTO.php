@@ -2,7 +2,7 @@
 
 namespace App\Compartido;
 
-class PaginationMetaDTO
+class MetadatosDePaginacionDTO
 {
     public function __construct(
         public int $page,

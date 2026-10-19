@@ -19,7 +19,7 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
  * replied to by a non-owning, non-privileged agent.
  *
  * spec.md "Resolved/Closed Ticket Ownership Guard" — non-owning agent
- * scenario. design.md D4: `StateConflictException` -> HTTP 409
+ * scenario. design.md D4: `ConflictoDeEstadoException` -> HTTP 409
  * `{"type": "TICKET_NOT_OWNED", ...}`. Mirrors the existing
  * `ProviderProxyControllerConversationWindowTest` pattern.
  */
@@ -141,7 +141,7 @@ class ProviderProxyControllerAutoClaimTest extends WebTestCase
         self::assertArrayHasKey('message', $data);
 
         // No message must have been persisted — the whole use-case
-        // transaction rolled back on the StateConflictException.
+        // transaction rolled back on the ConflictoDeEstadoException.
         $conn = $this->em->getConnection();
         $messageCount = (int) $conn->fetchOne(
             'SELECT COUNT(*) FROM messages m INNER JOIN tickets t ON t.conversation_id = m.conversation_id WHERE t.id = ?',

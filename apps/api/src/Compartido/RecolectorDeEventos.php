@@ -5,7 +5,7 @@ namespace App\Compartido;
 use Symfony\Contracts\Service\Attribute\AsService;
 
 #[AsService]
-class EventCollector
+class RecolectorDeEventos
 {
     /**
      * @var DomainEvent[]

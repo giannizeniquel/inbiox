@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Storage;
 
-use App\Compartido\Storage\MediaStorageService;
+use App\Compartido\Storage\AdjuntoStorageService;
 use Aws\S3\S3Client;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
 /**
- * Integration test for MediaStorageService against a local MinIO instance.
+ * Integration test for AdjuntoStorageService against a local MinIO instance.
  *
  * Requires MinIO running: docker-compose up -d minio
  *
@@ -19,7 +19,7 @@ use Psr\Log\NullLogger;
  */
 class MediaStorageServiceTest extends TestCase
 {
-    private ?MediaStorageService $service = null;
+    private ?AdjuntoStorageService $service = null;
     private ?S3Client $s3Client = null;
 
     protected function setUp(): void
@@ -48,7 +48,7 @@ class MediaStorageServiceTest extends TestCase
             // Bucket may already exist
         }
 
-        $this->service = new MediaStorageService(
+        $this->service = new AdjuntoStorageService(
             $this->s3Client,
             $bucket,
             new NullLogger(),

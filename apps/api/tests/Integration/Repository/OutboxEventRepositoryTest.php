@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Repository;
 
-use App\Compartido\Outbox\OutboxEvent;
-use App\Compartido\Repository\OutboxEventRepository;
+use App\Compartido\Outbox\EventoOutbox;
+use App\Compartido\Repository\EventoOutboxRepository;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -21,14 +21,14 @@ class OutboxEventRepositoryTest extends KernelTestCase
 
     private EntityManagerInterface $em;
     private Connection $conn;
-    private OutboxEventRepository $repo;
+    private EventoOutboxRepository $repo;
 
     protected function setUp(): void
     {
         self::bootKernel();
         $this->em = static::getContainer()->get(EntityManagerInterface::class);
         $this->conn = $this->em->getConnection();
-        $this->repo = static::getContainer()->get(OutboxEventRepository::class);
+        $this->repo = static::getContainer()->get(EventoOutboxRepository::class);
         $this->deleteMyRows();
     }
 
@@ -45,7 +45,7 @@ class OutboxEventRepositoryTest extends KernelTestCase
 
     private function createEvent(string $createdAt, string $status = 'pending', ?string $publishedAt = null, int $retryCount = 0): string
     {
-        $event = new OutboxEvent('ticket', self::AGGREGATE_ID, 'tickets', 'ticket.updated', ['k' => 'v']);
+        $event = new EventoOutbox('ticket', self::AGGREGATE_ID, 'tickets', 'ticket.updated', ['k' => 'v']);
         $this->em->persist($event);
         $this->em->flush();
 

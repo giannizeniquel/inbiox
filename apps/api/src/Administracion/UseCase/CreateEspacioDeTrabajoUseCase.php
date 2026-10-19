@@ -6,7 +6,7 @@ namespace App\Administracion\UseCase;
 
 use App\Administracion\Repository\EspacioDeTrabajoRepository;
 use App\Administracion\EspacioDeTrabajo;
-use App\Compartido\StateConflictException;
+use App\Compartido\ConflictoDeEstadoException;
 use Doctrine\ORM\EntityManagerInterface;
 
 final class CreateEspacioDeTrabajoUseCase
@@ -20,7 +20,7 @@ final class CreateEspacioDeTrabajoUseCase
      * @param array<mixed> $data decoded request body
      *
      * @throws \InvalidArgumentException when a field is missing or invalid
-     * @throws StateConflictException    when the phone number id is taken
+     * @throws ConflictoDeEstadoException    when the phone number id is taken
      */
     public function execute(array $data): EspacioDeTrabajo
     {
@@ -36,7 +36,7 @@ final class CreateEspacioDeTrabajoUseCase
         }
 
         if (null !== $this->espacioDeTrabajoRepository->findOneBy(['phoneNumberId' => $phoneNumberId])) {
-            throw new StateConflictException('A workspace with this phone number ID already exists');
+            throw new ConflictoDeEstadoException('A workspace with this phone number ID already exists');
         }
 
         $espacioDeTrabajo = new EspacioDeTrabajo($phoneNumberId, $nombreVisible);

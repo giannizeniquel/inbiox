@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit;
 
-use App\Compartido\Security\OwnershipScope;
+use App\Compartido\Security\AlcanceDeResponsabilidad;
 use App\Administracion\Usuario;
 use PHPUnit\Framework\TestCase;
 use Symfony\Bundle\SecurityBundle\Security;
 
 /**
- * Unit tests for OwnershipScope.
+ * Unit tests for AlcanceDeResponsabilidad.
  *
  * Covers:
  * - ROLE_SUPERVISOR → null (no scope)
@@ -32,7 +32,7 @@ class OwnershipScopeTest extends TestCase
             return 'ROLE_SUPERVISOR' === $role || 'ROLE_AGENT' === $role;
         });
 
-        $scope = new OwnershipScope($security);
+        $scope = new AlcanceDeResponsabilidad($security);
         self::assertNull($scope->getAgentId());
     }
 
@@ -47,7 +47,7 @@ class OwnershipScopeTest extends TestCase
             return \in_array($role, ['ROLE_ADMIN', 'ROLE_SUPERVISOR', 'ROLE_AGENT'], true);
         });
 
-        $scope = new OwnershipScope($security);
+        $scope = new AlcanceDeResponsabilidad($security);
         self::assertNull($scope->getAgentId());
     }
 
@@ -63,7 +63,7 @@ class OwnershipScopeTest extends TestCase
             return \in_array($role, ['ROLE_AGENT'], true);
         });
 
-        $scope = new OwnershipScope($security);
+        $scope = new AlcanceDeResponsabilidad($security);
         self::assertNull($scope->getAgentId());
     }
 
@@ -72,7 +72,7 @@ class OwnershipScopeTest extends TestCase
         $security = $this->createMock(Security::class);
         $security->method('getUser')->willReturn(null);
 
-        $scope = new OwnershipScope($security);
+        $scope = new AlcanceDeResponsabilidad($security);
         self::assertNull($scope->getAgentId());
     }
 }

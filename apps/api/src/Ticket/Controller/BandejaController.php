@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Ticket\Controller;
 
-use App\Compartido\PaginationMetaDTO;
+use App\Compartido\MetadatosDePaginacionDTO;
 use App\Ticket\Query\GetDetalleDeTicketQuery;
 use App\Conversacion\Query\GetMensajesDeTicketQuery;
 use App\Ticket\Query\ListTicketsQuery;
-use App\Compartido\Security\OwnershipScope;
-use App\Compartido\Security\WorkspaceScope;
+use App\Compartido\Security\AlcanceDeResponsabilidad;
+use App\Compartido\Security\AlcanceDeEspacioDeTrabajo;
 use App\Ticket\Repository\TicketRepository;
 use App\Ticket\UseCase\MarcarTicketLeidoUseCase;
 use App\Administracion\Usuario;
@@ -28,8 +28,8 @@ class BandejaController
         private ListTicketsQuery $listTicketsQuery,
         private GetDetalleDeTicketQuery $getDetalleDeTicketQuery,
         private GetMensajesDeTicketQuery $getTicketMessagesQuery,
-        private OwnershipScope $ownershipScope,
-        private WorkspaceScope $workspaceScope,
+        private AlcanceDeResponsabilidad $ownershipScope,
+        private AlcanceDeEspacioDeTrabajo $workspaceScope,
         private Security $security,
         private TicketRepository $ticketRepository,
         private MarcarTicketLeidoUseCase $marcarTicketLeidoUseCase,
@@ -72,7 +72,7 @@ class BandejaController
 
             $items = array_map(fn($dto) => $dto->toArray(), $result['items']);
 
-            $meta = new PaginationMetaDTO(
+            $meta = new MetadatosDePaginacionDTO(
                 page: $result['page'],
                 limit: $result['limit'],
                 total: $result['total'],

@@ -79,7 +79,7 @@ Todo en `apps/api/src/`, organizado **por módulo de negocio** desde la fase 2 d
 | `Automatizacion/` | Reglas y respuesta automática. | `EjecutorDeReglas.php`, `ReglaDeReaperturaAutomatica.php`, `ReglaDeEtiquetadoPorPalabraClave.php`, `RespuestaAutomaticaService.php`, `DependencyInjection/ReglaPass` (registra **a mano** las reglas) |
 | `Administracion/` | Espacios de trabajo, usuarios y el ABM de administración (`/api/admin/*`). | `Usuario.php`, `EspacioDeTrabajo.php`, `Controller/GestionDeUsuariosController`, `Controller/GestionDeAgentesController`, `UseCase/` (un caso de uso por cada escritura de administración) |
 | `Autenticacion/` | Login, refresh token, chequeo de usuarios inactivos. | `Controller/AutenticacionController`, `Security/VerificadorDeUsuario`, `RefreshToken.php` |
-| `Compartido/` | Outbox, tiempo real, cliente de Graph, storage, scopes de seguridad, excepciones comunes. | `Outbox/OutboxPublisherService`, `Realtime/RealtimeEventFactory`, `Graph/GraphClient`, `Storage/MediaStorageService`, `Security/OwnershipScope` |
+| `Compartido/` | Outbox, tiempo real, cliente de Graph, storage, scopes de seguridad, excepciones comunes. | `Outbox/OutboxPublisherService`, `Realtime/EventoEnTiempoRealFactory`, `Graph/GraphClient`, `Storage/AdjuntoStorageService`, `Security/AlcanceDeResponsabilidad` |
 
 Dentro de cada módulo, las carpetas de capa son `Controller/`, `UseCase/`, `Query/`, `Repository/` y, cuando hacen falta, `Command/`, `EventListener/` y `Security/` (voters). Las entidades Doctrine y las reglas puras van en la raíz del módulo; Doctrine mapea todo `src/` (`config/packages/doctrine.yaml`). **La fase 2 solo movió clases:** las violaciones de capa (controladores con lógica, SQL fuera de repositorios) siguen y se corrigen en la fase 3.
 
@@ -128,7 +128,7 @@ Todo en `apps/web/src/app/`. Detalle por pantalla en [07-frontend.md](07-fronten
 | Usuarios inactivos | `src/Autenticacion/Security/VerificadorDeUsuario.php` | Los rechaza en `checkPostAuth()`, también con JWT. |
 | Jerarquía de roles | `security.yaml:2-4` | `ROLE_ADMIN` ⊃ `ROLE_SUPERVISOR` ⊃ `ROLE_AGENT`. En el frontend los roles **no** son jerárquicos (se compensa en `roleGuard`). |
 | Voters | `Ticket/Security/TicketVoter.php` (usado: `ASSIGN`, `CLOSE`), `src/Conversacion/Security/MensajeVoter.php` (solo URL de adjuntos) | Ver [06](06-api-y-permisos.md). |
-| Scopes | `OwnershipScope` (siempre `null`: bandeja compartida, decisión Sprint 16) y `WorkspaceScope` (filtra por el `phone_number_id` del workspace activo; si no hay, **no filtra**) | El primero se reutiliza mal como autorización ([R3](00-estado-y-pendientes.md#r3-cualquier-agente-modifica-disponibilidad-y-turnos-de-cualquier-agente)). |
+| Scopes | `AlcanceDeResponsabilidad` (siempre `null`: bandeja compartida, decisión Sprint 16) y `AlcanceDeEspacioDeTrabajo` (filtra por el `phone_number_id` del workspace activo; si no hay, **no filtra**) | El primero se reutiliza mal como autorización ([R3](00-estado-y-pendientes.md#r3-cualquier-agente-modifica-disponibilidad-y-turnos-de-cualquier-agente)). |
 | Usuario ↔ Agente | `Agente.usuario` (1:1 opcional) | Si un usuario sin agente envía un mensaje o cambia de workspace (admin/supervisor), **se le crea un agente** con nombre = email (`Agente/UseCase/AsegurarAgenteDeUsuarioUseCase.php`, `Administracion/UseCase/SetEspacioDeTrabajoActivoUseCase.php` (`ensureAgent`)). |
 
 ---
@@ -138,7 +138,7 @@ Todo en `apps/web/src/app/`. Detalle por pantalla en [07-frontend.md](07-fronten
 ```mermaid
 sequenceDiagram
     participant UC as Caso de uso (PHP)
-    participant EC as EventCollector (memoria)
+    participant EC as RecolectorDeEventos (memoria)
     participant DB as outbox_events
     participant PUB as publisher (cada 2 s)
     participant HUB as Mercure hub
@@ -149,7 +149,7 @@ sequenceDiagram
     UC->>UC: commit de la transacción
     UC->>DB: persistEventsToOutbox() → filas pending
     PUB->>DB: SELECT pending LIMIT 100
-    PUB->>PUB: RealtimeEventFactory + EventTypeMapper → JSON v1
+    PUB->>PUB: EventoEnTiempoRealFactory + TipoDeEventoMapper → JSON v1
     PUB->>HUB: POST topic=tickets (JWT publicador)
     PUB->>DB: status = published, o retry_count+1 (a los 5 fallos dead_letter)
     HUB-->>NG: evento SSE (suscripción anónima al topic tickets)
@@ -159,10 +159,10 @@ sequenceDiagram
 
 | Paso | Archivos |
 |---|---|
-| Recolección de eventos | `Compartido/DomainEvent.php`, `Compartido/EventCollector.php` |
-| Escritura en outbox | Un solo escritor: `Compartido/Outbox/OutboxWriter::write()` (persist + flush, siempre después del commit del negocio). Cada caso de uso sigue armando **su propio payload** en `persistEventsToOutbox()`: `ProcesarMensajeEntranteUseCase.php:109-157`, `ProcesarMensajeSalienteUseCase.php:371-428`, `AsignarTicketUseCase.php:145-184`, `AsignarTicketAutomaticamenteUseCase.php:211-249`, `ProcesarActualizacionDeEstadoUseCase.php:216-257`. Disponibilidad, turnos y `MarcarTicketLeidoUseCase` arman un `OutboxEvent` y lo pasan al mismo escritor. |
+| Recolección de eventos | `Compartido/DomainEvent.php`, `Compartido/RecolectorDeEventos.php` |
+| Escritura en outbox | Un solo escritor: `Compartido/Outbox/OutboxWriter::write()` (persist + flush, siempre después del commit del negocio). Cada caso de uso sigue armando **su propio payload** en `persistEventsToOutbox()`: `ProcesarMensajeEntranteUseCase.php:109-157`, `ProcesarMensajeSalienteUseCase.php:371-428`, `AsignarTicketUseCase.php:145-184`, `AsignarTicketAutomaticamenteUseCase.php:211-249`, `ProcesarActualizacionDeEstadoUseCase.php:216-257`. Disponibilidad, turnos y `MarcarTicketLeidoUseCase` arman un `EventoOutbox` y lo pasan al mismo escritor. |
 | Publicación | `Compartido/Command/OutboxPublishCommand.php` → `Compartido/Outbox/OutboxPublisherService.php` |
-| Contrato | `Compartido/Realtime/RealtimeEventFactory.php`, `EventTypeMapper.php`, `RealtimeEventType.php` (`ticket.created`, `ticket.status_changed`, `ticket.assigned`, `message.added`, `message.updated`, `conversation.updated`, `agent.availability_changed`, `agent.shift_changed`) |
+| Contrato | `Compartido/Realtime/EventoEnTiempoRealFactory.php`, `TipoDeEventoMapper.php`, `TipoDeEventoEnTiempoReal.php` (`ticket.created`, `ticket.status_changed`, `ticket.assigned`, `message.added`, `message.updated`, `conversation.updated`, `agent.availability_changed`, `agent.shift_changed`) |
 | Token de suscripción | `GET /api/mercure/token` → `MercureJwtService::issueForUser()`; en la práctica el frontend **no lo usa para suscribirse** (el hub es anónimo), solo para el resync. |
 | Frontend | `core/realtime/mercure.service.ts`, `core/realtime/event-bus.service.ts`, `core/stores/ticket.store.ts:112-208`, `core/stores/conversation.store.ts:65-107` |
 
@@ -172,12 +172,12 @@ Deducidos de la lectura; confirmar con `SELECT event_type, status, COUNT(*) FROM
 
 | # | Problema | Evidencia |
 |---|---|---|
-| P-1 | `InboxUpdatedEvent` no está en `EventTypeMapper` → falla 5 veces → `dead_letter`. | `EventTypeMapper.php:11-19`; `OutboxPublisherService.php:206-210` |
-| P-2 | `outbox_events.sequence` queda en 0 salvo en estados de entrega → el resync por `afterSequence` no devuelve casi nada. | `ProcesarActualizacionDeEstadoUseCase.php:245`; `OutboxEventRepository::findResyncRows` |
-| P-3 | El resync filtra por `aggregate_id` sin `aggregate_type` (mezcla eventos de agente y de ticket). Además es inalcanzable (401 del firewall). | `OutboxEventRepository::findResyncRows` |
+| P-1 | `InboxUpdatedEvent` no está en `TipoDeEventoMapper` → falla 5 veces → `dead_letter`. | `TipoDeEventoMapper.php:11-19`; `OutboxPublisherService.php:206-210` |
+| P-2 | `outbox_events.sequence` queda en 0 salvo en estados de entrega → el resync por `afterSequence` no devuelve casi nada. | `ProcesarActualizacionDeEstadoUseCase.php:245`; `EventoOutboxRepository::findResyncRows` |
+| P-3 | El resync filtra por `aggregate_id` sin `aggregate_type` (mezcla eventos de agente y de ticket). Además es inalcanzable (401 del firewall). | `EventoOutboxRepository::findResyncRows` |
 | P-4 | En el mensaje entrante, la auto-asignación se publica como `ticket.status_changed` vacío, no como `ticket.assigned`. | `ProcesarMensajeEntranteUseCase.php:124-142` |
-| P-5 | Resolver, cerrar, transicionar y el cierre por ventana **no escriben nada** en el outbox. | `CambiarEstadoDeTicketUseCase.php` (no tiene `EventCollector`) |
-| P-6 | `ConversationUpdatedEvent` existía en el contrato sin que nadie lo emitiera; se borró en la fase 1 (el frontend todavía declara `conversation.updated`). (`ticket.read` sí se emite: lo inserta `BandejaController::marcarLeido` por SQL con el tipo ya en formato de contrato, que `RealtimeEventFactory::resolveEnum()` acepta.) | `BandejaController.php:189-202`; `RealtimeEventFactory.php:42-53` |
+| P-5 | Resolver, cerrar, transicionar y el cierre por ventana **no escriben nada** en el outbox. | `CambiarEstadoDeTicketUseCase.php` (no tiene `RecolectorDeEventos`) |
+| P-6 | `ConversationUpdatedEvent` existía en el contrato sin que nadie lo emitiera; se borró en la fase 1 (el frontend todavía declara `conversation.updated`). (`ticket.read` sí se emite: lo inserta `BandejaController::marcarLeido` por SQL con el tipo ya en formato de contrato, que `EventoEnTiempoRealFactory::resolveEnum()` acepta.) | `BandejaController.php:189-202`; `EventoEnTiempoRealFactory.php:42-53` |
 | P-7 | Plantillas y reaperturas por ventana no emiten eventos (la segunda es una limitación aceptada y documentada en `ProcesarMensajeEntranteUseCase.php:342-350`). | — |
 | P-8 | Topics `agent/{id}/availability`, `agent/{id}/shifts`, `agents`: se publican o conceden, pero el frontend no los escucha. | `MercureJwtService.php:28-32` |
 | P-9 | El publicador lee el outbox sin bloqueo de filas: si corren dos a la vez (por ejemplo el servicio docker `publisher` y `POST /admin/outbox/publish`), se duplican eventos (el frontend deduplica por `eventId`). La unidad systemd alternativa se borró en la fase 1; el publicador solo corre en docker. | `OutboxPublisherService.php:65-78` |
@@ -270,14 +270,14 @@ Archivos: `apps/api/.env` (no versionado), `.env.dev` (**versionado, con credenc
 | B1 | Controladores con lógica de negocio, SQL o `EntityManager` directo. | `ProxyDeProveedorController` orquestaba el envío (resolvía el teléfono y llamaba a Graph); resuelto en la fase 4a. | La regla queda repartida; es difícil saber "dónde está" una operación. Fase 3d: ningún controlador usa `EntityManager` ni SQL y toda escritura pasa por un caso de uso; partir el flujo de envío queda para la fase 4. Fase 4a-2: el envío de texto y media (`send`) pasó a `EnviarMensajeSalienteUseCase`; 4a-3: las plantillas pasaron a `EnviarPlantillaUseCase`, y ambos resuelven el teléfono con `Ticket::telefonoDestinatario()`. 4a-4: la subida de media pasó a `SubirAdjuntoUseCase`; el controlador solo conserva la descarga como proxy a Graph. |
 | B2 | El dominio depende de aplicación e infraestructura. | `Automatizacion/ReglaDeReaperturaAutomatica.php:12-13` usa `CambiarEstadoDeTicketUseCase` y el `EntityManager`. | Dirección de dependencias invertida. |
 | B3 | Implementación concreta dentro de `Domain`. | `Disponibilidad/Repository/TurnoRepository.php` | Inconsistencia con `Repository/`. |
-| B4 | ~~Interfaces con una sola implementación.~~ **Resuelto en la fase 2.** | Se borraron 8 interfaces (7 de repositorio y `EventCollector`); se inyecta la clase concreta. | — |
+| B4 | ~~Interfaces con una sola implementación.~~ **Resuelto en la fase 2.** | Se borraron 8 interfaces (7 de repositorio y `RecolectorDeEventos`); se inyecta la clase concreta. | — |
 | B5 | WhatsApp no está detrás de un puerto (contradice ADR-004). | `GraphClient` concreto inyectado en un controlador y en dos servicios. | Cambiar de proveedor implica tocar varios lugares. |
 | B6 | Lógica de outbox duplicada dentro de cada caso de uso (5 copias con formatos distintos, topics fijos). | ver [tiempo real](#tiempo-real-outbox--publicador--mercure--sse) | Causa directa de P-1, P-2, P-4. |
-| B7 | Un "scope" de reportes se reutiliza como autorización. | `DisponibilidadDeAgenteController::isPermitidoParaAgente()` usa `OwnershipScope`. | Hallazgo de seguridad [R3](00-estado-y-pendientes.md#r3-cualquier-agente-modifica-disponibilidad-y-turnos-de-cualquier-agente). |
+| B7 | Un "scope" de reportes se reutiliza como autorización. | `DisponibilidadDeAgenteController::isPermitidoParaAgente()` usa `AlcanceDeResponsabilidad`. | Hallazgo de seguridad [R3](00-estado-y-pendientes.md#r3-cualquier-agente-modifica-disponibilidad-y-turnos-de-cualquier-agente). |
 | B8 | Regla de negocio duplicada en el controlador. | `DisponibilidadDeAgenteController::isAgenteEnTurno()` copia la lógica de turnos del servicio (y no mira `active`). | Dos definiciones que pueden divergir. |
 | B9 | Un evento + listener funciona como llamada directa en la misma transacción. | `TicketRequiereAsignacionAutomaticaEvent` → `AsignacionAutomaticaSolicitadaListener::executeInTransaction`. | Parece desacoplado pero no lo está ([R9](00-estado-y-pendientes.md#r9-la-auto-asignación-puede-hacer-perder-mensajes-entrantes)). |
-| B10 | Una entidad del agregado Ticket se usa para cosas que no son de ticket. | `Compartido/ProcessedEvent.php` guarda idempotencia de mensajes salientes y el límite de auto-respuestas. | Nombre engañoso. |
-| B11 | Un voter mezcla autorización con validación de estado. | `TicketVoter` lanza `StateConflictException` (409) dentro de `voteOnAttribute`. | Comportamiento inesperado si se usa `isGranted` en otro contexto. |
+| B10 | Una entidad del agregado Ticket se usa para cosas que no son de ticket. | `Compartido/EventoProcesado.php` guarda idempotencia de mensajes salientes y el límite de auto-respuestas. | Nombre engañoso. |
+| B11 | Un voter mezcla autorización con validación de estado. | `TicketVoter` lanza `ConflictoDeEstadoException` (409) dentro de `voteOnAttribute`. | Comportamiento inesperado si se usa `isGranted` en otro contexto. |
 
 ### Dónde se violan hoy — frontend
 

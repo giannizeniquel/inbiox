@@ -25,7 +25,7 @@ final class TicketResponsabilidadGuard
     }
 
     /**
-     * Whether an outbound reply from $agenteId must be BLOCKED (StateConflictException)
+     * Whether an outbound reply from $agenteId must be BLOCKED (ConflictoDeEstadoException)
      * because the ticket is resolved/closed, the sender is not privileged, and the
      * sender is not the current owner.
      *

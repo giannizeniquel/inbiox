@@ -4,8 +4,8 @@ namespace App\Compartido\Outbox;
 
 use App\Compartido\Realtime\MercureJwtService;
 
-use App\Compartido\Realtime\RealtimeEventFactory;
-use App\Compartido\Repository\OutboxEventRepository;
+use App\Compartido\Realtime\EventoEnTiempoRealFactory;
+use App\Compartido\Repository\EventoOutboxRepository;
 
 /**
  * Publishes unpublished outbox events to Mercure hub.
@@ -21,8 +21,8 @@ class OutboxPublisherService
     private const BATCH_SIZE = 100;
 
     public function __construct(
-        private readonly OutboxEventRepository $outboxRepo,
-        private readonly RealtimeEventFactory $factory,
+        private readonly EventoOutboxRepository $outboxRepo,
+        private readonly EventoEnTiempoRealFactory $factory,
         private readonly MercureJwtService $jwtService,
         private readonly string $mercureUrl = 'http://mercure:80/.well-known/mercure'
     ) {}
@@ -60,7 +60,7 @@ class OutboxPublisherService
     /**
      * Find unpublished events ordered by creation date.
      *
-     * @return OutboxEvent[]
+     * @return EventoOutbox[]
      */
     private function findUnpublishedEvents(): array
     {
@@ -81,12 +81,12 @@ class OutboxPublisherService
     }
 
     /**
-     * Hydrate OutboxEvent from database row.
+     * Hydrate EventoOutbox from database row.
      */
-    private function hydrateEvent(array $row): OutboxEvent
+    private function hydrateEvent(array $row): EventoOutbox
     {
         // Use string ID directly - no Ulid conversion needed
-        $event = new OutboxEvent(
+        $event = new EventoOutbox(
             aggregateType: $row['aggregate_type'],
             aggregateId: (int) $row['aggregate_id'],
             topic: $row['topic'],
@@ -95,27 +95,27 @@ class OutboxPublisherService
         );
 
         // Use reflection to set the ID and other fields
-        $idReflection = new \ReflectionProperty(OutboxEvent::class, 'id');
+        $idReflection = new \ReflectionProperty(EventoOutbox::class, 'id');
         $idReflection->setAccessible(true);
         $idReflection->setValue($event, $row['id']); // ID is already a string
 
         // Set retry count
-        $retryReflection = new \ReflectionProperty(OutboxEvent::class, 'retryCount');
+        $retryReflection = new \ReflectionProperty(EventoOutbox::class, 'retryCount');
         $retryReflection->setAccessible(true);
         $retryReflection->setValue($event, (int) $row['retry_count']);
 
         // Set created at
-        $createdAtReflection = new \ReflectionProperty(OutboxEvent::class, 'createdAt');
+        $createdAtReflection = new \ReflectionProperty(EventoOutbox::class, 'createdAt');
         $createdAtReflection->setAccessible(true);
         $createdAtReflection->setValue($event, new \DateTimeImmutable($row['created_at']));
 
         // Set status via reflection
-        $statusReflection = new \ReflectionProperty(OutboxEvent::class, 'status');
+        $statusReflection = new \ReflectionProperty(EventoOutbox::class, 'status');
         $statusReflection->setAccessible(true);
         $statusReflection->setValue($event, $row['status'] ?? 'pending');
 
         // Set sequence via reflection
-        $seqReflection = new \ReflectionProperty(OutboxEvent::class, 'sequence');
+        $seqReflection = new \ReflectionProperty(EventoOutbox::class, 'sequence');
         $seqReflection->setAccessible(true);
         $seqReflection->setValue($event, (int) ($row['sequence'] ?? 0));
 
@@ -127,7 +127,7 @@ class OutboxPublisherService
      *
      * @return bool True if published successfully
      */
-    private function publishEvent(OutboxEvent $event): bool
+    private function publishEvent(EventoOutbox $event): bool
     {
         try {
             // Generate JWT for publishing
@@ -212,7 +212,7 @@ class OutboxPublisherService
     /**
      * Mark event as published.
      */
-    private function markPublished(OutboxEvent $event): void
+    private function markPublished(EventoOutbox $event): void
     {
         $this->outboxRepo->markPublished($event->getId(), new \DateTimeImmutable());
     }
@@ -220,7 +220,7 @@ class OutboxPublisherService
     /**
      * Handle publishing failure - increment retry count or dead-letter if exhausted.
      */
-    private function handleFailure(OutboxEvent $event): void
+    private function handleFailure(EventoOutbox $event): void
     {
         $currentRetryCount = $event->getRetryCount();
         $newRetryCount = $currentRetryCount + 1;

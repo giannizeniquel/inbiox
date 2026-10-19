@@ -8,8 +8,8 @@ use App\Disponibilidad\DisponibilidadDeAgenteService;
 use App\Asignacion\ResponsabilidadDeTicketService;
 use App\Agente\Agente;
 use App\Asignacion\TipoDeAsignacion;
-use App\Compartido\EventCollector;
-use App\Compartido\Outbox\OutboxEvent;
+use App\Compartido\RecolectorDeEventos;
+use App\Compartido\Outbox\EventoOutbox;
 use App\Compartido\Outbox\OutboxWriter;
 use App\Ticket\EstadoDeTicket;
 use App\Agente\Repository\AgenteRepository;
@@ -43,7 +43,7 @@ final class AsignarTicketAutomaticamenteUseCase
         private AsignacionRepository $asignacionRepo,
         private DisponibilidadDeAgenteService $disponibilidadDeAgenteService,
         private ResponsabilidadDeTicketService $responsabilidadDeTicketService,
-        private EventCollector $eventCollector,
+        private RecolectorDeEventos $eventCollector,
         private readonly OutboxWriter $outboxWriter,
         private AgenteRepository $agentRepo,
     ) {}
@@ -234,7 +234,7 @@ final class AsignarTicketAutomaticamenteUseCase
                 $payload['assignment_type'] = $this->ultimoTipoDeAsignacion;
             }
 
-            $outboxEvent = new OutboxEvent(
+            $outboxEvent = new EventoOutbox(
                 aggregateType: 'ticket',
                 aggregateId: $event->ticketId,
                 topic: 'tickets',

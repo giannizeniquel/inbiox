@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Outbox;
 
-use App\Compartido\Outbox\OutboxEvent;
+use App\Compartido\Outbox\EventoOutbox;
 use App\Compartido\Outbox\OutboxWriter;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
@@ -43,8 +43,8 @@ final class OutboxWriterTest extends KernelTestCase
     public function testWritesEveryEventAsAPendingRow(): void
     {
         $this->writer->write(
-            new OutboxEvent('ticket', self::AGGREGATE_ID, 'tickets', 'ticket.read', ['ticketId' => self::AGGREGATE_ID]),
-            new OutboxEvent('agent', self::AGGREGATE_ID, 'agent/990199/shifts', 'shift.changed', ['seq' => 7], 7),
+            new EventoOutbox('ticket', self::AGGREGATE_ID, 'tickets', 'ticket.read', ['ticketId' => self::AGGREGATE_ID]),
+            new EventoOutbox('agent', self::AGGREGATE_ID, 'agent/990199/shifts', 'shift.changed', ['seq' => 7], 7),
         );
 
         $rows = $this->conn->fetchAllAssociative(

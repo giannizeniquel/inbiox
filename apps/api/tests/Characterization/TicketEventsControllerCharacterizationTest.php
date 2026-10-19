@@ -9,7 +9,7 @@ use Symfony\Component\BrowserKit\Cookie;
 use Symfony\Component\Uid\Ulid;
 
 /**
- * Characterization of App\Compartido\Controller\TicketEventsController
+ * Characterization of App\Compartido\Controller\EventosDeTicketController
  * (app_ticket_events_resync, GET /api/tickets/{id}/events).
  *
  * The request needs BOTH the app JWT (firewall, ROLE_AGENT via access_control)

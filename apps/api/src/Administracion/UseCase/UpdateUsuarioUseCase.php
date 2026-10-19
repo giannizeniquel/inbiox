@@ -6,7 +6,7 @@ namespace App\Administracion\UseCase;
 
 use App\Administracion\Repository\UsuarioRepository;
 use App\Administracion\Usuario;
-use App\Compartido\StateConflictException;
+use App\Compartido\ConflictoDeEstadoException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
@@ -25,7 +25,7 @@ final class UpdateUsuarioUseCase
      * @param array<mixed> $data decoded request body
      *
      * @throws \InvalidArgumentException when a field is invalid
-     * @throws StateConflictException    when another user has the email
+     * @throws ConflictoDeEstadoException    when another user has the email
      */
     public function execute(Usuario $usuario, array $data): void
     {
@@ -34,7 +34,7 @@ final class UpdateUsuarioUseCase
                 throw new \InvalidArgumentException('email must be a non-empty string');
             }
             if (null !== $this->usuarioRepository->findOtroByEmail($data['email'], (int) $usuario->getId())) {
-                throw new StateConflictException('Email already in use');
+                throw new ConflictoDeEstadoException('Email already in use');
             }
             $usuario->setEmail($data['email']);
         }

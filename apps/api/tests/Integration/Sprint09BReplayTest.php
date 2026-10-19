@@ -2,7 +2,7 @@
 
 namespace App\Tests\Integration;
 
-use App\Compartido\Outbox\OutboxEvent;
+use App\Compartido\Outbox\EventoOutbox;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -49,7 +49,7 @@ class Sprint09BReplayTest extends KernelTestCase
     public function test_event_id_supports_deduplication(): void
     {
         // Arrange - create an event
-        $outboxEvent = new OutboxEvent(
+        $outboxEvent = new EventoOutbox(
             'ticket',
             1,
             'tickets',
@@ -60,7 +60,7 @@ class Sprint09BReplayTest extends KernelTestCase
         $this->em->flush();
 
         // Act - retrieve and validate
-        $stored = $this->em->find(OutboxEvent::class, $outboxEvent->getId());
+        $stored = $this->em->find(EventoOutbox::class, $outboxEvent->getId());
         
         // Assert - event_id is stable and usable for client-side deduplication
         $payload = $stored->getPayload();
@@ -85,7 +85,7 @@ class Sprint09BReplayTest extends KernelTestCase
         ];
         
         foreach ($events as $e) {
-        $outboxEvent = new OutboxEvent(
+        $outboxEvent = new EventoOutbox(
             'ticket',
             1,
             'tickets',
@@ -116,7 +116,7 @@ class Sprint09BReplayTest extends KernelTestCase
     public function test_older_events_detectable(): void
     {
         // Arrange - create event at seq=1
-        $event1 = new OutboxEvent(
+        $event1 = new EventoOutbox(
             'ticket',
             1,
             'tickets',
@@ -126,7 +126,7 @@ class Sprint09BReplayTest extends KernelTestCase
         $this->em->persist($event1);
         
         // Create another at seq=2
-        $event2 = new OutboxEvent(
+        $event2 = new EventoOutbox(
             'ticket',
             1,
             'tickets',
@@ -181,7 +181,7 @@ class Sprint09BReplayTest extends KernelTestCase
     public function test_payload_has_version(): void
     {
         // Arrange
-        $outboxEvent = new OutboxEvent(
+        $outboxEvent = new EventoOutbox(
             'ticket',
             1,
             'tickets',
@@ -192,7 +192,7 @@ class Sprint09BReplayTest extends KernelTestCase
         $this->em->flush();
 
         // Act
-        $stored = $this->em->find(OutboxEvent::class, $outboxEvent->getId());
+        $stored = $this->em->find(EventoOutbox::class, $outboxEvent->getId());
         
         // Assert
         $payload = $stored->getPayload();

@@ -2,7 +2,7 @@
 
 namespace App\Compartido\Command;
 
-use App\Compartido\Repository\OutboxEventRepository;
+use App\Compartido\Repository\EventoOutboxRepository;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
@@ -17,7 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class OutboxDeadLetterCommand extends Command
 {
     public function __construct(
-        private readonly OutboxEventRepository $outboxRepo,
+        private readonly EventoOutboxRepository $outboxRepo,
     ) {
         parent::__construct();
     }

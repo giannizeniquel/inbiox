@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Disponibilidad\UseCase;
 
 use App\Disponibilidad\AgentAvailabilityChangedEvent;
-use App\Compartido\Outbox\OutboxEvent;
+use App\Compartido\Outbox\EventoOutbox;
 use App\Compartido\Outbox\OutboxWriter;
 use App\Agente\Repository\AgenteRepository;
 use App\Ticket\Repository\TicketRepository;
@@ -103,7 +103,7 @@ final class SetDisponibilidadManualUseCase
 
         $data = $this->pendingOutboxEvent;
 
-        $outboxEvent = new OutboxEvent(
+        $outboxEvent = new EventoOutbox(
             aggregateType: 'agent',
             aggregateId: $data['aggregate_id'],
             topic: \sprintf('agent/%d/availability', $data['aggregate_id']),

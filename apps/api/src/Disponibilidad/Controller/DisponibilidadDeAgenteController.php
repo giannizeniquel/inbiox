@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Disponibilidad\Controller;
 
-use App\Compartido\Security\OwnershipScope;
+use App\Compartido\Security\AlcanceDeResponsabilidad;
 use App\Disponibilidad\DisponibilidadDeAgenteService;
 use App\Disponibilidad\UseCase\QuitarDisponibilidadManualUseCase;
 use App\Disponibilidad\UseCase\CreateTurnoUseCase;
@@ -43,7 +43,7 @@ class DisponibilidadDeAgenteController
         private AgenteRepository $agentRepo,
         private TurnoRepository $turnoRepo,
         private TicketRepository $ticketRepo,
-        private OwnershipScope $ownershipScope,
+        private AlcanceDeResponsabilidad $ownershipScope,
     ) {}
 
     /**

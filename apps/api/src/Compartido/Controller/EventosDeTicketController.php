@@ -2,7 +2,7 @@
 
 namespace App\Compartido\Controller;
 
-use App\Compartido\Query\ResyncTicketEventsQuery;
+use App\Compartido\Query\ResincronizarEventosDeTicketQuery;
 use App\Compartido\Realtime\MercureJwtService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -20,10 +20,10 @@ use Symfony\Component\Routing\Attribute\Route;
  * NOTE: The `/api/mercure/token` endpoint has been moved to MercureTokenController.
  * This controller only handles ticket event resync.
  */
-final class TicketEventsController
+final class EventosDeTicketController
 {
     public function __construct(
-        private readonly ResyncTicketEventsQuery $resyncTicketEventsQuery,
+        private readonly ResincronizarEventosDeTicketQuery $resyncTicketEventsQuery,
         private readonly MercureJwtService $jwtService,
     ) {}
 

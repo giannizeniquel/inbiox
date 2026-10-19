@@ -17,7 +17,7 @@ use Symfony\Bundle\SecurityBundle\Security;
  * (Production Readiness).md): reports/metrics are NOT restricted by
  * agent — every authenticated agent can see every other agent's metrics,
  * for now. Ticket/conversation data is still scoped by workspace (see
- * WorkspaceScope), just not by individual agent ownership.
+ * AlcanceDeEspacioDeTrabajo), just not by individual agent ownership.
  *
  * This class (and the `agent_id` WHERE-clause plumbing that consumes it
  * in ReporteRepository/ReporteService) is kept in place so that
@@ -25,7 +25,7 @@ use Symfony\Bundle\SecurityBundle\Security;
  * every query — do not "fix" `getAgentId()` to return the current
  * agent's ID without an explicit product decision to do so.
  */
-final class OwnershipScope
+final class AlcanceDeResponsabilidad
 {
     public function __construct(
         private readonly Security $security,
@@ -36,7 +36,7 @@ final class OwnershipScope
      *
      * - ROLE_ADMIN / ROLE_SUPERVISOR: null (no scope — see everything)
      * - ROLE_AGENT: null (agents see all tickets in their workspace;
-     *   segregation is handled by WorkspaceScope.phone_number_id)
+     *   segregation is handled by AlcanceDeEspacioDeTrabajo.phone_number_id)
      * - No authenticated user: null
      */
     public function getAgentId(): ?int
@@ -49,7 +49,7 @@ final class OwnershipScope
 
         // Workspace-based model: all authenticated users see all tickets
         // in their active workspace. Segregation by workspace is handled
-        // at the query level via WorkspaceScope (phone_number_id filter).
+        // at the query level via AlcanceDeEspacioDeTrabajo (phone_number_id filter).
         // Agent-level ownership is no longer enforced at the query level.
         return null;
     }

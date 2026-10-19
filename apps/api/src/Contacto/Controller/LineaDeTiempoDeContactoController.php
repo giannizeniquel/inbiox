@@ -6,7 +6,7 @@ namespace App\Contacto\Controller;
 
 use App\Contacto\Query\EventoDeLineaDeTiempoDTO;
 use App\Contacto\Query\GetLineaDeTiempoDeContactoQuery;
-use App\Compartido\Security\WorkspaceScope;
+use App\Compartido\Security\AlcanceDeEspacioDeTrabajo;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
@@ -17,7 +17,7 @@ class LineaDeTiempoDeContactoController
 {
     public function __construct(
         private GetLineaDeTiempoDeContactoQuery $getLineaDeTiempoDeContactoQuery,
-        private WorkspaceScope $workspaceScope,
+        private AlcanceDeEspacioDeTrabajo $workspaceScope,
     ) {}
 
     #[Route('/api/contacts/{id}/timeline', name: 'app_contacts_timeline', methods: ['GET'])]

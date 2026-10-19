@@ -6,7 +6,7 @@ namespace App\Administracion\UseCase;
 
 use App\Agente\Repository\EquipoRepository;
 use App\Agente\Equipo;
-use App\Compartido\StateConflictException;
+use App\Compartido\ConflictoDeEstadoException;
 use Doctrine\ORM\EntityManagerInterface;
 
 final class UpdateEquipoUseCase
@@ -23,7 +23,7 @@ final class UpdateEquipoUseCase
      * @param array<mixed> $data decoded request body
      *
      * @throws \InvalidArgumentException when a field is invalid
-     * @throws StateConflictException    when another team in the workspace has the name
+     * @throws ConflictoDeEstadoException    when another team in the workspace has the name
      */
     public function execute(Equipo $equipo, array $data): void
     {
@@ -34,7 +34,7 @@ final class UpdateEquipoUseCase
 
             $duplicado = $this->equipoRepository->findOneBy(['espacioDeTrabajo' => $equipo->getEspacioDeTrabajo(), 'nombre' => $data['name']]);
             if (null !== $duplicado && $duplicado->getId() !== $equipo->getId()) {
-                throw new StateConflictException('A team with this name already exists in this workspace');
+                throw new ConflictoDeEstadoException('A team with this name already exists in this workspace');
             }
 
             $equipo->setNombre($data['name']);

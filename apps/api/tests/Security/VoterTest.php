@@ -126,7 +126,7 @@ class VoterTest extends TestCase
      * Regression proof for design.md D1: wiring `TicketVoter::CLOSE` must
      * NOT collide with the `ASSIGN` attribute's resolved/closed state guard.
      * The identical (SUPERVISOR, resolved ticket) case is GRANTED with no
-     * exception under CLOSE, but still throws `StateConflictException`
+     * exception under CLOSE, but still throws `ConflictoDeEstadoException`
      * under ASSIGN.
      */
     public function testSupervisorCloseGrantedOnResolvedTicketWhileAssignStillThrows(): void
@@ -154,7 +154,7 @@ class VoterTest extends TestCase
             'CLOSE on a resolved ticket must be granted for a supervisor, no exception'
         );
 
-        $this->expectException(\App\Compartido\StateConflictException::class);
+        $this->expectException(\App\Compartido\ConflictoDeEstadoException::class);
         $voter->vote($token, $ticket, [TicketVoter::ASSIGN]);
     }
 }

@@ -17,7 +17,7 @@ use App\Conversacion\Controller\ProxyDeProveedorController;
 use App\Conversacion\Repository\MensajeRepository;
 use App\Agente\Agente;
 use App\Administracion\Usuario;
-use App\Compartido\Storage\MediaStorageService;
+use App\Compartido\Storage\AdjuntoStorageService;
 use App\Conversacion\ValidadorDeAdjunto;
 use App\Ticket\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -55,7 +55,7 @@ class ProviderProxyControllerResolveAgentTest extends TestCase
             new SubirAdjuntoUseCase(
                 $this->createMock(ValidadorDeAdjunto::class),
                 $this->createMock(GraphClient::class),
-                $this->createMock(MediaStorageService::class),
+                $this->createMock(AdjuntoStorageService::class),
             ),
         );
     }

@@ -8,7 +8,7 @@ use Aws\S3\S3Client;
 use Aws\S3\Exception\S3Exception;
 use Psr\Log\LoggerInterface;
 
-class MediaStorageService
+class AdjuntoStorageService
 {
     public function __construct(
         private readonly S3Client $s3Client,

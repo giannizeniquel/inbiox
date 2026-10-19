@@ -2,21 +2,21 @@
 
 namespace App\Compartido\Query;
 
-use App\Compartido\Outbox\OutboxEvent;
-use App\Compartido\Realtime\RealtimeEventFactory;
-use App\Compartido\Repository\OutboxEventRepository;
+use App\Compartido\Outbox\EventoOutbox;
+use App\Compartido\Realtime\EventoEnTiempoRealFactory;
+use App\Compartido\Repository\EventoOutboxRepository;
 
 /**
  * The realtime events of a ticket after a sequence, for the frontend to
  * recover missed events after a reconnection or a gap.
  */
-final class ResyncTicketEventsQuery
+final class ResincronizarEventosDeTicketQuery
 {
     private const PAGE_SIZE = 100;
 
     public function __construct(
-        private readonly OutboxEventRepository $outboxEventRepository,
-        private readonly RealtimeEventFactory $factory,
+        private readonly EventoOutboxRepository $outboxEventRepository,
+        private readonly EventoEnTiempoRealFactory $factory,
     ) {}
 
     /**
@@ -40,13 +40,13 @@ final class ResyncTicketEventsQuery
     }
 
     /**
-     * Hydrate an OutboxEvent from a raw DB row.
+     * Hydrate an EventoOutbox from a raw DB row.
      *
      * @param array<string, mixed> $row
      */
-    private function hydrateEvent(array $row): OutboxEvent
+    private function hydrateEvent(array $row): EventoOutbox
     {
-        $event = new OutboxEvent(
+        $event = new EventoOutbox(
             aggregateType: $row['aggregate_type'],
             aggregateId: (int) $row['aggregate_id'],
             topic: $row['topic'],
@@ -56,19 +56,19 @@ final class ResyncTicketEventsQuery
         );
 
         // Use reflection to set the ID (generated in constructor, we want the persisted one)
-        $idReflection = new \ReflectionProperty(OutboxEvent::class, 'id');
+        $idReflection = new \ReflectionProperty(EventoOutbox::class, 'id');
         $idReflection->setAccessible(true);
         $idReflection->setValue($event, $row['id']);
 
         // Set created_at
-        $createdAtReflection = new \ReflectionProperty(OutboxEvent::class, 'createdAt');
+        $createdAtReflection = new \ReflectionProperty(EventoOutbox::class, 'createdAt');
         $createdAtReflection->setAccessible(true);
         if (isset($row['created_at'])) {
             $createdAtReflection->setValue($event, new \DateTimeImmutable($row['created_at']));
         }
 
         // Set status
-        $statusReflection = new \ReflectionProperty(OutboxEvent::class, 'status');
+        $statusReflection = new \ReflectionProperty(EventoOutbox::class, 'status');
         $statusReflection->setAccessible(true);
         $statusReflection->setValue($event, $row['status'] ?? 'pending');
 

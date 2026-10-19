@@ -7,7 +7,7 @@ namespace App\Tests\Characterization;
 use App\Agente\Agente;
 use App\Compartido\Graph\GraphApiException;
 use App\Compartido\Graph\GraphClient;
-use App\Compartido\Storage\MediaStorageService;
+use App\Compartido\Storage\AdjuntoStorageService;
 use App\Conversacion\Mensaje;
 use App\Conversacion\MessageCreatedEvent;
 use App\Conversacion\MessageUpdatedEvent;
@@ -34,7 +34,7 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
     private const CONTACT_PHONE = '+5491100000555';
 
     private GraphClient&MockObject $graph;
-    private MediaStorageService&MockObject $storage;
+    private AdjuntoStorageService&MockObject $storage;
 
     protected function setUp(): void
     {
@@ -42,8 +42,8 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
         $this->deleteUnwipedRows();
         $this->graph = $this->createMock(GraphClient::class);
         static::getContainer()->set(GraphClient::class, $this->graph);
-        $this->storage = $this->createMock(MediaStorageService::class);
-        static::getContainer()->set(MediaStorageService::class, $this->storage);
+        $this->storage = $this->createMock(AdjuntoStorageService::class);
+        static::getContainer()->set(AdjuntoStorageService::class, $this->storage);
     }
 
     protected function tearDown(): void

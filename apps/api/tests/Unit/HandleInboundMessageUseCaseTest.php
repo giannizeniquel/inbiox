@@ -10,13 +10,13 @@ use App\Conversacion\UseCase\ProcesarMensajeEntranteUseCase;
 use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
 use App\Automatizacion\EjecutorDeReglas;
 use App\Disponibilidad\Repository\TurnoRepository;
-use App\Compartido\EventCollector;
+use App\Compartido\RecolectorDeEventos;
 use App\Conversacion\PoliticaDeVentana;
 use App\Agente\Repository\AgenteRepository;
 use App\Contacto\Repository\ContactoRepository;
 use App\Conversacion\Repository\ConversacionRepository;
 use App\Conversacion\Repository\MensajeRepository;
-use App\Compartido\Repository\ProcessedEventRepository;
+use App\Compartido\Repository\EventoProcesadoRepository;
 use App\Ticket\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
@@ -34,7 +34,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
     private EventDispatcherInterface|MockObject $eventDispatcher;
     private CambiarEstadoDeTicketUseCase|MockObject $transitionUseCase;
     private EjecutorDeReglas|MockObject $ruleExecutor;
-    private EventCollector|MockObject $eventCollector;
+    private RecolectorDeEventos|MockObject $eventCollector;
     private RespuestaAutomaticaService $autoReplyService;
     private LoggerInterface|MockObject $logger;
     private ProcesarMensajeEntranteUseCase $useCase;
@@ -49,7 +49,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
         $this->eventDispatcher = $this->createMock(EventDispatcherInterface::class);
         $this->transitionUseCase = $this->createMock(CambiarEstadoDeTicketUseCase::class);
         $this->ruleExecutor = $this->createMock(EjecutorDeReglas::class);
-        $this->eventCollector = $this->createMock(EventCollector::class);
+        $this->eventCollector = $this->createMock(RecolectorDeEventos::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
         // Create a real RespuestaAutomaticaService with mocked deps (can't mock final class)
@@ -57,7 +57,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
         $agentShiftRepo = $this->createMock(TurnoRepository::class);
         $availabilityService = new DisponibilidadDeAgenteService($agentRepo, $agentShiftRepo, $this->ticketRepo);
         $graphClient = $this->createMock(GraphClient::class);
-        $processedEventRepo = $this->createMock(ProcessedEventRepository::class);
+        $processedEventRepo = $this->createMock(EventoProcesadoRepository::class);
         $this->autoReplyService = new RespuestaAutomaticaService(
             $agentRepo,
             $availabilityService,

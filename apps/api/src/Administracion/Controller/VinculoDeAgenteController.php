@@ -8,7 +8,7 @@ use App\Administracion\UseCase\VincularUsuarioConAgenteUseCase;
 use App\Administracion\UseCase\DesvincularUsuarioDeAgenteUseCase;
 use App\Agente\Repository\AgenteRepository;
 use App\Compartido\NotFoundException;
-use App\Compartido\StateConflictException;
+use App\Compartido\ConflictoDeEstadoException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -58,7 +58,7 @@ final class VinculoDeAgenteController
             $usuario = $this->vincularUsuarioConAgenteUseCase->execute($agente, \is_array($data) ? $data : []);
         } catch (NotFoundException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 404);
-        } catch (StateConflictException $e) {
+        } catch (ConflictoDeEstadoException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 409);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);

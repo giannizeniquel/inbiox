@@ -56,7 +56,7 @@ services:
             $accessKey: '%env(S3_KEY)%'
             $secretKey: '%env(S3_SECRET)%'
 
-    App\Compartido\Storage\MediaStorageService:
+    App\Compartido\Storage\AdjuntoStorageService:
         arguments:
             $s3Client: '@Aws\S3\S3Client'
             $publicS3Client: '@media.public_s3_client'

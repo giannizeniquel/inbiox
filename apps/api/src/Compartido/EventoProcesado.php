@@ -7,7 +7,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity]
 #[ORM\Table(name: "processed_events")]
 #[ORM\UniqueConstraint(columns: ["event_id"])]
-class ProcessedEvent
+class EventoProcesado
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]

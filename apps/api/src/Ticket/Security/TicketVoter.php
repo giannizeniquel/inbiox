@@ -32,7 +32,7 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
  *
  * Attribute matrix:
  *   - ASSIGN: invoked by AsignacionDeTicketController::asignar(). Rejects with a 409
- *     `StateConflictException` when the ticket is already resolved/closed,
+ *     `ConflictoDeEstadoException` when the ticket is already resolved/closed,
  *     for every role, before the role checks below even run.
  *   - CLOSE: invoked by FlujoDeTicketController for resolve()/close()/
  *     transition() (target resolved/closed). Does NOT hit the ASSIGN state
@@ -81,7 +81,7 @@ final class TicketVoter extends Voter
         if ($attribute === self::ASSIGN) {
             $estado = $ticket->getEstado();
             if ($estado === EstadoDeTicket::RESUELTO->value || $estado === EstadoDeTicket::CERRADO->value) {
-                throw new \App\Compartido\StateConflictException(
+                throw new \App\Compartido\ConflictoDeEstadoException(
                     \sprintf('Cannot assign ticket in "%s" state', $estado)
                 );
             }

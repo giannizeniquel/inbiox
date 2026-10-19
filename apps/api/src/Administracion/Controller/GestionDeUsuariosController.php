@@ -10,7 +10,7 @@ use App\Administracion\UseCase\DesactivarUsuarioUseCase;
 use App\Administracion\UseCase\UpdateUsuarioUseCase;
 use App\Administracion\Usuario;
 use App\Compartido\NotFoundException;
-use App\Compartido\StateConflictException;
+use App\Compartido\ConflictoDeEstadoException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -68,7 +68,7 @@ final class GestionDeUsuariosController
             $usuario = $this->createUsuarioUseCase->execute(\is_array($data) ? $data : []);
         } catch (NotFoundException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 404);
-        } catch (StateConflictException $e) {
+        } catch (ConflictoDeEstadoException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 409);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
@@ -106,7 +106,7 @@ final class GestionDeUsuariosController
 
         try {
             $this->updateUsuarioUseCase->execute($usuario, \is_array($data) ? $data : []);
-        } catch (StateConflictException $e) {
+        } catch (ConflictoDeEstadoException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 409);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);

@@ -9,7 +9,7 @@ namespace App\Compartido;
  *
  * Used by TicketVoter when trying to assign a ticket in resolved/closed state.
  */
-class StateConflictException extends \RuntimeException
+class ConflictoDeEstadoException extends \RuntimeException
 {
     public function __construct(string $message = 'State conflict', int $code = 0, ?\Throwable $previous = null)
     {

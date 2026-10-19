@@ -12,16 +12,16 @@ use App\Disponibilidad\Turno;
 use App\Disponibilidad\Repository\TurnoRepository;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversacion;
-use App\Compartido\EventCollector;
+use App\Compartido\RecolectorDeEventos;
 use App\Conversacion\PoliticaDeVentana;
 use App\Conversacion\Mensaje;
 use App\Conversacion\TipoDeRemitente;
-use App\Compartido\ProcessedEvent;
+use App\Compartido\EventoProcesado;
 use App\Ticket\Ticket;
 use App\Compartido\Graph\GraphApiException;
 use App\Agente\Repository\AgenteRepository;
 use App\Ticket\Repository\TicketRepository;
-use App\Compartido\Repository\ProcessedEventRepository;
+use App\Compartido\Repository\EventoProcesadoRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Query;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -50,8 +50,8 @@ class AutoReplyServiceTest extends TestCase
     private TicketRepository&MockObject $ticketRepo;
     private DisponibilidadDeAgenteService $availabilityService;
     private GraphClient&MockObject $graphClient;
-    private ProcessedEventRepository&MockObject $processedEventRepo;
-    private EventCollector&MockObject $eventCollector;
+    private EventoProcesadoRepository&MockObject $processedEventRepo;
+    private RecolectorDeEventos&MockObject $eventCollector;
     private LoggerInterface&MockObject $logger;
     private PoliticaDeVentana $windowPolicy;
     private RespuestaAutomaticaService $service;
@@ -62,8 +62,8 @@ class AutoReplyServiceTest extends TestCase
         $this->agentShiftRepo = $this->createMock(TurnoRepository::class);
         $this->em = $this->createMock(EntityManagerInterface::class);
         $this->graphClient = $this->createMock(GraphClient::class);
-        $this->processedEventRepo = $this->createMock(ProcessedEventRepository::class);
-        $this->eventCollector = $this->createMock(EventCollector::class);
+        $this->processedEventRepo = $this->createMock(EventoProcesadoRepository::class);
+        $this->eventCollector = $this->createMock(RecolectorDeEventos::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
         // Create REAL DisponibilidadDeAgenteService with mocked deps
@@ -281,8 +281,8 @@ class AutoReplyServiceTest extends TestCase
             ->with(1)
             ->willReturn($agent);
 
-        // Simulate existing ProcessedEvent (recent — within 4h window)
-        $recentEvent = new ProcessedEvent('auto-reply:1');
+        // Simulate existing EventoProcesado (recent — within 4h window)
+        $recentEvent = new EventoProcesado('auto-reply:1');
         $recentProp = new \ReflectionProperty($recentEvent, 'processedAt');
         $recentProp->setAccessible(true);
         $recentProp->setValue($recentEvent, new \DateTimeImmutable('-1 hour')); // 1 hour ago
@@ -362,7 +362,7 @@ class AutoReplyServiceTest extends TestCase
             ->method('error')
             ->with(self::stringContains('AutoReply Graph API error'));
 
-        // ProcessedEvent should NOT be persisted (send failed)
+        // EventoProcesado should NOT be persisted (send failed)
         // Message is also NOT persisted because the send failed
         $this->em->expects(self::never())->method('persist');
         $this->em->expects(self::never())->method('flush');

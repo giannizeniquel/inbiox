@@ -9,7 +9,7 @@ use Symfony\Component\Uid\Ulid;
 #[ORM\Table(name: 'outbox_events')]
 #[ORM\Index(name: 'idx_outbox_published', columns: ['published_at'])]
 #[ORM\Index(name: 'idx_outbox_topic', columns: ['topic'])]
-class OutboxEvent
+class EventoOutbox
 {
     #[ORM\Id]
     #[ORM\Column(name: 'id', type: 'string', length: 36)]

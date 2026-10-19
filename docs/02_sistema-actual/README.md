@@ -50,7 +50,7 @@ Una bandeja de atención compartida: los mensajes que llegan por **WhatsApp Clou
 | **Usuario** | Credenciales y roles para iniciar sesión (`ROLE_AGENT`, `ROLE_SUPERVISOR`, `ROLE_ADMIN`). | `Administracion/Usuario.php` |
 | **Agente** | La persona que atiende (turnos, capacidad, workspaces). Se vincula 1:1 y de forma opcional con un usuario. | `Agente/Agente.php` |
 | **Workspace** | Un número de WhatsApp Business (`phone_number_id` de Meta). Los agentes pertenecen a uno o varios. | `Administracion/EspacioDeTrabajo.php` |
-| **Workspace activo** | El workspace que el usuario eligió en el selector; filtra la bandeja, contactos y reportes. | `Compartido/Security/WorkspaceScope.php` |
+| **Workspace activo** | El workspace que el usuario eligió en el selector; filtra la bandeja, contactos y reportes. | `Compartido/Security/AlcanceDeEspacioDeTrabajo.php` |
 | **Equipo (team)** | Área dentro de un workspace (Sprint 18). Hoy solo sirve para filtrar; **no** participa en la asignación. | `Agente/Equipo.php` |
 | **Turno (shift)** | Franja semanal de trabajo de un agente, en su zona horaria. | `Disponibilidad/Turno.php` |
 | **Override** | Disponibilidad forzada a mano ("disponible"/"no disponible"), con vencimiento opcional. Tiene prioridad sobre el turno. | `Agente.php` (`is_available_override`, `override_until`) |
@@ -62,7 +62,7 @@ Una bandeja de atención compartida: los mensajes que llegan por **WhatsApp Clou
 | **Plantilla (template)** | Mensaje pre-aprobado por Meta que se puede enviar fuera de la ventana de 24 h. Hoy no tiene UI. | `ProxyDeProveedorController::enviarPlantilla` → `EnviarPlantillaUseCase` |
 | **WAMID** | Identificador que Meta asigna a cada mensaje de WhatsApp. Se guarda en `messages.external_id`. | — |
 | **Webhook** | Endpoint público `POST /webhook` donde Meta envía mensajes entrantes y estados de entrega. | `Conversacion/Controller/WebhookController.php` |
-| **Outbox** | Tabla `outbox_events` donde los casos de uso dejan eventos para publicar después en tiempo real. Patrón "transactional outbox". | `Compartido/Outbox/OutboxEvent.php` |
+| **Outbox** | Tabla `outbox_events` donde los casos de uso dejan eventos para publicar después en tiempo real. Patrón "transactional outbox". | `Compartido/Outbox/EventoOutbox.php` |
 | **Publicador** | Proceso que lee el outbox cada 2 s y envía los eventos a Mercure (`app:outbox:publish`). | `Compartido/Outbox/OutboxPublisherService.php` |
 | **Dead letter** | Evento del outbox que falló 5 veces y ya no se reintenta. | `OutboxPublisherService.php` |
 | **Mercure** | Servidor (hub) de Server-Sent Events (SSE). El navegador queda suscripto y recibe eventos sin recargar. | servicio `mercure` en `docker-compose.yml` |

@@ -7,7 +7,7 @@ namespace App\Asignacion\Controller;
 use App\Asignacion\UseCase\AsignarTicketUseCase;
 use App\Asignacion\UseCase\SetEquipoDeTicketUseCase;
 use App\Disponibilidad\AgenteInactivoException;
-use App\Compartido\StateConflictException;
+use App\Compartido\ConflictoDeEstadoException;
 use App\Asignacion\Repository\AsignacionRepository;
 use App\Ticket\Repository\TicketRepository;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -53,10 +53,10 @@ class AsignacionDeTicketController
             );
             return new JsonResponse($result);
         } catch (AgenteInactivoException $e) {
-            // Subclass-first: must be caught BEFORE the generic StateConflictException
+            // Subclass-first: must be caught BEFORE the generic ConflictoDeEstadoException
             // arm below so the frontend gets the machine-readable discriminator.
             return new JsonResponse(['type' => 'AGENT_NOT_ACTIVE', 'error' => $e->getMessage()], 409);
-        } catch (StateConflictException $e) {
+        } catch (ConflictoDeEstadoException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 409);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);

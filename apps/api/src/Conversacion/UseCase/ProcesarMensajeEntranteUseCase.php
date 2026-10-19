@@ -5,12 +5,12 @@ namespace App\Conversacion\UseCase;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversacion;
 use App\Conversacion\EstadoDeConversacion;
-use App\Compartido\EventCollector;
+use App\Compartido\RecolectorDeEventos;
 use App\Conversacion\MessageCreatedEvent;
 use App\Ticket\TicketCreatedEvent;
 use App\Conversacion\Mensaje;
 use App\Conversacion\TipoDeRemitente;
-use App\Compartido\Outbox\OutboxEvent;
+use App\Compartido\Outbox\EventoOutbox;
 use App\Compartido\Outbox\OutboxWriter;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
@@ -41,7 +41,7 @@ class ProcesarMensajeEntranteUseCase
         private EventDispatcherInterface $eventDispatcher,
         private CambiarEstadoDeTicketUseCase $cambiarEstadoDeTicketUseCase,
         private EjecutorDeReglas $ejecutorDeReglas,
-        private EventCollector $eventCollector,
+        private RecolectorDeEventos $eventCollector,
         private readonly OutboxWriter $outboxWriter,
         private RespuestaAutomaticaService $respuestaAutomaticaService,
         private LoggerInterface $logger,
@@ -142,7 +142,7 @@ foreach ($events as $event) {
                 $payload['priority'] = $event->priority;
             }
 
-            $outboxEvent = new OutboxEvent(
+            $outboxEvent = new EventoOutbox(
                 aggregateType: 'ticket',
                 aggregateId: (int) $event->ticketId,
                 topic: 'tickets',

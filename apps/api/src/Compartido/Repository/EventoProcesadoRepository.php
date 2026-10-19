@@ -2,18 +2,18 @@
 
 namespace App\Compartido\Repository;
 
-use App\Compartido\ProcessedEvent;
+use App\Compartido\EventoProcesado;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<ProcessedEvent>
+ * @extends ServiceEntityRepository<EventoProcesado>
  */
-class ProcessedEventRepository extends ServiceEntityRepository
+class EventoProcesadoRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, ProcessedEvent::class);
+        parent::__construct($registry, EventoProcesado::class);
     }
 
     /**
@@ -27,7 +27,7 @@ class ProcessedEventRepository extends ServiceEntityRepository
     /**
      * Find processed event by event ID
      */
-    public function findByEventId(string $eventId): ?ProcessedEvent
+    public function findByEventId(string $eventId): ?EventoProcesado
     {
         return $this->findOneBy(['eventId' => $eventId]);
     }
@@ -35,7 +35,7 @@ class ProcessedEventRepository extends ServiceEntityRepository
     /**
      * Save a processed event
      */
-    public function save(ProcessedEvent $event): void
+    public function save(EventoProcesado $event): void
     {
         $this->getEntityManager()->persist($event);
         $this->getEntityManager()->flush();

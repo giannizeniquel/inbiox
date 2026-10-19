@@ -4,7 +4,7 @@ namespace App\Tests\Integration;
 
 use App\Conversacion\UseCase\ProcesarMensajeEntranteUseCase;
 use App\Asignacion\UseCase\AsignarTicketUseCase;
-use App\Compartido\Outbox\OutboxEvent;
+use App\Compartido\Outbox\EventoOutbox;
 use App\Ticket\Ticket;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversacion;
@@ -60,7 +60,7 @@ class Sprint09BOutboxTest extends KernelTestCase
     // ============================================
 
     /**
-     * Test: OutboxEvent is created after UseCase execution
+     * Test: EventoOutbox is created after UseCase execution
      */
     public function test_outbox_event_persisted_after_inbound_message(): void
     {
@@ -70,8 +70,8 @@ class Sprint09BOutboxTest extends KernelTestCase
         // Act
         $result = $useCase->procesarMensajeEntrante('+5491155555555', 'Hello test message');
 
-        // Assert - OutboxEvent exists
-        $outboxRepo = $this->em->getRepository(OutboxEvent::class);
+        // Assert - EventoOutbox exists
+        $outboxRepo = $this->em->getRepository(EventoOutbox::class);
         $events = $outboxRepo->findAll();
         
         $this->assertNotEmpty($events, 'OutboxEvent should be created');
@@ -105,8 +105,8 @@ class Sprint09BOutboxTest extends KernelTestCase
      */
     public function test_publisher_marks_event_as_published(): void
     {
-        // Arrange - create an OutboxEvent using the Entity
-        $outboxEvent = new OutboxEvent(
+        // Arrange - create an EventoOutbox using the Entity
+        $outboxEvent = new EventoOutbox(
             'ticket',
             1,
             'ticket/1',
@@ -123,7 +123,7 @@ class Sprint09BOutboxTest extends KernelTestCase
 
         // Assert - verify it was marked
         $this->em->clear();
-        $event = $this->em->find(OutboxEvent::class, $outboxEvent->getId());
+        $event = $this->em->find(EventoOutbox::class, $outboxEvent->getId());
         
         $this->assertNotNull($event->getPublishedAt(), 'published_at should be set');
     }
@@ -138,7 +138,7 @@ class Sprint09BOutboxTest extends KernelTestCase
     public function test_publisher_is_idempotent(): void
     {
         // Arrange - create already published event
-        $outboxEvent = new OutboxEvent(
+        $outboxEvent = new EventoOutbox(
             'ticket',
             1,
             'tickets',
@@ -220,7 +220,7 @@ class Sprint09BOutboxTest extends KernelTestCase
         $useCase->procesarMensajeEntrante('+5491155555557', 'Test message');
 
         // Assert
-        $outboxRepo = $this->em->getRepository(OutboxEvent::class);
+        $outboxRepo = $this->em->getRepository(EventoOutbox::class);
         $events = $outboxRepo->findAll();
         
         $this->assertCount(2, $events, 'Should have 2 events: TicketCreated + MessageCreated');

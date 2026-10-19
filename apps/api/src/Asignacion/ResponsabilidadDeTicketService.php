@@ -6,7 +6,7 @@ namespace App\Asignacion;
 
 use App\Agente\Agente;
 use App\Compartido\DomainEvent;
-use App\Compartido\EventCollector;
+use App\Compartido\RecolectorDeEventos;
 use App\Ticket\InboxUpdatedEvent;
 use App\Ticket\TicketUpdatedEvent;
 use App\Ticket\Ticket;
@@ -20,14 +20,14 @@ use Doctrine\ORM\EntityManagerInterface;
  * ALL ownership changes MUST go through registrarCambioDeResponsable().
  *
  * This is the audit gateway: every change creates an Asignacion row,
- * updates the ticket, and emits domain events via EventCollector
+ * updates the ticket, and emits domain events via RecolectorDeEventos
  * (which PR4 connects to Mercure).
  */
 final class ResponsabilidadDeTicketService
 {
     public function __construct(
         private EntityManagerInterface $em,
-        private EventCollector $eventCollector,
+        private RecolectorDeEventos $eventCollector,
     ) {}
 
     /**

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Conversacion;
 
-use App\Compartido\Storage\MediaStorageService;
+use App\Compartido\Storage\AdjuntoStorageService;
 
 class UrlDeAdjuntoService
 {
     public function __construct(
-        private readonly MediaStorageService $storageService,
+        private readonly AdjuntoStorageService $storageService,
         private readonly int $urlTtl = 300,
     ) {}
 

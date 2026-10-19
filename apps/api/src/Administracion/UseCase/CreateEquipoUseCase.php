@@ -7,7 +7,7 @@ namespace App\Administracion\UseCase;
 use App\Administracion\Repository\EspacioDeTrabajoRepository;
 use App\Agente\Repository\EquipoRepository;
 use App\Agente\Equipo;
-use App\Compartido\StateConflictException;
+use App\Compartido\ConflictoDeEstadoException;
 use Doctrine\ORM\EntityManagerInterface;
 
 final class CreateEquipoUseCase
@@ -22,7 +22,7 @@ final class CreateEquipoUseCase
      * @param array<mixed> $data decoded request body
      *
      * @throws \InvalidArgumentException when a field is missing or invalid, or the workspace does not exist
-     * @throws StateConflictException    when the workspace already has a team with that name
+     * @throws ConflictoDeEstadoException    when the workspace already has a team with that name
      */
     public function execute(array $data): Equipo
     {
@@ -45,7 +45,7 @@ final class CreateEquipoUseCase
         }
 
         if (null !== $this->equipoRepository->findOneBy(['espacioDeTrabajo' => $espacioDeTrabajo, 'nombre' => $nombre])) {
-            throw new StateConflictException('A team with this name already exists in this workspace');
+            throw new ConflictoDeEstadoException('A team with this name already exists in this workspace');
         }
 
         $equipo = new Equipo($espacioDeTrabajo, $nombre);

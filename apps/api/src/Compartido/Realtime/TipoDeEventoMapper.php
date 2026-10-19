@@ -3,22 +3,22 @@
 namespace App\Compartido\Realtime;
 
 /**
- * Maps PHP domain event FQCNs to RealtimeEventType enum values.
+ * Maps PHP domain event FQCNs to TipoDeEventoEnTiempoReal enum values.
  * Single source of truth for the FQCN → enum string mapping.
  */
-final readonly class EventTypeMapper
+final readonly class TipoDeEventoMapper
 {
     private const MAP = [
-        \App\Ticket\TicketCreatedEvent::class              => RealtimeEventType::TicketCreated,
-        \App\Ticket\TicketUpdatedEvent::class              => RealtimeEventType::TicketStatusChanged,
-        \App\Conversacion\MessageCreatedEvent::class             => RealtimeEventType::MessageAdded,
-        \App\Conversacion\MessageUpdatedEvent::class             => RealtimeEventType::MessageUpdated,
-        \App\Disponibilidad\AgentAvailabilityChangedEvent::class   => RealtimeEventType::AGENT_AVAILABILITY_CHANGED,
-        \App\Disponibilidad\AgentShiftChangedEvent::class          => RealtimeEventType::AGENT_SHIFT_CHANGED,
+        \App\Ticket\TicketCreatedEvent::class              => TipoDeEventoEnTiempoReal::TicketCreated,
+        \App\Ticket\TicketUpdatedEvent::class              => TipoDeEventoEnTiempoReal::TicketStatusChanged,
+        \App\Conversacion\MessageCreatedEvent::class             => TipoDeEventoEnTiempoReal::MessageAdded,
+        \App\Conversacion\MessageUpdatedEvent::class             => TipoDeEventoEnTiempoReal::MessageUpdated,
+        \App\Disponibilidad\AgentAvailabilityChangedEvent::class   => TipoDeEventoEnTiempoReal::AGENT_AVAILABILITY_CHANGED,
+        \App\Disponibilidad\AgentShiftChangedEvent::class          => TipoDeEventoEnTiempoReal::AGENT_SHIFT_CHANGED,
     ];
 
     /**
-     * Map a PHP FQCN to its corresponding RealtimeEventType string value.
+     * Map a PHP FQCN to its corresponding TipoDeEventoEnTiempoReal string value.
      *
      * @throws \InvalidArgumentException if no mapping exists for the class name
      */

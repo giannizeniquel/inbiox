@@ -11,7 +11,7 @@ use App\Conversacion\Conversacion;
 use App\Automatizacion\ContextoDeRegla;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
-use App\Compartido\StateConflictException;
+use App\Compartido\ConflictoDeEstadoException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -143,9 +143,9 @@ class AgentReplyAutoClaimTest extends KernelTestCase
      * the NEW `\Throwable` branch (design.md D6's second clear-on-abort
      * path) using a single fault-injecting test double for
      * `EjecutorDeReglas` — the LAST collaborator called, after
-     * `registrarCambioDeResponsable()`, the Message, and the ProcessedEvent have
+     * `registrarCambioDeResponsable()`, the Message, and the EventoProcesado have
      * already been flushed within the same still-open transaction. Every
-     * other collaborator (EntityManager, EventCollector, ResponsabilidadDeTicketService,
+     * other collaborator (EntityManager, RecolectorDeEventos, ResponsabilidadDeTicketService,
      * repositories) stays real.
      */
     public function testEventCollectorDoesNotLeakEventsFromARolledBackAttempt(): void
@@ -184,7 +184,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
         self::assertSame(0, (int) $conn->fetchOne('SELECT COUNT(*) FROM outbox_events WHERE aggregate_id = ?', [$ticketId]));
         self::assertNull($conn->fetchOne('SELECT assigned_agent_id FROM tickets WHERE id = ?', [$ticketId]));
 
-        $eventCollector = static::getContainer()->get(\App\Compartido\EventCollector::class);
+        $eventCollector = static::getContainer()->get(\App\Compartido\RecolectorDeEventos::class);
         self::assertSame(
             [],
             $eventCollector->getEvents(),
@@ -285,7 +285,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
 
         $useCase = static::getContainer()->get(ProcesarMensajeSalienteUseCase::class);
 
-        $this->expectException(StateConflictException::class);
+        $this->expectException(ConflictoDeEstadoException::class);
 
         try {
             $useCase->procesarMensajeSaliente(
@@ -317,7 +317,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
 
         $useCase = static::getContainer()->get(ProcesarMensajeSalienteUseCase::class);
 
-        $this->expectException(StateConflictException::class);
+        $this->expectException(ConflictoDeEstadoException::class);
         $useCase->procesarMensajeSaliente(
             ticketId: $ticketId,
             contenido: 'I am taking this ticket',

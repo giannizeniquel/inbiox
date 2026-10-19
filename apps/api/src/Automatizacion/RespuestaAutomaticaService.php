@@ -9,17 +9,17 @@ use App\Compartido\Graph\GraphClient;
 
 use App\Agente\Agente;
 use App\Conversacion\Conversacion;
-use App\Compartido\EventCollector;
+use App\Compartido\RecolectorDeEventos;
 use App\Conversacion\MessageCreatedEvent;
 use App\Conversacion\Mensaje;
 use App\Conversacion\DireccionDeMensaje;
 use App\Conversacion\TipoDeRemitente;
 use App\Conversacion\PoliticaDeVentana;
-use App\Compartido\ProcessedEvent;
+use App\Compartido\EventoProcesado;
 use App\Ticket\Ticket;
 use App\Compartido\Graph\GraphApiException;
 use App\Agente\Repository\AgenteRepository;
-use App\Compartido\Repository\ProcessedEventRepository;
+use App\Compartido\Repository\EventoProcesadoRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Ulid;
@@ -44,8 +44,8 @@ final class RespuestaAutomaticaService
         private readonly AgenteRepository $agentRepo,
         private readonly DisponibilidadDeAgenteService $availabilityService,
         private readonly GraphClient $graphClient,
-        private readonly ProcessedEventRepository $processedEventRepo,
-        private readonly EventCollector $eventCollector,
+        private readonly EventoProcesadoRepository $processedEventRepo,
+        private readonly RecolectorDeEventos $eventCollector,
         private readonly LoggerInterface $logger,
         private readonly EntityManagerInterface $em,
         private readonly PoliticaDeVentana $windowPolicy,
@@ -173,7 +173,7 @@ final class RespuestaAutomaticaService
         if ($existingEvent !== null) {
             $existingEvent->setProcessedAt(new \DateTimeImmutable('now'));
         } else {
-            $processedEvent = new ProcessedEvent($rateLimitKey);
+            $processedEvent = new EventoProcesado($rateLimitKey);
             $this->em->persist($processedEvent);
         }
         $this->em->flush();

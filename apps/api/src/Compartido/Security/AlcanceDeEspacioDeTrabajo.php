@@ -17,7 +17,7 @@ use Symfony\Bundle\SecurityBundle\Security;
  * This is used at the QUERY level to add WHERE clauses, filtering
  * tickets/conversations/contacts by the active workspace's phone number ID.
  */
-final class WorkspaceScope
+final class AlcanceDeEspacioDeTrabajo
 {
     public function __construct(
         private readonly Security $security,

@@ -8,7 +8,7 @@ use App\Administracion\Repository\UsuarioRepository;
 use App\Administracion\Usuario;
 use App\Agente\Repository\AgenteRepository;
 use App\Compartido\NotFoundException;
-use App\Compartido\StateConflictException;
+use App\Compartido\ConflictoDeEstadoException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
@@ -25,7 +25,7 @@ final class CreateUsuarioUseCase
      * @param array<mixed> $data decoded request body
      *
      * @throws \InvalidArgumentException when a field is missing or invalid
-     * @throws StateConflictException    when the email or the agent is taken
+     * @throws ConflictoDeEstadoException    when the email or the agent is taken
      * @throws NotFoundException         when agent_id does not exist
      */
     public function execute(array $data): Usuario
@@ -43,7 +43,7 @@ final class CreateUsuarioUseCase
         }
 
         if (null !== $this->usuarioRepository->findOneBy(['email' => $email])) {
-            throw new StateConflictException('Email already exists');
+            throw new ConflictoDeEstadoException('Email already exists');
         }
 
         $usuario = new Usuario();
@@ -58,7 +58,7 @@ final class CreateUsuarioUseCase
                 throw new NotFoundException('Agent not found');
             }
             if (null !== $agente->getUsuario()) {
-                throw new StateConflictException('Agent already linked to another user');
+                throw new ConflictoDeEstadoException('Agent already linked to another user');
             }
             $agente->setUsuario($usuario);
             $usuario->setAgente($agente);

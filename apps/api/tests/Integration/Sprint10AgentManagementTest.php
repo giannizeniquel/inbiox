@@ -8,7 +8,7 @@ use App\Asignacion\UseCase\AsignarTicketAutomaticamenteUseCase;
 use App\Agente\Agente;
 use App\Disponibilidad\Turno;
 use App\Asignacion\Asignacion;
-use App\Compartido\Outbox\OutboxEvent;
+use App\Compartido\Outbox\EventoOutbox;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
 use App\Administracion\Usuario;

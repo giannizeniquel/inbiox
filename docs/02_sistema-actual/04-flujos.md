@@ -82,7 +82,7 @@ flowchart TD
 | 16 | Despacha `TicketRequiereAsignacionAutomaticaEvent` → listener → `AsignarTicketAutomaticamenteUseCase::executeInTransaction()` **dentro de la misma transacción**. | `:466-468`; `Asignacion/EventListener/AsignacionAutomaticaSolicitadaListener.php:17-20` | ver F6 |
 | 17 | Commit. Después: `RespuestaAutomaticaService::enviarSiCorresponde()` y escritura de eventos en el outbox. | `:83-99`, `:107-156` | ver F9, F13 |
 
-- **Entidades:** Contacto, Conversation, Message, Ticket, EventoDeTicket, Etiqueta/EtiquetaDeTicket, Asignacion, Agente, OutboxEvent, WebhookPayload, ProcessedEvent, RegistroDeRegla.
+- **Entidades:** Contacto, Conversacion, Mensaje, Ticket, EventoDeTicket, Etiqueta/EtiquetaDeTicket, Asignacion, Agente, EventoOutbox, PayloadWebhook, EventoProcesado, RegistroDeRegla.
 - **Persistencia:** `webhook_payloads`, `contacts`, `conversations`, `messages`, `tickets`, `ticket_events`, `tags`/`ticket_tags`, `rule_execution_logs`, `assignments`, `processed_events`, `outbox_events`.
 - **Efectos laterales:** descarga de media de Meta; posible auto-respuesta por Graph API; eventos en tiempo real.
 - **Resultado:** el mensaje queda en la conversación; el ticket queda `new` (sin dueño), `active` (con dueño auto-asignado) o `waiting` (si estaba resuelto).
@@ -116,12 +116,12 @@ flowchart TD
 | 9 | **Auto-claim:** si el ticket no está resuelto/cerrado y el remitente no es el dueño → `AUTO_ASSIGN` (sin dueño) o `REASSIGN` (otro dueño). No mira disponibilidad ni capacidad. | `:222-254` | R-A6 |
 | 10 | Crea el `Mensaje` (`outbound`, `sender_type=agent`, `sender_agent_id`). | `:257-269` | R-M4 |
 | 11 | Estado: `new → active`, `active → waiting`; registra `first_response_at`. Como el paso 9 ya pasó `new → active`, el primer mensaje deja el ticket en `waiting`. | `:272-305` | R-T5, R-T6 |
-| 12 | Guarda `ProcessedEvent`, recolecta `MessageCreatedEvent`, commit, escribe outbox (omite `InboxUpdatedEvent`, agrega `assignee_id`). | `:308-426` | |
+| 12 | Guarda `EventoProcesado`, recolecta `MessageCreatedEvent`, commit, escribe outbox (omite `InboxUpdatedEvent`, agrega `assignee_id`). | `:308-426` | |
 | 13 | **Recién ahora** llama a Graph API (`sendMessage` o `sendMediaMessage`) con el `phone_number_id` del ticket. Si falla → error al usuario, **pero el mensaje ya quedó guardado como `sent`** y el ticket ya cambió. | `EnviarMensajeSalienteUseCase.php:77-97`; errores → JSON en `ProxyDeProveedorController.php:72-123` | R-M6 |
 | 14 | Guarda el WAMID en `messages.external_id` (para correlacionar estados de entrega). | `:174-184` | |
 | 15 | (Frontend) Confirma el mensaje optimista; si falla, `retryWithBackoff` **reintenta el POST 2 veces**. | `message-sender.service.ts:41-45, 71-74` | |
 
-- **Entidades:** Ticket, Message, Asignacion, Agente, ProcessedEvent, OutboxEvent.
+- **Entidades:** Ticket, Mensaje, Asignacion, Agente, EventoProcesado, EventoOutbox.
 - **Resultado:** mensaje en WhatsApp y en la conversación; el remitente pasa a ser dueño (salvo resuelto/cerrado).
 - **Confirmado por lectura (no reproducido en ejecución):** ante un duplicado (paso 5) el caso de uso devuelve `status = duplicate_skipped` y `message_id = null`, pero `EnviarMensajeSalienteUseCase` **no revisa ese resultado** (`:69-91`) y llama a Graph igual: el texto repetido se envía a WhatsApp sin quedar guardado. Combinado con el reintento automático del frontend (paso 15), un error de red puede hacer que el cliente reciba **el mismo mensaje hasta 3 veces**, mientras la base muestra uno solo. La idempotencia protege la base, no al cliente. Ver [R10](00-estado-y-pendientes.md#r10-mensaje-marcado-enviado-que-no-se-envió).
 
@@ -327,7 +327,7 @@ stateDiagram-v2
 
 | Operación | Endpoint | Caso de uso / clase | Notas |
 |---|---|---|---|
-| Listar | `GET /api/contacts?page&limit` | `ListContactosQuery` (con `WorkspaceScope`) | Frontend: 20 por página, búsqueda y filtros **en el navegador**. |
+| Listar | `GET /api/contacts?page&limit` | `ListContactosQuery` (con `AlcanceDeEspacioDeTrabajo`) | Frontend: 20 por página, búsqueda y filtros **en el navegador**. |
 | Detalle | `GET /api/contacts/{id}` | `GetDetalleDeContactoQuery` | Sin filtro de workspace. |
 | Crear | `POST /api/contacts` | `CreateContactoUseCase.php:19-81` | Teléfono obligatorio, normalizado con `NormalizadorDeTelefono`, único global; valores inválidos de `status`/`channel` se ignoran. |
 | Editar | `PUT /api/contacts/{id}` | `UpdateContactoUseCase.php:17-85` | Normaliza el teléfono con **código propio**; valores inválidos lanzan error (inconsistente con crear). |
@@ -361,9 +361,9 @@ El equipo **no participa en la asignación** (ni manual ni automática).
 
 Ver el diagrama y la tabla de archivos en [02 § Tiempo real](02-arquitectura-y-tecnologias.md#tiempo-real-outbox--publicador--mercure--sse). Resumen del recorrido:
 
-1. Un caso de uso recolecta eventos en `EventCollector` (en memoria).
+1. Un caso de uso recolecta eventos en `RecolectorDeEventos` (en memoria).
 2. Tras el commit, su `persistEventsToOutbox()` escribe filas `pending` en `outbox_events` (topic `tickets`).
-3. El servicio `publisher` (`app:outbox:publish`, cada 2 s) toma hasta 100, arma el JSON con `RealtimeEventFactory` y hace `POST` al hub.
+3. El servicio `publisher` (`app:outbox:publish`, cada 2 s) toma hasta 100, arma el JSON con `EventoEnTiempoRealFactory` y hace `POST` al hub.
 4. El navegador recibe el evento por SSE (`core/realtime/mercure.service.ts`), lo deduplica por `eventId` y lo emite por `EventBusService`.
 5. `TicketStore` y `ConversationStore` actualizan la pantalla.
 
@@ -372,7 +372,7 @@ Ver el diagrama y la tabla de archivos en [02 § Tiempo real](02-arquitectura-y-
 **Si falla, revisar:**
 1. `docker ps` → ¿corre `inbiox_publisher`? `docker logs inbiox_publisher`.
 2. Tabla `outbox_events`: ¿quedan `pending`? ¿hay `dead_letter`? (`app:outbox:dead-letter list`).
-3. `Compartido/Outbox/OutboxPublisherService.php`, `Compartido/Realtime/EventTypeMapper.php`.
+3. `Compartido/Outbox/OutboxPublisherService.php`, `Compartido/Realtime/TipoDeEventoMapper.php`.
 4. Navegador: pestaña Red → petición a `/.well-known/mercure?topic=tickets`; `mercure.service.ts` (circuit breaker tras 10 fallos; recargar la página).
 5. `core/stores/ticket.store.ts:112-208`, `core/stores/conversation.store.ts:65-107` (el mensaje solo se agrega si es el ticket abierto).
 
@@ -409,7 +409,7 @@ Un mensaje `failed` no afecta el estado del ticket.
 | Participación | Agentes que escribieron en el episodio | Spec `ticket-agent-participation` (`:941+`). |
 | Export CSV | Streaming por keyset, filtros compartidos con la bandeja, anti CSV-injection | `Reporte/Query/ExportarTicketsCsvQuery.php`; supervisor+. |
 
-- Ningún reporte se restringe por agente (`OwnershipScope` siempre `null`, decisión documentada). Se filtran por workspace activo y, en 5 casos, por equipo.
+- Ningún reporte se restringe por agente (`AlcanceDeResponsabilidad` siempre `null`, decisión documentada). Se filtran por workspace activo y, en 5 casos, por equipo.
 - Frontend: tres bloques de llamadas en secuencia; cualquier error se muestra como 0. Nombres "Agent {id}" y `loadPercentage = asignados × 20` inventados en `core/application/reports/get-reports-dashboard.use-case.ts:158-162`. Fechas locales convertidas a UTC con desfase (`core/api/reports-api.service.ts:131-143`).
 
 **Si falla, revisar:** pestaña Red (¿403/500 silenciados como 0?) → `get-reports-dashboard.use-case.ts` → `ReporteController.php` → `ReporteRepository.php` (método del reporte).
@@ -425,7 +425,7 @@ Un mensaje `failed` no afecta el estado del ticket.
 | 3 | Ante un 401: el interceptor deduplica refresh concurrentes y reintenta. Si el refresh falla, llama `logout()` (riesgo **no verificado** de bucle logout/refresh). | `core/auth/auth.interceptor.ts:81-133` |
 | 4 | Logout: `POST /api/auth/logout` (borra todos los refresh tokens), desconecta Mercure. **No limpia** los stores de tickets/conversación. | `auth.store.ts:136-148` |
 | 5 | Workspace: `GET /api/me/workspaces` (con `has_pending`) y `GET /api/me/workspace`; al elegir, `PUT /api/me/workspace` y `window.location.reload()`. Admin/supervisor pueden elegir cualquiera (y se les crea un agente); un agente solo los suyos. | `core/stores/workspace.store.ts:105-120`; `Administracion/Controller/MiEspacioDeTrabajoController.php`, `Administracion/UseCase/SetEspacioDeTrabajoActivoUseCase.php` |
-| 6 | El backend filtra bandeja, contactos y reportes con `WorkspaceScope` (por `phone_number_id`). Sin workspace activo: **no filtra**. | `Compartido/Security/WorkspaceScope.php:43-64` |
+| 6 | El backend filtra bandeja, contactos y reportes con `AlcanceDeEspacioDeTrabajo` (por `phone_number_id`). Sin workspace activo: **no filtra**. | `Compartido/Security/AlcanceDeEspacioDeTrabajo.php:43-64` |
 
 **Si falla, revisar:** 429 en login → rate limiter (5/min) → `security.yaml` → claves JWT (`config/jwt/*.pem`, `JWT_PASSPHRASE`) → `auth.store.ts` / `auth.interceptor.ts` → usuario inactivo (`VerificadorDeUsuario`).
 

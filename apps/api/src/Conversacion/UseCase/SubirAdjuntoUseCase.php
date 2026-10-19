@@ -6,7 +6,7 @@ namespace App\Conversacion\UseCase;
 
 use App\Compartido\Graph\GraphApiException;
 use App\Compartido\Graph\GraphClient;
-use App\Compartido\Storage\MediaStorageService;
+use App\Compartido\Storage\AdjuntoStorageService;
 use App\Conversacion\AdjuntoDemasiadoGrandeException;
 use App\Conversacion\MimeDeAdjuntoNoPermitidoException;
 use App\Conversacion\ValidadorDeAdjunto;
@@ -21,7 +21,7 @@ final class SubirAdjuntoUseCase
     public function __construct(
         private readonly ValidadorDeAdjunto $validadorDeAdjunto,
         private readonly GraphClient $graphClient,
-        private readonly MediaStorageService $mediaStorageService,
+        private readonly AdjuntoStorageService $mediaStorageService,
     ) {}
 
     /**

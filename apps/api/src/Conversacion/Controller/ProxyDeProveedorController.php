@@ -16,7 +16,7 @@ use App\Compartido\NotFoundException;
 use App\Compartido\Graph\GraphApiException;
 use App\Conversacion\AdjuntoDemasiadoGrandeException;
 use App\Conversacion\MimeDeAdjuntoNoPermitidoException;
-use App\Compartido\StateConflictException;
+use App\Compartido\ConflictoDeEstadoException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -90,7 +90,7 @@ class ProxyDeProveedorController extends AbstractController
                 ],
                 Response::HTTP_UNPROCESSABLE_ENTITY
             );
-        } catch (StateConflictException $e) {
+        } catch (ConflictoDeEstadoException $e) {
             return new JsonResponse(
                 [
                     'type' => 'TICKET_NOT_OWNED',

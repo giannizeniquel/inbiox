@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Conversacion\UseCase;
 
-use App\Compartido\EventCollector;
+use App\Compartido\RecolectorDeEventos;
 use App\Conversacion\MessageUpdatedEvent;
-use App\Compartido\Outbox\OutboxEvent;
+use App\Compartido\Outbox\EventoOutbox;
 use App\Compartido\Outbox\OutboxWriter;
 use App\Conversacion\Repository\MensajeRepository;
 use App\Ticket\Repository\TicketRepository;
@@ -51,7 +51,7 @@ class ProcesarActualizacionDeEstadoUseCase
         private readonly EntityManagerInterface $em,
         private readonly MensajeRepository $mensajeRepo,
         private readonly TicketRepository $ticketRepo,
-        private readonly EventCollector $eventCollector,
+        private readonly RecolectorDeEventos $eventCollector,
         private readonly OutboxWriter $outboxWriter,
         private readonly LoggerInterface $logger,
     ) {}
@@ -209,7 +209,7 @@ class ProcesarActualizacionDeEstadoUseCase
     }
 
     /**
-     * Persist collected domain events from EventCollector to the OutboxEvent table.
+     * Persist collected domain events from RecolectorDeEventos to the EventoOutbox table.
      *
      * Pattern matches ProcesarMensajeEntranteUseCase::persistEventsToOutbox().
      */
@@ -240,7 +240,7 @@ class ProcesarActualizacionDeEstadoUseCase
                 $payload['phone_number_id'] = $this->currentPhoneNumberId;
             }
 
-            $outboxEvent = new OutboxEvent(
+            $outboxEvent = new EventoOutbox(
                 aggregateType: 'ticket',
                 aggregateId: (int) $event->ticketId,
                 topic: 'tickets',

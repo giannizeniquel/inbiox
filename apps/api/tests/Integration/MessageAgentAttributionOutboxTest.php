@@ -8,7 +8,7 @@ use App\Conversacion\UseCase\ProcesarMensajeSalienteUseCase;
 use App\Agente\Agente;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversacion;
-use App\Compartido\Outbox\OutboxEvent;
+use App\Compartido\Outbox\EventoOutbox;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
 use Doctrine\ORM\EntityManagerInterface;
@@ -78,12 +78,12 @@ class MessageAgentAttributionOutboxTest extends KernelTestCase
         $useCase = static::getContainer()->get(ProcesarMensajeSalienteUseCase::class);
         $result = $useCase->procesarMensajeSaliente($ticketId, 'Thanks for reaching out', $agentId);
 
-        $outboxRepo = $this->em->getRepository(OutboxEvent::class);
+        $outboxRepo = $this->em->getRepository(EventoOutbox::class);
         $events = $outboxRepo->findAll();
 
         $messageCreatedEvents = \array_values(\array_filter(
             $events,
-            fn (OutboxEvent $e) => \str_contains($e->getEventType(), 'MessageCreated')
+            fn (EventoOutbox $e) => \str_contains($e->getEventType(), 'MessageCreated')
         ));
 
         self::assertCount(1, $messageCreatedEvents, 'Exactly one MessageCreatedEvent must be persisted to the outbox');

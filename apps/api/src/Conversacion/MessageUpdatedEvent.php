@@ -3,14 +3,14 @@
 namespace App\Conversacion;
 
 use App\Compartido\DomainEvent;
-use App\Compartido\EventCollector;
+use App\Compartido\RecolectorDeEventos;
 
 use Symfony\Component\Uid\Ulid;
 
 /**
  * Domain event for message status updates (delivered, read, failed, etc.).
  *
- * Published via EventCollector + Outbox → Mercure when a message's
+ * Published via RecolectorDeEventos + Outbox → Mercure when a message's
  * deliveryStatus transitions to a new state via ProcesarActualizacionDeEstadoUseCase.
  */
 final readonly class MessageUpdatedEvent extends DomainEvent

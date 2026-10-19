@@ -2,21 +2,21 @@
 
 namespace App\Compartido\Repository;
 
-use App\Compartido\Outbox\OutboxEvent;
+use App\Compartido\Outbox\EventoOutbox;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
  * Reads and writes on the raw `outbox_events` table for the publisher and the
- * dead-letter command. They work on plain rows, not managed OutboxEvent
+ * dead-letter command. They work on plain rows, not managed EventoOutbox
  * entities, so every method uses the DBAL QueryBuilder on the EntityManager's
  * connection and never flushes.
  */
-class OutboxEventRepository extends ServiceEntityRepository
+class EventoOutboxRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, OutboxEvent::class);
+        parent::__construct($registry, EventoOutbox::class);
     }
 
     /**
