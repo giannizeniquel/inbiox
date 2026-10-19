@@ -14,7 +14,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(name: 'idx_assignments_ticket_id', columns: ['ticket_id'])]
 #[ORM\Index(name: 'idx_assignments_assigned_at', columns: ['assigned_at'])]
 #[ORM\Index(name: 'idx_assignments_agent_assigned_at', columns: ['agent_id', 'assigned_at'])]
-class Assignment
+class Asignacion
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]

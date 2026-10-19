@@ -141,7 +141,7 @@ El hub Mercure acepta suscriptores anónimos (`docker-compose.yml`, `anonymous`)
 ### R6. Resolver quita el dueño (contradicción autoinfligida)
 
 **[PROD] · Confirmado.**
-Resolver o cerrar un ticket le quita el dueño: `CambiarEstadoDeTicketUseCase::registrarDesasignacionSiEsResponsable()` (líneas 37-61, llamado en 99, 172 y 289) → `AssignmentService.php:65` pone `assigned_agent_id = null`. Consecuencias:
+Resolver o cerrar un ticket le quita el dueño: `CambiarEstadoDeTicketUseCase::registrarDesasignacionSiEsResponsable()` (líneas 37-61, llamado en 99, 172 y 289) → `ResponsabilidadDeTicketService.php:65` pone `assigned_agent_id = null`. Consecuencias:
 
 1. La regla de Sprint 17 (Tier 1 #6, `TicketResponsabilidadGuard`) dice que en un ticket resuelto/cerrado solo supervisor/admin **o el dueño** pueden enviar mensajes. Como el dueño siempre es `null` en ese estado, **ningún `ROLE_AGENT` puede responder un ticket resuelto**. Los tests de ese cambio construyeron a mano tickets resueltos *con* dueño, un estado que producción nunca genera.
 2. Los reportes por agente (`tickets_resolved`, tiempo medio de resolución) se calculan por `assigned_agent_id`: los tickets resueltos dejan de contar para quien los resolvió.
@@ -162,7 +162,7 @@ Si "desasignar al resolver" es una regla de negocio: **Regla no confirmada** (el
 ### R9. La auto-asignación puede hacer perder mensajes entrantes
 
 **[DATOS] · Probable.**
-La auto-asignación corre **de forma síncrona dentro de la transacción del mensaje entrante** (`TicketAutoAssignmentRequestedListener.php:19` llama `executeInTransaction`). Si lanza una excepción, se revierte también el mensaje del cliente; el webhook igual responde 200 a Meta, que no reintenta. El mensaje solo queda como payload crudo en `webhook_payloads`. El comentario "decoupled" del código es engañoso.
+La auto-asignación corre **de forma síncrona dentro de la transacción del mensaje entrante** (`AsignacionAutomaticaSolicitadaListener.php:19` llama `executeInTransaction`). Si lanza una excepción, se revierte también el mensaje del cliente; el webhook igual responde 200 a Meta, que no reintenta. El mensaje solo queda como payload crudo en `webhook_payloads`. El comentario "decoupled" del código es engañoso.
 
 ### R10. Mensaje marcado "enviado" que no se envió
 
@@ -206,7 +206,7 @@ El servicio `window-closer` está detrás de un *profile* de docker-compose: con
 ### R16. Concurrencia en asignación manual (TOCTOU)
 
 **[DATOS] · Confirmado (lectura); deuda ya registrada en el análisis de brecha.**
-`AssignTicketUseCase.php:78-84` lee el ticket y después lo bloquea (`findById()` + `lock()`); el bloqueo no refresca la entidad. Bajo REPEATABLE READ, dos asignaciones simultáneas pueden registrar un tipo de asignación incorrecto y repetir el número de secuencia de eventos. Mismo patrón en `HandleInboundMessageUseCase.php:332,376`. El bug equivalente ya se corrigió en `HandleOutboundMessageUseCase` con `findByIdForUpdate()`.
+`AsignarTicketUseCase.php:78-84` lee el ticket y después lo bloquea (`findById()` + `lock()`); el bloqueo no refresca la entidad. Bajo REPEATABLE READ, dos asignaciones simultáneas pueden registrar un tipo de asignación incorrecto y repetir el número de secuencia de eventos. Mismo patrón en `HandleInboundMessageUseCase.php:332,376`. El bug equivalente ya se corrigió en `HandleOutboundMessageUseCase` con `findByIdForUpdate()`.
 
 ### R17. Deuda de comprensión
 
@@ -232,7 +232,7 @@ El servicio `window-closer` está detrás de un *profile* de docker-compose: con
 - Conectar el filtro por tag a la UI del inbox (Tier 1 #1 quedó solo en backend).
 - Consumir `sender_type` en el frontend (#14b): hoy los mensajes "de sistema" se infieren por corchetes.
 - Auditar otros controladores admin por el mismo bug de `#[IsGranted]` corregido en `AgentController`.
-- Corregir el TOCTOU de `AssignTicketUseCase` (R16).
+- Corregir el TOCTOU de `AsignarTicketUseCase` (R16).
 
 ### Smoke tests manuales pendientes
 

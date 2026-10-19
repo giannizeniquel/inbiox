@@ -8,10 +8,10 @@ namespace App\Asignacion;
  * Types of ticket ownership changes for the audit trail.
  *
  * Every assignment path (auto, manual, reassign, unassign) creates an
- * Assignment row with one of these types. AssignmentService is the ONLY
- * place that creates Assignment rows.
+ * Asignacion row with one of these types. ResponsabilidadDeTicketService is the ONLY
+ * place that creates Asignacion rows.
  */
-enum AssignmentType: string
+enum TipoDeAsignacion: string
 {
     case AUTO_ASSIGN = 'AUTO_ASSIGN';
     case MANUAL_ASSIGN = 'MANUAL_ASSIGN';

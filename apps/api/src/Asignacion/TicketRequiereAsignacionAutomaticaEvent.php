@@ -2,7 +2,7 @@
 
 namespace App\Asignacion;
 
-class TicketNeedsAutoAssignmentEvent
+class TicketRequiereAsignacionAutomaticaEvent
 {
     public function __construct(
         private int $ticketId,

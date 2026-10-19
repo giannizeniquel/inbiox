@@ -3,7 +3,7 @@
 namespace App\Tests\Integration;
 
 use App\Conversacion\UseCase\HandleInboundMessageUseCase;
-use App\Asignacion\UseCase\AssignTicketUseCase;
+use App\Asignacion\UseCase\AsignarTicketUseCase;
 use App\Ticket\Ticket;
 use App\Compartido\Outbox\OutboxEvent;
 use Doctrine\DBAL\LockMode;
@@ -34,7 +34,7 @@ class Sprint09BConcurrencyTest extends KernelTestCase
         $conn->executeStatement('DELETE FROM conversations');
         $conn->executeStatement('DELETE FROM contacts');
         
-        // Seed agents needed by AssignTicketUseCase (now requires ManyToOne)
+        // Seed agents needed by AsignarTicketUseCase (now requires ManyToOne)
         // Using base columns only (test DB may not have PR1 migration columns yet)
         $conn->executeStatement('DELETE FROM agents');
         for ($i = 1; $i <= 10; $i++) {
@@ -86,9 +86,9 @@ class Sprint09BConcurrencyTest extends KernelTestCase
         // Clear events for clean test
         $this->em->getConnection()->executeStatement('DELETE FROM outbox_events');
         
-        // Use AssignTicketUseCase - it applies pessimistic lock internally
-        $assignUseCase1 = static::getContainer()->get(AssignTicketUseCase::class);
-        $assignUseCase2 = static::getContainer()->get(AssignTicketUseCase::class);
+        // Use AsignarTicketUseCase - it applies pessimistic lock internally
+        $assignUseCase1 = static::getContainer()->get(AsignarTicketUseCase::class);
+        $assignUseCase2 = static::getContainer()->get(AsignarTicketUseCase::class);
         
         // First assignment → seq should increment
         $assignUseCase1->assignTicket($ticketId, 1, 'admin', 'First assignment');
@@ -138,8 +138,8 @@ class Sprint09BConcurrencyTest extends KernelTestCase
         );
         $this->assertEquals(0, $ticket['last_event_seq'], 'Initial seq should be 0');
         
-        // Use AssignTicketUseCase (applies pessimistic lock)
-        $assignUseCase = static::getContainer()->get(AssignTicketUseCase::class);
+        // Use AsignarTicketUseCase (applies pessimistic lock)
+        $assignUseCase = static::getContainer()->get(AsignarTicketUseCase::class);
         $assignUseCase->assignTicket(999, 1, 'admin', 'Test');
         
         // Verify seq incremented
@@ -168,7 +168,7 @@ class Sprint09BConcurrencyTest extends KernelTestCase
         $initialSeq = (int) $ticket['last_event_seq'];
         
         // Get Assign UseCase
-        $assignUseCase = static::getContainer()->get(AssignTicketUseCase::class);
+        $assignUseCase = static::getContainer()->get(AsignarTicketUseCase::class);
         
         // Do multiple assignments
         for ($i = 1; $i <= 4; $i++) {

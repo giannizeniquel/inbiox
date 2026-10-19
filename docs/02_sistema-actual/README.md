@@ -46,7 +46,7 @@ Una bandeja de atención compartida: los mensajes que llegan por **WhatsApp Clou
 | **Mensaje** | Un mensaje entrante (`inbound`) o saliente (`outbound`). Pertenece a la conversación, **no** al ticket. | `Conversacion/Message.php` |
 | **Ticket** | Un caso de atención: un "episodio" dentro de una conversación. Hay a lo sumo un ticket no cerrado por contacto y número. | `Ticket/Ticket.php` |
 | **Estado del ticket** | `new` → `active` → `waiting` → `resolved` → `closed`. Ver la máquina de estados (FSM) en [04-flujos.md](04-flujos.md#f4-transiciones-de-estado-del-ticket). | `Ticket/MaquinaDeEstadosDeTicket.php` |
-| **Dueño (owner)** | El agente asignado al ticket (`tickets.assigned_agent_id`). | `Asignacion/AssignmentService.php` |
+| **Dueño (owner)** | El agente asignado al ticket (`tickets.assigned_agent_id`). | `Asignacion/ResponsabilidadDeTicketService.php` |
 | **Usuario** | Credenciales y roles para iniciar sesión (`ROLE_AGENT`, `ROLE_SUPERVISOR`, `ROLE_ADMIN`). | `Administracion/User.php` |
 | **Agente** | La persona que atiende (turnos, capacidad, workspaces). Se vincula 1:1 y de forma opcional con un usuario. | `Agente/Agent.php` |
 | **Workspace** | Un número de WhatsApp Business (`phone_number_id` de Meta). Los agentes pertenecen a uno o varios. | `Administracion/Workspace.php` |
@@ -55,7 +55,7 @@ Una bandeja de atención compartida: los mensajes que llegan por **WhatsApp Clou
 | **Turno (shift)** | Franja semanal de trabajo de un agente, en su zona horaria. | `Disponibilidad/Turno.php` |
 | **Override** | Disponibilidad forzada a mano ("disponible"/"no disponible"), con vencimiento opcional. Tiene prioridad sobre el turno. | `Agent.php` (`is_available_override`, `override_until`) |
 | **Capacidad** | Máximo de tickets activos (`new`/`active`/`waiting`) por agente; por defecto 10. | `Agent.php` (`max_active_tickets`) |
-| **Auto-asignación** | El sistema elige un agente disponible con menos carga cuando llega un mensaje. | `Asignacion/UseCase/AutoAssignTicketUseCase.php` |
+| **Auto-asignación** | El sistema elige un agente disponible con menos carga cuando llega un mensaje. | `Asignacion/UseCase/AsignarTicketAutomaticamenteUseCase.php` |
 | **Auto-claim** | Cuando un agente responde un ticket no resuelto ni cerrado, pasa a ser su dueño, **aunque el ticket ya tuviera otro dueño** (se registra como `REASSIGN` y se lo quita al anterior). | `Conversacion/UseCase/HandleOutboundMessageUseCase.php:224-246` |
 | **Auto-respuesta** | Mensaje fijo que se envía al cliente si su agente no está disponible (máximo 1 cada 2 h por contacto). | `Automatizacion/RespuestaAutomaticaService.php` |
 | **Ventana de 24 h** | Regla de Meta: solo se puede enviar texto libre hasta 24 h después del último mensaje del cliente. Pasado ese plazo hay que usar una **plantilla**. | `Conversacion/ConversationWindowPolicy.php` |

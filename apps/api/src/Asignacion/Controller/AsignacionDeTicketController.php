@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Asignacion\Controller;
 
-use App\Asignacion\UseCase\AssignTicketUseCase;
-use App\Asignacion\UseCase\SetTicketTeamUseCase;
+use App\Asignacion\UseCase\AsignarTicketUseCase;
+use App\Asignacion\UseCase\SetEquipoDeTicketUseCase;
 use App\Disponibilidad\AgenteInactivoException;
 use App\Compartido\StateConflictException;
-use App\Asignacion\Repository\AssignmentRepository;
+use App\Asignacion\Repository\AsignacionRepository;
 use App\Ticket\Repository\TicketRepository;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -18,20 +18,20 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_AGENT')]
-class TicketController
+class AsignacionDeTicketController
 {
     public function __construct(
-        private AssignTicketUseCase $assignTicketUseCase,
+        private AsignarTicketUseCase $assignTicketUseCase,
         private TicketRepository $ticketRepo,
-        private AssignmentRepository $assignmentRepo,
+        private AsignacionRepository $assignmentRepo,
         private Security $security,
-        private SetTicketTeamUseCase $setTicketTeamUseCase,
+        private SetEquipoDeTicketUseCase $setTicketTeamUseCase,
     ) {}
 
     #[Route('/api/tickets/{id}/assign', name: 'app_ticket_assign', methods: ['POST'])]
     public function assign(
         int $id,
-        #[MapRequestPayload] AssignTicketRequest $request
+        #[MapRequestPayload] AsignarTicketRequest $request
     ): JsonResponse {
         try {
             // Load ticket for voter check

@@ -38,12 +38,12 @@ Estas son las preguntas que solo el desarrollador (o el cliente) puede responder
 | R-T1 | Un contacto tiene a lo sumo un ticket no cerrado por número de WhatsApp; los mensajes nuevos se suman a ese ticket. | `Ticket/Repository/TicketRepository.php:42-61`; `Conversacion/UseCase/HandleInboundMessageUseCase.php:332` | Negocio | **Confirmada** — análisis de brecha §1 ("1 caso abierto por contacto, reutilizado mientras no esté `closed`"). No hay restricción en la base: si existieran dos, el mensaje entrante falla. |
 | R-T2 | Un ticket nuevo nace `new` con prioridad `medium`; la prioridad nunca cambia. | `HandleInboundMessageUseCase.php:365-366` | Accidental (prioridad) | Regla no confirmada. La prioridad no tiene uso. |
 | R-T3 | Las transiciones válidas son las de la FSM; `closed` es terminal. | `Ticket/MaquinaDeEstadosDeTicket.php:34-54` | Negocio | **Confirmada** — análisis de brecha §1 y fila #9b. |
-| R-T4 | Al asignar un dueño a un ticket `new`, pasa a `active` (sin pasar por la FSM). | `Asignacion/AssignmentService.php:69-73` | Técnica | Regla no confirmada. El docblock de la FSM dice que `new → active` ocurre "por la primera respuesta". |
+| R-T4 | Al asignar un dueño a un ticket `new`, pasa a `active` (sin pasar por la FSM). | `Asignacion/ResponsabilidadDeTicketService.php:69-73` | Técnica | Regla no confirmada. El docblock de la FSM dice que `new → active` ocurre "por la primera respuesta". |
 | R-T5 | Primera respuesta del agente: `new → active` y se registra `first_response_at`. | `HandleOutboundMessageUseCase.php:281-309` | Negocio | **Confirmada** — métrica FRT (análisis de brecha fila #16). |
 | R-T6 | Cuando el agente responde, el ticket pasa a `waiting` (espera al cliente). | `HandleOutboundMessageUseCase.php:285-288` | Negocio | Regla no confirmada. |
 | R-T7 | Cuando el cliente responde a un ticket `waiting`, vuelve a `active`. | `HandleInboundMessageUseCase.php:394-408` | Negocio | Regla no confirmada (implícita en la FSM). |
 | R-T8 | Cuando el cliente escribe en un ticket `resolved`, se reabre en `waiting`. | `Automatizacion/ReglaDeReaperturaAutomatica.php:17-47` | Negocio | Reapertura: **Confirmada** (análisis de brecha fila #13). Destino `waiting`: Regla no confirmada. |
-| R-T9 | Resolver o cerrar quita el dueño y deja auditoría `UNASSIGN`. | `Ticket/UseCase/CambiarEstadoDeTicketUseCase.php:37-61` (llamado en `:99`, `:172`, `:289`) → `AssignmentService.php:65` | Técnica | **Regla no confirmada.** El docblock (`:21-22`) lo justifica como corrección de auditoría "W1". Efectos graves: ver [R6](00-estado-y-pendientes.md#r6-resolver-quita-el-dueño-contradicción-autoinfligida). |
+| R-T9 | Resolver o cerrar quita el dueño y deja auditoría `UNASSIGN`. | `Ticket/UseCase/CambiarEstadoDeTicketUseCase.php:37-61` (llamado en `:99`, `:172`, `:289`) → `ResponsabilidadDeTicketService.php:65` | Técnica | **Regla no confirmada.** El docblock (`:21-22`) lo justifica como corrección de auditoría "W1". Efectos graves: ver [R6](00-estado-y-pendientes.md#r6-resolver-quita-el-dueño-contradicción-autoinfligida). |
 | R-T10 | El cierre manual (`/close`) solo aplica a tickets `resolved`. | `CambiarEstadoDeTicketUseCase.php:283-285` | Negocio | **Confirmada** — spec `whatsapp-conversation-window` "No Regression to Manual Closure". |
 | R-T11 | Desde `/transition`, un ticket `active`/`waiting` puede ir directo a `closed`. | `MaquinaDeEstadosDeTicket.php:39-48` | Técnica | Regla no confirmada. La transición se agregó para la ventana de 24 h (`:20-24`) y de paso habilita el cierre manual directo. |
 | R-T12 | `resolved_at` solo se registra si quien llama lo pide (`set_resolved`); en `/resolve`, siempre. | `CambiarEstadoDeTicketUseCase.php:115-117`; `Ticket/Controller/FlujoDeTicketController.php:61-62` | Accidental | Regla no confirmada (el cliente controla un dato de métricas). |
@@ -67,17 +67,17 @@ Estas son las preguntas que solo el desarrollador (o el cliente) puede responder
 
 | ID | Regla | Dónde | Clasif. | Estado |
 |---|---|---|---|---|
-| R-A1 | Todo cambio de dueño pasa por `AssignmentService` y deja una fila de auditoría. | `AssignmentService.php:16-25, 45-111` | Técnica | Regla no confirmada como regla de negocio (es convención de código; se cumple). |
-| R-A2 | La auto-asignación elige al agente disponible con menos tickets activos; desempata por menos auto-asignaciones hoy y luego por menor id. | `Asignacion/UseCase/AutoAssignTicketUseCase.php:135-174` | Negocio | **Confirmada** — análisis de brecha filas #2a, #2e. |
-| R-A3 | La auto-asignación respeta la capacidad máxima (`max_active_tickets`, default 10). | `AutoAssignTicketUseCase.php:136-139`; `DisponibilidadDeAgenteService.php:60-63` | Negocio | **Confirmada** — fila #2a. |
+| R-A1 | Todo cambio de dueño pasa por `ResponsabilidadDeTicketService` y deja una fila de auditoría. | `ResponsabilidadDeTicketService.php:16-25, 45-111` | Técnica | Regla no confirmada como regla de negocio (es convención de código; se cumple). |
+| R-A2 | La auto-asignación elige al agente disponible con menos tickets activos; desempata por menos auto-asignaciones hoy y luego por menor id. | `Asignacion/UseCase/AsignarTicketAutomaticamenteUseCase.php:135-174` | Negocio | **Confirmada** — análisis de brecha filas #2a, #2e. |
+| R-A3 | La auto-asignación respeta la capacidad máxima (`max_active_tickets`, default 10). | `AsignarTicketAutomaticamenteUseCase.php:136-139`; `DisponibilidadDeAgenteService.php:60-63` | Negocio | **Confirmada** — fila #2a. |
 | R-A4 | La auto-asignación considera agentes de **cualquier** workspace. | `DisponibilidadDeAgenteService.php:114` | Accidental (probable bug) | Regla no confirmada; contradice el scope por workspace (fila #0b). |
-| R-A5 | Un ticket ya asignado no se auto-reasigna; un resuelto sin dueño sí se auto-asigna. | `AutoAssignTicketUseCase.php:100-107` | Técnica | Regla no confirmada. |
+| R-A5 | Un ticket ya asignado no se auto-reasigna; un resuelto sin dueño sí se auto-asigna. | `AsignarTicketAutomaticamenteUseCase.php:100-107` | Técnica | Regla no confirmada. |
 | R-A6 | El agente que responde un ticket no resuelto/cerrado pasa a ser su dueño (todos los roles), sin chequear disponibilidad ni capacidad. | `HandleOutboundMessageUseCase.php:226-258` | Negocio | **Confirmada** — spec `reply-auto-assignment` y fila #3 ("decisión de producto explícita del usuario"). |
 | R-A7 | En un ticket resuelto/cerrado, responder no cambia el dueño; solo supervisor/admin o el dueño actual pueden responder. | `Ticket/TicketResponsabilidadGuard.php:35-46` | Negocio | **Confirmada** — spec "Resolved/Closed Ticket Ownership Guard". **Efecto real contradictorio** por R-T9. |
-| R-A8 | No se puede asignar manualmente a un agente "Inactivo" (sin turno ni override), para ningún rol; la capacidad no importa. | `Asignacion/UseCase/AssignTicketUseCase.php:86-95` | Negocio | **Confirmada** — spec `agent-assignment-eligibility`. |
+| R-A8 | No se puede asignar manualmente a un agente "Inactivo" (sin turno ni override), para ningún rol; la capacidad no importa. | `Asignacion/UseCase/AsignarTicketUseCase.php:86-95` | Negocio | **Confirmada** — spec `agent-assignment-eligibility`. |
 | R-A9 | No se puede asignar manualmente un ticket resuelto/cerrado (409 para todos). | `TicketVoter.php:88-95` | Negocio | Regla no confirmada. |
 | R-A10 | Un agente solo puede reasignar tickets que ya son suyos; no puede tomar uno sin dueño desde el desplegable. | `TicketVoter.php:102-118` | Negocio | Regla no confirmada. |
-| R-A11 | El campo "asignado por" lo envía el cliente y se guarda tal cual. | `Asignacion/Controller/AssignTicketRequest.php:13-15` | Accidental | Regla no confirmada. |
+| R-A11 | El campo "asignado por" lo envía el cliente y se guarda tal cual. | `Asignacion/Controller/AsignarTicketRequest.php:13-15` | Accidental | Regla no confirmada. |
 | R-A12 | Un usuario sin agente obtiene uno creado automáticamente (nombre = email) al enviar un mensaje o al cambiar de workspace (admin/supervisor). | `Agente/UseCase/EnsureAgentForUserUseCase.php`; `Administracion/UseCase/SetActiveWorkspaceUseCase.php` (`ensureAgent`) | Técnica | Regla no confirmada. Efecto: aparecen "agentes" con nombre de email en reportes. |
 
 ## Visibilidad y permisos
@@ -99,7 +99,7 @@ Estas son las preguntas que solo el desarrollador (o el cliente) puede responder
 | R-D4 | Un agente solo gestiona su propio override/turnos; supervisor/admin, los de cualquiera. | Intención en el docblock de `Disponibilidad/Controller/DisponibilidadDeAgenteController.php:29-33, 314-318`; **no se aplica** (`:321-333`) | Negocio | Regla no confirmada, y hoy **no se cumple** ([R3](00-estado-y-pendientes.md#r3-cualquier-agente-modifica-disponibilidad-y-turnos-de-cualquier-agente)). |
 | R-D5 | `max_active_tickets ≥ 1`; la zona horaria debe ser válida. | `Agente/Agent.php:152-177` | Técnica | Regla no confirmada. |
 | R-D6 | Desactivar un agente no le quita sus tickets. | `Administracion/UseCase/DeactivateAgentUseCase.php` | Técnica (omisión) | Regla no confirmada. |
-| R-D7 | El override domina sobre el turno y la capacidad. | `DisponibilidadDeAgenteService.php:39-67` | Negocio | **Confirmada** en la cascada; **no se cumple del todo**: la auto-asignación vuelve a filtrar por capacidad dentro del lock (`AutoAssignTicketUseCase.php:135-139`). |
+| R-D7 | El override domina sobre el turno y la capacidad. | `DisponibilidadDeAgenteService.php:39-67` | Negocio | **Confirmada** en la cascada; **no se cumple del todo**: la auto-asignación vuelve a filtrar por capacidad dentro del lock (`AsignarTicketAutomaticamenteUseCase.php:135-139`). |
 
 ## Mensajería
 
@@ -136,7 +136,7 @@ Estas son las preguntas que solo el desarrollador (o el cliente) puede responder
 | R-G1 | Las etiquetas son globales y se normalizan en minúsculas. | `Ticket/Etiqueta.php:17, 53-56` | Técnica | Regla no confirmada. |
 | R-E1 | Un equipo pertenece a un workspace; su nombre es único dentro de él. | `Agente/Team.php:15, 23-25`; `Administracion/UseCase/CreateTeamUseCase.php`, `UpdateTeamUseCase.php` | Negocio | **Confirmada** — spec `team-management`. |
 | R-E2 | Solo se agregan a un equipo agentes del mismo workspace. | `Team.php:115-124` | Negocio | **Confirmada** — spec "Agent Team Membership Requires Workspace Membership". |
-| R-E3 | El equipo de un ticket debe ser del mismo workspace; cualquier agente puede asignarlo o quitarlo. | `Asignacion/UseCase/SetTicketTeamUseCase.php` | Negocio | **Confirmada** — spec "Ticket Team Assignment". |
+| R-E3 | El equipo de un ticket debe ser del mismo workspace; cualquier agente puede asignarlo o quitarlo. | `Asignacion/UseCase/SetEquipoDeTicketUseCase.php` | Negocio | **Confirmada** — spec "Ticket Team Assignment". |
 | R-E4 | Desactivar un equipo no borra su referencia en los tickets. | `Administracion/UseCase/DeactivateTeamUseCase.php` | Negocio | **Confirmada** — spec "Team Deactivation Retains Historical Ticket Attribution". |
 | R-E5 | Equipos inactivos no se ofrecen para nuevas asignaciones. | **Solo en el frontend** (el backend no lo valida en `setTeam`) | Negocio | **Confirmada** en la spec; **no aplicada en el backend**. |
 
@@ -157,7 +157,7 @@ Detalle en [07](07-frontend.md#lógica-de-negocio-que-vive-en-el-frontend).
 | Regla | Lugares | ¿Consistentes? |
 |---|---|---|
 | "Está en turno" | `DisponibilidadDeAgenteService::hasTurnoEnHorario` (`:262-290`) y `DisponibilidadDeAgenteController::isAgenteEnTurno` (`:340-369`) | No del todo: la del controlador no mira `active`. |
-| Cascada de disponibilidad | `isDisponible()`, `listarAgentesDisponibles()`, re-filtro en `AutoAssignTicketUseCase.php:135-139` | No: el re-filtro aplica capacidad también con override. |
+| Cascada de disponibilidad | `isDisponible()`, `listarAgentesDisponibles()`, re-filtro en `AsignarTicketAutomaticamenteUseCase.php:135-139` | No: el re-filtro aplica capacidad también con override. |
 | "Tickets activos" = `new`/`active`/`waiting` | `DisponibilidadDeAgenteService.php:297-317`, `TicketRepository::countActivosDeAgente` (`:146-160`), `ReportingRepository.php:354-356`, `MaquinaDeEstadosDeTicket::isActiveForSLA` (sin uso), frontend `get-reports-dashboard.use-case.ts` | Sí (cinco copias). |
 | Normalización de teléfono | entrante, `NormalizadorDeTelefono`, `UpdateContactoUseCase` | **No** (umbrales distintos). |
 | Cierre automático | `ConversationWindowExpiryService` (vivo). `AutoCloseRule` y `AutoCloseTicketUseCase` se borraron en la fase 1. | Resuelto: queda un solo criterio. |

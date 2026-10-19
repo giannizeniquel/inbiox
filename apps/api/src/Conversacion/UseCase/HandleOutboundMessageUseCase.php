@@ -2,12 +2,12 @@
 
 namespace App\Conversacion\UseCase;
 
-use App\Asignacion\UseCase\AssignTicketUseCase;
-use App\Asignacion\UseCase\AutoAssignTicketUseCase;
+use App\Asignacion\UseCase\AsignarTicketUseCase;
+use App\Asignacion\UseCase\AsignarTicketAutomaticamenteUseCase;
 use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
 
-use App\Asignacion\AssignmentService;
-use App\Asignacion\AssignmentType;
+use App\Asignacion\ResponsabilidadDeTicketService;
+use App\Asignacion\TipoDeAsignacion;
 use App\Conversacion\Conversation;
 use App\Conversacion\ConversationStatus;
 use App\Compartido\EventCollector;
@@ -54,7 +54,7 @@ class HandleOutboundMessageUseCase
         private CambiarEstadoDeTicketUseCase $transitionUseCase,
         private ProcessedEventRepository $processedEventRepo,
         private EjecutorDeReglas $ruleExecutor,
-        private AssignmentService $assignmentService,
+        private ResponsabilidadDeTicketService $assignmentService,
         private AgentRepository $agentRepo,
         private EventCollector $eventCollector,
         private readonly OutboxWriter $outboxWriter,
@@ -158,8 +158,8 @@ class HandleOutboundMessageUseCase
         }
 
         // Persist events AFTER the transaction fully commits (moved OUT of
-        // the try block, matching AssignTicketUseCase:118-121 /
-        // AutoAssignTicketUseCase:55-62): keeping the outbox flush inside
+        // the try block, matching AsignarTicketUseCase:118-121 /
+        // AsignarTicketAutomaticamenteUseCase:55-62): keeping the outbox flush inside
         // the try let an outbox-flush OptimisticLockException re-execute
         // the WHOLE transaction and re-collect duplicate events
         // (design.md D6).
@@ -306,8 +306,8 @@ class HandleOutboundMessageUseCase
         }
 
         $type = $currentAssigneeId !== null
-            ? AssignmentType::REASSIGN
-            : AssignmentType::AUTO_ASSIGN;
+            ? TipoDeAsignacion::REASSIGN
+            : TipoDeAsignacion::AUTO_ASSIGN;
 
         $this->assignmentService->recordOwnershipChange(
             ticket: $ticket,
@@ -318,7 +318,7 @@ class HandleOutboundMessageUseCase
             notes: 'Auto-assigned on agent reply',
         );
 
-        // Flush the assignment + any status change made by AssignmentService
+        // Flush the assignment + any status change made by ResponsabilidadDeTicketService
         // (e.g. new → active) so the DB is consistent before we decide the
         // FSM transition below.
         $this->em->flush();

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Asignacion\UseCase\AutoAssignTicketUseCase;
+use App\Asignacion\UseCase\AsignarTicketAutomaticamenteUseCase;
 use App\Agente\Agent;
 use App\Disponibilidad\Turno;
-use App\Asignacion\Assignment;
+use App\Asignacion\Asignacion;
 use App\Compartido\Outbox\OutboxEvent;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
@@ -22,7 +22,7 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
  *
  * Covers:
  *   - Full auto-assignment flow (agent → shift → ticket → assign)
- *   - Audit trail (Assignment row created with correct type)
+ *   - Audit trail (Asignacion row created with correct type)
  *   - Outbox event queued
  *   - Deterministic tiebreaker behavior
  *   - Assign-time guard: 409 AGENT_NOT_ACTIVE for every role, no bypass
@@ -124,7 +124,7 @@ class Sprint10AgentManagementTest extends WebTestCase
      * Full flow: Create agent with shift → Post ticket → Auto-assign → Verify.
      *
      * T-14.1: Assert ticket.owner_agent_id = agent.id
-     * T-14.2: Assert Assignment row created with type=AUTO_ASSIGN
+     * T-14.2: Assert Asignacion row created with type=AUTO_ASSIGN
      * T-14.3: Assert outbox event queued
      */
     public function testFullAutoAssignmentFlow(): void
@@ -159,8 +159,8 @@ class Sprint10AgentManagementTest extends WebTestCase
         $this->assertNotNull($ticketId);
 
         // 4. Run auto-assignment
-        /** @var AutoAssignTicketUseCase $useCase */
-        $useCase = static::getContainer()->get(AutoAssignTicketUseCase::class);
+        /** @var AsignarTicketAutomaticamenteUseCase $useCase */
+        $useCase = static::getContainer()->get(AsignarTicketAutomaticamenteUseCase::class);
         $result = $useCase->execute($ticketId);
 
         // 5. Assert result
@@ -180,7 +180,7 @@ class Sprint10AgentManagementTest extends WebTestCase
         $this->assertEquals($agentId, (int) $savedTicket['assigned_agent_id'], 'Ticket should have owner_agent_id set');
         $this->assertEquals(EstadoDeTicket::ACTIVO->value, $savedTicket['status'], 'Ticket status should be ACTIVE after assignment');
 
-        // 7. Assert Assignment row created with type=AUTO_ASSIGN
+        // 7. Assert Asignacion row created with type=AUTO_ASSIGN
         $assignmentRow = $this->em->getConnection()->executeQuery(
             'SELECT * FROM assignments WHERE ticket_id = ? ORDER BY assigned_at DESC LIMIT 1',
             [$ticketId],
@@ -239,8 +239,8 @@ class Sprint10AgentManagementTest extends WebTestCase
         $this->em->flush();
         $ticketId = (int) $ticket->getId();
 
-        /** @var AutoAssignTicketUseCase $useCase */
-        $useCase = static::getContainer()->get(AutoAssignTicketUseCase::class);
+        /** @var AsignarTicketAutomaticamenteUseCase $useCase */
+        $useCase = static::getContainer()->get(AsignarTicketAutomaticamenteUseCase::class);
         $result = $useCase->execute($ticketId);
 
         // The lowest-id agent should be selected
@@ -314,8 +314,8 @@ class Sprint10AgentManagementTest extends WebTestCase
         $ticketId = (int) $ticket->getId();
 
         // Run auto-assign
-        /** @var AutoAssignTicketUseCase $useCase */
-        $useCase = static::getContainer()->get(AutoAssignTicketUseCase::class);
+        /** @var AsignarTicketAutomaticamenteUseCase $useCase */
+        $useCase = static::getContainer()->get(AsignarTicketAutomaticamenteUseCase::class);
         $result = $useCase->execute($ticketId);
 
         // Should pick agentLow (lower load)
@@ -359,15 +359,15 @@ class Sprint10AgentManagementTest extends WebTestCase
         $ticketId = (int) $ticket->getId();
 
         // Run auto-assign
-        /** @var AutoAssignTicketUseCase $useCase */
-        $useCase = static::getContainer()->get(AutoAssignTicketUseCase::class);
+        /** @var AsignarTicketAutomaticamenteUseCase $useCase */
+        $useCase = static::getContainer()->get(AsignarTicketAutomaticamenteUseCase::class);
         $result = $useCase->execute($ticketId);
 
         $this->assertFalse($result['assigned']);
         $this->assertNull($result['agent_id']);
         $this->assertContains($result['reason'], ['no_agents_available', 'all_agents_at_capacity']);
 
-        // Verify no Assignment row created
+        // Verify no Asignacion row created
         $count = (int) $this->em->getConnection()->executeQuery(
             'SELECT COUNT(*) FROM assignments WHERE ticket_id = ?',
             [$ticketId],
@@ -398,15 +398,15 @@ class Sprint10AgentManagementTest extends WebTestCase
         $ticketId = (int) $ticket->getId();
 
         // Run auto-assign
-        /** @var AutoAssignTicketUseCase $useCase */
-        $useCase = static::getContainer()->get(AutoAssignTicketUseCase::class);
+        /** @var AsignarTicketAutomaticamenteUseCase $useCase */
+        $useCase = static::getContainer()->get(AsignarTicketAutomaticamenteUseCase::class);
         $result = $useCase->execute($ticketId);
 
         $this->assertFalse($result['assigned']);
         $this->assertEquals($agent->getId(), $result['agent_id']);
         $this->assertEquals('already_assigned', $result['reason']);
 
-        // Verify no new Assignment row was created
+        // Verify no new Asignacion row was created
         $assignmentCount = (int) $this->em->getConnection()->executeQuery(
             'SELECT COUNT(*) FROM assignments WHERE ticket_id = ?',
             [$ticketId],
@@ -419,8 +419,8 @@ class Sprint10AgentManagementTest extends WebTestCase
      */
     public function testTicketNotFound(): void
     {
-        /** @var AutoAssignTicketUseCase $useCase */
-        $useCase = static::getContainer()->get(AutoAssignTicketUseCase::class);
+        /** @var AsignarTicketAutomaticamenteUseCase $useCase */
+        $useCase = static::getContainer()->get(AsignarTicketAutomaticamenteUseCase::class);
         $result = $useCase->execute(99999);
 
         $this->assertFalse($result['assigned']);
@@ -510,7 +510,7 @@ class Sprint10AgentManagementTest extends WebTestCase
         self::assertSame('AGENT_NOT_ACTIVE', $data['type']);
     }
 
-    /** Assignment succeeds when the target agent is Activo. */
+    /** Asignacion succeeds when the target agent is Activo. */
     public function testAssignSucceedsForActiveAgent(): void
     {
         $this->createUser('supervisor@test.local', ['ROLE_SUPERVISOR']);
@@ -533,7 +533,7 @@ class Sprint10AgentManagementTest extends WebTestCase
         self::assertSame($activeAgent->getId(), $data['agent_id']);
     }
 
-    /** A 409 rejection must write no Assignment row and emit no outbox event. */
+    /** A 409 rejection must write no Asignacion row and emit no outbox event. */
     public function testAssignRejectionWritesNoAssignmentRowOrOutboxEvent(): void
     {
         $this->createUser('admin@test.local', ['ROLE_ADMIN']);

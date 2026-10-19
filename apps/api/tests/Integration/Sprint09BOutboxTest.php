@@ -3,7 +3,7 @@
 namespace App\Tests\Integration;
 
 use App\Conversacion\UseCase\HandleInboundMessageUseCase;
-use App\Asignacion\UseCase\AssignTicketUseCase;
+use App\Asignacion\UseCase\AsignarTicketUseCase;
 use App\Compartido\Outbox\OutboxEvent;
 use App\Ticket\Ticket;
 use App\Contacto\Contacto;

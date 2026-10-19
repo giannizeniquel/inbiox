@@ -71,7 +71,7 @@ class AgentReplyAutoClaimConcurrencyTest extends KernelTestCase
      *
      * This test isolates the ONE thing that must change: the plain,
      * non-locking `findById()` read (still used elsewhere, e.g.
-     * `AssignTicketUseCase`) never contends for the row lock at all, while
+     * `AsignarTicketUseCase`) never contends for the row lock at all, while
      * the NEW `findByIdForUpdate()` (design.md D1) blocks immediately and
      * fails on lock-wait-timeout under identical contention.
      */

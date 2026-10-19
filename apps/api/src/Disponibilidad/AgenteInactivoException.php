@@ -11,7 +11,7 @@ use App\Compartido\StateConflictException;
  * currently Activo (per DisponibilidadDeAgenteService::isActiveNow()).
  *
  * HARD BLOCK for every role (ROLE_AGENT, ROLE_SUPERVISOR, ROLE_ADMIN) — no
- * bypass. Thrown inside AssignTicketUseCase's transaction, after the
+ * bypass. Thrown inside AsignarTicketUseCase's transaction, after the
  * pessimistic lock, before recordOwnershipChange(): a rejection writes no
  * assignment row and emits no event; the transaction rolls back.
  *

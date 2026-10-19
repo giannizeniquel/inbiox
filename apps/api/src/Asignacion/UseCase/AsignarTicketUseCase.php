@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Asignacion\UseCase;
 
 use App\Disponibilidad\DisponibilidadDeAgenteService;
-use App\Asignacion\AssignmentService;
-use App\Asignacion\AssignmentType;
+use App\Asignacion\ResponsabilidadDeTicketService;
+use App\Asignacion\TipoDeAsignacion;
 use App\Compartido\EventCollector;
 use App\Ticket\InboxUpdatedEvent;
 use App\Ticket\TicketUpdatedEvent;
@@ -15,7 +15,7 @@ use App\Compartido\Outbox\OutboxWriter;
 use App\Ticket\EstadoDeTicket;
 use App\Disponibilidad\AgenteInactivoException;
 use App\Agente\Repository\AgentRepository;
-use App\Asignacion\Repository\AssignmentRepository;
+use App\Asignacion\Repository\AsignacionRepository;
 use App\Ticket\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\DBAL\LockMode;
@@ -23,14 +23,14 @@ use Doctrine\DBAL\LockMode;
 /**
  * Manual ticket assignment by a supervisor.
  *
- * Routes through AssignmentService for the audit trail — the ONLY path
+ * Routes through ResponsabilidadDeTicketService for the audit trail — the ONLY path
  * that modifies ticket.assigned_agent_id.
  *
  * Assignment types detected:
  *   - MANUAL_ASSIGN: ticket had no owner → initial assignment
  *   - REASSIGN:      ticket already had an owner → transfer
  */
-class AssignTicketUseCase
+class AsignarTicketUseCase
 {
     /** Track the last assignment type for outbox payload enrichment. */
     private ?string $lastAssignmentType = null;
@@ -38,11 +38,11 @@ class AssignTicketUseCase
     public function __construct(
         private EntityManagerInterface $em,
         private TicketRepository $ticketRepo,
-        private AssignmentRepository $assignmentRepo,
+        private AsignacionRepository $assignmentRepo,
         private AgentRepository $agentRepo,
         private EventCollector $eventCollector,
         private readonly OutboxWriter $outboxWriter,
-        private AssignmentService $assignmentService,
+        private ResponsabilidadDeTicketService $assignmentService,
         private DisponibilidadDeAgenteService $agentAvailabilityService,
     ) {}
 
@@ -105,10 +105,10 @@ class AssignTicketUseCase
                 $previousAgent = $this->agentRepo->findById($currentOwnerId);
             }
 
-            $type = $currentOwnerId !== null ? AssignmentType::REASSIGN : AssignmentType::MANUAL_ASSIGN;
+            $type = $currentOwnerId !== null ? TipoDeAsignacion::REASSIGN : TipoDeAsignacion::MANUAL_ASSIGN;
             $this->lastAssignmentType = $type->value;
 
-            // Route through AssignmentService (creates audit row, updates ticket, emits events)
+            // Route through ResponsabilidadDeTicketService (creates audit row, updates ticket, emits events)
             $assignment = $this->assignmentService->recordOwnershipChange(
                 ticket: $ticket,
                 agent: $agent,

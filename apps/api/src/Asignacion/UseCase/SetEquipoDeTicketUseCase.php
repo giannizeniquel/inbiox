@@ -8,7 +8,7 @@ use App\Agente\Repository\TeamRepository;
 use App\Ticket\Ticket;
 use Doctrine\ORM\EntityManagerInterface;
 
-final class SetTicketTeamUseCase
+final class SetEquipoDeTicketUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,

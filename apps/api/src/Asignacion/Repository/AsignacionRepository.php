@@ -2,17 +2,17 @@
 
 namespace App\Asignacion\Repository;
 
-use App\Asignacion\Assignment;
-use App\Asignacion\AssignmentType;
+use App\Asignacion\Asignacion;
+use App\Asignacion\TipoDeAsignacion;
 use App\Ticket\Ticket;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
-class AssignmentRepository extends ServiceEntityRepository
+class AsignacionRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, Assignment::class);
+        parent::__construct($registry, Asignacion::class);
     }
 
     public function findByTicket(Ticket $ticket): array
@@ -25,12 +25,12 @@ class AssignmentRepository extends ServiceEntityRepository
         return $this->findBy(['agent' => $agentId], ['assignedAt' => 'DESC']);
     }
 
-    public function findById(int $id): ?Assignment
+    public function findById(int $id): ?Asignacion
     {
         return $this->find($id);
     }
 
-    public function save(Assignment $assignment): void
+    public function save(Asignacion $assignment): void
     {
         $this->getEntityManager()->persist($assignment);
         $this->getEntityManager()->flush();
@@ -39,7 +39,7 @@ class AssignmentRepository extends ServiceEntityRepository
     /**
      * Find the current (most recent) assignment for a ticket
      */
-    public function findCurrentByTicket(int $ticketId): ?Assignment
+    public function findCurrentByTicket(int $ticketId): ?Asignacion
     {
         return $this->createQueryBuilder('a')
             ->join('a.ticket', 't')
@@ -66,7 +66,7 @@ class AssignmentRepository extends ServiceEntityRepository
             ->andWhere('a.type = :type')
             ->andWhere('a.assignedAt >= :todayStart')
             ->setParameter('agentId', $agentId)
-            ->setParameter('type', AssignmentType::AUTO_ASSIGN->value)
+            ->setParameter('type', TipoDeAsignacion::AUTO_ASSIGN->value)
             ->setParameter('todayStart', $todayStart)
             ->getQuery()
             ->getSingleScalarResult();

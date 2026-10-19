@@ -39,7 +39,7 @@ final class ClasificadorDeAuditoriaDeCierre
 
     /**
      * Compact, namespaced actor reference for `EventoDeTicket.source` /
-     * `Assignment.assignedBy` (design.md D5).
+     * `Asignacion.assignedBy` (design.md D5).
      */
     public function referenciaDeActor(User $usuario): string
     {

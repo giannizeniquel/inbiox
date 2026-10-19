@@ -12,7 +12,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
- * AgentRepository::lockRowsForUpdate(), moved out of AutoAssignTicketUseCase
+ * AgentRepository::lockRowsForUpdate(), moved out of AsignarTicketAutomaticamenteUseCase
  * in phase 3c-1.
  */
 class AgentRepositorySqlTest extends KernelTestCase

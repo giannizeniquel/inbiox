@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Asignacion\Controller;
 
-use App\Asignacion\UseCase\AutoAssignTicketUseCase;
+use App\Asignacion\UseCase\AsignarTicketAutomaticamenteUseCase;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_AGENT')]
-class AutoAssignController
+class AsignacionAutomaticaController
 {
     public function __construct(
-        private AutoAssignTicketUseCase $autoAssignTicketUseCase,
+        private AsignarTicketAutomaticamenteUseCase $autoAssignTicketUseCase,
     ) {}
 
     #[Route('/api/tickets/{id}/auto-assign', name: 'app_ticket_auto_assign', methods: ['POST'])]

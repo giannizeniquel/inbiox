@@ -27,7 +27,7 @@ use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
 use App\Conversacion\MediaDownloadService;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
-use App\Asignacion\TicketNeedsAutoAssignmentEvent;
+use App\Asignacion\TicketRequiereAsignacionAutomaticaEvent;
 use Symfony\Component\Uid\Ulid;
 
 class HandleInboundMessageUseCase
@@ -464,7 +464,7 @@ foreach ($events as $event) {
         $this->ruleExecutor->execute($ruleContext);
 
         if ($ticket->getId()) {
-            $this->eventDispatcher->dispatch(new TicketNeedsAutoAssignmentEvent($ticket->getId()));
+            $this->eventDispatcher->dispatch(new TicketRequiereAsignacionAutomaticaEvent($ticket->getId()));
         }
     }
 

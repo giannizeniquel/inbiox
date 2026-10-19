@@ -79,10 +79,10 @@ flowchart TD
 | 13 | Actualiza `last_message_at`, `updated_at` y **`last_inbound_message_at`** (único escritor). | `:410-423` | R-W3 |
 | 14 | Recolecta `TicketCreatedEvent` / `MessageCreatedEvent`. | `:429-455` | |
 | 15 | Ejecuta reglas `inbound` (`ReglaDeEtiquetadoPorPalabraClave`, `ReglaDeReaperturaAutomatica`). | `:461-465` | R-R1, R-T8 |
-| 16 | Despacha `TicketNeedsAutoAssignmentEvent` → listener → `AutoAssignTicketUseCase::executeInTransaction()` **dentro de la misma transacción**. | `:466-468`; `Asignacion/EventListener/TicketAutoAssignmentRequestedListener.php:17-20` | ver F6 |
+| 16 | Despacha `TicketRequiereAsignacionAutomaticaEvent` → listener → `AsignarTicketAutomaticamenteUseCase::executeInTransaction()` **dentro de la misma transacción**. | `:466-468`; `Asignacion/EventListener/AsignacionAutomaticaSolicitadaListener.php:17-20` | ver F6 |
 | 17 | Commit. Después: `RespuestaAutomaticaService::enviarSiCorresponde()` y escritura de eventos en el outbox. | `:83-99`, `:107-156` | ver F9, F13 |
 
-- **Entidades:** Contacto, Conversation, Message, Ticket, EventoDeTicket, Etiqueta/EtiquetaDeTicket, Assignment, Agent, OutboxEvent, WebhookPayload, ProcessedEvent, RegistroDeRegla.
+- **Entidades:** Contacto, Conversation, Message, Ticket, EventoDeTicket, Etiqueta/EtiquetaDeTicket, Asignacion, Agent, OutboxEvent, WebhookPayload, ProcessedEvent, RegistroDeRegla.
 - **Persistencia:** `webhook_payloads`, `contacts`, `conversations`, `messages`, `tickets`, `ticket_events`, `tags`/`ticket_tags`, `rule_execution_logs`, `assignments`, `processed_events`, `outbox_events`.
 - **Efectos laterales:** descarga de media de Meta; posible auto-respuesta por Graph API; eventos en tiempo real.
 - **Resultado:** el mensaje queda en la conversación; el ticket queda `new` (sin dueño), `active` (con dueño auto-asignado) o `waiting` (si estaba resuelto).
@@ -93,7 +93,7 @@ flowchart TD
 1. Logs de PHP (`docker logs inbiox_php`) y la tabla `webhook_payloads` (¿llegó el POST?).
 2. `Conversacion/Controller/WebhookController.php` (firma, JSON) y `Conversacion/UseCase/ProcessWebhookPayloadUseCase.php` (tipo de mensaje, excepciones tragadas en `:136-142`).
 3. `Conversacion/UseCase/HandleInboundMessageUseCase.php`.
-4. `Asignacion/UseCase/AutoAssignTicketUseCase.php` (una excepción aquí revierte el mensaje).
+4. `Asignacion/UseCase/AsignarTicketAutomaticamenteUseCase.php` (una excepción aquí revierte el mensaje).
 5. `Ticket/Repository/TicketRepository.php:42-61` (búsqueda del ticket no cerrado).
 6. `Conversacion/MediaDownloadService.php` (si falta el adjunto).
 
@@ -121,7 +121,7 @@ flowchart TD
 | 14 | Guarda el WAMID en `messages.external_id` (para correlacionar estados de entrega). | `:174-184` | |
 | 15 | (Frontend) Confirma el mensaje optimista; si falla, `retryWithBackoff` **reintenta el POST 2 veces**. | `message-sender.service.ts:41-45, 71-74` | |
 
-- **Entidades:** Ticket, Message, Assignment, Agent, ProcessedEvent, OutboxEvent.
+- **Entidades:** Ticket, Message, Asignacion, Agent, ProcessedEvent, OutboxEvent.
 - **Resultado:** mensaje en WhatsApp y en la conversación; el remitente pasa a ser dueño (salvo resuelto/cerrado).
 - **Confirmado por lectura (no reproducido en ejecución):** ante un duplicado (paso 5) el caso de uso devuelve `status = duplicate_skipped` y `message_id = null`, pero `SendOutboundMessageUseCase` **no revisa ese resultado** (`:69-91`) y llama a Graph igual: el texto repetido se envía a WhatsApp sin quedar guardado. Combinado con el reintento automático del frontend (paso 15), un error de red puede hacer que el cliente reciba **el mismo mensaje hasta 3 veces**, mientras la base muestra uno solo. La idempotencia protege la base, no al cliente. Ver [R10](00-estado-y-pendientes.md#r10-mensaje-marcado-enviado-que-no-se-envió).
 
@@ -184,11 +184,11 @@ stateDiagram-v2
 |---|---|---|---|
 | 1 | Voter `CLOSE`: supervisor/admin siempre; agente solo si es el dueño. | `Ticket/Security/TicketVoter.php:76-121`; `FlujoDeTicketController.php:136-155` | R-T13 |
 | 2 | `CambiarEstadoDeTicketUseCase::resolver()` → `execute()`: valida FSM, setea `resolved_at` y `first_response_at`. | `Ticket/UseCase/CambiarEstadoDeTicketUseCase.php:72-139, 263-266` | R-T3, R-T12 |
-| 3 | **Si hay dueño: `UNASSIGN`** → `AssignmentService` pone `assigned_agent_id = null` y crea fila `Assignment`. | `:37-61` (llamado en `:99`, `:172`, `:289`); `Asignacion/AssignmentService.php:65` | R-T9 |
+| 3 | **Si hay dueño: `UNASSIGN`** → `ResponsabilidadDeTicketService` pone `assigned_agent_id = null` y crea fila `Asignacion`. | `:37-61` (llamado en `:99`, `:172`, `:289`); `Asignacion/ResponsabilidadDeTicketService.php:65` | R-T9 |
 | 4 | El controlador clasifica el cierre (`owner`/`override`/`unowned`) y guarda un `EventoDeTicket` con `source = u:{userId}`. Si falla, solo se loguea. | `Ticket/ClasificadorDeAuditoriaDeCierre.php:25-38`; `Ticket/UseCase/RegistrarAuditoriaDeCierreUseCase.php` | R-T15 |
 | 5 | **No se escribe nada en el outbox**: los demás navegadores no se enteran hasta recargar. | — | P-5 |
 
-**Quién más cambia `tickets.status`** (fuera de este flujo): `AssignmentService` (`new → active` al asignar), `HandleInboundMessageUseCase` (`waiting → active`), `HandleOutboundMessageUseCase` (`new → active`, `active → waiting`), `ReglaDeReaperturaAutomatica` (`resolved → waiting`), `cerrarPorVentanaVencida` y `reabrirPorMensajeEntrante` (F8), `DebugController::status` (dev).
+**Quién más cambia `tickets.status`** (fuera de este flujo): `ResponsabilidadDeTicketService` (`new → active` al asignar), `HandleInboundMessageUseCase` (`waiting → active`), `HandleOutboundMessageUseCase` (`new → active`, `active → waiting`), `ReglaDeReaperturaAutomatica` (`resolved → waiting`), `cerrarPorVentanaVencida` y `reabrirPorMensajeEntrante` (F8), `DebugController::status` (dev).
 
 **Si falla, revisar:**
 1. 403 → voter: `TicketVoter.php` (¿el usuario tiene agente vinculado? ¿es el dueño?).
@@ -200,34 +200,34 @@ stateDiagram-v2
 
 ## F5. Asignación manual
 
-**Entrada:** desplegable de la tarjeta del ticket → `TicketListComponent.onAssign()` → `POST /api/tickets/{id}/assign` `{agentId, assignedBy, notes}` → `Asignacion/Controller/TicketController::assign` (`:35-75`).
+**Entrada:** desplegable de la tarjeta del ticket → `TicketListComponent.onAssign()` → `POST /api/tickets/{id}/assign` `{agentId, assignedBy, notes}` → `Asignacion/Controller/AsignacionDeTicketController::assign` (`:35-75`).
 
 | # | Paso | Dónde | Regla |
 |---|---|---|---|
 | 1 | (Frontend) El desplegable se muestra si el usuario es supervisor/admin, o si es agente y dueño; solo en `new`/`active`/`waiting`. Excluye al propio usuario. Los agentes "Inactivo" no se pueden elegir. | `features/inbox/containers/ticket-list/ticket-list.component.ts:121-149, 219-236`; `features/inbox/components/ticket-card/ticket-card.component.ts:51-59, 138-150` | |
 | 2 | (Frontend) Roster: `GET /api/workspaces/{wsId}/available-agents` → agentes activos del workspace con `is_active_now`, "Activo" primero. | `Disponibilidad/Controller/AgentesDisponiblesController.php:29-47`; `DisponibilidadDeAgenteService::listarAgentesDelEspacioDeTrabajo()` (`:181-224`) | |
 | 3 | Voter `ASSIGN`: ticket `resolved`/`closed` → 409 para todos; supervisor/admin pasan; agente solo si ya es el dueño. | `TicketVoter.php:88-118` | R-A9, R-A10 |
-| 4 | Valida `agentId > 0` y `assignedBy` (texto **enviado por el cliente**). | `Asignacion/UseCase/AssignTicketUseCase.php:57-66` | R-A11 |
+| 4 | Valida `agentId > 0` y `assignedBy` (texto **enviado por el cliente**). | `Asignacion/UseCase/AsignarTicketUseCase.php:57-66` | R-A11 |
 | 5 | Transacción; carga ticket y luego `lock()` (patrón con riesgo TOCTOU, [R16](00-estado-y-pendientes.md#r16-concurrencia-en-asignación-manual-toctou)). | `:70-84` | |
 | 6 | **Guard "Activo":** `isActivoAhora()` (cuenta activa → override → turno; **sin capacidad**). Si no → 409 `AGENT_NOT_ACTIVE`. Sin excepción para ningún rol. | `:86-95`; `DisponibilidadDeAgenteService.php:83-101` | R-A8 |
-| 7 | `REASSIGN` si ya tenía dueño, si no `MANUAL_ASSIGN` → `AssignmentService::recordOwnershipChange()` (fila `Assignment`, `new → active`, eventos). | `:97-117`; `AssignmentService.php:45-111` | R-A1, R-T4 |
+| 7 | `REASSIGN` si ya tenía dueño, si no `MANUAL_ASSIGN` → `ResponsabilidadDeTicketService::recordOwnershipChange()` (fila `Asignacion`, `new → active`, eventos). | `:97-117`; `ResponsabilidadDeTicketService.php:45-111` | R-A1, R-T4 |
 | 8 | Post-commit: eventos al outbox (los `InboxUpdatedEvent` terminan en dead letter). | `:135, 143-180` | P-1 |
 | 9 | (Frontend) Actualización optimista; si falla, rollback y mensaje 5 s; si 409 `AGENT_NOT_ACTIVE`, recarga el roster. | `ticket-list.component.ts:242-277` | |
 
 - **No verifica workspace** del agente destino. **No existe endpoint para desasignar**: `UNASSIGN` solo ocurre al resolver/cerrar.
-- **Historial:** `GET /api/tickets/{id}/assignment` (`Asignacion/Controller/TicketController.php:99-135`) — sin UI.
+- **Historial:** `GET /api/tickets/{id}/assignment` (`Asignacion/Controller/AsignacionDeTicketController.php:99-135`) — sin UI.
 
-**Si falla, revisar:** 409 `AGENT_NOT_ACTIVE` → turnos/override del agente (F7); 409 sin tipo → ticket resuelto/cerrado; 403 → voter `TicketVoter.php`; luego `AssignTicketUseCase.php`, `AssignmentService.php`, y en el frontend `ticket-list.component.ts` y `ticket-card.component.ts`.
+**Si falla, revisar:** 409 `AGENT_NOT_ACTIVE` → turnos/override del agente (F7); 409 sin tipo → ticket resuelto/cerrado; 403 → voter `TicketVoter.php`; luego `AsignarTicketUseCase.php`, `ResponsabilidadDeTicketService.php`, y en el frontend `ticket-list.component.ts` y `ticket-card.component.ts`.
 
 ---
 
 ## F6. Asignación automática
 
-**Entradas:** cada mensaje entrante (F1, paso 16) y `POST /api/tickets/{id}/auto-assign` (`Asignacion/Controller/AutoAssignController.php`, cualquier agente, sin UI).
+**Entradas:** cada mensaje entrante (F1, paso 16) y `POST /api/tickets/{id}/auto-assign` (`Asignacion/Controller/AsignacionAutomaticaController.php`, cualquier agente, sin UI).
 
 | # | Paso | Dónde | Regla |
 |---|---|---|---|
-| 1 | `SELECT … FOR UPDATE` del ticket. | `Asignacion/UseCase/AutoAssignTicketUseCase.php:85-88` | |
+| 1 | `SELECT … FOR UPDATE` del ticket. | `Asignacion/UseCase/AsignarTicketAutomaticamenteUseCase.php:85-88` | |
 | 2 | Si ya tiene dueño → `already_assigned`. **No mira el estado**: un ticket resuelto sin dueño es candidato. | `:100-107` | R-A5 |
 | 3 | `listarAgentesDisponibles()`: **todos** los agentes activos del sistema (sin filtro de workspace ni equipo), con cascada override → turno → capacidad. | `:112`; `DisponibilidadDeAgenteService.php:111-166` | R-A4, R-D1 |
 | 4 | Bloquea las filas de esos agentes y recalcula la carga (`new`/`active`/`waiting`) dentro del lock; descarta los que están al tope (incluso con override). | `:126-151` | R-A3 |
@@ -238,7 +238,7 @@ stateDiagram-v2
 - **Razones de no asignación:** `ticket_not_found`, `already_assigned`, `no_agents_available`, `all_agents_at_capacity`.
 - **No hay rebalanceo**: si nadie estaba disponible, el ticket queda sin dueño hasta que el cliente vuelva a escribir o alguien lo asigne. Existía `RebalanceUnassignedTicketsUseCase`, sin llamadores; se borró en la fase 1. Regla no confirmada.
 
-**Si falla, revisar:** `AutoAssignTicketUseCase.php` → `DisponibilidadDeAgenteService::listarAgentesDisponibles()` → turnos y zona horaria de los agentes (`agent_shifts`, `agents.timezone`) → `max_active_tickets`.
+**Si falla, revisar:** `AsignarTicketAutomaticamenteUseCase.php` → `DisponibilidadDeAgenteService::listarAgentesDisponibles()` → turnos y zona horaria de los agentes (`agent_shifts`, `agents.timezone`) → `max_active_tickets`.
 
 ---
 
@@ -348,7 +348,7 @@ Frontend: `features/contacts/` (pages, componentes de diálogo, `stores/contacts
 | CRUD | `/api/admin/teams[/{id}]` (supervisor+) | `Administracion/Controller/TeamController.php` | Nombre único por workspace; borrar = desactivar (no toca `tickets.team_id`). |
 | Membresía | `PUT /api/admin/teams/{id}/agents` | `:247-287` | Reemplaza la lista completa; `Team::addAgent()` rechaza agentes de otro workspace; IDs inexistentes se ignoran. |
 | Equipos para filtros | `GET /api/teams` | `Agente/Controller/TeamController.php:38-65` | Equipos de los workspaces del agente, incluidos inactivos. |
-| Asignar equipo a ticket | `PUT /api/tickets/{id}/team` (cualquier agente) | `TicketController::setTeam` (`:88-137`) | Valida mismo workspace; **no** rechaza equipos inactivos (la spec dice que sí); no emite eventos. **Sin UI.** |
+| Asignar equipo a ticket | `PUT /api/tickets/{id}/team` (cualquier agente) | `AsignacionDeTicketController::setTeam` (`:88-137`) | Valida mismo workspace; **no** rechaza equipos inactivos (la spec dice que sí); no emite eventos. **Sin UI.** |
 | Filtro | `GET /api/tickets?teamId=N`; 5 reportes con `teamId` | `FiltrosDeTicketBuilder`, `ReportingRepository` | Primer filtro server-side de la bandeja. |
 
 El equipo **no participa en la asignación** (ni manual ni automática).

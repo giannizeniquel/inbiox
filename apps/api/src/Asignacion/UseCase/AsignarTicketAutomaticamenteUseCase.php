@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace App\Asignacion\UseCase;
 
 use App\Disponibilidad\DisponibilidadDeAgenteService;
-use App\Asignacion\AssignmentService;
+use App\Asignacion\ResponsabilidadDeTicketService;
 use App\Agente\Agent;
-use App\Asignacion\AssignmentType;
+use App\Asignacion\TipoDeAsignacion;
 use App\Compartido\EventCollector;
 use App\Compartido\Outbox\OutboxEvent;
 use App\Compartido\Outbox\OutboxWriter;
 use App\Ticket\EstadoDeTicket;
 use App\Agente\Repository\AgentRepository;
-use App\Asignacion\Repository\AssignmentRepository;
+use App\Asignacion\Repository\AsignacionRepository;
 use App\Ticket\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -26,13 +26,13 @@ use Doctrine\ORM\EntityManagerInterface;
  *   3. SELECT agents FOR UPDATE WHERE id IN (...)
  *   4. Re-filter capacity inside lock (COUNT may have changed)
  *   5. Tiebreaker: lowest active count → fewest AUTO_ASSIGN today → lowest id
- *   6. AssignmentService.recordOwnershipChange()
+ *   6. ResponsabilidadDeTicketService.recordOwnershipChange()
  *   7. Collect outbox events for PR4 Mercure
  *
  * The old hardcoded "WHERE active = 1 AND is_available = 1" filter is REMOVED.
  * DisponibilidadDeAgenteService is the SOLE eligibility check.
  */
-final class AutoAssignTicketUseCase
+final class AsignarTicketAutomaticamenteUseCase
 {
     /** Track the last assignment type for outbox payload enrichment. */
     private ?string $lastAssignmentType = null;
@@ -40,9 +40,9 @@ final class AutoAssignTicketUseCase
     public function __construct(
         private EntityManagerInterface $em,
         private TicketRepository $ticketRepo,
-        private AssignmentRepository $assignmentRepo,
+        private AsignacionRepository $assignmentRepo,
         private DisponibilidadDeAgenteService $availabilityService,
-        private AssignmentService $assignmentService,
+        private ResponsabilidadDeTicketService $assignmentService,
         private EventCollector $eventCollector,
         private readonly OutboxWriter $outboxWriter,
         private AgentRepository $agentRepo,
@@ -95,7 +95,7 @@ final class AutoAssignTicketUseCase
             ];
         }
 
-        // 2. If already assigned, return idempotent (no new Assignment row)
+        // 2. If already assigned, return idempotent (no new Asignacion row)
         if ($ticketRow['assigned_agent_id'] !== null) {
             return [
                 'ticket_id' => $ticketId,
@@ -170,7 +170,7 @@ final class AutoAssignTicketUseCase
 
         $selectedAgent = $eligible[0]['agent'];
 
-        // 7. Load the Ticket entity for AssignmentService
+        // 7. Load the Ticket entity for ResponsabilidadDeTicketService
         $ticket = $this->ticketRepo->findById($ticketId);
         if ($ticket === null) {
             // Should not happen — we already locked the row above
@@ -182,15 +182,15 @@ final class AutoAssignTicketUseCase
             ];
         }
 
-        // 8. Record ownership change via AssignmentService (single point of change)
-        //    This creates the Assignment audit row, updates ticket.assigned_agent_id,
+        // 8. Record ownership change via ResponsabilidadDeTicketService (single point of change)
+        //    This creates the Asignacion audit row, updates ticket.assigned_agent_id,
         //    and emits domain events.
-        $this->lastAssignmentType = AssignmentType::AUTO_ASSIGN->value;
+        $this->lastAssignmentType = TipoDeAsignacion::AUTO_ASSIGN->value;
         $this->assignmentService->recordOwnershipChange(
             ticket: $ticket,
             agent: $selectedAgent,
             previousAgent: null,
-            type: AssignmentType::AUTO_ASSIGN,
+            type: TipoDeAsignacion::AUTO_ASSIGN,
             assignedBy: 'system',
         );
 

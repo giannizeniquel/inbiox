@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Asignacion\UseCase\AutoAssignTicketUseCase;
+use App\Asignacion\UseCase\AsignarTicketAutomaticamenteUseCase;
 use App\Agente\Agent;
 use App\Disponibilidad\Turno;
 use App\Ticket\Ticket;
@@ -65,8 +65,8 @@ class Sprint10ConcurrencyTest extends KernelTestCase
         $this->seedAgents(5, 3);
         $this->seedTickets(50);
 
-        /** @var AutoAssignTicketUseCase $useCase */
-        $useCase = static::getContainer()->get(AutoAssignTicketUseCase::class);
+        /** @var AsignarTicketAutomaticamenteUseCase $useCase */
+        $useCase = static::getContainer()->get(AsignarTicketAutomaticamenteUseCase::class);
 
         // Get all unassigned ticket IDs
         $ticketIds = $this->em->getConnection()->executeQuery(
@@ -163,7 +163,7 @@ class Sprint10ConcurrencyTest extends KernelTestCase
                     // But that's complex. Instead, let's use raw PDO connection
                     // with direct SQL statements for the auto-assign.
 
-                    // Actually, the simplest approach: use AutoAssignTicketUseCase
+                    // Actually, the simplest approach: use AsignarTicketAutomaticamenteUseCase
                     // with Doctrine. But Doctrine's EM doesn't survive forks well.
                     // Let me use a PDO-based approach.
 
@@ -173,7 +173,7 @@ class Sprint10ConcurrencyTest extends KernelTestCase
                     $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 
                     // Lock the ticket and assign it inside a transaction
-                    // This mimics AutoAssignTicketUseCase but uses raw SQL
+                    // This mimics AsignarTicketAutomaticamenteUseCase but uses raw SQL
                     $pdo->beginTransaction();
                     try {
                         // Select ticket FOR UPDATE
@@ -236,7 +236,7 @@ class Sprint10ConcurrencyTest extends KernelTestCase
                         );
                         $updateStmt->execute([$selectedAgent['id'], $ticketId]);
 
-                        // Insert Assignment row
+                        // Insert Asignacion row
                         $insertStmt = $pdo->prepare(
                             "INSERT INTO assignments (ticket_id, agent_id, type, assigned_by, assigned_at) VALUES (?, ?, 'AUTO_ASSIGN', 'system', NOW())"
                         );
@@ -331,8 +331,8 @@ class Sprint10ConcurrencyTest extends KernelTestCase
         $this->em->flush();
         $ticketId = (int) $ticket->getId();
 
-        /** @var AutoAssignTicketUseCase $useCase */
-        $useCase = static::getContainer()->get(AutoAssignTicketUseCase::class);
+        /** @var AsignarTicketAutomaticamenteUseCase $useCase */
+        $useCase = static::getContainer()->get(AsignarTicketAutomaticamenteUseCase::class);
         $result = $useCase->execute($ticketId);
 
         $this->assertFalse($result['assigned']);

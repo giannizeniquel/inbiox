@@ -145,7 +145,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
      * `EjecutorDeReglas` — the LAST collaborator called, after
      * `recordOwnershipChange()`, the Message, and the ProcessedEvent have
      * already been flushed within the same still-open transaction. Every
-     * other collaborator (EntityManager, EventCollector, AssignmentService,
+     * other collaborator (EntityManager, EventCollector, ResponsabilidadDeTicketService,
      * repositories) stays real.
      */
     public function testEventCollectorDoesNotLeakEventsFromARolledBackAttempt(): void

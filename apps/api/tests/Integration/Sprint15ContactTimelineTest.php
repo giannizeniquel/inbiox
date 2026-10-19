@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Asignacion\Assignment;
+use App\Asignacion\Asignacion;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Conversacion\Message;
@@ -202,7 +202,7 @@ class Sprint15ContactTimelineTest extends WebTestCase
         $this->em->flush();
 
         // Assignment (oldest event)
-        $assignment = new Assignment(
+        $assignment = new Asignacion(
             ticket: $ticket,
             agent: null,
             assignedBy: 'system',
@@ -210,7 +210,7 @@ class Sprint15ContactTimelineTest extends WebTestCase
         );
         // Override assigned_at to be the oldest
         $oldDate = (new \DateTimeImmutable())->modify('-4 hours');
-        $assignedAtProp = new \ReflectionProperty(Assignment::class, 'assignedAt');
+        $assignedAtProp = new \ReflectionProperty(Asignacion::class, 'assignedAt');
         $assignedAtProp->setAccessible(true);
         $assignedAtProp->setValue($assignment, $oldDate);
         $this->em->persist($assignment);

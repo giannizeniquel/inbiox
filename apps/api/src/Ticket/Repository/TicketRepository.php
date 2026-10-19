@@ -75,7 +75,7 @@ class TicketRepository extends ServiceEntityRepository
      * Query::HINT_REFRESH forces Doctrine to overwrite any stale identity-map
      * copy with the just-locked row instead of silently reusing it.
      *
-     * Rejected: `findById()` + `$em->lock()` (AssignTicketUseCase convention)
+     * Rejected: `findById()` + `$em->lock()` (AsignarTicketUseCase convention)
      * — under MySQL REPEATABLE READ, `findById()` opens the consistent-read
      * snapshot BEFORE the lock is acquired, so a later `refresh()` still
      * reads the pre-lock snapshot. TOCTOU survives.

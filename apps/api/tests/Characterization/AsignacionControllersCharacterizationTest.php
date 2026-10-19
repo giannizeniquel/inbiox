@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Tests\Characterization;
 
-use App\Asignacion\Assignment;
+use App\Asignacion\Asignacion;
 use App\Ticket\Repository\TicketRepository;
 
 /**
- * Characterization of App\Asignacion\Controller\AutoAssignController
- * (app_ticket_auto_assign) and App\Asignacion\Controller\TicketController::getAssignment
+ * Characterization of App\Asignacion\Controller\AsignacionAutomaticaController
+ * (app_ticket_auto_assign) and App\Asignacion\Controller\AsignacionDeTicketController::getAssignment
  * (app_ticket_assignment).
  */
 final class AsignacionControllersCharacterizationTest extends CharacterizationTestCase
@@ -130,7 +130,7 @@ final class AsignacionControllersCharacterizationTest extends CharacterizationTe
         $this->em->flush();
         $ticket = $this->createTicket('new');
         $token = $this->loginAs('auto-caller@characterization.local', ['ROLE_AGENT']);
-        // AutoAssignTicketUseCase is final, so a collaborator it calls after
+        // AsignarTicketAutomaticamenteUseCase is final, so a collaborator it calls after
         // finding an available agent is replaced instead.
         $ticketRepo = $this->createMock(TicketRepository::class);
         $ticketRepo->method('countActivosDeAgente')->willThrowException(new \InvalidArgumentException('bad ticket'));
@@ -155,8 +155,8 @@ final class AsignacionControllersCharacterizationTest extends CharacterizationTe
         $first = $this->createAgent('First');
         $second = $this->createAgent('Second');
         $ticket = $this->createTicket('active', $second->getId());
-        $older = new Assignment($ticket, $first, 'system', null, 'AUTO_ASSIGN');
-        $newer = new Assignment($ticket, $second, 'supervisor@x', 'handover', 'MANUAL_ASSIGN', $first);
+        $older = new Asignacion($ticket, $first, 'system', null, 'AUTO_ASSIGN');
+        $newer = new Asignacion($ticket, $second, 'supervisor@x', 'handover', 'MANUAL_ASSIGN', $first);
         $this->em->persist($older);
         $this->em->persist($newer);
         $this->em->flush();

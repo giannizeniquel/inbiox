@@ -19,11 +19,11 @@ use Doctrine\ORM\EntityManagerInterface;
  * NO other code may modify ticket.assigned_agent_id directly.
  * ALL ownership changes MUST go through recordOwnershipChange().
  *
- * This is the audit gateway: every change creates an Assignment row,
+ * This is the audit gateway: every change creates an Asignacion row,
  * updates the ticket, and emits domain events via EventCollector
  * (which PR4 connects to Mercure).
  */
-final class AssignmentService
+final class ResponsabilidadDeTicketService
 {
     public function __construct(
         private EntityManagerInterface $em,
@@ -36,22 +36,22 @@ final class AssignmentService
      * @param Ticket  $ticket        The ticket whose ownership is changing
      * @param ?Agent  $agent         The new owner (null for UNASSIGN)
      * @param ?Agent  $previousAgent The previous owner (null for initial assignment)
-     * @param AssignmentType $type   The type of change
+     * @param TipoDeAsignacion $type   The type of change
      * @param string  $assignedBy    'system' or user identifier
      * @param ?string $notes         Optional notes
      *
-     * @return Assignment The created assignment record
+     * @return Asignacion The created assignment record
      */
     public function recordOwnershipChange(
         Ticket $ticket,
         ?Agent $agent,
         ?Agent $previousAgent,
-        AssignmentType $type,
+        TipoDeAsignacion $type,
         string $assignedBy,
         ?string $notes = null,
-    ): Assignment {
-        // 1. Create Assignment audit row
-        $assignment = new Assignment(
+    ): Asignacion {
+        // 1. Create Asignacion audit row
+        $assignment = new Asignacion(
             ticket: $ticket,
             agent: $agent,
             assignedBy: $assignedBy,

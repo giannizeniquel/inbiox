@@ -4,7 +4,7 @@ namespace App\Asignacion\Controller;
 
 use Symfony\Component\Validator\Constraints as Assert;
 
-class AssignTicketRequest
+class AsignarTicketRequest
 {
     #[Assert\NotBlank(message: 'Agent ID is required')]
     #[Assert\Positive]

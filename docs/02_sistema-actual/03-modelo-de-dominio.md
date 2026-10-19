@@ -83,7 +83,7 @@ Tablas técnicas sin relaciones de negocio (no incluidas en el diagrama): `outbo
 | `Conversation` (`conversations`) | `Conversacion/Conversation.php` | Todo el historial de un contacto con un número. | `contact_id`, `status` (`open`/`closed`, pero `closed` **nunca se escribe**), `last_message_at`, `phone_number_id` |
 | `Message` (`messages`) | `Conversacion/Message.php` | Un mensaje entrante o saliente. | `conversation_id`, `direction`, `external_id` (WAMID), `content`, `delivery_status` (default `sent`), `failed_reason`, `media` (JSON), `sender_agent_id` (sin FK), `sender_type` (desde 12/09/2026; filas anteriores en `NULL`, sin backfill a propósito) |
 | `Ticket` (`tickets`) | `Ticket/Ticket.php` | Un caso de atención (episodio). | `contact_id`, `conversation_id`, `status`, `priority` (siempre `medium`, sin uso), `assigned_agent_id` (sin FK), `first_response_at`, `resolved_at`, `closed_at`, `version` (bloqueo optimista), `last_event_seq`, `phone_number_id`, `team_id`, `last_read_at`, `last_inbound_message_at` |
-| `Assignment` (`assignments`) | `Asignacion/Assignment.php` | Auditoría de cada cambio de dueño. | `ticket_id`, `agent_id`, `previous_agent_id`, `type`, `assigned_at`, `assigned_by` (texto libre: `system`, `u:{id}` o lo que mande el cliente), `notes` |
+| `Asignacion` (`assignments`) | `Asignacion/Asignacion.php` | Auditoría de cada cambio de dueño. | `ticket_id`, `agent_id`, `previous_agent_id`, `type`, `assigned_at`, `assigned_by` (texto libre: `system`, `u:{id}` o lo que mande el cliente), `notes` |
 | `Agent` (`agents`) | `Agente/Agent.php` | La persona que atiende. | `name`, `user_id`, `active`, `is_available` (**legacy, nunca se escribe**), `max_active_tickets` (default 10, mínimo 1), `timezone`, `is_available_override` + `override_until`, `signature`, `notification_sound`, `desktop_notifications`, `auto_reply_enabled`, `auto_reply_message`, `active_workspace_id` |
 | `Turno` (`agent_shifts`) | `Disponibilidad/Turno.php` | Turno semanal recurrente en hora local del agente. | `day_of_week` (1-7), `start_time`, `end_time` (distintos; si fin < inicio, cruza medianoche); UNIQUE (agente, día, inicio, fin) |
 | `User` (`user`) | `Administracion/User.php` | Credenciales y roles. | `email` (UNIQUE), `password_hash`, `roles` (JSON, sin validar en el backend), `is_active` |
@@ -111,7 +111,7 @@ Tablas técnicas sin relaciones de negocio (no incluidas en el diagrama): `outbo
 | `ConversationStatus` | `Conversacion/ConversationStatus.php` | `open`, `closed` | `closed` nunca se usa. |
 | `MessageDirection` | `Conversacion/MessageDirection.php` | `inbound`, `outbound` | Los casos de uso escriben el texto literal, no el enum. |
 | `MessageSenderType` | `Conversacion/MessageSenderType.php` | `agent`, `automatic`, `contact` | Spec `message-attribution`. El frontend todavía no lo usa. |
-| `AssignmentType` | `Asignacion/AssignmentType.php` | `AUTO_ASSIGN`, `MANUAL_ASSIGN`, `REASSIGN`, `UNASSIGN` | Solo `AssignmentService` crea filas de `Assignment`. |
+| `TipoDeAsignacion` | `Asignacion/TipoDeAsignacion.php` | `AUTO_ASSIGN`, `MANUAL_ASSIGN`, `REASSIGN`, `UNASSIGN` | Solo `ResponsabilidadDeTicketService` crea filas de `Asignacion`. |
 | Roles | strings en `User.roles` | `ROLE_ADMIN`, `ROLE_SUPERVISOR`, `ROLE_AGENT` | Jerarquía en `security.yaml` (el enum `Role`, sin uso, se borró en la fase 1). |
 | `MediaKind` | `Conversacion/MediaKind.php` | `image`, `video`, `audio`, `document` | |
 | `TipoDeEventoDeTicket` | `Ticket/TipoDeEventoDeTicket.php` | constantes de cierre/reapertura | `tag_added`, `tag_removed`, `auto_reopened`, `auto_closed` siguen como textos sueltos. |
@@ -133,7 +133,7 @@ Tablas técnicas sin relaciones de negocio (no incluidas en el diagrama): `outbo
 | Ticket → Team | N : 0..1 | `Ticket::$team` (`ManyToOne`, FK `ON DELETE SET NULL`). | — |
 | Ticket → Agent (dueño) | N : 0..1 | **No** | Motivo de no tener FK: **Regla no confirmada**. Desactivar un agente no le quita sus tickets. |
 | Message → Agent (autor) | N : 0..1 | **No** (por spec `message-attribution`, copiando la decisión anterior) | |
-| Ticket → Assignment | 1 : N | Sí (`CASCADE`) | |
+| Ticket → Asignacion | 1 : N | Sí (`CASCADE`) | |
 | Ticket ↔ Tag | N : M (`ticket_tags`) | Sí | |
 | Ticket → EventoDeTicket | 1 : N | **No** | |
 | Ticket / Conversation → Workspace | N : 1 | **No** (coincidencia de `phone_number_id`) | |

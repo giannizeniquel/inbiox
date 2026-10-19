@@ -2,9 +2,9 @@
 
 namespace App\Ticket\UseCase;
 
-use App\Asignacion\AssignmentService;
+use App\Asignacion\ResponsabilidadDeTicketService;
 use App\Agente\Agent;
-use App\Asignacion\AssignmentType;
+use App\Asignacion\TipoDeAsignacion;
 use App\Ticket\EventoDeTicket;
 use App\Ticket\TipoDeEventoDeTicket;
 use App\Ticket\Ticket;
@@ -19,7 +19,7 @@ use Doctrine\ORM\EntityManagerInterface;
  * Sets SLA timestamps deterministically.
  *
  * On resolve/close, if the ticket has an owner, creates an UNASSIGN
- * Assignment audit row via AssignmentService to close the audit gap (W1).
+ * Asignacion audit row via ResponsabilidadDeTicketService to close the audit gap (W1).
  */
 class CambiarEstadoDeTicketUseCase
 {
@@ -27,7 +27,7 @@ class CambiarEstadoDeTicketUseCase
         private EntityManagerInterface $em,
         private TicketRepository $ticketRepo,
         private MaquinaDeEstadosDeTicket $maquinaDeEstados,
-        private AssignmentService $assignmentService,
+        private ResponsabilidadDeTicketService $assignmentService,
         private AgentRepository $agentRepository,
     ) {}
 
@@ -55,7 +55,7 @@ class CambiarEstadoDeTicketUseCase
             ticket: $ticketEntity,
             agent: null,
             previousAgent: $agente,
-            type: AssignmentType::UNASSIGN,
+            type: TipoDeAsignacion::UNASSIGN,
             assignedBy: $actor,
         );
     }
@@ -94,7 +94,7 @@ class CambiarEstadoDeTicketUseCase
                 && !empty($ticket['assigned_agent_id'])
             ) {
                 $this->registrarDesasignacionSiEsResponsable($ticketId, $actor);
-                // Flush entity changes (Assignment + ticket entity modifications)
+                // Flush entity changes (Asignacion + ticket entity modifications)
                 // so they are part of this transaction before the raw SQL status update
                 $this->em->flush();
             }
