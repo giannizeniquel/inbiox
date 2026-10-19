@@ -252,7 +252,7 @@ stateDiagram-v2
 | `isDisponible()` / `listarAgentesDisponibles()` | activo → override → turno → **capacidad** | `:40-68`, `:112-167` | Auto-asignación, auto-respuesta, `GET /api/agents/{id}/availability`, reporte de disponibles |
 | `isActivoAhora()` ("Activo/Inactivo") | activo → override → turno (**sin capacidad**) | `:84-102` | Guard de asignación manual y roster del desplegable |
 | `isEnTurno()` | activo → turno (sin override ni capacidad) | `:233-242` | Listado de tickets y reporte de rendimiento |
-| *(copia)* `DisponibilidadDeAgenteController::isAgentInShift()` | turno (no mira `active`) | `Disponibilidad/Controller/DisponibilidadDeAgenteController.php:338-367` | Campo `is_in_shift` de `GET /api/agents/{id}/availability` |
+| *(copia)* `DisponibilidadDeAgenteController::isAgenteEnTurno()` | turno (no mira `active`) | `Disponibilidad/Controller/DisponibilidadDeAgenteController.php:338-367` | Campo `is_in_shift` de `GET /api/agents/{id}/availability` |
 
 > Corrección: un informe previo hablaba de "cinco definiciones". Son **cuatro criterios** (contando la columna legacy, que en realidad no evalúa nada) más **una copia** del criterio de turno en un controlador.
 

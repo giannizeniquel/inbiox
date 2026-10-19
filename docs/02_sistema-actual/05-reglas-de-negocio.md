@@ -156,7 +156,7 @@ Detalle en [07](07-frontend.md#lógica-de-negocio-que-vive-en-el-frontend).
 
 | Regla | Lugares | ¿Consistentes? |
 |---|---|---|
-| "Está en turno" | `DisponibilidadDeAgenteService::hasShiftAtTime` (`:262-290`) y `DisponibilidadDeAgenteController::isAgentInShift` (`:340-369`) | No del todo: la del controlador no mira `active`. |
+| "Está en turno" | `DisponibilidadDeAgenteService::hasTurnoEnHorario` (`:262-290`) y `DisponibilidadDeAgenteController::isAgenteEnTurno` (`:340-369`) | No del todo: la del controlador no mira `active`. |
 | Cascada de disponibilidad | `isDisponible()`, `listarAgentesDisponibles()`, re-filtro en `AutoAssignTicketUseCase.php:135-139` | No: el re-filtro aplica capacidad también con override. |
 | "Tickets activos" = `new`/`active`/`waiting` | `DisponibilidadDeAgenteService.php:297-317`, `TicketRepository::countActivosDeAgente` (`:146-160`), `ReportingRepository.php:354-356`, `MaquinaDeEstadosDeTicket::isActiveForSLA` (sin uso), frontend `get-reports-dashboard.use-case.ts` | Sí (cinco copias). |
 | Normalización de teléfono | entrante, `NormalizadorDeTelefono`, `UpdateContactoUseCase` | **No** (umbrales distintos). |
