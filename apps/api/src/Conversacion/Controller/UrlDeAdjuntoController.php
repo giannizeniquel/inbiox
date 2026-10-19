@@ -29,7 +29,7 @@ class UrlDeAdjuntoController extends AbstractController
      *
      * @return JsonResponse
      */
-    #[IsGranted('ACCESS', subject: 'message')]
+    #[IsGranted('ACCESS', subject: 'mensaje')]
     public function __invoke(Mensaje $mensaje): JsonResponse
     {
         $adjunto = $mensaje->getAdjunto();
