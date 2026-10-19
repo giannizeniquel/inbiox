@@ -20,15 +20,15 @@ class EquipoRepository extends ServiceEntityRepository
     }
 
     /**
-     * @param Workspace[] $workspaces non-empty
+     * @param Workspace[] $espaciosDeTrabajo non-empty
      *
      * @return Equipo[] ordered by name
      */
-    public function findByEspaciosDeTrabajo(array $workspaces): array
+    public function findByEspaciosDeTrabajo(array $espaciosDeTrabajo): array
     {
         return $this->createQueryBuilder('t')
             ->andWhere('t.espacioDeTrabajo IN (:workspaces)')
-            ->setParameter('workspaces', $workspaces)
+            ->setParameter('workspaces', $espaciosDeTrabajo)
             ->orderBy('t.nombre', 'ASC')
             ->getQuery()
             ->getResult();

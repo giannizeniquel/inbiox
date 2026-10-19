@@ -15,9 +15,9 @@ class AgenteRepository extends ServiceEntityRepository
         parent::__construct($registry, Agente::class);
     }
 
-    public function save(Agente $agent): void
+    public function save(Agente $agente): void
     {
-        $this->_em->persist($agent);
+        $this->_em->persist($agente);
         $this->_em->flush();
     }
 
@@ -48,12 +48,12 @@ class AgenteRepository extends ServiceEntityRepository
     }
 
     /** @return Agente[] */
-    public function findByEspacioDeTrabajo(Workspace $workspace): array
+    public function findByEspacioDeTrabajo(Workspace $espacioDeTrabajo): array
     {
         return $this->createQueryBuilder('a')
             ->innerJoin('a.espaciosDeTrabajo', 'w')
             ->where('w.id = :workspaceId')
-            ->setParameter('workspaceId', $workspace->getId())
+            ->setParameter('workspaceId', $espacioDeTrabajo->getId())
             ->orderBy('a.id', 'ASC')
             ->getQuery()
             ->getResult();
@@ -64,13 +64,13 @@ class AgenteRepository extends ServiceEntityRepository
      *
      * @return Agente[]
      */
-    public function findActivosByEspacioDeTrabajo(Workspace $workspace): array
+    public function findActivosByEspacioDeTrabajo(Workspace $espacioDeTrabajo): array
     {
         return $this->createQueryBuilder('a')
             ->innerJoin('a.espaciosDeTrabajo', 'w')
             ->where('w.id = :workspaceId')
             ->andWhere('a.activo = true')
-            ->setParameter('workspaceId', $workspace->getId())
+            ->setParameter('workspaceId', $espacioDeTrabajo->getId())
             ->orderBy('a.id', 'ASC')
             ->getQuery()
             ->getResult();

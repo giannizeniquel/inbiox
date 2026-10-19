@@ -88,9 +88,9 @@ class Agente
     #[ORM\InverseJoinColumn(name: 'team_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     private Collection $equipos;
 
-    public function __construct(string $name)
+    public function __construct(string $nombre)
     {
-        $this->nombre = $name;
+        $this->nombre = $nombre;
         $this->turnos = new ArrayCollection();
         $this->espaciosDeTrabajo = new ArrayCollection();
         $this->equipos = new ArrayCollection();
@@ -113,9 +113,9 @@ class Agente
         return $this->usuario;
     }
 
-    public function setUsuario(?User $user): self
+    public function setUsuario(?User $usuario): self
     {
-        $this->usuario = $user;
+        $this->usuario = $usuario;
         $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
@@ -125,9 +125,9 @@ class Agente
         return $this->activo;
     }
 
-    public function setActivo(bool $active): self
+    public function setActivo(bool $activo): self
     {
-        $this->activo = $active;
+        $this->activo = $activo;
         $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
@@ -137,9 +137,9 @@ class Agente
         return $this->disponible;
     }
 
-    public function setDisponible(bool $isAvailable): self
+    public function setDisponible(bool $disponible): self
     {
-        $this->disponible = $isAvailable;
+        $this->disponible = $disponible;
         $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
@@ -149,12 +149,12 @@ class Agente
         return $this->maxTicketsActivos;
     }
 
-    public function setMaxTicketsActivos(int $maxActiveTickets): self
+    public function setMaxTicketsActivos(int $maxTicketsActivos): self
     {
-        if ($maxActiveTickets < 1) {
+        if ($maxTicketsActivos < 1) {
             throw new \InvalidArgumentException('maxActiveTickets must be at least 1');
         }
-        $this->maxTicketsActivos = $maxActiveTickets;
+        $this->maxTicketsActivos = $maxTicketsActivos;
         $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
@@ -164,14 +164,14 @@ class Agente
         return $this->zonaHoraria;
     }
 
-    public function setZonaHoraria(string $timezone): self
+    public function setZonaHoraria(string $zonaHoraria): self
     {
         try {
-            new \DateTimeZone($timezone);
+            new \DateTimeZone($zonaHoraria);
         } catch (\Exception $e) {
-            throw new \InvalidArgumentException(\sprintf('Invalid timezone: "%s"', $timezone));
+            throw new \InvalidArgumentException(\sprintf('Invalid timezone: "%s"', $zonaHoraria));
         }
-        $this->zonaHoraria = $timezone;
+        $this->zonaHoraria = $zonaHoraria;
         $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
@@ -181,9 +181,9 @@ class Agente
         return $this->disponibilidadManual;
     }
 
-    public function setDisponibilidadManual(?bool $isAvailableOverride): self
+    public function setDisponibilidadManual(?bool $disponibilidadManual): self
     {
-        $this->disponibilidadManual = $isAvailableOverride;
+        $this->disponibilidadManual = $disponibilidadManual;
         $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
@@ -193,9 +193,9 @@ class Agente
         return $this->disponibilidadManualHasta;
     }
 
-    public function setDisponibilidadManualHasta(?\DateTimeImmutable $overrideUntil): self
+    public function setDisponibilidadManualHasta(?\DateTimeImmutable $disponibilidadManualHasta): self
     {
-        $this->disponibilidadManualHasta = $overrideUntil;
+        $this->disponibilidadManualHasta = $disponibilidadManualHasta;
         $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
@@ -206,20 +206,20 @@ class Agente
         return $this->turnos;
     }
 
-    public function addTurno(Turno $shift): self
+    public function addTurno(Turno $turno): self
     {
-        if (!$this->turnos->contains($shift)) {
-            $this->turnos->add($shift);
-            $shift->setAgente($this);
+        if (!$this->turnos->contains($turno)) {
+            $this->turnos->add($turno);
+            $turno->setAgente($this);
         }
         return $this;
     }
 
-    public function removeTurno(Turno $shift): self
+    public function removeTurno(Turno $turno): self
     {
-        if ($this->turnos->removeElement($shift)) {
-            if ($shift->getAgente() === $this) {
-                $shift->setAgente(null);
+        if ($this->turnos->removeElement($turno)) {
+            if ($turno->getAgente() === $this) {
+                $turno->setAgente(null);
             }
         }
         return $this;
@@ -231,17 +231,17 @@ class Agente
         return $this->espaciosDeTrabajo;
     }
 
-    public function addEspacioDeTrabajo(Workspace $workspace): self
+    public function addEspacioDeTrabajo(Workspace $espacioDeTrabajo): self
     {
-        if (!$this->espaciosDeTrabajo->contains($workspace)) {
-            $this->espaciosDeTrabajo->add($workspace);
+        if (!$this->espaciosDeTrabajo->contains($espacioDeTrabajo)) {
+            $this->espaciosDeTrabajo->add($espacioDeTrabajo);
         }
         return $this;
     }
 
-    public function removeEspacioDeTrabajo(Workspace $workspace): self
+    public function removeEspacioDeTrabajo(Workspace $espacioDeTrabajo): self
     {
-        $this->espaciosDeTrabajo->removeElement($workspace);
+        $this->espaciosDeTrabajo->removeElement($espacioDeTrabajo);
         return $this;
     }
 
@@ -251,17 +251,17 @@ class Agente
         return $this->equipos;
     }
 
-    public function addEquipo(Equipo $team): self
+    public function addEquipo(Equipo $equipo): self
     {
-        if (!$this->equipos->contains($team)) {
-            $this->equipos->add($team);
+        if (!$this->equipos->contains($equipo)) {
+            $this->equipos->add($equipo);
         }
         return $this;
     }
 
-    public function removeEquipo(Equipo $team): self
+    public function removeEquipo(Equipo $equipo): self
     {
-        $this->equipos->removeElement($team);
+        $this->equipos->removeElement($equipo);
         return $this;
     }
 
@@ -270,9 +270,9 @@ class Agente
         return $this->firma;
     }
 
-    public function setFirma(?string $signature): self
+    public function setFirma(?string $firma): self
     {
-        $this->firma = $signature;
+        $this->firma = $firma;
         $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
@@ -282,9 +282,9 @@ class Agente
         return $this->sonidoDeNotificacion;
     }
 
-    public function setSonidoDeNotificacion(bool $notificationSound): self
+    public function setSonidoDeNotificacion(bool $sonidoDeNotificacion): self
     {
-        $this->sonidoDeNotificacion = $notificationSound;
+        $this->sonidoDeNotificacion = $sonidoDeNotificacion;
         $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
@@ -294,9 +294,9 @@ class Agente
         return $this->notificacionesDeEscritorio;
     }
 
-    public function setNotificacionesDeEscritorio(bool $desktopNotifications): self
+    public function setNotificacionesDeEscritorio(bool $notificacionesDeEscritorio): self
     {
-        $this->notificacionesDeEscritorio = $desktopNotifications;
+        $this->notificacionesDeEscritorio = $notificacionesDeEscritorio;
         $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
@@ -306,9 +306,9 @@ class Agente
         return $this->respuestaAutomaticaActiva;
     }
 
-    public function setRespuestaAutomaticaActiva(bool $autoReplyEnabled): self
+    public function setRespuestaAutomaticaActiva(bool $respuestaAutomaticaActiva): self
     {
-        $this->respuestaAutomaticaActiva = $autoReplyEnabled;
+        $this->respuestaAutomaticaActiva = $respuestaAutomaticaActiva;
         $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
@@ -318,9 +318,9 @@ class Agente
         return $this->mensajeDeRespuestaAutomatica;
     }
 
-    public function setMensajeDeRespuestaAutomatica(?string $autoReplyMessage): self
+    public function setMensajeDeRespuestaAutomatica(?string $mensajeDeRespuestaAutomatica): self
     {
-        $this->mensajeDeRespuestaAutomatica = $autoReplyMessage;
+        $this->mensajeDeRespuestaAutomatica = $mensajeDeRespuestaAutomatica;
         $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
@@ -330,9 +330,9 @@ class Agente
         return $this->espacioDeTrabajoActivo;
     }
 
-    public function setEspacioDeTrabajoActivo(?Workspace $activeWorkspace): self
+    public function setEspacioDeTrabajoActivo(?Workspace $espacioDeTrabajoActivo): self
     {
-        $this->espacioDeTrabajoActivo = $activeWorkspace;
+        $this->espacioDeTrabajoActivo = $espacioDeTrabajoActivo;
         $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }

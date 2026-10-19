@@ -41,10 +41,10 @@ class Equipo
     #[ORM\ManyToMany(targetEntity: Agente::class, mappedBy: 'equipos')]
     private Collection $agentes;
 
-    public function __construct(Workspace $workspace, string $name)
+    public function __construct(Workspace $espacioDeTrabajo, string $nombre)
     {
-        $this->espacioDeTrabajo = $workspace;
-        $this->nombre = $name;
+        $this->espacioDeTrabajo = $espacioDeTrabajo;
+        $this->nombre = $nombre;
         $this->agentes = new ArrayCollection();
         $this->creadoAt = new \DateTimeImmutable();
         $this->actualizadoAt = new \DateTimeImmutable();
@@ -65,9 +65,9 @@ class Equipo
         return $this->nombre;
     }
 
-    public function setNombre(string $name): self
+    public function setNombre(string $nombre): self
     {
-        $this->nombre = $name;
+        $this->nombre = $nombre;
         $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
@@ -77,9 +77,9 @@ class Equipo
         return $this->activo;
     }
 
-    public function setActivo(bool $isActive): self
+    public function setActivo(bool $activo): self
     {
-        $this->activo = $isActive;
+        $this->activo = $activo;
         $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
@@ -113,28 +113,28 @@ class Equipo
      *
      * @throws \InvalidArgumentException if the agent is not a member of the team's workspace
      */
-    public function addAgente(Agente $agent): self
+    public function addAgente(Agente $agente): self
     {
-        if (!$agent->getEspaciosDeTrabajo()->contains($this->espacioDeTrabajo)) {
+        if (!$agente->getEspaciosDeTrabajo()->contains($this->espacioDeTrabajo)) {
             throw new \InvalidArgumentException(sprintf(
                 'Agent %d does not belong to workspace %d of team "%s"',
-                $agent->getId() ?? 0,
+                $agente->getId() ?? 0,
                 $this->espacioDeTrabajo->getId() ?? 0,
                 $this->nombre
             ));
         }
 
-        if (!$this->agentes->contains($agent)) {
-            $this->agentes->add($agent);
-            $agent->addEquipo($this);
+        if (!$this->agentes->contains($agente)) {
+            $this->agentes->add($agente);
+            $agente->addEquipo($this);
         }
         return $this;
     }
 
-    public function removeAgente(Agente $agent): self
+    public function removeAgente(Agente $agente): self
     {
-        if ($this->agentes->removeElement($agent)) {
-            $agent->removeEquipo($this);
+        if ($this->agentes->removeElement($agente)) {
+            $agente->removeEquipo($this);
         }
         return $this;
     }
