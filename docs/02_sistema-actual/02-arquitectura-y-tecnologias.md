@@ -77,7 +77,7 @@ Todo en `apps/api/src/`, organizado **por módulo de negocio** desde la fase 2 d
 | `Asignacion/` | Asignación manual y automática. | `ResponsabilidadDeTicketService.php`, `UseCase/AsignarTicketUseCase`, `UseCase/AsignarTicketAutomaticamenteUseCase`, `EventListener/AsignacionAutomaticaSolicitadaListener` |
 | `Reporte/` | Métricas y exportación. | `Controller/ReportingController`, `Query/ReportingService`, `Repository/ReportingRepository` |
 | `Automatizacion/` | Reglas y respuesta automática. | `EjecutorDeReglas.php`, `ReglaDeReaperturaAutomatica.php`, `ReglaDeEtiquetadoPorPalabraClave.php`, `RespuestaAutomaticaService.php`, `DependencyInjection/ReglaPass` (registra **a mano** las reglas) |
-| `Administracion/` | Espacios de trabajo, usuarios y el ABM de administración (`/api/admin/*`). | `User.php`, `Workspace.php`, `Controller/UserController`, `Controller/AgentController`, `UseCase/` (un caso de uso por cada escritura de administración) |
+| `Administracion/` | Espacios de trabajo, usuarios y el ABM de administración (`/api/admin/*`). | `Usuario.php`, `EspacioDeTrabajo.php`, `Controller/GestionDeUsuariosController`, `Controller/GestionDeAgentesController`, `UseCase/` (un caso de uso por cada escritura de administración) |
 | `Autenticacion/` | Login, refresh token, chequeo de usuarios inactivos. | `Controller/AuthController`, `Security/UserChecker`, `RefreshToken.php` |
 | `Compartido/` | Outbox, tiempo real, cliente de Graph, storage, scopes de seguridad, excepciones comunes. | `Outbox/OutboxPublisherService`, `Realtime/RealtimeEventFactory`, `Graph/GraphClient`, `Storage/MediaStorageService`, `Security/OwnershipScope` |
 
@@ -129,7 +129,7 @@ Todo en `apps/web/src/app/`. Detalle por pantalla en [07-frontend.md](07-fronten
 | Jerarquía de roles | `security.yaml:2-4` | `ROLE_ADMIN` ⊃ `ROLE_SUPERVISOR` ⊃ `ROLE_AGENT`. En el frontend los roles **no** son jerárquicos (se compensa en `roleGuard`). |
 | Voters | `Ticket/Security/TicketVoter.php` (usado: `ASSIGN`, `CLOSE`), `src/Conversacion/Security/MessageVoter.php` (solo URL de adjuntos) | Ver [06](06-api-y-permisos.md). |
 | Scopes | `OwnershipScope` (siempre `null`: bandeja compartida, decisión Sprint 16) y `WorkspaceScope` (filtra por el `phone_number_id` del workspace activo; si no hay, **no filtra**) | El primero se reutiliza mal como autorización ([R3](00-estado-y-pendientes.md#r3-cualquier-agente-modifica-disponibilidad-y-turnos-de-cualquier-agente)). |
-| Usuario ↔ Agente | `Agente.usuario` (1:1 opcional) | Si un usuario sin agente envía un mensaje o cambia de workspace (admin/supervisor), **se le crea un agente** con nombre = email (`Agente/UseCase/AsegurarAgenteDeUsuarioUseCase.php`, `Administracion/UseCase/SetActiveWorkspaceUseCase.php` (`ensureAgent`)). |
+| Usuario ↔ Agente | `Agente.usuario` (1:1 opcional) | Si un usuario sin agente envía un mensaje o cambia de workspace (admin/supervisor), **se le crea un agente** con nombre = email (`Agente/UseCase/AsegurarAgenteDeUsuarioUseCase.php`, `Administracion/UseCase/SetEspacioDeTrabajoActivoUseCase.php` (`ensureAgent`)). |
 
 ---
 
@@ -193,7 +193,7 @@ Deducidos de la lectura; confirmar con `SELECT event_type, status, COUNT(*) FROM
 | `app:outbox:publish` | Publica eventos pendientes en Mercure. No tiene opciones (`--status`, que se ignoraba, se borró en la fase 1). | Servicio docker `publisher`, bucle cada 2 s, `restart: always`. Alternativa manual: `POST /admin/outbox/publish` (admin). |
 | `app:outbox:dead-letter` | `list`, `retry <id>`, `purge [días]` de eventos fallidos. | Manual. |
 | `app:conversation-window:close-expired` | Cierra tickets con la ventana de 24 h vencida. Opciones `--dry-run`, `--limit=200`, `--safety-margin`. | Servicio docker `window-closer` (**profile opcional**), cada 900 s. El comentario del compose pide revisar antes con `--dry-run`. |
-| `app:seed-users` | Crea 2 admins, 2 supervisores y 6 agentes (`@inbiox.local`) repartidos en los dos primeros workspaces. Contraseña fija en `src/Administracion/Command/SeedUsersCommand.php:31`. | Manual (dev). Requiere workspaces existentes. |
+| `app:seed-users` | Crea 2 admins, 2 supervisores y 6 agentes (`@inbiox.local`) repartidos en los dos primeros workspaces. Contraseña fija en `src/Administracion/Command/SeedUsuariosCommand.php:31`. | Manual (dev). Requiere workspaces existentes. |
 | `app:seed-reports` | Trunca y siembra datos para tests de reportes. Protegido (`APP_ENV=test` y base `inbiox_test`). | Lo usan los tests. |
 
 No hay cron ni Symfony Scheduler. El `Makefile` tiene un target `seed` que llama a `app:seed`, **que no existe**.

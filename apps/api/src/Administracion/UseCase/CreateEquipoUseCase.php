@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace App\Administracion\UseCase;
 
-use App\Administracion\Repository\WorkspaceRepository;
+use App\Administracion\Repository\EspacioDeTrabajoRepository;
 use App\Agente\Repository\EquipoRepository;
 use App\Agente\Equipo;
 use App\Compartido\StateConflictException;
 use Doctrine\ORM\EntityManagerInterface;
 
-final class CreateTeamUseCase
+final class CreateEquipoUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly WorkspaceRepository $workspaceRepository,
+        private readonly EspacioDeTrabajoRepository $workspaceRepository,
         private readonly EquipoRepository $teamRepository,
     ) {}
 

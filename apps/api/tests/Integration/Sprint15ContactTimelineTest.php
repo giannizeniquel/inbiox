@@ -70,7 +70,7 @@ class Sprint15ContactTimelineTest extends WebTestCase
 
     private function createAuthenticatedUser(): string
     {
-        $user = new \App\Administracion\User();
+        $user = new \App\Administracion\Usuario();
         $user->setEmail('timeline-agent@inbiox.local');
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
         $user->setRoles(['ROLE_AGENT']);

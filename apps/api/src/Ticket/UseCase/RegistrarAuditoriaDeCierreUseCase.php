@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Ticket\UseCase;
 
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use App\Ticket\ClasificadorDeAuditoriaDeCierre;
 use App\Ticket\EventoDeTicket;
 use Doctrine\ORM\EntityManagerInterface;
@@ -26,7 +26,7 @@ final class RegistrarAuditoriaDeCierreUseCase
         private readonly LoggerInterface $logger,
     ) {}
 
-    public function execute(int $ticketId, string $nuevoEstado, ?int $responsableAnteriorId, User $usuario): void
+    public function execute(int $ticketId, string $nuevoEstado, ?int $responsableAnteriorId, Usuario $usuario): void
     {
         $agenteActuanteId = $usuario->getAgent()?->getId();
 

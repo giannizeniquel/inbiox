@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Controller;
 
 use App\Agente\Agente;
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -57,9 +57,9 @@ class ContactImportControllerTest extends WebTestCase
         $this->tempFiles = [];
     }
 
-    private function createUser(string $email, array $roles, ?Agente $agent = null): User
+    private function createUser(string $email, array $roles, ?Agente $agent = null): Usuario
     {
-        $user = new User();
+        $user = new Usuario();
         $user->setEmail($email);
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
         $user->setRoles($roles);

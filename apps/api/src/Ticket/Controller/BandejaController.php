@@ -12,7 +12,7 @@ use App\Compartido\Security\OwnershipScope;
 use App\Compartido\Security\WorkspaceScope;
 use App\Ticket\Repository\TicketRepository;
 use App\Ticket\UseCase\MarcarTicketLeidoUseCase;
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -145,7 +145,7 @@ class BandejaController
         }
 
         $usuario = $this->security->getUser();
-        $agenteActualId = $usuario instanceof User ? $usuario->getAgent()?->getId() : null;
+        $agenteActualId = $usuario instanceof Usuario ? $usuario->getAgent()?->getId() : null;
 
         $this->marcarTicketLeidoUseCase->execute($ticket, $agenteActualId);
 

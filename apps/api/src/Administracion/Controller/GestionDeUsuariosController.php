@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Administracion\Controller;
 
-use App\Administracion\Repository\UserRepository;
-use App\Administracion\UseCase\CreateUserUseCase;
-use App\Administracion\UseCase\DeactivateUserUseCase;
-use App\Administracion\UseCase\UpdateUserUseCase;
-use App\Administracion\User;
+use App\Administracion\Repository\UsuarioRepository;
+use App\Administracion\UseCase\CreateUsuarioUseCase;
+use App\Administracion\UseCase\DesactivarUsuarioUseCase;
+use App\Administracion\UseCase\UpdateUsuarioUseCase;
+use App\Administracion\Usuario;
 use App\Compartido\NotFoundException;
 use App\Compartido\StateConflictException;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -23,13 +23,13 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * All endpoints require ROLE_ADMIN.
  */
 #[IsGranted('ROLE_ADMIN')]
-final class UserController
+final class GestionDeUsuariosController
 {
     public function __construct(
-        private readonly UserRepository $userRepository,
-        private readonly CreateUserUseCase $createUserUseCase,
-        private readonly UpdateUserUseCase $updateUserUseCase,
-        private readonly DeactivateUserUseCase $deactivateUserUseCase,
+        private readonly UsuarioRepository $userRepository,
+        private readonly CreateUsuarioUseCase $createUserUseCase,
+        private readonly UpdateUsuarioUseCase $updateUserUseCase,
+        private readonly DesactivarUsuarioUseCase $deactivateUserUseCase,
     ) {}
 
     #[Route('/api/admin/users', name: 'admin_users_list', methods: ['GET'])]
@@ -42,7 +42,7 @@ final class UserController
         $total = $this->userRepository->count([]);
         $users = $this->userRepository->findPageWithAgent($offset, $limit);
 
-        $items = array_map(fn(User $user) => $this->serializeUser($user), $users);
+        $items = array_map(fn(Usuario $user) => $this->serializeUser($user), $users);
 
         return new JsonResponse([
             'data' => $items,
@@ -132,7 +132,7 @@ final class UserController
     /**
      * @return array<string, mixed>
      */
-    private function serializeUser(User $user): array
+    private function serializeUser(Usuario $user): array
     {
         $agent = $user->getAgent();
 

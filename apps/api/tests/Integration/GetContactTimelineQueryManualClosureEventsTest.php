@@ -12,7 +12,7 @@ use App\Conversacion\Conversation;
 use App\Ticket\TipoDeEventoDeTicket;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -81,7 +81,7 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
 
     private function createUser(string $email, array $roles): int
     {
-        $user = new User();
+        $user = new Usuario();
         $user->setEmail($email);
         $user->setPassword('unused-hash');
         $user->setRoles($roles);
@@ -96,7 +96,7 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
 
     private function createUserWithAgent(string $email, array $roles, string $agentName): array
     {
-        $user = new User();
+        $user = new Usuario();
         $user->setEmail($email);
         $user->setPassword('unused-hash');
         $user->setRoles($roles);

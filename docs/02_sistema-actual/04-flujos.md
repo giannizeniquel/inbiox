@@ -248,7 +248,7 @@ stateDiagram-v2
 
 | Criterio | Qué mira | Dónde | Lo usa |
 |---|---|---|---|
-| Columna `agents.is_available` | Nada (nadie la escribe; siempre `true`) | `Agente/Agente.php:36-37` | Solo se muestra en la API admin (`Administracion/Controller/AgentController.php:136`). **Legacy.** |
+| Columna `agents.is_available` | Nada (nadie la escribe; siempre `true`) | `Agente/Agente.php:36-37` | Solo se muestra en la API admin (`Administracion/Controller/GestionDeAgentesController.php:136`). **Legacy.** |
 | `isDisponible()` / `listarAgentesDisponibles()` | activo → override → turno → **capacidad** | `:40-68`, `:112-167` | Auto-asignación, auto-respuesta, `GET /api/agents/{id}/availability`, reporte de disponibles |
 | `isActivoAhora()` ("Activo/Inactivo") | activo → override → turno (**sin capacidad**) | `:84-102` | Guard de asignación manual y roster del desplegable |
 | `isEnTurno()` | activo → turno (sin override ni capacidad) | `:233-242` | Listado de tickets y reporte de rendimiento |
@@ -263,7 +263,7 @@ stateDiagram-v2
 | Reemplazar mis turnos | `PUT /api/me/shifts` | `ReemplazarTurnosUseCase` (`:56-90`) | Sí, `/settings` → Horario laboral |
 | Crear/borrar turno de un agente | `POST /api/agents/{id}/shifts`, `DELETE …/shifts/{shiftId}` | `CreateTurnoUseCase` (`:105-137`), `DeleteTurnoUseCase` | **No** (página rota) |
 | Override | `POST/DELETE /api/agents/{id}/availability` | `SetDisponibilidadManualUseCase` (`:42-91`), `QuitarDisponibilidadManualUseCase` | **No** |
-| Zona horaria | `PUT /api/admin/agents/{id}` | `Administracion/Controller/AgentController::update` | Sí, Admin → Agentes |
+| Zona horaria | `PUT /api/admin/agents/{id}` | `Administracion/Controller/GestionDeAgentesController::update` | Sí, Admin → Agentes |
 
 - Los turnos se interpretan en la zona horaria del agente, intervalo `[inicio, fin)`, con cruce de medianoche (`DisponibilidadDeAgenteService.php:261-289`). No se validan turnos superpuestos. Las validaciones están duplicadas en dos casos de uso con nombres de campo distintos (`day_of_week` vs `dayOfWeek`).
 - Override y turnos escriben eventos `agent.*` en el outbox que el frontend no escucha.
@@ -345,7 +345,7 @@ Frontend: `features/contacts/` (pages, componentes de diálogo, `stores/contacts
 
 | Operación | Endpoint | Dónde | Notas |
 |---|---|---|---|
-| CRUD | `/api/admin/teams[/{id}]` (supervisor+) | `Administracion/Controller/TeamController.php` | Nombre único por workspace; borrar = desactivar (no toca `tickets.team_id`). |
+| CRUD | `/api/admin/teams[/{id}]` (supervisor+) | `Administracion/Controller/GestionDeEquiposController.php` | Nombre único por workspace; borrar = desactivar (no toca `tickets.team_id`). |
 | Membresía | `PUT /api/admin/teams/{id}/agents` | `:247-287` | Reemplaza la lista completa; `Equipo::addAgente()` rechaza agentes de otro workspace; IDs inexistentes se ignoran. |
 | Equipos para filtros | `GET /api/teams` | `Agente/Controller/EquipoController.php:38-65` | Equipos de los workspaces del agente, incluidos inactivos. |
 | Asignar equipo a ticket | `PUT /api/tickets/{id}/team` (cualquier agente) | `AsignacionDeTicketController::setEquipo` (`:88-137`) | Valida mismo workspace; **no** rechaza equipos inactivos (la spec dice que sí); no emite eventos. **Sin UI.** |
@@ -353,7 +353,7 @@ Frontend: `features/contacts/` (pages, componentes de diálogo, `stores/contacts
 
 El equipo **no participa en la asignación** (ni manual ni automática).
 
-**Si falla, revisar:** 403 al crear siendo supervisor → el frontend llama `GET /api/admin/workspaces` (solo admin) en `features/admin/teams/teams-page.component.ts:88-95` → `Administracion/Controller/TeamController.php` → `Agente/Equipo.php`.
+**Si falla, revisar:** 403 al crear siendo supervisor → el frontend llama `GET /api/admin/workspaces` (solo admin) en `features/admin/teams/teams-page.component.ts:88-95` → `Administracion/Controller/GestionDeEquiposController.php` → `Agente/Equipo.php`.
 
 ---
 
@@ -424,7 +424,7 @@ Un mensaje `failed` no afecta el estado del ticket.
 | 2 | Al recargar la app: `APP_INITIALIZER` → `POST /api/auth/refresh` (cookie) → token Mercure → `/me` → SSE. | `app.config.ts:16-23`; `auth.store.ts:175-202` |
 | 3 | Ante un 401: el interceptor deduplica refresh concurrentes y reintenta. Si el refresh falla, llama `logout()` (riesgo **no verificado** de bucle logout/refresh). | `core/auth/auth.interceptor.ts:81-133` |
 | 4 | Logout: `POST /api/auth/logout` (borra todos los refresh tokens), desconecta Mercure. **No limpia** los stores de tickets/conversación. | `auth.store.ts:136-148` |
-| 5 | Workspace: `GET /api/me/workspaces` (con `has_pending`) y `GET /api/me/workspace`; al elegir, `PUT /api/me/workspace` y `window.location.reload()`. Admin/supervisor pueden elegir cualquiera (y se les crea un agente); un agente solo los suyos. | `core/stores/workspace.store.ts:105-120`; `Administracion/Controller/MeWorkspaceController.php`, `Administracion/UseCase/SetActiveWorkspaceUseCase.php` |
+| 5 | Workspace: `GET /api/me/workspaces` (con `has_pending`) y `GET /api/me/workspace`; al elegir, `PUT /api/me/workspace` y `window.location.reload()`. Admin/supervisor pueden elegir cualquiera (y se les crea un agente); un agente solo los suyos. | `core/stores/workspace.store.ts:105-120`; `Administracion/Controller/MiEspacioDeTrabajoController.php`, `Administracion/UseCase/SetEspacioDeTrabajoActivoUseCase.php` |
 | 6 | El backend filtra bandeja, contactos y reportes con `WorkspaceScope` (por `phone_number_id`). Sin workspace activo: **no filtra**. | `Compartido/Security/WorkspaceScope.php:43-64` |
 
 **Si falla, revisar:** 429 en login → rate limiter (5/min) → `security.yaml` → claves JWT (`config/jwt/*.pem`, `JWT_PASSPHRASE`) → `auth.store.ts` / `auth.interceptor.ts` → usuario inactivo (`UserChecker`).
@@ -453,10 +453,10 @@ En la respuesta del listado, `contact.id` es el **id de la conversación** (`Lis
 
 | Pantalla | Endpoints | Controlador | Rol (backend) | Notas |
 |---|---|---|---|---|
-| Usuarios | `/api/admin/users[/{id}]` | `Administracion/Controller/UserController.php` | Admin | Borrar = `is_active=false`. Roles sin validar (acepta cualquier texto). Puede vincular agente al crear. |
-| Agentes | `/api/admin/agents[/{id}]` | `Administracion/Controller/AgentController.php` | Supervisor | Borrar = `active=false` (no desasigna sus tickets; el usuario puede seguir entrando). Zona horaria editable. |
-| Vincular usuario ↔ agente | `POST/DELETE /api/admin/agents/{id}/link-user` | `Administracion/Controller/AgentLinkController.php` | **Admin** (la clase exige más que `access_control`) | El supervisor ve el botón y recibe 403. |
-| Workspaces | `/api/admin/workspaces[/{id}]`, `PUT …/{id}/agents` | `Administracion/Controller/WorkspaceController.php` | Admin | Borrar = desactivar. `phone_number_id` único. |
+| Usuarios | `/api/admin/users[/{id}]` | `Administracion/Controller/GestionDeUsuariosController.php` | Admin | Borrar = `is_active=false`. Roles sin validar (acepta cualquier texto). Puede vincular agente al crear. |
+| Agentes | `/api/admin/agents[/{id}]` | `Administracion/Controller/GestionDeAgentesController.php` | Supervisor | Borrar = `active=false` (no desasigna sus tickets; el usuario puede seguir entrando). Zona horaria editable. |
+| Vincular usuario ↔ agente | `POST/DELETE /api/admin/agents/{id}/link-user` | `Administracion/Controller/VinculoDeAgenteController.php` | **Admin** (la clase exige más que `access_control`) | El supervisor ve el botón y recibe 403. |
+| Workspaces | `/api/admin/workspaces[/{id}]`, `PUT …/{id}/agents` | `Administracion/Controller/GestionDeEspaciosDeTrabajoController.php` | Admin | Borrar = desactivar. `phone_number_id` único. |
 | Equipos | ver [F12](#f12-equipos) | | Supervisor | |
 
 Frontend: `features/admin/{users,agents,workspaces,teams}` con casos de uso en `core/application/admin/*`; `teams` y `workspaces` llaman `GET /api/admin/agents?limit=100` directo (con más de 100 agentes, faltan).

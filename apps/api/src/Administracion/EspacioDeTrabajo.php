@@ -13,7 +13,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity]
 #[ORM\Table(name: 'workspaces')]
 #[ORM\UniqueConstraint(name: 'uniq_workspaces_phone_number_id', columns: ['phone_number_id'])]
-class Workspace
+class EspacioDeTrabajo
 {
     #[ORM\Id]
     #[ORM\Column(name: 'id', type: Types::BIGINT)]
@@ -35,7 +35,7 @@ class Workspace
     #[ORM\Column(name: 'updated_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $updatedAt;
 
-    /** Inverse side of Agent↔Workspace M:N */
+    /** Inverse side of Agente↔EspacioDeTrabajo M:N */
     #[ORM\ManyToMany(targetEntity: Agente::class, mappedBy: 'espaciosDeTrabajo')]
     private Collection $agents;
 

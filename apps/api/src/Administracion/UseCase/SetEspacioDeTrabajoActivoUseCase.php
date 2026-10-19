@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace App\Administracion\UseCase;
 
-use App\Administracion\Repository\WorkspaceRepository;
-use App\Administracion\User;
-use App\Administracion\Workspace;
-use App\Administracion\WorkspaceNotAssignedException;
+use App\Administracion\Repository\EspacioDeTrabajoRepository;
+use App\Administracion\Usuario;
+use App\Administracion\EspacioDeTrabajo;
+use App\Administracion\EspacioDeTrabajoNoAsignadoException;
 use App\Agente\UseCase\AsegurarAgenteDeUsuarioUseCase;
 use App\Compartido\NotFoundException;
 use Doctrine\ORM\EntityManagerInterface;
 
-final class SetActiveWorkspaceUseCase
+final class SetEspacioDeTrabajoActivoUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly WorkspaceRepository $workspaceRepository,
+        private readonly EspacioDeTrabajoRepository $workspaceRepository,
         private readonly AsegurarAgenteDeUsuarioUseCase $ensureAgentForUser,
     ) {}
 
@@ -31,9 +31,9 @@ final class SetActiveWorkspaceUseCase
      *
      * @throws \InvalidArgumentException     when workspaceId is invalid or the workspace is inactive
      * @throws NotFoundException             when the workspace, or the agent of an agent-role user, does not exist
-     * @throws WorkspaceNotAssignedException when an agent is not assigned to the workspace
+     * @throws EspacioDeTrabajoNoAsignadoException when an agent is not assigned to the workspace
      */
-    public function execute(User $user, bool $canUseAnyWorkspace, array $data): Workspace
+    public function execute(Usuario $user, bool $canUseAnyWorkspace, array $data): EspacioDeTrabajo
     {
         $workspaceId = $data['workspaceId'] ?? null;
 
@@ -65,7 +65,7 @@ final class SetActiveWorkspaceUseCase
         }
 
         if (!$agent->getEspaciosDeTrabajo()->contains($workspace)) {
-            throw new WorkspaceNotAssignedException('Agent is not assigned to this workspace');
+            throw new EspacioDeTrabajoNoAsignadoException('Agent is not assigned to this workspace');
         }
 
         $agent->setEspacioDeTrabajoActivo($workspace);

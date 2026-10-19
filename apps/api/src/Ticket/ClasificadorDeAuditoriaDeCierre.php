@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Ticket;
 
-use App\Administracion\User;
+use App\Administracion\Usuario;
 
 /**
  * Classifies a manual resolve/close action into the owner/override/unowned
@@ -41,7 +41,7 @@ final class ClasificadorDeAuditoriaDeCierre
      * Compact, namespaced actor reference for `EventoDeTicket.source` /
      * `Asignacion.asignadoPor` (design.md D5).
      */
-    public function referenciaDeActor(User $usuario): string
+    public function referenciaDeActor(Usuario $usuario): string
     {
         return \sprintf('u:%d', $usuario->getId());
     }

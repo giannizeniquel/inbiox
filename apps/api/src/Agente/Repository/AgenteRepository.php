@@ -3,7 +3,7 @@
 namespace App\Agente\Repository;
 
 use App\Agente\Agente;
-use App\Administracion\Workspace;
+use App\Administracion\EspacioDeTrabajo;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\Persistence\ManagerRegistry;
@@ -48,7 +48,7 @@ class AgenteRepository extends ServiceEntityRepository
     }
 
     /** @return Agente[] */
-    public function findByEspacioDeTrabajo(Workspace $espacioDeTrabajo): array
+    public function findByEspacioDeTrabajo(EspacioDeTrabajo $espacioDeTrabajo): array
     {
         return $this->createQueryBuilder('a')
             ->innerJoin('a.espaciosDeTrabajo', 'w')
@@ -64,7 +64,7 @@ class AgenteRepository extends ServiceEntityRepository
      *
      * @return Agente[]
      */
-    public function findActivosByEspacioDeTrabajo(Workspace $espacioDeTrabajo): array
+    public function findActivosByEspacioDeTrabajo(EspacioDeTrabajo $espacioDeTrabajo): array
     {
         return $this->createQueryBuilder('a')
             ->innerJoin('a.espaciosDeTrabajo', 'w')

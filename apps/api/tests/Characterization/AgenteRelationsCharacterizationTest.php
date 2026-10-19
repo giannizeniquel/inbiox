@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Characterization;
 
-use App\Administracion\User;
-use App\Administracion\Workspace;
+use App\Administracion\Usuario;
+use App\Administracion\EspacioDeTrabajo;
 use App\Agente\Agente;
 use App\Agente\Equipo;
 use App\Automatizacion\RespuestaAutomaticaService;
@@ -43,14 +43,14 @@ final class AgenteRelationsCharacterizationTest extends KernelTestCase
 
     public function testRelationsLoadFromBothSides(): void
     {
-        $usuario = new User();
+        $usuario = new Usuario();
         $usuario->setEmail('relations@inbiox.local');
         $usuario->setPassword('unused-hash');
         $usuario->setRoles(['ROLE_AGENT']);
         $this->em->persist($usuario);
 
-        $primero = new Workspace('pn-relations-1', 'First');
-        $segundo = new Workspace('pn-relations-2', 'Second');
+        $primero = new EspacioDeTrabajo('pn-relations-1', 'First');
+        $segundo = new EspacioDeTrabajo('pn-relations-2', 'Second');
         $this->em->persist($primero);
         $this->em->persist($segundo);
 
@@ -76,12 +76,12 @@ final class AgenteRelationsCharacterizationTest extends KernelTestCase
 
         $agente = $this->em->find(Agente::class, $agenteId);
         self::assertSame($usuarioId, $agente->getUsuario()?->getId());
-        self::assertSame($agenteId, $this->em->find(User::class, $usuarioId)->getAgent()?->getId());
+        self::assertSame($agenteId, $this->em->find(Usuario::class, $usuarioId)->getAgent()?->getId());
         self::assertEqualsCanonicalizing([$primeroId, $segundoId], $this->ids($agente->getEspaciosDeTrabajo()));
         self::assertSame($segundoId, $agente->getEspacioDeTrabajoActivo()?->getId());
         self::assertSame([$equipoId], $this->ids($agente->getEquipos()));
         self::assertCount(1, $agente->getTurnos());
-        self::assertSame([$agenteId], $this->ids($this->em->find(Workspace::class, $primeroId)->getAgents()));
+        self::assertSame([$agenteId], $this->ids($this->em->find(EspacioDeTrabajo::class, $primeroId)->getAgents()));
         self::assertSame([$agenteId], $this->ids($this->em->find(Equipo::class, $equipoId)->getAgentes()));
 
         $conn = $this->em->getConnection();
@@ -92,8 +92,8 @@ final class AgenteRelationsCharacterizationTest extends KernelTestCase
 
     public function testAutoReplyTargetIsTheActiveAgentWithAutoReplyInTheTicketWorkspace(): void
     {
-        $primero = new Workspace('pn-target-1', 'First');
-        $segundo = new Workspace('pn-target-2', 'Second');
+        $primero = new EspacioDeTrabajo('pn-target-1', 'First');
+        $segundo = new EspacioDeTrabajo('pn-target-2', 'Second');
         $this->em->persist($primero);
         $this->em->persist($segundo);
 

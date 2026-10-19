@@ -6,7 +6,7 @@ namespace App\Tests\Integration;
 
 use App\Agente\Agente;
 use App\Disponibilidad\Turno;
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -72,7 +72,7 @@ class Sprint10ControllerTest extends WebTestCase
      */
     private function createAuthenticatedUser(): string
     {
-        $user = new User();
+        $user = new Usuario();
         $user->setEmail('sprint10-admin@inbiox.local');
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
         $user->setRoles(['ROLE_SUPERVISOR']);

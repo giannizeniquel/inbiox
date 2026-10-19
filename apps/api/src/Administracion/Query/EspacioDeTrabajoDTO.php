@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Administracion\Query;
 
-use App\Administracion\Workspace;
+use App\Administracion\EspacioDeTrabajo;
 
 /**
  * Data Transfer Object for workspace responses.
  */
-class WorkspaceDTO
+class EspacioDeTrabajoDTO
 {
     public function __construct(
         public readonly int $id,
@@ -22,7 +22,7 @@ class WorkspaceDTO
         public readonly bool $hasPending = false,
     ) {}
 
-    public static function fromEntity(Workspace $workspace, int $agentCount = 0): self
+    public static function fromEntity(EspacioDeTrabajo $workspace, int $agentCount = 0): self
     {
         return new self(
             id: (int) $workspace->getId(),

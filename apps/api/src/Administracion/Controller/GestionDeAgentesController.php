@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Administracion\Controller;
 
-use App\Administracion\UseCase\CreateAgentUseCase;
-use App\Administracion\UseCase\DeactivateAgentUseCase;
-use App\Administracion\UseCase\UpdateAgentUseCase;
+use App\Administracion\UseCase\CreateAgenteUseCase;
+use App\Administracion\UseCase\DesactivarAgenteUseCase;
+use App\Administracion\UseCase\UpdateAgenteUseCase;
 use App\Agente\Agente;
 use App\Agente\Repository\AgenteRepository;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -21,13 +21,13 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * All endpoints require ROLE_SUPERVISOR.
  */
 #[IsGranted('ROLE_SUPERVISOR')]
-final class AgentController
+final class GestionDeAgentesController
 {
     public function __construct(
         private readonly AgenteRepository $agentRepository,
-        private readonly CreateAgentUseCase $createAgentUseCase,
-        private readonly UpdateAgentUseCase $updateAgentUseCase,
-        private readonly DeactivateAgentUseCase $deactivateAgentUseCase,
+        private readonly CreateAgenteUseCase $createAgentUseCase,
+        private readonly UpdateAgenteUseCase $updateAgentUseCase,
+        private readonly DesactivarAgenteUseCase $deactivateAgentUseCase,
     ) {}
 
     #[Route('/api/admin/agents', name: 'admin_agents_list', methods: ['GET'])]

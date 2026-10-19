@@ -7,8 +7,8 @@
 namespace App\Administracion\Command;
 
 use App\Agente\Agente;
-use App\Administracion\User;
-use App\Administracion\Workspace;
+use App\Administracion\Usuario;
+use App\Administracion\EspacioDeTrabajo;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -17,7 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 #[AsCommand(name: 'app:seed-users', description: 'Seed test users')]
-final class SeedUsersCommand extends Command
+final class SeedUsuariosCommand extends Command
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
@@ -31,7 +31,7 @@ final class SeedUsersCommand extends Command
         $password = 'password123';
 
         // Load existing workspaces
-        $workspaceRepo = $this->em->getRepository(Workspace::class);
+        $workspaceRepo = $this->em->getRepository(EspacioDeTrabajo::class);
         $workspaces = $workspaceRepo->findBy([], ['id' => 'ASC']);
         if (empty($workspaces)) {
             $output->writeln('<error>No workspaces found. Run migrations first.</error>');
@@ -50,7 +50,7 @@ final class SeedUsersCommand extends Command
             ['email' => 'admin2@inbiox.local'],
         ];
         foreach ($admins as $a) {
-            $user = new User();
+            $user = new Usuario();
             $user->setEmail($a['email']);
             $user->setPassword($this->hasher->hashPassword($user, $password));
             $user->setRoles(['ROLE_ADMIN']);
@@ -74,7 +74,7 @@ final class SeedUsersCommand extends Command
             ['email' => 'super2@inbiox.local'],
         ];
         foreach ($supervisors as $s) {
-            $user = new User();
+            $user = new Usuario();
             $user->setEmail($s['email']);
             $user->setPassword($this->hasher->hashPassword($user, $password));
             $user->setRoles(['ROLE_SUPERVISOR']);
@@ -102,7 +102,7 @@ final class SeedUsersCommand extends Command
             ['email' => 'agent6@inbiox.local', 'name' => 'Diego Sánchez',  'ws' => [$ws2],       'active' => $ws2],
         ];
         foreach ($agents as $a) {
-            $user = new User();
+            $user = new Usuario();
             $user->setEmail($a['email']);
             $user->setPassword($this->hasher->hashPassword($user, $password));
             $user->setRoles(['ROLE_AGENT']);

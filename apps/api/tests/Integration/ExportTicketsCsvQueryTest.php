@@ -12,7 +12,7 @@ use App\Ticket\Etiqueta;
 use App\Ticket\EtiquetaDeTicket;
 use App\Agente\Equipo;
 use App\Ticket\Ticket;
-use App\Administracion\Workspace;
+use App\Administracion\EspacioDeTrabajo;
 use App\Ticket\Repository\EtiquetaRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use League\Csv\Reader;
@@ -125,7 +125,7 @@ class ExportTicketsCsvQueryTest extends KernelTestCase
 
     private function createTeam(string $name = 'Support'): Equipo
     {
-        $workspace = new Workspace('+549110000' . random_int(1000, 9999), 'Workspace for ' . $name);
+        $workspace = new EspacioDeTrabajo('+549110000' . random_int(1000, 9999), 'Workspace for ' . $name);
         $this->em->persist($workspace);
 
         $team = new Equipo($workspace, $name);

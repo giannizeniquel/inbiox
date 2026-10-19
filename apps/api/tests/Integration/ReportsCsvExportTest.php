@@ -11,7 +11,7 @@ use App\Conversacion\Conversation;
 use App\Ticket\Etiqueta;
 use App\Ticket\EtiquetaDeTicket;
 use App\Ticket\Ticket;
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use App\Ticket\Repository\EtiquetaRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use League\Csv\Reader;
@@ -75,7 +75,7 @@ class ReportsCsvExportTest extends WebTestCase
         $this->userSeq++;
         $email = sprintf('export-test-%d@inbiox.local', $this->userSeq);
 
-        $user = new User();
+        $user = new Usuario();
         $user->setEmail($email);
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
         $user->setRoles($roles);

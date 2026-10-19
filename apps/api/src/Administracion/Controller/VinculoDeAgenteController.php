@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Administracion\Controller;
 
-use App\Administracion\UseCase\LinkUserToAgentUseCase;
-use App\Administracion\UseCase\UnlinkUserFromAgentUseCase;
+use App\Administracion\UseCase\VincularUsuarioConAgenteUseCase;
+use App\Administracion\UseCase\DesvincularUsuarioDeAgenteUseCase;
 use App\Agente\Repository\AgenteRepository;
 use App\Compartido\NotFoundException;
 use App\Compartido\StateConflictException;
@@ -22,12 +22,12 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * All endpoints require ROLE_ADMIN.
  */
 #[IsGranted('ROLE_ADMIN')]
-final class AgentLinkController
+final class VinculoDeAgenteController
 {
     public function __construct(
         private readonly AgenteRepository $agentRepository,
-        private readonly LinkUserToAgentUseCase $linkUserToAgentUseCase,
-        private readonly UnlinkUserFromAgentUseCase $unlinkUserFromAgentUseCase,
+        private readonly VincularUsuarioConAgenteUseCase $linkUserToAgentUseCase,
+        private readonly DesvincularUsuarioDeAgenteUseCase $unlinkUserFromAgentUseCase,
     ) {}
 
     /**

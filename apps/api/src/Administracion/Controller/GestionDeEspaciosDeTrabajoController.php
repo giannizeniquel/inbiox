@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Administracion\Controller;
 
-use App\Administracion\Repository\WorkspaceRepository;
-use App\Administracion\UseCase\AssignWorkspaceAgentsUseCase;
-use App\Administracion\UseCase\CreateWorkspaceUseCase;
-use App\Administracion\UseCase\DeactivateWorkspaceUseCase;
-use App\Administracion\UseCase\UpdateWorkspaceUseCase;
-use App\Administracion\Workspace;
+use App\Administracion\Repository\EspacioDeTrabajoRepository;
+use App\Administracion\UseCase\AsignarAgentesAEspacioDeTrabajoUseCase;
+use App\Administracion\UseCase\CreateEspacioDeTrabajoUseCase;
+use App\Administracion\UseCase\DesactivarEspacioDeTrabajoUseCase;
+use App\Administracion\UseCase\UpdateEspacioDeTrabajoUseCase;
+use App\Administracion\EspacioDeTrabajo;
 use App\Agente\Agente;
 use App\Compartido\StateConflictException;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -24,14 +24,14 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * All endpoints require ROLE_ADMIN.
  */
 #[IsGranted('ROLE_ADMIN')]
-final class WorkspaceController
+final class GestionDeEspaciosDeTrabajoController
 {
     public function __construct(
-        private readonly WorkspaceRepository $workspaceRepository,
-        private readonly CreateWorkspaceUseCase $createWorkspaceUseCase,
-        private readonly UpdateWorkspaceUseCase $updateWorkspaceUseCase,
-        private readonly DeactivateWorkspaceUseCase $deactivateWorkspaceUseCase,
-        private readonly AssignWorkspaceAgentsUseCase $assignWorkspaceAgentsUseCase,
+        private readonly EspacioDeTrabajoRepository $workspaceRepository,
+        private readonly CreateEspacioDeTrabajoUseCase $createWorkspaceUseCase,
+        private readonly UpdateEspacioDeTrabajoUseCase $updateWorkspaceUseCase,
+        private readonly DesactivarEspacioDeTrabajoUseCase $deactivateWorkspaceUseCase,
+        private readonly AsignarAgentesAEspacioDeTrabajoUseCase $assignWorkspaceAgentsUseCase,
     ) {}
 
     #[Route('/api/admin/workspaces', name: 'app_admin_workspaces_list', methods: ['GET'])]
@@ -44,7 +44,7 @@ final class WorkspaceController
         $total = $this->workspaceRepository->count([]);
         $workspaces = $this->workspaceRepository->findBy([], ['id' => 'DESC'], $limit, $offset);
 
-        $items = array_map(fn(Workspace $w) => $this->serializeWorkspace($w), $workspaces);
+        $items = array_map(fn(EspacioDeTrabajo $w) => $this->serializeWorkspace($w), $workspaces);
 
         return new JsonResponse([
             'data' => $items,
@@ -162,7 +162,7 @@ final class WorkspaceController
     /**
      * @return array<string, mixed>
      */
-    private function serializeWorkspace(Workspace $workspace): array
+    private function serializeWorkspace(EspacioDeTrabajo $workspace): array
     {
         $agentIds = [];
         foreach ($workspace->getAgents() as $agent) {

@@ -4,12 +4,12 @@ security:
         ROLE_SUPERVISOR: [ROLE_AGENT]
 
     password_hashers:
-        App\Administracion\User: 'auto'
+        App\Administracion\Usuario: 'auto'
 
     providers:
         app_user_provider:
             entity:
-                class: App\Administracion\User
+                class: App\Administracion\Usuario
                 property: email
 
     firewalls:

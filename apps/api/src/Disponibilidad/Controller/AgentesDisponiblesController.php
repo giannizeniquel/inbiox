@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Disponibilidad\Controller;
 
 use App\Disponibilidad\DisponibilidadDeAgenteService;
-use App\Administracion\Workspace;
-use App\Administracion\Repository\WorkspaceRepository;
+use App\Administracion\EspacioDeTrabajo;
+use App\Administracion\Repository\EspacioDeTrabajoRepository;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -22,7 +22,7 @@ final class AgentesDisponiblesController
 {
     public function __construct(
         private readonly DisponibilidadDeAgenteService $disponibilidadDeAgenteService,
-        private readonly WorkspaceRepository $workspaceRepository,
+        private readonly EspacioDeTrabajoRepository $workspaceRepository,
     ) {}
 
     #[Route('/api/workspaces/{id}/available-agents', name: 'app_workspace_available_agents', methods: ['GET'])]

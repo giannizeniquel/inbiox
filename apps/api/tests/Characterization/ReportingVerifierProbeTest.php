@@ -271,7 +271,7 @@ final class ReportingVerifierProbeTest extends CharacterizationTestCase
 
         $viewer = $this->createAgent('Viewer');
         $this->token($viewer->getId(), 'viewer');
-        $workspace = $this->em->getRepository(\App\Administracion\Workspace::class)->findOneBy(['phoneNumberId' => 'probe-ws']);
+        $workspace = $this->em->getRepository(\App\Administracion\EspacioDeTrabajo::class)->findOneBy(['phoneNumberId' => 'probe-ws']);
         $viewer->addEspacioDeTrabajo($workspace);
         $viewer->setEspacioDeTrabajoActivo($workspace);
         $this->em->flush();

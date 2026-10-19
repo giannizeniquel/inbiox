@@ -11,7 +11,7 @@ use App\Ticket\UseCase\ResolverTicketUseCase;
 use App\Ticket\ClasificadorDeAuditoriaDeCierre;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use App\Ticket\Repository\TicketRepository;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -33,7 +33,7 @@ class FlujoDeTicketController
     ) {}
 
     #[Route('/api/tickets/{id}/transition', name: 'app_ticket_transition', methods: ['POST'])]
-    public function transicionar(int $id, Request $request, #[CurrentUser] ?User $usuario): JsonResponse
+    public function transicionar(int $id, Request $request, #[CurrentUser] ?Usuario $usuario): JsonResponse
     {
         try {
             $data = json_decode($request->getContent(), true);
@@ -78,7 +78,7 @@ class FlujoDeTicketController
     }
 
     #[Route('/api/tickets/{id}/resolve', name: 'app_ticket_resolve', methods: ['POST'])]
-    public function resolver(int $id, #[CurrentUser] ?User $usuario): JsonResponse
+    public function resolver(int $id, #[CurrentUser] ?Usuario $usuario): JsonResponse
     {
         try {
             $denied = $this->denyUnlessGrantedClose($id, $usuario, 'resolve');
@@ -102,7 +102,7 @@ class FlujoDeTicketController
     }
 
     #[Route('/api/tickets/{id}/close', name: 'app_ticket_close', methods: ['POST'])]
-    public function cerrar(int $id, #[CurrentUser] ?User $usuario): JsonResponse
+    public function cerrar(int $id, #[CurrentUser] ?Usuario $usuario): JsonResponse
     {
         try {
             $denied = $this->denyUnlessGrantedClose($id, $usuario, 'close');
@@ -133,7 +133,7 @@ class FlujoDeTicketController
      * through to `null` (skip the voter) so the existing use-case 400 stays
      * the contract for a nonexistent ticket — no new 404 is introduced.
      */
-    private function denyUnlessGrantedClose(int $ticketId, ?User $usuario, string $action): ?JsonResponse
+    private function denyUnlessGrantedClose(int $ticketId, ?Usuario $usuario, string $action): ?JsonResponse
     {
         $ticket = $this->ticketRepo->findById($ticketId);
         if ($ticket === null) {
@@ -154,7 +154,7 @@ class FlujoDeTicketController
         return null;
     }
 
-    private function motivoDeRechazoDeCierre(Ticket $ticket, ?User $usuario): string
+    private function motivoDeRechazoDeCierre(Ticket $ticket, ?Usuario $usuario): string
     {
         if ($usuario === null || $usuario->getAgent() === null) {
             return 'no_linked_agent';

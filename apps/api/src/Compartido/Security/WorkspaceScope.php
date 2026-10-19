@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Compartido\Security;
 
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use Symfony\Bundle\SecurityBundle\Security;
 
 /**
@@ -29,8 +29,8 @@ final class WorkspaceScope
      * ALL roles (ADMIN, SUPERVISOR, AGENT) go through the same path:
      * user → agent → activeWorkspace → phoneNumberId.
      *
-     * - User with linked Agent that has an active workspace: the workspace's phoneNumberId
-     * - User without Agent or without active workspace: null (no scope)
+     * - Usuario with linked Agent that has an active workspace: the workspace's phoneNumberId
+     * - Usuario without Agent or without active workspace: null (no scope)
      * - No authenticated user: null
      *
      * The workspace switcher is responsible for setting the active workspace
@@ -44,7 +44,7 @@ final class WorkspaceScope
     {
         $user = $this->security->getUser();
 
-        if (!$user instanceof User) {
+        if (!$user instanceof Usuario) {
             return null;
         }
 

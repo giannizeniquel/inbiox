@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Agente\Controller;
 
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use App\Agente\Agente;
 use App\Agente\UseCase\UpdatePerfilDeAgenteUseCase;
 use App\Agente\UseCase\UpdatePreferenciasDeNotificacionUseCase;
@@ -138,7 +138,7 @@ final class MiConfiguracionController
     {
         $usuario = $this->security->getUser();
 
-        if (!$usuario instanceof User) {
+        if (!$usuario instanceof Usuario) {
             return null;
         }
 

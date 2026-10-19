@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Domain\Agent;
 
 use App\Agente\Agente;
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -36,7 +36,7 @@ class AgentTest extends TestCase
 
     public function testSetUserLinksAgentToUser(): void
     {
-        $user = new User();
+        $user = new Usuario();
         $user->setEmail('agent@inbiox.local');
 
         $agent = new Agente('Linked Agent');
@@ -47,7 +47,7 @@ class AgentTest extends TestCase
 
     public function testUnlinkUserSetsNull(): void
     {
-        $user = new User();
+        $user = new Usuario();
         $user->setEmail('agent@inbiox.local');
 
         $agent = new Agente('Linked Agent');
@@ -60,7 +60,7 @@ class AgentTest extends TestCase
 
     public function testUserCanExistWithoutAgent(): void
     {
-        $user = new User();
+        $user = new Usuario();
         $user->setEmail('admin@inbiox.local');
 
         self::assertNull($user->getAgent(), 'User created without Agent must have null agent');
@@ -82,7 +82,7 @@ class AgentTest extends TestCase
 
     public function testSetUserReturnsSelfForChaining(): void
     {
-        $user = new User();
+        $user = new Usuario();
         $user->setEmail('agent@inbiox.local');
 
         $agent = new Agente('Chained Agent');
@@ -93,7 +93,7 @@ class AgentTest extends TestCase
 
     public function testUserBidirectionalRelationship(): void
     {
-        $user = new User();
+        $user = new Usuario();
         $user->setEmail('agent@inbiox.local');
 
         $agent = new Agente('BiDi Agent');

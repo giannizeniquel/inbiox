@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Controller\Admin;
 
 use App\Agente\Agente;
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -54,8 +54,8 @@ class UserControllerTest extends WebTestCase
         string $email,
         array $roles = ['ROLE_AGENT'],
         bool $isActive = true,
-    ): User {
-        $user = new User();
+    ): Usuario {
+        $user = new Usuario();
         $user->setEmail($email);
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
         $user->setRoles($roles);
@@ -105,7 +105,7 @@ class UserControllerTest extends WebTestCase
     {
         $agent = $this->createAgent('Agent');
         $this->createUser('agent@test.local', ['ROLE_AGENT']);
-        $user = $this->em->getRepository(User::class)->findOneBy(['email' => 'agent@test.local']);
+        $user = $this->em->getRepository(Usuario::class)->findOneBy(['email' => 'agent@test.local']);
         $agent->setUsuario($user);
         $this->em->flush();
 
@@ -361,7 +361,7 @@ class UserControllerTest extends WebTestCase
 
         // Verify the user still exists but is deactivated
         $this->em->clear();
-        $deletedUser = $this->em->getRepository(User::class)->find($user->getId());
+        $deletedUser = $this->em->getRepository(Usuario::class)->find($user->getId());
         self::assertNotNull($deletedUser, 'User must still exist (soft delete)');
         self::assertFalse($deletedUser->isActive(), 'User must be deactivated');
     }

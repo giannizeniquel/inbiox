@@ -6,8 +6,8 @@ namespace App\Agente;
 
 use App\Disponibilidad\Turno;
 
-use App\Administracion\User;
-use App\Administracion\Workspace;
+use App\Administracion\Usuario;
+use App\Administracion\EspacioDeTrabajo;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -26,9 +26,9 @@ class Agente
     #[ORM\Column(name: 'name', type: Types::STRING, length: 255)]
     private string $nombre;
 
-    #[ORM\OneToOne(targetEntity: User::class, inversedBy: 'agent')]
+    #[ORM\OneToOne(targetEntity: Usuario::class, inversedBy: 'agent')]
     #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: true, unique: true)]
-    private ?User $usuario = null;
+    private ?Usuario $usuario = null;
 
     #[ORM\Column(name: 'active', type: Types::BOOLEAN, options: ['default' => true])]
     private bool $activo = true;
@@ -72,15 +72,15 @@ class Agente
     #[ORM\OneToMany(targetEntity: Turno::class, mappedBy: 'agente', orphanRemoval: true)]
     private Collection $turnos;
 
-    #[ORM\ManyToMany(targetEntity: Workspace::class, inversedBy: 'agents')]
+    #[ORM\ManyToMany(targetEntity: EspacioDeTrabajo::class, inversedBy: 'agents')]
     #[ORM\JoinTable(name: 'agent_workspace')]
     #[ORM\JoinColumn(name: 'agent_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     #[ORM\InverseJoinColumn(name: 'workspace_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     private Collection $espaciosDeTrabajo;
 
-    #[ORM\ManyToOne(targetEntity: Workspace::class)]
+    #[ORM\ManyToOne(targetEntity: EspacioDeTrabajo::class)]
     #[ORM\JoinColumn(name: 'active_workspace_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
-    private ?Workspace $espacioDeTrabajoActivo = null;
+    private ?EspacioDeTrabajo $espacioDeTrabajoActivo = null;
 
     #[ORM\ManyToMany(targetEntity: Equipo::class, inversedBy: 'agentes')]
     #[ORM\JoinTable(name: 'agent_team')]
@@ -108,12 +108,12 @@ class Agente
         return $this->nombre;
     }
 
-    public function getUsuario(): ?User
+    public function getUsuario(): ?Usuario
     {
         return $this->usuario;
     }
 
-    public function setUsuario(?User $usuario): self
+    public function setUsuario(?Usuario $usuario): self
     {
         $this->usuario = $usuario;
         $this->actualizadoAt = new \DateTimeImmutable();
@@ -225,13 +225,13 @@ class Agente
         return $this;
     }
 
-    /** @return Collection<int, Workspace> */
+    /** @return Collection<int, EspacioDeTrabajo> */
     public function getEspaciosDeTrabajo(): Collection
     {
         return $this->espaciosDeTrabajo;
     }
 
-    public function addEspacioDeTrabajo(Workspace $espacioDeTrabajo): self
+    public function addEspacioDeTrabajo(EspacioDeTrabajo $espacioDeTrabajo): self
     {
         if (!$this->espaciosDeTrabajo->contains($espacioDeTrabajo)) {
             $this->espaciosDeTrabajo->add($espacioDeTrabajo);
@@ -239,7 +239,7 @@ class Agente
         return $this;
     }
 
-    public function removeEspacioDeTrabajo(Workspace $espacioDeTrabajo): self
+    public function removeEspacioDeTrabajo(EspacioDeTrabajo $espacioDeTrabajo): self
     {
         $this->espaciosDeTrabajo->removeElement($espacioDeTrabajo);
         return $this;
@@ -325,12 +325,12 @@ class Agente
         return $this;
     }
 
-    public function getEspacioDeTrabajoActivo(): ?Workspace
+    public function getEspacioDeTrabajoActivo(): ?EspacioDeTrabajo
     {
         return $this->espacioDeTrabajoActivo;
     }
 
-    public function setEspacioDeTrabajoActivo(?Workspace $espacioDeTrabajoActivo): self
+    public function setEspacioDeTrabajoActivo(?EspacioDeTrabajo $espacioDeTrabajoActivo): self
     {
         $this->espacioDeTrabajoActivo = $espacioDeTrabajoActivo;
         $this->actualizadoAt = new \DateTimeImmutable();

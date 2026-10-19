@@ -13,7 +13,7 @@ use Doctrine\ORM\EntityManagerInterface;
  * It must not clear tickets.team_id on the team's tickets (spec: Team
  * Deactivation Retains Historical Ticket Attribution).
  */
-final class DeactivateTeamUseCase
+final class DesactivarEquipoUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,

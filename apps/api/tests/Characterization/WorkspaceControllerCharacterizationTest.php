@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Characterization;
 
 /**
- * Characterization of App\Administracion\Controller\WorkspaceController
+ * Characterization of App\Administracion\Controller\GestionDeEspaciosDeTrabajoController
  * (app_admin_workspaces_*). Admin-only via access_control and #[IsGranted].
  */
 final class WorkspaceControllerCharacterizationTest extends CharacterizationTestCase

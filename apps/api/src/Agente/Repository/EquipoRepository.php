@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Agente\Repository;
 
-use App\Administracion\Workspace;
+use App\Administracion\EspacioDeTrabajo;
 use App\Agente\Equipo;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -20,7 +20,7 @@ class EquipoRepository extends ServiceEntityRepository
     }
 
     /**
-     * @param Workspace[] $espaciosDeTrabajo non-empty
+     * @param EspacioDeTrabajo[] $espaciosDeTrabajo non-empty
      *
      * @return Equipo[] ordered by name
      */

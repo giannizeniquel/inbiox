@@ -13,7 +13,7 @@ use Symfony\Component\Security\Core\User\UserInterface;
 #[ORM\Entity]
 #[ORM\Table(name: '`user`')]
 #[ORM\Index(name: 'idx_user_email', columns: ['email'])]
-class User implements UserInterface, PasswordAuthenticatedUserInterface
+class Usuario implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\Column(name: 'id', type: Types::BIGINT)]

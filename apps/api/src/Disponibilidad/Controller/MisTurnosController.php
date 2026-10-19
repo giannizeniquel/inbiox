@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Disponibilidad\Controller;
 
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use App\Agente\Agente;
 use App\Disponibilidad\UseCase\ReemplazarTurnosUseCase;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -76,7 +76,7 @@ final class MisTurnosController
     {
         $usuario = $this->security->getUser();
 
-        if (!$usuario instanceof User) {
+        if (!$usuario instanceof Usuario) {
             return null;
         }
 

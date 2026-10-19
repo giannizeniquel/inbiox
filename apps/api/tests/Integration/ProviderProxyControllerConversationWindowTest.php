@@ -8,7 +8,7 @@ use App\Agente\Agente;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Ticket\Ticket;
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -59,7 +59,7 @@ class ProviderProxyControllerConversationWindowTest extends WebTestCase
 
     private function createAuthenticatedUser(): string
     {
-        $user = new User();
+        $user = new Usuario();
         $user->setEmail('window-test-agent@inbiox.local');
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
         $user->setRoles(['ROLE_AGENT']);

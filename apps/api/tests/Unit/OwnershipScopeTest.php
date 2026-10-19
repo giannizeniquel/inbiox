@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit;
 
 use App\Compartido\Security\OwnershipScope;
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use PHPUnit\Framework\TestCase;
 use Symfony\Bundle\SecurityBundle\Security;
 
@@ -22,7 +22,7 @@ class OwnershipScopeTest extends TestCase
 {
     public function testSupervisorReturnsNull(): void
     {
-        $user = new User();
+        $user = new Usuario();
         $user->setRoles(['ROLE_SUPERVISOR']);
 
         $security = $this->createMock(Security::class);
@@ -38,7 +38,7 @@ class OwnershipScopeTest extends TestCase
 
     public function testAdminReturnsNull(): void
     {
-        $user = new User();
+        $user = new Usuario();
         $user->setRoles(['ROLE_ADMIN']);
 
         $security = $this->createMock(Security::class);
@@ -53,7 +53,7 @@ class OwnershipScopeTest extends TestCase
 
     public function testAgentWithoutLinkedAgentReturnsNull(): void
     {
-        $user = new User();
+        $user = new Usuario();
         $user->setRoles(['ROLE_AGENT']);
         // No agent set (null)
 

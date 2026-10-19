@@ -8,7 +8,7 @@ use App\Agente\Agente;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Ticket\Ticket;
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use App\Reporte\Repository\ReportingRepository;
 use App\Reporte\Query\ReportingService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -172,7 +172,7 @@ class ReportingResponseDelayTest extends WebTestCase
     private function createAuthenticatedAgentToken(): string
     {
         $agent = new Agente('Auth Agent');
-        $user = new User();
+        $user = new Usuario();
         $user->setEmail('rd-agent@test.local');
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
         $user->setRoles(['ROLE_AGENT']);

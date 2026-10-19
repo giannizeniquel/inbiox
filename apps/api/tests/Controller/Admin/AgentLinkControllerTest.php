@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Controller\Admin;
 
 use App\Agente\Agente;
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -17,7 +17,7 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
  * - Linking user to agent
  * - Unlinking user from agent
  * - 400 "Agent already linked" if agent has user
- * - 400 "User already linked" if user has agent
+ * - 400 "Usuario already linked" if user has agent
  * - 400 "Cannot link deactivated user" (Q3)
  * - 409 on UNIQUE constraint conflict
  * - Access control (ROLE_ADMIN required)
@@ -57,8 +57,8 @@ class AgentLinkControllerTest extends WebTestCase
         array $roles = ['ROLE_AGENT'],
         bool $isActive = true,
         ?Agente $agent = null,
-    ): User {
-        $user = new User();
+    ): Usuario {
+        $user = new Usuario();
         $user->setEmail($email);
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
         $user->setRoles($roles);

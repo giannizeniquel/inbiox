@@ -115,7 +115,7 @@ Todas **Agente**, salvo export. Filtran por workspace activo; nunca por agente.
 
 > Verificado en `ReportingController.php`: solo `frt`, `rt`, `counts`, `volume`, `agents` y `export` leen `teamId`. Los demás lo ignoran aunque el frontend lo envíe (p. ej. `response-delay`).
 
-### G. Autoservicio (`MiConfiguracionController`, `MiRespuestaAutomaticaController`, `MisTurnosController`, `MeWorkspaceController`; todos con clase `IS_AUTHENTICATED_FULLY`)
+### G. Autoservicio (`MiConfiguracionController`, `MiRespuestaAutomaticaController`, `MisTurnosController`, `MiEspacioDeTrabajoController`; todos con clase `IS_AUTHENTICATED_FULLY`)
 
 | Método | Path | Acción | Rol | Nota |
 |---|---|---|---|---|
@@ -150,15 +150,15 @@ Todas **Agente**, salvo export. Filtran por workspace activo; nunca por agente.
 
 | Método | Path | Controlador | Rol | Nota |
 |---|---|---|---|---|
-| GET, POST | `/api/admin/users` | `Admin\UserController::list` / `create` | Admin | `roles` sin validar. |
+| GET, POST | `/api/admin/users` | `Admin\GestionDeUsuariosController::list` / `create` | Admin | `roles` sin validar. |
 | GET, PUT, DELETE | `/api/admin/users/{id}` | `get` / `update` / `delete` (soft) | Admin | |
-| GET, POST | `/api/admin/agents` | `Admin\AgentController::list` / `create` | Supervisor | |
+| GET, POST | `/api/admin/agents` | `Admin\GestionDeAgentesController::list` / `create` | Supervisor | |
 | GET, PUT, DELETE | `/api/admin/agents/{id}` | `get` / `update` / `delete` (soft) | Supervisor | |
-| POST, DELETE | `/api/admin/agents/{id}/link-user` | `Admin\AgentLinkController::linkUser` / `unlinkUser` | **Admin** (la clase es más estricta que `access_control`) | |
-| GET, POST | `/api/admin/workspaces` | `Admin\WorkspaceController::list` / `create` | Admin | |
+| POST, DELETE | `/api/admin/agents/{id}/link-user` | `Admin\VinculoDeAgenteController::linkUser` / `unlinkUser` | **Admin** (la clase es más estricta que `access_control`) | |
+| GET, POST | `/api/admin/workspaces` | `Admin\GestionDeEspaciosDeTrabajoController::list` / `create` | Admin | |
 | GET, PUT, DELETE | `/api/admin/workspaces/{id}` | `get` / `update` / `delete` (soft) | Admin | |
 | PUT | `/api/admin/workspaces/{id}/agents` | `assignAgents` | Admin | |
-| GET, POST | `/api/admin/teams` | `Admin\TeamController::list` / `create` | Supervisor | |
+| GET, POST | `/api/admin/teams` | `Admin\GestionDeEquiposController::list` / `create` | Supervisor | |
 | GET, PUT, DELETE | `/api/admin/teams/{id}` | `get` / `update` / `delete` (soft) | Supervisor | |
 | PUT | `/api/admin/teams/{id}/agents` | `assignAgents` | Supervisor | |
 
@@ -224,10 +224,10 @@ Endpoints vivos **sin UI**: plantillas, asignar equipo a ticket, historial de as
 
 | Pantalla / control | Frontend | Backend | Efecto |
 |---|---|---|---|
-| Botones "Link/Unlink" usuario ↔ agente (`features/admin/agents/agents-page.component.html:67-71`) | Visibles para supervisor | `AgentLinkController` exige Admin; el modal carga `GET /api/admin/users` (Admin) | El supervisor recibe 403. |
+| Botones "Link/Unlink" usuario ↔ agente (`features/admin/agents/agents-page.component.html:67-71`) | Visibles para supervisor | `VinculoDeAgenteController` exige Admin; el modal carga `GET /api/admin/users` (Admin) | El supervisor recibe 403. |
 | Crear equipo (`features/admin/teams/teams-page.component.ts:88-95`) | Pantalla para supervisor | El selector de workspace usa `GET /api/admin/workspaces` (Admin); el error se traga | El supervisor no puede crear equipos (el campo obligatorio queda vacío). |
 | Texto "(solo administradores)" junto a "Gestionar horarios" en `/settings` | Visible para todos | — | El enlace además está roto (usa el id del workspace como id de agente). |
 | Roles en el frontend (`core/stores/auth.store.ts:40-52`) | No jerárquicos (`isAdmin`, `isSupervisor`; no hay `isAgent`) | Jerárquicos | `roleGuard` lo compensa dejando pasar siempre al admin (`core/auth/auth.guard.ts:55-58`). Hoy no queda ninguna comprobación `isSupervisor()` sin `\|\| isAdmin()`. |
 | Informes (`/reports`) | Sin guard | Agente | Consistente: los agentes ven todos los reportes. |
 | Importar CSV / Exportar CSV | `isAdmin() \|\| isSupervisor()` | Supervisor | Consistente. |
-| Comentarios desactualizados | `contacts-page.component.ts:247` ("ROLE_SUPERVISOR only") | `Administracion/Controller/TeamController.php:29-36` dice que `AgentController` exige Admin (hoy exige Supervisor); `BandejaController.php:53` dice "AGENT sees only own tickets" | Confunden al lector; no cambian comportamiento. |
+| Comentarios desactualizados | `contacts-page.component.ts:247` ("ROLE_SUPERVISOR only") | `Administracion/Controller/GestionDeEquiposController.php:29-36` dice que `GestionDeAgentesController` exige Admin (hoy exige Supervisor); `BandejaController.php:53` dice "AGENT sees only own tickets" | Confunden al lector; no cambian comportamiento. |

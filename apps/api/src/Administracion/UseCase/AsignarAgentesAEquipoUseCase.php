@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Administracion\UseCase;
 
-use App\Administracion\Workspace;
 use App\Agente\Repository\AgenteRepository;
+use App\Agente\Equipo;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * Replaces the workspace's agents with the given ids. Unknown ids are skipped.
+ * Replaces the team's agents with the given ids. Unknown ids are skipped.
  */
-final class AssignWorkspaceAgentsUseCase
+final class AsignarAgentesAEquipoUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
@@ -21,9 +21,10 @@ final class AssignWorkspaceAgentsUseCase
     /**
      * @param array<mixed> $data decoded request body
      *
-     * @throws \InvalidArgumentException when agentIds is invalid
+     * @throws \InvalidArgumentException when agentIds is invalid, or an agent
+     *                                   is outside the team's workspace
      */
-    public function execute(Workspace $workspace, array $data): void
+    public function execute(Equipo $team, array $data): void
     {
         $agentIds = $data['agentIds'] ?? [];
 
@@ -31,10 +32,13 @@ final class AssignWorkspaceAgentsUseCase
             throw new \InvalidArgumentException('agentIds must be an array of integers');
         }
 
-        // All-or-nothing: a non-integer id rolls back the whole batch.
-        $this->entityManager->wrapInTransaction(function () use ($workspace, $agentIds): void {
-            foreach ($workspace->getAgents() as $existingAgent) {
-                $workspace->removeAgent($existingAgent);
+        // Run in transaction for atomicity — Team::addAgent() throws
+        // \InvalidArgumentException (workspace-membership invariant,
+        // design.md D3) which rolls back the whole batch (hard reject,
+        // all-or-nothing), mirroring AssignWorkspaceAgentsUseCase.
+        $this->entityManager->wrapInTransaction(function () use ($team, $agentIds): void {
+            foreach ($team->getAgentes() as $existingAgent) {
+                $team->removeAgente($existingAgent);
             }
 
             foreach ($agentIds as $agentId) {
@@ -43,7 +47,7 @@ final class AssignWorkspaceAgentsUseCase
                 }
                 $agent = $this->agentRepository->find($agentId);
                 if (null !== $agent) {
-                    $workspace->addAgent($agent);
+                    $team->addAgente($agent);
                 }
             }
         });

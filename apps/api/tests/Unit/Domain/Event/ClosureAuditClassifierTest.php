@@ -6,7 +6,7 @@ namespace App\Tests\Unit\Domain\Event;
 
 use App\Ticket\ClasificadorDeAuditoriaDeCierre;
 use App\Ticket\TipoDeEventoDeTicket;
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -62,7 +62,7 @@ class ClosureAuditClassifierTest extends TestCase
 
     public function testActorReferenceReturnsNamespacedUserId(): void
     {
-        $user = new User();
+        $user = new Usuario();
         $prop = new \ReflectionProperty($user, 'id');
         $prop->setAccessible(true);
         $prop->setValue($user, 9);

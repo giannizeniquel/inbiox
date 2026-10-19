@@ -4,24 +4,24 @@ declare(strict_types=1);
 
 namespace App\Administracion\Repository;
 
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<User>
+ * @extends ServiceEntityRepository<Usuario>
  */
-class UserRepository extends ServiceEntityRepository
+class UsuarioRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, User::class);
+        parent::__construct($registry, Usuario::class);
     }
 
     /**
      * Newest first, with the linked agent fetched in the same query.
      *
-     * @return User[]
+     * @return Usuario[]
      */
     public function findPageWithAgent(int $offset, int $limit): array
     {
@@ -35,7 +35,7 @@ class UserRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    public function findOtherByEmail(string $email, int $excludedId): ?User
+    public function findOtherByEmail(string $email, int $excludedId): ?Usuario
     {
         return $this->createQueryBuilder('u')
             ->where('u.email = :email')

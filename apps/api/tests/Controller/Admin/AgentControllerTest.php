@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Controller\Admin;
 
 use App\Agente\Agente;
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -54,8 +54,8 @@ class AgentControllerTest extends WebTestCase
         array $roles = ['ROLE_AGENT'],
         bool $isActive = true,
         ?Agente $agent = null,
-    ): User {
-        $user = new User();
+    ): Usuario {
+        $user = new Usuario();
         $user->setEmail($email);
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
         $user->setRoles($roles);

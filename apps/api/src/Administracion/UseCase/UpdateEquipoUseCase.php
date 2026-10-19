@@ -9,7 +9,7 @@ use App\Agente\Equipo;
 use App\Compartido\StateConflictException;
 use Doctrine\ORM\EntityManagerInterface;
 
-final class UpdateTeamUseCase
+final class UpdateEquipoUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,

@@ -11,7 +11,7 @@ use App\Disponibilidad\Turno;
 use App\Disponibilidad\Repository\TurnoRepository;
 use App\Ticket\Repository\TicketRepository;
 use App\Ticket\EstadoDeTicket;
-use App\Administracion\Workspace;
+use App\Administracion\EspacioDeTrabajo;
 use App\Agente\Repository\AgenteRepository;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -1257,7 +1257,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
     public function testListWorkspaceAgentRosterReturnsEmptyWhenNoAgents(): void
     {
-        $workspace = $this->createMock(Workspace::class);
+        $workspace = $this->createMock(EspacioDeTrabajo::class);
         $workspace->method('getId')->willReturn(1);
 
         $this->agentRepository->expects(self::once())
@@ -1275,7 +1275,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
     public function testListWorkspaceAgentRosterExcludesInactiveAgents(): void
     {
-        $workspace = $this->createMock(Workspace::class);
+        $workspace = $this->createMock(EspacioDeTrabajo::class);
         $workspace->method('getId')->willReturn(1);
 
         // GIVEN one active=true agent (Activo via override) and one active=false agent
@@ -1307,7 +1307,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
     public function testListWorkspaceAgentRosterAtCapacityAgentStillActivo(): void
     {
-        $workspace = $this->createMock(Workspace::class);
+        $workspace = $this->createMock(EspacioDeTrabajo::class);
         $workspace->method('getId')->willReturn(1);
 
         // GIVEN an agent Activo via override, already at full capacity
@@ -1340,7 +1340,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
     public function testListWorkspaceAgentRosterSortsActivoBeforeInactivo(): void
     {
-        $workspace = $this->createMock(Workspace::class);
+        $workspace = $this->createMock(EspacioDeTrabajo::class);
         $workspace->method('getId')->willReturn(1);
 
         // GIVEN agent 1 = Inactivo (override false), agent 2 = Activo (override true)
@@ -1376,7 +1376,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
     public function testListWorkspaceAgentRosterSortsByIdWithinSameTier(): void
     {
-        $workspace = $this->createMock(Workspace::class);
+        $workspace = $this->createMock(EspacioDeTrabajo::class);
         $workspace->method('getId')->willReturn(1);
 
         // GIVEN three Activo agents (all override=true), arbitrary input order
@@ -1412,7 +1412,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
     public function testListWorkspaceAgentRosterReturnsDtoWithIsActiveNowKey(): void
     {
-        $workspace = $this->createMock(Workspace::class);
+        $workspace = $this->createMock(EspacioDeTrabajo::class);
         $workspace->method('getId')->willReturn(1);
 
         $agent = $this->createAgent(id: 1, isAvailableOverride: true, overrideUntil: null, maxActiveTickets: 5);

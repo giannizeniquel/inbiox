@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Administracion\Controller;
 
-use App\Administracion\Query\WorkspaceDTO;
-use App\Administracion\Repository\WorkspaceRepository;
-use App\Administracion\UseCase\SetActiveWorkspaceUseCase;
-use App\Administracion\User;
-use App\Administracion\Workspace;
-use App\Administracion\WorkspaceNotAssignedException;
+use App\Administracion\Query\EspacioDeTrabajoDTO;
+use App\Administracion\Repository\EspacioDeTrabajoRepository;
+use App\Administracion\UseCase\SetEspacioDeTrabajoActivoUseCase;
+use App\Administracion\Usuario;
+use App\Administracion\EspacioDeTrabajo;
+use App\Administracion\EspacioDeTrabajoNoAsignadoException;
 use App\Compartido\NotFoundException;
 use App\Ticket\Repository\TicketRepository;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -27,20 +27,20 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * GET  /api/me/workspaces  — returns the user's workspaces
  */
 #[IsGranted('IS_AUTHENTICATED_FULLY')]
-final class MeWorkspaceController
+final class MiEspacioDeTrabajoController
 {
     public function __construct(
         private readonly Security $security,
-        private readonly WorkspaceRepository $workspaceRepository,
+        private readonly EspacioDeTrabajoRepository $workspaceRepository,
         private readonly TicketRepository $ticketRepository,
-        private readonly SetActiveWorkspaceUseCase $setActiveWorkspaceUseCase,
+        private readonly SetEspacioDeTrabajoActivoUseCase $setActiveWorkspaceUseCase,
     ) {}
 
     #[Route('/api/me/workspace', name: 'app_me_workspace', methods: ['GET'])]
     public function getActiveWorkspace(): JsonResponse
     {
         $user = $this->security->getUser();
-        $agent = $user instanceof User ? $user->getAgent() : null;
+        $agent = $user instanceof Usuario ? $user->getAgent() : null;
         if (null === $agent) {
             return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
         }
@@ -53,7 +53,7 @@ final class MeWorkspaceController
             );
         }
 
-        return new JsonResponse(ActiveWorkspaceDTO::fromEntity($activeWorkspace)->toArray());
+        return new JsonResponse(EspacioDeTrabajoActivoDTO::fromEntity($activeWorkspace)->toArray());
     }
 
     #[Route('/api/me/workspace', name: 'app_me_workspace_set', methods: ['PUT'])]
@@ -67,7 +67,7 @@ final class MeWorkspaceController
 
         // Unreachable with the entity user provider; kept as a guard.
         $user = $this->security->getUser();
-        if (!$user instanceof User) {
+        if (!$user instanceof Usuario) {
             return new JsonResponse(['error' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
         }
 
@@ -79,27 +79,27 @@ final class MeWorkspaceController
             );
         } catch (NotFoundException $e) {
             return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_NOT_FOUND);
-        } catch (WorkspaceNotAssignedException $e) {
+        } catch (EspacioDeTrabajoNoAsignadoException $e) {
             return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_FORBIDDEN);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
         }
 
-        return new JsonResponse(ActiveWorkspaceDTO::fromEntity($workspace)->toArray());
+        return new JsonResponse(EspacioDeTrabajoActivoDTO::fromEntity($workspace)->toArray());
     }
 
     #[Route('/api/me/workspaces', name: 'app_me_workspaces', methods: ['GET'])]
     public function listMyWorkspaces(): JsonResponse
     {
         $user = $this->security->getUser();
-        if (!$user instanceof User) {
+        if (!$user instanceof Usuario) {
             return new JsonResponse(['error' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
         }
 
         // Admin/Supervisor: see ALL workspaces
         if ($this->security->isGranted('ROLE_ADMIN') || $this->security->isGranted('ROLE_SUPERVISOR')) {
             $workspaces = $this->workspaceRepository->findBy(['isActive' => true]);
-            $items = array_map(fn(Workspace $w) => WorkspaceDTO::fromEntity($w)->toArray(), $workspaces);
+            $items = array_map(fn(EspacioDeTrabajo $w) => EspacioDeTrabajoDTO::fromEntity($w)->toArray(), $workspaces);
             return new JsonResponse($items);
         }
 
@@ -113,7 +113,7 @@ final class MeWorkspaceController
         $items = [];
         foreach ($agent->getEspaciosDeTrabajo()->toArray() as $w) {
             $hasPending = $this->ticketRepository->hasPendientesDeAgente($w->getPhoneNumberId(), $agentId);
-            $items[] = array_merge(WorkspaceDTO::fromEntity($w)->toArray(), ['has_pending' => $hasPending]);
+            $items[] = array_merge(EspacioDeTrabajoDTO::fromEntity($w)->toArray(), ['has_pending' => $hasPending]);
         }
 
         return new JsonResponse($items);

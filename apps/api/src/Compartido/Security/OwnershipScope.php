@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Compartido\Security;
 
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use Symfony\Bundle\SecurityBundle\Security;
 
 /**
@@ -43,7 +43,7 @@ final class OwnershipScope
     {
         $user = $this->security->getUser();
 
-        if (!$user instanceof User) {
+        if (!$user instanceof Usuario) {
             return null;
         }
 

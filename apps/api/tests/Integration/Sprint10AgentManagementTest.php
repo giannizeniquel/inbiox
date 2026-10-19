@@ -11,7 +11,7 @@ use App\Asignacion\Asignacion;
 use App\Compartido\Outbox\OutboxEvent;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -70,8 +70,8 @@ class Sprint10AgentManagementTest extends WebTestCase
         string $email,
         array $roles = ['ROLE_AGENT'],
         ?Agente $agent = null,
-    ): User {
-        $user = new User();
+    ): Usuario {
+        $user = new Usuario();
         $user->setEmail($email);
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
         $user->setRoles($roles);

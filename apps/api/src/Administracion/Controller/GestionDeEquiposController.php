@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Administracion\Controller;
 
-use App\Administracion\UseCase\AssignTeamAgentsUseCase;
-use App\Administracion\UseCase\CreateTeamUseCase;
-use App\Administracion\UseCase\DeactivateTeamUseCase;
-use App\Administracion\UseCase\UpdateTeamUseCase;
+use App\Administracion\UseCase\AsignarAgentesAEquipoUseCase;
+use App\Administracion\UseCase\CreateEquipoUseCase;
+use App\Administracion\UseCase\DesactivarEquipoUseCase;
+use App\Administracion\UseCase\UpdateEquipoUseCase;
 use App\Agente\Agente;
 use App\Agente\Repository\EquipoRepository;
 use App\Agente\Equipo;
@@ -21,12 +21,12 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 /**
  * Admin Team management (Tier 2 #7 — Team/Area Entity, Slice 1).
  *
- * Structural copy of Admin/WorkspaceController.php: same pagination shape,
+ * Structural copy of Admin/GestionDeEspaciosDeTrabajoController.php: same pagination shape,
  * same reference-id error logging, same transaction-wrapped bulk-assign
  * pattern. All endpoints require ROLE_SUPERVISOR or higher (mirrors Agent
  * CRUD access per spec — administration domain, "Team CRUD (Admin/Supervisor)").
  *
- * NOTE: unlike Admin/AgentController.php (which declares `#[IsGranted('ROLE_ADMIN')]`
+ * NOTE: unlike Admin/GestionDeAgentesController.php (which declares `#[IsGranted('ROLE_ADMIN')]`
  * on the class despite its docblock/access_control intending ROLE_SUPERVISOR —
  * a pre-existing inconsistency confirmed by the failing
  * `AgentControllerTest::testListAgentsAllowedForSupervisor` baseline test),
@@ -36,14 +36,14 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * ROLE_SUPERVISOR, per spec.
  */
 #[IsGranted('ROLE_SUPERVISOR')]
-final class TeamController
+final class GestionDeEquiposController
 {
     public function __construct(
         private readonly EquipoRepository $teamRepository,
-        private readonly CreateTeamUseCase $createTeamUseCase,
-        private readonly UpdateTeamUseCase $updateTeamUseCase,
-        private readonly DeactivateTeamUseCase $deactivateTeamUseCase,
-        private readonly AssignTeamAgentsUseCase $assignTeamAgentsUseCase,
+        private readonly CreateEquipoUseCase $createTeamUseCase,
+        private readonly UpdateEquipoUseCase $updateTeamUseCase,
+        private readonly DesactivarEquipoUseCase $deactivateTeamUseCase,
+        private readonly AsignarAgentesAEquipoUseCase $assignTeamAgentsUseCase,
     ) {}
 
     #[Route('/api/admin/teams', name: 'app_admin_teams_list', methods: ['GET'])]

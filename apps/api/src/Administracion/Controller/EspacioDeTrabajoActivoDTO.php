@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Administracion\Controller;
 
-use App\Administracion\Workspace;
+use App\Administracion\EspacioDeTrabajo;
 
 /**
  * Data Transfer Object for the active workspace preference response.
  */
-class ActiveWorkspaceDTO
+class EspacioDeTrabajoActivoDTO
 {
     public function __construct(
         public readonly int $workspaceId,
@@ -17,7 +17,7 @@ class ActiveWorkspaceDTO
         public readonly string $displayName,
     ) {}
 
-    public static function fromEntity(Workspace $workspace): self
+    public static function fromEntity(EspacioDeTrabajo $workspace): self
     {
         return new self(
             workspaceId: (int) $workspace->getId(),

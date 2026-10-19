@@ -6,8 +6,8 @@ namespace App\Tests\Controller;
 
 use App\Agente\Agente;
 use App\Disponibilidad\Turno;
-use App\Administracion\User;
-use App\Administracion\Workspace;
+use App\Administracion\Usuario;
+use App\Administracion\EspacioDeTrabajo;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -18,7 +18,7 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
  * Covers:
  * - GET /api/workspaces/{id}/available-agents
  * - Authentication requirements
- * - Workspace existence and active status
+ * - EspacioDeTrabajo existence and active status
  * - Agent availability filtering
  */
 class WorkspaceAgentControllerTest extends WebTestCase
@@ -57,8 +57,8 @@ class WorkspaceAgentControllerTest extends WebTestCase
         string $email,
         array $roles = ['ROLE_AGENT'],
         ?Agente $agent = null,
-    ): User {
-        $user = new User();
+    ): Usuario {
+        $user = new Usuario();
         $user->setEmail($email);
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
         $user->setRoles($roles);
@@ -85,9 +85,9 @@ class WorkspaceAgentControllerTest extends WebTestCase
         return $agent;
     }
 
-    private function createWorkspace(string $phoneNumberId = '+1234567890', bool $active = true): Workspace
+    private function createWorkspace(string $phoneNumberId = '+1234567890', bool $active = true): EspacioDeTrabajo
     {
-        $workspace = new Workspace($phoneNumberId, 'Test Workspace');
+        $workspace = new EspacioDeTrabajo($phoneNumberId, 'Test Workspace');
         $workspace->setActive($active);
         $this->em->persist($workspace);
         $this->em->flush();

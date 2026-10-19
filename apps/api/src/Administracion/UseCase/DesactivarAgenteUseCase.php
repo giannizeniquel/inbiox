@@ -10,7 +10,7 @@ use Doctrine\ORM\EntityManagerInterface;
 /**
  * Soft delete: the agent stays, with active = false.
  */
-final class DeactivateAgentUseCase
+final class DesactivarAgenteUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,

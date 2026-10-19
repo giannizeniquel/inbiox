@@ -7,7 +7,7 @@ namespace App\Tests\Security;
 use App\Ticket\Security\TicketVoter;
 use App\Agente\Agente;
 use App\Ticket\Ticket;
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use PHPUnit\Framework\TestCase;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
@@ -53,7 +53,7 @@ class VoterTest extends TestCase
             return false;
         });
 
-        $user = new User();
+        $user = new Usuario();
         $user->setRoles([$role]);
 
         if (null !== $userAgentId) {
@@ -136,7 +136,7 @@ class VoterTest extends TestCase
             fn (string $roleName): bool => \in_array($roleName, ['ROLE_SUPERVISOR', 'ROLE_AGENT'], true)
         );
 
-        $user = new User();
+        $user = new Usuario();
         $user->setRoles(['ROLE_SUPERVISOR']);
 
         $ticket = $this->createMock(Ticket::class);

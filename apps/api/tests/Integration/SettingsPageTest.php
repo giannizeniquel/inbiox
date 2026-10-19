@@ -6,7 +6,7 @@ namespace App\Tests\Integration;
 
 use App\Agente\Agente;
 use App\Disponibilidad\Turno;
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -67,7 +67,7 @@ class SettingsPageTest extends WebTestCase
 
     private function createAuthenticatedAgent(): string
     {
-        $user = new User();
+        $user = new Usuario();
         $user->setEmail('settings-agent@inbiox.local');
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
         $user->setRoles(['ROLE_AGENT']);
@@ -353,7 +353,7 @@ class SettingsPageTest extends WebTestCase
 
     private function loadAgent(): Agente
     {
-        $user = $this->em->getRepository(User::class)->findOneBy(['email' => 'settings-agent@inbiox.local']);
+        $user = $this->em->getRepository(Usuario::class)->findOneBy(['email' => 'settings-agent@inbiox.local']);
         \assert($user !== null);
         $agent = $user->getAgent();
         \assert($agent !== null);

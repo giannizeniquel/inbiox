@@ -11,7 +11,7 @@ use App\Conversacion\Conversation;
 use App\Ticket\TipoDeEventoDeTicket;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -67,7 +67,7 @@ class TicketClosureAuditClassificationTest extends WebTestCase
 
     private function createAuthenticatedUser(string $email, array $roles, ?Agente $agent = null): array
     {
-        $user = new User();
+        $user = new Usuario();
         $user->setEmail($email);
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
         $user->setRoles($roles);

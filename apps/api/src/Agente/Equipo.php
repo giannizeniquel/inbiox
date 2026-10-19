@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Agente;
 
-use App\Administracion\Workspace;
+use App\Administracion\EspacioDeTrabajo;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -21,9 +21,9 @@ class Equipo
     #[ORM\GeneratedValue]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(targetEntity: Workspace::class)]
+    #[ORM\ManyToOne(targetEntity: EspacioDeTrabajo::class)]
     #[ORM\JoinColumn(name: 'workspace_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
-    private Workspace $espacioDeTrabajo;
+    private EspacioDeTrabajo $espacioDeTrabajo;
 
     #[ORM\Column(name: 'name', type: Types::STRING, length: 255)]
     private string $nombre;
@@ -41,7 +41,7 @@ class Equipo
     #[ORM\ManyToMany(targetEntity: Agente::class, mappedBy: 'equipos')]
     private Collection $agentes;
 
-    public function __construct(Workspace $espacioDeTrabajo, string $nombre)
+    public function __construct(EspacioDeTrabajo $espacioDeTrabajo, string $nombre)
     {
         $this->espacioDeTrabajo = $espacioDeTrabajo;
         $this->nombre = $nombre;
@@ -55,7 +55,7 @@ class Equipo
         return $this->id;
     }
 
-    public function getEspacioDeTrabajo(): Workspace
+    public function getEspacioDeTrabajo(): EspacioDeTrabajo
     {
         return $this->espacioDeTrabajo;
     }

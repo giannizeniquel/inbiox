@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Controller;
 
 use App\Agente\Agente;
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -58,8 +58,8 @@ class AuthorizationTest extends WebTestCase
         array $roles = ['ROLE_AGENT'],
         ?Agente $agent = null,
         bool $isActive = true,
-    ): User {
-        $user = new User();
+    ): Usuario {
+        $user = new Usuario();
         $user->setEmail($email);
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
         $user->setRoles($roles);
@@ -250,7 +250,7 @@ class AuthorizationTest extends WebTestCase
     public function testAgentWithoutLinkedAgentGets403OnTicketEndpoint(): void
     {
         // Create user with ROLE_AGENT but no linked Agent
-        $user = new User();
+        $user = new Usuario();
         $user->setEmail('agentless@test.local');
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
         $user->setRoles(['ROLE_AGENT']);

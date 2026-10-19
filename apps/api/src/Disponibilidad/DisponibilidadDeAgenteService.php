@@ -8,7 +8,7 @@ use App\Disponibilidad\Query\DisponibilidadDeAgenteDTO;
 use App\Agente\Agente;
 use App\Disponibilidad\Repository\TurnoRepository;
 use App\Ticket\EstadoDeTicket;
-use App\Administracion\Workspace;
+use App\Administracion\EspacioDeTrabajo;
 use App\Agente\Repository\AgenteRepository;
 use App\Ticket\Repository\TicketRepository;
 
@@ -177,7 +177,7 @@ final class DisponibilidadDeAgenteService
      *
      * @return DisponibilidadDeAgenteDTO[]
      */
-    public function listarAgentesDelEspacioDeTrabajo(Workspace $espacioDeTrabajo, \DateTimeImmutable $atUtc): array
+    public function listarAgentesDelEspacioDeTrabajo(EspacioDeTrabajo $espacioDeTrabajo, \DateTimeImmutable $atUtc): array
     {
         // 1. Fetch all workspace agents, then filter to active=true in PHP
         $agentes = $this->agentRepository->findByEspacioDeTrabajo($espacioDeTrabajo);

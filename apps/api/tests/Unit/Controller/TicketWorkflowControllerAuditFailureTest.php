@@ -12,7 +12,7 @@ use App\Agente\Agente;
 use App\Ticket\ClasificadorDeAuditoriaDeCierre;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use App\Ticket\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
@@ -33,7 +33,7 @@ class TicketWorkflowControllerAuditFailureTest extends TestCase
         $agent = $this->createMock(Agente::class);
         $agent->method('getId')->willReturn(7);
 
-        $user = new User();
+        $user = new Usuario();
         $reflection = new \ReflectionProperty($user, 'id');
         $reflection->setAccessible(true);
         $reflection->setValue($user, 9);

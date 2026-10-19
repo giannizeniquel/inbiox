@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Agente\UseCase;
 
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use App\Agente\Agente;
 use App\Agente\Repository\AgenteRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -20,7 +20,7 @@ final class AsegurarAgenteDeUsuarioUseCase
         private readonly AgenteRepository $agenteRepository,
     ) {}
 
-    public function execute(User $usuario): Agente
+    public function execute(Usuario $usuario): Agente
     {
         $agente = $usuario->getAgent() ?? $this->agenteRepository->findOneBy(['usuario' => $usuario]);
 

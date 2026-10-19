@@ -9,8 +9,8 @@ use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Agente\Equipo;
 use App\Ticket\Ticket;
-use App\Administracion\User;
-use App\Administracion\Workspace;
+use App\Administracion\Usuario;
+use App\Administracion\EspacioDeTrabajo;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -68,7 +68,7 @@ class TicketControllerSetTeamTest extends WebTestCase
 
     private function createAgentUser(string $email): string
     {
-        $user = new User();
+        $user = new Usuario();
         $user->setEmail($email);
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
         $user->setRoles(['ROLE_AGENT']);
@@ -98,16 +98,16 @@ class TicketControllerSetTeamTest extends WebTestCase
         return ['HTTP_AUTHORIZATION' => 'Bearer ' . $token];
     }
 
-    private function createWorkspace(string $phoneNumberId, string $displayName): Workspace
+    private function createWorkspace(string $phoneNumberId, string $displayName): EspacioDeTrabajo
     {
-        $workspace = new Workspace($phoneNumberId, $displayName);
+        $workspace = new EspacioDeTrabajo($phoneNumberId, $displayName);
         $this->em->persist($workspace);
         $this->em->flush();
 
         return $workspace;
     }
 
-    private function createTeam(Workspace $workspace, string $name = 'Support'): Equipo
+    private function createTeam(EspacioDeTrabajo $workspace, string $name = 'Support'): Equipo
     {
         $team = new Equipo($workspace, $name);
         $this->em->persist($team);

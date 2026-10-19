@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace App\Administracion\UseCase;
 
-use App\Administracion\Repository\UserRepository;
-use App\Administracion\User;
+use App\Administracion\Repository\UsuarioRepository;
+use App\Administracion\Usuario;
 use App\Compartido\StateConflictException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
-final class UpdateUserUseCase
+final class UpdateUsuarioUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly UserRepository $userRepository,
+        private readonly UsuarioRepository $userRepository,
         private readonly UserPasswordHasherInterface $passwordHasher,
     ) {}
 
@@ -27,7 +27,7 @@ final class UpdateUserUseCase
      * @throws \InvalidArgumentException when a field is invalid
      * @throws StateConflictException    when another user has the email
      */
-    public function execute(User $user, array $data): void
+    public function execute(Usuario $user, array $data): void
     {
         if (isset($data['email'])) {
             if (!\is_string($data['email']) || empty($data['email'])) {

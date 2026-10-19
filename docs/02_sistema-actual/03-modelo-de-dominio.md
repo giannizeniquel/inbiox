@@ -16,7 +16,7 @@ Contacto (único por teléfono, global)
                  ├── Etiquetas
                  └── Eventos de ticket (auditoría: tags, cierres, reaperturas)
 
-Usuario (login + roles) ──1:1 opcional── Agente ──N:M── Workspace (= un número de WhatsApp)
+Usuario (login + roles) ──1:1 opcional── Agente ──N:M── EspacioDeTrabajo (= un número de WhatsApp)
                                             ├──N:M── Equipo (pertenece a un workspace)
                                             └──1:N── Turnos
 ```
@@ -86,8 +86,8 @@ Tablas técnicas sin relaciones de negocio (no incluidas en el diagrama): `outbo
 | `Asignacion` (`assignments`) | `Asignacion/Asignacion.php` | Auditoría de cada cambio de dueño. | `ticket_id`, `agent_id`, `previous_agent_id`, `type`, `assigned_at`, `assigned_by` (texto libre: `system`, `u:{id}` o lo que mande el cliente), `notes` |
 | `Agente` (`agents`) | `Agente/Agente.php` | La persona que atiende. | `name`, `user_id`, `active`, `is_available` (**legacy, nunca se escribe**), `max_active_tickets` (default 10, mínimo 1), `timezone`, `is_available_override` + `override_until`, `signature`, `notification_sound`, `desktop_notifications`, `auto_reply_enabled`, `auto_reply_message`, `active_workspace_id` |
 | `Turno` (`agent_shifts`) | `Disponibilidad/Turno.php` | Turno semanal recurrente en hora local del agente. | `day_of_week` (1-7), `start_time`, `end_time` (distintos; si fin < inicio, cruza medianoche); UNIQUE (agente, día, inicio, fin) |
-| `User` (`user`) | `Administracion/User.php` | Credenciales y roles. | `email` (UNIQUE), `password_hash`, `roles` (JSON, sin validar en el backend), `is_active` |
-| `Workspace` (`workspaces`) | `Administracion/Workspace.php` | Un número de WhatsApp Business. Ejemplo de negocio: un número para clientes y otro para contratistas (análisis de brecha, req. #0b). | `phone_number_id` (UNIQUE), `display_name`, `is_active`. **No guarda credenciales**: todos los números usan el mismo token de Meta. |
+| `Usuario` (`user`) | `Administracion/Usuario.php` | Credenciales y roles. | `email` (UNIQUE), `password_hash`, `roles` (JSON, sin validar en el backend), `is_active` |
+| `EspacioDeTrabajo` (`workspaces`) | `Administracion/EspacioDeTrabajo.php` | Un número de WhatsApp Business. Ejemplo de negocio: un número para clientes y otro para contratistas (análisis de brecha, req. #0b). | `phone_number_id` (UNIQUE), `display_name`, `is_active`. **No guarda credenciales**: todos los números usan el mismo token de Meta. |
 | `Equipo` (`teams`) | `Agente/Equipo.php` | Área dentro de un workspace (Sprint 18). | `workspace_id`, `name` (UNIQUE por workspace), `is_active` |
 | `Etiqueta` (`tags`) | `Ticket/Etiqueta.php` | Etiqueta global (no por workspace). | `name` (minúsculas, normalizado, UNIQUE) |
 | `EtiquetaDeTicket` (`ticket_tags`) | `Ticket/EtiquetaDeTicket.php` | Relación ticket ↔ etiqueta. | Relación unidireccional: ni `Ticket` ni `Etiqueta` tienen la colección inversa. |
@@ -112,7 +112,7 @@ Tablas técnicas sin relaciones de negocio (no incluidas en el diagrama): `outbo
 | `MessageDirection` | `Conversacion/MessageDirection.php` | `inbound`, `outbound` | Los casos de uso escriben el texto literal, no el enum. |
 | `MessageSenderType` | `Conversacion/MessageSenderType.php` | `agent`, `automatic`, `contact` | Spec `message-attribution`. El frontend todavía no lo usa. |
 | `TipoDeAsignacion` | `Asignacion/TipoDeAsignacion.php` | `AUTO_ASSIGN`, `MANUAL_ASSIGN`, `REASSIGN`, `UNASSIGN` | Solo `ResponsabilidadDeTicketService` crea filas de `Asignacion`. |
-| Roles | strings en `User.roles` | `ROLE_ADMIN`, `ROLE_SUPERVISOR`, `ROLE_AGENT` | Jerarquía en `security.yaml` (el enum `Role`, sin uso, se borró en la fase 1). |
+| Roles | strings en `Usuario.roles` | `ROLE_ADMIN`, `ROLE_SUPERVISOR`, `ROLE_AGENT` | Jerarquía en `security.yaml` (el enum `Role`, sin uso, se borró en la fase 1). |
 | `MediaKind` | `Conversacion/MediaKind.php` | `image`, `video`, `audio`, `document` | |
 | `TipoDeEventoDeTicket` | `Ticket/TipoDeEventoDeTicket.php` | constantes de cierre/reapertura | `tag_added`, `tag_removed`, `auto_reopened`, `auto_closed` siguen como textos sueltos. |
 | Estado de entrega (textos) | `Conversacion/UseCase/HandleStatusUpdateUseCase.php:29-44` | `sending` → `sent` → `delivered` → `read`; `failed` | Solo avanza; `read` y `failed` son finales. |
@@ -121,10 +121,10 @@ Tablas técnicas sin relaciones de negocio (no incluidas en el diagrama): `outbo
 
 | Relación | Cardinalidad | ¿FK real? | Observación |
 |---|---|---|---|
-| User ↔ Agente | 1 : 0..1 | Sí (`agents.user_id`, unique, `ON DELETE SET NULL`) | Vínculo opcional. |
-| Agente ↔ Workspace | N : M (`agent_workspace`) | Sí | Determina qué workspaces puede elegir un agente. |
-| Agente → Workspace activo | N : 0..1 | Sí (`SET NULL`) | Preferencia del selector. |
-| Equipo → Workspace | N : 1 | Sí (`CASCADE`) | |
+| Usuario ↔ Agente | 1 : 0..1 | Sí (`agents.user_id`, unique, `ON DELETE SET NULL`) | Vínculo opcional. |
+| Agente ↔ EspacioDeTrabajo | N : M (`agent_workspace`) | Sí | Determina qué workspaces puede elegir un agente. |
+| Agente → EspacioDeTrabajo activo | N : 0..1 | Sí (`SET NULL`) | Preferencia del selector. |
+| Equipo → EspacioDeTrabajo | N : 1 | Sí (`CASCADE`) | |
 | Agente ↔ Equipo | N : M (`agent_team`) | Sí | Solo agentes del mismo workspace (`Equipo::addAgente()`). |
 | Agente → Turno | 1 : N | Sí (`CASCADE`) | |
 | Contacto → Conversation | 1 : N (una por número) | Sí | |
@@ -136,5 +136,5 @@ Tablas técnicas sin relaciones de negocio (no incluidas en el diagrama): `outbo
 | Ticket → Asignacion | 1 : N | Sí (`CASCADE`) | |
 | Ticket ↔ Tag | N : M (`ticket_tags`) | Sí | |
 | Ticket → EventoDeTicket | 1 : N | **No** | |
-| Ticket / Conversation → Workspace | N : 1 | **No** (coincidencia de `phone_number_id`) | |
+| Ticket / Conversation → EspacioDeTrabajo | N : 1 | **No** (coincidencia de `phone_number_id`) | |
 | Contact → "owner" | ? | **No** | `contacts.owner_id` solo se usa como filtro en `ListContactosQuery.php:54`. A qué apunta: **Regla no confirmada.** |

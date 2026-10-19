@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Administracion\UseCase;
 
-use App\Administracion\Repository\WorkspaceRepository;
-use App\Administracion\Workspace;
+use App\Administracion\Repository\EspacioDeTrabajoRepository;
+use App\Administracion\EspacioDeTrabajo;
 use App\Compartido\StateConflictException;
 use Doctrine\ORM\EntityManagerInterface;
 
-final class CreateWorkspaceUseCase
+final class CreateEspacioDeTrabajoUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly WorkspaceRepository $workspaceRepository,
+        private readonly EspacioDeTrabajoRepository $workspaceRepository,
     ) {}
 
     /**
@@ -22,7 +22,7 @@ final class CreateWorkspaceUseCase
      * @throws \InvalidArgumentException when a field is missing or invalid
      * @throws StateConflictException    when the phone number id is taken
      */
-    public function execute(array $data): Workspace
+    public function execute(array $data): EspacioDeTrabajo
     {
         $phoneNumberId = $data['phoneNumberId'] ?? null;
         $displayName = $data['displayName'] ?? null;
@@ -39,7 +39,7 @@ final class CreateWorkspaceUseCase
             throw new StateConflictException('A workspace with this phone number ID already exists');
         }
 
-        $workspace = new Workspace($phoneNumberId, $displayName);
+        $workspace = new EspacioDeTrabajo($phoneNumberId, $displayName);
 
         if (isset($data['isActive'])) {
             $workspace->setActive((bool) $data['isActive']);

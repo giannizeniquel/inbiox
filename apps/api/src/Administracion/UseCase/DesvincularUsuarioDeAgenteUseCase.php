@@ -7,7 +7,7 @@ namespace App\Administracion\UseCase;
 use App\Agente\Agente;
 use Doctrine\ORM\EntityManagerInterface;
 
-final class UnlinkUserFromAgentUseCase
+final class DesvincularUsuarioDeAgenteUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,

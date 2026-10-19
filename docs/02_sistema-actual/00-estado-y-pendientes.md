@@ -120,7 +120,7 @@ Leyenda: **[SEG]** seguridad · **[DATOS]** pérdida o corrupción de datos · *
 | `docs/03_architecture/saas-multi-tenant.md` | Fragmentos de credenciales y números de teléfono reales. |
 | `apps/api/config/packages/test.yaml` | El secreto con el que se firman los JWT de Mercure. Este archivo está en la raíz de `config/packages/` y **no** usa `when@test`, así que se carga **en todos los entornos** (verificado con `debug:container`). Cambiar `MERCURE_JWT_SECRET` en `.env` no lo rota. |
 | `docker-compose.yml` | Contraseñas de MySQL, clave de publicador de Mercure, credenciales de MinIO (dev). |
-| `apps/api/src/Administracion/Command/SeedUsersCommand.php:31` | Contraseña fija de los usuarios de seed (dev). |
+| `apps/api/src/Administracion/Command/SeedUsuariosCommand.php:31` | Contraseña fija de los usuarios de seed (dev). |
 | `MercureJwtService.php:200`, `OutboxPublisherService.php:226` | Secretos de respaldo hardcodeados si falta la variable. |
 
 ### R3. Cualquier agente modifica disponibilidad y turnos de cualquier agente
@@ -231,7 +231,7 @@ El servicio `window-closer` está detrás de un *profile* de docker-compose: con
 - Auto-ruteo por tag → equipo (Tier 2 #7 lo dejó fuera).
 - Conectar el filtro por tag a la UI del inbox (Tier 1 #1 quedó solo en backend).
 - Consumir `sender_type` en el frontend (#14b): hoy los mensajes "de sistema" se infieren por corchetes.
-- Auditar otros controladores admin por el mismo bug de `#[IsGranted]` corregido en `AgentController`.
+- Auditar otros controladores admin por el mismo bug de `#[IsGranted]` corregido en `GestionDeAgentesController`.
 - Corregir el TOCTOU de `AsignarTicketUseCase` (R16).
 
 ### Smoke tests manuales pendientes

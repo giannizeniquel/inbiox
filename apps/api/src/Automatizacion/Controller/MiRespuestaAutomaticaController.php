@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Automatizacion\Controller;
 
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use App\Agente\Agente;
 use App\Automatizacion\UseCase\UpdateConfiguracionDeRespuestaAutomaticaUseCase;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -48,7 +48,7 @@ final class MiRespuestaAutomaticaController
     {
         $usuario = $this->security->getUser();
 
-        if (!$usuario instanceof User) {
+        if (!$usuario instanceof Usuario) {
             return null;
         }
 

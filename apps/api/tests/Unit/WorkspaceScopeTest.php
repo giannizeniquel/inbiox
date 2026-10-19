@@ -6,8 +6,8 @@ namespace App\Tests\Unit;
 
 use App\Compartido\Security\WorkspaceScope;
 use App\Agente\Agente;
-use App\Administracion\User;
-use App\Administracion\Workspace;
+use App\Administracion\Usuario;
+use App\Administracion\EspacioDeTrabajo;
 use PHPUnit\Framework\TestCase;
 use Symfony\Bundle\SecurityBundle\Security;
 
@@ -25,13 +25,13 @@ class WorkspaceScopeTest extends TestCase
 {
     public function testAgentWithActiveWorkspaceReturnsPhoneNumberId(): void
     {
-        $workspace = $this->createMock(Workspace::class);
+        $workspace = $this->createMock(EspacioDeTrabajo::class);
         $workspace->method('getPhoneNumberId')->willReturn('1146240195247464');
 
         $agent = $this->createMock(Agente::class);
         $agent->method('getEspacioDeTrabajoActivo')->willReturn($workspace);
 
-        $user = new User();
+        $user = new Usuario();
         $user->setRoles(['ROLE_AGENT']);
         $user->setAgent($agent);
 
@@ -47,7 +47,7 @@ class WorkspaceScopeTest extends TestCase
 
     public function testSupervisorReturnsNull(): void
     {
-        $user = new User();
+        $user = new Usuario();
         $user->setRoles(['ROLE_SUPERVISOR']);
 
         $security = $this->createMock(Security::class);
@@ -62,7 +62,7 @@ class WorkspaceScopeTest extends TestCase
 
     public function testAdminReturnsNull(): void
     {
-        $user = new User();
+        $user = new Usuario();
         $user->setRoles(['ROLE_ADMIN']);
 
         $security = $this->createMock(Security::class);
@@ -80,7 +80,7 @@ class WorkspaceScopeTest extends TestCase
         $agent = $this->createMock(Agente::class);
         $agent->method('getEspacioDeTrabajoActivo')->willReturn(null);
 
-        $user = new User();
+        $user = new Usuario();
         $user->setRoles(['ROLE_AGENT']);
         $user->setAgent($agent);
 

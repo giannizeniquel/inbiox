@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace App\Administracion\UseCase;
 
-use App\Administracion\Repository\UserRepository;
-use App\Administracion\User;
+use App\Administracion\Repository\UsuarioRepository;
+use App\Administracion\Usuario;
 use App\Agente\Agente;
 use App\Compartido\NotFoundException;
 use App\Compartido\StateConflictException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 
-final class LinkUserToAgentUseCase
+final class VincularUsuarioConAgenteUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly UserRepository $userRepository,
+        private readonly UsuarioRepository $userRepository,
     ) {}
 
     /**
@@ -27,7 +27,7 @@ final class LinkUserToAgentUseCase
      * @throws NotFoundException         when the user does not exist
      * @throws StateConflictException    when the database rejects the link as a duplicate
      */
-    public function execute(Agente $agent, array $data): User
+    public function execute(Agente $agent, array $data): Usuario
     {
         $userId = $data['user_id'] ?? null;
 

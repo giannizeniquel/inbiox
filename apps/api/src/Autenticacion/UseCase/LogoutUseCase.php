@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Autenticacion\UseCase;
 
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use App\Autenticacion\RefreshToken;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -18,7 +18,7 @@ final class LogoutUseCase
      * Deletes the refresh token from the cookie and every refresh token of
      * the authenticated user.
      */
-    public function execute(?string $refreshTokenString, ?User $user): void
+    public function execute(?string $refreshTokenString, ?Usuario $user): void
     {
         $refreshTokenRepo = $this->entityManager->getRepository(RefreshToken::class);
 

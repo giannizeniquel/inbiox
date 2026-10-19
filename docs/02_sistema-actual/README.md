@@ -47,9 +47,9 @@ Una bandeja de atención compartida: los mensajes que llegan por **WhatsApp Clou
 | **Ticket** | Un caso de atención: un "episodio" dentro de una conversación. Hay a lo sumo un ticket no cerrado por contacto y número. | `Ticket/Ticket.php` |
 | **Estado del ticket** | `new` → `active` → `waiting` → `resolved` → `closed`. Ver la máquina de estados (FSM) en [04-flujos.md](04-flujos.md#f4-transiciones-de-estado-del-ticket). | `Ticket/MaquinaDeEstadosDeTicket.php` |
 | **Dueño (owner)** | El agente asignado al ticket (`tickets.assigned_agent_id`). | `Asignacion/ResponsabilidadDeTicketService.php` |
-| **Usuario** | Credenciales y roles para iniciar sesión (`ROLE_AGENT`, `ROLE_SUPERVISOR`, `ROLE_ADMIN`). | `Administracion/User.php` |
+| **Usuario** | Credenciales y roles para iniciar sesión (`ROLE_AGENT`, `ROLE_SUPERVISOR`, `ROLE_ADMIN`). | `Administracion/Usuario.php` |
 | **Agente** | La persona que atiende (turnos, capacidad, workspaces). Se vincula 1:1 y de forma opcional con un usuario. | `Agente/Agente.php` |
-| **Workspace** | Un número de WhatsApp Business (`phone_number_id` de Meta). Los agentes pertenecen a uno o varios. | `Administracion/Workspace.php` |
+| **Workspace** | Un número de WhatsApp Business (`phone_number_id` de Meta). Los agentes pertenecen a uno o varios. | `Administracion/EspacioDeTrabajo.php` |
 | **Workspace activo** | El workspace que el usuario eligió en el selector; filtra la bandeja, contactos y reportes. | `Compartido/Security/WorkspaceScope.php` |
 | **Equipo (team)** | Área dentro de un workspace (Sprint 18). Hoy solo sirve para filtrar; **no** participa en la asignación. | `Agente/Equipo.php` |
 | **Turno (shift)** | Franja semanal de trabajo de un agente, en su zona horaria. | `Disponibilidad/Turno.php` |

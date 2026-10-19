@@ -6,7 +6,7 @@ namespace App\Autenticacion\Controller;
 
 use Symfony\Component\Routing\Attribute\Route;
 use App\Autenticacion\UseCase\LogoutUseCase;
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -72,7 +72,7 @@ final class AuthController extends AbstractController
         $user = $this->getUser();
         $this->logoutUseCase->execute(
             $request->cookies->get(self::REFRESH_COOKIE_NAME),
-            $user instanceof User ? $user : null,
+            $user instanceof Usuario ? $user : null,
         );
 
         // Build response with cleared cookie
@@ -100,7 +100,7 @@ final class AuthController extends AbstractController
     {
         $user = $this->getUser();
 
-        if (!$user instanceof User) {
+        if (!$user instanceof Usuario) {
             return $this->json(['error' => 'Not authenticated'], Response::HTTP_UNAUTHORIZED);
         }
 

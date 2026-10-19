@@ -9,7 +9,7 @@ use App\Disponibilidad\Turno;
 use App\Contacto\Contacto;
 use App\Ticket\EventoDeTicket;
 use App\Ticket\Ticket;
-use App\Administracion\Workspace;
+use App\Administracion\EspacioDeTrabajo;
 use App\Reporte\Repository\ReportingRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -61,7 +61,7 @@ final class SeedReportsCommand extends Command
         $this->reportingRepo->truncateSeedTables();
 
         // ── Load existing workspaces ──
-        $workspaceRepo = $this->em->getRepository(Workspace::class);
+        $workspaceRepo = $this->em->getRepository(EspacioDeTrabajo::class);
         $workspaces = $workspaceRepo->findBy([], ['id' => 'ASC']);
         if (empty($workspaces)) {
             $output->writeln('<error>No workspaces found. Run app:seed-users first.</error>');

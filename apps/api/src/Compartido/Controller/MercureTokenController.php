@@ -10,7 +10,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use App\Administracion\User;
+use App\Administracion\Usuario;
 
 #[IsGranted('ROLE_AGENT')]
 final class MercureTokenController extends AbstractController
@@ -21,7 +21,7 @@ final class MercureTokenController extends AbstractController
 
     // Route registered in config/routes.yaml (app_mercure_token)
     #[Route('/api/mercure/token', name: 'app_mercure_token', methods: ['GET'])]
-    public function getToken(#[CurrentUser] ?User $user): JsonResponse
+    public function getToken(#[CurrentUser] ?Usuario $user): JsonResponse
     {
         if (null === $user) {
             return new JsonResponse(['error' => 'Unauthorized'], 401);

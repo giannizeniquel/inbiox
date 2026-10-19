@@ -6,8 +6,8 @@ namespace App\Tests\Controller;
 
 use App\Agente\Agente;
 use App\Agente\Equipo;
-use App\Administracion\User;
-use App\Administracion\Workspace;
+use App\Administracion\Usuario;
+use App\Administracion\EspacioDeTrabajo;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -53,9 +53,9 @@ class TeamControllerTest extends WebTestCase
     //  Helpers
     // ────────────────────────────────────────────────────────
 
-    private function createUser(string $email, array $roles = ['ROLE_AGENT'], ?Agente $agent = null): User
+    private function createUser(string $email, array $roles = ['ROLE_AGENT'], ?Agente $agent = null): Usuario
     {
-        $user = new User();
+        $user = new Usuario();
         $user->setEmail($email);
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
         $user->setRoles($roles);
@@ -81,16 +81,16 @@ class TeamControllerTest extends WebTestCase
         return $agent;
     }
 
-    private function createWorkspace(string $phoneNumberId, string $displayName): Workspace
+    private function createWorkspace(string $phoneNumberId, string $displayName): EspacioDeTrabajo
     {
-        $workspace = new Workspace($phoneNumberId, $displayName);
+        $workspace = new EspacioDeTrabajo($phoneNumberId, $displayName);
         $this->em->persist($workspace);
         $this->em->flush();
 
         return $workspace;
     }
 
-    private function createTeam(Workspace $workspace, string $name, bool $active = true): Equipo
+    private function createTeam(EspacioDeTrabajo $workspace, string $name, bool $active = true): Equipo
     {
         $team = new Equipo($workspace, $name);
         $team->setActivo($active);

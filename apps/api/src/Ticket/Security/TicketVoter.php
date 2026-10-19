@@ -6,7 +6,7 @@ namespace App\Ticket\Security;
 
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
@@ -70,7 +70,7 @@ final class TicketVoter extends Voter
     {
         $usuario = $token->getUser();
 
-        if (!$usuario instanceof User) {
+        if (!$usuario instanceof Usuario) {
             return false;
         }
 

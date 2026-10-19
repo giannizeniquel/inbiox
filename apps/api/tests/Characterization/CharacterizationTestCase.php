@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Characterization;
 
-use App\Administracion\User;
-use App\Administracion\Workspace;
+use App\Administracion\Usuario;
+use App\Administracion\EspacioDeTrabajo;
 use App\Agente\Agente;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
@@ -103,9 +103,9 @@ abstract class CharacterizationTestCase extends WebTestCase
     //  Fixtures
     // ────────────────────────────────────────────────────────
 
-    protected function createUser(string $email, array $roles, ?Agente $agent = null): User
+    protected function createUser(string $email, array $roles, ?Agente $agent = null): Usuario
     {
-        $user = new User();
+        $user = new Usuario();
         $user->setEmail($email);
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
         $user->setRoles($roles);
@@ -132,9 +132,9 @@ abstract class CharacterizationTestCase extends WebTestCase
         return $agent;
     }
 
-    protected function createWorkspace(string $phoneNumberId, string $displayName = 'Workspace'): Workspace
+    protected function createWorkspace(string $phoneNumberId, string $displayName = 'Workspace'): EspacioDeTrabajo
     {
-        $workspace = new Workspace($phoneNumberId, $displayName);
+        $workspace = new EspacioDeTrabajo($phoneNumberId, $displayName);
         $this->em->persist($workspace);
         $this->em->flush();
 

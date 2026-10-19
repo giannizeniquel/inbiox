@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Agente\Controller;
 
 use App\Agente\Equipo;
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use App\Agente\Repository\EquipoRepository;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -38,7 +38,7 @@ final class EquipoController
     public function listar(): JsonResponse
     {
         $usuario = $this->security->getUser();
-        if (!$usuario instanceof User) {
+        if (!$usuario instanceof Usuario) {
             return new JsonResponse(['error' => 'Unauthorized'], 401);
         }
 

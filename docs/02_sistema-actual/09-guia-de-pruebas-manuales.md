@@ -75,7 +75,7 @@ docker exec inbiox_php php bin/console cache:pool:clear cache.rate_limiter
 | Usuario | Cómo se obtiene | Contraseña |
 |---|---|---|
 | `admin@inbiox.local` (Admin) | Lo crea la migración base (`Version20261017210004`). | El valor de `INITIAL_ADMIN_PASSWORD` al migrar. |
-| `admin1/2@inbiox.local` (Admin), `super1/2@inbiox.local` (Supervisor), `agent1…6@inbiox.local` (Agente) | `docker exec inbiox_php php bin/console app:seed-users` | Fija, en `apps/api/src/Administracion/Command/SeedUsersCommand.php:31`. |
+| `admin1/2@inbiox.local` (Admin), `super1/2@inbiox.local` (Supervisor), `agent1…6@inbiox.local` (Agente) | `docker exec inbiox_php php bin/console app:seed-users` | Fija, en `apps/api/src/Administracion/Command/SeedUsuariosCommand.php:31`. |
 
 Notas sobre el seed:
 - Requiere workspaces existentes; reparte a los agentes entre los **dos primeros** (agent1-2 en ambos, agent3-4 solo en el primero, agent5-6 solo en el segundo). Para probar multi-workspace, crear antes un segundo workspace (P-23).

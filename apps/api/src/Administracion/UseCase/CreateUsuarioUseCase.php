@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace App\Administracion\UseCase;
 
-use App\Administracion\Repository\UserRepository;
-use App\Administracion\User;
+use App\Administracion\Repository\UsuarioRepository;
+use App\Administracion\Usuario;
 use App\Agente\Repository\AgenteRepository;
 use App\Compartido\NotFoundException;
 use App\Compartido\StateConflictException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
-final class CreateUserUseCase
+final class CreateUsuarioUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly UserRepository $userRepository,
+        private readonly UsuarioRepository $userRepository,
         private readonly AgenteRepository $agentRepository,
         private readonly UserPasswordHasherInterface $passwordHasher,
     ) {}
@@ -28,7 +28,7 @@ final class CreateUserUseCase
      * @throws StateConflictException    when the email or the agent is taken
      * @throws NotFoundException         when agent_id does not exist
      */
-    public function execute(array $data): User
+    public function execute(array $data): Usuario
     {
         $email = $data['email'] ?? null;
         $password = $data['password'] ?? null;
@@ -46,7 +46,7 @@ final class CreateUserUseCase
             throw new StateConflictException('Email already exists');
         }
 
-        $user = new User();
+        $user = new Usuario();
         $user->setEmail($email);
         $user->setPassword($this->passwordHasher->hashPassword($user, $password));
         $user->setRoles($roles);

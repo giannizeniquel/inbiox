@@ -9,7 +9,7 @@ use App\Disponibilidad\Turno;
 use App\Contacto\Contacto;
 use App\Ticket\EventoDeTicket;
 use App\Ticket\Ticket;
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use App\Reporte\Repository\ReportingRepository;
 use App\Reporte\Query\ReportingService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -351,9 +351,9 @@ class ReportingV2Test extends WebTestCase
      */
     private function authenticatedClient(): KernelBrowser
     {
-        $user = $this->em->getRepository(User::class)->findOneBy(['email' => self::ADMIN_EMAIL]);
+        $user = $this->em->getRepository(Usuario::class)->findOneBy(['email' => self::ADMIN_EMAIL]);
         if (null === $user) {
-            $user = new User();
+            $user = new Usuario();
             $user->setEmail(self::ADMIN_EMAIL);
             $user->setRoles(['ROLE_ADMIN']);
         }
@@ -387,7 +387,7 @@ class ReportingV2Test extends WebTestCase
         }
 
         // Load workspaces
-        $wsRepo = $this->em->getRepository(\App\Administracion\Workspace::class);
+        $wsRepo = $this->em->getRepository(\App\Administracion\EspacioDeTrabajo::class);
         $workspaces = $wsRepo->findBy([], ['id' => 'ASC']);
         if (empty($workspaces)) {
             $this->markTestSkipped('No workspaces found. Run app:seed-users first.');

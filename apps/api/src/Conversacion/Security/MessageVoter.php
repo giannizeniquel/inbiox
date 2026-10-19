@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Conversacion\Security;
 
 use App\Conversacion\Message;
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use App\Ticket\Repository\TicketRepository;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
@@ -36,7 +36,7 @@ final class MessageVoter extends Voter
     {
         $user = $token->getUser();
 
-        if (!$user instanceof User) {
+        if (!$user instanceof Usuario) {
             return false;
         }
 

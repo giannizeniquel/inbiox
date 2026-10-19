@@ -9,7 +9,7 @@ use App\Agente\UseCase\AsegurarAgenteDeUsuarioUseCase;
 use App\Conversacion\UseCase\SendOutboundMessageUseCase;
 use App\Conversacion\UseCase\SendTemplateUseCase;
 use App\Conversacion\UseCase\UploadMediaUseCase;
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use App\Conversacion\ConversationWindowExpiredException;
 use App\Conversacion\RecipientPhoneNotFoundException;
 use App\Compartido\NotFoundException;
@@ -41,7 +41,7 @@ class ProviderProxyController extends AbstractController
     ) {}
 
     #[Route('/api/provider/send', name: 'app_provider_send', methods: ['POST'])]
-    public function send(Request $request, #[CurrentUser] ?User $user): JsonResponse
+    public function send(Request $request, #[CurrentUser] ?Usuario $user): JsonResponse
     {
         $payload = json_decode($request->getContent(), true);
 
@@ -142,7 +142,7 @@ class ProviderProxyController extends AbstractController
      * find one so they can be assigned to tickets. Extracted from send()'s
      * original inline fallback (design.md D4).
      */
-    private function resolveActingAgentId(?User $user): ?int
+    private function resolveActingAgentId(?Usuario $user): ?int
     {
         if ($user === null) {
             return null;
@@ -156,7 +156,7 @@ class ProviderProxyController extends AbstractController
     }
 
     #[Route('/api/provider/template/send', name: 'app_provider_template_send', methods: ['POST'])]
-    public function sendTemplate(Request $request, #[CurrentUser] ?User $user): JsonResponse
+    public function sendTemplate(Request $request, #[CurrentUser] ?Usuario $user): JsonResponse
     {
         $payload = json_decode($request->getContent(), true);
 
@@ -225,7 +225,7 @@ class ProviderProxyController extends AbstractController
     }
 
     #[Route('/api/provider/media/upload', name: 'app_provider_media_upload', methods: ['POST'])]
-    public function uploadMedia(Request $request, #[CurrentUser] ?User $user): JsonResponse
+    public function uploadMedia(Request $request, #[CurrentUser] ?Usuario $user): JsonResponse
     {
         /** @var UploadedFile|null $file */
         $file = $request->files->get('file');

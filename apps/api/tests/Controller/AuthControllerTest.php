@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -53,10 +53,10 @@ class AuthControllerTest extends WebTestCase
         string $password = self::TEST_PASSWORD,
         array $roles = ['ROLE_AGENT'],
         bool $isActive = true,
-    ): User {
+    ): Usuario {
         // Use bcrypt directly — Symfony's auto hasher resolves to NativePasswordHasher
         // which uses password_verify() internally, so any bcrypt hash is compatible.
-        $user = new User();
+        $user = new Usuario();
         $user->setEmail($email);
         $user->setPassword(\password_hash($password, \PASSWORD_BCRYPT));
         $user->setRoles($roles);
@@ -471,7 +471,7 @@ class AuthControllerTest extends WebTestCase
         $token = $this->login('deactivate-test@inbiox.local');
 
         // Deactivate the user in the database
-        $user = $this->em->getRepository(User::class)->findOneBy(['email' => 'deactivate-test@inbiox.local']);
+        $user = $this->em->getRepository(Usuario::class)->findOneBy(['email' => 'deactivate-test@inbiox.local']);
         self::assertNotNull($user);
         $user->setIsActive(false);
         $this->em->flush();

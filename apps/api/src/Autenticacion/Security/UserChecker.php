@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Autenticacion\Security;
 
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use Symfony\Component\Security\Core\Exception\DisabledException;
 use Symfony\Component\Security\Core\User\UserCheckerInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -20,14 +20,14 @@ final class UserChecker implements UserCheckerInterface
 {
     public function checkPreAuth(UserInterface $user): void
     {
-        if (!$user instanceof User) {
+        if (!$user instanceof Usuario) {
             return;
         }
     }
 
     public function checkPostAuth(UserInterface $user): void
     {
-        if (!$user instanceof User) {
+        if (!$user instanceof Usuario) {
             return;
         }
 

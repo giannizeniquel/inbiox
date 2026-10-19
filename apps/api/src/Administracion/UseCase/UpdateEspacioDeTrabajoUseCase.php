@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Administracion\UseCase;
 
-use App\Administracion\Workspace;
+use App\Administracion\EspacioDeTrabajo;
 use Doctrine\ORM\EntityManagerInterface;
 
-final class UpdateWorkspaceUseCase
+final class UpdateEspacioDeTrabajoUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
@@ -21,7 +21,7 @@ final class UpdateWorkspaceUseCase
      *
      * @throws \InvalidArgumentException when a field is invalid
      */
-    public function execute(Workspace $workspace, array $data): void
+    public function execute(EspacioDeTrabajo $workspace, array $data): void
     {
         if (isset($data['phoneNumberId'])) {
             if (!\is_string($data['phoneNumberId']) || empty($data['phoneNumberId'])) {

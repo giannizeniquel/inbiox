@@ -8,7 +8,7 @@ use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Agente\Equipo;
 use App\Ticket\Ticket;
-use App\Administracion\Workspace;
+use App\Administracion\EspacioDeTrabajo;
 use App\Reporte\Repository\ReportingRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -54,7 +54,7 @@ class ReportingRepositoryTeamFilterTest extends KernelTestCase
 
     private function createTeam(string $name = 'Support'): Equipo
     {
-        $workspace = new Workspace('+549110000' . random_int(1000, 9999), 'Workspace for ' . $name);
+        $workspace = new EspacioDeTrabajo('+549110000' . random_int(1000, 9999), 'Workspace for ' . $name);
         $this->em->persist($workspace);
 
         $team = new Equipo($workspace, $name);

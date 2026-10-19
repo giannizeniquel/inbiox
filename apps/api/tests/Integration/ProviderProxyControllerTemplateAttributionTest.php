@@ -10,7 +10,7 @@ use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Conversacion\MessageSenderType;
 use App\Ticket\Ticket;
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -103,7 +103,7 @@ class ProviderProxyControllerTemplateAttributionTest extends WebTestCase
 
     public function testSendTemplateSetsAgentAttributionWhenAgentRecordExists(): void
     {
-        $user = new User();
+        $user = new Usuario();
         $user->setEmail('template-agent@inbiox.local');
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
         $user->setRoles(['ROLE_AGENT']);

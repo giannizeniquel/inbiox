@@ -9,7 +9,7 @@ use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -59,7 +59,7 @@ class ProviderProxyControllerAutoClaimTest extends WebTestCase
 
     private function authenticateAsAgent(): string
     {
-        $user = new User();
+        $user = new Usuario();
         $user->setEmail('non-owning-agent@inbiox.local');
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
         $user->setRoles(['ROLE_AGENT']);

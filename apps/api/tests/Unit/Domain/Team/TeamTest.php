@@ -6,7 +6,7 @@ namespace App\Tests\Unit\Domain\Team;
 
 use App\Agente\Agente;
 use App\Agente\Equipo;
-use App\Administracion\Workspace;
+use App\Administracion\EspacioDeTrabajo;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -21,7 +21,7 @@ class TeamTest extends TestCase
 {
     public function testTeamCreatedWithinWorkspaceIsActiveAndScoped(): void
     {
-        $workspace = new Workspace('+1000000000', 'Workspace A');
+        $workspace = new EspacioDeTrabajo('+1000000000', 'Workspace A');
         $team = new Equipo($workspace, 'Support');
 
         self::assertTrue($team->isActivo(), 'New team must default to active');
@@ -32,7 +32,7 @@ class TeamTest extends TestCase
 
     public function testAddAgentAlreadyInTeamWorkspaceSucceeds(): void
     {
-        $workspace = new Workspace('+1000000000', 'Workspace A');
+        $workspace = new EspacioDeTrabajo('+1000000000', 'Workspace A');
         $agent = new Agente('Agent A');
         $agent->addEspacioDeTrabajo($workspace);
 
@@ -45,8 +45,8 @@ class TeamTest extends TestCase
 
     public function testAddAgentOutsideTeamWorkspaceThrows(): void
     {
-        $workspaceA = new Workspace('+1000000000', 'Workspace A');
-        $workspaceB = new Workspace('+2000000000', 'Workspace B');
+        $workspaceA = new EspacioDeTrabajo('+1000000000', 'Workspace A');
+        $workspaceB = new EspacioDeTrabajo('+2000000000', 'Workspace B');
 
         $agent = new Agente('Agent B');
         $agent->addEspacioDeTrabajo($workspaceB); // agent belongs to B, not A
@@ -59,8 +59,8 @@ class TeamTest extends TestCase
 
     public function testAddAgentOutsideTeamWorkspaceCreatesNoMembership(): void
     {
-        $workspaceA = new Workspace('+1000000000', 'Workspace A');
-        $workspaceB = new Workspace('+2000000000', 'Workspace B');
+        $workspaceA = new EspacioDeTrabajo('+1000000000', 'Workspace A');
+        $workspaceB = new EspacioDeTrabajo('+2000000000', 'Workspace B');
 
         $agent = new Agente('Agent B');
         $agent->addEspacioDeTrabajo($workspaceB);
@@ -79,7 +79,7 @@ class TeamTest extends TestCase
 
     public function testRemoveAgentUpdatesBothSides(): void
     {
-        $workspace = new Workspace('+1000000000', 'Workspace A');
+        $workspace = new EspacioDeTrabajo('+1000000000', 'Workspace A');
         $agent = new Agente('Agent A');
         $agent->addEspacioDeTrabajo($workspace);
 
@@ -93,7 +93,7 @@ class TeamTest extends TestCase
 
     public function testSetActiveTogglesFlag(): void
     {
-        $workspace = new Workspace('+1000000000', 'Workspace A');
+        $workspace = new EspacioDeTrabajo('+1000000000', 'Workspace A');
         $team = new Equipo($workspace, 'Support');
 
         $team->setActivo(false);

@@ -10,6 +10,6 @@ namespace App\Administracion;
  * Only admins and supervisors may switch to any workspace. Controllers map it
  * to 403 with the exception message.
  */
-class WorkspaceNotAssignedException extends \RuntimeException
+class EspacioDeTrabajoNoAsignadoException extends \RuntimeException
 {
 }

@@ -7,7 +7,7 @@ namespace App\Administracion\UseCase;
 use App\Agente\Agente;
 use Doctrine\ORM\EntityManagerInterface;
 
-final class CreateAgentUseCase
+final class CreateAgenteUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,

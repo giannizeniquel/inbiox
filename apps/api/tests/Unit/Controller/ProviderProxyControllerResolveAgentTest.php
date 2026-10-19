@@ -16,7 +16,7 @@ use App\Conversacion\UseCase\UploadMediaUseCase;
 use App\Conversacion\Controller\ProviderProxyController;
 use App\Conversacion\Repository\MessageRepository;
 use App\Agente\Agente;
-use App\Administracion\User;
+use App\Administracion\Usuario;
 use App\Compartido\Storage\MediaStorageService;
 use App\Conversacion\MediaValidator;
 use App\Ticket\Repository\TicketRepository;
@@ -60,7 +60,7 @@ class ProviderProxyControllerResolveAgentTest extends TestCase
         );
     }
 
-    private function invokeResolveActingAgentId(ProviderProxyController $controller, ?User $user): ?int
+    private function invokeResolveActingAgentId(ProviderProxyController $controller, ?Usuario $user): ?int
     {
         $method = new \ReflectionMethod($controller, 'resolveActingAgentId');
         $method->setAccessible(true);
@@ -80,7 +80,7 @@ class ProviderProxyControllerResolveAgentTest extends TestCase
 
     public function testReturnsExistingAgentIdWhenUserAlreadyHasAnAgentRecord(): void
     {
-        $user = new User();
+        $user = new Usuario();
         $user->setEmail('has-agent@inbiox.local');
 
         $agent = new Agente('Existing Agent');
@@ -106,7 +106,7 @@ class ProviderProxyControllerResolveAgentTest extends TestCase
         // degrade path by making persist() throw during Agent auto-creation
         // (e.g. a transient DB error). The send must not fail: null is
         // returned instead of propagating the exception.
-        $user = new User();
+        $user = new Usuario();
         $user->setEmail('no-agent@inbiox.local');
 
         $agentRepository = $this->createMock(AgenteRepository::class);
