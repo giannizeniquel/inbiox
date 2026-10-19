@@ -73,39 +73,39 @@ final class RespuestaAutomaticaService
     private function ejecutarEnvioSiCorresponde(Ticket $ticket): void
     {
         // 1. Resolve target agent
-        $agent = $this->buscarAgenteDestino($ticket);
-        if ($agent === null) {
+        $agente = $this->buscarAgenteDestino($ticket);
+        if ($agente === null) {
             return; // No eligible agent
         }
 
         // 2. Check auto-reply is enabled and has a message
-        if (!$agent->isAutoReplyEnabled()) {
+        if (!$agente->isAutoReplyEnabled()) {
             return;
         }
 
-        $autoReplyMessage = $agent->getAutoReplyMessage();
-        if ($autoReplyMessage === null || \trim($autoReplyMessage) === '') {
+        $mensajeDeRespuestaAutomatica = $agente->getAutoReplyMessage();
+        if ($mensajeDeRespuestaAutomatica === null || \trim($mensajeDeRespuestaAutomatica) === '') {
             return;
         }
 
         // 3. Check agent is NOT available (we send when they're unavailable)
         $now = new \DateTimeImmutable('now');
-        if ($this->availabilityService->isAvailable($agent, $now)) {
+        if ($this->availabilityService->isAvailable($agente, $now)) {
             return; // Agent is available — don't send auto-reply
         }
 
         // 4. Rate limit check
-        $contact = $ticket->getContacto();
-        if ($contact === null) {
+        $contacto = $ticket->getContacto();
+        if ($contacto === null) {
             return;
         }
 
-        $contactId = (int) $contact->getId();
-        $rateLimitKey = \sprintf('auto-reply:%d', $contactId);
+        $contactoId = (int) $contacto->getId();
+        $rateLimitKey = \sprintf('auto-reply:%d', $contactoId);
 
         if ($this->hasRespuestaAutomaticaReciente($rateLimitKey)) {
             $this->logger->info('AutoReply rate-limited for contact {contactId}', [
-                'contactId' => $contactId,
+                'contactId' => $contactoId,
                 'ticket_id' => $ticket->getId(),
             ]);
             return;
@@ -113,11 +113,11 @@ final class RespuestaAutomaticaService
 
         // 5. Send the message
         $phoneNumberId = $ticket->getPhoneNumberId();
-        $to = $contact->getTelefono();
+        $telefonoDestino = $contacto->getTelefono();
 
-        if ($to === null || $to === '') {
+        if ($telefonoDestino === null || $telefonoDestino === '') {
             $this->logger->warning('AutoReply skipped: contact has no phone number', [
-                'contactId' => $contactId,
+                'contactId' => $contactoId,
                 'ticket_id' => $ticket->getId(),
             ]);
             return;
@@ -128,19 +128,19 @@ final class RespuestaAutomaticaService
         // return with a log line, never a throw (design.md caller table).
         if (!$this->windowPolicy->isOpenForSending($ticket->getUltimoMensajeEntranteAt(), new \DateTimeImmutable())) {
             $this->logger->info('AutoReply skipped: conversation window has expired', [
-                'contactId' => $contactId,
+                'contactId' => $contactoId,
                 'ticket_id' => $ticket->getId(),
             ]);
             return;
         }
 
         try {
-            $graphResponse = $this->graphClient->sendMessage($to, $autoReplyMessage, $phoneNumberId);
+            $graphResponse = $this->graphClient->sendMessage($telefonoDestino, $mensajeDeRespuestaAutomatica, $phoneNumberId);
         } catch (GraphApiException $e) {
             $this->logger->error('AutoReply Graph API error: {message}', [
                 'message' => $e->getMessage(),
                 'graphCode' => $e->getGraphCode(),
-                'contactId' => $contactId,
+                'contactId' => $contactoId,
                 'ticket_id' => $ticket->getId(),
             ]);
             return; // Fire-and-forget: swallow the exception
@@ -148,24 +148,24 @@ final class RespuestaAutomaticaService
 
         // 6. Create local Message entity so the auto-reply appears in the conversation
         $wamid = $graphResponse['messages'][0]['id'] ?? null;
-        $conversation = $ticket->getConversacion();
-        $msg = null;
-        if ($conversation !== null) {
-            $msg = new Message();
-            $msg->setConversation($conversation);
-            $msg->setDirection('outbound');
-            $msg->setContent($autoReplyMessage);
+        $conversacion = $ticket->getConversacion();
+        $mensajeSaliente = null;
+        if ($conversacion !== null) {
+            $mensajeSaliente = new Message();
+            $mensajeSaliente->setConversation($conversacion);
+            $mensajeSaliente->setDirection('outbound');
+            $mensajeSaliente->setContent($mensajeDeRespuestaAutomatica);
             if ($wamid !== null) {
-                $msg->setExternalId($wamid);
+                $mensajeSaliente->setExternalId($wamid);
             }
-            $msg->setDeliveryStatus('sent');
-            $msg->setSenderAgentId($agent->getId());
-            $msg->setSenderType(MessageSenderType::AUTOMATIC);
-            $this->em->persist($msg);
+            $mensajeSaliente->setDeliveryStatus('sent');
+            $mensajeSaliente->setSenderAgentId($agente->getId());
+            $mensajeSaliente->setSenderType(MessageSenderType::AUTOMATIC);
+            $this->em->persist($mensajeSaliente);
 
             // Update conversation timestamp
-            $conversation->setLastMessageAt($msg->getCreatedAt());
-            $conversation->setUpdatedAt(new \DateTimeImmutable());
+            $conversacion->setLastMessageAt($mensajeSaliente->getCreatedAt());
+            $conversacion->setUpdatedAt(new \DateTimeImmutable());
         }
 
         // 7. Upsert rate-limit key (update timestamp or insert new)
@@ -179,7 +179,7 @@ final class RespuestaAutomaticaService
         $this->em->flush();
 
         // 8. Emit outbox event so the message appears in real-time via Mercure
-        if ($msg !== null) {
+        if ($mensajeSaliente !== null) {
             $this->eventCollector->collect(new MessageCreatedEvent(
                 eventId: new Ulid(),
                 ticketId: $ticket->getId(),
@@ -187,14 +187,14 @@ final class RespuestaAutomaticaService
                 seq: $ticket->incrementLastEventSeq(),
                 version: 1,
                 direction: MessageDirection::OUTBOUND,
-                messageId: (int) $msg->getId(),
-                content: $autoReplyMessage,
-                senderName: $agent->getName(),
+                messageId: (int) $mensajeSaliente->getId(),
+                content: $mensajeDeRespuestaAutomatica,
+                senderName: $agente->getName(),
             ));
         }
 
         $this->logger->info('AutoReply sent to contact {contactId}', [
-            'contactId' => $contactId,
+            'contactId' => $contactoId,
             'ticket_id' => $ticket->getId(),
         ]);
     }
@@ -209,30 +209,30 @@ final class RespuestaAutomaticaService
      */
     private function buscarAgenteDestino(Ticket $ticket): ?Agent
     {
-        $assignedAgentId = $ticket->getAgenteAsignadoId();
+        $agenteAsignadoId = $ticket->getAgenteAsignadoId();
 
-        if ($assignedAgentId !== null) {
-            $agent = $this->agentRepo->findById($assignedAgentId);
-            if ($agent !== null && $agent->isActive()) {
-                return $agent;
+        if ($agenteAsignadoId !== null) {
+            $agente = $this->agentRepo->findById($agenteAsignadoId);
+            if ($agente !== null && $agente->isActive()) {
+                return $agente;
             }
         }
 
         // Fallback: find first active agent with auto_reply_enabled
         // Use the ticket's phoneNumberId to scope to the right workspace
         $phoneNumberId = $ticket->getPhoneNumberId();
-        $allActive = $this->agentRepo->findAllActive();
-        foreach ($allActive as $candidate) {
-            if ($candidate->isAutoReplyEnabled()) {
+        $agentesActivos = $this->agentRepo->findAllActive();
+        foreach ($agentesActivos as $candidato) {
+            if ($candidato->isAutoReplyEnabled()) {
                 // Check if this agent is in a workspace matching the ticket's phoneNumberId
                 if ($phoneNumberId !== null) {
-                    foreach ($candidate->getWorkspaces() as $ws) {
+                    foreach ($candidato->getWorkspaces() as $ws) {
                         if ($ws->getPhoneNumberId() === $phoneNumberId) {
-                            return $candidate;
+                            return $candidato;
                         }
                     }
                 } else {
-                    return $candidate;
+                    return $candidato;
                 }
             }
         }
@@ -250,10 +250,10 @@ final class RespuestaAutomaticaService
             return false;
         }
 
-        $windowEnd = $existing->getProcessedAt()->modify(
+        $finDeVentana = $existing->getProcessedAt()->modify(
             \sprintf('+%d hours', self::HORAS_DE_VENTANA_DE_RESPUESTA_AUTOMATICA)
         );
 
-        return $windowEnd >= new \DateTimeImmutable('now');
+        return $finDeVentana >= new \DateTimeImmutable('now');
     }
 }

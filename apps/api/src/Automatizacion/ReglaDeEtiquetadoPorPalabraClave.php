@@ -9,30 +9,30 @@ class ReglaDeEtiquetadoPorPalabraClave implements ReglaInterface
     private const PALABRA_CLAVE = 'error';
 
     public function __construct(
-        private AgregarEtiquetaATicketUseCase $addTagUseCase,
+        private AgregarEtiquetaATicketUseCase $agregarEtiquetaATicketUseCase,
     ) {}
 
-    public function supports(ContextoDeRegla $context): bool
+    public function supports(ContextoDeRegla $contexto): bool
     {
         // Only supports inbound messages
-        if ($context->getTipoDeDisparador() !== 'inbound') {
+        if ($contexto->getTipoDeDisparador() !== 'inbound') {
             return false;
         }
 
-        $message = $context->getMensaje();
-        if (!$message) {
+        $mensaje = $contexto->getMensaje();
+        if (!$mensaje) {
             return false;
         }
 
         // Case-insensitive substring match for "error"
-        $content = $message->getContent();
-        return stripos($content, self::PALABRA_CLAVE) !== false;
+        $contenido = $mensaje->getContent();
+        return stripos($contenido, self::PALABRA_CLAVE) !== false;
     }
 
-    public function execute(ContextoDeRegla $context): void
+    public function execute(ContextoDeRegla $contexto): void
     {
-        $this->addTagUseCase->execute(
-            $context->getTicketId(),
+        $this->agregarEtiquetaATicketUseCase->execute(
+            $contexto->getTicketId(),
             self::PALABRA_CLAVE,
             'system'
         );
@@ -43,10 +43,10 @@ class ReglaDeEtiquetadoPorPalabraClave implements ReglaInterface
         return 'keyword_tagging';
     }
 
-    public function armarClaveDeEjecucion(ContextoDeRegla $context): string
+    public function armarClaveDeEjecucion(ContextoDeRegla $contexto): string
     {
-        $ticketId = $context->getTicketId();
-        $messageId = $context->getMensajeId() ?? 'no_message';
-        return "tag_error:{$ticketId}:{$messageId}";
+        $ticketId = $contexto->getTicketId();
+        $mensajeId = $contexto->getMensajeId() ?? 'no_message';
+        return "tag_error:{$ticketId}:{$mensajeId}";
     }
 }

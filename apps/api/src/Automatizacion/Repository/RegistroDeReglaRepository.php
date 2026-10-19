@@ -16,14 +16,14 @@ class RegistroDeReglaRepository extends ServiceEntityRepository
         parent::__construct($registry, RegistroDeRegla::class);
     }
 
-    public function findByClaveDeEjecucion(string $executionKey): ?RegistroDeRegla
+    public function findByClaveDeEjecucion(string $claveDeEjecucion): ?RegistroDeRegla
     {
-        return $this->findOneBy(['claveDeEjecucion' => $executionKey]);
+        return $this->findOneBy(['claveDeEjecucion' => $claveDeEjecucion]);
     }
 
-    public function save(RegistroDeRegla $executionLog): void
+    public function save(RegistroDeRegla $registroDeRegla): void
     {
-        $this->getEntityManager()->persist($executionLog);
+        $this->getEntityManager()->persist($registroDeRegla);
         $this->getEntityManager()->flush();
     }
 }

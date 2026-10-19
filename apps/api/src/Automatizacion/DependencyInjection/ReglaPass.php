@@ -20,13 +20,13 @@ class ReglaPass implements CompilerPassInterface
             return;
         }
 
-        $ruleExecutorDefinition = $container->getDefinition('App\Automatizacion\EjecutorDeReglas');
+        $ejecutorDeReglasDefinition = $container->getDefinition('App\Automatizacion\EjecutorDeReglas');
 
         // Get all service definitions
         $definitions = $container->getDefinitions();
 
         // Rule classes we know implement RuleInterface
-        $knownRuleClasses = [
+        $clasesDeReglasConocidas = [
             'App\Automatizacion\ReglaDeReaperturaAutomatica',
             'App\Automatizacion\ReglaDeEtiquetadoPorPalabraClave',
         ];
@@ -42,8 +42,8 @@ class ReglaPass implements CompilerPassInterface
             }
 
             // Check if it's one of our known rule classes
-            if (in_array($class, $knownRuleClasses, true)) {
-                $ruleExecutorDefinition->addMethodCall('agregarRegla', [new Reference($id)]);
+            if (in_array($class, $clasesDeReglasConocidas, true)) {
+                $ejecutorDeReglasDefinition->addMethodCall('agregarRegla', [new Reference($id)]);
             }
         }
     }

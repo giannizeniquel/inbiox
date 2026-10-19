@@ -10,18 +10,18 @@ use Doctrine\ORM\EntityManagerInterface;
 class ReglaDeReaperturaAutomatica implements ReglaInterface
 {
     public function __construct(
-        private CambiarEstadoDeTicketUseCase $transitionUseCase,
+        private CambiarEstadoDeTicketUseCase $cambiarEstadoUseCase,
         private EntityManagerInterface $em,
     ) {}
 
-    public function supports(ContextoDeRegla $context): bool
+    public function supports(ContextoDeRegla $contexto): bool
     {
         // Only supports inbound messages on resolved tickets
-        if ($context->getTipoDeDisparador() !== 'inbound') {
+        if ($contexto->getTipoDeDisparador() !== 'inbound') {
             return false;
         }
 
-        $ticket = $context->getTicket();
+        $ticket = $contexto->getTicket();
         // MUST return false for CLOSED tickets - don't reopen closed tickets
         if ($ticket->getEstado() === EstadoDeTicket::CERRADO->value) {
             return false;
@@ -30,18 +30,18 @@ class ReglaDeReaperturaAutomatica implements ReglaInterface
         return $ticket->getEstado() === EstadoDeTicket::RESUELTO->value;
     }
 
-    public function execute(ContextoDeRegla $context): void
+    public function execute(ContextoDeRegla $contexto): void
     {
         // Transition resolved → waiting (NOT to active)
-        $this->transitionUseCase->execute(
-            $context->getTicketId(),
+        $this->cambiarEstadoUseCase->execute(
+            $contexto->getTicketId(),
             EstadoDeTicket::EN_ESPERA->value,
             false, // don't set first_response
             false  // don't set resolved
         );
 
         // Emit auto_reopened event
-        $event = new EventoDeTicket($context->getTicketId(), 'auto_reopened', 'system');
+        $event = new EventoDeTicket($contexto->getTicketId(), 'auto_reopened', 'system');
         $this->em->persist($event);
         $this->em->flush();
     }
@@ -51,10 +51,10 @@ class ReglaDeReaperturaAutomatica implements ReglaInterface
         return 'auto_reopen';
     }
 
-    public function armarClaveDeEjecucion(ContextoDeRegla $context): string
+    public function armarClaveDeEjecucion(ContextoDeRegla $contexto): string
     {
-        $ticketId = $context->getTicketId();
-        $messageId = $context->getMensajeId() ?? 'no_message';
-        return "auto_reopen:{$ticketId}:{$messageId}";
+        $ticketId = $contexto->getTicketId();
+        $mensajeId = $contexto->getMensajeId() ?? 'no_message';
+        return "auto_reopen:{$ticketId}:{$mensajeId}";
     }
 }

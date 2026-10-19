@@ -14,15 +14,15 @@ final class UpdateConfiguracionDeRespuestaAutomaticaUseCase
     ) {}
 
     /**
-     * A null $enabled is left unchanged. The message is always set, so a null
+     * A null $habilitado is left unchanged. The message is always set, so a null
      * message clears it.
      */
-    public function execute(Agent $agent, ?bool $enabled, ?string $message): void
+    public function execute(Agent $agente, ?bool $habilitado, ?string $mensaje): void
     {
-        if ($enabled !== null) {
-            $agent->setAutoReplyEnabled($enabled);
+        if ($habilitado !== null) {
+            $agente->setAutoReplyEnabled($habilitado);
         }
-        $agent->setAutoReplyMessage($message);
+        $agente->setAutoReplyMessage($mensaje);
 
         $this->entityManager->flush();
     }

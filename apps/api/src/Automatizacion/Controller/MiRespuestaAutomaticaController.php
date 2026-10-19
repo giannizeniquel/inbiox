@@ -24,34 +24,34 @@ final class MiRespuestaAutomaticaController
 {
     public function __construct(
         private readonly Security $security,
-        private readonly UpdateConfiguracionDeRespuestaAutomaticaUseCase $updateAutoReplySettingsUseCase,
+        private readonly UpdateConfiguracionDeRespuestaAutomaticaUseCase $updateConfiguracionDeRespuestaAutomaticaUseCase,
     ) {}
 
     #[IsGranted('ROLE_AGENT')]
     #[Route('/api/me/auto-reply', name: 'app_me_auto_reply', methods: ['PUT'])]
     public function updateRespuestaAutomatica(#[MapRequestPayload] UpdateRespuestaAutomaticaRequest $request): JsonResponse
     {
-        $agent = $this->getAgente();
-        if (null === $agent) {
+        $agente = $this->getAgente();
+        if (null === $agente) {
             return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
         }
 
-        $this->updateAutoReplySettingsUseCase->execute($agent, $request->enabled, $request->message);
+        $this->updateConfiguracionDeRespuestaAutomaticaUseCase->execute($agente, $request->enabled, $request->message);
 
         return new JsonResponse([
-            'enabled' => $agent->isAutoReplyEnabled(),
-            'message' => $agent->getAutoReplyMessage(),
+            'enabled' => $agente->isAutoReplyEnabled(),
+            'message' => $agente->getAutoReplyMessage(),
         ]);
     }
 
     private function getAgente(): ?Agent
     {
-        $user = $this->security->getUser();
+        $usuario = $this->security->getUser();
 
-        if (!$user instanceof User) {
+        if (!$usuario instanceof User) {
             return null;
         }
 
-        return $user->getAgent();
+        return $usuario->getAgent();
     }
 }

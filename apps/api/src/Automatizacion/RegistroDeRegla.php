@@ -36,12 +36,12 @@ class RegistroDeRegla
     #[ORM\Column(name: 'result_data', type: 'json', nullable: true)]
     private ?array $datosDeResultado = null;
 
-    public function __construct(string $executionKey, string $ruleName, ?int $ticketId = null, ?int $messageId = null)
+    public function __construct(string $claveDeEjecucion, string $nombreDeRegla, ?int $ticketId = null, ?int $mensajeId = null)
     {
-        $this->claveDeEjecucion = $executionKey;
-        $this->nombreDeRegla = $ruleName;
+        $this->claveDeEjecucion = $claveDeEjecucion;
+        $this->nombreDeRegla = $nombreDeRegla;
         $this->ticketId = $ticketId;
-        $this->mensajeId = $messageId;
+        $this->mensajeId = $mensajeId;
         $this->ejecutadoAt = new \DateTimeImmutable();
     }
 
@@ -80,9 +80,9 @@ class RegistroDeRegla
         return $this->estadoDeResultado;
     }
 
-    public function setEstadoDeResultado(string $resultStatus): self
+    public function setEstadoDeResultado(string $estadoDeResultado): self
     {
-        $this->estadoDeResultado = $resultStatus;
+        $this->estadoDeResultado = $estadoDeResultado;
         return $this;
     }
 
@@ -91,9 +91,9 @@ class RegistroDeRegla
         return $this->datosDeResultado;
     }
 
-    public function setDatosDeResultado(?array $resultData): self
+    public function setDatosDeResultado(?array $datosDeResultado): self
     {
-        $this->datosDeResultado = $resultData;
+        $this->datosDeResultado = $datosDeResultado;
         return $this;
     }
 }

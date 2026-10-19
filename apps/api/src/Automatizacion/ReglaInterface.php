@@ -7,12 +7,12 @@ interface ReglaInterface
     /**
      * Check if this rule supports the given context.
      */
-    public function supports(ContextoDeRegla $context): bool;
+    public function supports(ContextoDeRegla $contexto): bool;
 
     /**
      * Execute the rule's action.
      */
-    public function execute(ContextoDeRegla $context): void;
+    public function execute(ContextoDeRegla $contexto): void;
 
     /**
      * Get unique name for this rule.
@@ -22,5 +22,5 @@ interface ReglaInterface
     /**
      * Build execution key for idempotency check.
      */
-    public function armarClaveDeEjecucion(ContextoDeRegla $context): string;
+    public function armarClaveDeEjecucion(ContextoDeRegla $contexto): string;
 }

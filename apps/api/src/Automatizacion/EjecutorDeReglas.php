@@ -13,62 +13,62 @@ class EjecutorDeReglas
     private array $reglas = [];
 
     public function __construct(
-        private RegistroDeReglaRepository $executionLogRepo,
+        private RegistroDeReglaRepository $registroDeReglaRepo,
         private EventDispatcherInterface $eventDispatcher,
-        iterable $rules = [],
+        iterable $reglas = [],
     ) {
-        foreach ($rules as $rule) {
-            $this->reglas[] = $rule;
+        foreach ($reglas as $regla) {
+            $this->reglas[] = $regla;
         }
     }
 
     /**
      * Add a rule to be executed.
      */
-    public function agregarRegla(ReglaInterface $rule): void
+    public function agregarRegla(ReglaInterface $regla): void
     {
-        $this->reglas[] = $rule;
+        $this->reglas[] = $regla;
     }
 
     /**
      * Execute all rules that support the given context.
      */
-    public function execute(ContextoDeRegla $context): void
+    public function execute(ContextoDeRegla $contexto): void
     {
-        foreach ($this->reglas as $rule) {
-            if (!$rule->supports($context)) {
+        foreach ($this->reglas as $regla) {
+            if (!$regla->supports($contexto)) {
                 continue;
             }
 
-            $executionKey = $rule->armarClaveDeEjecucion($context);
+            $claveDeEjecucion = $regla->armarClaveDeEjecucion($contexto);
 
             // Idempotency check
-            if ($this->executionLogRepo->findByClaveDeEjecucion($executionKey)) {
+            if ($this->registroDeReglaRepo->findByClaveDeEjecucion($claveDeEjecucion)) {
                 continue;
             }
 
             try {
-                $rule->execute($context);
+                $regla->execute($contexto);
 
                 // Log successful execution
-                $log = new RegistroDeRegla(
-                    $executionKey,
-                    $rule->getNombre(),
-                    $context->getTicketId(),
-                    $context->getMensajeId()
+                $registro = new RegistroDeRegla(
+                    $claveDeEjecucion,
+                    $regla->getNombre(),
+                    $contexto->getTicketId(),
+                    $contexto->getMensajeId()
                 );
-                $this->executionLogRepo->save($log);
+                $this->registroDeReglaRepo->save($registro);
             } catch (\Throwable $e) {
                 // Log failed execution but don't break the chain
-                $log = new RegistroDeRegla(
-                    $executionKey,
-                    $rule->getNombre(),
-                    $context->getTicketId(),
-                    $context->getMensajeId()
+                $registro = new RegistroDeRegla(
+                    $claveDeEjecucion,
+                    $regla->getNombre(),
+                    $contexto->getTicketId(),
+                    $contexto->getMensajeId()
                 );
-                $log->setEstadoDeResultado('failed');
-                $log->setDatosDeResultado(['error' => $e->getMessage()]);
-                $this->executionLogRepo->save($log);
+                $registro->setEstadoDeResultado('failed');
+                $registro->setDatosDeResultado(['error' => $e->getMessage()]);
+                $this->registroDeReglaRepo->save($registro);
             }
         }
     }
