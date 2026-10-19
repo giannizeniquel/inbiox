@@ -27,7 +27,7 @@ final class AutenticacionController extends AbstractController
     private const REFRESH_COOKIE_NAME = 'inbiox_refresh';
 
     public function __construct(
-        private readonly CerrarSesionUseCase $logoutUseCase,
+        private readonly CerrarSesionUseCase $cerrarSesionUseCase,
         private readonly TokenStorageInterface $tokenStorage,
         #[Autowire(env: 'bool:REFRESH_COOKIE_SECURE')]
         private readonly bool $refreshCookieSecure,
@@ -69,10 +69,10 @@ final class AutenticacionController extends AbstractController
     public function cerrarSesion(Request $request): JsonResponse
     {
         // Invalidate the cookie's refresh token and all of the user's refresh tokens
-        $user = $this->getUser();
-        $this->logoutUseCase->execute(
+        $usuario = $this->getUser();
+        $this->cerrarSesionUseCase->execute(
             $request->cookies->get(self::REFRESH_COOKIE_NAME),
-            $user instanceof Usuario ? $user : null,
+            $usuario instanceof Usuario ? $usuario : null,
         );
 
         // Build response with cleared cookie
@@ -98,19 +98,19 @@ final class AutenticacionController extends AbstractController
     #[Route('/api/auth/me', name: 'api_auth_me', methods: ['GET'])]
     public function getMiPerfil(): JsonResponse
     {
-        $user = $this->getUser();
+        $usuario = $this->getUser();
 
-        if (!$user instanceof Usuario) {
+        if (!$usuario instanceof Usuario) {
             return $this->json(['error' => 'Not authenticated'], Response::HTTP_UNAUTHORIZED);
         }
 
         return $this->json([
-            'id' => $user->getId(),
-            'email' => $user->getEmail(),
-            'roles' => $user->getRoles(),
-            'is_active' => $user->isActivo(),
-            'agent_id' => $user->getAgente()?->getId(),
-            'agent_name' => $user->getAgente()?->getNombre(),
+            'id' => $usuario->getId(),
+            'email' => $usuario->getEmail(),
+            'roles' => $usuario->getRoles(),
+            'is_active' => $usuario->isActivo(),
+            'agent_id' => $usuario->getAgente()?->getId(),
+            'agent_name' => $usuario->getAgente()?->getNombre(),
         ]);
     }
 }

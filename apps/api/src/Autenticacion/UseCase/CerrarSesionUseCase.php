@@ -18,7 +18,7 @@ final class CerrarSesionUseCase
      * Deletes the refresh token from the cookie and every refresh token of
      * the authenticated user.
      */
-    public function execute(?string $refreshTokenString, ?Usuario $user): void
+    public function execute(?string $refreshTokenString, ?Usuario $usuario): void
     {
         $refreshTokenRepo = $this->entityManager->getRepository(RefreshToken::class);
 
@@ -29,10 +29,10 @@ final class CerrarSesionUseCase
             }
         }
 
-        if (null !== $user) {
-            $userTokens = $refreshTokenRepo->findBy(['username' => $user->getUserIdentifier()]);
-            foreach ($userTokens as $userToken) {
-                $this->entityManager->remove($userToken);
+        if (null !== $usuario) {
+            $tokensDeUsuario = $refreshTokenRepo->findBy(['username' => $usuario->getUserIdentifier()]);
+            foreach ($tokensDeUsuario as $tokenDeUsuario) {
+                $this->entityManager->remove($tokenDeUsuario);
             }
         }
 
