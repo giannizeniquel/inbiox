@@ -394,7 +394,7 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
         $ticketId = $this->createTicket(EstadoDeTicket::RESUELTO->value);
 
         $useCase = static::getContainer()->get(CambiarEstadoDeTicketUseCase::class);
-        // Mirrors AutoReopenRule::execute()'s exact 4-positional-arg call site.
+        // Mirrors ReglaDeReaperturaAutomatica::execute()'s exact 4-positional-arg call site.
         $result = $useCase->execute($ticketId, EstadoDeTicket::EN_ESPERA->value, false, false);
 
         self::assertSame(EstadoDeTicket::EN_ESPERA->value, $result['new_status']);

@@ -52,7 +52,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
         $this->eventCollector = $this->createMock(EventCollector::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
-        // Create a real AutoReplyService with mocked deps (can't mock final class)
+        // Create a real RespuestaAutomaticaService with mocked deps (can't mock final class)
         $agentRepo = $this->createMock(AgentRepository::class);
         $agentShiftRepo = $this->createMock(AgentShiftRepository::class);
         $availabilityService = new AgentAvailabilityService($agentRepo, $agentShiftRepo, $this->ticketRepo);

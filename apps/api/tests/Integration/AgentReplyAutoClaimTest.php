@@ -193,7 +193,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
 
         // Symfony's test container refuses to `set()` an already-initialized
         // service a second time — reboot the kernel to get a fresh container
-        // with the REAL RuleExecutorService (untouched) via normal DI, then
+        // with the REAL EjecutorDeReglas (untouched) via normal DI, then
         // retry against the SAME DB rows (MySQL data survives the reboot).
         self::ensureKernelShutdown();
         self::bootKernel();

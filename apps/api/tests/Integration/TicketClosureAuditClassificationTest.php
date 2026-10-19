@@ -251,7 +251,7 @@ class TicketClosureAuditClassificationTest extends WebTestCase
 
     /**
      * Pins design.md D2's reachability claim: a supervisor resolving an
-     * `AutoReopenRule`-reopened (therefore unowned) ticket is a genuine
+     * `ReglaDeReaperturaAutomatica`-reopened (therefore unowned) ticket is a genuine
      * `manual_resolved_unowned` case, not a hypothetical one.
      */
     public function testSupervisorResolvesAnAutoReopenedUnownedTicketProducesManualResolvedUnowned(): void
@@ -261,7 +261,7 @@ class TicketClosureAuditClassificationTest extends WebTestCase
         // unowned too, matching the only reachable real state.
         $ticketId = $this->createTicket(EstadoDeTicket::RESUELTO->value, null);
 
-        // Simulate AutoReopenRule::execute()'s exact call site: resolved →
+        // Simulate ReglaDeReaperturaAutomatica::execute()'s exact call site: resolved →
         // waiting, via the system actor default. The ticket stays unowned.
         $transitionUseCase = static::getContainer()->get(CambiarEstadoDeTicketUseCase::class);
         $transitionUseCase->execute($ticketId, EstadoDeTicket::EN_ESPERA->value, false, false);

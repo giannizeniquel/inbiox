@@ -8,14 +8,14 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
 
 /**
- * Compiler pass to register all rules with RuleExecutorService.
+ * Compiler pass to register all rules with EjecutorDeReglas.
  * Automatically discovers all services implementing ReglaInterface.
  */
 class ReglaPass implements CompilerPassInterface
 {
     public function process(ContainerBuilder $container): void
     {
-        // Get the RuleExecutorService definition
+        // Get the EjecutorDeReglas definition
         if (!$container->has('App\Automatizacion\EjecutorDeReglas')) {
             return;
         }
@@ -25,7 +25,7 @@ class ReglaPass implements CompilerPassInterface
         // Get all service definitions
         $definitions = $container->getDefinitions();
 
-        // Rule classes we know implement RuleInterface
+        // Rule classes we know implement ReglaInterface
         $clasesDeReglasConocidas = [
             'App\Automatizacion\ReglaDeReaperturaAutomatica',
             'App\Automatizacion\ReglaDeEtiquetadoPorPalabraClave',

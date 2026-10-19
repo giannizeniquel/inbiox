@@ -28,7 +28,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
  * - ReglaInterface contract
  * - ReglaDeReaperturaAutomatica (resolved → waiting, closed NOT reopened)
  * - ReglaDeEtiquetadoPorPalabraClave (error keyword detection)
- * - RuleExecutorService (execution key prevents duplicates)
+ * - EjecutorDeReglas (execution key prevents duplicates)
  * - HandleInboundMessageUseCase integration with rules
  */
 class Sprint08AutomationTest extends KernelTestCase
@@ -304,7 +304,7 @@ class Sprint08AutomationTest extends KernelTestCase
     }
 
     /**
-     * Test ReglaDeReaperturaAutomatica buildExecutionKey includes ticket and message.
+     * Test ReglaDeReaperturaAutomatica armarClaveDeEjecucion includes ticket and message.
      */
     public function testAutoReopenRuleBuildExecutionKey(): void
     {
@@ -399,7 +399,7 @@ class Sprint08AutomationTest extends KernelTestCase
     // ============================================
 
     /**
-     * Test RuleExecutorService execution key prevents duplicate execution.
+     * Test EjecutorDeReglas execution key prevents duplicate execution.
      */
     public function testRuleExecutorServiceIdempotencyCheck(): void
     {
@@ -469,7 +469,7 @@ class Sprint08AutomationTest extends KernelTestCase
         $this->assertNotNull($result['ticket_id']);
         $this->assertNotNull($result['message_id']);
 
-        // Verify "error" tag was added by KeywordTaggingRule
+        // Verify "error" tag was added by ReglaDeEtiquetadoPorPalabraClave
         $tagCount = $this->em->getConnection()->executeQuery(
             'SELECT COUNT(*) FROM ticket_tags tt
              JOIN tags t ON tt.tag_id = t.id

@@ -29,7 +29,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * Unit tests for RespuestaAutomaticaService::maybeSend.
+ * Unit tests for RespuestaAutomaticaService::enviarSiCorresponde.
  *
  * Coverage:
  * 1. Does NOT send when auto_reply_enabled = false
