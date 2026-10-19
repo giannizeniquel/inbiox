@@ -78,7 +78,7 @@ Todo en `apps/api/src/`, organizado **por módulo de negocio** desde la fase 2 d
 | `Reporte/` | Métricas y exportación. | `Controller/ReportingController`, `Query/ReportingService`, `Repository/ReportingRepository` |
 | `Automatizacion/` | Reglas y respuesta automática. | `EjecutorDeReglas.php`, `ReglaDeReaperturaAutomatica.php`, `ReglaDeEtiquetadoPorPalabraClave.php`, `RespuestaAutomaticaService.php`, `DependencyInjection/ReglaPass` (registra **a mano** las reglas) |
 | `Administracion/` | Espacios de trabajo, usuarios y el ABM de administración (`/api/admin/*`). | `Usuario.php`, `EspacioDeTrabajo.php`, `Controller/GestionDeUsuariosController`, `Controller/GestionDeAgentesController`, `UseCase/` (un caso de uso por cada escritura de administración) |
-| `Autenticacion/` | Login, refresh token, chequeo de usuarios inactivos. | `Controller/AuthController`, `Security/UserChecker`, `RefreshToken.php` |
+| `Autenticacion/` | Login, refresh token, chequeo de usuarios inactivos. | `Controller/AutenticacionController`, `Security/VerificadorDeUsuario`, `RefreshToken.php` |
 | `Compartido/` | Outbox, tiempo real, cliente de Graph, storage, scopes de seguridad, excepciones comunes. | `Outbox/OutboxPublisherService`, `Realtime/RealtimeEventFactory`, `Graph/GraphClient`, `Storage/MediaStorageService`, `Security/OwnershipScope` |
 
 Dentro de cada módulo, las carpetas de capa son `Controller/`, `UseCase/`, `Query/`, `Repository/` y, cuando hacen falta, `Command/`, `EventListener/` y `Security/` (voters). Las entidades Doctrine y las reglas puras van en la raíz del módulo; Doctrine mapea todo `src/` (`config/packages/doctrine.yaml`). **La fase 2 solo movió clases:** las violaciones de capa (controladores con lógica, SQL fuera de repositorios) siguen y se corrigen en la fase 3.
@@ -121,11 +121,11 @@ Todo en `apps/web/src/app/`. Detalle por pantalla en [07-frontend.md](07-fronten
 | Pieza | Dónde | Comportamiento |
 |---|---|---|
 | Firewalls | `config/packages/security.yaml:15-42` | `webhook` (`^/webhook`, sin seguridad: se valida HMAC en el controlador) y `api` (todo lo demás, stateless). |
-| Login | `json_login` en `/api/auth/login` | No llega al controlador. Devuelve `{access_token, token_type, expires_in: 900}` + cookie `inbiox_refresh`. `AuthenticationSuccessListener` renombra `token` → `access_token`. |
+| Login | `json_login` en `/api/auth/login` | No llega al controlador. Devuelve `{access_token, token_type, expires_in: 900}` + cookie `inbiox_refresh`. `RespuestaDeAutenticacionListener` renombra `token` → `access_token`. |
 | Refresh | `refresh_jwt` en `/api/auth/refresh` | Lee la cookie, rota el refresh token (un solo uso). |
-| Logout | `AuthController::logout` | Borra **todos** los refresh tokens del usuario. El access token sigue válido hasta 15 min (no hay lista negra). |
+| Logout | `AutenticacionController::logout` | Borra **todos** los refresh tokens del usuario. El access token sigue válido hasta 15 min (no hay lista negra). |
 | Rate limit de login | `security.yaml:40-42` | 5 intentos/minuto; estado en filesystem (por eso hay que limpiarlo antes de correr tests). |
-| Usuarios inactivos | `src/Autenticacion/Security/UserChecker.php` | Los rechaza en `checkPostAuth()`, también con JWT. |
+| Usuarios inactivos | `src/Autenticacion/Security/VerificadorDeUsuario.php` | Los rechaza en `checkPostAuth()`, también con JWT. |
 | Jerarquía de roles | `security.yaml:2-4` | `ROLE_ADMIN` ⊃ `ROLE_SUPERVISOR` ⊃ `ROLE_AGENT`. En el frontend los roles **no** son jerárquicos (se compensa en `roleGuard`). |
 | Voters | `Ticket/Security/TicketVoter.php` (usado: `ASSIGN`, `CLOSE`), `src/Conversacion/Security/MessageVoter.php` (solo URL de adjuntos) | Ver [06](06-api-y-permisos.md). |
 | Scopes | `OwnershipScope` (siempre `null`: bandeja compartida, decisión Sprint 16) y `WorkspaceScope` (filtra por el `phone_number_id` del workspace activo; si no hay, **no filtra**) | El primero se reutiliza mal como autorización ([R3](00-estado-y-pendientes.md#r3-cualquier-agente-modifica-disponibilidad-y-turnos-de-cualquier-agente)). |

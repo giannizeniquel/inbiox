@@ -8,7 +8,7 @@ use App\Administracion\Usuario;
 use App\Autenticacion\RefreshToken;
 use Doctrine\ORM\EntityManagerInterface;
 
-final class LogoutUseCase
+final class CerrarSesionUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,

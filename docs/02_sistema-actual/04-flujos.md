@@ -427,7 +427,7 @@ Un mensaje `failed` no afecta el estado del ticket.
 | 5 | Workspace: `GET /api/me/workspaces` (con `has_pending`) y `GET /api/me/workspace`; al elegir, `PUT /api/me/workspace` y `window.location.reload()`. Admin/supervisor pueden elegir cualquiera (y se les crea un agente); un agente solo los suyos. | `core/stores/workspace.store.ts:105-120`; `Administracion/Controller/MiEspacioDeTrabajoController.php`, `Administracion/UseCase/SetEspacioDeTrabajoActivoUseCase.php` |
 | 6 | El backend filtra bandeja, contactos y reportes con `WorkspaceScope` (por `phone_number_id`). Sin workspace activo: **no filtra**. | `Compartido/Security/WorkspaceScope.php:43-64` |
 
-**Si falla, revisar:** 429 en login → rate limiter (5/min) → `security.yaml` → claves JWT (`config/jwt/*.pem`, `JWT_PASSPHRASE`) → `auth.store.ts` / `auth.interceptor.ts` → usuario inactivo (`UserChecker`).
+**Si falla, revisar:** 429 en login → rate limiter (5/min) → `security.yaml` → claves JWT (`config/jwt/*.pem`, `JWT_PASSPHRASE`) → `auth.store.ts` / `auth.interceptor.ts` → usuario inactivo (`VerificadorDeUsuario`).
 
 ---
 

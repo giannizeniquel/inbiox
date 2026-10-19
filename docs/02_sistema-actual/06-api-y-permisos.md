@@ -41,10 +41,10 @@ Leyenda "Rol": **Público**, **Auth** (cualquier usuario autenticado), **Agente*
 
 | Método | Path | Controlador::acción | Rol | Delega en / nota |
 |---|---|---|---|---|
-| POST | `/api/auth/login` | `AuthController::login` | Público | No llega al controlador: lo atiende `json_login` (Lexik) + Gesdinet + `AuthenticationSuccessListener`. |
-| POST | `/api/auth/refresh` | `AuthController::refresh` | Público | No llega al controlador: `refresh_jwt` (Gesdinet). |
-| POST | `/api/auth/logout` | `AuthController::logout` (`:66-102`) | Auth | Borra todos los refresh tokens del usuario. |
-| GET | `/api/auth/me` | `AuthController::me` (`:110-126`) | Auth | Perfil con `agent_id`, `agent_name`. |
+| POST | `/api/auth/login` | `AutenticacionController::login` | Público | No llega al controlador: lo atiende `json_login` (Lexik) + Gesdinet + `RespuestaDeAutenticacionListener`. |
+| POST | `/api/auth/refresh` | `AutenticacionController::refresh` | Público | No llega al controlador: `refresh_jwt` (Gesdinet). |
+| POST | `/api/auth/logout` | `AutenticacionController::logout` (`:66-102`) | Auth | Borra todos los refresh tokens del usuario. |
+| GET | `/api/auth/me` | `AutenticacionController::me` (`:110-126`) | Auth | Perfil con `agent_id`, `agent_name`. |
 
 ### B. Tickets y bandeja
 

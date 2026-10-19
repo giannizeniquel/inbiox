@@ -33,7 +33,7 @@ services:
             $verifyToken: '%env(META_WEBHOOK_VERIFY_TOKEN)%'
             $appSecret: '%env(META_APP_SECRET)%'
 
-    App\Autenticacion\EventListener\AuthenticationSuccessListener:
+    App\Autenticacion\EventListener\RespuestaDeAutenticacionListener:
         arguments:
             $tokenTtl: '%lexik_jwt_authentication.token_ttl%'
         tags:

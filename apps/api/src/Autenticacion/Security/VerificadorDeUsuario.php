@@ -16,7 +16,7 @@ use Symfony\Component\Security\Core\User\UserInterface;
  * JWT alike), so an inactive user is rejected even with a still-valid token
  * (covered by AuthControllerTest::testDeactivatedUserGets403OnAuthenticatedRequest).
  */
-final class UserChecker implements UserCheckerInterface
+final class VerificadorDeUsuario implements UserCheckerInterface
 {
     public function checkPreAuth(UserInterface $user): void
     {

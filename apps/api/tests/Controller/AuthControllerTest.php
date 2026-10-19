@@ -17,7 +17,7 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
  *   A2 — Refresh
  *   A3 — Logout
  *   A4 — /me
- *   A5 — UserChecker (deactivated user gets 403)
+ *   A5 — VerificadorDeUsuario (deactivated user gets 403)
  */
 class AuthControllerTest extends WebTestCase
 {
@@ -462,7 +462,7 @@ class AuthControllerTest extends WebTestCase
     }
 
     // ────────────────────────────────────────────────────────
-    //  A5 — UserChecker (inactive user gets 403)
+    //  A5 — VerificadorDeUsuario (inactive user gets 403)
     // ────────────────────────────────────────────────────────
 
     public function testDeactivatedUserGets403OnAuthenticatedRequest(): void

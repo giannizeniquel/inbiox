@@ -14,7 +14,7 @@ use Lexik\Bundle\JWTAuthenticationBundle\Event\AuthenticationSuccessEvent;
  *
  * Runs after Gesdinet's refresh token listener has modified the data.
  */
-final class AuthenticationSuccessListener
+final class RespuestaDeAutenticacionListener
 {
     /**
      * @param int $tokenTtl The JWT TTL in seconds (from `lexik_jwt_authentication.token_ttl`)

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Autenticacion\Controller;
 
 use Symfony\Component\Routing\Attribute\Route;
-use App\Autenticacion\UseCase\LogoutUseCase;
+use App\Autenticacion\UseCase\CerrarSesionUseCase;
 use App\Administracion\Usuario;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -22,12 +22,12 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
  * POST /api/auth/logout      — invalidates refresh token, clears cookie
  * GET  /api/auth/me          — returns current user profile
  */
-final class AuthController extends AbstractController
+final class AutenticacionController extends AbstractController
 {
     private const REFRESH_COOKIE_NAME = 'inbiox_refresh';
 
     public function __construct(
-        private readonly LogoutUseCase $logoutUseCase,
+        private readonly CerrarSesionUseCase $logoutUseCase,
         private readonly TokenStorageInterface $tokenStorage,
         #[Autowire(env: 'bool:REFRESH_COOKIE_SECURE')]
         private readonly bool $refreshCookieSecure,
