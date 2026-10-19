@@ -35,7 +35,7 @@ final class AsignarAgentesAEquipoUseCase
         // Run in transaction for atomicity — Team::addAgent() throws
         // \InvalidArgumentException (workspace-membership invariant,
         // design.md D3) which rolls back the whole batch (hard reject,
-        // all-or-nothing), mirroring AssignWorkspaceAgentsUseCase.
+        // all-or-nothing), mirroring AsignarAgentesAEspacioDeTrabajoUseCase.
         $this->entityManager->wrapInTransaction(function () use ($equipo, $agenteIds): void {
             foreach ($equipo->getAgentes() as $agenteExistente) {
                 $equipo->removeAgente($agenteExistente);
