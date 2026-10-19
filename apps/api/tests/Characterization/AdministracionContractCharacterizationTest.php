@@ -25,9 +25,7 @@ final class AdministracionContractCharacterizationTest extends KernelTestCase
     {
         self::bootKernel();
         $em = static::getContainer()->get(EntityManagerInterface::class);
-        $em->getConnection()->executeStatement('DELETE FROM refresh_tokens');
-        $em->getConnection()->executeStatement('DELETE FROM agents');
-        $em->getConnection()->executeStatement('DELETE FROM `user`');
+        $em->getConnection()->executeStatement("DELETE FROM `user` WHERE email = 'contract@inbiox.local'");
 
         $hasher = static::getContainer()->get(PasswordHasherFactoryInterface::class)->getPasswordHasher(Usuario::class);
         $usuario = new Usuario();
