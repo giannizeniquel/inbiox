@@ -104,7 +104,7 @@ Todas **Agente**, salvo export. Filtran por workspace activo; nunca por agente.
 | `GET /api/reports/agents` | `agents` | `getAgentPerformance` | Sí |
 | `GET /api/reports/agent-load` | `agentLoad` | `getAgentLoad` | — |
 | `GET /api/reports/unassigned` | `unassigned` | `getUnassigned` (**conteo roto**) | — |
-| `GET /api/reports/available-agents` | `availableAgents` | `Reporte/Query/ListAvailableAgentsQuery`: `DisponibilidadDeAgenteService::listAvailableAgents` + filtro de workspace en PHP + un conteo de tickets activos por agente | — |
+| `GET /api/reports/available-agents` | `availableAgents` | `Reporte/Query/ListAvailableAgentsQuery`: `DisponibilidadDeAgenteService::listarAgentesDisponibles` + filtro de workspace en PHP + un conteo de tickets activos por agente | — |
 | `GET /api/reports/frt-trend` | `frtTrend` | `getFrtTrend` | — |
 | `GET /api/reports/heatmap` | `heatmap` | `getHeatmap` | — |
 | `GET /api/reports/recurring-customers` | `recurringCustomers` | `getRecurringCustomers` | — |
@@ -123,8 +123,8 @@ Todas **Agente**, salvo export. Filtran por workspace activo; nunca por agente.
 | PUT | `/api/me/profile` | `updateProfile` | Agente | Firma. |
 | PUT | `/api/me/notifications` | `updateNotifications` | Agente | Se guarda; el frontend no lo usa. |
 | PUT | `/api/me/auto-reply` | `updateRespuestaAutomatica` | Agente | |
-| GET | `/api/me/shifts` | `getShifts` | Agente | |
-| PUT | `/api/me/shifts` | `replaceShifts` | Agente | `ReemplazarTurnosUseCase`. |
+| GET | `/api/me/shifts` | `getTurnos` | Agente | |
+| PUT | `/api/me/shifts` | `reemplazarTurnos` | Agente | `ReemplazarTurnosUseCase`. |
 | GET | `/api/me/workspace` | `getActiveWorkspace` | Auth | |
 | PUT | `/api/me/workspace` | `setActiveWorkspace` (`:310-372`) | Auth (agente: solo sus workspaces; supervisor/admin: cualquiera, y se les crea agente) | |
 | GET | `/api/me/workspaces` | `listMyWorkspaces` (`:391-461`) | Auth | SQL embebido (`has_pending`). |
@@ -133,11 +133,11 @@ Todas **Agente**, salvo export. Filtran por workspace activo; nunca por agente.
 
 | Método | Path | Controlador::acción | Rol | Nota |
 |---|---|---|---|---|
-| GET | `/api/workspaces/{id}/available-agents` | `AgentesDisponiblesController::listAvailableAgents` | Agente (no verifica pertenencia al workspace) | Roster del desplegable. |
+| GET | `/api/workspaces/{id}/available-agents` | `AgentesDisponiblesController::listarAgentesDisponibles` | Agente (no verifica pertenencia al workspace) | Roster del desplegable. |
 | GET | `/api/teams` | `TeamController::list` | Agente | Equipos de mis workspaces. |
-| POST/DELETE/GET | `/api/agents/{id}/availability` | `DisponibilidadDeAgenteController::setAvailability` / `clearAvailability` / `getAvailability` | Agente **sobre cualquier agente** ([R3](00-estado-y-pendientes.md#r3-cualquier-agente-modifica-disponibilidad-y-turnos-de-cualquier-agente)) | |
-| POST | `/api/agents/{id}/shifts` | `createShift` | ídem | |
-| DELETE | `/api/agents/{id}/shifts/{shiftId}` | `deleteShift` | ídem | |
+| POST/DELETE/GET | `/api/agents/{id}/availability` | `DisponibilidadDeAgenteController::setDisponibilidadManual` / `quitarDisponibilidadManual` / `getDisponibilidad` | Agente **sobre cualquier agente** ([R3](00-estado-y-pendientes.md#r3-cualquier-agente-modifica-disponibilidad-y-turnos-de-cualquier-agente)) | |
+| POST | `/api/agents/{id}/shifts` | `createTurno` | ídem | |
+| DELETE | `/api/agents/{id}/shifts/{shiftId}` | `deleteTurno` | ídem | |
 
 ### I. Tiempo real
 

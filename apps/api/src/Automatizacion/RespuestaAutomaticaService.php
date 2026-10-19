@@ -90,7 +90,7 @@ final class RespuestaAutomaticaService
 
         // 3. Check agent is NOT available (we send when they're unavailable)
         $now = new \DateTimeImmutable('now');
-        if ($this->availabilityService->isAvailable($agente, $now)) {
+        if ($this->availabilityService->isDisponible($agente, $now)) {
             return; // Agent is available — don't send auto-reply
         }
 

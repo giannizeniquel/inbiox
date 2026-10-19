@@ -30,19 +30,19 @@ class Turno
 
     #[ORM\ManyToOne(targetEntity: Agent::class, inversedBy: 'shifts')]
     #[ORM\JoinColumn(name: 'agent_id', referencedColumnName: 'id', onDelete: 'CASCADE', nullable: false)]
-    private ?Agent $agent = null;
+    private ?Agent $agente = null;
 
     #[ORM\Column(name: 'day_of_week', type: Types::SMALLINT, options: ['unsigned' => true])]
-    private int $dayOfWeek;
+    private int $diaDeLaSemana;
 
     #[ORM\Column(name: 'start_time', type: Types::TIME_IMMUTABLE)]
-    private \DateTimeImmutable $startTime;
+    private \DateTimeImmutable $horaDeInicio;
 
     #[ORM\Column(name: 'end_time', type: Types::TIME_IMMUTABLE)]
-    private \DateTimeImmutable $endTime;
+    private \DateTimeImmutable $horaDeFin;
 
     #[ORM\Column(name: 'created_at', type: Types::DATETIME_IMMUTABLE, options: ['comment' => '(DC2Type:datetime_immutable)'])]
-    private \DateTimeImmutable $createdAt;
+    private \DateTimeImmutable $creadoAt;
 
     public function __construct(
         Agent $agent,
@@ -50,11 +50,11 @@ class Turno
         \DateTimeImmutable $startTime,
         \DateTimeImmutable $endTime
     ) {
-        $this->agent = $agent;
-        $this->dayOfWeek = $dayOfWeek;
-        $this->startTime = $startTime;
-        $this->endTime = $endTime;
-        $this->createdAt = new \DateTimeImmutable();
+        $this->agente = $agent;
+        $this->diaDeLaSemana = $dayOfWeek;
+        $this->horaDeInicio = $startTime;
+        $this->horaDeFin = $endTime;
+        $this->creadoAt = new \DateTimeImmutable();
     }
 
     public function getId(): ?int
@@ -62,52 +62,52 @@ class Turno
         return $this->id;
     }
 
-    public function getAgent(): ?Agent
+    public function getAgente(): ?Agent
     {
-        return $this->agent;
+        return $this->agente;
     }
 
-    public function setAgent(?Agent $agent): self
+    public function setAgente(?Agent $agent): self
     {
-        $this->agent = $agent;
+        $this->agente = $agent;
         return $this;
     }
 
-    public function getDayOfWeek(): int
+    public function getDiaDeLaSemana(): int
     {
-        return $this->dayOfWeek;
+        return $this->diaDeLaSemana;
     }
 
-    public function setDayOfWeek(int $dayOfWeek): self
+    public function setDiaDeLaSemana(int $dayOfWeek): self
     {
-        $this->dayOfWeek = $dayOfWeek;
+        $this->diaDeLaSemana = $dayOfWeek;
         return $this;
     }
 
-    public function getStartTime(): \DateTimeImmutable
+    public function getHoraDeInicio(): \DateTimeImmutable
     {
-        return $this->startTime;
+        return $this->horaDeInicio;
     }
 
-    public function setStartTime(\DateTimeImmutable $startTime): self
+    public function setHoraDeInicio(\DateTimeImmutable $startTime): self
     {
-        $this->startTime = $startTime;
+        $this->horaDeInicio = $startTime;
         return $this;
     }
 
-    public function getEndTime(): \DateTimeImmutable
+    public function getHoraDeFin(): \DateTimeImmutable
     {
-        return $this->endTime;
+        return $this->horaDeFin;
     }
 
-    public function setEndTime(\DateTimeImmutable $endTime): self
+    public function setHoraDeFin(\DateTimeImmutable $endTime): self
     {
-        $this->endTime = $endTime;
+        $this->horaDeFin = $endTime;
         return $this;
     }
 
-    public function getCreatedAt(): \DateTimeImmutable
+    public function getCreadoAt(): \DateTimeImmutable
     {
-        return $this->createdAt;
+        return $this->creadoAt;
     }
 }

@@ -53,12 +53,12 @@ class DisponibilidadDeAgenteController
      * Returns 200 with the updated availability state.
      */
     #[Route('/api/agents/{id}/availability', name: 'app_agent_set_availability', methods: ['POST'])]
-    public function setAvailability(
+    public function setDisponibilidadManual(
         int $id,
         #[MapRequestPayload] SetDisponibilidadManualRequest $request,
     ): JsonResponse {
         // Ownership check: AGENT can only modify their own availability
-        if (false === $this->isGrantedForAgent($id)) {
+        if (false === $this->isPermitidoParaAgente($id)) {
             return new JsonResponse(['error' => 'Forbidden'], 403);
         }
 
@@ -93,10 +93,10 @@ class DisponibilidadDeAgenteController
      * Returns 204 on success.
      */
     #[Route('/api/agents/{id}/availability', name: 'app_agent_clear_availability', methods: ['DELETE'])]
-    public function clearAvailability(int $id): JsonResponse
+    public function quitarDisponibilidadManual(int $id): JsonResponse
     {
         // Ownership check: AGENT can only modify their own availability
-        if (false === $this->isGrantedForAgent($id)) {
+        if (false === $this->isPermitidoParaAgente($id)) {
             return new JsonResponse(['error' => 'Forbidden'], 403);
         }
 
@@ -123,10 +123,10 @@ class DisponibilidadDeAgenteController
      * Reuses DisponibilidadDeAgenteService for determination. Read-only.
      */
     #[Route('/api/agents/{id}/availability', name: 'app_agent_get_availability', methods: ['GET'])]
-    public function getAvailability(int $id): JsonResponse
+    public function getDisponibilidad(int $id): JsonResponse
     {
         // Ownership check: AGENT can only view their own availability
-        if (false === $this->isGrantedForAgent($id)) {
+        if (false === $this->isPermitidoParaAgente($id)) {
             return new JsonResponse(['error' => 'Forbidden'], 403);
         }
 
@@ -139,11 +139,11 @@ class DisponibilidadDeAgenteController
         $localTz = new \DateTimeZone($agent->getTimezone());
         $localNow = $nowUtc->setTimezone($localTz);
 
-        $isAvailable = $this->agentAvailabilityService->isAvailable($agent, $nowUtc);
+        $isAvailable = $this->agentAvailabilityService->isDisponible($agent, $nowUtc);
         $currentLoad = $this->ticketRepo->countActivosDeAgente($id);
 
         // Compute is_in_shift by checking schedule only (no override, no capacity)
-        $isInShift = $this->isAgentInShift($agent, $localNow);
+        $isInShift = $this->isAgenteEnTurno($agent, $localNow);
 
         // Compute override info
         $overrideActive = false;
@@ -180,12 +180,12 @@ class DisponibilidadDeAgenteController
      * Returns 201 with the created shift data.
      */
     #[Route('/api/agents/{id}/shifts', name: 'app_agent_create_shift', methods: ['POST'])]
-    public function createShift(
+    public function createTurno(
         int $id,
         #[MapRequestPayload] CreateTurnoRequest $request,
     ): JsonResponse {
         // Ownership check: AGENT can only modify their own shifts
-        if (false === $this->isGrantedForAgent($id)) {
+        if (false === $this->isPermitidoParaAgente($id)) {
             return new JsonResponse(['error' => 'Forbidden'], 403);
         }
 
@@ -228,10 +228,10 @@ class DisponibilidadDeAgenteController
      * Returns 204 on success.
      */
     #[Route('/api/agents/{id}/shifts/{shiftId}', name: 'app_agent_delete_shift', methods: ['DELETE'])]
-    public function deleteShift(int $id, int $shiftId): JsonResponse
+    public function deleteTurno(int $id, int $shiftId): JsonResponse
     {
         // Ownership check: AGENT can only modify their own shifts
-        if (false === $this->isGrantedForAgent($id)) {
+        if (false === $this->isPermitidoParaAgente($id)) {
             return new JsonResponse(['error' => 'Forbidden'], 403);
         }
 
@@ -245,7 +245,7 @@ class DisponibilidadDeAgenteController
             return new JsonResponse(['error' => 'Shift not found'], 404);
         }
 
-        $shiftAgent = $shift->getAgent();
+        $shiftAgent = $shift->getAgente();
         if ($shiftAgent === null || $shiftAgent->getId() !== $agent->getId()) {
             return new JsonResponse(['error' => 'Shift does not belong to this agent'], 404);
         }
@@ -267,7 +267,7 @@ class DisponibilidadDeAgenteController
      * ADMIN/SUPERVISOR can act on any agent.
      * AGENT can only act on their own agent.
      */
-    private function isGrantedForAgent(int $agentId): bool
+    private function isPermitidoParaAgente(int $agentId): bool
     {
         $scopeId = $this->ownershipScope->getAgentId();
 
@@ -286,25 +286,25 @@ class DisponibilidadDeAgenteController
      * Reuses the same cross-midnight logic as DisponibilidadDeAgenteService
      * but checks schedule only — no override, no capacity.
      */
-    private function isAgentInShift(\App\Agente\Agent $agent, \DateTimeImmutable $localDateTime): bool
+    private function isAgenteEnTurno(\App\Agente\Agent $agent, \DateTimeImmutable $localDateTime): bool
     {
         $dow = (int) $localDateTime->format('N');
         $time = $localDateTime->format('H:i:s');
 
         foreach ($agent->getShifts() as $shift) {
-            $startTime = $shift->getStartTime()->format('H:i:s');
-            $endTime = $shift->getEndTime()->format('H:i:s');
+            $startTime = $shift->getHoraDeInicio()->format('H:i:s');
+            $endTime = $shift->getHoraDeFin()->format('H:i:s');
 
             if ($endTime > $startTime) {
                 // Normal shift (same day, half-open [start, end))
-                if ($shift->getDayOfWeek() === $dow && $time >= $startTime && $time < $endTime) {
+                if ($shift->getDiaDeLaSemana() === $dow && $time >= $startTime && $time < $endTime) {
                     return true;
                 }
             } else {
                 // Cross-midnight shift (end < start, e.g. 22:00-06:00)
-                $nextDow = $shift->getDayOfWeek() === 7 ? 1 : $shift->getDayOfWeek() + 1;
+                $nextDow = $shift->getDiaDeLaSemana() === 7 ? 1 : $shift->getDiaDeLaSemana() + 1;
 
-                if ($dow === $shift->getDayOfWeek() && $time >= $startTime) {
+                if ($dow === $shift->getDiaDeLaSemana() && $time >= $startTime) {
                     return true; // First night
                 }
                 if ($dow === $nextDow && $time < $endTime) {

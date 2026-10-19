@@ -180,7 +180,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
         // WHEN evaluated
         $this->expectNoActiveTicketCount();
-        $result = $this->service->isAvailable($agent, new \DateTimeImmutable('now'));
+        $result = $this->service->isDisponible($agent, new \DateTimeImmutable('now'));
 
         // THEN unavailable regardless of shift/override/capacity
         self::assertFalse($result);
@@ -207,7 +207,7 @@ class AgentAvailabilityServiceTest extends TestCase
         // WHEN evaluated at now + 60min (inside TTL)
         $evalAt = $now->modify('+60 minutes');
         $this->expectNoActiveTicketCount();
-        $result = $this->service->isAvailable($agent, $evalAt);
+        $result = $this->service->isDisponible($agent, $evalAt);
 
         // THEN override takes precedence (even without shifts)
         self::assertTrue($result);
@@ -224,7 +224,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
         // WHEN evaluated (in shift, with capacity)
         $this->expectNoActiveTicketCount();
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-15', '12:00'), // Monday 12:00 UTC
         );
@@ -251,7 +251,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $evalAt = $this->utcDateTime('2026-06-14', '12:01');
         // Local time (ART): 2026-06-14 09:01 → Sunday, outside shift
         $this->expectNoActiveTicketCount();
-        $result = $this->service->isAvailable($agent, $evalAt);
+        $result = $this->service->isDisponible($agent, $evalAt);
 
         // THEN override is ignored, schedule check fails
         self::assertFalse($result);
@@ -276,7 +276,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $evalAt = $this->utcDateTime('2026-06-15', '12:00');
         // Local (ART): 2026-06-15 09:00 → Monday, within 08:00-16:00 → in shift
         $this->expectActiveTicketCount(1, 5); // at capacity = 5
-        $result = $this->service->isAvailable($agent, $evalAt);
+        $result = $this->service->isDisponible($agent, $evalAt);
 
         // THEN override ignored, schedule matches, capacity blocks
         self::assertFalse($result);
@@ -293,7 +293,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
         // WHEN evaluated at any time
         $this->expectNoActiveTicketCount();
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-15', '12:00'),
         );
@@ -312,7 +312,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
         // WHEN evaluated (no shifts, but override = true)
         $this->expectNoActiveTicketCount();
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             new \DateTimeImmutable('now'),
         );
@@ -333,7 +333,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
         // WHEN evaluated at exactly TTL time (override_until >= atUtc)
         $this->expectNoActiveTicketCount();
-        $result = $this->service->isAvailable($agent, $now);
+        $result = $this->service->isDisponible($agent, $now);
 
         // THEN override is still active (>=, not >)
         self::assertTrue($result);
@@ -361,7 +361,7 @@ class AgentAvailabilityServiceTest extends TestCase
         // WHEN evaluated at Monday 10:00 local time
         // 10:00 ART = 13:00 UTC on Monday 2026-06-15
         $evalAt = $this->utcDateTime('2026-06-15', '13:00');
-        $result = $this->service->isAvailable($agent, $evalAt);
+        $result = $this->service->isDisponible($agent, $evalAt);
 
         // THEN available = true
         self::assertTrue($result);
@@ -375,7 +375,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
         // WHEN evaluated at Monday 18:00 local (UTC)
         $this->expectNoActiveTicketCount();
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-15', '18:00'),
         );
@@ -391,7 +391,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
         // WHEN evaluated (no override active)
         $this->expectNoActiveTicketCount();
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             new \DateTimeImmutable('now'),
         );
@@ -411,7 +411,7 @@ class AgentAvailabilityServiceTest extends TestCase
         // WHEN evaluated at Saturday 02:30 local time
         $this->expectActiveTicketCount(1, 0);
         // Saturday 2026-06-20 02:30 ART = 2026-06-20 05:30 UTC
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-20', '05:30'),
         );
@@ -429,7 +429,7 @@ class AgentAvailabilityServiceTest extends TestCase
         // WHEN evaluated at Saturday 09:00 local time
         $this->expectNoActiveTicketCount();
         // Saturday 2026-06-20 09:00 ART = 2026-06-20 12:00 UTC
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-20', '12:00'),
         );
@@ -449,7 +449,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
         // WHEN evaluated at Monday 10:00 local time
         $this->expectActiveTicketCount(1, 0);
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-15', '10:00'),
         );
@@ -467,7 +467,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
         // WHEN evaluated at Monday 13:00 local time (gap)
         $this->expectNoActiveTicketCount();
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-15', '13:00'),
         );
@@ -485,7 +485,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
         // WHEN evaluated at Monday 15:00 local time
         $this->expectActiveTicketCount(1, 0);
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-15', '15:00'),
         );
@@ -503,7 +503,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $this->createShift($agent, 5, '22:00', '06:00');
 
         $this->expectNoActiveTicketCount();
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-19', '21:59'), // Friday 21:59 UTC
         );
@@ -518,7 +518,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $this->createShift($agent, 5, '22:00', '06:00');
 
         $this->expectActiveTicketCount(1, 0);
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-19', '22:00'), // Friday 22:00 UTC
         );
@@ -533,7 +533,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $this->createShift($agent, 5, '22:00', '06:00');
 
         $this->expectActiveTicketCount(1, 0);
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-20', '05:59'), // Saturday 05:59 UTC
         );
@@ -548,7 +548,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $this->createShift($agent, 5, '22:00', '06:00');
 
         $this->expectNoActiveTicketCount();
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-20', '06:00'), // Saturday 06:00 UTC
         );
@@ -563,7 +563,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $this->createShift($agent, 5, '22:00', '06:00');
 
         $this->expectNoActiveTicketCount();
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-20', '06:01'), // Saturday 06:01 UTC
         );
@@ -580,7 +580,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $this->createShift($agent, 1, '08:00', '16:00');
 
         $this->expectNoActiveTicketCount();
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-15', '07:59'), // Monday 07:59 UTC
         );
@@ -595,7 +595,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $this->createShift($agent, 1, '08:00', '16:00');
 
         $this->expectActiveTicketCount(1, 0);
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-15', '08:00'), // Monday 08:00 UTC
         );
@@ -610,7 +610,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $this->createShift($agent, 1, '08:00', '16:00');
 
         $this->expectActiveTicketCount(1, 0);
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-15', '15:59'), // Monday 15:59 UTC
         );
@@ -625,7 +625,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $this->createShift($agent, 1, '08:00', '16:00');
 
         $this->expectNoActiveTicketCount();
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-15', '16:00'), // Monday 16:00 UTC
         );
@@ -647,7 +647,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
         $this->expectActiveTicketCount(1, 5);
 
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-15', '12:00'),
         );
@@ -664,7 +664,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
         $this->expectActiveTicketCount(1, 4);
 
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-15', '12:00'),
         );
@@ -681,7 +681,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
         $this->expectActiveTicketCount(1, 0);
 
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-15', '12:00'),
         );
@@ -698,7 +698,7 @@ class AgentAvailabilityServiceTest extends TestCase
         // After assignment, count = 4 (within limit)
         $this->expectActiveTicketCount(1, 4);
 
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-15', '12:00'),
         );
@@ -715,7 +715,7 @@ class AgentAvailabilityServiceTest extends TestCase
         // After resolution, count = 4 (was 5, one resolved)
         $this->expectActiveTicketCount(1, 4);
 
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-15', '12:00'),
         );
@@ -732,7 +732,7 @@ class AgentAvailabilityServiceTest extends TestCase
         // After closure, count = 4 (was 5, one closed)
         $this->expectActiveTicketCount(1, 4);
 
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-15', '12:00'),
         );
@@ -749,7 +749,7 @@ class AgentAvailabilityServiceTest extends TestCase
         // 3 active (new/active/waiting), 2 resolved/closed — count = 3
         $this->expectActiveTicketCount(1, 3);
 
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-15', '12:00'),
         );
@@ -769,7 +769,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
         // WHEN evaluated at Monday 11:00 UTC (08:00 ART) — start of shift
         $this->expectActiveTicketCount(1, 0);
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-15', '11:00'), // 11:00 UTC = 08:00 ART
         );
@@ -778,7 +778,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
         // WHEN evaluated at Monday 10:59 UTC (07:59 ART) — before shift
         $this->expectNoActiveTicketCount();
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-15', '10:59'), // 10:59 UTC = 07:59 ART
         );
@@ -793,7 +793,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $this->createShift($agent, 1, '08:00', '16:00'); // Mon 08:00-16:00 UTC
 
         $this->expectActiveTicketCount(1, 0);
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-15', '08:00'),
         );
@@ -801,7 +801,7 @@ class AgentAvailabilityServiceTest extends TestCase
         self::assertTrue($result);
 
         $this->expectNoActiveTicketCount();
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-15', '07:59'),
         );
@@ -821,7 +821,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
         // Saturday 02:30 ART = Saturday 05:30 UTC → within shift
         $this->expectActiveTicketCount(1, 0);
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-20', '05:30'), // Sat 05:30 UTC = 02:30 ART
         );
@@ -829,7 +829,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
         // Saturday 09:00 ART = Saturday 12:00 UTC → outside shift
         $this->expectNoActiveTicketCount();
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-20', '12:00'), // Sat 12:00 UTC = 09:00 ART
         );
@@ -853,8 +853,8 @@ class AgentAvailabilityServiceTest extends TestCase
             ->willReturnOnConsecutiveCalls(2, 2);
 
         // Call twice, should get identical results
-        $result1 = $this->service->isAvailable($agent, $at);
-        $result2 = $this->service->isAvailable($agent, $at);
+        $result1 = $this->service->isDisponible($agent, $at);
+        $result2 = $this->service->isDisponible($agent, $at);
 
         self::assertSame($result1, $result2);
     }
@@ -873,7 +873,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $this->createShift($agent, 1, '08:00', '16:00');
 
         $this->expectNoActiveTicketCount();
-        $result = $this->service->isActiveNow(
+        $result = $this->service->isActivoAhora(
             $agent,
             $agent->getShifts()->toArray(),
             $this->utcDateTime('2026-06-15', '12:00'), // Monday, in shift
@@ -891,7 +891,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $agent = $this->createAgent(isAvailableOverride: true, overrideUntil: $ttl);
 
         $this->expectNoActiveTicketCount();
-        $result = $this->service->isActiveNow($agent, [], $now->modify('+60 minutes'));
+        $result = $this->service->isActivoAhora($agent, [], $now->modify('+60 minutes'));
 
         self::assertTrue($result);
     }
@@ -903,7 +903,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $this->createShift($agent, 1, '08:00', '16:00');
 
         $this->expectNoActiveTicketCount();
-        $result = $this->service->isActiveNow(
+        $result = $this->service->isActivoAhora(
             $agent,
             $agent->getShifts()->toArray(),
             $this->utcDateTime('2026-06-15', '12:00'), // Monday, in shift — override still wins
@@ -921,7 +921,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
         // WHEN evaluated Monday 12:00 (TTL expired, in shift)
         $this->expectNoActiveTicketCount();
-        $result = $this->service->isActiveNow(
+        $result = $this->service->isActivoAhora(
             $agent,
             $agent->getShifts()->toArray(),
             $this->utcDateTime('2026-06-15', '12:00'),
@@ -939,7 +939,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
         // WHEN evaluated Tuesday 12:00 (TTL expired, outside shift)
         $this->expectNoActiveTicketCount();
-        $result = $this->service->isActiveNow(
+        $result = $this->service->isActivoAhora(
             $agent,
             $agent->getShifts()->toArray(),
             $this->utcDateTime('2026-06-16', '12:00'),
@@ -955,7 +955,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $this->createShift($agent, 1, '08:00', '16:00');
 
         $this->expectNoActiveTicketCount();
-        $result = $this->service->isActiveNow(
+        $result = $this->service->isActivoAhora(
             $agent,
             $agent->getShifts()->toArray(),
             $this->utcDateTime('2026-06-15', '12:00'),
@@ -971,7 +971,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $this->createShift($agent, 1, '08:00', '16:00');
 
         $this->expectNoActiveTicketCount();
-        $result = $this->service->isActiveNow(
+        $result = $this->service->isActivoAhora(
             $agent,
             $agent->getShifts()->toArray(),
             $this->utcDateTime('2026-06-16', '12:00'), // Tuesday
@@ -986,7 +986,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $agent = $this->createAgent();
 
         $this->expectNoActiveTicketCount();
-        $result = $this->service->isActiveNow($agent, [], new \DateTimeImmutable('now'));
+        $result = $this->service->isActivoAhora($agent, [], new \DateTimeImmutable('now'));
 
         self::assertFalse($result);
     }
@@ -999,7 +999,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
         // No COUNT query must ever be issued by isActiveNow
         $this->expectNoActiveTicketCount();
-        $result = $this->service->isActiveNow(
+        $result = $this->service->isActivoAhora(
             $agent,
             $agent->getShifts()->toArray(),
             $this->utcDateTime('2026-06-15', '12:00'),
@@ -1018,7 +1018,7 @@ class AgentAvailabilityServiceTest extends TestCase
             ->method('findAllActive')
             ->willReturn([]);
 
-        $result = $this->service->listAvailableAgents(new \DateTimeImmutable('now'));
+        $result = $this->service->listarAgentesDisponibles(new \DateTimeImmutable('now'));
 
         self::assertSame([], $result);
     }
@@ -1038,7 +1038,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
         // Batch-load shifts
         $this->agentShiftRepository->expects(self::once())
-            ->method('findByAgents')
+            ->method('findByAgentes')
             ->with([1, 2])
             ->willReturn(\array_merge(
                 $agentInShift->getShifts()->toArray(),
@@ -1047,7 +1047,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
         $this->expectActiveTicketCount(1, 2);
 
-        $result = $this->service->listAvailableAgents(
+        $result = $this->service->listarAgentesDisponibles(
             $this->utcDateTime('2026-06-15', '12:00'), // Monday 12:00 UTC
         );
 
@@ -1069,7 +1069,7 @@ class AgentAvailabilityServiceTest extends TestCase
             ->willReturn([$agentFree, $agentFull]);
 
         $this->agentShiftRepository->expects(self::once())
-            ->method('findByAgents')
+            ->method('findByAgentes')
             ->with([1, 2])
             ->willReturn(\array_merge(
                 $agentFree->getShifts()->toArray(),
@@ -1085,7 +1085,7 @@ class AgentAvailabilityServiceTest extends TestCase
                 5, // 5 >= 5: full
             );
 
-        $result = $this->service->listAvailableAgents(
+        $result = $this->service->listarAgentesDisponibles(
             $this->utcDateTime('2026-06-15', '12:00'), // Monday 12:00 UTC
         );
 
@@ -1110,13 +1110,13 @@ class AgentAvailabilityServiceTest extends TestCase
             ->willReturn([$agentOverride, $agentNoOverride]);
 
         $this->agentShiftRepository->expects(self::once())
-            ->method('findByAgents')
+            ->method('findByAgentes')
             ->with([1, 2])
             ->willReturn($agentNoOverride->getShifts()->toArray());
 
         $this->expectActiveTicketCount(2, 0);
 
-        $result = $this->service->listAvailableAgents(
+        $result = $this->service->listarAgentesDisponibles(
             $this->utcDateTime('2026-06-15', '12:00'), // Monday 12:00 UTC
         );
 
@@ -1140,7 +1140,7 @@ class AgentAvailabilityServiceTest extends TestCase
             ->willReturn([$agent3, $agent1, $agent2]);
 
         $this->agentShiftRepository->expects(self::once())
-            ->method('findByAgents')
+            ->method('findByAgentes')
             ->with([3, 1, 2])
             ->willReturn(\array_merge(
                 $agent3->getShifts()->toArray(),
@@ -1153,7 +1153,7 @@ class AgentAvailabilityServiceTest extends TestCase
             ->method('countActivosDeAgente')
             ->willReturn(0);
 
-        $result = $this->service->listAvailableAgents(
+        $result = $this->service->listarAgentesDisponibles(
             $this->utcDateTime('2026-06-15', '12:00'),
         );
 
@@ -1181,13 +1181,13 @@ class AgentAvailabilityServiceTest extends TestCase
         // Even if findByAgents is called, we shouldn't need to load shifts
         // because override=false blocks before schedule check
         $this->agentShiftRepository->expects(self::once())
-            ->method('findByAgents')
+            ->method('findByAgentes')
             ->with([1])
             ->willReturn($agent->getShifts()->toArray());
 
         $this->ticketRepository->expects(self::never())->method('countActivosDeAgente');
 
-        $result = $this->service->listAvailableAgents(
+        $result = $this->service->listarAgentesDisponibles(
             $this->utcDateTime('2026-06-15', '12:00'),
         );
 
@@ -1218,7 +1218,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
         // Saturday 02:30 ART = Saturday 05:30 UTC
         $this->expectActiveTicketCount(1, 0);
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-20', '05:30'),
         );
@@ -1240,7 +1240,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
         // Saturday 09:00 ART = Saturday 12:00 UTC
         $this->expectNoActiveTicketCount();
-        $result = $this->service->isAvailable(
+        $result = $this->service->isDisponible(
             $agent,
             $this->utcDateTime('2026-06-20', '12:00'),
         );
@@ -1265,7 +1265,7 @@ class AgentAvailabilityServiceTest extends TestCase
             ->with($workspace)
             ->willReturn([]);
 
-        $result = $this->service->listWorkspaceAgentRoster(
+        $result = $this->service->listarAgentesDelEspacioDeTrabajo(
             $workspace,
             new \DateTimeImmutable('now'),
         );
@@ -1289,13 +1289,13 @@ class AgentAvailabilityServiceTest extends TestCase
 
         // Only the active=true agent's shifts are batch-loaded
         $this->agentShiftRepository->expects(self::once())
-            ->method('findByAgents')
+            ->method('findByAgentes')
             ->with([1])
             ->willReturn([]);
 
         $this->expectActiveTicketCount(1, 0);
 
-        $result = $this->service->listWorkspaceAgentRoster(
+        $result = $this->service->listarAgentesDelEspacioDeTrabajo(
             $workspace,
             $this->utcDateTime('2026-06-15', '12:00'),
         );
@@ -1319,7 +1319,7 @@ class AgentAvailabilityServiceTest extends TestCase
             ->willReturn([$agent]);
 
         $this->agentShiftRepository->expects(self::once())
-            ->method('findByAgents')
+            ->method('findByAgentes')
             ->with([1])
             ->willReturn([]);
 
@@ -1327,7 +1327,7 @@ class AgentAvailabilityServiceTest extends TestCase
         // consulted by is_active_now, only reported for display purposes
         $this->expectActiveTicketCount(1, 1);
 
-        $result = $this->service->listWorkspaceAgentRoster(
+        $result = $this->service->listarAgentesDelEspacioDeTrabajo(
             $workspace,
             new \DateTimeImmutable('now'),
         );
@@ -1353,7 +1353,7 @@ class AgentAvailabilityServiceTest extends TestCase
             ->willReturn([$agentInactivo, $agentActivo]);
 
         $this->agentShiftRepository->expects(self::once())
-            ->method('findByAgents')
+            ->method('findByAgentes')
             ->with([1, 2])
             ->willReturn([]);
 
@@ -1361,7 +1361,7 @@ class AgentAvailabilityServiceTest extends TestCase
             ->method('countActivosDeAgente')
             ->willReturn(0);
 
-        $result = $this->service->listWorkspaceAgentRoster(
+        $result = $this->service->listarAgentesDelEspacioDeTrabajo(
             $workspace,
             new \DateTimeImmutable('now'),
         );
@@ -1390,7 +1390,7 @@ class AgentAvailabilityServiceTest extends TestCase
             ->willReturn([$agent3, $agent1, $agent2]);
 
         $this->agentShiftRepository->expects(self::once())
-            ->method('findByAgents')
+            ->method('findByAgentes')
             ->with([3, 1, 2])
             ->willReturn([]);
 
@@ -1398,7 +1398,7 @@ class AgentAvailabilityServiceTest extends TestCase
             ->method('countActivosDeAgente')
             ->willReturn(0);
 
-        $result = $this->service->listWorkspaceAgentRoster(
+        $result = $this->service->listarAgentesDelEspacioDeTrabajo(
             $workspace,
             new \DateTimeImmutable('now'),
         );
@@ -1423,13 +1423,13 @@ class AgentAvailabilityServiceTest extends TestCase
             ->willReturn([$agent]);
 
         $this->agentShiftRepository->expects(self::once())
-            ->method('findByAgents')
+            ->method('findByAgentes')
             ->with([1])
             ->willReturn([]);
 
         $this->expectActiveTicketCount(1, 2);
 
-        $result = $this->service->listWorkspaceAgentRoster($workspace, new \DateTimeImmutable('now'));
+        $result = $this->service->listarAgentesDelEspacioDeTrabajo($workspace, new \DateTimeImmutable('now'));
 
         self::assertCount(1, $result);
         self::assertInstanceOf(DisponibilidadDeAgenteDTO::class, $result[0]);

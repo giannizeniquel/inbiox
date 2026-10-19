@@ -27,7 +27,7 @@ final class ListAvailableAgentsQuery
      */
     public function execute(?string $phoneNumberId, \DateTimeImmutable $atUtc): array
     {
-        $available = $this->agentAvailabilityService->listAvailableAgents($atUtc);
+        $available = $this->agentAvailabilityService->listarAgentesDisponibles($atUtc);
 
         $result = [];
         foreach ($available as $agent) {

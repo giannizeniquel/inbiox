@@ -137,7 +137,7 @@ class ReportingService
         foreach ($rows as $row) {
             $isInShift = false;
             if (isset($agentMap[$row['agent_id']])) {
-                $isInShift = $this->agentAvailabilityService->isInShift($agentMap[$row['agent_id']], $now);
+                $isInShift = $this->agentAvailabilityService->isEnTurno($agentMap[$row['agent_id']], $now);
             }
 
             $enrichedRow = [];

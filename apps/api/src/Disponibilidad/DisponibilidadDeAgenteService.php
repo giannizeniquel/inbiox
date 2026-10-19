@@ -36,7 +36,7 @@ final class DisponibilidadDeAgenteService
      * The agent's shifts are loaded from the entity (lazy-loads if not already
      * initialized). For batch evaluation, use listAvailableAgents().
      */
-    public function isAvailable(Agent $agent, \DateTimeImmutable $atUtc): bool
+    public function isDisponible(Agent $agent, \DateTimeImmutable $atUtc): bool
     {
         // Step 1: Account active check
         if (!$agent->isActive()) {
@@ -52,12 +52,12 @@ final class DisponibilidadDeAgenteService
 
         // Step 3: Schedule check
         $localTime = $this->utcToLocal($atUtc, $agent->getTimezone());
-        if (!$this->hasShiftAtTime($localTime, $agent->getShifts()->toArray())) {
+        if (!$this->hasTurnoEnHorario($localTime, $agent->getShifts()->toArray())) {
             return false;
         }
 
         // Step 4: Capacity check
-        $activeCount = $this->countActiveTickets($agent->getId());
+        $activeCount = $this->countTicketsActivos($agent->getId());
         if ($activeCount >= $agent->getMaxActiveTickets()) {
             return false;
         }
@@ -80,7 +80,7 @@ final class DisponibilidadDeAgenteService
      *
      * @param Turno[] $shifts
      */
-    public function isActiveNow(Agent $agent, array $shifts, \DateTimeImmutable $atUtc): bool
+    public function isActivoAhora(Agent $agent, array $shifts, \DateTimeImmutable $atUtc): bool
     {
         // Step 1: Account active check
         if (!$agent->isActive()) {
@@ -97,7 +97,7 @@ final class DisponibilidadDeAgenteService
         // Step 3: Schedule check (capacity deliberately ignored)
         $localTime = $this->utcToLocal($atUtc, $agent->getTimezone());
 
-        return $this->hasShiftAtTime($localTime, $shifts);
+        return $this->hasTurnoEnHorario($localTime, $shifts);
     }
 
     /**
@@ -108,7 +108,7 @@ final class DisponibilidadDeAgenteService
      *
      * @return Agent[]
      */
-    public function listAvailableAgents(\DateTimeImmutable $atUtc): array
+    public function listarAgentesDisponibles(\DateTimeImmutable $atUtc): array
     {
         // 1. Fetch all active agents (1 query)
         $agents = $this->agentRepository->findAllActive();
@@ -118,12 +118,12 @@ final class DisponibilidadDeAgenteService
 
         // 2. Batch-load shifts for all active agents (1 query, no N+1)
         $agentIds = \array_map(fn (Agent $a): ?int => $a->getId(), $agents);
-        $allShifts = $this->agentShiftRepository->findByAgents(\array_filter($agentIds));
+        $allShifts = $this->agentShiftRepository->findByAgentes(\array_filter($agentIds));
 
         /** @var array<int, Turno[]> $shiftsByAgent */
         $shiftsByAgent = [];
         foreach ($allShifts as $shift) {
-            $agentId = $shift->getAgent()?->getId();
+            $agentId = $shift->getAgente()?->getId();
             if ($agentId !== null) {
                 $shiftsByAgent[$agentId][] = $shift;
             }
@@ -146,12 +146,12 @@ final class DisponibilidadDeAgenteService
 
             // Schedule check (uses preloaded shifts — no lazy load)
             $localTime = $this->utcToLocal($atUtc, $agent->getTimezone());
-            if (!$this->hasShiftAtTime($localTime, $shiftsByAgent[$agentId] ?? [])) {
+            if (!$this->hasTurnoEnHorario($localTime, $shiftsByAgent[$agentId] ?? [])) {
                 continue;
             }
 
             // Capacity check
-            $activeCount = $this->countActiveTickets($agentId);
+            $activeCount = $this->countTicketsActivos($agentId);
             if ($activeCount >= $agent->getMaxActiveTickets()) {
                 continue;
             }
@@ -177,7 +177,7 @@ final class DisponibilidadDeAgenteService
      *
      * @return DisponibilidadDeAgenteDTO[]
      */
-    public function listWorkspaceAgentRoster(Workspace $workspace, \DateTimeImmutable $atUtc): array
+    public function listarAgentesDelEspacioDeTrabajo(Workspace $workspace, \DateTimeImmutable $atUtc): array
     {
         // 1. Fetch all workspace agents, then filter to active=true in PHP
         $agents = $this->agentRepository->findByWorkspace($workspace);
@@ -189,12 +189,12 @@ final class DisponibilidadDeAgenteService
 
         // 2. Batch-load shifts for the active agents only (1 query, no N+1)
         $agentIds = \array_map(fn (Agent $a): ?int => $a->getId(), $activeAgents);
-        $allShifts = $this->agentShiftRepository->findByAgents(\array_filter($agentIds));
+        $allShifts = $this->agentShiftRepository->findByAgentes(\array_filter($agentIds));
 
         /** @var array<int, Turno[]> $shiftsByAgent */
         $shiftsByAgent = [];
         foreach ($allShifts as $shift) {
-            $agentId = $shift->getAgent()?->getId();
+            $agentId = $shift->getAgente()?->getId();
             if ($agentId !== null) {
                 $shiftsByAgent[$agentId][] = $shift;
             }
@@ -204,8 +204,8 @@ final class DisponibilidadDeAgenteService
         $roster = [];
         foreach ($activeAgents as $agent) {
             $agentId = $agent->getId();
-            $isActiveNow = $this->isActiveNow($agent, $shiftsByAgent[$agentId] ?? [], $atUtc);
-            $activeCount = $this->countActiveTickets($agentId);
+            $isActiveNow = $this->isActivoAhora($agent, $shiftsByAgent[$agentId] ?? [], $atUtc);
+            $activeCount = $this->countTicketsActivos($agentId);
 
             $roster[] = DisponibilidadDeAgenteDTO::fromEntity($agent, $activeCount, $isActiveNow);
         }
@@ -229,7 +229,7 @@ final class DisponibilidadDeAgenteService
      * Used by reports and inbox enrichment for read-only projections.
      * The full availability cascade is isAvailable().
      */
-    public function isInShift(Agent $agent, \DateTimeImmutable $atUtc): bool
+    public function isEnTurno(Agent $agent, \DateTimeImmutable $atUtc): bool
     {
         if (!$agent->isActive()) {
             return false;
@@ -237,7 +237,7 @@ final class DisponibilidadDeAgenteService
 
         $localTime = $this->utcToLocal($atUtc, $agent->getTimezone());
 
-        return $this->hasShiftAtTime($localTime, $agent->getShifts()->toArray());
+        return $this->hasTurnoEnHorario($localTime, $agent->getShifts()->toArray());
     }
 
     /**
@@ -258,25 +258,25 @@ final class DisponibilidadDeAgenteService
      *
      * @param Turno[] $shifts
      */
-    private function hasShiftAtTime(\DateTimeImmutable $localDateTime, array $shifts): bool
+    private function hasTurnoEnHorario(\DateTimeImmutable $localDateTime, array $shifts): bool
     {
         $dow = (int) $localDateTime->format('N'); // 1=Monday, 7=Sunday
         $time = $localDateTime->format('H:i:s');
 
         foreach ($shifts as $shift) {
-            $startTime = $shift->getStartTime()->format('H:i:s');
-            $endTime = $shift->getEndTime()->format('H:i:s');
+            $startTime = $shift->getHoraDeInicio()->format('H:i:s');
+            $endTime = $shift->getHoraDeFin()->format('H:i:s');
 
             if ($endTime > $startTime) {
                 // Normal shift (same day, half-open [start, end))
-                if ($shift->getDayOfWeek() === $dow && $time >= $startTime && $time < $endTime) {
+                if ($shift->getDiaDeLaSemana() === $dow && $time >= $startTime && $time < $endTime) {
                     return true;
                 }
             } else {
                 // Cross-midnight shift (end < start, e.g. 22:00-06:00)
-                $nextDow = $shift->getDayOfWeek() === 7 ? 1 : $shift->getDayOfWeek() + 1;
+                $nextDow = $shift->getDiaDeLaSemana() === 7 ? 1 : $shift->getDiaDeLaSemana() + 1;
 
-                if ($dow === $shift->getDayOfWeek() && $time >= $startTime) {
+                if ($dow === $shift->getDiaDeLaSemana() && $time >= $startTime) {
                     return true; // First night: e.g., Fri 22:00-23:59
                 }
                 if ($dow === $nextDow && $time < $endTime) {
@@ -294,7 +294,7 @@ final class DisponibilidadDeAgenteService
      * Active tickets are those with status IN ('new', 'active', 'waiting').
      * Uses index idx_tickets_owner_status (assigned_agent_id, status).
      */
-    private function countActiveTickets(?int $agentId): int
+    private function countTicketsActivos(?int $agentId): int
     {
         if ($agentId === null) {
             return 0;

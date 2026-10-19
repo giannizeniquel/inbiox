@@ -102,7 +102,7 @@ class ListTicketsQuery
                 
                 $isEnTurno = false;
                 if ($agenteEntity !== null) {
-                    $isEnTurno = $this->agentAvailabilityService->isInShift($agenteEntity, $now);
+                    $isEnTurno = $this->agentAvailabilityService->isEnTurno($agenteEntity, $now);
                 }
                 
                 $responsable = [

@@ -26,7 +26,7 @@ final class AgentesDisponiblesController
     ) {}
 
     #[Route('/api/workspaces/{id}/available-agents', name: 'app_workspace_available_agents', methods: ['GET'])]
-    public function listAvailableAgents(int $id): JsonResponse
+    public function listarAgentesDisponibles(int $id): JsonResponse
     {
         $workspace = $this->workspaceRepository->find($id);
 
@@ -39,7 +39,7 @@ final class AgentesDisponiblesController
         }
 
         $atUtc = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-        $agents = $this->agentAvailabilityService->listWorkspaceAgentRoster($workspace, $atUtc);
+        $agents = $this->agentAvailabilityService->listarAgentesDelEspacioDeTrabajo($workspace, $atUtc);
 
         $data = array_map(fn ($dto) => $dto->toArray(), $agents);
 

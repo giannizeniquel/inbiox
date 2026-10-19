@@ -46,7 +46,7 @@ final class CreateTurnoUseCase
     public function execute(int $agentId, int $dayOfWeek, string $startTime, string $endTime): array
     {
         // Pre-flight validation
-        $this->validateShiftInput($dayOfWeek, $startTime, $endTime);
+        $this->validarDatosDeTurno($dayOfWeek, $startTime, $endTime);
 
         $result = $this->em->getConnection()->transactional(function () use ($agentId, $dayOfWeek, $startTime, $endTime) {
             // 1. Find and lock agent FOR UPDATE
@@ -106,7 +106,7 @@ final class CreateTurnoUseCase
      *
      * @throws \InvalidArgumentException
      */
-    private function validateShiftInput(int $dayOfWeek, string $startTime, string $endTime): void
+    private function validarDatosDeTurno(int $dayOfWeek, string $startTime, string $endTime): void
     {
         if ($dayOfWeek < 1 || $dayOfWeek > 7) {
             throw new \InvalidArgumentException('day_of_week must be between 1 and 7');

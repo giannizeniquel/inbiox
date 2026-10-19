@@ -153,7 +153,7 @@ Si "desasignar al resolver" es una regla de negocio: **Regla no confirmada** (el
 ### R7. Auto-asignación sin filtro de workspace
 
 **[PROD]/[DATOS] · Probable** (depende de que haya más de un workspace en uso).
-`DisponibilidadDeAgenteService::listAvailableAgents()` (`apps/api/src/Disponibilidad/DisponibilidadDeAgenteService.php:111-114`) toma **todos** los agentes activos del sistema. Un ticket del número A puede asignarse a un agente que solo pertenece al número B y que no lo ve en su bandeja. Un comentario en la línea 174 menciona un método `listAvailableAgentsInWorkspace()` "(removed)": existió una variante por workspace y se quitó; el motivo no está documentado. La asignación manual tampoco verifica workspace.
+`DisponibilidadDeAgenteService::listarAgentesDisponibles()` (`apps/api/src/Disponibilidad/DisponibilidadDeAgenteService.php:111-114`) toma **todos** los agentes activos del sistema. Un ticket del número A puede asignarse a un agente que solo pertenece al número B y que no lo ve en su bandeja. Un comentario en la línea 174 menciona un método `listAvailableAgentsInWorkspace()` "(removed)": existió una variante por workspace y se quitó; el motivo no está documentado. La asignación manual tampoco verifica workspace.
 
 ### R8. KPI "Sin asignar" siempre en 0
 

@@ -108,7 +108,7 @@ final class AutoAssignTicketUseCase
         // 3. Get available agents via AgentAvailabilityService (SOLE eligibility check)
         //    This uses the full cascade: active → override → schedule → capacity.
         $nowUtc = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-        $availableAgents = $this->availabilityService->listAvailableAgents($nowUtc);
+        $availableAgents = $this->availabilityService->listarAgentesDisponibles($nowUtc);
 
         if (empty($availableAgents)) {
             return [

@@ -79,9 +79,9 @@ final class MeController
         $businessHours = [];
         foreach ($agent->getShifts() as $shift) {
             $businessHours[] = [
-                'dayOfWeek' => $shift->getDayOfWeek(),
-                'start' => $shift->getStartTime()->format('H:i'),
-                'end' => $shift->getEndTime()->format('H:i'),
+                'dayOfWeek' => $shift->getDiaDeLaSemana(),
+                'start' => $shift->getHoraDeInicio()->format('H:i'),
+                'end' => $shift->getHoraDeFin()->format('H:i'),
             ];
         }
 

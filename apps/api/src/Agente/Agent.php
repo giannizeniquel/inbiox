@@ -69,7 +69,7 @@ class Agent
     #[ORM\Column(name: 'updated_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $updatedAt;
 
-    #[ORM\OneToMany(targetEntity: Turno::class, mappedBy: 'agent', orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: Turno::class, mappedBy: 'agente', orphanRemoval: true)]
     private Collection $shifts;
 
     #[ORM\ManyToMany(targetEntity: Workspace::class, inversedBy: 'agents')]
@@ -210,7 +210,7 @@ class Agent
     {
         if (!$this->shifts->contains($shift)) {
             $this->shifts->add($shift);
-            $shift->setAgent($this);
+            $shift->setAgente($this);
         }
         return $this;
     }
@@ -218,8 +218,8 @@ class Agent
     public function removeShift(Turno $shift): self
     {
         if ($this->shifts->removeElement($shift)) {
-            if ($shift->getAgent() === $this) {
-                $shift->setAgent(null);
+            if ($shift->getAgente() === $this) {
+                $shift->setAgente(null);
             }
         }
         return $this;

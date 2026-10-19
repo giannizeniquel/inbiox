@@ -41,12 +41,12 @@ final class ReemplazarTurnosUseCase
             }
 
             // 1. Delete all existing shifts
-            $this->agentShiftRepo->deleteAllForAgent($agentId);
+            $this->agentShiftRepo->deleteTodosDeAgente($agentId);
 
             // 2. Create new shifts
             $created = [];
             foreach ($shifts as $input) {
-                $this->validateShiftInput($input->dayOfWeek, $input->start, $input->end);
+                $this->validarDatosDeTurno($input->dayOfWeek, $input->start, $input->end);
 
                 $start = \DateTimeImmutable::createFromFormat('H:i', $input->start);
                 $end = \DateTimeImmutable::createFromFormat('H:i', $input->end);
@@ -71,7 +71,7 @@ final class ReemplazarTurnosUseCase
         });
     }
 
-    private function validateShiftInput(int $dayOfWeek, string $startTime, string $endTime): void
+    private function validarDatosDeTurno(int $dayOfWeek, string $startTime, string $endTime): void
     {
         if ($dayOfWeek < 1 || $dayOfWeek > 7) {
             throw new \InvalidArgumentException('dayOfWeek must be between 1 and 7');

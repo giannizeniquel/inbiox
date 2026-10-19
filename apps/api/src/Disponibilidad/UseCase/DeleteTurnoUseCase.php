@@ -56,7 +56,7 @@ final class DeleteTurnoUseCase
                 throw new \InvalidArgumentException('Shift not found');
             }
 
-            $shiftAgent = $shift->getAgent();
+            $shiftAgent = $shift->getAgente();
 
             // Check either by ID (if loaded reference) or by entity reference
             if ($shiftAgent === null || $shiftAgent->getId() !== $agent->getId()) {
@@ -64,9 +64,9 @@ final class DeleteTurnoUseCase
             }
 
             // Store shift data before removal for the outbox event
-            $dayOfWeek = $shift->getDayOfWeek();
-            $startTime = $shift->getStartTime()->format('H:i');
-            $endTime = $shift->getEndTime()->format('H:i');
+            $dayOfWeek = $shift->getDiaDeLaSemana();
+            $startTime = $shift->getHoraDeInicio()->format('H:i');
+            $endTime = $shift->getHoraDeFin()->format('H:i');
 
             // 3. Remove shift
             $agent->removeShift($shift);

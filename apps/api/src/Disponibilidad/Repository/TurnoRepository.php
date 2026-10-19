@@ -17,25 +17,25 @@ class TurnoRepository extends ServiceEntityRepository
     }
 
     /** @return Turno[] */
-    public function findByAgent(int $agentId): array
+    public function findByAgente(int $agentId): array
     {
         return $this->createQueryBuilder('s')
-            ->where('s.agent = :agentId')
+            ->where('s.agente = :agentId')
             ->setParameter('agentId', $agentId)
-            ->orderBy('s.dayOfWeek', 'ASC')
-            ->addOrderBy('s.startTime', 'ASC')
+            ->orderBy('s.diaDeLaSemana', 'ASC')
+            ->addOrderBy('s.horaDeInicio', 'ASC')
             ->getQuery()
             ->getResult();
     }
 
     /** @param int[] $agentIds @return Turno[] */
-    public function findByAgents(array $agentIds): array
+    public function findByAgentes(array $agentIds): array
     {
         return $this->createQueryBuilder('s')
-            ->where('s.agent IN (:agentIds)')
+            ->where('s.agente IN (:agentIds)')
             ->setParameter('agentIds', $agentIds)
-            ->orderBy('s.dayOfWeek', 'ASC')
-            ->addOrderBy('s.startTime', 'ASC')
+            ->orderBy('s.diaDeLaSemana', 'ASC')
+            ->addOrderBy('s.horaDeInicio', 'ASC')
             ->getQuery()
             ->getResult();
     }
@@ -45,11 +45,11 @@ class TurnoRepository extends ServiceEntityRepository
      *
      * @return int Number of deleted rows
      */
-    public function deleteAllForAgent(int $agentId): int
+    public function deleteTodosDeAgente(int $agentId): int
     {
         return (int) $this->createQueryBuilder('s')
             ->delete()
-            ->where('s.agent = :agentId')
+            ->where('s.agente = :agentId')
             ->setParameter('agentId', $agentId)
             ->getQuery()
             ->execute();

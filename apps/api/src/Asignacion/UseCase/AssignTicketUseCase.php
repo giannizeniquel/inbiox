@@ -87,13 +87,13 @@ class AssignTicketUseCase
 
             // Assign-time Activo guard: HARD BLOCK for every role, no bypass.
             // Capacity is never checked here — only account-active + override/shift.
-            $isActiveNow = $this->agentAvailabilityService->isActiveNow(
+            $isActiveNow = $this->agentAvailabilityService->isActivoAhora(
                 $agent,
                 $agent->getShifts()->toArray(),
                 new \DateTimeImmutable('now', new \DateTimeZone('UTC')),
             );
             if (!$isActiveNow) {
-                throw AgenteInactivoException::forAgent($agentId, $agent->getName());
+                throw AgenteInactivoException::paraAgente($agentId, $agent->getName());
             }
 
             // Detect assignment type from current ownership

@@ -30,9 +30,9 @@ final class MisTurnosController
 
     #[IsGranted('ROLE_AGENT')]
     #[Route('/api/me/shifts', name: 'app_me_shifts_list', methods: ['GET'])]
-    public function getShifts(): JsonResponse
+    public function getTurnos(): JsonResponse
     {
-        $agent = $this->getAgent();
+        $agent = $this->getAgente();
         if (null === $agent) {
             return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
         }
@@ -40,9 +40,9 @@ final class MisTurnosController
         $shifts = [];
         foreach ($agent->getShifts() as $shift) {
             $shifts[] = [
-                'dayOfWeek' => $shift->getDayOfWeek(),
-                'start' => $shift->getStartTime()->format('H:i'),
-                'end' => $shift->getEndTime()->format('H:i'),
+                'dayOfWeek' => $shift->getDiaDeLaSemana(),
+                'start' => $shift->getHoraDeInicio()->format('H:i'),
+                'end' => $shift->getHoraDeFin()->format('H:i'),
             ];
         }
 
@@ -56,9 +56,9 @@ final class MisTurnosController
 
     #[IsGranted('ROLE_AGENT')]
     #[Route('/api/me/shifts', name: 'app_me_shifts_replace', methods: ['PUT'])]
-    public function replaceShifts(#[MapRequestPayload] ReemplazarTurnosRequest $request): JsonResponse
+    public function reemplazarTurnos(#[MapRequestPayload] ReemplazarTurnosRequest $request): JsonResponse
     {
-        $agent = $this->getAgent();
+        $agent = $this->getAgente();
         if (null === $agent) {
             return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
         }
@@ -72,7 +72,7 @@ final class MisTurnosController
         return new JsonResponse($created);
     }
 
-    private function getAgent(): ?Agent
+    private function getAgente(): ?Agent
     {
         $user = $this->security->getUser();
 
