@@ -33,57 +33,57 @@ final class SetDisponibilidadManualUseCase
     /**
      * Set availability override for an agent.
      *
-     * @param int     $agentId
-     * @param bool    $isAvailable
+     * @param int     $agenteId
+     * @param bool    $isDisponible
      * @param ?int    $ttlMinutes  null = persistent override (no expiry)
      *
      * @return array{agent_id: int, is_available: bool, override_active: bool, current_load: int, max_capacity: int}
      *
      * @throws \InvalidArgumentException if agent not found
      */
-    public function execute(int $agentId, bool $isAvailable, ?int $ttlMinutes): array
+    public function execute(int $agenteId, bool $isDisponible, ?int $ttlMinutes): array
     {
-        $result = $this->em->getConnection()->transactional(function () use ($agentId, $isAvailable, $ttlMinutes) {
+        $result = $this->em->getConnection()->transactional(function () use ($agenteId, $isDisponible, $ttlMinutes) {
             // 1. Find and lock agent FOR UPDATE
-            $agent = $this->agentRepo->findById($agentId);
-            if ($agent === null) {
+            $agente = $this->agentRepo->findById($agenteId);
+            if ($agente === null) {
                 throw new \InvalidArgumentException('Agent not found');
             }
 
-            $this->em->lock($agent, LockMode::PESSIMISTIC_WRITE);
+            $this->em->lock($agente, LockMode::PESSIMISTIC_WRITE);
 
             // 2. Set override fields
             $now = new \DateTimeImmutable();
-            $overrideUntil = $ttlMinutes !== null ? $now->modify(\sprintf('+%d minutes', $ttlMinutes)) : null;
+            $disponibilidadManualHasta = $ttlMinutes !== null ? $now->modify(\sprintf('+%d minutes', $ttlMinutes)) : null;
 
-            $agent->setIsAvailableOverride($isAvailable);
-            $agent->setOverrideUntil($overrideUntil);
+            $agente->setIsAvailableOverride($isDisponible);
+            $agente->setOverrideUntil($disponibilidadManualHasta);
 
             // 3. Persist
             $this->em->flush();
 
             // 4. Compute current load
-            $currentLoad = $this->ticketRepo->countActivosDeAgente($agentId);
+            $cargaActual = $this->ticketRepo->countActivosDeAgente($agenteId);
 
             // 5. Track outbox event data
             $this->pendingOutboxEvent = [
-                'aggregate_id' => $agentId,
+                'aggregate_id' => $agenteId,
                 'payload' => [
-                    'agent_id'        => $agentId,
-                    'is_available'    => $isAvailable,
+                    'agent_id'        => $agenteId,
+                    'is_available'    => $isDisponible,
                     'override_active' => true,
-                    'current_load'    => $currentLoad,
-                    'max_capacity'    => $agent->getMaxActiveTickets(),
+                    'current_load'    => $cargaActual,
+                    'max_capacity'    => $agente->getMaxActiveTickets(),
                     'timestamp'       => $now->format('Y-m-d\TH:i:s\Z'),
                 ],
             ];
 
             return [
-                'agent_id'        => $agentId,
-                'is_available'    => $isAvailable,
+                'agent_id'        => $agenteId,
+                'is_available'    => $isDisponible,
                 'override_active' => true,
-                'current_load'    => $currentLoad,
-                'max_capacity'    => $agent->getMaxActiveTickets(),
+                'current_load'    => $cargaActual,
+                'max_capacity'    => $agente->getMaxActiveTickets(),
             ];
         });
 

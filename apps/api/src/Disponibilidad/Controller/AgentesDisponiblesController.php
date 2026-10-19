@@ -21,27 +21,27 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class AgentesDisponiblesController
 {
     public function __construct(
-        private readonly DisponibilidadDeAgenteService $agentAvailabilityService,
+        private readonly DisponibilidadDeAgenteService $disponibilidadDeAgenteService,
         private readonly WorkspaceRepository $workspaceRepository,
     ) {}
 
     #[Route('/api/workspaces/{id}/available-agents', name: 'app_workspace_available_agents', methods: ['GET'])]
     public function listarAgentesDisponibles(int $id): JsonResponse
     {
-        $workspace = $this->workspaceRepository->find($id);
+        $espacioDeTrabajo = $this->workspaceRepository->find($id);
 
-        if (null === $workspace) {
+        if (null === $espacioDeTrabajo) {
             return new JsonResponse(['error' => 'Workspace not found'], Response::HTTP_NOT_FOUND);
         }
 
-        if (!$workspace->isActive()) {
+        if (!$espacioDeTrabajo->isActive()) {
             return new JsonResponse(['error' => 'Workspace is not active'], Response::HTTP_BAD_REQUEST);
         }
 
         $atUtc = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-        $agents = $this->agentAvailabilityService->listarAgentesDelEspacioDeTrabajo($workspace, $atUtc);
+        $agentes = $this->disponibilidadDeAgenteService->listarAgentesDelEspacioDeTrabajo($espacioDeTrabajo, $atUtc);
 
-        $data = array_map(fn ($dto) => $dto->toArray(), $agents);
+        $data = array_map(fn ($dto) => $dto->toArray(), $agentes);
 
         return new JsonResponse($data);
     }

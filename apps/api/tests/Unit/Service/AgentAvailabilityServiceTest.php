@@ -1333,9 +1333,9 @@ class AgentAvailabilityServiceTest extends TestCase
         );
 
         self::assertCount(1, $result);
-        self::assertTrue($result[0]->isActiveNow);
-        self::assertSame(1, $result[0]->activeTicketCount);
-        self::assertSame(1, $result[0]->maxActiveTickets);
+        self::assertTrue($result[0]->isActivoAhora);
+        self::assertSame(1, $result[0]->cantidadDeTicketsActivos);
+        self::assertSame(1, $result[0]->maxTicketsActivos);
     }
 
     public function testListWorkspaceAgentRosterSortsActivoBeforeInactivo(): void
@@ -1369,9 +1369,9 @@ class AgentAvailabilityServiceTest extends TestCase
         // THEN Activo (id 2) sorts before Inactivo (id 1)
         self::assertCount(2, $result);
         self::assertSame(2, $result[0]->id);
-        self::assertTrue($result[0]->isActiveNow);
+        self::assertTrue($result[0]->isActivoAhora);
         self::assertSame(1, $result[1]->id);
-        self::assertFalse($result[1]->isActiveNow);
+        self::assertFalse($result[1]->isActivoAhora);
     }
 
     public function testListWorkspaceAgentRosterSortsByIdWithinSameTier(): void
@@ -1434,10 +1434,10 @@ class AgentAvailabilityServiceTest extends TestCase
         self::assertCount(1, $result);
         self::assertInstanceOf(DisponibilidadDeAgenteDTO::class, $result[0]);
         self::assertSame(1, $result[0]->id);
-        self::assertSame('Agent-1', $result[0]->name);
-        self::assertTrue($result[0]->isActiveNow);
-        self::assertSame(2, $result[0]->activeTicketCount);
-        self::assertSame(5, $result[0]->maxActiveTickets);
+        self::assertSame('Agent-1', $result[0]->nombre);
+        self::assertTrue($result[0]->isActivoAhora);
+        self::assertSame(2, $result[0]->cantidadDeTicketsActivos);
+        self::assertSame(5, $result[0]->maxTicketsActivos);
         self::assertArrayHasKey('is_active_now', $result[0]->toArray());
     }
 }

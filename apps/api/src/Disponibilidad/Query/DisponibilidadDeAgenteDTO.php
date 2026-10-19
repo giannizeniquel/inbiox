@@ -13,20 +13,20 @@ class DisponibilidadDeAgenteDTO
 {
     public function __construct(
         public readonly int $id,
-        public readonly string $name,
-        public readonly bool $isActiveNow,
-        public readonly int $activeTicketCount,
-        public readonly int $maxActiveTickets,
+        public readonly string $nombre,
+        public readonly bool $isActivoAhora,
+        public readonly int $cantidadDeTicketsActivos,
+        public readonly int $maxTicketsActivos,
     ) {}
 
-    public static function fromEntity(Agent $agent, int $activeTicketCount, bool $isActiveNow): self
+    public static function fromEntity(Agent $agente, int $cantidadDeTicketsActivos, bool $isActivoAhora): self
     {
         return new self(
-            id: (int) $agent->getId(),
-            name: $agent->getName(),
-            isActiveNow: $isActiveNow,
-            activeTicketCount: $activeTicketCount,
-            maxActiveTickets: $agent->getMaxActiveTickets(),
+            id: (int) $agente->getId(),
+            nombre: $agente->getName(),
+            isActivoAhora: $isActivoAhora,
+            cantidadDeTicketsActivos: $cantidadDeTicketsActivos,
+            maxTicketsActivos: $agente->getMaxActiveTickets(),
         );
     }
 
@@ -37,10 +37,10 @@ class DisponibilidadDeAgenteDTO
     {
         return [
             'id' => $this->id,
-            'name' => $this->name,
-            'is_active_now' => $this->isActiveNow,
-            'active_ticket_count' => $this->activeTicketCount,
-            'max_active_tickets' => $this->maxActiveTickets,
+            'name' => $this->nombre,
+            'is_active_now' => $this->isActivoAhora,
+            'active_ticket_count' => $this->cantidadDeTicketsActivos,
+            'max_active_tickets' => $this->maxTicketsActivos,
         ];
     }
 }

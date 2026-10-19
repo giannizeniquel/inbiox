@@ -25,52 +25,52 @@ final class DeleteTurnoUseCase
     public function __construct(
         private EntityManagerInterface $em,
         private AgentRepository $agentRepo,
-        private TurnoRepository $agentShiftRepo,
+        private TurnoRepository $turnoRepo,
         private readonly OutboxWriter $outboxWriter,
     ) {}
 
     /**
      * Delete a shift for the given agent.
      *
-     * @param int $agentId
+     * @param int $agenteId
      * @param int $shiftId
      *
      * @return array{agent_id: int, shift_id: int, action: string}
      *
      * @throws \InvalidArgumentException if agent or shift not found, or shift does not belong to agent
      */
-    public function execute(int $agentId, int $shiftId): array
+    public function execute(int $agenteId, int $shiftId): array
     {
-        $result = $this->em->getConnection()->transactional(function () use ($agentId, $shiftId) {
+        $result = $this->em->getConnection()->transactional(function () use ($agenteId, $shiftId) {
             // 1. Find and lock agent FOR UPDATE
-            $agent = $this->agentRepo->findById($agentId);
-            if ($agent === null) {
+            $agente = $this->agentRepo->findById($agenteId);
+            if ($agente === null) {
                 throw new \InvalidArgumentException('Agent not found');
             }
 
-            $this->em->lock($agent, LockMode::PESSIMISTIC_WRITE);
+            $this->em->lock($agente, LockMode::PESSIMISTIC_WRITE);
 
             // 2. Find shift and verify ownership
-            $shift = $this->agentShiftRepo->find($shiftId);
-            if ($shift === null) {
+            $turno = $this->turnoRepo->find($shiftId);
+            if ($turno === null) {
                 throw new \InvalidArgumentException('Shift not found');
             }
 
-            $shiftAgent = $shift->getAgente();
+            $agenteDelTurno = $turno->getAgente();
 
             // Check either by ID (if loaded reference) or by entity reference
-            if ($shiftAgent === null || $shiftAgent->getId() !== $agent->getId()) {
+            if ($agenteDelTurno === null || $agenteDelTurno->getId() !== $agente->getId()) {
                 throw new \InvalidArgumentException('Shift does not belong to this agent');
             }
 
             // Store shift data before removal for the outbox event
-            $dayOfWeek = $shift->getDiaDeLaSemana();
-            $startTime = $shift->getHoraDeInicio()->format('H:i');
-            $endTime = $shift->getHoraDeFin()->format('H:i');
+            $diaDeLaSemana = $turno->getDiaDeLaSemana();
+            $horaDeInicio = $turno->getHoraDeInicio()->format('H:i');
+            $horaDeFin = $turno->getHoraDeFin()->format('H:i');
 
             // 3. Remove shift
-            $agent->removeShift($shift);
-            $this->em->remove($shift);
+            $agente->removeShift($turno);
+            $this->em->remove($turno);
 
             // 4. Persist
             $this->em->flush();
@@ -78,20 +78,20 @@ final class DeleteTurnoUseCase
             // 5. Track outbox event
             $now = new \DateTimeImmutable();
             $this->pendingOutboxEvent = [
-                'aggregate_id' => $agentId,
+                'aggregate_id' => $agenteId,
                 'payload' => [
-                    'agent_id'    => $agentId,
+                    'agent_id'    => $agenteId,
                     'shift_id'    => $shiftId,
                     'action'      => 'deleted',
-                    'day_of_week' => $dayOfWeek,
-                    'start_time'  => $startTime,
-                    'end_time'    => $endTime,
+                    'day_of_week' => $diaDeLaSemana,
+                    'start_time'  => $horaDeInicio,
+                    'end_time'    => $horaDeFin,
                     'timestamp'   => $now->format('Y-m-d\TH:i:s\Z'),
                 ],
             ];
 
             return [
-                'agent_id' => $agentId,
+                'agent_id' => $agenteId,
                 'shift_id' => $shiftId,
                 'action'   => 'deleted',
             ];

@@ -25,61 +25,61 @@ final class MisTurnosController
 {
     public function __construct(
         private readonly Security $security,
-        private readonly ReemplazarTurnosUseCase $replaceAgentShiftsUseCase,
+        private readonly ReemplazarTurnosUseCase $reemplazarTurnosUseCase,
     ) {}
 
     #[IsGranted('ROLE_AGENT')]
     #[Route('/api/me/shifts', name: 'app_me_shifts_list', methods: ['GET'])]
     public function getTurnos(): JsonResponse
     {
-        $agent = $this->getAgente();
-        if (null === $agent) {
+        $agente = $this->getAgente();
+        if (null === $agente) {
             return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
         }
 
-        $shifts = [];
-        foreach ($agent->getShifts() as $shift) {
-            $shifts[] = [
-                'dayOfWeek' => $shift->getDiaDeLaSemana(),
-                'start' => $shift->getHoraDeInicio()->format('H:i'),
-                'end' => $shift->getHoraDeFin()->format('H:i'),
+        $turnos = [];
+        foreach ($agente->getShifts() as $turno) {
+            $turnos[] = [
+                'dayOfWeek' => $turno->getDiaDeLaSemana(),
+                'start' => $turno->getHoraDeInicio()->format('H:i'),
+                'end' => $turno->getHoraDeFin()->format('H:i'),
             ];
         }
 
         // Sort by dayOfWeek then start
-        \usort($shifts, function (array $a, array $b) {
+        \usort($turnos, function (array $a, array $b) {
             return [$a['dayOfWeek'], $a['start']] <=> [$b['dayOfWeek'], $b['start']];
         });
 
-        return new JsonResponse($shifts);
+        return new JsonResponse($turnos);
     }
 
     #[IsGranted('ROLE_AGENT')]
     #[Route('/api/me/shifts', name: 'app_me_shifts_replace', methods: ['PUT'])]
     public function reemplazarTurnos(#[MapRequestPayload] ReemplazarTurnosRequest $request): JsonResponse
     {
-        $agent = $this->getAgente();
-        if (null === $agent) {
+        $agente = $this->getAgente();
+        if (null === $agente) {
             return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
         }
 
         try {
-            $created = $this->replaceAgentShiftsUseCase->execute((int) $agent->getId(), $request->shifts);
+            $creado = $this->reemplazarTurnosUseCase->execute((int) $agente->getId(), $request->shifts);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
         }
 
-        return new JsonResponse($created);
+        return new JsonResponse($creado);
     }
 
     private function getAgente(): ?Agent
     {
-        $user = $this->security->getUser();
+        $usuario = $this->security->getUser();
 
-        if (!$user instanceof User) {
+        if (!$usuario instanceof User) {
             return null;
         }
 
-        return $user->getAgent();
+        return $usuario->getAgent();
     }
 }

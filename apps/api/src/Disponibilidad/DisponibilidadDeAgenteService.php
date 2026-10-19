@@ -26,7 +26,7 @@ final class DisponibilidadDeAgenteService
 {
     public function __construct(
         private AgentRepository $agentRepository,
-        private TurnoRepository $agentShiftRepository,
+        private TurnoRepository $turnoRepository,
         private TicketRepository $ticketRepository,
     ) {}
 
@@ -36,29 +36,29 @@ final class DisponibilidadDeAgenteService
      * The agent's shifts are loaded from the entity (lazy-loads if not already
      * initialized). For batch evaluation, use listAvailableAgents().
      */
-    public function isDisponible(Agent $agent, \DateTimeImmutable $atUtc): bool
+    public function isDisponible(Agent $agente, \DateTimeImmutable $atUtc): bool
     {
         // Step 1: Account active check
-        if (!$agent->isActive()) {
+        if (!$agente->isActive()) {
             return false;
         }
 
         // Step 2: Override check (dominates schedule and capacity)
-        if ($agent->getIsAvailableOverride() !== null) {
-            if ($agent->getOverrideUntil() === null || $agent->getOverrideUntil() >= $atUtc) {
-                return $agent->getIsAvailableOverride();
+        if ($agente->getIsAvailableOverride() !== null) {
+            if ($agente->getOverrideUntil() === null || $agente->getOverrideUntil() >= $atUtc) {
+                return $agente->getIsAvailableOverride();
             }
         }
 
         // Step 3: Schedule check
-        $localTime = $this->utcToLocal($atUtc, $agent->getTimezone());
-        if (!$this->hasTurnoEnHorario($localTime, $agent->getShifts()->toArray())) {
+        $localTime = $this->utcToLocal($atUtc, $agente->getTimezone());
+        if (!$this->hasTurnoEnHorario($localTime, $agente->getShifts()->toArray())) {
             return false;
         }
 
         // Step 4: Capacity check
-        $activeCount = $this->countTicketsActivos($agent->getId());
-        if ($activeCount >= $agent->getMaxActiveTickets()) {
+        $cantidadDeActivos = $this->countTicketsActivos($agente->getId());
+        if ($cantidadDeActivos >= $agente->getMaxActiveTickets()) {
             return false;
         }
 
@@ -78,26 +78,26 @@ final class DisponibilidadDeAgenteService
      * findByAgents()) and a single-agent guard check can call this with no
      * N+1 query.
      *
-     * @param Turno[] $shifts
+     * @param Turno[] $turnos
      */
-    public function isActivoAhora(Agent $agent, array $shifts, \DateTimeImmutable $atUtc): bool
+    public function isActivoAhora(Agent $agente, array $turnos, \DateTimeImmutable $atUtc): bool
     {
         // Step 1: Account active check
-        if (!$agent->isActive()) {
+        if (!$agente->isActive()) {
             return false;
         }
 
         // Step 2: Override check (dominates schedule; capacity never checked)
-        if ($agent->getIsAvailableOverride() !== null) {
-            if ($agent->getOverrideUntil() === null || $agent->getOverrideUntil() >= $atUtc) {
-                return $agent->getIsAvailableOverride();
+        if ($agente->getIsAvailableOverride() !== null) {
+            if ($agente->getOverrideUntil() === null || $agente->getOverrideUntil() >= $atUtc) {
+                return $agente->getIsAvailableOverride();
             }
         }
 
         // Step 3: Schedule check (capacity deliberately ignored)
-        $localTime = $this->utcToLocal($atUtc, $agent->getTimezone());
+        $localTime = $this->utcToLocal($atUtc, $agente->getTimezone());
 
-        return $this->hasTurnoEnHorario($localTime, $shifts);
+        return $this->hasTurnoEnHorario($localTime, $turnos);
     }
 
     /**
@@ -111,58 +111,58 @@ final class DisponibilidadDeAgenteService
     public function listarAgentesDisponibles(\DateTimeImmutable $atUtc): array
     {
         // 1. Fetch all active agents (1 query)
-        $agents = $this->agentRepository->findAllActive();
-        if (empty($agents)) {
+        $agentes = $this->agentRepository->findAllActive();
+        if (empty($agentes)) {
             return [];
         }
 
         // 2. Batch-load shifts for all active agents (1 query, no N+1)
-        $agentIds = \array_map(fn (Agent $a): ?int => $a->getId(), $agents);
-        $allShifts = $this->agentShiftRepository->findByAgentes(\array_filter($agentIds));
+        $agenteIds = \array_map(fn (Agent $a): ?int => $a->getId(), $agentes);
+        $todosLosTurnos = $this->turnoRepository->findByAgentes(\array_filter($agenteIds));
 
-        /** @var array<int, Turno[]> $shiftsByAgent */
-        $shiftsByAgent = [];
-        foreach ($allShifts as $shift) {
-            $agentId = $shift->getAgente()?->getId();
-            if ($agentId !== null) {
-                $shiftsByAgent[$agentId][] = $shift;
+        /** @var array<int, Turno[]> $turnosPorAgente */
+        $turnosPorAgente = [];
+        foreach ($todosLosTurnos as $turno) {
+            $agenteId = $turno->getAgente()?->getId();
+            if ($agenteId !== null) {
+                $turnosPorAgente[$agenteId][] = $turno;
             }
         }
 
         // 3+4. Apply cascade per agent
-        $available = [];
-        foreach ($agents as $agent) {
-            $agentId = $agent->getId();
+        $disponible = [];
+        foreach ($agentes as $agente) {
+            $agenteId = $agente->getId();
 
             // Override check
-            if ($agent->getIsAvailableOverride() !== null) {
-                if ($agent->getOverrideUntil() === null || $agent->getOverrideUntil() >= $atUtc) {
-                    if ($agent->getIsAvailableOverride()) {
-                        $available[] = $agent;
+            if ($agente->getIsAvailableOverride() !== null) {
+                if ($agente->getOverrideUntil() === null || $agente->getOverrideUntil() >= $atUtc) {
+                    if ($agente->getIsAvailableOverride()) {
+                        $disponible[] = $agente;
                     }
                     continue;
                 }
             }
 
             // Schedule check (uses preloaded shifts — no lazy load)
-            $localTime = $this->utcToLocal($atUtc, $agent->getTimezone());
-            if (!$this->hasTurnoEnHorario($localTime, $shiftsByAgent[$agentId] ?? [])) {
+            $localTime = $this->utcToLocal($atUtc, $agente->getTimezone());
+            if (!$this->hasTurnoEnHorario($localTime, $turnosPorAgente[$agenteId] ?? [])) {
                 continue;
             }
 
             // Capacity check
-            $activeCount = $this->countTicketsActivos($agentId);
-            if ($activeCount >= $agent->getMaxActiveTickets()) {
+            $cantidadDeActivos = $this->countTicketsActivos($agenteId);
+            if ($cantidadDeActivos >= $agente->getMaxActiveTickets()) {
                 continue;
             }
 
-            $available[] = $agent;
+            $disponible[] = $agente;
         }
 
         // Sort by id ASC (stable order)
-        \usort($available, fn (Agent $a, Agent $b): int => $a->getId() <=> $b->getId());
+        \usort($disponible, fn (Agent $a, Agent $b): int => $a->getId() <=> $b->getId());
 
-        return $available;
+        return $disponible;
     }
 
     /**
@@ -177,49 +177,49 @@ final class DisponibilidadDeAgenteService
      *
      * @return DisponibilidadDeAgenteDTO[]
      */
-    public function listarAgentesDelEspacioDeTrabajo(Workspace $workspace, \DateTimeImmutable $atUtc): array
+    public function listarAgentesDelEspacioDeTrabajo(Workspace $espacioDeTrabajo, \DateTimeImmutable $atUtc): array
     {
         // 1. Fetch all workspace agents, then filter to active=true in PHP
-        $agents = $this->agentRepository->findByWorkspace($workspace);
-        $activeAgents = \array_values(\array_filter($agents, fn (Agent $a): bool => $a->isActive()));
+        $agentes = $this->agentRepository->findByWorkspace($espacioDeTrabajo);
+        $agentesActivos = \array_values(\array_filter($agentes, fn (Agent $a): bool => $a->isActive()));
 
-        if (empty($activeAgents)) {
+        if (empty($agentesActivos)) {
             return [];
         }
 
         // 2. Batch-load shifts for the active agents only (1 query, no N+1)
-        $agentIds = \array_map(fn (Agent $a): ?int => $a->getId(), $activeAgents);
-        $allShifts = $this->agentShiftRepository->findByAgentes(\array_filter($agentIds));
+        $agenteIds = \array_map(fn (Agent $a): ?int => $a->getId(), $agentesActivos);
+        $todosLosTurnos = $this->turnoRepository->findByAgentes(\array_filter($agenteIds));
 
-        /** @var array<int, Turno[]> $shiftsByAgent */
-        $shiftsByAgent = [];
-        foreach ($allShifts as $shift) {
-            $agentId = $shift->getAgente()?->getId();
-            if ($agentId !== null) {
-                $shiftsByAgent[$agentId][] = $shift;
+        /** @var array<int, Turno[]> $turnosPorAgente */
+        $turnosPorAgente = [];
+        foreach ($todosLosTurnos as $turno) {
+            $agenteId = $turno->getAgente()?->getId();
+            if ($agenteId !== null) {
+                $turnosPorAgente[$agenteId][] = $turno;
             }
         }
 
         // 3. Build the full roster (no eligibility-based exclusion)
-        $roster = [];
-        foreach ($activeAgents as $agent) {
-            $agentId = $agent->getId();
-            $isActiveNow = $this->isActivoAhora($agent, $shiftsByAgent[$agentId] ?? [], $atUtc);
-            $activeCount = $this->countTicketsActivos($agentId);
+        $agentesDelEspacioDeTrabajo = [];
+        foreach ($agentesActivos as $agente) {
+            $agenteId = $agente->getId();
+            $isActivoAhora = $this->isActivoAhora($agente, $turnosPorAgente[$agenteId] ?? [], $atUtc);
+            $cantidadDeActivos = $this->countTicketsActivos($agenteId);
 
-            $roster[] = DisponibilidadDeAgenteDTO::fromEntity($agent, $activeCount, $isActiveNow);
+            $agentesDelEspacioDeTrabajo[] = DisponibilidadDeAgenteDTO::fromEntity($agente, $cantidadDeActivos, $isActivoAhora);
         }
 
         // 4. Sort: Activo first, then id ASC (stable order within each tier)
-        \usort($roster, function (DisponibilidadDeAgenteDTO $a, DisponibilidadDeAgenteDTO $b): int {
-            if ($a->isActiveNow !== $b->isActiveNow) {
-                return $a->isActiveNow ? -1 : 1;
+        \usort($agentesDelEspacioDeTrabajo, function (DisponibilidadDeAgenteDTO $a, DisponibilidadDeAgenteDTO $b): int {
+            if ($a->isActivoAhora !== $b->isActivoAhora) {
+                return $a->isActivoAhora ? -1 : 1;
             }
 
             return $a->id <=> $b->id;
         });
 
-        return $roster;
+        return $agentesDelEspacioDeTrabajo;
     }
 
     /**
@@ -229,15 +229,15 @@ final class DisponibilidadDeAgenteService
      * Used by reports and inbox enrichment for read-only projections.
      * The full availability cascade is isAvailable().
      */
-    public function isEnTurno(Agent $agent, \DateTimeImmutable $atUtc): bool
+    public function isEnTurno(Agent $agente, \DateTimeImmutable $atUtc): bool
     {
-        if (!$agent->isActive()) {
+        if (!$agente->isActive()) {
             return false;
         }
 
-        $localTime = $this->utcToLocal($atUtc, $agent->getTimezone());
+        $localTime = $this->utcToLocal($atUtc, $agente->getTimezone());
 
-        return $this->hasTurnoEnHorario($localTime, $agent->getShifts()->toArray());
+        return $this->hasTurnoEnHorario($localTime, $agente->getShifts()->toArray());
     }
 
     /**
@@ -256,30 +256,30 @@ final class DisponibilidadDeAgenteService
      * Handles both normal shifts (end > start) and cross-midnight shifts
      * (end < start, e.g. 22:00-06:00). The interval is half-open: [start, end).
      *
-     * @param Turno[] $shifts
+     * @param Turno[] $turnos
      */
-    private function hasTurnoEnHorario(\DateTimeImmutable $localDateTime, array $shifts): bool
+    private function hasTurnoEnHorario(\DateTimeImmutable $localDateTime, array $turnos): bool
     {
         $dow = (int) $localDateTime->format('N'); // 1=Monday, 7=Sunday
         $time = $localDateTime->format('H:i:s');
 
-        foreach ($shifts as $shift) {
-            $startTime = $shift->getHoraDeInicio()->format('H:i:s');
-            $endTime = $shift->getHoraDeFin()->format('H:i:s');
+        foreach ($turnos as $turno) {
+            $horaDeInicio = $turno->getHoraDeInicio()->format('H:i:s');
+            $horaDeFin = $turno->getHoraDeFin()->format('H:i:s');
 
-            if ($endTime > $startTime) {
+            if ($horaDeFin > $horaDeInicio) {
                 // Normal shift (same day, half-open [start, end))
-                if ($shift->getDiaDeLaSemana() === $dow && $time >= $startTime && $time < $endTime) {
+                if ($turno->getDiaDeLaSemana() === $dow && $time >= $horaDeInicio && $time < $horaDeFin) {
                     return true;
                 }
             } else {
                 // Cross-midnight shift (end < start, e.g. 22:00-06:00)
-                $nextDow = $shift->getDiaDeLaSemana() === 7 ? 1 : $shift->getDiaDeLaSemana() + 1;
+                $nextDow = $turno->getDiaDeLaSemana() === 7 ? 1 : $turno->getDiaDeLaSemana() + 1;
 
-                if ($dow === $shift->getDiaDeLaSemana() && $time >= $startTime) {
+                if ($dow === $turno->getDiaDeLaSemana() && $time >= $horaDeInicio) {
                     return true; // First night: e.g., Fri 22:00-23:59
                 }
-                if ($dow === $nextDow && $time < $endTime) {
+                if ($dow === $nextDow && $time < $horaDeFin) {
                     return true; // Next morning: e.g., Sat 00:00-05:59
                 }
             }
@@ -294,12 +294,12 @@ final class DisponibilidadDeAgenteService
      * Active tickets are those with status IN ('new', 'active', 'waiting').
      * Uses index idx_tickets_owner_status (assigned_agent_id, status).
      */
-    private function countTicketsActivos(?int $agentId): int
+    private function countTicketsActivos(?int $agenteId): int
     {
-        if ($agentId === null) {
+        if ($agenteId === null) {
             return 0;
         }
 
-        return $this->ticketRepository->countActivosDeAgente($agentId);
+        return $this->ticketRepository->countActivosDeAgente($agenteId);
     }
 }

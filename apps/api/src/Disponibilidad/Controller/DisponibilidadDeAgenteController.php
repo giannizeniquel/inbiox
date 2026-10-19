@@ -35,13 +35,13 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class DisponibilidadDeAgenteController
 {
     public function __construct(
-        private SetDisponibilidadManualUseCase $setAgentAvailabilityUseCase,
-        private QuitarDisponibilidadManualUseCase $clearAgentAvailabilityUseCase,
-        private CreateTurnoUseCase $createAgentShiftUseCase,
-        private DeleteTurnoUseCase $deleteAgentShiftUseCase,
-        private DisponibilidadDeAgenteService $agentAvailabilityService,
+        private SetDisponibilidadManualUseCase $setDisponibilidadManualUseCase,
+        private QuitarDisponibilidadManualUseCase $quitarDisponibilidadManualUseCase,
+        private CreateTurnoUseCase $createTurnoUseCase,
+        private DeleteTurnoUseCase $deleteTurnoUseCase,
+        private DisponibilidadDeAgenteService $disponibilidadDeAgenteService,
         private AgentRepository $agentRepo,
-        private TurnoRepository $agentShiftRepo,
+        private TurnoRepository $turnoRepo,
         private TicketRepository $ticketRepo,
         private OwnershipScope $ownershipScope,
     ) {}
@@ -62,8 +62,8 @@ class DisponibilidadDeAgenteController
             return new JsonResponse(['error' => 'Forbidden'], 403);
         }
 
-        $agent = $this->agentRepo->findById($id);
-        if ($agent === null) {
+        $agente = $this->agentRepo->findById($id);
+        if ($agente === null) {
             return new JsonResponse(['error' => 'Agent not found'], 404);
         }
 
@@ -72,7 +72,7 @@ class DisponibilidadDeAgenteController
         }
 
         try {
-            $result = $this->setAgentAvailabilityUseCase->execute(
+            $result = $this->setDisponibilidadManualUseCase->execute(
                 $id,
                 $request->isAvailable,
                 $request->ttlMinutes,
@@ -100,13 +100,13 @@ class DisponibilidadDeAgenteController
             return new JsonResponse(['error' => 'Forbidden'], 403);
         }
 
-        $agent = $this->agentRepo->findById($id);
-        if ($agent === null) {
+        $agente = $this->agentRepo->findById($id);
+        if ($agente === null) {
             return new JsonResponse(['error' => 'Agent not found'], 404);
         }
 
         try {
-            $this->clearAgentAvailabilityUseCase->execute($id);
+            $this->quitarDisponibilidadManualUseCase->execute($id);
 
             return new JsonResponse(null, 204);
         } catch (LockWaitTimeoutException) {
@@ -130,45 +130,45 @@ class DisponibilidadDeAgenteController
             return new JsonResponse(['error' => 'Forbidden'], 403);
         }
 
-        $agent = $this->agentRepo->findById($id);
-        if ($agent === null) {
+        $agente = $this->agentRepo->findById($id);
+        if ($agente === null) {
             return new JsonResponse(['error' => 'Agent not found'], 404);
         }
 
         $nowUtc = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-        $localTz = new \DateTimeZone($agent->getTimezone());
+        $localTz = new \DateTimeZone($agente->getTimezone());
         $localNow = $nowUtc->setTimezone($localTz);
 
-        $isAvailable = $this->agentAvailabilityService->isDisponible($agent, $nowUtc);
-        $currentLoad = $this->ticketRepo->countActivosDeAgente($id);
+        $isDisponible = $this->disponibilidadDeAgenteService->isDisponible($agente, $nowUtc);
+        $cargaActual = $this->ticketRepo->countActivosDeAgente($id);
 
         // Compute is_in_shift by checking schedule only (no override, no capacity)
-        $isInShift = $this->isAgenteEnTurno($agent, $localNow);
+        $isEnTurno = $this->isAgenteEnTurno($agente, $localNow);
 
         // Compute override info
-        $overrideActive = false;
-        $overrideAvailable = null;
-        $overrideExpiresAt = null;
+        $disponibilidadManualActiva = false;
+        $disponibilidadManual = null;
+        $disponibilidadManualVenceAt = null;
 
-        if ($agent->getIsAvailableOverride() !== null) {
-            if ($agent->getOverrideUntil() === null || $agent->getOverrideUntil() >= $nowUtc) {
-                $overrideActive = true;
-                $overrideAvailable = $agent->getIsAvailableOverride();
-                $overrideExpiresAt = $agent->getOverrideUntil()?->format('Y-m-d\TH:i:s\Z');
+        if ($agente->getIsAvailableOverride() !== null) {
+            if ($agente->getOverrideUntil() === null || $agente->getOverrideUntil() >= $nowUtc) {
+                $disponibilidadManualActiva = true;
+                $disponibilidadManual = $agente->getIsAvailableOverride();
+                $disponibilidadManualVenceAt = $agente->getOverrideUntil()?->format('Y-m-d\TH:i:s\Z');
             }
         }
 
         return new JsonResponse([
             'agent_id'     => $id,
-            'is_available' => $isAvailable,
-            'is_in_shift'  => $isInShift,
-            'timezone'     => $agent->getTimezone(),
-            'current_load' => $currentLoad,
-            'max_capacity' => $agent->getMaxActiveTickets(),
+            'is_available' => $isDisponible,
+            'is_in_shift'  => $isEnTurno,
+            'timezone'     => $agente->getTimezone(),
+            'current_load' => $cargaActual,
+            'max_capacity' => $agente->getMaxActiveTickets(),
             'override'     => [
-                'active'       => $overrideActive,
-                'is_available' => $overrideAvailable,
-                'expires_at'   => $overrideExpiresAt,
+                'active'       => $disponibilidadManualActiva,
+                'is_available' => $disponibilidadManual,
+                'expires_at'   => $disponibilidadManualVenceAt,
             ],
         ]);
     }
@@ -189,8 +189,8 @@ class DisponibilidadDeAgenteController
             return new JsonResponse(['error' => 'Forbidden'], 403);
         }
 
-        $agent = $this->agentRepo->findById($id);
-        if ($agent === null) {
+        $agente = $this->agentRepo->findById($id);
+        if ($agente === null) {
             return new JsonResponse(['error' => 'Agent not found'], 404);
         }
 
@@ -204,7 +204,7 @@ class DisponibilidadDeAgenteController
         }
 
         try {
-            $result = $this->createAgentShiftUseCase->execute(
+            $result = $this->createTurnoUseCase->execute(
                 $id,
                 $request->dayOfWeek,
                 $request->startTime,
@@ -235,23 +235,23 @@ class DisponibilidadDeAgenteController
             return new JsonResponse(['error' => 'Forbidden'], 403);
         }
 
-        $agent = $this->agentRepo->findById($id);
-        if ($agent === null) {
+        $agente = $this->agentRepo->findById($id);
+        if ($agente === null) {
             return new JsonResponse(['error' => 'Agent not found'], 404);
         }
 
-        $shift = $this->agentShiftRepo->find($shiftId);
-        if ($shift === null) {
+        $turno = $this->turnoRepo->find($shiftId);
+        if ($turno === null) {
             return new JsonResponse(['error' => 'Shift not found'], 404);
         }
 
-        $shiftAgent = $shift->getAgente();
-        if ($shiftAgent === null || $shiftAgent->getId() !== $agent->getId()) {
+        $agenteDelTurno = $turno->getAgente();
+        if ($agenteDelTurno === null || $agenteDelTurno->getId() !== $agente->getId()) {
             return new JsonResponse(['error' => 'Shift does not belong to this agent'], 404);
         }
 
         try {
-            $this->deleteAgentShiftUseCase->execute($id, $shiftId);
+            $this->deleteTurnoUseCase->execute($id, $shiftId);
 
             return new JsonResponse(null, 204);
         } catch (LockWaitTimeoutException) {
@@ -267,7 +267,7 @@ class DisponibilidadDeAgenteController
      * ADMIN/SUPERVISOR can act on any agent.
      * AGENT can only act on their own agent.
      */
-    private function isPermitidoParaAgente(int $agentId): bool
+    private function isPermitidoParaAgente(int $agenteId): bool
     {
         $scopeId = $this->ownershipScope->getAgentId();
 
@@ -277,7 +277,7 @@ class DisponibilidadDeAgenteController
         }
 
         // AGENT: only their own agent
-        return $scopeId === $agentId;
+        return $scopeId === $agenteId;
     }
 
     /**
@@ -286,28 +286,28 @@ class DisponibilidadDeAgenteController
      * Reuses the same cross-midnight logic as DisponibilidadDeAgenteService
      * but checks schedule only — no override, no capacity.
      */
-    private function isAgenteEnTurno(\App\Agente\Agent $agent, \DateTimeImmutable $localDateTime): bool
+    private function isAgenteEnTurno(\App\Agente\Agent $agente, \DateTimeImmutable $localDateTime): bool
     {
         $dow = (int) $localDateTime->format('N');
         $time = $localDateTime->format('H:i:s');
 
-        foreach ($agent->getShifts() as $shift) {
-            $startTime = $shift->getHoraDeInicio()->format('H:i:s');
-            $endTime = $shift->getHoraDeFin()->format('H:i:s');
+        foreach ($agente->getShifts() as $turno) {
+            $horaDeInicio = $turno->getHoraDeInicio()->format('H:i:s');
+            $horaDeFin = $turno->getHoraDeFin()->format('H:i:s');
 
-            if ($endTime > $startTime) {
+            if ($horaDeFin > $horaDeInicio) {
                 // Normal shift (same day, half-open [start, end))
-                if ($shift->getDiaDeLaSemana() === $dow && $time >= $startTime && $time < $endTime) {
+                if ($turno->getDiaDeLaSemana() === $dow && $time >= $horaDeInicio && $time < $horaDeFin) {
                     return true;
                 }
             } else {
                 // Cross-midnight shift (end < start, e.g. 22:00-06:00)
-                $nextDow = $shift->getDiaDeLaSemana() === 7 ? 1 : $shift->getDiaDeLaSemana() + 1;
+                $nextDow = $turno->getDiaDeLaSemana() === 7 ? 1 : $turno->getDiaDeLaSemana() + 1;
 
-                if ($dow === $shift->getDiaDeLaSemana() && $time >= $startTime) {
+                if ($dow === $turno->getDiaDeLaSemana() && $time >= $horaDeInicio) {
                     return true; // First night
                 }
-                if ($dow === $nextDow && $time < $endTime) {
+                if ($dow === $nextDow && $time < $horaDeFin) {
                     return true; // Next morning
                 }
             }

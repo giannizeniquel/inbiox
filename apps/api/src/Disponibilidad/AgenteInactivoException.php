@@ -22,12 +22,12 @@ use App\Compartido\StateConflictException;
  */
 class AgenteInactivoException extends StateConflictException
 {
-    public static function paraAgente(int $agentId, string $agentName): self
+    public static function paraAgente(int $agenteId, string $nombreDeAgente): self
     {
         return new self(\sprintf(
             'Agent "%s" (id=%d) is not currently active and cannot be assigned',
-            $agentName,
-            $agentId,
+            $nombreDeAgente,
+            $agenteId,
         ));
     }
 }

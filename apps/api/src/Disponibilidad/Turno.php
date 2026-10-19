@@ -45,15 +45,15 @@ class Turno
     private \DateTimeImmutable $creadoAt;
 
     public function __construct(
-        Agent $agent,
-        int $dayOfWeek,
-        \DateTimeImmutable $startTime,
-        \DateTimeImmutable $endTime
+        Agent $agente,
+        int $diaDeLaSemana,
+        \DateTimeImmutable $horaDeInicio,
+        \DateTimeImmutable $horaDeFin
     ) {
-        $this->agente = $agent;
-        $this->diaDeLaSemana = $dayOfWeek;
-        $this->horaDeInicio = $startTime;
-        $this->horaDeFin = $endTime;
+        $this->agente = $agente;
+        $this->diaDeLaSemana = $diaDeLaSemana;
+        $this->horaDeInicio = $horaDeInicio;
+        $this->horaDeFin = $horaDeFin;
         $this->creadoAt = new \DateTimeImmutable();
     }
 
@@ -67,9 +67,9 @@ class Turno
         return $this->agente;
     }
 
-    public function setAgente(?Agent $agent): self
+    public function setAgente(?Agent $agente): self
     {
-        $this->agente = $agent;
+        $this->agente = $agente;
         return $this;
     }
 
@@ -78,9 +78,9 @@ class Turno
         return $this->diaDeLaSemana;
     }
 
-    public function setDiaDeLaSemana(int $dayOfWeek): self
+    public function setDiaDeLaSemana(int $diaDeLaSemana): self
     {
-        $this->diaDeLaSemana = $dayOfWeek;
+        $this->diaDeLaSemana = $diaDeLaSemana;
         return $this;
     }
 
@@ -89,9 +89,9 @@ class Turno
         return $this->horaDeInicio;
     }
 
-    public function setHoraDeInicio(\DateTimeImmutable $startTime): self
+    public function setHoraDeInicio(\DateTimeImmutable $horaDeInicio): self
     {
-        $this->horaDeInicio = $startTime;
+        $this->horaDeInicio = $horaDeInicio;
         return $this;
     }
 
@@ -100,9 +100,9 @@ class Turno
         return $this->horaDeFin;
     }
 
-    public function setHoraDeFin(\DateTimeImmutable $endTime): self
+    public function setHoraDeFin(\DateTimeImmutable $horaDeFin): self
     {
-        $this->horaDeFin = $endTime;
+        $this->horaDeFin = $horaDeFin;
         return $this;
     }
 

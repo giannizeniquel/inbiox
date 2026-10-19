@@ -22,43 +22,43 @@ final class ReemplazarTurnosUseCase
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly AgentRepository $agentRepo,
-        private readonly TurnoRepository $agentShiftRepo,
+        private readonly TurnoRepository $turnoRepo,
     ) {}
 
     /**
-     * @param DatosDeTurnoDTO[] $shifts
+     * @param DatosDeTurnoDTO[] $turnos
      *
      * @return array<int, array{dayOfWeek: int, start: string, end: string}>
      *
      * @throws \InvalidArgumentException if agent not found
      */
-    public function execute(int $agentId, array $shifts): array
+    public function execute(int $agenteId, array $turnos): array
     {
-        return $this->em->getConnection()->transactional(function () use ($agentId, $shifts) {
-            $agent = $this->agentRepo->findById($agentId);
-            if ($agent === null) {
+        return $this->em->getConnection()->transactional(function () use ($agenteId, $turnos) {
+            $agente = $this->agentRepo->findById($agenteId);
+            if ($agente === null) {
                 throw new \InvalidArgumentException('Agent not found');
             }
 
             // 1. Delete all existing shifts
-            $this->agentShiftRepo->deleteTodosDeAgente($agentId);
+            $this->turnoRepo->deleteTodosDeAgente($agenteId);
 
             // 2. Create new shifts
-            $created = [];
-            foreach ($shifts as $input) {
+            $creado = [];
+            foreach ($turnos as $input) {
                 $this->validarDatosDeTurno($input->dayOfWeek, $input->start, $input->end);
 
-                $start = \DateTimeImmutable::createFromFormat('H:i', $input->start);
-                $end = \DateTimeImmutable::createFromFormat('H:i', $input->end);
+                $inicio = \DateTimeImmutable::createFromFormat('H:i', $input->start);
+                $fin = \DateTimeImmutable::createFromFormat('H:i', $input->end);
 
-                if ($start === false || $end === false) {
+                if ($inicio === false || $fin === false) {
                     throw new \InvalidArgumentException('Invalid time format');
                 }
 
-                $shift = new Turno($agent, $input->dayOfWeek, $start, $end);
-                $this->em->persist($shift);
+                $turno = new Turno($agente, $input->dayOfWeek, $inicio, $fin);
+                $this->em->persist($turno);
 
-                $created[] = [
+                $creado[] = [
                     'dayOfWeek' => $input->dayOfWeek,
                     'start' => $input->start,
                     'end' => $input->end,
@@ -67,25 +67,25 @@ final class ReemplazarTurnosUseCase
 
             $this->em->flush();
 
-            return $created;
+            return $creado;
         });
     }
 
-    private function validarDatosDeTurno(int $dayOfWeek, string $startTime, string $endTime): void
+    private function validarDatosDeTurno(int $diaDeLaSemana, string $horaDeInicio, string $horaDeFin): void
     {
-        if ($dayOfWeek < 1 || $dayOfWeek > 7) {
+        if ($diaDeLaSemana < 1 || $diaDeLaSemana > 7) {
             throw new \InvalidArgumentException('dayOfWeek must be between 1 and 7');
         }
 
-        if (!\preg_match('/^\d{2}:\d{2}$/', $startTime)) {
+        if (!\preg_match('/^\d{2}:\d{2}$/', $horaDeInicio)) {
             throw new \InvalidArgumentException('start must be in HH:MM format');
         }
 
-        if (!\preg_match('/^\d{2}:\d{2}$/', $endTime)) {
+        if (!\preg_match('/^\d{2}:\d{2}$/', $horaDeFin)) {
             throw new \InvalidArgumentException('end must be in HH:MM format');
         }
 
-        if ($startTime === $endTime) {
+        if ($horaDeInicio === $horaDeFin) {
             throw new \InvalidArgumentException('start and end must differ');
         }
     }

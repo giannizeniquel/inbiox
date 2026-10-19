@@ -33,54 +33,54 @@ final class QuitarDisponibilidadManualUseCase
     /**
      * Clear availability override for an agent.
      *
-     * @param int $agentId
+     * @param int $agenteId
      *
      * @return array{agent_id: int, is_available: bool, override_active: bool, current_load: int, max_capacity: int}
      *
      * @throws \InvalidArgumentException if agent not found
      */
-    public function execute(int $agentId): array
+    public function execute(int $agenteId): array
     {
-        $result = $this->em->getConnection()->transactional(function () use ($agentId) {
+        $result = $this->em->getConnection()->transactional(function () use ($agenteId) {
             // 1. Find and lock agent FOR UPDATE
-            $agent = $this->agentRepo->findById($agentId);
-            if ($agent === null) {
+            $agente = $this->agentRepo->findById($agenteId);
+            if ($agente === null) {
                 throw new \InvalidArgumentException('Agent not found');
             }
 
-            $this->em->lock($agent, LockMode::PESSIMISTIC_WRITE);
+            $this->em->lock($agente, LockMode::PESSIMISTIC_WRITE);
 
             // 2. Clear override fields
-            $agent->setIsAvailableOverride(null);
-            $agent->setOverrideUntil(null);
+            $agente->setIsAvailableOverride(null);
+            $agente->setOverrideUntil(null);
 
             // 3. Persist
             $this->em->flush();
 
             // 4. Compute current load and availability
             $now = new \DateTimeImmutable();
-            $currentLoad = $this->ticketRepo->countActivosDeAgente($agentId);
+            $cargaActual = $this->ticketRepo->countActivosDeAgente($agenteId);
 
             // After clearing, availability is determined by schedule + capacity
             // We report is_available after the fact using the service,
             // but for the outbox event we just note override is no longer active.
             $this->pendingOutboxEvent = [
-                'aggregate_id' => $agentId,
+                'aggregate_id' => $agenteId,
                 'payload' => [
-                    'agent_id'        => $agentId,
+                    'agent_id'        => $agenteId,
                     'is_available'    => false, // will be re-evaluated on next check
                     'override_active' => false,
-                    'current_load'    => $currentLoad,
-                    'max_capacity'    => $agent->getMaxActiveTickets(),
+                    'current_load'    => $cargaActual,
+                    'max_capacity'    => $agente->getMaxActiveTickets(),
                     'timestamp'       => $now->format('Y-m-d\TH:i:s\Z'),
                 ],
             ];
 
             return [
-                'agent_id'        => $agentId,
+                'agent_id'        => $agenteId,
                 'override_active' => false,
-                'current_load'    => $currentLoad,
-                'max_capacity'    => $agent->getMaxActiveTickets(),
+                'current_load'    => $cargaActual,
+                'max_capacity'    => $agente->getMaxActiveTickets(),
             ];
         });
 
