@@ -66,7 +66,7 @@ final class AutenticacionController extends AbstractController
      * Requires a valid JWT (IS_AUTHENTICATED_FULLY).
      */
     #[Route('/api/auth/logout', name: 'api_auth_logout', methods: ['POST'])]
-    public function logout(Request $request): JsonResponse
+    public function cerrarSesion(Request $request): JsonResponse
     {
         // Invalidate the cookie's refresh token and all of the user's refresh tokens
         $user = $this->getUser();
@@ -96,7 +96,7 @@ final class AutenticacionController extends AbstractController
      * Requires a valid JWT (IS_AUTHENTICATED_FULLY).
      */
     #[Route('/api/auth/me', name: 'api_auth_me', methods: ['GET'])]
-    public function me(): JsonResponse
+    public function getMiPerfil(): JsonResponse
     {
         $user = $this->getUser();
 

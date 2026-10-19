@@ -43,8 +43,8 @@ Leyenda "Rol": **Público**, **Auth** (cualquier usuario autenticado), **Agente*
 |---|---|---|---|---|
 | POST | `/api/auth/login` | `AutenticacionController::login` | Público | No llega al controlador: lo atiende `json_login` (Lexik) + Gesdinet + `RespuestaDeAutenticacionListener`. |
 | POST | `/api/auth/refresh` | `AutenticacionController::refresh` | Público | No llega al controlador: `refresh_jwt` (Gesdinet). |
-| POST | `/api/auth/logout` | `AutenticacionController::logout` (`:66-102`) | Auth | Borra todos los refresh tokens del usuario. |
-| GET | `/api/auth/me` | `AutenticacionController::me` (`:110-126`) | Auth | Perfil con `agent_id`, `agent_name`. |
+| POST | `/api/auth/logout` | `AutenticacionController::cerrarSesion` (`:66-102`) | Auth | Borra todos los refresh tokens del usuario. |
+| GET | `/api/auth/me` | `AutenticacionController::getMiPerfil` (`:110-126`) | Auth | Perfil con `agent_id`, `agent_name`. |
 
 ### B. Tickets y bandeja
 
