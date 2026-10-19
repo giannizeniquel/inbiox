@@ -55,9 +55,9 @@ class Conversacion
         return $this->contacto;
     }
 
-    public function setContacto(Contacto $contact): self
+    public function setContacto(Contacto $contacto): self
     {
-        $this->contacto = $contact;
+        $this->contacto = $contacto;
         return $this;
     }
 
@@ -71,9 +71,9 @@ class Conversacion
         return $this->estado;
     }
 
-    public function setEstado(string $status): self
+    public function setEstado(string $estado): self
     {
-        $this->estado = $status;
+        $this->estado = $estado;
         return $this;
     }
 
@@ -82,9 +82,9 @@ class Conversacion
         return $this->ultimoMensajeAt;
     }
 
-    public function setUltimoMensajeAt(?\DateTimeImmutable $lastMessageAt): self
+    public function setUltimoMensajeAt(?\DateTimeImmutable $ultimoMensajeAt): self
     {
-        $this->ultimoMensajeAt = $lastMessageAt;
+        $this->ultimoMensajeAt = $ultimoMensajeAt;
         return $this;
     }
 
@@ -98,9 +98,9 @@ class Conversacion
         return $this->actualizadoAt;
     }
 
-    public function setActualizadoAt(\DateTimeImmutable $updatedAt): self
+    public function setActualizadoAt(\DateTimeImmutable $actualizadoAt): self
     {
-        $this->actualizadoAt = $updatedAt;
+        $this->actualizadoAt = $actualizadoAt;
         return $this;
     }
 

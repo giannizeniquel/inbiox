@@ -66,9 +66,9 @@ class Mensaje
         return $this->conversacion;
     }
 
-    public function setConversacion(Conversacion $conversation): self
+    public function setConversacion(Conversacion $conversacion): self
     {
-        $this->conversacion = $conversation;
+        $this->conversacion = $conversacion;
         return $this;
     }
 
@@ -77,9 +77,9 @@ class Mensaje
         return $this->direccion;
     }
 
-    public function setDireccion(string $direction): self
+    public function setDireccion(string $direccion): self
     {
-        $this->direccion = $direction;
+        $this->direccion = $direccion;
         return $this;
     }
 
@@ -99,9 +99,9 @@ class Mensaje
         return $this->contenido;
     }
 
-    public function setContenido(string $content): self
+    public function setContenido(string $contenido): self
     {
-        $this->contenido = $content;
+        $this->contenido = $contenido;
         return $this;
     }
 
@@ -110,9 +110,9 @@ class Mensaje
         return $this->estadoDeEntrega;
     }
 
-    public function setEstadoDeEntrega(string $deliveryStatus): self
+    public function setEstadoDeEntrega(string $estadoDeEntrega): self
     {
-        $this->estadoDeEntrega = $deliveryStatus;
+        $this->estadoDeEntrega = $estadoDeEntrega;
         return $this;
     }
 
@@ -121,9 +121,9 @@ class Mensaje
         return $this->motivoDeFallo;
     }
 
-    public function setMotivoDeFallo(?string $failedReason): self
+    public function setMotivoDeFallo(?string $motivoDeFallo): self
     {
-        $this->motivoDeFallo = $failedReason;
+        $this->motivoDeFallo = $motivoDeFallo;
         return $this;
     }
 
@@ -132,9 +132,9 @@ class Mensaje
         return $this->actualizadoAt;
     }
 
-    public function setActualizadoAt(?\DateTimeImmutable $updatedAt): self
+    public function setActualizadoAt(?\DateTimeImmutable $actualizadoAt): self
     {
-        $this->actualizadoAt = $updatedAt;
+        $this->actualizadoAt = $actualizadoAt;
         return $this;
     }
 
@@ -143,9 +143,9 @@ class Mensaje
         return $this->adjunto;
     }
 
-    public function setAdjunto(?array $media): self
+    public function setAdjunto(?array $adjunto): self
     {
-        $this->adjunto = $media;
+        $this->adjunto = $adjunto;
         return $this;
     }
 
@@ -159,9 +159,9 @@ class Mensaje
         return $this->agenteRemitenteId;
     }
 
-    public function setAgenteRemitenteId(?int $senderAgentId): self
+    public function setAgenteRemitenteId(?int $agenteRemitenteId): self
     {
-        $this->agenteRemitenteId = $senderAgentId;
+        $this->agenteRemitenteId = $agenteRemitenteId;
         return $this;
     }
 
@@ -170,9 +170,9 @@ class Mensaje
         return $this->tipoDeRemitente;
     }
 
-    public function setTipoDeRemitente(TipoDeRemitente $senderType): self
+    public function setTipoDeRemitente(TipoDeRemitente $tipoDeRemitente): self
     {
-        $this->tipoDeRemitente = $senderType->value;
+        $this->tipoDeRemitente = $tipoDeRemitente->value;
         return $this;
     }
 }

@@ -45,9 +45,9 @@ final class RecordWebhookPayloadUseCase
         }
 
         $webhookPayload = new PayloadWebhook(
-            eventType: $eventType,
+            tipoDeEvento: $eventType,
             payload: $payload,
-            receivedAt: new \DateTimeImmutable(),
+            recibidoAt: new \DateTimeImmutable(),
             phoneNumberId: $phoneNumberId
         );
 

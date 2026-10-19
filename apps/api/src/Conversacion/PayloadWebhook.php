@@ -38,11 +38,11 @@ class PayloadWebhook
     #[ORM\Column(name: 'processed', type: 'boolean', options: ['default' => false])]
     private bool $procesado = false;
 
-    public function __construct(string $eventType, array $payload, \DateTimeImmutable $receivedAt, ?string $phoneNumberId = null)
+    public function __construct(string $tipoDeEvento, array $payload, \DateTimeImmutable $recibidoAt, ?string $phoneNumberId = null)
     {
-        $this->tipoDeEvento = $eventType;
+        $this->tipoDeEvento = $tipoDeEvento;
         $this->payload = $payload;
-        $this->recibidoAt = $receivedAt;
+        $this->recibidoAt = $recibidoAt;
         $this->phoneNumberId = $phoneNumberId;
     }
 
@@ -82,9 +82,9 @@ class PayloadWebhook
         return $this->procesado;
     }
 
-    public function setProcesado(bool $processed): self
+    public function setProcesado(bool $procesado): self
     {
-        $this->procesado = $processed;
+        $this->procesado = $procesado;
 
         return $this;
     }

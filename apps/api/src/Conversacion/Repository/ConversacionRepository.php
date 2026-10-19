@@ -15,9 +15,9 @@ class ConversacionRepository extends ServiceEntityRepository
         parent::__construct($registry, Conversacion::class);
     }
 
-    public function findAbiertaByContacto(Contacto $contact, ?string $phoneNumberId = null): ?Conversacion
+    public function findAbiertaByContacto(Contacto $contacto, ?string $phoneNumberId = null): ?Conversacion
     {
-        $criteria = ['contacto' => $contact, 'estado' => EstadoDeConversacion::ABIERTA->value];
+        $criteria = ['contacto' => $contacto, 'estado' => EstadoDeConversacion::ABIERTA->value];
         if ($phoneNumberId !== null) {
             $criteria['phoneNumberId'] = $phoneNumberId;
         }

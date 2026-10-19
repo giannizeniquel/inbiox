@@ -20,9 +20,9 @@ class MensajeRepository extends ServiceEntityRepository
         return $this->findOneBy(['externalId' => $externalId]);
     }
 
-    public function findByConversacion(Conversacion $conversation): array
+    public function findByConversacion(Conversacion $conversacion): array
     {
-        return $this->findBy(['conversacion' => $conversation]);
+        return $this->findBy(['conversacion' => $conversacion]);
     }
 
     public function findById(int $id): ?Mensaje
@@ -37,13 +37,13 @@ class MensajeRepository extends ServiceEntityRepository
      *
      * @return list<array<string, mixed>>
      */
-    public function findPaginaAscendente(int $conversationId, mixed $cursorCreatedAt, ?int $cursorId, int $maxResults): array
+    public function findPaginaAscendente(int $conversacionId, mixed $cursorCreadoAt, ?int $cursorId, int $maxResults): array
     {
-        $qb = $this->createPaginaQueryBuilder($conversationId);
+        $qb = $this->createPaginaQueryBuilder($conversacionId);
 
         if ($cursorId !== null) {
             $qb->andWhere('(created_at > :cursorCreatedAt OR (created_at = :cursorCreatedAt AND id > :cursorId))')
-                ->setParameter('cursorCreatedAt', $cursorCreatedAt)
+                ->setParameter('cursorCreatedAt', $cursorCreadoAt)
                 ->setParameter('cursorId', $cursorId);
         }
 
@@ -61,13 +61,13 @@ class MensajeRepository extends ServiceEntityRepository
      *
      * @return list<array<string, mixed>>
      */
-    public function findPaginaDescendente(int $conversationId, mixed $cursorCreatedAt, ?int $cursorId, int $maxResults, int $offset = 0): array
+    public function findPaginaDescendente(int $conversacionId, mixed $cursorCreadoAt, ?int $cursorId, int $maxResults, int $offset = 0): array
     {
-        $qb = $this->createPaginaQueryBuilder($conversationId);
+        $qb = $this->createPaginaQueryBuilder($conversacionId);
 
         if ($cursorId !== null) {
             $qb->andWhere('(created_at < :cursorCreatedAt OR (created_at = :cursorCreatedAt AND id < :cursorId))')
-                ->setParameter('cursorCreatedAt', $cursorCreatedAt)
+                ->setParameter('cursorCreatedAt', $cursorCreadoAt)
                 ->setParameter('cursorId', $cursorId);
         }
 
@@ -82,12 +82,12 @@ class MensajeRepository extends ServiceEntityRepository
         return $qb->fetchAllAssociative();
     }
 
-    private function createPaginaQueryBuilder(int $conversationId): QueryBuilder
+    private function createPaginaQueryBuilder(int $conversacionId): QueryBuilder
     {
         return $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->select('id', 'content', 'direction', 'created_at', 'media', 'sender_agent_id', 'sender_type')
             ->from('messages')
             ->where('conversation_id = :conversationId')
-            ->setParameter('conversationId', $conversationId);
+            ->setParameter('conversationId', $conversacionId);
     }
 }
