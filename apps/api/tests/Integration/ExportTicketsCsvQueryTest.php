@@ -163,7 +163,7 @@ class ExportTicketsCsvQueryTest extends KernelTestCase
         $query->stream($writer, new \DateTimeImmutable('2020-01-01'), new \DateTimeImmutable('2030-01-01'));
 
         $reader = Reader::createFromString($writer->toString());
-        self::assertSame(ExportarTicketsCsvQuery::COLUMNS, $reader->fetchOne(0));
+        self::assertSame(ExportarTicketsCsvQuery::COLUMNAS, $reader->fetchOne(0));
     }
 
     public function test_row_shape_has_all_fourteen_columns_with_tags_joined(): void

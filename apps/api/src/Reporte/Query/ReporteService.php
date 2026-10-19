@@ -39,9 +39,9 @@ class ReporteService
      */
     public function getFrt(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
     {
-        $this->validateDateRange($from, $to);
+        $this->validarRangoDeFechas($from, $to);
 
-        return $this->reportingRepository->getFrtMetrics($from, $to, $agentId, $phoneNumberId, $teamId);
+        return $this->reportingRepository->getMetricasDeFrt($from, $to, $agentId, $phoneNumberId, $teamId);
     }
 
     /**
@@ -56,9 +56,9 @@ class ReporteService
      */
     public function getRt(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
     {
-        $this->validateDateRange($from, $to);
+        $this->validarRangoDeFechas($from, $to);
 
-        return $this->reportingRepository->getRtMetrics($from, $to, $agentId, $phoneNumberId, $teamId);
+        return $this->reportingRepository->getMetricasDeRt($from, $to, $agentId, $phoneNumberId, $teamId);
     }
 
     /**
@@ -71,11 +71,11 @@ class ReporteService
      * @param int|null $teamId Optional filter by team (single-select)
      * @return array{new: int, active: int, waiting: int, resolved: int, closed: int}
      */
-    public function getCounts(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
+    public function getConteos(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
     {
-        $this->validateDateRange($from, $to);
+        $this->validarRangoDeFechas($from, $to);
 
-        return $this->reportingRepository->getCountsByStatus($from, $to, $agentId, $phoneNumberId, $teamId);
+        return $this->reportingRepository->getConteosPorEstado($from, $to, $agentId, $phoneNumberId, $teamId);
     }
 
     /**
@@ -88,11 +88,11 @@ class ReporteService
      * @param int|null $teamId Optional filter by team (single-select)
      * @return array<int, array{date: string, tickets_created: int, tickets_resolved: int}>
      */
-    public function getVolume(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
+    public function getVolumen(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
     {
-        $this->validateDateRange($from, $to);
+        $this->validarRangoDeFechas($from, $to);
 
-        return $this->reportingRepository->getVolumeOverTime($from, $to, $agentId, $phoneNumberId, $teamId);
+        return $this->reportingRepository->getVolumenEnElTiempo($from, $to, $agentId, $phoneNumberId, $teamId);
     }
 
     /**
@@ -105,13 +105,13 @@ class ReporteService
      * @param int|null $teamId Optional filter by team (single-select)
      * @return array<int, array{agent_id: int, agent_name: string|null, tickets_assigned: int, tickets_resolved: int, current_active_tickets: int, max_active_tickets: int, current_load: float, is_in_shift: bool, avg_frt_seconds: float|null, avg_frt_minutes: float|null, avg_rt_seconds: float|null, avg_rt_minutes: float|null}>
      */
-    public function getAgentPerformance(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
+    public function getRendimientoDeAgentes(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
     {
-        $this->validateDateRange($from, $to);
+        $this->validarRangoDeFechas($from, $to);
 
-        $rows = $this->reportingRepository->getAgentPerformance($from, $to, $agentId, $phoneNumberId, $teamId);
+        $rows = $this->reportingRepository->getRendimientoDeAgentes($from, $to, $agentId, $phoneNumberId, $teamId);
 
-        return $this->addIsInShift($rows);
+        return $this->addEnTurno($rows);
     }
 
     /**
@@ -122,7 +122,7 @@ class ReporteService
      * @param array<int, array<string, mixed>> $rows
      * @return array<int, array<string, mixed>>
      */
-    private function addIsInShift(array $rows): array
+    private function addEnTurno(array $rows): array
     {
         $now = new \DateTimeImmutable();
         $agentMap = [];
@@ -160,9 +160,9 @@ class ReporteService
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
      * @return array<int, array{agent_id: int, agent_name: string, active_tickets: int, max_capacity: int, load_percent: float}>
      */
-    public function getAgentLoad(?int $agentId = null, ?string $phoneNumberId = null): array
+    public function getCargaDeAgentes(?int $agentId = null, ?string $phoneNumberId = null): array
     {
-        return $this->reportingRepository->getAgentLoad($agentId, $phoneNumberId);
+        return $this->reportingRepository->getCargaDeAgentes($agentId, $phoneNumberId);
     }
 
     /**
@@ -174,9 +174,9 @@ class ReporteService
      * @param int $limit Maximum results (default 50)
      * @return array{count: int, tickets: array<int, array{id: int, contact_name: string|null, created_at: string, priority: string}>}
      */
-    public function getUnassigned(?string $phoneNumberId = null, ?\DateTimeImmutable $from = null, ?\DateTimeImmutable $to = null, int $limit = 50): array
+    public function getSinAsignar(?string $phoneNumberId = null, ?\DateTimeImmutable $from = null, ?\DateTimeImmutable $to = null, int $limit = 50): array
     {
-        return $this->reportingRepository->getUnassigned($phoneNumberId, $from, $to, $limit);
+        return $this->reportingRepository->getSinAsignar($phoneNumberId, $from, $to, $limit);
     }
 
     /**
@@ -187,11 +187,11 @@ class ReporteService
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
      * @return array<int, array{date: string, avg_frt_seconds: float, ticket_count: int}>
      */
-    public function getFrtTrend(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null): array
+    public function getTendenciaDeFrt(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null): array
     {
-        $this->validateDateRange($from, $to);
+        $this->validarRangoDeFechas($from, $to);
 
-        return $this->reportingRepository->getFrtTrend($from, $to, $phoneNumberId);
+        return $this->reportingRepository->getTendenciaDeFrt($from, $to, $phoneNumberId);
     }
 
     /**
@@ -202,11 +202,11 @@ class ReporteService
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
      * @return array<int, array{day_of_week: int, hour: int, count: int}>
      */
-    public function getHeatmap(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null): array
+    public function getMapaDeCalor(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null): array
     {
-        $this->validateDateRange($from, $to);
+        $this->validarRangoDeFechas($from, $to);
 
-        return $this->reportingRepository->getHeatmap($from, $to, $phoneNumberId);
+        return $this->reportingRepository->getMapaDeCalor($from, $to, $phoneNumberId);
     }
 
     /**
@@ -217,9 +217,9 @@ class ReporteService
      * @param int $days Lookback window in days (default 90)
      * @return array<int, array{contact_id: int, contact_name: string|null, email: string|null, ticket_count: int, last_ticket_at: string}>
      */
-    public function getRecurringCustomers(?string $phoneNumberId = null, int $threshold = 3, int $days = 90): array
+    public function getContactosRecurrentes(?string $phoneNumberId = null, int $threshold = 3, int $days = 90): array
     {
-        return $this->reportingRepository->getRecurringCustomers($phoneNumberId, $threshold, $days);
+        return $this->reportingRepository->getContactosRecurrentes($phoneNumberId, $threshold, $days);
     }
 
     /**
@@ -231,11 +231,11 @@ class ReporteService
      * @param int $limit Maximum results (default 100)
      * @return array<int, array{ticket_id: int, contact_name: string|null, resolved_at: string|null, reopened_at: string, current_status: string}>
      */
-    public function getReopened(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null, int $limit = 100): array
+    public function getReabiertos(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null, int $limit = 100): array
     {
-        $this->validateDateRange($from, $to);
+        $this->validarRangoDeFechas($from, $to);
 
-        return $this->reportingRepository->getReopened($from, $to, $phoneNumberId, $limit);
+        return $this->reportingRepository->getReabiertos($from, $to, $phoneNumberId, $limit);
     }
 
     /**
@@ -246,12 +246,12 @@ class ReporteService
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
      * @return array{data_available_from: string|null, partial_data: bool, aggregate: array{avg_delay_seconds: float|null, sample_count: int, unanswered_inbound_count: int}, per_agent: array<int, array{agent_id: int, agent_name: string|null, avg_delay_seconds: float|null, sample_count: int}>}
      */
-    public function getResponseDelay(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null): array
+    public function getDemoraDeRespuesta(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null): array
     {
-        $this->validateDateRange($from, $to);
+        $this->validarRangoDeFechas($from, $to);
 
-        $cutoff = $this->reportingRepository->getAttributionCutoff();
-        $metrics = $this->reportingRepository->getResponseDelayMetrics($from, $to, $phoneNumberId);
+        $cutoff = $this->reportingRepository->getCorteDeAtribucion();
+        $metrics = $this->reportingRepository->getMetricasDeDemoraDeRespuesta($from, $to, $phoneNumberId);
 
         return [
             'data_available_from' => $cutoff?->format('Y-m-d H:i:s'),
@@ -269,9 +269,9 @@ class ReporteService
      * @param int $ticketId Ticket ID
      * @return array{ticket_id: int, data_available_from: string|null, partial_data: bool, participants: array<int, array{agent_id: int, agent_name: string|null, message_count: int, sample_count: int, avg_delay_seconds: float|null}>, automatic_message_count: int, unanswered_inbound_count: int, pairs: array<int, array{run_start_at: string, reply_at: string|null, agent_id: int|null, delay_seconds: float|null}>}|null null when the ticket does not exist or has no conversation
      */
-    public function getTicketParticipation(int $ticketId): ?array
+    public function getParticipacionEnTicket(int $ticketId): ?array
     {
-        $result = $this->reportingRepository->getTicketParticipation($ticketId);
+        $result = $this->reportingRepository->getParticipacionEnTicket($ticketId);
 
         if ($result === null) {
             return null;
@@ -289,7 +289,7 @@ class ReporteService
      *
      * @throws \InvalidArgumentException If from is after to
      */
-    private function validateDateRange(\DateTimeImmutable $from, \DateTimeImmutable $to): void
+    private function validarRangoDeFechas(\DateTimeImmutable $from, \DateTimeImmutable $to): void
     {
         if ($from >= $to) {
             throw new \InvalidArgumentException('"from" must be before "to"');

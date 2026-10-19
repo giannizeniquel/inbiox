@@ -104,14 +104,14 @@ class ReportingRepositoryTeamFilterTest extends KernelTestCase
         return $id;
     }
 
-    // --- getFrtMetrics ---
+    // --- getMetricasDeFrt ---
 
     public function test_frt_metrics_team_id_null_is_identical_to_no_scope(): void
     {
         $this->createTicket(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-01 00:10:00'));
 
-        $unscoped = $this->repo->getFrtMetrics(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'));
-        $withNullTeam = $this->repo->getFrtMetrics(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'), null, null, null);
+        $unscoped = $this->repo->getMetricasDeFrt(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'));
+        $withNullTeam = $this->repo->getMetricasDeFrt(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'), null, null, null);
 
         self::assertSame($unscoped, $withNullTeam);
         self::assertSame(600.0, $withNullTeam['avg_frt_seconds']);
@@ -123,19 +123,19 @@ class ReportingRepositoryTeamFilterTest extends KernelTestCase
         $this->createTicket(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-01 00:10:00'), null, $team->getId());
         $this->createTicket(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-01 00:20:00'));
 
-        $result = $this->repo->getFrtMetrics(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'), null, null, $team->getId());
+        $result = $this->repo->getMetricasDeFrt(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'), null, null, $team->getId());
 
         self::assertSame(600.0, $result['avg_frt_seconds']);
     }
 
-    // --- getRtMetrics ---
+    // --- getMetricasDeRt ---
 
     public function test_rt_metrics_team_id_null_is_identical_to_no_scope(): void
     {
         $this->createTicket(new \DateTimeImmutable('2026-01-01'), null, new \DateTimeImmutable('2026-01-01 01:00:00'));
 
-        $unscoped = $this->repo->getRtMetrics(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'));
-        $withNullTeam = $this->repo->getRtMetrics(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'), null, null, null);
+        $unscoped = $this->repo->getMetricasDeRt(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'));
+        $withNullTeam = $this->repo->getMetricasDeRt(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'), null, null, null);
 
         self::assertSame($unscoped, $withNullTeam);
         self::assertSame(3600.0, $withNullTeam['avg_rt_seconds']);
@@ -147,20 +147,20 @@ class ReportingRepositoryTeamFilterTest extends KernelTestCase
         $this->createTicket(new \DateTimeImmutable('2026-01-01'), null, new \DateTimeImmutable('2026-01-01 01:00:00'), $team->getId());
         $this->createTicket(new \DateTimeImmutable('2026-01-01'), null, new \DateTimeImmutable('2026-01-01 02:00:00'));
 
-        $result = $this->repo->getRtMetrics(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'), null, null, $team->getId());
+        $result = $this->repo->getMetricasDeRt(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'), null, null, $team->getId());
 
         self::assertSame(3600.0, $result['avg_rt_seconds']);
     }
 
-    // --- getCountsByStatus ---
+    // --- getConteosPorEstado ---
 
     public function test_counts_by_status_team_id_null_is_identical_to_no_scope(): void
     {
         $this->createTicket(new \DateTimeImmutable('2026-01-01'), status: 'new');
         $this->createTicket(new \DateTimeImmutable('2026-01-01'), status: 'active');
 
-        $unscoped = $this->repo->getCountsByStatus(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'));
-        $withNullTeam = $this->repo->getCountsByStatus(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'), null, null, null);
+        $unscoped = $this->repo->getConteosPorEstado(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'));
+        $withNullTeam = $this->repo->getConteosPorEstado(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'), null, null, null);
 
         self::assertSame($unscoped, $withNullTeam);
         self::assertSame(1, $withNullTeam['new']);
@@ -173,19 +173,19 @@ class ReportingRepositoryTeamFilterTest extends KernelTestCase
         $this->createTicket(new \DateTimeImmutable('2026-01-01'), status: 'new', teamId: $team->getId());
         $this->createTicket(new \DateTimeImmutable('2026-01-01'), status: 'new');
 
-        $result = $this->repo->getCountsByStatus(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'), null, null, $team->getId());
+        $result = $this->repo->getConteosPorEstado(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'), null, null, $team->getId());
 
         self::assertSame(1, $result['new']);
     }
 
-    // --- getVolumeOverTime ---
+    // --- getVolumenEnElTiempo ---
 
     public function test_volume_over_time_team_id_null_is_identical_to_no_scope(): void
     {
         $this->createTicket(new \DateTimeImmutable('2026-01-01'));
 
-        $unscoped = $this->repo->getVolumeOverTime(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'));
-        $withNullTeam = $this->repo->getVolumeOverTime(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'), null, null, null);
+        $unscoped = $this->repo->getVolumenEnElTiempo(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'));
+        $withNullTeam = $this->repo->getVolumenEnElTiempo(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'), null, null, null);
 
         self::assertSame($unscoped, $withNullTeam);
         self::assertSame(1, $withNullTeam[0]['tickets_created']);
@@ -198,18 +198,18 @@ class ReportingRepositoryTeamFilterTest extends KernelTestCase
         $this->createTicket(new \DateTimeImmutable('2026-01-01'));
         $this->createTicket(new \DateTimeImmutable('2026-01-01'));
 
-        $result = $this->repo->getVolumeOverTime(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'), null, null, $team->getId());
+        $result = $this->repo->getVolumenEnElTiempo(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'), null, null, $team->getId());
 
         self::assertCount(1, $result);
         self::assertSame(1, $result[0]['tickets_created']);
     }
 
-    // --- getAgentPerformance ---
+    // --- getRendimientoDeAgentes ---
 
     public function test_agent_performance_team_id_null_is_identical_to_no_scope(): void
     {
-        $unscoped = $this->repo->getAgentPerformance(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'));
-        $withNullTeam = $this->repo->getAgentPerformance(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'), null, null, null);
+        $unscoped = $this->repo->getRendimientoDeAgentes(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'));
+        $withNullTeam = $this->repo->getRendimientoDeAgentes(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'), null, null, null);
 
         self::assertSame($unscoped, $withNullTeam);
     }
@@ -234,7 +234,7 @@ class ReportingRepositoryTeamFilterTest extends KernelTestCase
         $agentConn->update('tickets', ['assigned_agent_id' => $agentId], ['id' => $inTeamTicket]);
         $agentConn->update('tickets', ['assigned_agent_id' => $agentId], ['id' => $outOfTeamTicket]);
 
-        $result = $this->repo->getAgentPerformance(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'), $agentId, null, $team->getId());
+        $result = $this->repo->getRendimientoDeAgentes(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'), $agentId, null, $team->getId());
 
         self::assertCount(1, $result);
         self::assertSame(1, $result[0]['tickets_assigned']);

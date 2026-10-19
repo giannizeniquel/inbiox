@@ -471,7 +471,7 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
     {
         $token = $this->supervisorToken();
         $service = $this->createMock(ReporteService::class);
-        $service->method('getCounts')->willThrowException(new \RuntimeException('report exploded'));
+        $service->method('getConteos')->willThrowException(new \RuntimeException('report exploded'));
         static::getContainer()->set(ReporteService::class, $service);
 
         $response = $this->request('GET', '/api/reports/counts?' . self::WINDOW, $token);

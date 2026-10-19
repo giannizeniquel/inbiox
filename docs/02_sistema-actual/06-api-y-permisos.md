@@ -99,21 +99,21 @@ Todas **Agente**, salvo export. Filtran por workspace activo; nunca por agente.
 |---|---|---|---|
 | `GET /api/reports/frt` | `frt` | `ReporteService::getFrt` | Sí |
 | `GET /api/reports/rt` | `rt` | `getRt` | Sí |
-| `GET /api/reports/counts` | `counts` | `getCounts` | Sí |
-| `GET /api/reports/volume` | `volume` | `getVolume` | Sí |
-| `GET /api/reports/agents` | `agents` | `getAgentPerformance` | Sí |
-| `GET /api/reports/agent-load` | `agentLoad` | `getAgentLoad` | — |
-| `GET /api/reports/unassigned` | `unassigned` | `getUnassigned` (**conteo roto**) | — |
-| `GET /api/reports/available-agents` | `availableAgents` | `Reporte/Query/ListarAgentesDisponiblesQuery`: `DisponibilidadDeAgenteService::listarAgentesDisponibles` + filtro de workspace en PHP + un conteo de tickets activos por agente | — |
-| `GET /api/reports/frt-trend` | `frtTrend` | `getFrtTrend` | — |
-| `GET /api/reports/heatmap` | `heatmap` | `getHeatmap` | — |
-| `GET /api/reports/recurring-customers` | `recurringCustomers` | `getRecurringCustomers` | — |
-| `GET /api/reports/reopened` | `reopened` | `getReopened` | — |
-| `GET /api/reports/export` | `export` | `FiltrosDeTicketBuilder` + `ExportarTicketsCsvQuery` — **Supervisor** | Filtros de la bandeja |
-| `GET /api/reports/response-delay` | `responseDelay` | `getResponseDelay` | — |
-| `GET /api/reports/tickets/{id}/participation` | `ticketParticipation` | `getTicketParticipation` (sin workspace) | — |
+| `GET /api/reports/counts` | `conteos` | `getConteos` | Sí |
+| `GET /api/reports/volume` | `volumen` | `getVolumen` | Sí |
+| `GET /api/reports/agents` | `agentes` | `getRendimientoDeAgentes` | Sí |
+| `GET /api/reports/agent-load` | `cargaDeAgentes` | `getCargaDeAgentes` | — |
+| `GET /api/reports/unassigned` | `sinAsignar` | `getSinAsignar` (**conteo roto**) | — |
+| `GET /api/reports/available-agents` | `agentesDisponibles` | `Reporte/Query/ListarAgentesDisponiblesQuery`: `DisponibilidadDeAgenteService::listarAgentesDisponibles` + filtro de workspace en PHP + un conteo de tickets activos por agente | — |
+| `GET /api/reports/frt-trend` | `tendenciaDeFrt` | `getTendenciaDeFrt` | — |
+| `GET /api/reports/heatmap` | `mapaDeCalor` | `getMapaDeCalor` | — |
+| `GET /api/reports/recurring-customers` | `contactosRecurrentes` | `getContactosRecurrentes` | — |
+| `GET /api/reports/reopened` | `reabiertos` | `getReabiertos` | — |
+| `GET /api/reports/export` | `exportar` | `FiltrosDeTicketBuilder` + `ExportarTicketsCsvQuery` — **Supervisor** | Filtros de la bandeja |
+| `GET /api/reports/response-delay` | `demoraDeRespuesta` | `getDemoraDeRespuesta` | — |
+| `GET /api/reports/tickets/{id}/participation` | `participacionEnTicket` | `getParticipacionEnTicket` (sin workspace) | — |
 
-> Verificado en `ReporteController.php`: solo `frt`, `rt`, `counts`, `volume`, `agents` y `export` leen `teamId`. Los demás lo ignoran aunque el frontend lo envíe (p. ej. `response-delay`).
+> Verificado en `ReporteController.php`: solo `frt`, `rt`, `conteos`, `volumen`, `agentes` y `exportar` leen `teamId`. Los demás lo ignoran aunque el frontend lo envíe (p. ej. `response-delay`).
 
 ### G. Autoservicio (`MiConfiguracionController`, `MiRespuestaAutomaticaController`, `MisTurnosController`, `MiEspacioDeTrabajoController`; todos con clase `IS_AUTHENTICATED_FULLY`)
 

@@ -61,7 +61,7 @@ class ReportingV2Test extends WebTestCase
 
     public function testGetAgentLoadReturnsPopulatedData(): void
     {
-        $result = $this->reportingRepo->getAgentLoad();
+        $result = $this->reportingRepo->getCargaDeAgentes();
 
         $this->assertIsArray($result);
         $this->assertNotEmpty($result);
@@ -90,13 +90,13 @@ class ReportingV2Test extends WebTestCase
             $this->markTestSkipped('No workspace data found');
         }
 
-        $result = $this->reportingRepo->getAgentLoad(null, $phoneNumberId);
+        $result = $this->reportingRepo->getCargaDeAgentes(null, $phoneNumberId);
         $this->assertIsArray($result);
     }
 
     public function testGetUnassignedReturnsTickets(): void
     {
-        $result = $this->reportingRepo->getUnassigned();
+        $result = $this->reportingRepo->getSinAsignar();
 
         $this->assertArrayHasKey('count', $result);
         $this->assertArrayHasKey('tickets', $result);
@@ -119,7 +119,7 @@ class ReportingV2Test extends WebTestCase
         $from = new \DateTimeImmutable('-30 days');
         $to = new \DateTimeImmutable('now');
 
-        $result = $this->reportingRepo->getUnassigned(null, $from, $to);
+        $result = $this->reportingRepo->getSinAsignar(null, $from, $to);
         $this->assertArrayHasKey('count', $result);
         $this->assertArrayHasKey('tickets', $result);
     }
@@ -129,7 +129,7 @@ class ReportingV2Test extends WebTestCase
         $from = new \DateTimeImmutable('-30 days');
         $to = new \DateTimeImmutable('now');
 
-        $result = $this->reportingRepo->getFrtTrend($from, $to);
+        $result = $this->reportingRepo->getTendenciaDeFrt($from, $to);
 
         $this->assertIsArray($result);
         $this->assertNotEmpty($result);
@@ -148,7 +148,7 @@ class ReportingV2Test extends WebTestCase
         $from = new \DateTimeImmutable('-90 days');
         $to = new \DateTimeImmutable('now');
 
-        $result = $this->reportingRepo->getHeatmap($from, $to);
+        $result = $this->reportingRepo->getMapaDeCalor($from, $to);
 
         $this->assertIsArray($result);
         $this->assertNotEmpty($result);
@@ -166,7 +166,7 @@ class ReportingV2Test extends WebTestCase
 
     public function testGetRecurringCustomersReturnsData(): void
     {
-        $result = $this->reportingRepo->getRecurringCustomers(null, 2);
+        $result = $this->reportingRepo->getContactosRecurrentes(null, 2);
 
         $this->assertIsArray($result);
         $this->assertNotEmpty($result);
@@ -186,7 +186,7 @@ class ReportingV2Test extends WebTestCase
         $from = new \DateTimeImmutable('-30 days');
         $to = new \DateTimeImmutable('now');
 
-        $result = $this->reportingRepo->getReopened($from, $to);
+        $result = $this->reportingRepo->getReabiertos($from, $to);
 
         $this->assertIsArray($result);
 
@@ -205,14 +205,14 @@ class ReportingV2Test extends WebTestCase
 
     public function testReportingServiceGetAgentLoad(): void
     {
-        $result = $this->reportingService->getAgentLoad();
+        $result = $this->reportingService->getCargaDeAgentes();
         $this->assertIsArray($result);
         $this->assertNotEmpty($result);
     }
 
     public function testReportingServiceGetUnassigned(): void
     {
-        $result = $this->reportingService->getUnassigned();
+        $result = $this->reportingService->getSinAsignar();
         $this->assertArrayHasKey('count', $result);
         $this->assertArrayHasKey('tickets', $result);
     }
@@ -222,7 +222,7 @@ class ReportingV2Test extends WebTestCase
         $from = new \DateTimeImmutable('-30 days');
         $to = new \DateTimeImmutable('now');
 
-        $result = $this->reportingService->getFrtTrend($from, $to);
+        $result = $this->reportingService->getTendenciaDeFrt($from, $to);
         $this->assertIsArray($result);
     }
 
@@ -231,13 +231,13 @@ class ReportingV2Test extends WebTestCase
         $from = new \DateTimeImmutable('-30 days');
         $to = new \DateTimeImmutable('now');
 
-        $result = $this->reportingService->getHeatmap($from, $to);
+        $result = $this->reportingService->getMapaDeCalor($from, $to);
         $this->assertIsArray($result);
     }
 
     public function testReportingServiceGetRecurringCustomers(): void
     {
-        $result = $this->reportingService->getRecurringCustomers(null, 2);
+        $result = $this->reportingService->getContactosRecurrentes(null, 2);
         $this->assertIsArray($result);
     }
 
@@ -246,7 +246,7 @@ class ReportingV2Test extends WebTestCase
         $from = new \DateTimeImmutable('-30 days');
         $to = new \DateTimeImmutable('now');
 
-        $result = $this->reportingService->getReopened($from, $to);
+        $result = $this->reportingService->getReabiertos($from, $to);
         $this->assertIsArray($result);
     }
 
@@ -256,7 +256,7 @@ class ReportingV2Test extends WebTestCase
         $to = new \DateTimeImmutable('2026-01-01 00:00:00');
 
         $this->expectException(\InvalidArgumentException::class);
-        $this->reportingService->getFrtTrend($from, $to);
+        $this->reportingService->getTendenciaDeFrt($from, $to);
     }
 
     // ============================================

@@ -27,7 +27,7 @@ class ExportarTicketsCsvQuery
     public const CHUNK_SIZE = 500;
 
     /** Column order — MUST match the header row and the spec's column contract. */
-    public const COLUMNS = [
+    public const COLUMNAS = [
         'ticket_id',
         'contact_name',
         'contact_phone',
@@ -45,7 +45,7 @@ class ExportarTicketsCsvQuery
     ];
 
     /** Only free-text columns get formula-injection escaping; phone is excluded on purpose. */
-    private const ESCAPABLE_COLUMNS = ['contact_name', 'assigned_agent', 'tags'];
+    private const COLUMNAS_A_ESCAPAR = ['contact_name', 'assigned_agent', 'tags'];
 
     public function __construct(
         private FiltrosDeTicketBuilder $ticketFilterBuilder,
@@ -72,7 +72,7 @@ class ExportarTicketsCsvQuery
         ?string $phoneNumberId = null,
         ?int $teamId = null,
     ): int {
-        $writer->insertOne(self::COLUMNS);
+        $writer->insertOne(self::COLUMNAS);
 
         $escapeFormula = new EscapeFormula();
 
@@ -99,7 +99,7 @@ class ExportarTicketsCsvQuery
             }
 
             $ticketIds = array_map(fn($row) => (int) $row['id'], $rows);
-            $tagsByTicket = $this->fetchTagsByTicket($ticketIds);
+            $tagsByTicket = $this->fetchEtiquetasPorTicket($ticketIds);
 
             foreach ($rows as $row) {
                 $ticketId = (int) $row['id'];
@@ -121,7 +121,7 @@ class ExportarTicketsCsvQuery
                     'phone_number_id' => $row['phone_number_id'] ?? '',
                 ];
 
-                $escapable = array_intersect_key($record, array_flip(self::ESCAPABLE_COLUMNS));
+                $escapable = array_intersect_key($record, array_flip(self::COLUMNAS_A_ESCAPAR));
                 $record = array_merge($record, $escapeFormula->escapeRecord($escapable));
 
                 $writer->insertOne(array_values($record));
@@ -141,7 +141,7 @@ class ExportarTicketsCsvQuery
      * @param list<int> $ticketIds
      * @return array<int, list<string>> ticket id => ordered tag names
      */
-    private function fetchTagsByTicket(array $ticketIds): array
+    private function fetchEtiquetasPorTicket(array $ticketIds): array
     {
         if (empty($ticketIds)) {
             return [];

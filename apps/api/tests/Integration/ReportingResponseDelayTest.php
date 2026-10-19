@@ -213,7 +213,7 @@ class ReportingResponseDelayTest extends WebTestCase
         $this->automatic($cid, '2026-06-01 08:30:00');
         $this->inbound($cid, '2026-06-01 08:45:00');
 
-        $cutoff = $this->reportingRepo->getAttributionCutoff();
+        $cutoff = $this->reportingRepo->getCorteDeAtribucion();
 
         self::assertNotNull($cutoff);
         self::assertSame('2026-06-01 08:30:00', $cutoff->format('Y-m-d H:i:s'));
@@ -242,7 +242,7 @@ class ReportingResponseDelayTest extends WebTestCase
         $from = new \DateTimeImmutable('2026-06-01 08:00:00');
         $to = new \DateTimeImmutable('2026-06-01 11:00:00');
 
-        $result = $this->reportingRepo->getResponseDelayMetrics($from, $to);
+        $result = $this->reportingRepo->getMetricasDeDemoraDeRespuesta($from, $to);
 
         // If episodes were NOT scoped per-ticket, Ticket A's 09:10 inbound
         // would wrongly pair with the FIRST agent message in the whole
@@ -276,7 +276,7 @@ class ReportingResponseDelayTest extends WebTestCase
 
         $from = new \DateTimeImmutable('2026-06-01 08:00:00');
         $to = new \DateTimeImmutable('2026-06-01 10:00:00');
-        $result = $this->reportingRepo->getResponseDelayMetrics($from, $to);
+        $result = $this->reportingRepo->getMetricasDeDemoraDeRespuesta($from, $to);
 
         // Exactly ONE sample, measured from the run's FIRST message (M1, 09:00) to R (09:05).
         self::assertSame(1, $result['aggregate']['sample_count']);
@@ -305,7 +305,7 @@ class ReportingResponseDelayTest extends WebTestCase
 
         $from = new \DateTimeImmutable('2026-06-01 08:00:00');
         $to = new \DateTimeImmutable('2026-06-01 10:00:00');
-        $result = $this->reportingRepo->getResponseDelayMetrics($from, $to);
+        $result = $this->reportingRepo->getMetricasDeDemoraDeRespuesta($from, $to);
 
         // Burst 0 = [I1,I2] -> A1 (09:00 -> 09:02 = 120s)
         // Burst 1 = [I3,I4] -> A2 (09:03 -> 09:06 = 180s); AU1 neither split it nor stopped the clock
@@ -325,7 +325,7 @@ class ReportingResponseDelayTest extends WebTestCase
 
         $from = new \DateTimeImmutable('2026-06-01 08:00:00');
         $to = new \DateTimeImmutable('2026-06-01 10:00:00');
-        $result = $this->reportingRepo->getResponseDelayMetrics($from, $to);
+        $result = $this->reportingRepo->getMetricasDeDemoraDeRespuesta($from, $to);
 
         self::assertSame(0, $result['aggregate']['sample_count']);
         self::assertNull($result['aggregate']['avg_delay_seconds']); // never-zero rule
@@ -354,13 +354,13 @@ class ReportingResponseDelayTest extends WebTestCase
         $this->inbound($cid, '2026-06-01 08:00:00');
         $this->agentReply($cid, $agent->getId(), '2026-06-01 08:05:00');
 
-        $cutoff = $this->reportingRepo->getAttributionCutoff();
+        $cutoff = $this->reportingRepo->getCorteDeAtribucion();
         self::assertNotNull($cutoff);
         self::assertSame('2026-06-01 08:00:00', $cutoff->format('Y-m-d H:i:s'));
 
         $from = new \DateTimeImmutable('2026-06-01 06:00:00');
         $to = new \DateTimeImmutable('2026-06-01 09:00:00');
-        $result = $this->reportingRepo->getResponseDelayMetrics($from, $to);
+        $result = $this->reportingRepo->getMetricasDeDemoraDeRespuesta($from, $to);
 
         // The pre-cutoff legacy pair must be entirely excluded — not counted
         // as unanswered, not counted as a sample.
@@ -369,12 +369,12 @@ class ReportingResponseDelayTest extends WebTestCase
         self::assertSame(0, $result['aggregate']['unanswered_inbound_count']);
 
         // Service-level partial_data: range starts before the cutoff.
-        $serviceResult = $this->reportingService->getResponseDelay($from, $to);
+        $serviceResult = $this->reportingService->getDemoraDeRespuesta($from, $to);
         self::assertTrue($serviceResult['partial_data']);
         self::assertSame('2026-06-01 08:00:00', $serviceResult['data_available_from']);
 
         // Range fully within attributed data (from === cutoff) -> partial_data false.
-        $fullyAttributedResult = $this->reportingService->getResponseDelay(
+        $fullyAttributedResult = $this->reportingService->getDemoraDeRespuesta(
             new \DateTimeImmutable('2026-06-01 08:00:00'),
             $to
         );
@@ -406,8 +406,8 @@ class ReportingResponseDelayTest extends WebTestCase
         $this->inbound($cid, $tieTimestamp);
         $this->agentReply($cid, $agent->getId(), '2026-06-01 09:05:00');
 
-        $ticket1Participation = $this->reportingRepo->getTicketParticipation($ticket1->getId());
-        $ticket2Participation = $this->reportingRepo->getTicketParticipation($ticket2->getId());
+        $ticket1Participation = $this->reportingRepo->getParticipacionEnTicket($ticket1->getId());
+        $ticket2Participation = $this->reportingRepo->getParticipacionEnTicket($ticket2->getId());
 
         self::assertNotNull($ticket1Participation);
         self::assertNotNull($ticket2Participation);
@@ -443,7 +443,7 @@ class ReportingResponseDelayTest extends WebTestCase
         $this->inbound($cid, '2026-06-01 09:10:00');
         $this->agentReply($cid, $agentY->getId(), '2026-06-01 09:12:00');
 
-        $result = $this->reportingRepo->getTicketParticipation($ticket->getId());
+        $result = $this->reportingRepo->getParticipacionEnTicket($ticket->getId());
 
         self::assertNotNull($result);
         self::assertCount(2, $result['pairs']); // one entry for the 3-message run, not three
@@ -477,7 +477,7 @@ class ReportingResponseDelayTest extends WebTestCase
         $this->inbound($cid, '2026-06-01 08:00:00');
         $this->agentReply($cid, $agent->getId(), '2026-06-01 08:05:00');
 
-        $result = $this->reportingRepo->getTicketParticipation($ticket->getId());
+        $result = $this->reportingRepo->getParticipacionEnTicket($ticket->getId());
 
         self::assertNotNull($result);
         self::assertTrue($result['partial_data']);
@@ -488,7 +488,7 @@ class ReportingResponseDelayTest extends WebTestCase
 
     public function testGetTicketParticipationReturnsNullForUnknownTicket(): void
     {
-        $result = $this->reportingRepo->getTicketParticipation(999999999);
+        $result = $this->reportingRepo->getParticipacionEnTicket(999999999);
 
         self::assertNull($result);
     }
@@ -518,7 +518,7 @@ class ReportingResponseDelayTest extends WebTestCase
         $this->automatic($cid, '2026-06-01 09:05:00'); // AU2
         $this->agentReply($cid, $agentX->getId(), '2026-06-01 09:07:00'); // A2
 
-        $result = $this->reportingRepo->getTicketParticipation($ticket->getId());
+        $result = $this->reportingRepo->getParticipacionEnTicket($ticket->getId());
 
         self::assertNotNull($result);
 

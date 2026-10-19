@@ -225,7 +225,7 @@ class ReportsCsvExportTest extends WebTestCase
         self::assertStringStartsWith("\xEF\xBB\xBF", $body);
 
         $reader = Reader::createFromString(substr($body, 3));
-        self::assertSame(ExportarTicketsCsvQuery::COLUMNS, $reader->fetchOne(0));
+        self::assertSame(ExportarTicketsCsvQuery::COLUMNAS, $reader->fetchOne(0));
     }
 
     // ────────────────────────────────────────────────────────

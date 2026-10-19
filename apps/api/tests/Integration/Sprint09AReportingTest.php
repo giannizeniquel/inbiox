@@ -85,7 +85,7 @@ class Sprint09AReportingTest extends KernelTestCase
         );
 
         // Act
-        $result = $this->reportingRepo->getFrtMetrics($from, $to);
+        $result = $this->reportingRepo->getMetricasDeFrt($from, $to);
 
         // Assert - average should be 45 minutes (2700 seconds)
         $this->assertEquals(2700, (int)$result['avg_frt_seconds']);
@@ -117,7 +117,7 @@ class Sprint09AReportingTest extends KernelTestCase
         );
 
         // Act
-        $result = $this->reportingRepo->getFrtMetrics($from, $to);
+        $result = $this->reportingRepo->getMetricasDeFrt($from, $to);
 
         // Assert - only 1 ticket counted, avg is 30 min
         $this->assertEquals(1800, (int)$result['avg_frt_seconds']);
@@ -151,7 +151,7 @@ class Sprint09AReportingTest extends KernelTestCase
         );
 
         // Act
-        $result = $this->reportingRepo->getRtMetrics($from, $to);
+        $result = $this->reportingRepo->getMetricasDeRt($from, $to);
 
         // Assert - average should be 3 hours (10800 seconds)
         $this->assertEquals(10800, (int)$result['avg_rt_seconds']);
@@ -183,7 +183,7 @@ class Sprint09AReportingTest extends KernelTestCase
         );
 
         // Act
-        $result = $this->reportingRepo->getRtMetrics($from, $to);
+        $result = $this->reportingRepo->getMetricasDeRt($from, $to);
 
         // Assert - only 1 ticket counted
         $this->assertEquals(7200, (int)$result['avg_rt_seconds']);
@@ -217,7 +217,7 @@ class Sprint09AReportingTest extends KernelTestCase
         );
 
         // Act
-        $result = $this->reportingRepo->getFrtMetrics($from, $to);
+        $result = $this->reportingRepo->getMetricasDeFrt($from, $to);
 
         // Assert - only 1 ticket counted
         $this->assertNotNull($result['avg_frt_seconds']);
@@ -233,7 +233,7 @@ class Sprint09AReportingTest extends KernelTestCase
         $to = new \DateTimeImmutable('2026-03-31 23:59:59');
 
         // Act
-        $result = $this->reportingRepo->getFrtMetrics($from, $to);
+        $result = $this->reportingRepo->getMetricasDeFrt($from, $to);
 
         // Assert
         $this->assertNull($result['avg_frt_seconds']);
@@ -270,7 +270,7 @@ class Sprint09AReportingTest extends KernelTestCase
         );
 
         // Act - filter by agent 42
-        $result = $this->reportingRepo->getFrtMetrics($from, $to, $agentId);
+        $result = $this->reportingRepo->getMetricasDeFrt($from, $to, $agentId);
 
         // Assert - only 1 ticket counted
         $this->assertEquals(1800, (int)$result['avg_frt_seconds']);
@@ -297,7 +297,7 @@ class Sprint09AReportingTest extends KernelTestCase
         $this->createTestTicketWithStatus('closed');
 
         // Act
-        $result = $this->reportingRepo->getCountsByStatus($from, $to);
+        $result = $this->reportingRepo->getConteosPorEstado($from, $to);
 
         // Assert
         $this->assertEquals(2, $result['new']);
@@ -342,7 +342,7 @@ class Sprint09AReportingTest extends KernelTestCase
         );
 
         // Act
-        $result = $this->reportingRepo->getVolumeOverTime($from, $to);
+        $result = $this->reportingRepo->getVolumenEnElTiempo($from, $to);
 
         // Assert - check structure
         $this->assertIsArray($result);
@@ -394,7 +394,7 @@ class Sprint09AReportingTest extends KernelTestCase
         );
 
         // Act
-        $result = $this->reportingRepo->getAgentPerformance($from, $to);
+        $result = $this->reportingRepo->getRendimientoDeAgentes($from, $to);
 
         // Assert
         $this->assertIsArray($result);
@@ -435,7 +435,7 @@ class Sprint09AReportingTest extends KernelTestCase
         );
 
         // Act - filter by agent 42
-        $result = $this->reportingRepo->getAgentPerformance($from, $to, $agent42Id);
+        $result = $this->reportingRepo->getRendimientoDeAgentes($from, $to, $agent42Id);
 
         // Assert - only agent 42
         $this->assertCount(1, $result);
@@ -472,7 +472,7 @@ class Sprint09AReportingTest extends KernelTestCase
         );
 
         // Act — filter by workspace A
-        $result = $this->reportingRepo->getAgentPerformance($from, $to, null, $wsA);
+        $result = $this->reportingRepo->getRendimientoDeAgentes($from, $to, null, $wsA);
 
         // Assert
         $this->assertIsArray($result);
@@ -513,7 +513,7 @@ class Sprint09AReportingTest extends KernelTestCase
         );
 
         // Act — null workspace = no filter (backward compatible)
-        $result = $this->reportingRepo->getAgentPerformance($from, $to);
+        $result = $this->reportingRepo->getRendimientoDeAgentes($from, $to);
 
         // Assert — both agents appear
         $agentIds = array_column($result, 'agent_id');
@@ -541,7 +541,7 @@ class Sprint09AReportingTest extends KernelTestCase
         );
 
         // Act
-        $result = $this->reportingRepo->getFrtMetrics($from, $to);
+        $result = $this->reportingRepo->getMetricasDeFrt($from, $to);
 
         // Assert - 30 minutes = 1800 seconds
         $this->assertEquals(1800, (int)$result['avg_frt_seconds']);
@@ -567,7 +567,7 @@ class Sprint09AReportingTest extends KernelTestCase
         );
 
         // Act
-        $result = $this->reportingRepo->getFrtMetrics($from, $to);
+        $result = $this->reportingRepo->getMetricasDeFrt($from, $to);
 
         // Assert - 5 days = 432000 seconds
         $this->assertEquals(432000, (int)$result['avg_frt_seconds']);
@@ -589,7 +589,7 @@ class Sprint09AReportingTest extends KernelTestCase
         );
 
         // Act
-        $result = $this->reportingRepo->getFrtMetrics($from, $to);
+        $result = $this->reportingRepo->getMetricasDeFrt($from, $to);
 
         // Assert - 0 seconds
         $this->assertEquals(0, (int)$result['avg_frt_seconds']);

@@ -109,7 +109,7 @@ class ReporteRepository extends ServiceEntityRepository
      * @param int|null $teamId Optional filter by team (single-select)
      * @return array{avg_frt_seconds: float|null, min_frt_seconds: int|null, max_frt_seconds: int|null, avg_frt_minutes: float|null, min_frt_minutes: int|null, max_frt_minutes: int|null}
      */
-    public function getFrtMetrics(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
+    public function getMetricasDeFrt(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
     {
         $conn = $this->entityManager->getConnection();
         
@@ -160,7 +160,7 @@ class ReporteRepository extends ServiceEntityRepository
      * @param int|null $teamId Optional filter by team (single-select)
      * @return array{avg_rt_seconds: float|null, min_rt_seconds: int|null, max_rt_seconds: int|null, avg_rt_minutes: float|null, min_rt_minutes: int|null, max_rt_minutes: int|null}
      */
-    public function getRtMetrics(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
+    public function getMetricasDeRt(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
     {
         $conn = $this->entityManager->getConnection();
         
@@ -204,7 +204,7 @@ class ReporteRepository extends ServiceEntityRepository
      * @param int|null $teamId Optional filter by team (single-select)
      * @return array{new: int, active: int, waiting: int, resolved: int, closed: int}
      */
-    public function getCountsByStatus(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
+    public function getConteosPorEstado(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
     {
         $qb = $this->createQueryBuilder('t');
 
@@ -263,7 +263,7 @@ class ReporteRepository extends ServiceEntityRepository
      * @param int|null $teamId Optional filter by team (single-select)
      * @return array<int, array{date: string, tickets_created: int, tickets_resolved: int}>
      */
-    public function getVolumeOverTime(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
+    public function getVolumenEnElTiempo(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
     {
         $conn = $this->entityManager->getConnection();
         $params = ['from' => $from->format('Y-m-d H:i:s'), 'to' => $to->format('Y-m-d H:i:s')];
@@ -332,7 +332,7 @@ class ReporteRepository extends ServiceEntityRepository
      * @param int|null $teamId Optional filter by team (single-select)
      * @return array<int, array{agent_id: int, agent_name: string|null, tickets_assigned: int, tickets_resolved: int, current_active_tickets: int, max_active_tickets: int, current_load: float, avg_frt_seconds: float|null, avg_frt_minutes: float|null, avg_rt_seconds: float|null, avg_rt_minutes: float|null}>
      */
-    public function getAgentPerformance(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
+    public function getRendimientoDeAgentes(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
     {
         $conn = $this->entityManager->getConnection();
 
@@ -405,7 +405,7 @@ class ReporteRepository extends ServiceEntityRepository
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
      * @return array<int, array{agent_id: int, agent_name: string, active_tickets: int, max_capacity: int, load_percent: float}>
      */
-    public function getAgentLoad(?int $agentId = null, ?string $phoneNumberId = null): array
+    public function getCargaDeAgentes(?int $agentId = null, ?string $phoneNumberId = null): array
     {
         $conn = $this->entityManager->getConnection();
 
@@ -460,7 +460,7 @@ class ReporteRepository extends ServiceEntityRepository
      * @param int $limit Maximum results (default 50)
      * @return array{count: int, tickets: array<int, array{id: int, contact_name: string|null, created_at: string, priority: string}>}
      */
-    public function getUnassigned(?string $phoneNumberId = null, ?\DateTimeImmutable $from = null, ?\DateTimeImmutable $to = null, int $limit = 50): array
+    public function getSinAsignar(?string $phoneNumberId = null, ?\DateTimeImmutable $from = null, ?\DateTimeImmutable $to = null, int $limit = 50): array
     {
         $conn = $this->entityManager->getConnection();
 
@@ -528,7 +528,7 @@ class ReporteRepository extends ServiceEntityRepository
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
      * @return array<int, array{date: string, avg_frt_seconds: float, ticket_count: int}>
      */
-    public function getFrtTrend(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null): array
+    public function getTendenciaDeFrt(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null): array
     {
         $conn = $this->entityManager->getConnection();
 
@@ -580,7 +580,7 @@ class ReporteRepository extends ServiceEntityRepository
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
      * @return array<int, array{day_of_week: int, hour: int, count: int}>
      */
-    public function getHeatmap(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null): array
+    public function getMapaDeCalor(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null): array
     {
         $conn = $this->entityManager->getConnection();
 
@@ -641,7 +641,7 @@ class ReporteRepository extends ServiceEntityRepository
      * @param int $days Lookback window in days (default 90)
      * @return array<int, array{contact_id: int, contact_name: string|null, email: string|null, ticket_count: int, last_ticket_at: string}>
      */
-    public function getRecurringCustomers(?string $phoneNumberId = null, int $threshold = 3, int $days = 90): array
+    public function getContactosRecurrentes(?string $phoneNumberId = null, int $threshold = 3, int $days = 90): array
     {
         $conn = $this->entityManager->getConnection();
 
@@ -696,7 +696,7 @@ class ReporteRepository extends ServiceEntityRepository
      * @param int $limit Maximum results (default 100)
      * @return array<int, array{ticket_id: int, contact_name: string|null, resolved_at: string|null, reopened_at: string, current_status: string}>
      */
-    public function getReopened(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null, int $limit = 100): array
+    public function getReabiertos(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null, int $limit = 100): array
     {
         $conn = $this->entityManager->getConnection();
 
@@ -750,7 +750,7 @@ class ReporteRepository extends ServiceEntityRepository
      * Native SQL because it combines three `LIMIT 1` subqueries with UNION
      * ALL, which DQL cannot express. Tested by ReportingResponseDelayTest.
      */
-    public function getAttributionCutoff(): ?\DateTimeImmutable
+    public function getCorteDeAtribucion(): ?\DateTimeImmutable
     {
         $conn = $this->entityManager->getConnection();
 
@@ -788,11 +788,11 @@ class ReporteRepository extends ServiceEntityRepository
      *
      * @return array{aggregate: array{avg_delay_seconds: float|null, sample_count: int, unanswered_inbound_count: int}, per_agent: array<int, array{agent_id: int, agent_name: string|null, avg_delay_seconds: float|null, sample_count: int}>}
      */
-    public function getResponseDelayMetrics(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null): array
+    public function getMetricasDeDemoraDeRespuesta(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null): array
     {
-        $rows = $this->fetchResponseDelayRows($from, $to, $phoneNumberId);
+        $rows = $this->fetchFilasDeDemoraDeRespuesta($from, $to, $phoneNumberId);
 
-        return $this->aggregateResponseDelayRows($rows);
+        return $this->agregarFilasDeDemoraDeRespuesta($rows);
     }
 
     /**
@@ -801,7 +801,7 @@ class ReporteRepository extends ServiceEntityRepository
      *
      * @return list<array<string, mixed>>
      */
-    private function fetchResponseDelayRows(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId): array
+    private function fetchFilasDeDemoraDeRespuesta(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId): array
     {
         $conn = $this->entityManager->getConnection();
         $timeDiff = $this->getTimeDiffExpression('b.inbound_at', 'r.reply_at');
@@ -887,7 +887,7 @@ class ReporteRepository extends ServiceEntityRepository
      * @param list<array<string, mixed>> $rows
      * @return array{aggregate: array{avg_delay_seconds: float|null, sample_count: int, unanswered_inbound_count: int}, per_agent: array<int, array{agent_id: int, agent_name: string|null, avg_delay_seconds: float|null, sample_count: int}>}
      */
-    private function aggregateResponseDelayRows(array $rows): array
+    private function agregarFilasDeDemoraDeRespuesta(array $rows): array
     {
         $aggregateSampleCount = 0;
         $aggregateSumDelay = 0.0;
@@ -928,7 +928,7 @@ class ReporteRepository extends ServiceEntityRepository
      * Get per-ticket participation drill-down: participants, per-agent
      * delay samples, automatic activity, and burst pairs — scoped to the
      * ticket's own episode. Reuses the same burst-based sampling and
-     * clock start/stop rules as {@see getResponseDelayMetrics()}.
+     * clock start/stop rules as {@see getMetricasDeDemoraDeRespuesta()}.
      *
      * Native SQL because the burst pairing needs CTEs and window functions
      * (`SUM() OVER`, `ROW_NUMBER() OVER`, `COUNT() OVER`), which neither DQL
@@ -938,18 +938,18 @@ class ReporteRepository extends ServiceEntityRepository
      *
      * @return array{ticket_id: int, data_available_from: \DateTimeImmutable|null, partial_data: bool, participants: array<int, array{agent_id: int, agent_name: string|null, message_count: int, sample_count: int, avg_delay_seconds: float|null}>, automatic_message_count: int, unanswered_inbound_count: int, pairs: array<int, array{run_start_at: string, reply_at: string|null, agent_id: int|null, delay_seconds: float|null}>}|null null when the ticket does not exist or has no conversation
      */
-    public function getTicketParticipation(int $ticketId): ?array
+    public function getParticipacionEnTicket(int $ticketId): ?array
     {
-        $episode = $this->findParticipationEpisode($ticketId);
+        $episode = $this->findEpisodioDeParticipacion($ticketId);
         if ($episode === null) {
             return null;
         }
 
-        $cutoff = $this->getAttributionCutoff();
-        $pairRows = $this->fetchParticipationPairRows($episode, $cutoff);
-        $messageCounts = $this->countEpisodeMessagesBySender($episode);
-        [$pairs, $participantStats, $unansweredInboundCount] = $this->foldParticipationPairs($pairRows);
-        $participants = $this->buildParticipants($messageCounts['by_agent'], $participantStats);
+        $cutoff = $this->getCorteDeAtribucion();
+        $pairRows = $this->fetchFilasDeParesDeParticipacion($episode, $cutoff);
+        $messageCounts = $this->countMensajesDelEpisodioPorRemitente($episode);
+        [$pairs, $participantStats, $unansweredInboundCount] = $this->plegarParesDeParticipacion($pairRows);
+        $participants = $this->armarParticipantes($messageCounts['by_agent'], $participantStats);
 
         return [
             'ticket_id' => $ticketId,
@@ -969,7 +969,7 @@ class ReporteRepository extends ServiceEntityRepository
      *
      * @return array{conversation_id: int, start: string, end: string|null}|null null when the ticket does not exist or has no conversation
      */
-    private function findParticipationEpisode(int $ticketId): ?array
+    private function findEpisodioDeParticipacion(int $ticketId): ?array
     {
         $conn = $this->entityManager->getConnection();
 
@@ -1010,7 +1010,7 @@ class ReporteRepository extends ServiceEntityRepository
      * @param array{conversation_id: int, start: string, end: string|null} $episode
      * @return list<array<string, mixed>>
      */
-    private function fetchParticipationPairRows(array $episode, ?\DateTimeImmutable $cutoff): array
+    private function fetchFilasDeParesDeParticipacion(array $episode, ?\DateTimeImmutable $cutoff): array
     {
         $conn = $this->entityManager->getConnection();
         $timeDiff = $this->getTimeDiffExpression('b.inbound_at', 'r.reply_at');
@@ -1072,7 +1072,7 @@ class ReporteRepository extends ServiceEntityRepository
      * @param array{conversation_id: int, start: string, end: string|null} $episode
      * @return array{by_agent: array<int, int>, automatic: int, unattributed: int}
      */
-    private function countEpisodeMessagesBySender(array $episode): array
+    private function countMensajesDelEpisodioPorRemitente(array $episode): array
     {
         $conn = $this->entityManager->getConnection();
 
@@ -1118,7 +1118,7 @@ class ReporteRepository extends ServiceEntityRepository
      * @param list<array<string, mixed>> $pairRows
      * @return array{0: list<array{run_start_at: string, reply_at: string|null, agent_id: int|null, delay_seconds: float|null}>, 1: array<int, array{agent_name: string|null, sample_count: int, sum_delay: float}>, 2: int}
      */
-    private function foldParticipationPairs(array $pairRows): array
+    private function plegarParesDeParticipacion(array $pairRows): array
     {
         $participantStats = [];
         $unansweredInboundCount = 0;
@@ -1162,7 +1162,7 @@ class ReporteRepository extends ServiceEntityRepository
      * @param array<int, array{agent_name: string|null, sample_count: int, sum_delay: float}> $participantStats
      * @return list<array{agent_id: int, agent_name: string|null, message_count: int, sample_count: int, avg_delay_seconds: float|null}>
      */
-    private function buildParticipants(array $messageCountByAgent, array $participantStats): array
+    private function armarParticipantes(array $messageCountByAgent, array $participantStats): array
     {
         $conn = $this->entityManager->getConnection();
 

@@ -27,7 +27,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * Authorization: any authenticated agent (ROLE_AGENT or higher) can access
  * every endpoint here. Reports/metrics are NOT restricted by agent — this
  * is an intentional product decision (see docs/04_sprints/sprint_16
- * (Production Readiness).md), not a bug. `getScopeAgentId()` below always
+ * (Production Readiness).md), not a bug. `getAgenteIdDeAlcance()` below always
  * returns null (see OwnershipScope), so no per-agent filtering is applied
  * to any query.
  */
@@ -68,7 +68,7 @@ class ReporteController
      * Always null today for every role (including AGENT) — see
      * OwnershipScope for why this is intentional and not a bug.
      */
-    private function getScopeAgentId(): ?int
+    private function getAgenteIdDeAlcance(): ?int
     {
         return $this->ownershipScope->getAgentId();
     }
@@ -77,7 +77,7 @@ class ReporteController
      * Get the scoped phoneNumberId for workspace filtering.
      * AGENT sees only their active workspace; SUPERVISOR/ADMIN see all.
      */
-    private function getScopePhoneNumberId(): ?string
+    private function getPhoneNumberIdDeAlcance(): ?string
     {
         return $this->workspaceScope->getActivePhoneNumberId();
     }
@@ -85,7 +85,7 @@ class ReporteController
     /**
      * Read the optional `teamId` query parameter (single-select team filter).
      */
-    private function getTeamId(Request $request): ?int
+    private function getEquipoId(Request $request): ?int
     {
         $teamId = $request->query->get('teamId');
 
@@ -106,13 +106,13 @@ class ReporteController
             $agentId = $request->query->get('agent_id') ? (int) $request->query->get('agent_id') : null;
 
             // Ownership scoping: force agent_id for AGENT role
-            $scopeAgentId = $this->getScopeAgentId();
+            $scopeAgentId = $this->getAgenteIdDeAlcance();
             if (null !== $scopeAgentId) {
                 $agentId = $scopeAgentId;
             }
 
-            $phoneNumberId = $this->getScopePhoneNumberId();
-            $teamId = $this->getTeamId($request);
+            $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
+            $teamId = $this->getEquipoId($request);
 
             $metrics = $this->reportingService->getFrt($from, $to, $agentId, $phoneNumberId, $teamId);
             return new JsonResponse($metrics);
@@ -133,9 +133,9 @@ class ReporteController
             $from = $this->parseDateTime($request->query->get('from'));
             $to = $this->parseDateTime($request->query->get('to'));
 
-            $scopeAgentId = $this->getScopeAgentId();
-            $phoneNumberId = $this->getScopePhoneNumberId();
-            $teamId = $this->getTeamId($request);
+            $scopeAgentId = $this->getAgenteIdDeAlcance();
+            $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
+            $teamId = $this->getEquipoId($request);
             $metrics = $this->reportingService->getRt($from, $to, $scopeAgentId, $phoneNumberId, $teamId);
 
             return new JsonResponse($metrics);
@@ -150,16 +150,16 @@ class ReporteController
      * GET /reports/counts?from=2026-01-01T00:00:00Z&to=2026-01-02T00:00:00Z
      */
     #[Route('/api/reports/counts', name: 'app_report_counts', methods: ['GET'])]
-    public function counts(Request $request): JsonResponse
+    public function conteos(Request $request): JsonResponse
     {
         try {
             $from = $this->parseDateTime($request->query->get('from'));
             $to = $this->parseDateTime($request->query->get('to'));
 
-            $scopeAgentId = $this->getScopeAgentId();
-            $phoneNumberId = $this->getScopePhoneNumberId();
-            $teamId = $this->getTeamId($request);
-            $counts = $this->reportingService->getCounts($from, $to, $scopeAgentId, $phoneNumberId, $teamId);
+            $scopeAgentId = $this->getAgenteIdDeAlcance();
+            $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
+            $teamId = $this->getEquipoId($request);
+            $counts = $this->reportingService->getConteos($from, $to, $scopeAgentId, $phoneNumberId, $teamId);
 
             return new JsonResponse($counts);
         } catch (\InvalidArgumentException $e) {
@@ -173,16 +173,16 @@ class ReporteController
      * GET /reports/volume?from=2026-01-01T00:00:00Z&to=2026-01-02T00:00:00Z
      */
     #[Route('/api/reports/volume', name: 'app_report_volume', methods: ['GET'])]
-    public function volume(Request $request): JsonResponse
+    public function volumen(Request $request): JsonResponse
     {
         try {
             $from = $this->parseDateTime($request->query->get('from'));
             $to = $this->parseDateTime($request->query->get('to'));
 
-            $scopeAgentId = $this->getScopeAgentId();
-            $phoneNumberId = $this->getScopePhoneNumberId();
-            $teamId = $this->getTeamId($request);
-            $volume = $this->reportingService->getVolume($from, $to, $scopeAgentId, $phoneNumberId, $teamId);
+            $scopeAgentId = $this->getAgenteIdDeAlcance();
+            $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
+            $teamId = $this->getEquipoId($request);
+            $volume = $this->reportingService->getVolumen($from, $to, $scopeAgentId, $phoneNumberId, $teamId);
 
             return new JsonResponse($volume);
         } catch (\InvalidArgumentException $e) {
@@ -196,7 +196,7 @@ class ReporteController
      * GET /reports/agents?from=2026-01-01T00:00:00Z&to=2026-01-02T00:00:00Z[&agent_id=1]
      */
     #[Route('/api/reports/agents', name: 'app_report_agents', methods: ['GET'])]
-    public function agents(Request $request): JsonResponse
+    public function agentes(Request $request): JsonResponse
     {
         try {
             $from = $this->parseDateTime($request->query->get('from'));
@@ -204,14 +204,14 @@ class ReporteController
             $agentId = $request->query->get('agent_id') ? (int) $request->query->get('agent_id') : null;
 
             // Ownership scoping: force agent_id for AGENT role
-            $scopeAgentId = $this->getScopeAgentId();
+            $scopeAgentId = $this->getAgenteIdDeAlcance();
             if (null !== $scopeAgentId) {
                 $agentId = $scopeAgentId;
             }
 
-            $phoneNumberId = $this->getScopePhoneNumberId();
-            $teamId = $this->getTeamId($request);
-            $performance = $this->reportingService->getAgentPerformance($from, $to, $agentId, $phoneNumberId, $teamId);
+            $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
+            $teamId = $this->getEquipoId($request);
+            $performance = $this->reportingService->getRendimientoDeAgentes($from, $to, $agentId, $phoneNumberId, $teamId);
             return new JsonResponse($performance);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
@@ -224,17 +224,17 @@ class ReporteController
      * GET /reports/agent-load[?agent_id=1][&phone_number_id=...]
      */
     #[Route('/api/reports/agent-load', name: 'app_report_agent_load', methods: ['GET'])]
-    public function agentLoad(Request $request): JsonResponse
+    public function cargaDeAgentes(Request $request): JsonResponse
     {
         $agentId = $request->query->get('agent_id') ? (int) $request->query->get('agent_id') : null;
 
-        $scopeAgentId = $this->getScopeAgentId();
+        $scopeAgentId = $this->getAgenteIdDeAlcance();
         if (null !== $scopeAgentId) {
             $agentId = $scopeAgentId;
         }
 
-        $phoneNumberId = $this->getScopePhoneNumberId();
-        $metrics = $this->reportingService->getAgentLoad($agentId, $phoneNumberId);
+        $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
+        $metrics = $this->reportingService->getCargaDeAgentes($agentId, $phoneNumberId);
 
         return new JsonResponse($metrics);
     }
@@ -245,14 +245,14 @@ class ReporteController
      * GET /reports/unassigned[?from=...][&to=...][&phone_number_id=...]
      */
     #[Route('/api/reports/unassigned', name: 'app_report_unassigned', methods: ['GET'])]
-    public function unassigned(Request $request): JsonResponse
+    public function sinAsignar(Request $request): JsonResponse
     {
         try {
-            $phoneNumberId = $this->getScopePhoneNumberId();
+            $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
             $from = $request->query->get('from') ? $this->parseDateTime($request->query->get('from')) : null;
             $to = $request->query->get('to') ? $this->parseDateTime($request->query->get('to')) : null;
 
-            $result = $this->reportingService->getUnassigned($phoneNumberId, $from, $to);
+            $result = $this->reportingService->getSinAsignar($phoneNumberId, $from, $to);
 
             return new JsonResponse($result);
         } catch (\InvalidArgumentException $e) {
@@ -266,9 +266,9 @@ class ReporteController
      * GET /reports/available-agents[?phone_number_id=...]
      */
     #[Route('/api/reports/available-agents', name: 'app_report_available_agents', methods: ['GET'])]
-    public function availableAgents(Request $request): JsonResponse
+    public function agentesDisponibles(Request $request): JsonResponse
     {
-        $result = $this->listAvailableAgents->execute($this->getScopePhoneNumberId(), new \DateTimeImmutable());
+        $result = $this->listAvailableAgents->execute($this->getPhoneNumberIdDeAlcance(), new \DateTimeImmutable());
 
         return new JsonResponse($result);
     }
@@ -279,14 +279,14 @@ class ReporteController
      * GET /reports/frt-trend?from=...&to=...[&phone_number_id=...]
      */
     #[Route('/api/reports/frt-trend', name: 'app_report_frt_trend', methods: ['GET'])]
-    public function frtTrend(Request $request): JsonResponse
+    public function tendenciaDeFrt(Request $request): JsonResponse
     {
         try {
             $from = $this->parseDateTime($request->query->get('from'));
             $to = $this->parseDateTime($request->query->get('to'));
-            $phoneNumberId = $this->getScopePhoneNumberId();
+            $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
 
-            $trend = $this->reportingService->getFrtTrend($from, $to, $phoneNumberId);
+            $trend = $this->reportingService->getTendenciaDeFrt($from, $to, $phoneNumberId);
 
             return new JsonResponse($trend);
         } catch (\InvalidArgumentException $e) {
@@ -300,14 +300,14 @@ class ReporteController
      * GET /reports/heatmap?from=...&to=...[&phone_number_id=...]
      */
     #[Route('/api/reports/heatmap', name: 'app_report_heatmap', methods: ['GET'])]
-    public function heatmap(Request $request): JsonResponse
+    public function mapaDeCalor(Request $request): JsonResponse
     {
         try {
             $from = $this->parseDateTime($request->query->get('from'));
             $to = $this->parseDateTime($request->query->get('to'));
-            $phoneNumberId = $this->getScopePhoneNumberId();
+            $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
 
-            $heatmap = $this->reportingService->getHeatmap($from, $to, $phoneNumberId);
+            $heatmap = $this->reportingService->getMapaDeCalor($from, $to, $phoneNumberId);
 
             return new JsonResponse($heatmap);
         } catch (\InvalidArgumentException $e) {
@@ -321,12 +321,12 @@ class ReporteController
      * GET /reports/recurring-customers[?phone_number_id=...][&threshold=3]
      */
     #[Route('/api/reports/recurring-customers', name: 'app_report_recurring', methods: ['GET'])]
-    public function recurringCustomers(Request $request): JsonResponse
+    public function contactosRecurrentes(Request $request): JsonResponse
     {
-        $phoneNumberId = $this->getScopePhoneNumberId();
+        $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
         $threshold = $request->query->get('threshold') ? (int) $request->query->get('threshold') : 3;
 
-        $result = $this->reportingService->getRecurringCustomers($phoneNumberId, $threshold);
+        $result = $this->reportingService->getContactosRecurrentes($phoneNumberId, $threshold);
 
         return new JsonResponse($result);
     }
@@ -337,14 +337,14 @@ class ReporteController
      * GET /reports/reopened?from=...&to=...[&phone_number_id=...]
      */
     #[Route('/api/reports/reopened', name: 'app_report_reopened', methods: ['GET'])]
-    public function reopened(Request $request): JsonResponse
+    public function reabiertos(Request $request): JsonResponse
     {
         try {
             $from = $this->parseDateTime($request->query->get('from'));
             $to = $this->parseDateTime($request->query->get('to'));
-            $phoneNumberId = $this->getScopePhoneNumberId();
+            $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
 
-            $result = $this->reportingService->getReopened($from, $to, $phoneNumberId);
+            $result = $this->reportingService->getReabiertos($from, $to, $phoneNumberId);
 
             return new JsonResponse($result);
         } catch (\InvalidArgumentException $e) {
@@ -364,7 +364,7 @@ class ReporteController
      */
     #[IsGranted('ROLE_SUPERVISOR')]
     #[Route('/api/reports/export', name: 'app_report_export', methods: ['GET'])]
-    public function export(Request $request): Response
+    public function exportar(Request $request): Response
     {
         try {
             $from = $this->parseDateTime($request->query->get('from'));
@@ -376,8 +376,8 @@ class ReporteController
         $agentId = $request->query->get('agent_id');
         $status = $request->query->get('status');
         $tag = $request->query->get('tag');
-        $phoneNumberId = $this->getScopePhoneNumberId();
-        $teamId = $this->getTeamId($request);
+        $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
+        $teamId = $this->getEquipoId($request);
 
         // Validate filter args up front (no DB query — same pure builder used
         // inside ExportarTicketsCsvQuery::stream) so an invalid request (e.g.
@@ -427,14 +427,14 @@ class ReporteController
      * GET /reports/response-delay?from=...&to=...
      */
     #[Route('/api/reports/response-delay', name: 'app_report_response_delay', methods: ['GET'])]
-    public function responseDelay(Request $request): JsonResponse
+    public function demoraDeRespuesta(Request $request): JsonResponse
     {
         try {
             $from = $this->parseDateTime($request->query->get('from'));
             $to = $this->parseDateTime($request->query->get('to'));
-            $phoneNumberId = $this->getScopePhoneNumberId();
+            $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
 
-            $result = $this->reportingService->getResponseDelay($from, $to, $phoneNumberId);
+            $result = $this->reportingService->getDemoraDeRespuesta($from, $to, $phoneNumberId);
 
             return new JsonResponse($result);
         } catch (\InvalidArgumentException $e) {
@@ -448,9 +448,9 @@ class ReporteController
      * GET /reports/tickets/{id}/participation
      */
     #[Route('/api/reports/tickets/{id}/participation', name: 'app_report_ticket_participation', methods: ['GET'])]
-    public function ticketParticipation(Request $request, int $id): JsonResponse
+    public function participacionEnTicket(Request $request, int $id): JsonResponse
     {
-        $result = $this->reportingService->getTicketParticipation($id);
+        $result = $this->reportingService->getParticipacionEnTicket($id);
 
         if ($result === null) {
             return new JsonResponse(['error' => 'Ticket not found'], 404);
