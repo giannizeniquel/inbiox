@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Disponibilidad\Turno;
 use App\Administracion\User;
 use Doctrine\ORM\EntityManagerInterface;
@@ -101,7 +101,7 @@ class Sprint10ControllerTest extends WebTestCase
         string $timezone = 'UTC',
         int $maxActiveTickets = 5,
     ): int {
-        $agent = new Agent($name);
+        $agent = new Agente($name);
         $agent->setTimezone($timezone);
         $agent->setMaxActiveTickets($maxActiveTickets);
         $this->em->persist($agent);

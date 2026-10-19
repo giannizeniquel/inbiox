@@ -7,7 +7,7 @@ namespace App\Tests\Unit\Service;
 use App\Disponibilidad\DisponibilidadDeAgenteService;
 use App\Automatizacion\RespuestaAutomaticaService;
 use App\Compartido\Graph\GraphClient;
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Disponibilidad\Turno;
 use App\Disponibilidad\Repository\TurnoRepository;
 use App\Contacto\Contacto;
@@ -19,7 +19,7 @@ use App\Conversacion\MessageSenderType;
 use App\Compartido\ProcessedEvent;
 use App\Ticket\Ticket;
 use App\Compartido\Graph\GraphApiException;
-use App\Agente\Repository\AgentRepository;
+use App\Agente\Repository\AgenteRepository;
 use App\Ticket\Repository\TicketRepository;
 use App\Compartido\Repository\ProcessedEventRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -44,7 +44,7 @@ use Psr\Log\LoggerInterface;
  */
 class AutoReplyServiceTest extends TestCase
 {
-    private AgentRepository&MockObject $agentRepo;
+    private AgenteRepository&MockObject $agentRepo;
     private TurnoRepository&MockObject $agentShiftRepo;
     private EntityManagerInterface&MockObject $em;
     private TicketRepository&MockObject $ticketRepo;
@@ -58,7 +58,7 @@ class AutoReplyServiceTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->agentRepo = $this->createMock(AgentRepository::class);
+        $this->agentRepo = $this->createMock(AgenteRepository::class);
         $this->agentShiftRepo = $this->createMock(TurnoRepository::class);
         $this->em = $this->createMock(EntityManagerInterface::class);
         $this->graphClient = $this->createMock(GraphClient::class);
@@ -95,8 +95,8 @@ class AutoReplyServiceTest extends TestCase
         bool $active = true,
         bool $autoReplyEnabled = true,
         ?string $autoReplyMessage = 'We are away right now.',
-    ): Agent {
-        $agent = new Agent('Agent-'.$id);
+    ): Agente {
+        $agent = new Agente('Agent-'.$id);
         $agent->setActive($active);
         $agent->setAutoReplyEnabled($autoReplyEnabled);
         $agent->setAutoReplyMessage($autoReplyMessage);
@@ -122,7 +122,7 @@ class AutoReplyServiceTest extends TestCase
     }
 
     private function createTicket(
-        ?Agent $agent = null,
+        ?Agente $agent = null,
         ?Contacto $contact = null,
         ?string $phoneNumberId = '123456789',
         ?Conversation $conversation = null,
@@ -153,7 +153,7 @@ class AutoReplyServiceTest extends TestCase
      * The agent's local time is UTC. A shift on the current DOW that covers
      * the current time will make isAvailable() pass step 3 (schedule).
      */
-    private function makeAgentAvailable(Agent $agent): void
+    private function makeAgentAvailable(Agente $agent): void
     {
         $now = new \DateTimeImmutable('now');
         $dow = (int) $now->format('N');

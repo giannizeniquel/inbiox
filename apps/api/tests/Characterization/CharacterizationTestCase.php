@@ -6,7 +6,7 @@ namespace App\Tests\Characterization;
 
 use App\Administracion\User;
 use App\Administracion\Workspace;
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Ticket\Ticket;
@@ -103,7 +103,7 @@ abstract class CharacterizationTestCase extends WebTestCase
     //  Fixtures
     // ────────────────────────────────────────────────────────
 
-    protected function createUser(string $email, array $roles, ?Agent $agent = null): User
+    protected function createUser(string $email, array $roles, ?Agente $agent = null): User
     {
         $user = new User();
         $user->setEmail($email);
@@ -123,9 +123,9 @@ abstract class CharacterizationTestCase extends WebTestCase
         return $user;
     }
 
-    protected function createAgent(string $name): Agent
+    protected function createAgent(string $name): Agente
     {
-        $agent = new Agent($name);
+        $agent = new Agente($name);
         $this->em->persist($agent);
         $this->em->flush();
 
@@ -174,7 +174,7 @@ abstract class CharacterizationTestCase extends WebTestCase
     /**
      * Creates a user (optionally linked to a new agent) and returns its access token.
      */
-    protected function loginAs(string $email, array $roles, ?Agent $agent = null): string
+    protected function loginAs(string $email, array $roles, ?Agente $agent = null): string
     {
         $this->createUser($email, $roles, $agent);
 

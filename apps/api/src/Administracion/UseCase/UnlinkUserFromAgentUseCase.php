@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Administracion\UseCase;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use Doctrine\ORM\EntityManagerInterface;
 
 final class UnlinkUserFromAgentUseCase
@@ -16,7 +16,7 @@ final class UnlinkUserFromAgentUseCase
     /**
      * @throws \InvalidArgumentException when the agent has no linked user
      */
-    public function execute(Agent $agent): void
+    public function execute(Agente $agent): void
     {
         $user = $agent->getUser();
 

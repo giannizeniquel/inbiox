@@ -11,7 +11,7 @@ use App\Disponibilidad\UseCase\CreateTurnoUseCase;
 use App\Disponibilidad\UseCase\DeleteTurnoUseCase;
 use App\Disponibilidad\UseCase\SetDisponibilidadManualUseCase;
 use App\Disponibilidad\Repository\TurnoRepository;
-use App\Agente\Repository\AgentRepository;
+use App\Agente\Repository\AgenteRepository;
 use App\Ticket\Repository\TicketRepository;
 use Doctrine\DBAL\Exception\LockWaitTimeoutException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
@@ -40,7 +40,7 @@ class DisponibilidadDeAgenteController
         private CreateTurnoUseCase $createTurnoUseCase,
         private DeleteTurnoUseCase $deleteTurnoUseCase,
         private DisponibilidadDeAgenteService $disponibilidadDeAgenteService,
-        private AgentRepository $agentRepo,
+        private AgenteRepository $agentRepo,
         private TurnoRepository $turnoRepo,
         private TicketRepository $ticketRepo,
         private OwnershipScope $ownershipScope,
@@ -286,7 +286,7 @@ class DisponibilidadDeAgenteController
      * Reuses the same cross-midnight logic as DisponibilidadDeAgenteService
      * but checks schedule only — no override, no capacity.
      */
-    private function isAgenteEnTurno(\App\Agente\Agent $agente, \DateTimeImmutable $localDateTime): bool
+    private function isAgenteEnTurno(\App\Agente\Agente $agente, \DateTimeImmutable $localDateTime): bool
     {
         $dow = (int) $localDateTime->format('N');
         $time = $localDateTime->format('H:i:s');

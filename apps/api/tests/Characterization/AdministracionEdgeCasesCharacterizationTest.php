@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Characterization;
 
-use App\Agente\Team;
+use App\Agente\Equipo;
 
 /**
  * Edge cases of the Administracion controllers that moving their writes into
@@ -129,7 +129,7 @@ final class AdministracionEdgeCasesCharacterizationTest extends Characterization
         $workspace = $this->createWorkspace('edge-ws-1');
         $kept = $this->createAgent('Kept');
         $workspace->addAgent($kept);
-        $team = new Team($workspace, 'Edge team');
+        $team = new Equipo($workspace, 'Edge team');
         $team->addAgent($kept);
         $this->em->persist($team);
         $this->em->flush();

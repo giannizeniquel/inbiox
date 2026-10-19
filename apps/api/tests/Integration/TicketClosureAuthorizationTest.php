@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Ticket\Ticket;
@@ -73,7 +73,7 @@ class TicketClosureAuthorizationTest extends WebTestCase
         $this->em = null;
     }
 
-    private function createAuthenticatedUser(string $email, array $roles, ?Agent $agent = null): string
+    private function createAuthenticatedUser(string $email, array $roles, ?Agente $agent = null): string
     {
         $user = new User();
         $user->setEmail($email);
@@ -103,9 +103,9 @@ class TicketClosureAuthorizationTest extends WebTestCase
         return $data['access_token'];
     }
 
-    private function createAgent(string $name): Agent
+    private function createAgent(string $name): Agente
     {
-        $agent = new Agent($name);
+        $agent = new Agente($name);
         $this->em->persist($agent);
         $this->em->flush();
 

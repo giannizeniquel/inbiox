@@ -7,7 +7,7 @@ namespace App\Disponibilidad\UseCase;
 use App\Disponibilidad\AgentShiftChangedEvent;
 use App\Compartido\Outbox\OutboxEvent;
 use App\Compartido\Outbox\OutboxWriter;
-use App\Agente\Repository\AgentRepository;
+use App\Agente\Repository\AgenteRepository;
 use App\Disponibilidad\Repository\TurnoRepository;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
@@ -24,7 +24,7 @@ final class DeleteTurnoUseCase
 
     public function __construct(
         private EntityManagerInterface $em,
-        private AgentRepository $agentRepo,
+        private AgenteRepository $agentRepo,
         private TurnoRepository $turnoRepo,
         private readonly OutboxWriter $outboxWriter,
     ) {}

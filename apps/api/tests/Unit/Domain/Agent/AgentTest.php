@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Domain\Agent;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Administracion\User;
 use PHPUnit\Framework\TestCase;
 
@@ -19,7 +19,7 @@ class AgentTest extends TestCase
 {
     public function testCreateAgentWithoutUserLink(): void
     {
-        $agent = new Agent('Support Bot');
+        $agent = new Agente('Support Bot');
 
         self::assertSame('Support Bot', $agent->getName());
         self::assertNull($agent->getUser(), 'New agent must have null user');
@@ -28,7 +28,7 @@ class AgentTest extends TestCase
 
     public function testAgentNoEmailProperty(): void
     {
-        $agent = new Agent('Test Agent');
+        $agent = new Agente('Test Agent');
 
         // Email property no longer exists on Agent
         self::assertFalse(property_exists($agent, 'email'), 'Agent must not have an email property');
@@ -39,7 +39,7 @@ class AgentTest extends TestCase
         $user = new User();
         $user->setEmail('agent@inbiox.local');
 
-        $agent = new Agent('Linked Agent');
+        $agent = new Agente('Linked Agent');
         $agent->setUser($user);
 
         self::assertSame($user, $agent->getUser());
@@ -50,7 +50,7 @@ class AgentTest extends TestCase
         $user = new User();
         $user->setEmail('agent@inbiox.local');
 
-        $agent = new Agent('Linked Agent');
+        $agent = new Agente('Linked Agent');
         $agent->setUser($user);
         self::assertNotNull($agent->getUser());
 
@@ -68,7 +68,7 @@ class AgentTest extends TestCase
 
     public function testAgentRemainsFunctionalForTicketAssignment(): void
     {
-        $agent = new Agent('Support Bot');
+        $agent = new Agente('Support Bot');
         $agent->setMaxActiveTickets(10);
         $agent->setTimezone('UTC');
 
@@ -85,7 +85,7 @@ class AgentTest extends TestCase
         $user = new User();
         $user->setEmail('agent@inbiox.local');
 
-        $agent = new Agent('Chained Agent');
+        $agent = new Agente('Chained Agent');
         $result = $agent->setUser($user);
 
         self::assertSame($agent, $result);
@@ -96,7 +96,7 @@ class AgentTest extends TestCase
         $user = new User();
         $user->setEmail('agent@inbiox.local');
 
-        $agent = new Agent('BiDi Agent');
+        $agent = new Agente('BiDi Agent');
         $agent->setUser($user);
 
         // User's inverse side maps back to the same agent
@@ -110,7 +110,7 @@ class AgentTest extends TestCase
 
     public function testSetTimezoneRejectsInvalidIana(): void
     {
-        $agent = new Agent('Invalid Timezone Agent');
+        $agent = new Agente('Invalid Timezone Agent');
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Invalid timezone: "Not/AZone"');
@@ -120,7 +120,7 @@ class AgentTest extends TestCase
 
     public function testAgentKeepsExistingFields(): void
     {
-        $agent = new Agent('Existing Fields Agent');
+        $agent = new Agente('Existing Fields Agent');
         $agent->setActive(false);
         $agent->setAvailable(false);
         $agent->setMaxActiveTickets(15);

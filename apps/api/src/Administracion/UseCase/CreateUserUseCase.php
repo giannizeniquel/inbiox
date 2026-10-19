@@ -6,7 +6,7 @@ namespace App\Administracion\UseCase;
 
 use App\Administracion\Repository\UserRepository;
 use App\Administracion\User;
-use App\Agente\Repository\AgentRepository;
+use App\Agente\Repository\AgenteRepository;
 use App\Compartido\NotFoundException;
 use App\Compartido\StateConflictException;
 use Doctrine\ORM\EntityManagerInterface;
@@ -17,7 +17,7 @@ final class CreateUserUseCase
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly UserRepository $userRepository,
-        private readonly AgentRepository $agentRepository,
+        private readonly AgenteRepository $agentRepository,
         private readonly UserPasswordHasherInterface $passwordHasher,
     ) {}
 

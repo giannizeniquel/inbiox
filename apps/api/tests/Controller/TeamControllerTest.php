@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
-use App\Agente\Agent;
-use App\Agente\Team;
+use App\Agente\Agente;
+use App\Agente\Equipo;
 use App\Administracion\User;
 use App\Administracion\Workspace;
 use Doctrine\ORM\EntityManagerInterface;
@@ -53,7 +53,7 @@ class TeamControllerTest extends WebTestCase
     //  Helpers
     // ────────────────────────────────────────────────────────
 
-    private function createUser(string $email, array $roles = ['ROLE_AGENT'], ?Agent $agent = null): User
+    private function createUser(string $email, array $roles = ['ROLE_AGENT'], ?Agente $agent = null): User
     {
         $user = new User();
         $user->setEmail($email);
@@ -72,9 +72,9 @@ class TeamControllerTest extends WebTestCase
         return $user;
     }
 
-    private function createAgent(string $name = 'Test Agent'): Agent
+    private function createAgent(string $name = 'Test Agent'): Agente
     {
-        $agent = new Agent($name);
+        $agent = new Agente($name);
         $this->em->persist($agent);
         $this->em->flush();
 
@@ -90,9 +90,9 @@ class TeamControllerTest extends WebTestCase
         return $workspace;
     }
 
-    private function createTeam(Workspace $workspace, string $name, bool $active = true): Team
+    private function createTeam(Workspace $workspace, string $name, bool $active = true): Equipo
     {
-        $team = new Team($workspace, $name);
+        $team = new Equipo($workspace, $name);
         $team->setActive($active);
         $this->em->persist($team);
         $this->em->flush();

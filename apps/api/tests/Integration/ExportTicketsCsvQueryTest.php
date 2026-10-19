@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Tests\Integration;
 
 use App\Reporte\Query\ExportTicketsCsvQuery;
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Ticket\Etiqueta;
 use App\Ticket\EtiquetaDeTicket;
-use App\Agente\Team;
+use App\Agente\Equipo;
 use App\Ticket\Ticket;
 use App\Administracion\Workspace;
 use App\Ticket\Repository\EtiquetaRepository;
@@ -87,7 +87,7 @@ class ExportTicketsCsvQueryTest extends KernelTestCase
             $ticket->setCreadoAt($createdAt);
         }
         if (null !== $teamId) {
-            $ticket->setEquipo($this->em->getReference(Team::class, $teamId));
+            $ticket->setEquipo($this->em->getReference(Equipo::class, $teamId));
         }
         $this->em->persist($ticket);
         $this->em->flush();
@@ -113,7 +113,7 @@ class ExportTicketsCsvQueryTest extends KernelTestCase
 
     private function createAgent(string $name = 'Agent Smith'): int
     {
-        $agent = new Agent($name);
+        $agent = new Agente($name);
         $this->em->persist($agent);
         $this->em->flush();
 
@@ -123,12 +123,12 @@ class ExportTicketsCsvQueryTest extends KernelTestCase
         return $id;
     }
 
-    private function createTeam(string $name = 'Support'): Team
+    private function createTeam(string $name = 'Support'): Equipo
     {
         $workspace = new Workspace('+549110000' . random_int(1000, 9999), 'Workspace for ' . $name);
         $this->em->persist($workspace);
 
-        $team = new Team($workspace, $name);
+        $team = new Equipo($workspace, $name);
         $this->em->persist($team);
         $this->em->flush();
 

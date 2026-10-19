@@ -2,40 +2,40 @@
 
 namespace App\Agente\Repository;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Administracion\Workspace;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\Persistence\ManagerRegistry;
 
-class AgentRepository extends ServiceEntityRepository
+class AgenteRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, Agent::class);
+        parent::__construct($registry, Agente::class);
     }
 
-    public function save(Agent $agent): void
+    public function save(Agente $agent): void
     {
         $this->_em->persist($agent);
         $this->_em->flush();
     }
 
-    public function findById(int $id): ?Agent
+    public function findById(int $id): ?Agente
     {
         return $this->find($id);
     }
 
     /**
      * @param int[] $ids
-     * @return Agent[]
+     * @return Agente[]
      */
     public function findByIds(array $ids): array
     {
         return $this->getEntityManager()
             ->createQueryBuilder()
             ->select('a')
-            ->from(Agent::class, 'a')
+            ->from(Agente::class, 'a')
             ->where('a.id IN (:ids)')
             ->setParameter('ids', $ids)
             ->getQuery()
@@ -47,7 +47,7 @@ class AgentRepository extends ServiceEntityRepository
         return $this->findBy(['active' => true]);
     }
 
-    /** @return Agent[] */
+    /** @return Agente[] */
     public function findByWorkspace(Workspace $workspace): array
     {
         return $this->createQueryBuilder('a')
@@ -62,7 +62,7 @@ class AgentRepository extends ServiceEntityRepository
     /**
      * Find active agents in a workspace.
      *
-     * @return Agent[]
+     * @return Agente[]
      */
     public function findActiveByWorkspace(Workspace $workspace): array
     {
@@ -99,7 +99,7 @@ class AgentRepository extends ServiceEntityRepository
     /**
      * Newest first, with the linked user fetched in the same query.
      *
-     * @return Agent[]
+     * @return Agente[]
      */
     public function findPageWithUser(int $offset, int $limit): array
     {

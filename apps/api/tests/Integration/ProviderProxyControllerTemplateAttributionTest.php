@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Integration;
 
 use App\Compartido\Graph\GraphClient;
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Conversacion\MessageSenderType;
@@ -109,7 +109,7 @@ class ProviderProxyControllerTemplateAttributionTest extends WebTestCase
         $user->setRoles(['ROLE_AGENT']);
         $this->em->persist($user);
 
-        $agent = new Agent('Template Agent');
+        $agent = new Agente('Template Agent');
         $agent->setUser($user);
         $this->em->persist($agent);
         $this->em->flush();

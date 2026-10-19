@@ -16,7 +16,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity]
 #[ORM\Table(name: 'agents')]
 #[ORM\Index(name: 'idx_agents_active', columns: ['active', 'is_available'])]
-class Agent
+class Agente
 {
     #[ORM\Id]
     #[ORM\Column(name: 'id', type: Types::BIGINT)]
@@ -82,7 +82,7 @@ class Agent
     #[ORM\JoinColumn(name: 'active_workspace_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
     private ?Workspace $activeWorkspace = null;
 
-    #[ORM\ManyToMany(targetEntity: Team::class, inversedBy: 'agents')]
+    #[ORM\ManyToMany(targetEntity: Equipo::class, inversedBy: 'agents')]
     #[ORM\JoinTable(name: 'agent_team')]
     #[ORM\JoinColumn(name: 'agent_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     #[ORM\InverseJoinColumn(name: 'team_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
@@ -245,13 +245,13 @@ class Agent
         return $this;
     }
 
-    /** @return Collection<int, Team> */
+    /** @return Collection<int, Equipo> */
     public function getTeams(): Collection
     {
         return $this->teams;
     }
 
-    public function addTeam(Team $team): self
+    public function addTeam(Equipo $team): self
     {
         if (!$this->teams->contains($team)) {
             $this->teams->add($team);
@@ -259,7 +259,7 @@ class Agent
         return $this;
     }
 
-    public function removeTeam(Team $team): self
+    public function removeTeam(Equipo $team): self
     {
         $this->teams->removeElement($team);
         return $this;

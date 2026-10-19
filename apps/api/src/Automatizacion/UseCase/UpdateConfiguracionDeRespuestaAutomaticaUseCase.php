@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Automatizacion\UseCase;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use Doctrine\ORM\EntityManagerInterface;
 
 final class UpdateConfiguracionDeRespuestaAutomaticaUseCase
@@ -17,7 +17,7 @@ final class UpdateConfiguracionDeRespuestaAutomaticaUseCase
      * A null $habilitado is left unchanged. The message is always set, so a null
      * message clears it.
      */
-    public function execute(Agent $agente, ?bool $habilitado, ?string $mensaje): void
+    public function execute(Agente $agente, ?bool $habilitado, ?string $mensaje): void
     {
         if ($habilitado !== null) {
             $agente->setAutoReplyEnabled($habilitado);

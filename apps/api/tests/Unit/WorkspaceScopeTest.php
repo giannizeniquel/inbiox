@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit;
 
 use App\Compartido\Security\WorkspaceScope;
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Administracion\User;
 use App\Administracion\Workspace;
 use PHPUnit\Framework\TestCase;
@@ -28,7 +28,7 @@ class WorkspaceScopeTest extends TestCase
         $workspace = $this->createMock(Workspace::class);
         $workspace->method('getPhoneNumberId')->willReturn('1146240195247464');
 
-        $agent = $this->createMock(Agent::class);
+        $agent = $this->createMock(Agente::class);
         $agent->method('getActiveWorkspace')->willReturn($workspace);
 
         $user = new User();
@@ -77,7 +77,7 @@ class WorkspaceScopeTest extends TestCase
 
     public function testAgentWithoutActiveWorkspaceReturnsNull(): void
     {
-        $agent = $this->createMock(Agent::class);
+        $agent = $this->createMock(Agente::class);
         $agent->method('getActiveWorkspace')->willReturn(null);
 
         $user = new User();

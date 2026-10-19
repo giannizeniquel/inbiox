@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Disponibilidad\Query;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 
 /**
  * Data Transfer Object for agent availability in workspace listing.
@@ -19,7 +19,7 @@ class DisponibilidadDeAgenteDTO
         public readonly int $maxTicketsActivos,
     ) {}
 
-    public static function fromEntity(Agent $agente, int $cantidadDeTicketsActivos, bool $isActivoAhora): self
+    public static function fromEntity(Agente $agente, int $cantidadDeTicketsActivos, bool $isActivoAhora): self
     {
         return new self(
             id: (int) $agente->getId(),

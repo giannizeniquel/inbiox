@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Integration;
 
 use App\Asignacion\UseCase\AsignarTicketAutomaticamenteUseCase;
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Disponibilidad\Turno;
 use App\Asignacion\Asignacion;
 use App\Compartido\Outbox\OutboxEvent;
@@ -69,7 +69,7 @@ class Sprint10AgentManagementTest extends WebTestCase
     private function createUser(
         string $email,
         array $roles = ['ROLE_AGENT'],
-        ?Agent $agent = null,
+        ?Agente $agent = null,
     ): User {
         $user = new User();
         $user->setEmail($email);
@@ -130,7 +130,7 @@ class Sprint10AgentManagementTest extends WebTestCase
     public function testFullAutoAssignmentFlow(): void
     {
         // 1. Create an agent
-        $agent = new Agent('Test Agent');
+        $agent = new Agente('Test Agent');
         $agent->setMaxActiveTickets(5);
         $agent->setTimezone('UTC');
         $this->em->persist($agent);
@@ -212,7 +212,7 @@ class Sprint10AgentManagementTest extends WebTestCase
     {
         $agents = [];
         for ($i = 1; $i <= 3; $i++) {
-            $agent = new Agent("Agent $i");
+            $agent = new Agente("Agent $i");
             $agent->setMaxActiveTickets(10);
             $agent->setTimezone('UTC');
             $this->em->persist($agent);
@@ -245,7 +245,7 @@ class Sprint10AgentManagementTest extends WebTestCase
 
         // The lowest-id agent should be selected
         $this->assertTrue($result['assigned']);
-        $lowestAgentId = min(array_map(fn(Agent $a) => (int) $a->getId(), $agents));
+        $lowestAgentId = min(array_map(fn(Agente $a) => (int) $a->getId(), $agents));
         $this->assertEquals($lowestAgentId, $result['agent_id'], 'Lowest id agent should be selected when loads and today counts are equal');
 
         // Now create another ticket — agent with lowest id now has load=1, others load=0
@@ -260,7 +260,7 @@ class Sprint10AgentManagementTest extends WebTestCase
 
         // Should be the second-lowest agent (first is now at capacity... well, not at max=10)
         // Both agent2 and agent3 have load=0, so lowest id (agent2) should win
-        $sortedIds = array_map(fn(Agent $a) => (int) $a->getId(), $agents);
+        $sortedIds = array_map(fn(Agente $a) => (int) $a->getId(), $agents);
         sort($sortedIds);
         // agent[0] (lowest) has load 1, agent[1] and agent[2] have load 0
         // among agent[1] and agent[2] (both load 0), agent[1] (lower id) wins
@@ -273,12 +273,12 @@ class Sprint10AgentManagementTest extends WebTestCase
     public function testLoadBasedTiebreaker(): void
     {
         // Create 2 agents
-        $agentLow = new Agent('Low Load');
+        $agentLow = new Agente('Low Load');
         $agentLow->setMaxActiveTickets(10);
         $agentLow->setTimezone('UTC');
         $this->em->persist($agentLow);
 
-        $agentHigh = new Agent('High Load');
+        $agentHigh = new Agente('High Load');
         $agentHigh->setMaxActiveTickets(10);
         $agentHigh->setTimezone('UTC');
         $this->em->persist($agentHigh);
@@ -329,7 +329,7 @@ class Sprint10AgentManagementTest extends WebTestCase
     public function testNoEligibleAgents(): void
     {
         // Create an agent but with max_active_tickets = 0 (impossible via setter, so...)
-        $agent = new Agent('Full Agent');
+        $agent = new Agente('Full Agent');
         $agent->setMaxActiveTickets(1);
         $agent->setTimezone('UTC');
         $this->em->persist($agent);
@@ -380,7 +380,7 @@ class Sprint10AgentManagementTest extends WebTestCase
      */
     public function testAlreadyAssignedTicketIsIdempotent(): void
     {
-        $agent = new Agent('Owner');
+        $agent = new Agente('Owner');
         $agent->setMaxActiveTickets(5);
         $agent->setTimezone('UTC');
         $this->em->persist($agent);
@@ -438,14 +438,14 @@ class Sprint10AgentManagementTest extends WebTestCase
     /** ROLE_AGENT: blocked from assigning to an Inactivo agent, even on own ticket. */
     public function testAssignRejectsInactiveAgentForRoleAgent(): void
     {
-        $ownerAgent = new Agent('Owner Agent');
+        $ownerAgent = new Agente('Owner Agent');
         $ownerAgent->setMaxActiveTickets(5);
         $this->em->persist($ownerAgent);
         $this->em->flush();
         $this->createUser('owner@test.local', ['ROLE_AGENT'], $ownerAgent);
         $token = $this->login('owner@test.local');
 
-        $inactiveAgent = new Agent('Inactivo Agent');
+        $inactiveAgent = new Agente('Inactivo Agent');
         $inactiveAgent->setIsAvailableOverride(false);
         $this->em->persist($inactiveAgent);
         $this->em->flush();
@@ -470,7 +470,7 @@ class Sprint10AgentManagementTest extends WebTestCase
         $this->createUser('supervisor@test.local', ['ROLE_SUPERVISOR']);
         $token = $this->login('supervisor@test.local');
 
-        $inactiveAgent = new Agent('Inactivo Agent');
+        $inactiveAgent = new Agente('Inactivo Agent');
         $inactiveAgent->setIsAvailableOverride(false);
         $this->em->persist($inactiveAgent);
         $this->em->flush();
@@ -493,7 +493,7 @@ class Sprint10AgentManagementTest extends WebTestCase
         $this->createUser('admin@test.local', ['ROLE_ADMIN']);
         $token = $this->login('admin@test.local');
 
-        $inactiveAgent = new Agent('Inactivo Agent');
+        $inactiveAgent = new Agente('Inactivo Agent');
         $inactiveAgent->setIsAvailableOverride(false);
         $this->em->persist($inactiveAgent);
         $this->em->flush();
@@ -516,7 +516,7 @@ class Sprint10AgentManagementTest extends WebTestCase
         $this->createUser('supervisor@test.local', ['ROLE_SUPERVISOR']);
         $token = $this->login('supervisor@test.local');
 
-        $activeAgent = new Agent('Activo Agent');
+        $activeAgent = new Agente('Activo Agent');
         $activeAgent->setIsAvailableOverride(true);
         $this->em->persist($activeAgent);
         $this->em->flush();
@@ -539,7 +539,7 @@ class Sprint10AgentManagementTest extends WebTestCase
         $this->createUser('admin@test.local', ['ROLE_ADMIN']);
         $token = $this->login('admin@test.local');
 
-        $inactiveAgent = new Agent('Inactivo Agent');
+        $inactiveAgent = new Agente('Inactivo Agent');
         $inactiveAgent->setIsAvailableOverride(false);
         $this->em->persist($inactiveAgent);
         $this->em->flush();

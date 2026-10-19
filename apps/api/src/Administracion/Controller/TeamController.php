@@ -8,9 +8,9 @@ use App\Administracion\UseCase\AssignTeamAgentsUseCase;
 use App\Administracion\UseCase\CreateTeamUseCase;
 use App\Administracion\UseCase\DeactivateTeamUseCase;
 use App\Administracion\UseCase\UpdateTeamUseCase;
-use App\Agente\Agent;
-use App\Agente\Repository\TeamRepository;
-use App\Agente\Team;
+use App\Agente\Agente;
+use App\Agente\Repository\EquipoRepository;
+use App\Agente\Equipo;
 use App\Compartido\StateConflictException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -39,7 +39,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class TeamController
 {
     public function __construct(
-        private readonly TeamRepository $teamRepository,
+        private readonly EquipoRepository $teamRepository,
         private readonly CreateTeamUseCase $createTeamUseCase,
         private readonly UpdateTeamUseCase $updateTeamUseCase,
         private readonly DeactivateTeamUseCase $deactivateTeamUseCase,
@@ -56,7 +56,7 @@ final class TeamController
         $total = $this->teamRepository->count([]);
         $teams = $this->teamRepository->findBy([], ['id' => 'DESC'], $limit, $offset);
 
-        $items = array_map(fn(Team $t) => $this->serializeTeam($t), $teams);
+        $items = array_map(fn(Equipo $t) => $this->serializeTeam($t), $teams);
 
         return new JsonResponse([
             'data' => $items,
@@ -163,7 +163,7 @@ final class TeamController
         }
 
         $assignedIds = array_map(
-            fn(Agent $a) => (int) $a->getId(),
+            fn(Agente $a) => (int) $a->getId(),
             $team->getAgents()->toArray()
         );
 
@@ -176,7 +176,7 @@ final class TeamController
     /**
      * @return array<string, mixed>
      */
-    private function serializeTeam(Team $team): array
+    private function serializeTeam(Equipo $team): array
     {
         $agentIds = [];
         foreach ($team->getAgents() as $agent) {

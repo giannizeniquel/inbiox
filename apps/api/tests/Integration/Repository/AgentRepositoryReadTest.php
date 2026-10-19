@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Repository;
 
-use App\Agente\Agent;
-use App\Agente\Repository\AgentRepository;
+use App\Agente\Agente;
+use App\Agente\Repository\AgenteRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
- * AgentRepository::findByIds(), moved out of ListTicketsQuery in phase 3c-2.
+ * AgenteRepository::findByIds(), moved out of ListTicketsQuery in phase 3c-2.
  */
 class AgentRepositoryReadTest extends KernelTestCase
 {
@@ -30,9 +30,9 @@ class AgentRepositoryReadTest extends KernelTestCase
 
     public function testFindByIdsReturnsOnlyTheRequestedAgents(): void
     {
-        $agents = static::getContainer()->get(AgentRepository::class)->findByIds([880001, 880003, 999999999]);
+        $agents = static::getContainer()->get(AgenteRepository::class)->findByIds([880001, 880003, 999999999]);
 
-        $ids = array_map(fn (Agent $a) => $a->getId(), $agents);
+        $ids = array_map(fn (Agente $a) => $a->getId(), $agents);
         sort($ids);
         self::assertSame([880001, 880003], $ids);
     }

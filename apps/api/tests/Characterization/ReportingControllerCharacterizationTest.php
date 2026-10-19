@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Characterization;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Disponibilidad\Turno;
 use App\Reporte\Query\ReportingService;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -18,7 +18,7 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
 {
     private const WINDOW = 'from=2025-03-01T00:00:00Z&to=2025-03-03T00:00:00Z';
 
-    private Agent $owner;
+    private Agente $owner;
 
     /**
      * Three tickets inside the window, all owned by one agent, and one outside it.

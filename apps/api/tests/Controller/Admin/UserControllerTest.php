@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller\Admin;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Administracion\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -67,9 +67,9 @@ class UserControllerTest extends WebTestCase
         return $user;
     }
 
-    private function createAgent(string $name = 'Test Agent'): Agent
+    private function createAgent(string $name = 'Test Agent'): Agente
     {
-        $agent = new Agent($name);
+        $agent = new Agente($name);
         $this->em->persist($agent);
         $this->em->flush();
 

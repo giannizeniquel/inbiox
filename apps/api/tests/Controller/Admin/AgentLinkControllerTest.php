@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller\Admin;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Administracion\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -56,7 +56,7 @@ class AgentLinkControllerTest extends WebTestCase
         string $email,
         array $roles = ['ROLE_AGENT'],
         bool $isActive = true,
-        ?Agent $agent = null,
+        ?Agente $agent = null,
     ): User {
         $user = new User();
         $user->setEmail($email);
@@ -75,9 +75,9 @@ class AgentLinkControllerTest extends WebTestCase
         return $user;
     }
 
-    private function createAgent(string $name = 'Test Agent'): Agent
+    private function createAgent(string $name = 'Test Agent'): Agente
     {
-        $agent = new Agent($name);
+        $agent = new Agente($name);
         $this->em->persist($agent);
         $this->em->flush();
 
@@ -260,7 +260,7 @@ class AgentLinkControllerTest extends WebTestCase
 
         // Verify the link is removed
         $this->em->clear();
-        $updatedAgent = $this->em->getRepository(Agent::class)->find($agent->getId());
+        $updatedAgent = $this->em->getRepository(Agente::class)->find($agent->getId());
         self::assertNull($updatedAgent->getUser());
     }
 

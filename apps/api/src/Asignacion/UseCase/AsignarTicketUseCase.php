@@ -14,7 +14,7 @@ use App\Compartido\Outbox\OutboxEvent;
 use App\Compartido\Outbox\OutboxWriter;
 use App\Ticket\EstadoDeTicket;
 use App\Disponibilidad\AgenteInactivoException;
-use App\Agente\Repository\AgentRepository;
+use App\Agente\Repository\AgenteRepository;
 use App\Asignacion\Repository\AsignacionRepository;
 use App\Ticket\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -39,7 +39,7 @@ class AsignarTicketUseCase
         private EntityManagerInterface $em,
         private TicketRepository $ticketRepo,
         private AsignacionRepository $asignacionRepo,
-        private AgentRepository $agentRepo,
+        private AgenteRepository $agentRepo,
         private EventCollector $eventCollector,
         private readonly OutboxWriter $outboxWriter,
         private ResponsabilidadDeTicketService $responsabilidadDeTicketService,

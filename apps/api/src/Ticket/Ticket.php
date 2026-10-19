@@ -2,7 +2,7 @@
 
 namespace App\Ticket;
 
-use App\Agente\Team;
+use App\Agente\Equipo;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Conversacion\RecipientPhoneNotFoundException;
@@ -66,9 +66,9 @@ class Ticket
     #[ORM\Column(name: "phone_number_id", type: "string", length: 36, nullable: true)]
     private ?string $phoneNumberId = null;
 
-    #[ORM\ManyToOne(targetEntity: Team::class)]
+    #[ORM\ManyToOne(targetEntity: Equipo::class)]
     #[ORM\JoinColumn(name: "team_id", referencedColumnName: "id", nullable: true, onDelete: "SET NULL")]
-    private ?Team $equipo = null;
+    private ?Equipo $equipo = null;
 
     #[ORM\Column(name: "last_read_at", type: "datetime_immutable", nullable: true)]
     private ?\DateTimeImmutable $ultimaLecturaAt = null;
@@ -254,7 +254,7 @@ class Ticket
         return $this->equipo?->getId();
     }
 
-    public function setEquipo(?Team $equipo): self
+    public function setEquipo(?Equipo $equipo): self
     {
         $this->equipo = $equipo;
         return $this;

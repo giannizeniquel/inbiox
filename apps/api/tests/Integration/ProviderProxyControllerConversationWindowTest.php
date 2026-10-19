@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Ticket\Ticket;
@@ -65,7 +65,7 @@ class ProviderProxyControllerConversationWindowTest extends WebTestCase
         $user->setRoles(['ROLE_AGENT']);
         $this->em->persist($user);
 
-        $agent = new Agent('Window Test Agent');
+        $agent = new Agente('Window Test Agent');
         $agent->setUser($user);
         $this->em->persist($agent);
         $this->em->flush();

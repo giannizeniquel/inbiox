@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Disponibilidad\UseCase;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Disponibilidad\Turno;
 use App\Disponibilidad\Repository\TurnoRepository;
-use App\Agente\Repository\AgentRepository;
+use App\Agente\Repository\AgenteRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -21,7 +21,7 @@ final class ReemplazarTurnosUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
-        private readonly AgentRepository $agentRepo,
+        private readonly AgenteRepository $agentRepo,
         private readonly TurnoRepository $turnoRepo,
     ) {}
 

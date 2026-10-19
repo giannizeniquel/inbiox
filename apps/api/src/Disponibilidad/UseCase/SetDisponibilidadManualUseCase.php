@@ -7,7 +7,7 @@ namespace App\Disponibilidad\UseCase;
 use App\Disponibilidad\AgentAvailabilityChangedEvent;
 use App\Compartido\Outbox\OutboxEvent;
 use App\Compartido\Outbox\OutboxWriter;
-use App\Agente\Repository\AgentRepository;
+use App\Agente\Repository\AgenteRepository;
 use App\Ticket\Repository\TicketRepository;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
@@ -25,7 +25,7 @@ final class SetDisponibilidadManualUseCase
 
     public function __construct(
         private EntityManagerInterface $em,
-        private AgentRepository $agentRepo,
+        private AgenteRepository $agentRepo,
         private TicketRepository $ticketRepo,
         private readonly OutboxWriter $outboxWriter,
     ) {}

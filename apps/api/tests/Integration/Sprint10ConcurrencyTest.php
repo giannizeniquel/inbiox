@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Integration;
 
 use App\Asignacion\UseCase\AsignarTicketAutomaticamenteUseCase;
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Disponibilidad\Turno;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
@@ -316,7 +316,7 @@ class Sprint10ConcurrencyTest extends KernelTestCase
      */
     public function testOverrideFalseBlocksAssignment(): void
     {
-        $agent = new Agent('Override Blocked');
+        $agent = new Agente('Override Blocked');
         $agent->setMaxActiveTickets(5);
         $agent->setTimezone('UTC');
         $agent->setIsAvailableOverride(false); // explicitly blocked

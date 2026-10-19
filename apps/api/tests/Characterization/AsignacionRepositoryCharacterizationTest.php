@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Characterization;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Asignacion\Asignacion;
 use App\Asignacion\Repository\AsignacionRepository;
 use App\Asignacion\TipoDeAsignacion;
@@ -26,8 +26,8 @@ final class AsignacionRepositoryCharacterizationTest extends KernelTestCase
     private ?EntityManagerInterface $em = null;
     private AsignacionRepository $repository;
     private Ticket $ticket;
-    private Agent $primero;
-    private Agent $segundo;
+    private Agente $primero;
+    private Agente $segundo;
 
     protected function setUp(): void
     {
@@ -60,8 +60,8 @@ final class AsignacionRepositoryCharacterizationTest extends KernelTestCase
         $this->ticket->setEstado(EstadoDeTicket::ACTIVO->value);
         $this->em->persist($this->ticket);
 
-        $this->primero = new Agent('First Agent');
-        $this->segundo = new Agent('Second Agent');
+        $this->primero = new Agente('First Agent');
+        $this->segundo = new Agente('Second Agent');
         $this->em->persist($this->primero);
         $this->em->persist($this->segundo);
         $this->em->flush();
@@ -114,7 +114,7 @@ final class AsignacionRepositoryCharacterizationTest extends KernelTestCase
         self::assertSame(0, $this->repository->countAsignacionesAutomaticasDeHoy((int) $this->segundo->getId(), new \DateTimeImmutable('2026-10-01 00:00:00')));
     }
 
-    private function asignar(Agent $agente, TipoDeAsignacion $tipo, string $at): Asignacion
+    private function asignar(Agente $agente, TipoDeAsignacion $tipo, string $at): Asignacion
     {
         $asignacion = new Asignacion($this->ticket, $agente, 'system', null, $tipo->value);
         (new \ReflectionProperty(Asignacion::class, 'asignadoAt'))->setValue($asignacion, new \DateTimeImmutable($at));

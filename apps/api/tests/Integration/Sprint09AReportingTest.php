@@ -683,7 +683,7 @@ class Sprint09AReportingTest extends KernelTestCase
 
     private function createTestAgent(string $name = 'Test Agent'): int
     {
-        $agent = new \App\Agente\Agent($name);
+        $agent = new \App\Agente\Agente($name);
         $this->em->persist($agent);
         $this->em->flush();
         return $agent->getId();

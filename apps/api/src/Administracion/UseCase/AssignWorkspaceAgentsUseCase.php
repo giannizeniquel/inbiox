@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Administracion\UseCase;
 
 use App\Administracion\Workspace;
-use App\Agente\Repository\AgentRepository;
+use App\Agente\Repository\AgenteRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -15,7 +15,7 @@ final class AssignWorkspaceAgentsUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly AgentRepository $agentRepository,
+        private readonly AgenteRepository $agentRepository,
     ) {}
 
     /**

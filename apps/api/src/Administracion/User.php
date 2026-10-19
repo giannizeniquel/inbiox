@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Administracion;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
@@ -39,8 +39,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(name: 'updated_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
 
-    #[ORM\OneToOne(mappedBy: 'user', targetEntity: Agent::class)]
-    private ?Agent $agent = null;
+    #[ORM\OneToOne(mappedBy: 'user', targetEntity: Agente::class)]
+    private ?Agente $agent = null;
 
     public function __construct()
     {
@@ -127,12 +127,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->updatedAt;
     }
 
-    public function getAgent(): ?Agent
+    public function getAgent(): ?Agente
     {
         return $this->agent;
     }
 
-    public function setAgent(?Agent $agent): self
+    public function setAgent(?Agente $agent): self
     {
         $this->agent = $agent;
         return $this;

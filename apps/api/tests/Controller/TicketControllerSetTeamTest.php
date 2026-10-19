@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
-use App\Agente\Team;
+use App\Agente\Equipo;
 use App\Ticket\Ticket;
 use App\Administracion\User;
 use App\Administracion\Workspace;
@@ -74,7 +74,7 @@ class TicketControllerSetTeamTest extends WebTestCase
         $user->setRoles(['ROLE_AGENT']);
         $this->em->persist($user);
 
-        $agent = new Agent('Agent for ' . $email);
+        $agent = new Agente('Agent for ' . $email);
         $agent->setUser($user);
         $this->em->persist($agent);
         $this->em->flush();
@@ -107,9 +107,9 @@ class TicketControllerSetTeamTest extends WebTestCase
         return $workspace;
     }
 
-    private function createTeam(Workspace $workspace, string $name = 'Support'): Team
+    private function createTeam(Workspace $workspace, string $name = 'Support'): Equipo
     {
-        $team = new Team($workspace, $name);
+        $team = new Equipo($workspace, $name);
         $this->em->persist($team);
         $this->em->flush();
 

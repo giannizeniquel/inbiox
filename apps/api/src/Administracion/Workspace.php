@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Administracion;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -36,7 +36,7 @@ class Workspace
     private \DateTimeImmutable $updatedAt;
 
     /** Inverse side of Agent↔Workspace M:N */
-    #[ORM\ManyToMany(targetEntity: Agent::class, mappedBy: 'workspaces')]
+    #[ORM\ManyToMany(targetEntity: Agente::class, mappedBy: 'workspaces')]
     private Collection $agents;
 
     public function __construct(string $phoneNumberId, string $displayName)
@@ -99,13 +99,13 @@ class Workspace
         return $this->updatedAt;
     }
 
-    /** @return Collection<int, Agent> */
+    /** @return Collection<int, Agente> */
     public function getAgents(): Collection
     {
         return $this->agents;
     }
 
-    public function addAgent(Agent $agent): self
+    public function addAgent(Agente $agent): self
     {
         if (!$this->agents->contains($agent)) {
             $this->agents->add($agent);
@@ -114,7 +114,7 @@ class Workspace
         return $this;
     }
 
-    public function removeAgent(Agent $agent): self
+    public function removeAgent(Agente $agent): self
     {
         if ($this->agents->removeElement($agent)) {
             $agent->removeWorkspace($this);

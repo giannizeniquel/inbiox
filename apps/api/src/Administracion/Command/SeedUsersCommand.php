@@ -6,7 +6,7 @@
 
 namespace App\Administracion\Command;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Administracion\User;
 use App\Administracion\Workspace;
 use Doctrine\ORM\EntityManagerInterface;
@@ -56,7 +56,7 @@ final class SeedUsersCommand extends Command
             $user->setRoles(['ROLE_ADMIN']);
 
             // Admin gets an Agent so workspace switcher works
-            $agent = new Agent($a['email']);
+            $agent = new Agente($a['email']);
             $agent->setUser($user);
             $user->setAgent($agent);
             $agent->addWorkspace($ws1);
@@ -80,7 +80,7 @@ final class SeedUsersCommand extends Command
             $user->setRoles(['ROLE_SUPERVISOR']);
 
             // Supervisor gets an Agent so workspace switcher works
-            $agent = new Agent($s['email']);
+            $agent = new Agente($s['email']);
             $agent->setUser($user);
             $user->setAgent($agent);
             $agent->addWorkspace($ws1);
@@ -107,7 +107,7 @@ final class SeedUsersCommand extends Command
             $user->setPassword($this->hasher->hashPassword($user, $password));
             $user->setRoles(['ROLE_AGENT']);
 
-            $agent = new Agent($a['name']);
+            $agent = new Agente($a['name']);
             $agent->setUser($user);
             $user->setAgent($agent);
 

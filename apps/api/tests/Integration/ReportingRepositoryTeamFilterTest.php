@@ -6,7 +6,7 @@ namespace App\Tests\Integration;
 
 use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
-use App\Agente\Team;
+use App\Agente\Equipo;
 use App\Ticket\Ticket;
 use App\Administracion\Workspace;
 use App\Reporte\Repository\ReportingRepository;
@@ -52,12 +52,12 @@ class ReportingRepositoryTeamFilterTest extends KernelTestCase
         $this->em = null;
     }
 
-    private function createTeam(string $name = 'Support'): Team
+    private function createTeam(string $name = 'Support'): Equipo
     {
         $workspace = new Workspace('+549110000' . random_int(1000, 9999), 'Workspace for ' . $name);
         $this->em->persist($workspace);
 
-        $team = new Team($workspace, $name);
+        $team = new Equipo($workspace, $name);
         $this->em->persist($team);
         $this->em->flush();
 
@@ -93,7 +93,7 @@ class ReportingRepositoryTeamFilterTest extends KernelTestCase
             $ticket->setResueltoAt($resolvedAt);
         }
         if (null !== $teamId) {
-            $ticket->setEquipo($this->em->getReference(Team::class, $teamId));
+            $ticket->setEquipo($this->em->getReference(Equipo::class, $teamId));
         }
         $this->em->persist($ticket);
         $this->em->flush();

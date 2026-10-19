@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Domain\Team;
 
-use App\Agente\Agent;
-use App\Agente\Team;
+use App\Agente\Agente;
+use App\Agente\Equipo;
 use App\Administracion\Workspace;
 use PHPUnit\Framework\TestCase;
 
@@ -22,7 +22,7 @@ class TeamTest extends TestCase
     public function testTeamCreatedWithinWorkspaceIsActiveAndScoped(): void
     {
         $workspace = new Workspace('+1000000000', 'Workspace A');
-        $team = new Team($workspace, 'Support');
+        $team = new Equipo($workspace, 'Support');
 
         self::assertTrue($team->isActive(), 'New team must default to active');
         self::assertSame($workspace, $team->getWorkspace());
@@ -33,10 +33,10 @@ class TeamTest extends TestCase
     public function testAddAgentAlreadyInTeamWorkspaceSucceeds(): void
     {
         $workspace = new Workspace('+1000000000', 'Workspace A');
-        $agent = new Agent('Agent A');
+        $agent = new Agente('Agent A');
         $agent->addWorkspace($workspace);
 
-        $team = new Team($workspace, 'Support');
+        $team = new Equipo($workspace, 'Support');
         $team->addAgent($agent);
 
         self::assertTrue($team->getAgents()->contains($agent));
@@ -48,10 +48,10 @@ class TeamTest extends TestCase
         $workspaceA = new Workspace('+1000000000', 'Workspace A');
         $workspaceB = new Workspace('+2000000000', 'Workspace B');
 
-        $agent = new Agent('Agent B');
+        $agent = new Agente('Agent B');
         $agent->addWorkspace($workspaceB); // agent belongs to B, not A
 
-        $team = new Team($workspaceA, 'Support');
+        $team = new Equipo($workspaceA, 'Support');
 
         $this->expectException(\InvalidArgumentException::class);
         $team->addAgent($agent);
@@ -62,10 +62,10 @@ class TeamTest extends TestCase
         $workspaceA = new Workspace('+1000000000', 'Workspace A');
         $workspaceB = new Workspace('+2000000000', 'Workspace B');
 
-        $agent = new Agent('Agent B');
+        $agent = new Agente('Agent B');
         $agent->addWorkspace($workspaceB);
 
-        $team = new Team($workspaceA, 'Support');
+        $team = new Equipo($workspaceA, 'Support');
 
         try {
             $team->addAgent($agent);
@@ -80,10 +80,10 @@ class TeamTest extends TestCase
     public function testRemoveAgentUpdatesBothSides(): void
     {
         $workspace = new Workspace('+1000000000', 'Workspace A');
-        $agent = new Agent('Agent A');
+        $agent = new Agente('Agent A');
         $agent->addWorkspace($workspace);
 
-        $team = new Team($workspace, 'Support');
+        $team = new Equipo($workspace, 'Support');
         $team->addAgent($agent);
         $team->removeAgent($agent);
 
@@ -94,7 +94,7 @@ class TeamTest extends TestCase
     public function testSetActiveTogglesFlag(): void
     {
         $workspace = new Workspace('+1000000000', 'Workspace A');
-        $team = new Team($workspace, 'Support');
+        $team = new Equipo($workspace, 'Support');
 
         $team->setActive(false);
         self::assertFalse($team->isActive());

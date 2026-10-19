@@ -68,8 +68,8 @@ final class ReportingVerifierProbeTest extends CharacterizationTestCase
         $beta = $this->createAgent('Beta');
         $this->token($alpha->getId(), 'alpha');
         $this->token($beta->getId(), 'beta');
-        $teamA = new \App\Agente\Team($workspace, 'Team A');
-        $teamB = new \App\Agente\Team($workspace, 'Team B');
+        $teamA = new \App\Agente\Equipo($workspace, 'Team A');
+        $teamB = new \App\Agente\Equipo($workspace, 'Team B');
         $this->em->persist($teamA);
         $this->em->persist($teamB);
         $this->em->flush();

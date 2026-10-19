@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Agente\UseCase;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use Doctrine\ORM\EntityManagerInterface;
 
 final class UpdateNotificationPreferencesUseCase
@@ -16,7 +16,7 @@ final class UpdateNotificationPreferencesUseCase
     /**
      * A null preference is left unchanged.
      */
-    public function execute(Agent $agent, ?bool $sound, ?bool $desktop): void
+    public function execute(Agente $agent, ?bool $sound, ?bool $desktop): void
     {
         if ($sound !== null) {
             $agent->setNotificationSound($sound);

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Administracion\UseCase;
 
-use App\Agente\Team;
+use App\Agente\Equipo;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -19,7 +19,7 @@ final class DeactivateTeamUseCase
         private readonly EntityManagerInterface $entityManager,
     ) {}
 
-    public function execute(Team $team): void
+    public function execute(Equipo $team): void
     {
         $team->setActive(false);
         $this->entityManager->flush();

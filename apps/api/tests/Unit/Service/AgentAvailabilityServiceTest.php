@@ -6,13 +6,13 @@ namespace App\Tests\Unit\Service;
 
 use App\Disponibilidad\Query\DisponibilidadDeAgenteDTO;
 use App\Disponibilidad\DisponibilidadDeAgenteService;
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Disponibilidad\Turno;
 use App\Disponibilidad\Repository\TurnoRepository;
 use App\Ticket\Repository\TicketRepository;
 use App\Ticket\EstadoDeTicket;
 use App\Administracion\Workspace;
-use App\Agente\Repository\AgentRepository;
+use App\Agente\Repository\AgenteRepository;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -34,14 +34,14 @@ use PHPUnit\Framework\TestCase;
  */
 class AgentAvailabilityServiceTest extends TestCase
 {
-    private AgentRepository&MockObject $agentRepository;
+    private AgenteRepository&MockObject $agentRepository;
     private TurnoRepository&MockObject $agentShiftRepository;
     private TicketRepository&MockObject $ticketRepository;
     private DisponibilidadDeAgenteService $service;
 
     protected function setUp(): void
     {
-        $this->agentRepository = $this->createMock(AgentRepository::class);
+        $this->agentRepository = $this->createMock(AgenteRepository::class);
         $this->agentShiftRepository = $this->createMock(TurnoRepository::class);
         $this->ticketRepository = $this->createMock(TicketRepository::class);
 
@@ -64,8 +64,8 @@ class AgentAvailabilityServiceTest extends TestCase
         ?bool $isAvailableOverride = null,
         ?\DateTimeImmutable $overrideUntil = null,
         int $maxActiveTickets = 5,
-    ): Agent {
-        $agent = new Agent('Agent-'.$id);
+    ): Agente {
+        $agent = new Agente('Agent-'.$id);
         $agent->setActive($active);
         $agent->setTimezone($timezone);
         $agent->setMaxActiveTickets($maxActiveTickets);
@@ -84,7 +84,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
     /** Create a shift attached to an agent. Sets id via reflection. */
     private function createShift(
-        Agent $agent,
+        Agente $agent,
         int $dayOfWeek,
         string $start,
         string $end,
@@ -149,20 +149,20 @@ class AgentAvailabilityServiceTest extends TestCase
 
     public function testDefaultTimezoneIsUtc(): void
     {
-        $agent = new Agent('Test');
+        $agent = new Agente('Test');
         self::assertSame('UTC', $agent->getTimezone());
     }
 
     public function testValidTimezoneAccepted(): void
     {
-        $agent = new Agent('Test');
+        $agent = new Agente('Test');
         $agent->setTimezone('America/Argentina/Buenos_Aires');
         self::assertSame('America/Argentina/Buenos_Aires', $agent->getTimezone());
     }
 
     public function testInvalidTimezoneThrows(): void
     {
-        $agent = new Agent('Test');
+        $agent = new Agente('Test');
         $this->expectException(\InvalidArgumentException::class);
         $agent->setTimezone('Invalid/Timezone');
     }

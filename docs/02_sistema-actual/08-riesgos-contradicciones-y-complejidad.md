@@ -29,7 +29,7 @@ Ordenadas por severidad (impacto en el comportamiento del producto).
 | C-16 | Baja | **`new → active` tiene tres disparadores:** asignación (backend), primera respuesta (backend) y asignación optimista (frontend). El docblock de la FSM solo menciona la primera respuesta. | `ResponsabilidadDeTicketService.php:69-73`; `MaquinaDeEstadosDeTicket.php:9`; `apps/web/src/app/core/stores/ticket.store.ts:182` |
 | C-17 | Baja | **`is_available` significa cuatro cosas** según el endpoint: columna legacy (admin), cascada con capacidad (`GET /api/agents/{id}/availability`), override (`SetDisponibilidadManualUseCase`), y `false` fijo en `QuitarDisponibilidadManualUseCase:69`. El roster usa otro nombre (`is_active_now`). | archivos citados |
 | C-18 | Baja | **`contact.id` cambia de significado** entre el listado (id de conversación, con respaldo `1` inventado) y el detalle (id del contacto). | `Ticket/Query/ListTicketsQuery.php:163`; `GetDetalleDeTicketQuery.php:56` |
-| C-19 | Baja | **Resuelto en la fase 5-0 de la limpieza.** Antes: `EtiquetaDeTicket` declaraba `inversedBy: 'ticketTags'` en entidades sin esa propiedad, y `tickets.team_id` tenía FK en la base pero no estaba mapeada como relación. Ahora `EtiquetaDeTicket` es unidireccional y `Ticket::$team` es una `ManyToOne` a `Team`. | `Ticket/EtiquetaDeTicket.php`; `Ticket/Ticket.php` |
+| C-19 | Baja | **Resuelto en la fase 5-0 de la limpieza.** Antes: `EtiquetaDeTicket` declaraba `inversedBy: 'ticketTags'` en entidades sin esa propiedad, y `tickets.team_id` tenía FK en la base pero no estaba mapeada como relación. Ahora `EtiquetaDeTicket` es unidireccional y `Ticket::$team` es una `ManyToOne` a `Equipo`. | `Ticket/EtiquetaDeTicket.php`; `Ticket/Ticket.php` |
 | C-20 | Baja | **Comentarios desactualizados que contradicen el código:** "AGENT sees only own tickets" (`BandejaController.php:53`), `Administracion/Controller/TeamController.php:29-36` (dice que `AgentController` exige Admin), `UserChecker.php:15-17` (dice que no corre con JWT), `GraphClient` (dice v23.0, usa v25.0), `OwnershipScope` ("Determines the ownership scope" pero no restringe nada), `listarAgentesDisponibles()` ("no N+1", hace una consulta por agente). | archivos citados |
 
 ## Contradicciones entre specs y código
@@ -88,7 +88,7 @@ Formato pedido por el método: qué es · por qué parece existir · ¿respaldad
 | Elemento | Situación | Evidencia |
 |---|---|---|
 | `src/Entity/` | Carpeta vacía del esqueleto de Symfony. | `doctrine.yaml:16-22` |
-| `Agent.is_available` / `setAvailable()` | Columna legacy nunca escrita (pero expuesta en la API admin). | `Agent.php:36-37, 135-145` |
+| `Agente.is_available` / `setAvailable()` | Columna legacy nunca escrita (pero expuesta en la API admin). | `Agente.php:36-37, 135-145` |
 | `WebhookPayload.processed` | Nunca se pone en `true`. | búsqueda de `setProcessed` |
 | `ConversationStatus::CLOSED` | Nunca escrito. | búsqueda |
 | Reglas con disparador `outbound` | El motor se invoca; ninguna regla lo soporta. | `HandleOutboundMessageUseCase.php:352-353` |

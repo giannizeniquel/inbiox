@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Agente\UseCase;
 
 use App\Administracion\User;
-use App\Agente\Agent;
-use App\Agente\Repository\AgentRepository;
+use App\Agente\Agente;
+use App\Agente\Repository\AgenteRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -17,15 +17,15 @@ final class EnsureAgentForUserUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly AgentRepository $agentRepository,
+        private readonly AgenteRepository $agentRepository,
     ) {}
 
-    public function execute(User $user): Agent
+    public function execute(User $user): Agente
     {
         $agent = $user->getAgent() ?? $this->agentRepository->findOneBy(['user' => $user]);
 
         if ($agent === null) {
-            $agent = new Agent($user->getEmail() ?? 'Admin');
+            $agent = new Agente($user->getEmail() ?? 'Admin');
             $agent->setUser($user);
             $this->entityManager->persist($agent);
             $this->entityManager->flush();

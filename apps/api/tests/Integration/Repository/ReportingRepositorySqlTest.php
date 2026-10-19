@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Repository;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Contacto\Contacto;
 use App\Reporte\Repository\ReportingRepository;
 use App\Ticket\EventoDeTicket;
@@ -28,7 +28,7 @@ class ReportingRepositorySqlTest extends KernelTestCase
         $contact = new Contacto();
         $contact->setTelefono('+5491100009903');
         $em->persist($contact);
-        $em->persist(new Agent('Truncate Me'));
+        $em->persist(new Agente('Truncate Me'));
         $em->flush();
         $em->persist(new EventoDeTicket(990099, 'tag_added', 'system'));
         $em->flush();

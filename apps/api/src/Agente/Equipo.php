@@ -14,7 +14,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Table(name: 'teams')]
 #[ORM\UniqueConstraint(name: 'uniq_teams_workspace_name', columns: ['workspace_id', 'name'])]
 #[ORM\Index(name: 'idx_teams_workspace', columns: ['workspace_id'])]
-class Team
+class Equipo
 {
     #[ORM\Id]
     #[ORM\Column(name: 'id', type: Types::BIGINT)]
@@ -38,7 +38,7 @@ class Team
     private \DateTimeImmutable $updatedAt;
 
     /** Inverse side of Agent↔Team M:N */
-    #[ORM\ManyToMany(targetEntity: Agent::class, mappedBy: 'teams')]
+    #[ORM\ManyToMany(targetEntity: Agente::class, mappedBy: 'teams')]
     private Collection $agents;
 
     public function __construct(Workspace $workspace, string $name)
@@ -94,7 +94,7 @@ class Team
         return $this->updatedAt;
     }
 
-    /** @return Collection<int, Agent> */
+    /** @return Collection<int, Agente> */
     public function getAgents(): Collection
     {
         return $this->agents;
@@ -113,7 +113,7 @@ class Team
      *
      * @throws \InvalidArgumentException if the agent is not a member of the team's workspace
      */
-    public function addAgent(Agent $agent): self
+    public function addAgent(Agente $agent): self
     {
         if (!$agent->getWorkspaces()->contains($this->workspace)) {
             throw new \InvalidArgumentException(sprintf(
@@ -131,7 +131,7 @@ class Team
         return $this;
     }
 
-    public function removeAgent(Agent $agent): self
+    public function removeAgent(Agente $agent): self
     {
         if ($this->agents->removeElement($agent)) {
             $agent->removeTeam($this);

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Asignacion\UseCase;
 
-use App\Agente\Repository\TeamRepository;
+use App\Agente\Repository\EquipoRepository;
 use App\Ticket\Ticket;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -12,7 +12,7 @@ final class SetEquipoDeTicketUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly TeamRepository $teamRepository,
+        private readonly EquipoRepository $teamRepository,
     ) {}
 
     /**

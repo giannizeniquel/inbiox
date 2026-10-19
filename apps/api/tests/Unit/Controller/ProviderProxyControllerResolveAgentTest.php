@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Controller;
 
-use App\Agente\Repository\AgentRepository;
+use App\Agente\Repository\AgenteRepository;
 use App\Agente\UseCase\EnsureAgentForUserUseCase;
 use App\Compartido\Graph\GraphClient;
 use App\Conversacion\UseCase\HandleOutboundMessageUseCase;
@@ -15,7 +15,7 @@ use App\Conversacion\UseCase\SendTemplateUseCase;
 use App\Conversacion\UseCase\UploadMediaUseCase;
 use App\Conversacion\Controller\ProviderProxyController;
 use App\Conversacion\Repository\MessageRepository;
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Administracion\User;
 use App\Compartido\Storage\MediaStorageService;
 use App\Conversacion\MediaValidator;
@@ -36,7 +36,7 @@ use PHPUnit\Framework\TestCase;
  */
 class ProviderProxyControllerResolveAgentTest extends TestCase
 {
-    private function makeController(EntityManagerInterface $em, AgentRepository $agentRepository): ProviderProxyController
+    private function makeController(EntityManagerInterface $em, AgenteRepository $agentRepository): ProviderProxyController
     {
         return new ProviderProxyController(
             $this->createMock(GraphClient::class),
@@ -70,7 +70,7 @@ class ProviderProxyControllerResolveAgentTest extends TestCase
 
     public function testReturnsNullWhenUserIsNull(): void
     {
-        $agentRepository = $this->createMock(AgentRepository::class);
+        $agentRepository = $this->createMock(AgenteRepository::class);
         $agentRepository->expects(self::never())->method('findOneBy');
 
         $controller = $this->makeController($this->createMock(EntityManagerInterface::class), $agentRepository);
@@ -83,14 +83,14 @@ class ProviderProxyControllerResolveAgentTest extends TestCase
         $user = new User();
         $user->setEmail('has-agent@inbiox.local');
 
-        $agent = new Agent('Existing Agent');
+        $agent = new Agente('Existing Agent');
         $reflectedId = new \ReflectionProperty($agent, 'id');
         $reflectedId->setAccessible(true);
         $reflectedId->setValue($agent, 42);
         $agent->setUser($user);
         $user->setAgent($agent);
 
-        $agentRepository = $this->createMock(AgentRepository::class);
+        $agentRepository = $this->createMock(AgenteRepository::class);
         $agentRepository->expects(self::never())->method('findOneBy');
         $em = $this->createMock(EntityManagerInterface::class);
         $em->expects(self::never())->method('persist');
@@ -109,7 +109,7 @@ class ProviderProxyControllerResolveAgentTest extends TestCase
         $user = new User();
         $user->setEmail('no-agent@inbiox.local');
 
-        $agentRepository = $this->createMock(AgentRepository::class);
+        $agentRepository = $this->createMock(AgenteRepository::class);
         $agentRepository->method('findOneBy')->willReturn(null);
 
         $em = $this->createMock(EntityManagerInterface::class);

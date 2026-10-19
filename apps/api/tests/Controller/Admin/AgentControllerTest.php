@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller\Admin;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Administracion\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -53,7 +53,7 @@ class AgentControllerTest extends WebTestCase
         string $email,
         array $roles = ['ROLE_AGENT'],
         bool $isActive = true,
-        ?Agent $agent = null,
+        ?Agente $agent = null,
     ): User {
         $user = new User();
         $user->setEmail($email);
@@ -72,9 +72,9 @@ class AgentControllerTest extends WebTestCase
         return $user;
     }
 
-    private function createAgent(string $name = 'Test Agent'): Agent
+    private function createAgent(string $name = 'Test Agent'): Agente
     {
-        $agent = new Agent($name);
+        $agent = new Agente($name);
         $this->em->persist($agent);
         $this->em->flush();
 
@@ -401,7 +401,7 @@ class AgentControllerTest extends WebTestCase
         self::assertSame('Europe/Lisbon', $data['timezone']);
 
         $this->em->clear();
-        $updatedAgent = $this->em->getRepository(Agent::class)->find($agent->getId());
+        $updatedAgent = $this->em->getRepository(Agente::class)->find($agent->getId());
         self::assertSame('Europe/Lisbon', $updatedAgent->getTimezone());
     }
 
@@ -443,7 +443,7 @@ class AgentControllerTest extends WebTestCase
         self::assertSame(400, $this->client->getResponse()->getStatusCode());
 
         $this->em->clear();
-        $unchangedAgent = $this->em->getRepository(Agent::class)->find($agent->getId());
+        $unchangedAgent = $this->em->getRepository(Agente::class)->find($agent->getId());
         self::assertSame('UTC', $unchangedAgent->getTimezone());
     }
 
@@ -496,7 +496,7 @@ class AgentControllerTest extends WebTestCase
 
         // Verify the agent still exists but is deactivated
         $this->em->clear();
-        $deletedAgent = $this->em->getRepository(Agent::class)->find($agent->getId());
+        $deletedAgent = $this->em->getRepository(Agente::class)->find($agent->getId());
         self::assertNotNull($deletedAgent, 'Agent must still exist (soft delete)');
         self::assertFalse($deletedAgent->isActive(), 'Agent must be deactivated');
     }

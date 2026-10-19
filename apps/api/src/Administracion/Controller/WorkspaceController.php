@@ -10,7 +10,7 @@ use App\Administracion\UseCase\CreateWorkspaceUseCase;
 use App\Administracion\UseCase\DeactivateWorkspaceUseCase;
 use App\Administracion\UseCase\UpdateWorkspaceUseCase;
 use App\Administracion\Workspace;
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Compartido\StateConflictException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -149,7 +149,7 @@ final class WorkspaceController
         }
 
         $assignedIds = array_map(
-            fn(Agent $a) => (int) $a->getId(),
+            fn(Agente $a) => (int) $a->getId(),
             $workspace->getAgents()->toArray()
         );
 

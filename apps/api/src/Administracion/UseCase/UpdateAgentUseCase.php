@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Administracion\UseCase;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use Doctrine\ORM\EntityManagerInterface;
 
 final class UpdateAgentUseCase
@@ -21,7 +21,7 @@ final class UpdateAgentUseCase
      *
      * @throws \InvalidArgumentException when a field is invalid
      */
-    public function execute(Agent $agent, array $data): void
+    public function execute(Agente $agent, array $data): void
     {
         if (isset($data['name'])) {
             if (!\is_string($data['name']) || empty($data['name'])) {
@@ -29,7 +29,7 @@ final class UpdateAgentUseCase
             }
             // Agent has no name setter. Reflection sets the name without
             // touching updated_at, which is the current behavior.
-            $nameProp = new \ReflectionProperty(Agent::class, 'name');
+            $nameProp = new \ReflectionProperty(Agente::class, 'name');
             $nameProp->setAccessible(true);
             $nameProp->setValue($agent, $data['name']);
         }

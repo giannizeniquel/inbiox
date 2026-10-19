@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Ticket\Ticket;
@@ -65,7 +65,7 @@ class ProviderProxyControllerAutoClaimTest extends WebTestCase
         $user->setRoles(['ROLE_AGENT']);
         $this->em->persist($user);
 
-        $agent = new Agent('Non-Owning Agent');
+        $agent = new Agente('Non-Owning Agent');
         $agent->setUser($user);
         $this->em->persist($agent);
         $this->em->flush();
@@ -87,7 +87,7 @@ class ProviderProxyControllerAutoClaimTest extends WebTestCase
 
     private function createResolvedTicketOwnedBySomeoneElse(): int
     {
-        $owner = new Agent('Owner Agent');
+        $owner = new Agente('Owner Agent');
         $this->em->persist($owner);
         $this->em->flush();
 

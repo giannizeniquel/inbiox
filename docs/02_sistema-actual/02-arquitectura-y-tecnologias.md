@@ -72,7 +72,7 @@ Todo en `apps/api/src/`, organizado **por módulo de negocio** desde la fase 2 d
 | `Ticket/` | Ticket, estados, máquina de estados, etiquetas, bandeja. | `Ticket.php`, `MaquinaDeEstadosDeTicket.php`, `Controller/BandejaController`, `Controller/FlujoDeTicketController`, `Query/ListTicketsQuery`, `Query/FiltrosDeTicketBuilder` |
 | `Conversacion/` | Conversación, mensajes, media, ventana de 24 h, webhook de Meta, envío. | `Controller/WebhookController`, `Controller/ProviderProxyController`, `UseCase/HandleInboundMessageUseCase`, `UseCase/ProcessWebhookPayloadUseCase`, `UseCase/SendOutboundMessageUseCase`, `UseCase/SendTemplateUseCase`, `UseCase/UploadMediaUseCase`, `ConversationWindowPolicy.php`, `MediaValidator.php` |
 | `Contacto/` | Contactos, importación, línea de tiempo. | `Controller/ContactoController`, `Query/GetLineaDeTiempoDeContactoQuery`, `UseCase/ImportarContactosDesdeCsvUseCase` |
-| `Agente/` | Agentes, equipos, perfil propio (`/api/me`). | `Agent.php`, `Team.php`, `Controller/MeController` (configuración, perfil y notificaciones; auto-respuesta, turnos y workspaces propios viven en Automatizacion, Disponibilidad y Administracion) |
+| `Agente/` | Agentes, equipos, perfil propio (`/api/me`). | `Agente.php`, `Equipo.php`, `Controller/MeController` (configuración, perfil y notificaciones; auto-respuesta, turnos y workspaces propios viven en Automatizacion, Disponibilidad y Administracion) |
 | `Disponibilidad/` | Turnos, disponibilidad manual. | `Turno.php`, `DisponibilidadDeAgenteService.php`, `UseCase/SetDisponibilidadManualUseCase` |
 | `Asignacion/` | Asignación manual y automática. | `ResponsabilidadDeTicketService.php`, `UseCase/AsignarTicketUseCase`, `UseCase/AsignarTicketAutomaticamenteUseCase`, `EventListener/AsignacionAutomaticaSolicitadaListener` |
 | `Reporte/` | Métricas y exportación. | `Controller/ReportingController`, `Query/ReportingService`, `Repository/ReportingRepository` |
@@ -129,7 +129,7 @@ Todo en `apps/web/src/app/`. Detalle por pantalla en [07-frontend.md](07-fronten
 | Jerarquía de roles | `security.yaml:2-4` | `ROLE_ADMIN` ⊃ `ROLE_SUPERVISOR` ⊃ `ROLE_AGENT`. En el frontend los roles **no** son jerárquicos (se compensa en `roleGuard`). |
 | Voters | `Ticket/Security/TicketVoter.php` (usado: `ASSIGN`, `CLOSE`), `src/Conversacion/Security/MessageVoter.php` (solo URL de adjuntos) | Ver [06](06-api-y-permisos.md). |
 | Scopes | `OwnershipScope` (siempre `null`: bandeja compartida, decisión Sprint 16) y `WorkspaceScope` (filtra por el `phone_number_id` del workspace activo; si no hay, **no filtra**) | El primero se reutiliza mal como autorización ([R3](00-estado-y-pendientes.md#r3-cualquier-agente-modifica-disponibilidad-y-turnos-de-cualquier-agente)). |
-| Usuario ↔ Agente | `Agent.user` (1:1 opcional) | Si un usuario sin agente envía un mensaje o cambia de workspace (admin/supervisor), **se le crea un agente** con nombre = email (`Agente/UseCase/EnsureAgentForUserUseCase.php`, `Administracion/UseCase/SetActiveWorkspaceUseCase.php` (`ensureAgent`)). |
+| Usuario ↔ Agente | `Agente.user` (1:1 opcional) | Si un usuario sin agente envía un mensaje o cambia de workspace (admin/supervisor), **se le crea un agente** con nombre = email (`Agente/UseCase/EnsureAgentForUserUseCase.php`, `Administracion/UseCase/SetActiveWorkspaceUseCase.php` (`ensureAgent`)). |
 
 ---
 

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Integration;
 
 use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Ticket\TipoDeEventoDeTicket;
@@ -65,7 +65,7 @@ class TicketClosureAuditClassificationTest extends WebTestCase
         $this->em = null;
     }
 
-    private function createAuthenticatedUser(string $email, array $roles, ?Agent $agent = null): array
+    private function createAuthenticatedUser(string $email, array $roles, ?Agente $agent = null): array
     {
         $user = new User();
         $user->setEmail($email);
@@ -97,9 +97,9 @@ class TicketClosureAuditClassificationTest extends WebTestCase
         return ['token' => $data['access_token'], 'user_id' => $userId];
     }
 
-    private function createAgent(string $name): Agent
+    private function createAgent(string $name): Agente
     {
-        $agent = new Agent($name);
+        $agent = new Agente($name);
         $this->em->persist($agent);
         $this->em->flush();
 

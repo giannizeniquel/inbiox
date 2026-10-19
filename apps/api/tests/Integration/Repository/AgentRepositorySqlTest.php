@@ -4,21 +4,21 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Repository;
 
-use App\Agente\Agent;
-use App\Agente\Repository\AgentRepository;
+use App\Agente\Agente;
+use App\Agente\Repository\AgenteRepository;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
- * AgentRepository::lockRowsForUpdate(), moved out of AsignarTicketAutomaticamenteUseCase
+ * AgenteRepository::lockRowsForUpdate(), moved out of AsignarTicketAutomaticamenteUseCase
  * in phase 3c-1.
  */
 class AgentRepositorySqlTest extends KernelTestCase
 {
     private Connection $conn;
-    private AgentRepository $repo;
+    private AgenteRepository $repo;
     /** @var int[] */
     private array $agentIds = [];
 
@@ -27,10 +27,10 @@ class AgentRepositorySqlTest extends KernelTestCase
         self::bootKernel();
         $em = static::getContainer()->get(EntityManagerInterface::class);
         $this->conn = $em->getConnection();
-        $this->repo = static::getContainer()->get(AgentRepository::class);
+        $this->repo = static::getContainer()->get(AgenteRepository::class);
 
         foreach (['Lock A', 'Lock B'] as $name) {
-            $agent = new Agent($name);
+            $agent = new Agente($name);
             $em->persist($agent);
             $em->flush();
             $this->agentIds[] = (int) $agent->getId();

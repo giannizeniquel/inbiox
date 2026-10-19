@@ -6,7 +6,7 @@ namespace App\Tests\Integration;
 
 use App\Conversacion\UseCase\HandleInboundMessageUseCase;
 use App\Conversacion\UseCase\HandleOutboundMessageUseCase;
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Conversacion\MessageSenderType;
@@ -75,7 +75,7 @@ class MessageAttributionWriteSiteTest extends KernelTestCase
 
     public function testHandleOutboundMessageSetsAgentAttributionForAKnownAgent(): void
     {
-        $agent = new Agent('Reply Agent');
+        $agent = new Agente('Reply Agent');
         $this->em->persist($agent);
         $this->em->flush();
         $agentId = $agent->getId();

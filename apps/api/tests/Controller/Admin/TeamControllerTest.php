@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller\Admin;
 
-use App\Agente\Agent;
-use App\Agente\Team;
+use App\Agente\Agente;
+use App\Agente\Equipo;
 use App\Administracion\User;
 use App\Administracion\Workspace;
 use Doctrine\ORM\EntityManagerInterface;
@@ -60,7 +60,7 @@ class TeamControllerTest extends WebTestCase
     private function createUser(
         string $email,
         array $roles = ['ROLE_AGENT'],
-        ?Agent $agent = null,
+        ?Agente $agent = null,
     ): User {
         $user = new User();
         $user->setEmail($email);
@@ -79,9 +79,9 @@ class TeamControllerTest extends WebTestCase
         return $user;
     }
 
-    private function createAgent(string $name = 'Test Agent'): Agent
+    private function createAgent(string $name = 'Test Agent'): Agente
     {
-        $agent = new Agent($name);
+        $agent = new Agente($name);
         $this->em->persist($agent);
         $this->em->flush();
 
@@ -97,9 +97,9 @@ class TeamControllerTest extends WebTestCase
         return $workspace;
     }
 
-    private function createTeam(Workspace $workspace, string $name = 'Support'): Team
+    private function createTeam(Workspace $workspace, string $name = 'Support'): Equipo
     {
-        $team = new Team($workspace, $name);
+        $team = new Equipo($workspace, $name);
         $this->em->persist($team);
         $this->em->flush();
 
@@ -360,7 +360,7 @@ class TeamControllerTest extends WebTestCase
         self::assertSame(204, $response->getStatusCode());
 
         $this->em->clear();
-        $deactivated = $this->em->getRepository(Team::class)->find($team->getId());
+        $deactivated = $this->em->getRepository(Equipo::class)->find($team->getId());
         self::assertNotNull($deactivated, 'Team must still exist (soft delete)');
         self::assertFalse($deactivated->isActive(), 'Team must be deactivated');
     }
@@ -447,7 +447,7 @@ class TeamControllerTest extends WebTestCase
 
         // Zero rows written — all-or-nothing rollback
         $this->em->clear();
-        $reloadedTeam = $this->em->getRepository(Team::class)->find($team->getId());
+        $reloadedTeam = $this->em->getRepository(Equipo::class)->find($team->getId());
         self::assertCount(0, $reloadedTeam->getAgents(), 'No partial membership must be applied on rejection');
     }
 }

@@ -84,11 +84,11 @@ Tablas técnicas sin relaciones de negocio (no incluidas en el diagrama): `outbo
 | `Message` (`messages`) | `Conversacion/Message.php` | Un mensaje entrante o saliente. | `conversation_id`, `direction`, `external_id` (WAMID), `content`, `delivery_status` (default `sent`), `failed_reason`, `media` (JSON), `sender_agent_id` (sin FK), `sender_type` (desde 12/09/2026; filas anteriores en `NULL`, sin backfill a propósito) |
 | `Ticket` (`tickets`) | `Ticket/Ticket.php` | Un caso de atención (episodio). | `contact_id`, `conversation_id`, `status`, `priority` (siempre `medium`, sin uso), `assigned_agent_id` (sin FK), `first_response_at`, `resolved_at`, `closed_at`, `version` (bloqueo optimista), `last_event_seq`, `phone_number_id`, `team_id`, `last_read_at`, `last_inbound_message_at` |
 | `Asignacion` (`assignments`) | `Asignacion/Asignacion.php` | Auditoría de cada cambio de dueño. | `ticket_id`, `agent_id`, `previous_agent_id`, `type`, `assigned_at`, `assigned_by` (texto libre: `system`, `u:{id}` o lo que mande el cliente), `notes` |
-| `Agent` (`agents`) | `Agente/Agent.php` | La persona que atiende. | `name`, `user_id`, `active`, `is_available` (**legacy, nunca se escribe**), `max_active_tickets` (default 10, mínimo 1), `timezone`, `is_available_override` + `override_until`, `signature`, `notification_sound`, `desktop_notifications`, `auto_reply_enabled`, `auto_reply_message`, `active_workspace_id` |
+| `Agente` (`agents`) | `Agente/Agente.php` | La persona que atiende. | `name`, `user_id`, `active`, `is_available` (**legacy, nunca se escribe**), `max_active_tickets` (default 10, mínimo 1), `timezone`, `is_available_override` + `override_until`, `signature`, `notification_sound`, `desktop_notifications`, `auto_reply_enabled`, `auto_reply_message`, `active_workspace_id` |
 | `Turno` (`agent_shifts`) | `Disponibilidad/Turno.php` | Turno semanal recurrente en hora local del agente. | `day_of_week` (1-7), `start_time`, `end_time` (distintos; si fin < inicio, cruza medianoche); UNIQUE (agente, día, inicio, fin) |
 | `User` (`user`) | `Administracion/User.php` | Credenciales y roles. | `email` (UNIQUE), `password_hash`, `roles` (JSON, sin validar en el backend), `is_active` |
 | `Workspace` (`workspaces`) | `Administracion/Workspace.php` | Un número de WhatsApp Business. Ejemplo de negocio: un número para clientes y otro para contratistas (análisis de brecha, req. #0b). | `phone_number_id` (UNIQUE), `display_name`, `is_active`. **No guarda credenciales**: todos los números usan el mismo token de Meta. |
-| `Team` (`teams`) | `Agente/Team.php` | Área dentro de un workspace (Sprint 18). | `workspace_id`, `name` (UNIQUE por workspace), `is_active` |
+| `Equipo` (`teams`) | `Agente/Equipo.php` | Área dentro de un workspace (Sprint 18). | `workspace_id`, `name` (UNIQUE por workspace), `is_active` |
 | `Etiqueta` (`tags`) | `Ticket/Etiqueta.php` | Etiqueta global (no por workspace). | `name` (minúsculas, normalizado, UNIQUE) |
 | `EtiquetaDeTicket` (`ticket_tags`) | `Ticket/EtiquetaDeTicket.php` | Relación ticket ↔ etiqueta. | Relación unidireccional: ni `Ticket` ni `Etiqueta` tienen la colección inversa. |
 | `EventoDeTicket` (`ticket_events`) | `Ticket/EventoDeTicket.php` | Historial de hechos de un ticket: tags, cierres manuales (`manual_{resolved,closed}_{owner,override,unowned}`), cierre por ventana (`window_expired_closed`), reaperturas (`window_reopened`, `auto_reopened`). | `ticket_id` (sin FK), `type` (texto), `source` (`system`, `manual`, `u:{id}`) |
@@ -121,18 +121,18 @@ Tablas técnicas sin relaciones de negocio (no incluidas en el diagrama): `outbo
 
 | Relación | Cardinalidad | ¿FK real? | Observación |
 |---|---|---|---|
-| User ↔ Agent | 1 : 0..1 | Sí (`agents.user_id`, unique, `ON DELETE SET NULL`) | Vínculo opcional. |
-| Agent ↔ Workspace | N : M (`agent_workspace`) | Sí | Determina qué workspaces puede elegir un agente. |
-| Agent → Workspace activo | N : 0..1 | Sí (`SET NULL`) | Preferencia del selector. |
-| Team → Workspace | N : 1 | Sí (`CASCADE`) | |
-| Agent ↔ Team | N : M (`agent_team`) | Sí | Solo agentes del mismo workspace (`Team::addAgent()`). |
-| Agent → Turno | 1 : N | Sí (`CASCADE`) | |
-| Contact → Conversation | 1 : N (una por número) | Sí | |
+| User ↔ Agente | 1 : 0..1 | Sí (`agents.user_id`, unique, `ON DELETE SET NULL`) | Vínculo opcional. |
+| Agente ↔ Workspace | N : M (`agent_workspace`) | Sí | Determina qué workspaces puede elegir un agente. |
+| Agente → Workspace activo | N : 0..1 | Sí (`SET NULL`) | Preferencia del selector. |
+| Equipo → Workspace | N : 1 | Sí (`CASCADE`) | |
+| Agente ↔ Equipo | N : M (`agent_team`) | Sí | Solo agentes del mismo workspace (`Equipo::addAgent()`). |
+| Agente → Turno | 1 : N | Sí (`CASCADE`) | |
+| Contacto → Conversation | 1 : N (una por número) | Sí | |
 | Conversation → Message | 1 : N | Sí | |
-| Contact / Conversation → Ticket | 1 : N | Sí | A lo sumo un ticket no cerrado por contacto y número (regla en código, no en BD). |
-| Ticket → Team | N : 0..1 | `Ticket::$team` (`ManyToOne`, FK `ON DELETE SET NULL`). | — |
-| Ticket → Agent (dueño) | N : 0..1 | **No** | Motivo de no tener FK: **Regla no confirmada**. Desactivar un agente no le quita sus tickets. |
-| Message → Agent (autor) | N : 0..1 | **No** (por spec `message-attribution`, copiando la decisión anterior) | |
+| Contacto / Conversation → Ticket | 1 : N | Sí | A lo sumo un ticket no cerrado por contacto y número (regla en código, no en BD). |
+| Ticket → Equipo | N : 0..1 | `Ticket::$team` (`ManyToOne`, FK `ON DELETE SET NULL`). | — |
+| Ticket → Agente (dueño) | N : 0..1 | **No** | Motivo de no tener FK: **Regla no confirmada**. Desactivar un agente no le quita sus tickets. |
+| Message → Agente (autor) | N : 0..1 | **No** (por spec `message-attribution`, copiando la decisión anterior) | |
 | Ticket → Asignacion | 1 : N | Sí (`CASCADE`) | |
 | Ticket ↔ Tag | N : M (`ticket_tags`) | Sí | |
 | Ticket → EventoDeTicket | 1 : N | **No** | |

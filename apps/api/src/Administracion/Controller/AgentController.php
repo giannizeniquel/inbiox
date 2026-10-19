@@ -7,8 +7,8 @@ namespace App\Administracion\Controller;
 use App\Administracion\UseCase\CreateAgentUseCase;
 use App\Administracion\UseCase\DeactivateAgentUseCase;
 use App\Administracion\UseCase\UpdateAgentUseCase;
-use App\Agente\Agent;
-use App\Agente\Repository\AgentRepository;
+use App\Agente\Agente;
+use App\Agente\Repository\AgenteRepository;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -24,7 +24,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class AgentController
 {
     public function __construct(
-        private readonly AgentRepository $agentRepository,
+        private readonly AgenteRepository $agentRepository,
         private readonly CreateAgentUseCase $createAgentUseCase,
         private readonly UpdateAgentUseCase $updateAgentUseCase,
         private readonly DeactivateAgentUseCase $deactivateAgentUseCase,
@@ -40,7 +40,7 @@ final class AgentController
         $total = $this->agentRepository->count([]);
         $agents = $this->agentRepository->findPageWithUser($offset, $limit);
 
-        $items = array_map(fn(Agent $agent) => $this->serializeAgent($agent), $agents);
+        $items = array_map(fn(Agente $agent) => $this->serializeAgent($agent), $agents);
 
         return new JsonResponse([
             'data' => $items,
@@ -124,7 +124,7 @@ final class AgentController
     /**
      * @return array<string, mixed>
      */
-    private function serializeAgent(Agent $agent): array
+    private function serializeAgent(Agente $agent): array
     {
         $user = $agent->getUser();
 

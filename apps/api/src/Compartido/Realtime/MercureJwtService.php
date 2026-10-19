@@ -6,7 +6,7 @@ namespace App\Compartido\Realtime;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use App\Agente\Agent;
+use App\Agente\Agente;
 use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer\Hmac\Sha256;
 use Lcobucci\JWT\Signer\Key\InMemory;
@@ -176,7 +176,7 @@ final class MercureJwtService
      * - ROLE_AGENT: agent-specific topics + tickets
      * - ROLE_SUPERVISOR/ROLE_ADMIN: all + wildcard
      */
-    public function issueForUser(UserInterface $user, ?Agent $agent = null): Token
+    public function issueForUser(UserInterface $user, ?Agente $agent = null): Token
     {
         $roles = $user->getRoles();
         $topics = [self::TOPIC_TICKETS, self::TOPIC_AGENTS_BROADCAST];

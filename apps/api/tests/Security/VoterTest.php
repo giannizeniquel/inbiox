@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Security;
 
 use App\Ticket\Security\TicketVoter;
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Ticket\Ticket;
 use App\Administracion\User;
 use PHPUnit\Framework\TestCase;
@@ -57,7 +57,7 @@ class VoterTest extends TestCase
         $user->setRoles([$role]);
 
         if (null !== $userAgentId) {
-            $agent = $this->createMock(Agent::class);
+            $agent = $this->createMock(Agente::class);
             $agent->method('getId')->willReturn($userAgentId);
             $user->setAgent($agent);
         }

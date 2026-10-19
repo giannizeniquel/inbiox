@@ -5,24 +5,24 @@ declare(strict_types=1);
 namespace App\Agente\Repository;
 
 use App\Administracion\Workspace;
-use App\Agente\Team;
+use App\Agente\Equipo;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<Team>
+ * @extends ServiceEntityRepository<Equipo>
  */
-class TeamRepository extends ServiceEntityRepository
+class EquipoRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, Team::class);
+        parent::__construct($registry, Equipo::class);
     }
 
     /**
      * @param Workspace[] $workspaces non-empty
      *
-     * @return Team[] ordered by name
+     * @return Equipo[] ordered by name
      */
     public function findByWorkspaces(array $workspaces): array
     {

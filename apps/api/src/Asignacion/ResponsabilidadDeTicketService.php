@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Asignacion;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Compartido\DomainEvent;
 use App\Compartido\EventCollector;
 use App\Ticket\InboxUpdatedEvent;
@@ -34,8 +34,8 @@ final class ResponsabilidadDeTicketService
      * Record a ticket ownership change with full audit trail.
      *
      * @param Ticket  $ticket        The ticket whose ownership is changing
-     * @param ?Agent  $agente         The new owner (null for UNASSIGN)
-     * @param ?Agent  $agenteAnterior The previous owner (null for initial assignment)
+     * @param ?Agente  $agente         The new owner (null for UNASSIGN)
+     * @param ?Agente  $agenteAnterior The previous owner (null for initial assignment)
      * @param TipoDeAsignacion $tipo   The type of change
      * @param string  $asignadoPor    'system' or user identifier
      * @param ?string $notas         Optional notes
@@ -44,8 +44,8 @@ final class ResponsabilidadDeTicketService
      */
     public function registrarCambioDeResponsable(
         Ticket $ticket,
-        ?Agent $agente,
-        ?Agent $agenteAnterior,
+        ?Agente $agente,
+        ?Agente $agenteAnterior,
         TipoDeAsignacion $tipo,
         string $asignadoPor,
         ?string $notas = null,

@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Disponibilidad;
 
 use App\Disponibilidad\Query\DisponibilidadDeAgenteDTO;
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Disponibilidad\Repository\TurnoRepository;
 use App\Ticket\EstadoDeTicket;
 use App\Administracion\Workspace;
-use App\Agente\Repository\AgentRepository;
+use App\Agente\Repository\AgenteRepository;
 use App\Ticket\Repository\TicketRepository;
 
 /**
@@ -25,7 +25,7 @@ use App\Ticket\Repository\TicketRepository;
 final class DisponibilidadDeAgenteService
 {
     public function __construct(
-        private AgentRepository $agentRepository,
+        private AgenteRepository $agentRepository,
         private TurnoRepository $turnoRepository,
         private TicketRepository $ticketRepository,
     ) {}
@@ -36,7 +36,7 @@ final class DisponibilidadDeAgenteService
      * The agent's shifts are loaded from the entity (lazy-loads if not already
      * initialized). For batch evaluation, use listarAgentesDisponibles().
      */
-    public function isDisponible(Agent $agente, \DateTimeImmutable $atUtc): bool
+    public function isDisponible(Agente $agente, \DateTimeImmutable $atUtc): bool
     {
         // Step 1: Account active check
         if (!$agente->isActive()) {
@@ -80,7 +80,7 @@ final class DisponibilidadDeAgenteService
      *
      * @param Turno[] $turnos
      */
-    public function isActivoAhora(Agent $agente, array $turnos, \DateTimeImmutable $atUtc): bool
+    public function isActivoAhora(Agente $agente, array $turnos, \DateTimeImmutable $atUtc): bool
     {
         // Step 1: Account active check
         if (!$agente->isActive()) {
@@ -106,7 +106,7 @@ final class DisponibilidadDeAgenteService
      * Batch-loads shifts in one query (no N+1). Applies the full cascade in
      * PHP: override → schedule → capacity. Returns agents sorted by id ASC.
      *
-     * @return Agent[]
+     * @return Agente[]
      */
     public function listarAgentesDisponibles(\DateTimeImmutable $atUtc): array
     {
@@ -117,7 +117,7 @@ final class DisponibilidadDeAgenteService
         }
 
         // 2. Batch-load shifts for all active agents (1 query, no N+1)
-        $agenteIds = \array_map(fn (Agent $a): ?int => $a->getId(), $agentes);
+        $agenteIds = \array_map(fn (Agente $a): ?int => $a->getId(), $agentes);
         $todosLosTurnos = $this->turnoRepository->findByAgentes(\array_filter($agenteIds));
 
         /** @var array<int, Turno[]> $turnosPorAgente */
@@ -160,7 +160,7 @@ final class DisponibilidadDeAgenteService
         }
 
         // Sort by id ASC (stable order)
-        \usort($disponible, fn (Agent $a, Agent $b): int => $a->getId() <=> $b->getId());
+        \usort($disponible, fn (Agente $a, Agente $b): int => $a->getId() <=> $b->getId());
 
         return $disponible;
     }
@@ -181,14 +181,14 @@ final class DisponibilidadDeAgenteService
     {
         // 1. Fetch all workspace agents, then filter to active=true in PHP
         $agentes = $this->agentRepository->findByWorkspace($espacioDeTrabajo);
-        $agentesActivos = \array_values(\array_filter($agentes, fn (Agent $a): bool => $a->isActive()));
+        $agentesActivos = \array_values(\array_filter($agentes, fn (Agente $a): bool => $a->isActive()));
 
         if (empty($agentesActivos)) {
             return [];
         }
 
         // 2. Batch-load shifts for the active agents only (1 query, no N+1)
-        $agenteIds = \array_map(fn (Agent $a): ?int => $a->getId(), $agentesActivos);
+        $agenteIds = \array_map(fn (Agente $a): ?int => $a->getId(), $agentesActivos);
         $todosLosTurnos = $this->turnoRepository->findByAgentes(\array_filter($agenteIds));
 
         /** @var array<int, Turno[]> $turnosPorAgente */
@@ -229,7 +229,7 @@ final class DisponibilidadDeAgenteService
      * Used by reports and inbox enrichment for read-only projections.
      * The full availability cascade is isAvailable().
      */
-    public function isEnTurno(Agent $agente, \DateTimeImmutable $atUtc): bool
+    public function isEnTurno(Agente $agente, \DateTimeImmutable $atUtc): bool
     {
         if (!$agente->isActive()) {
             return false;

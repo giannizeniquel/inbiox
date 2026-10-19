@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Reporte\Command;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Disponibilidad\Turno;
 use App\Contacto\Contacto;
 use App\Ticket\EventoDeTicket;
@@ -81,7 +81,7 @@ final class SeedReportsCommand extends Command
         ];
 
         foreach ($agentConfigs as $cfg) {
-            $agent = new Agent($cfg['name']);
+            $agent = new Agente($cfg['name']);
             $agent->setMaxActiveTickets($cfg['max_active']);
             $agent->setTimezone($cfg['tz']);
             $agent->setActive(true);

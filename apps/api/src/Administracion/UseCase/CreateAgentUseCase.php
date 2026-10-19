@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Administracion\UseCase;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use Doctrine\ORM\EntityManagerInterface;
 
 final class CreateAgentUseCase
@@ -18,7 +18,7 @@ final class CreateAgentUseCase
      *
      * @throws \InvalidArgumentException when a field is missing or invalid
      */
-    public function execute(array $data): Agent
+    public function execute(array $data): Agente
     {
         $name = $data['name'] ?? null;
 
@@ -32,7 +32,7 @@ final class CreateAgentUseCase
             throw new \InvalidArgumentException('timezone must be a string');
         }
 
-        $agent = new Agent($name);
+        $agent = new Agente($name);
         $agent->setTimezone($timezone);
         $this->entityManager->persist($agent);
         $this->entityManager->flush();

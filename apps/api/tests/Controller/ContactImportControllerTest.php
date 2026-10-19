@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Administracion\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -57,7 +57,7 @@ class ContactImportControllerTest extends WebTestCase
         $this->tempFiles = [];
     }
 
-    private function createUser(string $email, array $roles, ?Agent $agent = null): User
+    private function createUser(string $email, array $roles, ?Agente $agent = null): User
     {
         $user = new User();
         $user->setEmail($email);
@@ -76,9 +76,9 @@ class ContactImportControllerTest extends WebTestCase
         return $user;
     }
 
-    private function createAgent(string $name = 'Test Agent'): Agent
+    private function createAgent(string $name = 'Test Agent'): Agente
     {
-        $agent = new Agent($name);
+        $agent = new Agente($name);
         $this->em->persist($agent);
         $this->em->flush();
 

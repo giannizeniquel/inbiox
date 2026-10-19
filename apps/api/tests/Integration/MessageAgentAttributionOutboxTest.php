@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Integration;
 
 use App\Conversacion\UseCase\HandleOutboundMessageUseCase;
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Compartido\Outbox\OutboxEvent;
@@ -49,7 +49,7 @@ class MessageAgentAttributionOutboxTest extends KernelTestCase
 
     public function testAgentReplyProducesOneOutboxRowWithMessageIdAndContent(): void
     {
-        $agent = new Agent('Outbox Agent');
+        $agent = new Agente('Outbox Agent');
         $this->em->persist($agent);
         $this->em->flush();
         $agentId = $agent->getId();

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Administracion\UseCase;
 
-use App\Agente\Repository\AgentRepository;
-use App\Agente\Team;
+use App\Agente\Repository\AgenteRepository;
+use App\Agente\Equipo;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -15,7 +15,7 @@ final class AssignTeamAgentsUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly AgentRepository $agentRepository,
+        private readonly AgenteRepository $agentRepository,
     ) {}
 
     /**
@@ -24,7 +24,7 @@ final class AssignTeamAgentsUseCase
      * @throws \InvalidArgumentException when agentIds is invalid, or an agent
      *                                   is outside the team's workspace
      */
-    public function execute(Team $team, array $data): void
+    public function execute(Equipo $team, array $data): void
     {
         $agentIds = $data['agentIds'] ?? [];
 

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Administracion\UseCase;
 
 use App\Administracion\Repository\WorkspaceRepository;
-use App\Agente\Repository\TeamRepository;
-use App\Agente\Team;
+use App\Agente\Repository\EquipoRepository;
+use App\Agente\Equipo;
 use App\Compartido\StateConflictException;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -15,7 +15,7 @@ final class CreateTeamUseCase
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly WorkspaceRepository $workspaceRepository,
-        private readonly TeamRepository $teamRepository,
+        private readonly EquipoRepository $teamRepository,
     ) {}
 
     /**
@@ -24,7 +24,7 @@ final class CreateTeamUseCase
      * @throws \InvalidArgumentException when a field is missing or invalid, or the workspace does not exist
      * @throws StateConflictException    when the workspace already has a team with that name
      */
-    public function execute(array $data): Team
+    public function execute(array $data): Equipo
     {
         $workspaceId = $data['workspaceId'] ?? null;
         $name = $data['name'] ?? null;
@@ -48,7 +48,7 @@ final class CreateTeamUseCase
             throw new StateConflictException('A team with this name already exists in this workspace');
         }
 
-        $team = new Team($workspace, $name);
+        $team = new Equipo($workspace, $name);
 
         if (isset($data['isActive'])) {
             $team->setActive((bool) $data['isActive']);

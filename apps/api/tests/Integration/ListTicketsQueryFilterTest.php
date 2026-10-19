@@ -9,7 +9,7 @@ use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Ticket\Etiqueta;
 use App\Ticket\EtiquetaDeTicket;
-use App\Agente\Team;
+use App\Agente\Equipo;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
 use App\Administracion\Workspace;
@@ -70,7 +70,7 @@ class ListTicketsQueryFilterTest extends KernelTestCase
             $ticket->setAgenteAsignadoId($assignedAgentId);
         }
         if (null !== $teamId) {
-            $ticket->setEquipo($this->em->getReference(Team::class, $teamId));
+            $ticket->setEquipo($this->em->getReference(Equipo::class, $teamId));
         }
         $this->em->persist($ticket);
         $this->em->flush();
@@ -94,12 +94,12 @@ class ListTicketsQueryFilterTest extends KernelTestCase
         return $id;
     }
 
-    private function createTeam(string $name = 'Support'): Team
+    private function createTeam(string $name = 'Support'): Equipo
     {
         $workspace = new Workspace('+549110000' . random_int(1000, 9999), 'Workspace for ' . $name);
         $this->em->persist($workspace);
 
-        $team = new Team($workspace, $name);
+        $team = new Equipo($workspace, $name);
         $this->em->persist($team);
         $this->em->flush();
 

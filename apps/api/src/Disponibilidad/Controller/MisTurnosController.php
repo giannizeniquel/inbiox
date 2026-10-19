@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Disponibilidad\Controller;
 
 use App\Administracion\User;
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Disponibilidad\UseCase\ReemplazarTurnosUseCase;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -72,7 +72,7 @@ final class MisTurnosController
         return new JsonResponse($creado);
     }
 
-    private function getAgente(): ?Agent
+    private function getAgente(): ?Agente
     {
         $usuario = $this->security->getUser();
 

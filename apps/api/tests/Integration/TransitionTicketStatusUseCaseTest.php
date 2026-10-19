@@ -6,7 +6,7 @@ namespace App\Tests\Integration;
 
 use App\Ticket\UseCase\ResolverTicketUseCase;
 use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Ticket\TipoDeEventoDeTicket;
@@ -230,7 +230,7 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
 
     private function createAgent(string $name): int
     {
-        $agent = new Agent($name);
+        $agent = new Agente($name);
         $this->em->persist($agent);
         $this->em->flush();
 

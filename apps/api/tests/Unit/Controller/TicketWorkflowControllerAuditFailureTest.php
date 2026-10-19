@@ -8,7 +8,7 @@ use App\Ticket\UseCase\RegistrarAuditoriaDeCierreUseCase;
 use App\Ticket\UseCase\ResolverTicketUseCase;
 use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
 use App\Ticket\Controller\FlujoDeTicketController;
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Ticket\ClasificadorDeAuditoriaDeCierre;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
@@ -30,7 +30,7 @@ class TicketWorkflowControllerAuditFailureTest extends TestCase
 {
     private function buildController(EntityManagerInterface $em, LoggerInterface $logger): array
     {
-        $agent = $this->createMock(Agent::class);
+        $agent = $this->createMock(Agente::class);
         $agent->method('getId')->willReturn(7);
 
         $user = new User();

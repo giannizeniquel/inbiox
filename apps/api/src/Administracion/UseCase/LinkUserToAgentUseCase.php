@@ -6,7 +6,7 @@ namespace App\Administracion\UseCase;
 
 use App\Administracion\Repository\UserRepository;
 use App\Administracion\User;
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Compartido\NotFoundException;
 use App\Compartido\StateConflictException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
@@ -27,7 +27,7 @@ final class LinkUserToAgentUseCase
      * @throws NotFoundException         when the user does not exist
      * @throws StateConflictException    when the database rejects the link as a duplicate
      */
-    public function execute(Agent $agent, array $data): User
+    public function execute(Agente $agent, array $data): User
     {
         $userId = $data['user_id'] ?? null;
 

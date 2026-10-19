@@ -6,7 +6,7 @@ namespace App\Administracion\Controller;
 
 use App\Administracion\UseCase\LinkUserToAgentUseCase;
 use App\Administracion\UseCase\UnlinkUserFromAgentUseCase;
-use App\Agente\Repository\AgentRepository;
+use App\Agente\Repository\AgenteRepository;
 use App\Compartido\NotFoundException;
 use App\Compartido\StateConflictException;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -25,7 +25,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class AgentLinkController
 {
     public function __construct(
-        private readonly AgentRepository $agentRepository,
+        private readonly AgenteRepository $agentRepository,
         private readonly LinkUserToAgentUseCase $linkUserToAgentUseCase,
         private readonly UnlinkUserFromAgentUseCase $unlinkUserFromAgentUseCase,
     ) {}

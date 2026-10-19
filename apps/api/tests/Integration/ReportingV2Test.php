@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Disponibilidad\Turno;
 use App\Contacto\Contacto;
 use App\Ticket\EventoDeTicket;
@@ -397,7 +397,7 @@ class ReportingV2Test extends WebTestCase
         // Create 5 agents
         $agents = [];
         for ($i = 1; $i <= 5; $i++) {
-            $agent = new Agent("Test Agent {$i}");
+            $agent = new Agente("Test Agent {$i}");
             $agent->setMaxActiveTickets(10);
             $agent->setTimezone('UTC');
             $agent->setActive(true);

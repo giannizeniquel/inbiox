@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Disponibilidad;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
@@ -28,9 +28,9 @@ class Turno
     #[ORM\GeneratedValue]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(targetEntity: Agent::class, inversedBy: 'shifts')]
+    #[ORM\ManyToOne(targetEntity: Agente::class, inversedBy: 'shifts')]
     #[ORM\JoinColumn(name: 'agent_id', referencedColumnName: 'id', onDelete: 'CASCADE', nullable: false)]
-    private ?Agent $agente = null;
+    private ?Agente $agente = null;
 
     #[ORM\Column(name: 'day_of_week', type: Types::SMALLINT, options: ['unsigned' => true])]
     private int $diaDeLaSemana;
@@ -45,7 +45,7 @@ class Turno
     private \DateTimeImmutable $creadoAt;
 
     public function __construct(
-        Agent $agente,
+        Agente $agente,
         int $diaDeLaSemana,
         \DateTimeImmutable $horaDeInicio,
         \DateTimeImmutable $horaDeFin
@@ -62,12 +62,12 @@ class Turno
         return $this->id;
     }
 
-    public function getAgente(): ?Agent
+    public function getAgente(): ?Agente
     {
         return $this->agente;
     }
 
-    public function setAgente(?Agent $agente): self
+    public function setAgente(?Agente $agente): self
     {
         $this->agente = $agente;
         return $this;

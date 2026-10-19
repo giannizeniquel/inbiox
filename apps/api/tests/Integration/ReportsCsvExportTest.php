@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Integration;
 
 use App\Reporte\Query\ExportTicketsCsvQuery;
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Ticket\Etiqueta;
@@ -281,9 +281,9 @@ class ReportsCsvExportTest extends WebTestCase
 
     public function test_agent_id_param_narrows_results(): void
     {
-        $agentA = new Agent('Agent A');
+        $agentA = new Agente('Agent A');
         $this->em->persist($agentA);
-        $agentB = new Agent('Agent B');
+        $agentB = new Agente('Agent B');
         $this->em->persist($agentB);
         $this->em->flush();
 

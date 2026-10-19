@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Disponibilidad\Turno;
 use App\Administracion\User;
 use Doctrine\ORM\EntityManagerInterface;
@@ -74,7 +74,7 @@ class SettingsPageTest extends WebTestCase
         $this->em->persist($user);
         $this->em->flush();
 
-        $agent = new Agent('Settings Agent');
+        $agent = new Agente('Settings Agent');
         $agent->setUser($user);
         $this->em->persist($agent);
         $this->em->flush();
@@ -351,7 +351,7 @@ class SettingsPageTest extends WebTestCase
     //  Private helpers
     // ────────────────────────────────────────────────────────
 
-    private function loadAgent(): Agent
+    private function loadAgent(): Agente
     {
         $user = $this->em->getRepository(User::class)->findOneBy(['email' => 'settings-agent@inbiox.local']);
         \assert($user !== null);
@@ -360,7 +360,7 @@ class SettingsPageTest extends WebTestCase
         return $agent;
     }
 
-    private function createShift(Agent $agent, int $dayOfWeek, string $start, string $end): Turno
+    private function createShift(Agente $agent, int $dayOfWeek, string $start, string $end): Turno
     {
         $startTime = \DateTimeImmutable::createFromFormat('H:i', $start);
         $endTime = \DateTimeImmutable::createFromFormat('H:i', $end);

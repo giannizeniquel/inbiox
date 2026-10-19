@@ -6,13 +6,13 @@ namespace App\Asignacion\UseCase;
 
 use App\Disponibilidad\DisponibilidadDeAgenteService;
 use App\Asignacion\ResponsabilidadDeTicketService;
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Asignacion\TipoDeAsignacion;
 use App\Compartido\EventCollector;
 use App\Compartido\Outbox\OutboxEvent;
 use App\Compartido\Outbox\OutboxWriter;
 use App\Ticket\EstadoDeTicket;
-use App\Agente\Repository\AgentRepository;
+use App\Agente\Repository\AgenteRepository;
 use App\Asignacion\Repository\AsignacionRepository;
 use App\Ticket\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -45,7 +45,7 @@ final class AsignarTicketAutomaticamenteUseCase
         private ResponsabilidadDeTicketService $responsabilidadDeTicketService,
         private EventCollector $eventCollector,
         private readonly OutboxWriter $outboxWriter,
-        private AgentRepository $agentRepo,
+        private AgenteRepository $agentRepo,
     ) {}
 
     /**
@@ -120,7 +120,7 @@ final class AsignarTicketAutomaticamenteUseCase
         }
 
         // 4. Lock candidate agent rows FOR UPDATE
-        $agenteIds = array_map(fn (Agent $a): int => (int) $a->getId(), $agentesDisponibles);
+        $agenteIds = array_map(fn (Agente $a): int => (int) $a->getId(), $agentesDisponibles);
         $this->agentRepo->lockRowsForUpdate($agenteIds);
 
         // 5. Re-filter capacity inside the lock + gather tiebreaker data

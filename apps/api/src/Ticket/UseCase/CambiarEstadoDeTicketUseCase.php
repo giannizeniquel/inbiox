@@ -3,14 +3,14 @@
 namespace App\Ticket\UseCase;
 
 use App\Asignacion\ResponsabilidadDeTicketService;
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Asignacion\TipoDeAsignacion;
 use App\Ticket\EventoDeTicket;
 use App\Ticket\TipoDeEventoDeTicket;
 use App\Ticket\Ticket;
 use App\Ticket\MaquinaDeEstadosDeTicket;
 use App\Ticket\EstadoDeTicket;
-use App\Agente\Repository\AgentRepository;
+use App\Agente\Repository\AgenteRepository;
 use App\Ticket\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -28,7 +28,7 @@ class CambiarEstadoDeTicketUseCase
         private TicketRepository $ticketRepo,
         private MaquinaDeEstadosDeTicket $maquinaDeEstados,
         private ResponsabilidadDeTicketService $assignmentService,
-        private AgentRepository $agentRepository,
+        private AgenteRepository $agentRepository,
     ) {}
 
     /**

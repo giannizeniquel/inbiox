@@ -29,7 +29,7 @@ use App\Ticket\TicketResponsabilidadGuard;
 use App\Compartido\ConcurrencyException;
 use App\Conversacion\ConversationWindowExpiredException;
 use App\Compartido\StateConflictException;
-use App\Agente\Repository\AgentRepository;
+use App\Agente\Repository\AgenteRepository;
 use App\Conversacion\Repository\ConversationRepository;
 use App\Conversacion\Repository\MessageRepository;
 use App\Compartido\Repository\ProcessedEventRepository;
@@ -55,7 +55,7 @@ class HandleOutboundMessageUseCase
         private ProcessedEventRepository $processedEventRepo,
         private EjecutorDeReglas $ruleExecutor,
         private ResponsabilidadDeTicketService $assignmentService,
-        private AgentRepository $agentRepo,
+        private AgenteRepository $agentRepo,
         private EventCollector $eventCollector,
         private readonly OutboxWriter $outboxWriter,
         private ConversationWindowPolicy $windowPolicy,

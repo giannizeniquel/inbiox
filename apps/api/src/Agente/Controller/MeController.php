@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Agente\Controller;
 
 use App\Administracion\User;
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Agente\UseCase\UpdateAgentProfileUseCase;
 use App\Agente\UseCase\UpdateNotificationPreferencesUseCase;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -134,7 +134,7 @@ final class MeController
         ]);
     }
 
-    private function getAgent(): ?Agent
+    private function getAgent(): ?Agente
     {
         $user = $this->security->getUser();
 

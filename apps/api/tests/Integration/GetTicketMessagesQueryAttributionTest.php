@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Integration;
 
 use App\Conversacion\Query\GetTicketMessagesQuery;
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Conversacion\Message;
@@ -45,7 +45,7 @@ class GetTicketMessagesQueryAttributionTest extends KernelTestCase
 
     private function createTicketWithMessages(): int
     {
-        $agent = new Agent('Query Test Agent');
+        $agent = new Agente('Query Test Agent');
         $this->em->persist($agent);
         $this->em->flush();
         $agentId = $agent->getId();

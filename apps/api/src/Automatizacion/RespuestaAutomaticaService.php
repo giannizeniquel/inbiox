@@ -7,7 +7,7 @@ namespace App\Automatizacion;
 use App\Disponibilidad\DisponibilidadDeAgenteService;
 use App\Compartido\Graph\GraphClient;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Conversacion\Conversation;
 use App\Compartido\EventCollector;
 use App\Conversacion\MessageCreatedEvent;
@@ -18,7 +18,7 @@ use App\Conversacion\ConversationWindowPolicy;
 use App\Compartido\ProcessedEvent;
 use App\Ticket\Ticket;
 use App\Compartido\Graph\GraphApiException;
-use App\Agente\Repository\AgentRepository;
+use App\Agente\Repository\AgenteRepository;
 use App\Compartido\Repository\ProcessedEventRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -41,7 +41,7 @@ final class RespuestaAutomaticaService
     private const HORAS_DE_VENTANA_DE_RESPUESTA_AUTOMATICA = 2;
 
     public function __construct(
-        private readonly AgentRepository $agentRepo,
+        private readonly AgenteRepository $agentRepo,
         private readonly DisponibilidadDeAgenteService $availabilityService,
         private readonly GraphClient $graphClient,
         private readonly ProcessedEventRepository $processedEventRepo,
@@ -207,7 +207,7 @@ final class RespuestaAutomaticaService
      * 2. First active agent in the workspace matching the ticket's phoneNumberId
      *    with auto_reply_enabled = true
      */
-    private function buscarAgenteDestino(Ticket $ticket): ?Agent
+    private function buscarAgenteDestino(Ticket $ticket): ?Agente
     {
         $agenteAsignadoId = $ticket->getAgenteAsignadoId();
 

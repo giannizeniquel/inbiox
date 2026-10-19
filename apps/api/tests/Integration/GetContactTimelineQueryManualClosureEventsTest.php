@@ -6,7 +6,7 @@ namespace App\Tests\Integration;
 
 use App\Contacto\Query\GetLineaDeTiempoDeContactoQuery;
 use App\Contacto\Query\EventoDeLineaDeTiempoDTO;
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Ticket\TipoDeEventoDeTicket;
@@ -102,7 +102,7 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
         $user->setRoles($roles);
         $this->em->persist($user);
 
-        $agent = new Agent($agentName);
+        $agent = new Agente($agentName);
         $agent->setUser($user);
         $this->em->persist($agent);
         $this->em->flush();

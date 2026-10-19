@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Agente\UseCase;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use Doctrine\ORM\EntityManagerInterface;
 
 final class UpdateAgentProfileUseCase
@@ -16,7 +16,7 @@ final class UpdateAgentProfileUseCase
     /**
      * Sets the signature; null clears it.
      */
-    public function execute(Agent $agent, ?string $signature): void
+    public function execute(Agente $agent, ?string $signature): void
     {
         $agent->setSignature($signature);
         $this->entityManager->flush();

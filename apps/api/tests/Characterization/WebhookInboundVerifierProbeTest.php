@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Characterization;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Compartido\Graph\GraphApiException;
 use App\Compartido\Graph\GraphClient;
 use App\Compartido\Storage\MediaStorageService;
@@ -488,7 +488,7 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
 
     public function testAFailingAutoReplySendStillStoresTheInboundMessage(): void
     {
-        $agent = new Agent('Ausente');
+        $agent = new Agente('Ausente');
         $agent->setAutoReplyEnabled(true);
         $agent->setAutoReplyMessage('Ya te respondemos');
         $agent->addWorkspace($this->createWorkspace(self::PNID));

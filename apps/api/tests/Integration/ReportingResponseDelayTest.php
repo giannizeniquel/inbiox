@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
 use App\Ticket\Ticket;
@@ -80,9 +80,9 @@ class ReportingResponseDelayTest extends WebTestCase
     //  Fixture helpers
     // ────────────────────────────────────────────────────────
 
-    private function createAgent(string $name): Agent
+    private function createAgent(string $name): Agente
     {
-        $agent = new Agent($name);
+        $agent = new Agente($name);
         $agent->setMaxActiveTickets(10);
         $agent->setActive(true);
         $this->em->persist($agent);
@@ -171,7 +171,7 @@ class ReportingResponseDelayTest extends WebTestCase
 
     private function createAuthenticatedAgentToken(): string
     {
-        $agent = new Agent('Auth Agent');
+        $agent = new Agente('Auth Agent');
         $user = new User();
         $user->setEmail('rd-agent@test.local');
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));

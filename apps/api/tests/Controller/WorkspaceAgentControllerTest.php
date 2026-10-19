@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Disponibilidad\Turno;
 use App\Administracion\User;
 use App\Administracion\Workspace;
@@ -56,7 +56,7 @@ class WorkspaceAgentControllerTest extends WebTestCase
     private function createUser(
         string $email,
         array $roles = ['ROLE_AGENT'],
-        ?Agent $agent = null,
+        ?Agente $agent = null,
     ): User {
         $user = new User();
         $user->setEmail($email);
@@ -75,9 +75,9 @@ class WorkspaceAgentControllerTest extends WebTestCase
         return $user;
     }
 
-    private function createAgent(string $name = 'Test Agent', bool $active = true): Agent
+    private function createAgent(string $name = 'Test Agent', bool $active = true): Agente
     {
-        $agent = new Agent($name);
+        $agent = new Agente($name);
         $agent->setActive($active);
         $this->em->persist($agent);
         $this->em->flush();
@@ -96,7 +96,7 @@ class WorkspaceAgentControllerTest extends WebTestCase
     }
 
     private function createShift(
-        Agent $agent,
+        Agente $agent,
         int $dayOfWeek,
         string $start,
         string $end,

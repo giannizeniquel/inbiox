@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Administracion\UseCase;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -16,7 +16,7 @@ final class DeactivateAgentUseCase
         private readonly EntityManagerInterface $entityManager,
     ) {}
 
-    public function execute(Agent $agent): void
+    public function execute(Agente $agent): void
     {
         $agent->setActive(false);
         $this->entityManager->flush();

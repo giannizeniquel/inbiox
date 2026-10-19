@@ -3,8 +3,8 @@
 namespace App\Ticket\Query;
 
 use App\Disponibilidad\DisponibilidadDeAgenteService;
-use App\Agente\Agent;
-use App\Agente\Repository\AgentRepository;
+use App\Agente\Agente;
+use App\Agente\Repository\AgenteRepository;
 use App\Ticket\Repository\TicketRepository;
 
 class ListTicketsQuery
@@ -12,7 +12,7 @@ class ListTicketsQuery
     public function __construct(
         private DisponibilidadDeAgenteService $agentAvailabilityService,
         private TicketRepository $ticketRepository,
-        private AgentRepository $agentRepository,
+        private AgenteRepository $agentRepository,
         private FiltrosDeTicketBuilder $filtrosDeTicketBuilder = new FiltrosDeTicketBuilder(),
     ) {}
 
@@ -85,7 +85,7 @@ class ListTicketsQuery
         if (!empty($agenteIds)) {
             $agenteEntities = $this->agentRepository->findByIds($agenteIds);
         }
-        /** @var array<int, Agent> $mapaDeAgentes */
+        /** @var array<int, Agente> $mapaDeAgentes */
         $mapaDeAgentes = [];
         foreach ($agenteEntities as $agente) {
             $mapaDeAgentes[$agente->getId()] = $agente;

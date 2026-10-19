@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Automatizacion\Controller;
 
 use App\Administracion\User;
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Automatizacion\UseCase\UpdateConfiguracionDeRespuestaAutomaticaUseCase;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -44,7 +44,7 @@ final class MiRespuestaAutomaticaController
         ]);
     }
 
-    private function getAgente(): ?Agent
+    private function getAgente(): ?Agente
     {
         $usuario = $this->security->getUser();
 

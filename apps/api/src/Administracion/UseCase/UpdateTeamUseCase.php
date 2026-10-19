@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Administracion\UseCase;
 
-use App\Agente\Repository\TeamRepository;
-use App\Agente\Team;
+use App\Agente\Repository\EquipoRepository;
+use App\Agente\Equipo;
 use App\Compartido\StateConflictException;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -13,7 +13,7 @@ final class UpdateTeamUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly TeamRepository $teamRepository,
+        private readonly EquipoRepository $teamRepository,
     ) {}
 
     /**
@@ -25,7 +25,7 @@ final class UpdateTeamUseCase
      * @throws \InvalidArgumentException when a field is invalid
      * @throws StateConflictException    when another team in the workspace has the name
      */
-    public function execute(Team $team, array $data): void
+    public function execute(Equipo $team, array $data): void
     {
         if (isset($data['name'])) {
             if (!\is_string($data['name']) || empty($data['name'])) {

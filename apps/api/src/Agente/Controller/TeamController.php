@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Agente\Controller;
 
-use App\Agente\Team;
+use App\Agente\Equipo;
 use App\Administracion\User;
-use App\Agente\Repository\TeamRepository;
+use App\Agente\Repository\EquipoRepository;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
@@ -30,7 +30,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class TeamController
 {
     public function __construct(
-        private readonly TeamRepository $teamRepository,
+        private readonly EquipoRepository $teamRepository,
         private readonly Security $security,
     ) {}
 
@@ -54,7 +54,7 @@ final class TeamController
 
         $teams = $this->teamRepository->findByWorkspaces($workspaces);
 
-        $items = array_map(fn(Team $t) => [
+        $items = array_map(fn(Equipo $t) => [
             'id' => (int) $t->getId(),
             'workspace_id' => (int) $t->getWorkspace()->getId(),
             'name' => $t->getName(),

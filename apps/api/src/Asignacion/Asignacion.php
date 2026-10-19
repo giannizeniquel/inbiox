@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Asignacion;
 
-use App\Agente\Agent;
+use App\Agente\Agente;
 use App\Ticket\Ticket;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
@@ -25,16 +25,16 @@ class Asignacion
     #[ORM\JoinColumn(name: "ticket_id", referencedColumnName: "id", onDelete: "CASCADE")]
     private Ticket $ticket;
 
-    #[ORM\ManyToOne(targetEntity: Agent::class)]
+    #[ORM\ManyToOne(targetEntity: Agente::class)]
     #[ORM\JoinColumn(name: "agent_id", referencedColumnName: "id", nullable: true)]
-    private ?Agent $agente = null;
+    private ?Agente $agente = null;
 
     #[ORM\Column(name: "type", type: Types::STRING, length: 20, options: ['default' => 'MANUAL_ASSIGN'])]
     private string $tipo = 'MANUAL_ASSIGN';
 
-    #[ORM\ManyToOne(targetEntity: Agent::class)]
+    #[ORM\ManyToOne(targetEntity: Agente::class)]
     #[ORM\JoinColumn(name: "previous_agent_id", referencedColumnName: "id", nullable: true)]
-    private ?Agent $agenteAnterior = null;
+    private ?Agente $agenteAnterior = null;
 
     #[ORM\Column(name: "assigned_at", type: "datetime_immutable")]
     private \DateTimeImmutable $asignadoAt;
@@ -47,11 +47,11 @@ class Asignacion
 
     public function __construct(
         Ticket $ticket,
-        ?Agent $agente = null,
+        ?Agente $agente = null,
         string $asignadoPor = '',
         ?string $notas = null,
         string $tipo = 'MANUAL_ASSIGN',
-        ?Agent $agenteAnterior = null
+        ?Agente $agenteAnterior = null
     ) {
         $this->ticket = $ticket;
         $this->agente = $agente;
@@ -72,12 +72,12 @@ class Asignacion
         return $this->ticket;
     }
 
-    public function getAgente(): ?Agent
+    public function getAgente(): ?Agente
     {
         return $this->agente;
     }
 
-    public function setAgente(?Agent $agente): self
+    public function setAgente(?Agente $agente): self
     {
         $this->agente = $agente;
         return $this;
@@ -91,12 +91,12 @@ class Asignacion
         return $this->agente?->getId();
     }
 
-    public function getAgenteAnterior(): ?Agent
+    public function getAgenteAnterior(): ?Agente
     {
         return $this->agenteAnterior;
     }
 
-    public function setAgenteAnterior(?Agent $agenteAnterior): self
+    public function setAgenteAnterior(?Agente $agenteAnterior): self
     {
         $this->agenteAnterior = $agenteAnterior;
         return $this;

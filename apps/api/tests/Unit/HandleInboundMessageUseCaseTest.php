@@ -12,7 +12,7 @@ use App\Automatizacion\EjecutorDeReglas;
 use App\Disponibilidad\Repository\TurnoRepository;
 use App\Compartido\EventCollector;
 use App\Conversacion\ConversationWindowPolicy;
-use App\Agente\Repository\AgentRepository;
+use App\Agente\Repository\AgenteRepository;
 use App\Contacto\Repository\ContactoRepository;
 use App\Conversacion\Repository\ConversationRepository;
 use App\Conversacion\Repository\MessageRepository;
@@ -53,7 +53,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
         $this->logger = $this->createMock(LoggerInterface::class);
 
         // Create a real RespuestaAutomaticaService with mocked deps (can't mock final class)
-        $agentRepo = $this->createMock(AgentRepository::class);
+        $agentRepo = $this->createMock(AgenteRepository::class);
         $agentShiftRepo = $this->createMock(TurnoRepository::class);
         $availabilityService = new DisponibilidadDeAgenteService($agentRepo, $agentShiftRepo, $this->ticketRepo);
         $graphClient = $this->createMock(GraphClient::class);
