@@ -10,12 +10,12 @@ use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 class AsignacionAutomaticaSolicitadaListener
 {
     public function __construct(
-        private AsignarTicketAutomaticamenteUseCase $autoAssignTicketUseCase,
+        private AsignarTicketAutomaticamenteUseCase $asignarTicketAutomaticamenteUseCase,
     ) {
     }
 
     public function __invoke(TicketRequiereAsignacionAutomaticaEvent $event): void
     {
-        $this->autoAssignTicketUseCase->executeInTransaction($event->getTicketId());
+        $this->asignarTicketAutomaticamenteUseCase->executeInTransaction($event->getTicketId());
     }
 }

@@ -204,9 +204,9 @@ class Sprint15ContactTimelineTest extends WebTestCase
         // Assignment (oldest event)
         $assignment = new Asignacion(
             ticket: $ticket,
-            agent: null,
-            assignedBy: 'system',
-            type: 'AUTO_ASSIGN',
+            agente: null,
+            asignadoPor: 'system',
+            tipo: 'AUTO_ASSIGN',
         );
         // Override assigned_at to be the oldest
         $oldDate = (new \DateTimeImmutable())->modify('-4 hours');

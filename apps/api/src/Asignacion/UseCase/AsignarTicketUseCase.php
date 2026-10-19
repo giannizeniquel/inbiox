@@ -38,41 +38,41 @@ class AsignarTicketUseCase
     public function __construct(
         private EntityManagerInterface $em,
         private TicketRepository $ticketRepo,
-        private AsignacionRepository $assignmentRepo,
+        private AsignacionRepository $asignacionRepo,
         private AgentRepository $agentRepo,
         private EventCollector $eventCollector,
         private readonly OutboxWriter $outboxWriter,
-        private ResponsabilidadDeTicketService $assignmentService,
-        private DisponibilidadDeAgenteService $agentAvailabilityService,
+        private ResponsabilidadDeTicketService $responsabilidadDeTicketService,
+        private DisponibilidadDeAgenteService $disponibilidadDeAgenteService,
     ) {}
 
     /**
      * Assign a ticket to an agent (manual assignment).
      *
      * @param int $ticketId
-     * @param int $agentId
-     * @param string $assignedBy
-     * @param string|null $notes
+     * @param int $agenteId
+     * @param string $asignadoPor
+     * @param string|null $notas
      * @return array
      * @throws \InvalidArgumentException if ticket or agent not found
      */
-    public function asignar(int $ticketId, int $agentId, string $assignedBy, ?string $notes = null): array
+    public function asignar(int $ticketId, int $agenteId, string $asignadoPor, ?string $notas = null): array
     {
         // Validate input
-        if ($agentId <= 0) {
+        if ($agenteId <= 0) {
             throw new \InvalidArgumentException('Agent ID is required');
         }
 
-        if ($assignedBy === '') {
+        if ($asignadoPor === '') {
             throw new \InvalidArgumentException('Assigned by is required');
         }
 
         $this->ultimoTipoDeAsignacion = null;
 
-        $result = $this->em->getConnection()->transactional(function () use ($ticketId, $agentId, $assignedBy, $notes) {
+        $result = $this->em->getConnection()->transactional(function () use ($ticketId, $agenteId, $asignadoPor, $notas) {
             // Find the agent
-            $agent = $this->agentRepo->findById($agentId);
-            if (!$agent) {
+            $agente = $this->agentRepo->findById($agenteId);
+            if (!$agente) {
                 throw new \InvalidArgumentException('Agent not found');
             }
 
@@ -87,48 +87,48 @@ class AsignarTicketUseCase
 
             // Assign-time Activo guard: HARD BLOCK for every role, no bypass.
             // Capacity is never checked here — only account-active + override/shift.
-            $isActiveNow = $this->agentAvailabilityService->isActivoAhora(
-                $agent,
-                $agent->getShifts()->toArray(),
+            $isActivoAhora = $this->disponibilidadDeAgenteService->isActivoAhora(
+                $agente,
+                $agente->getShifts()->toArray(),
                 new \DateTimeImmutable('now', new \DateTimeZone('UTC')),
             );
-            if (!$isActiveNow) {
-                throw AgenteInactivoException::paraAgente($agentId, $agent->getName());
+            if (!$isActivoAhora) {
+                throw AgenteInactivoException::paraAgente($agenteId, $agente->getName());
             }
 
             // Detect assignment type from current ownership
-            $currentOwnerId = $ticket->getAgenteAsignadoId();
-            $previousAgent = null;
+            $responsableActualId = $ticket->getAgenteAsignadoId();
+            $agenteAnterior = null;
 
-            if ($currentOwnerId !== null && $currentOwnerId !== $agentId) {
+            if ($responsableActualId !== null && $responsableActualId !== $agenteId) {
                 // REASSIGN — ticket has a different owner
-                $previousAgent = $this->agentRepo->findById($currentOwnerId);
+                $agenteAnterior = $this->agentRepo->findById($responsableActualId);
             }
 
-            $type = $currentOwnerId !== null ? TipoDeAsignacion::REASIGNACION : TipoDeAsignacion::MANUAL;
-            $this->ultimoTipoDeAsignacion = $type->value;
+            $tipo = $responsableActualId !== null ? TipoDeAsignacion::REASIGNACION : TipoDeAsignacion::MANUAL;
+            $this->ultimoTipoDeAsignacion = $tipo->value;
 
             // Route through ResponsabilidadDeTicketService (creates audit row, updates ticket, emits events)
-            $assignment = $this->assignmentService->registrarCambioDeResponsable(
+            $asignacion = $this->responsabilidadDeTicketService->registrarCambioDeResponsable(
                 ticket: $ticket,
-                agent: $agent,
-                previousAgent: $previousAgent,
-                type: $type,
-                assignedBy: $assignedBy,
-                notes: $notes,
+                agente: $agente,
+                agenteAnterior: $agenteAnterior,
+                tipo: $tipo,
+                asignadoPor: $asignadoPor,
+                notas: $notas,
             );
 
             $this->em->flush();
 
             return [
-                'assignment_id' => $assignment->getId(),
+                'assignment_id' => $asignacion->getId(),
                 'ticket_id' => $ticket->getId(),
-                'agent_id' => $assignment->getAgenteId(),
-                'agent_name' => $agent->getName(),
-                'assigned_by' => $assignment->getAsignadoPor(),
-                'assigned_at' => $assignment->getAsignadoAt()->format('Y-m-d H:i:s'),
+                'agent_id' => $asignacion->getAgenteId(),
+                'agent_name' => $agente->getName(),
+                'assigned_by' => $asignacion->getAsignadoPor(),
+                'assigned_at' => $asignacion->getAsignadoAt()->format('Y-m-d H:i:s'),
                 'ticket_status' => $ticket->getEstado(),
-                'notes' => $assignment->getNotas(),
+                'notes' => $asignacion->getNotas(),
                 'status' => 'ok',
             ];
         });

@@ -53,10 +53,10 @@ class CambiarEstadoDeTicketUseCase
 
         $this->assignmentService->registrarCambioDeResponsable(
             ticket: $ticketEntity,
-            agent: null,
-            previousAgent: $agente,
-            type: TipoDeAsignacion::DESASIGNACION,
-            assignedBy: $actor,
+            agente: null,
+            agenteAnterior: $agente,
+            tipo: TipoDeAsignacion::DESASIGNACION,
+            asignadoPor: $actor,
         );
     }
 

@@ -20,9 +20,9 @@ class AsignacionRepository extends ServiceEntityRepository
         return $this->findBy(['ticket' => $ticket], ['asignadoAt' => 'DESC']);
     }
 
-    public function findByAgente(int $agentId): array
+    public function findByAgente(int $agenteId): array
     {
-        return $this->findBy(['agente' => $agentId], ['asignadoAt' => 'DESC']);
+        return $this->findBy(['agente' => $agenteId], ['asignadoAt' => 'DESC']);
     }
 
     public function findById(int $id): ?Asignacion
@@ -30,9 +30,9 @@ class AsignacionRepository extends ServiceEntityRepository
         return $this->find($id);
     }
 
-    public function save(Asignacion $assignment): void
+    public function save(Asignacion $asignacion): void
     {
-        $this->getEntityManager()->persist($assignment);
+        $this->getEntityManager()->persist($asignacion);
         $this->getEntityManager()->flush();
     }
 
@@ -57,7 +57,7 @@ class AsignacionRepository extends ServiceEntityRepository
      * Used as the second tiebreaker in the auto-assignment algorithm.
      * Uses index idx_assignments_agent_assigned_at (agent_id, assigned_at).
      */
-    public function countAsignacionesAutomaticasDeHoy(int $agentId, \DateTimeImmutable $todayStart): int
+    public function countAsignacionesAutomaticasDeHoy(int $agenteId, \DateTimeImmutable $inicioDeHoy): int
     {
         return (int) $this->createQueryBuilder('a')
             ->select('COUNT(a.id)')
@@ -65,9 +65,9 @@ class AsignacionRepository extends ServiceEntityRepository
             ->where('ag.id = :agentId')
             ->andWhere('a.tipo = :type')
             ->andWhere('a.asignadoAt >= :todayStart')
-            ->setParameter('agentId', $agentId)
+            ->setParameter('agentId', $agenteId)
             ->setParameter('type', TipoDeAsignacion::AUTOMATICA->value)
-            ->setParameter('todayStart', $todayStart)
+            ->setParameter('todayStart', $inicioDeHoy)
             ->getQuery()
             ->getSingleScalarResult();
     }

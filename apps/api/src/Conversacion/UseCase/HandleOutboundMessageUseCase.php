@@ -311,11 +311,11 @@ class HandleOutboundMessageUseCase
 
         $this->assignmentService->registrarCambioDeResponsable(
             ticket: $ticket,
-            agent: $agent,
-            previousAgent: $previousAgent,
-            type: $type,
-            assignedBy: 'system',
-            notes: 'Auto-assigned on agent reply',
+            agente: $agent,
+            agenteAnterior: $previousAgent,
+            tipo: $type,
+            asignadoPor: 'system',
+            notas: 'Auto-assigned on agent reply',
         );
 
         // Flush the assignment + any status change made by ResponsabilidadDeTicketService

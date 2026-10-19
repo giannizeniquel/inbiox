@@ -13,7 +13,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class AsignacionAutomaticaController
 {
     public function __construct(
-        private AsignarTicketAutomaticamenteUseCase $autoAssignTicketUseCase,
+        private AsignarTicketAutomaticamenteUseCase $asignarTicketAutomaticamenteUseCase,
     ) {}
 
     #[Route('/api/tickets/{id}/auto-assign', name: 'app_ticket_auto_assign', methods: ['POST'])]
@@ -24,7 +24,7 @@ class AsignacionAutomaticaController
             return new JsonResponse(['error' => 'Invalid ticket ID'], 400);
         }
 
-        $result = $this->autoAssignTicketUseCase->execute($id);
+        $result = $this->asignarTicketAutomaticamenteUseCase->execute($id);
         return new JsonResponse($result);
     }
 }

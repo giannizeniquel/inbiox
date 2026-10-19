@@ -21,11 +21,11 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class AsignacionDeTicketController
 {
     public function __construct(
-        private AsignarTicketUseCase $assignTicketUseCase,
+        private AsignarTicketUseCase $asignarTicketUseCase,
         private TicketRepository $ticketRepo,
-        private AsignacionRepository $assignmentRepo,
+        private AsignacionRepository $asignacionRepo,
         private Security $security,
-        private SetEquipoDeTicketUseCase $setTicketTeamUseCase,
+        private SetEquipoDeTicketUseCase $setEquipoDeTicketUseCase,
     ) {}
 
     #[Route('/api/tickets/{id}/assign', name: 'app_ticket_assign', methods: ['POST'])]
@@ -45,7 +45,7 @@ class AsignacionDeTicketController
                 return new JsonResponse(['error' => 'Forbidden'], 403);
             }
 
-            $result = $this->assignTicketUseCase->asignar(
+            $result = $this->asignarTicketUseCase->asignar(
                 $id,
                 $request->agentId,
                 $request->assignedBy,
@@ -86,10 +86,10 @@ class AsignacionDeTicketController
                 return new JsonResponse(['error' => 'teamId is required (integer or null)'], 400);
             }
 
-            $teamId = $data['teamId'];
-            $this->setTicketTeamUseCase->execute($ticket, $teamId);
+            $equipoId = $data['teamId'];
+            $this->setEquipoDeTicketUseCase->execute($ticket, $equipoId);
 
-            return new JsonResponse(['ticket_id' => $ticket->getId(), 'team_id' => $teamId]);
+            return new JsonResponse(['ticket_id' => $ticket->getId(), 'team_id' => $equipoId]);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }
@@ -105,29 +105,29 @@ class AsignacionDeTicketController
         }
 
         // Get assignment history
-        $assignments = $this->assignmentRepo->findByTicket($ticket);
+        $asignaciones = $this->asignacionRepo->findByTicket($ticket);
 
         $data = [
             'ticket_id' => $ticket->getId(),
-            'assignments' => array_map(function ($assignment) {
+            'assignments' => array_map(function ($asignacion) {
                 return [
-                    'id' => $assignment->getId(),
-                    'agent_id' => $assignment->getAgenteId(),
-                    'assigned_by' => $assignment->getAsignadoPor(),
-                    'assigned_at' => $assignment->getAsignadoAt()->format('Y-m-d H:i:s'),
-                    'notes' => $assignment->getNotas(),
+                    'id' => $asignacion->getId(),
+                    'agent_id' => $asignacion->getAgenteId(),
+                    'assigned_by' => $asignacion->getAsignadoPor(),
+                    'assigned_at' => $asignacion->getAsignadoAt()->format('Y-m-d H:i:s'),
+                    'notes' => $asignacion->getNotas(),
                 ];
-            }, $assignments),
+            }, $asignaciones),
             'current_assignment' => null,
         ];
 
         // Get the most recent assignment as current
-        if (!empty($assignments)) {
-            $current = $assignments[0]; // Already ordered by DESC
+        if (!empty($asignaciones)) {
+            $actual = $asignaciones[0]; // Already ordered by DESC
             $data['current_assignment'] = [
-                'agent_id' => $current->getAgenteId(),
-                'assigned_by' => $current->getAsignadoPor(),
-                'assigned_at' => $current->getAsignadoAt()->format('Y-m-d H:i:s'),
+                'agent_id' => $actual->getAgenteId(),
+                'assigned_by' => $actual->getAsignadoPor(),
+                'assigned_at' => $actual->getAsignadoAt()->format('Y-m-d H:i:s'),
             ];
         }
 

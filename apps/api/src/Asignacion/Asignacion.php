@@ -47,19 +47,19 @@ class Asignacion
 
     public function __construct(
         Ticket $ticket,
-        ?Agent $agent = null,
-        string $assignedBy = '',
-        ?string $notes = null,
-        string $type = 'MANUAL_ASSIGN',
-        ?Agent $previousAgent = null
+        ?Agent $agente = null,
+        string $asignadoPor = '',
+        ?string $notas = null,
+        string $tipo = 'MANUAL_ASSIGN',
+        ?Agent $agenteAnterior = null
     ) {
         $this->ticket = $ticket;
-        $this->agente = $agent;
-        $this->asignadoPor = $assignedBy;
-        $this->tipo = $type;
-        $this->agenteAnterior = $previousAgent;
+        $this->agente = $agente;
+        $this->asignadoPor = $asignadoPor;
+        $this->tipo = $tipo;
+        $this->agenteAnterior = $agenteAnterior;
         $this->asignadoAt = new \DateTimeImmutable();
-        $this->notas = $notes;
+        $this->notas = $notas;
     }
 
     public function getId(): ?int
@@ -77,9 +77,9 @@ class Asignacion
         return $this->agente;
     }
 
-    public function setAgente(?Agent $agent): self
+    public function setAgente(?Agent $agente): self
     {
-        $this->agente = $agent;
+        $this->agente = $agente;
         return $this;
     }
 
@@ -96,9 +96,9 @@ class Asignacion
         return $this->agenteAnterior;
     }
 
-    public function setAgenteAnterior(?Agent $previousAgent): self
+    public function setAgenteAnterior(?Agent $agenteAnterior): self
     {
-        $this->agenteAnterior = $previousAgent;
+        $this->agenteAnterior = $agenteAnterior;
         return $this;
     }
 
@@ -115,9 +115,9 @@ class Asignacion
         return $this->tipo;
     }
 
-    public function setTipo(string $type): self
+    public function setTipo(string $tipo): self
     {
-        $this->tipo = $type;
+        $this->tipo = $tipo;
         return $this;
     }
 
@@ -131,9 +131,9 @@ class Asignacion
         return $this->asignadoPor;
     }
 
-    public function setAsignadoPor(string $assignedBy): self
+    public function setAsignadoPor(string $asignadoPor): self
     {
-        $this->asignadoPor = $assignedBy;
+        $this->asignadoPor = $asignadoPor;
         return $this;
     }
 
@@ -142,9 +142,9 @@ class Asignacion
         return $this->notas;
     }
 
-    public function setNotas(?string $notes): self
+    public function setNotas(?string $notas): self
     {
-        $this->notas = $notes;
+        $this->notas = $notas;
         return $this;
     }
 }

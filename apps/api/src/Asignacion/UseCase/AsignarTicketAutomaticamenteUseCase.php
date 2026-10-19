@@ -40,9 +40,9 @@ final class AsignarTicketAutomaticamenteUseCase
     public function __construct(
         private EntityManagerInterface $em,
         private TicketRepository $ticketRepo,
-        private AsignacionRepository $assignmentRepo,
-        private DisponibilidadDeAgenteService $availabilityService,
-        private ResponsabilidadDeTicketService $assignmentService,
+        private AsignacionRepository $asignacionRepo,
+        private DisponibilidadDeAgenteService $disponibilidadDeAgenteService,
+        private ResponsabilidadDeTicketService $responsabilidadDeTicketService,
         private EventCollector $eventCollector,
         private readonly OutboxWriter $outboxWriter,
         private AgentRepository $agentRepo,
@@ -84,9 +84,9 @@ final class AsignarTicketAutomaticamenteUseCase
     private function executeInternal(int $ticketId): array
     {
         // 1. Lock the ticket row FOR UPDATE
-        $ticketRow = $this->ticketRepo->findFilaByIdForUpdate($ticketId);
+        $filaDeTicket = $this->ticketRepo->findFilaByIdForUpdate($ticketId);
 
-        if (!$ticketRow) {
+        if (!$filaDeTicket) {
             return [
                 'ticket_id' => $ticketId,
                 'assigned' => false,
@@ -96,11 +96,11 @@ final class AsignarTicketAutomaticamenteUseCase
         }
 
         // 2. If already assigned, return idempotent (no new Asignacion row)
-        if ($ticketRow['assigned_agent_id'] !== null) {
+        if ($filaDeTicket['assigned_agent_id'] !== null) {
             return [
                 'ticket_id' => $ticketId,
                 'assigned' => false,
-                'agent_id' => (int) $ticketRow['assigned_agent_id'],
+                'agent_id' => (int) $filaDeTicket['assigned_agent_id'],
                 'reason' => 'already_assigned',
             ];
         }
@@ -108,9 +108,9 @@ final class AsignarTicketAutomaticamenteUseCase
         // 3. Get available agents via DisponibilidadDeAgenteService (SOLE eligibility check)
         //    This uses the full cascade: active → override → schedule → capacity.
         $nowUtc = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-        $availableAgents = $this->availabilityService->listarAgentesDisponibles($nowUtc);
+        $agentesDisponibles = $this->disponibilidadDeAgenteService->listarAgentesDisponibles($nowUtc);
 
-        if (empty($availableAgents)) {
+        if (empty($agentesDisponibles)) {
             return [
                 'ticket_id' => $ticketId,
                 'assigned' => false,
@@ -120,32 +120,32 @@ final class AsignarTicketAutomaticamenteUseCase
         }
 
         // 4. Lock candidate agent rows FOR UPDATE
-        $agentIds = array_map(fn (Agent $a): int => (int) $a->getId(), $availableAgents);
-        $this->agentRepo->lockRowsForUpdate($agentIds);
+        $agenteIds = array_map(fn (Agent $a): int => (int) $a->getId(), $agentesDisponibles);
+        $this->agentRepo->lockRowsForUpdate($agenteIds);
 
         // 5. Re-filter capacity inside the lock + gather tiebreaker data
-        $todayStart = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->setTime(0, 0, 0);
-        $eligible = [];
+        $inicioDeHoy = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->setTime(0, 0, 0);
+        $elegibles = [];
 
-        foreach ($availableAgents as $agent) {
-            $activeCount = $this->ticketRepo->countActivosDeAgente((int) $agent->getId());
-            if ($activeCount >= $agent->getMaxActiveTickets()) {
+        foreach ($agentesDisponibles as $agente) {
+            $cantidadDeActivos = $this->ticketRepo->countActivosDeAgente((int) $agente->getId());
+            if ($cantidadDeActivos >= $agente->getMaxActiveTickets()) {
                 continue; // at capacity — skip
             }
 
-            $todayCount = $this->assignmentRepo->countAsignacionesAutomaticasDeHoy(
-                (int) $agent->getId(),
-                $todayStart,
+            $cantidadDeHoy = $this->asignacionRepo->countAsignacionesAutomaticasDeHoy(
+                (int) $agente->getId(),
+                $inicioDeHoy,
             );
 
-            $eligible[] = [
-                'agent' => $agent,
-                'activeCount' => $activeCount,
-                'todayCount' => $todayCount,
+            $elegibles[] = [
+                'agent' => $agente,
+                'activeCount' => $cantidadDeActivos,
+                'todayCount' => $cantidadDeHoy,
             ];
         }
 
-        if (empty($eligible)) {
+        if (empty($elegibles)) {
             return [
                 'ticket_id' => $ticketId,
                 'assigned' => false,
@@ -155,7 +155,7 @@ final class AsignarTicketAutomaticamenteUseCase
         }
 
         // 6. DETERMINISTIC tiebreaker (no shuffle, no rand — same data = same result)
-        usort($eligible, function (array $a, array $b): int {
+        usort($elegibles, function (array $a, array $b): int {
             // First: lowest active ticket count
             if ($a['activeCount'] !== $b['activeCount']) {
                 return $a['activeCount'] <=> $b['activeCount'];
@@ -168,7 +168,7 @@ final class AsignarTicketAutomaticamenteUseCase
             return $a['agent']->getId() <=> $b['agent']->getId();
         });
 
-        $selectedAgent = $eligible[0]['agent'];
+        $agenteSeleccionado = $elegibles[0]['agent'];
 
         // 7. Load the Ticket entity for ResponsabilidadDeTicketService
         $ticket = $this->ticketRepo->findById($ticketId);
@@ -186,12 +186,12 @@ final class AsignarTicketAutomaticamenteUseCase
         //    This creates the Asignacion audit row, updates ticket.assigned_agent_id,
         //    and emits domain events.
         $this->ultimoTipoDeAsignacion = TipoDeAsignacion::AUTOMATICA->value;
-        $this->assignmentService->registrarCambioDeResponsable(
+        $this->responsabilidadDeTicketService->registrarCambioDeResponsable(
             ticket: $ticket,
-            agent: $selectedAgent,
-            previousAgent: null,
-            type: TipoDeAsignacion::AUTOMATICA,
-            assignedBy: 'system',
+            agente: $agenteSeleccionado,
+            agenteAnterior: null,
+            tipo: TipoDeAsignacion::AUTOMATICA,
+            asignadoPor: 'system',
         );
 
         // 9. Flush to persist all changes in the current transaction
@@ -200,7 +200,7 @@ final class AsignarTicketAutomaticamenteUseCase
         return [
             'ticket_id' => $ticketId,
             'assigned' => true,
-            'agent_id' => $selectedAgent->getId(),
+            'agent_id' => $agenteSeleccionado->getId(),
             'reason' => 'success',
         ];
     }

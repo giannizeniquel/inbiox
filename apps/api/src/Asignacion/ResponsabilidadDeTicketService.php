@@ -34,42 +34,42 @@ final class ResponsabilidadDeTicketService
      * Record a ticket ownership change with full audit trail.
      *
      * @param Ticket  $ticket        The ticket whose ownership is changing
-     * @param ?Agent  $agent         The new owner (null for UNASSIGN)
-     * @param ?Agent  $previousAgent The previous owner (null for initial assignment)
-     * @param TipoDeAsignacion $type   The type of change
-     * @param string  $assignedBy    'system' or user identifier
-     * @param ?string $notes         Optional notes
+     * @param ?Agent  $agente         The new owner (null for UNASSIGN)
+     * @param ?Agent  $agenteAnterior The previous owner (null for initial assignment)
+     * @param TipoDeAsignacion $tipo   The type of change
+     * @param string  $asignadoPor    'system' or user identifier
+     * @param ?string $notas         Optional notes
      *
      * @return Asignacion The created assignment record
      */
     public function registrarCambioDeResponsable(
         Ticket $ticket,
-        ?Agent $agent,
-        ?Agent $previousAgent,
-        TipoDeAsignacion $type,
-        string $assignedBy,
-        ?string $notes = null,
+        ?Agent $agente,
+        ?Agent $agenteAnterior,
+        TipoDeAsignacion $tipo,
+        string $asignadoPor,
+        ?string $notas = null,
     ): Asignacion {
         // 1. Create Asignacion audit row
-        $assignment = new Asignacion(
+        $asignacion = new Asignacion(
             ticket: $ticket,
-            agent: $agent,
-            assignedBy: $assignedBy,
-            notes: $notes,
-            type: $type->value,
-            previousAgent: $previousAgent,
+            agente: $agente,
+            asignadoPor: $asignadoPor,
+            notas: $notas,
+            tipo: $tipo->value,
+            agenteAnterior: $agenteAnterior,
         );
-        $this->em->persist($assignment);
+        $this->em->persist($asignacion);
 
         // 2. Update ticket ownership (THE single point of change for assigned_agent_id)
-        $ticket->setAgenteAsignadoId($agent?->getId());
+        $ticket->setAgenteAsignadoId($agente?->getId());
         $ticket->setActualizadoAt(new \DateTimeImmutable());
 
         // If ticket was NEW, set to ACTIVE on assignment
-        $statusChanged = false;
+        $estadoCambiado = false;
         if ($ticket->getEstado() === EstadoDeTicket::NUEVO->value) {
             $ticket->setEstado(EstadoDeTicket::ACTIVO->value);
-            $statusChanged = true;
+            $estadoCambiado = true;
         }
 
         // 3. Collect domain events
@@ -81,12 +81,12 @@ final class ResponsabilidadDeTicketService
             occurredAt: $now,
             seq: $ticket->incrementLastEventSeq(),
             version: 1,
-            status: $statusChanged ? EstadoDeTicket::ACTIVO : null,
-            ownerAgentId: $agent?->getId(),
+            status: $estadoCambiado ? EstadoDeTicket::ACTIVO : null,
+            ownerAgentId: $agente?->getId(),
         ));
 
         // Inbox update for previous agent (lost a ticket)
-        if ($previousAgent !== null) {
+        if ($agenteAnterior !== null) {
             $this->eventCollector->collect(new InboxUpdatedEvent(
                 eventId: DomainEvent::generateEventId(),
                 ticketId: $ticket->getId(),
@@ -97,7 +97,7 @@ final class ResponsabilidadDeTicketService
         }
 
         // Inbox update for new agent (gained a ticket)
-        if ($agent !== null) {
+        if ($agente !== null) {
             $this->eventCollector->collect(new InboxUpdatedEvent(
                 eventId: DomainEvent::generateEventId(),
                 ticketId: $ticket->getId(),
@@ -107,6 +107,6 @@ final class ResponsabilidadDeTicketService
             ));
         }
 
-        return $assignment;
+        return $asignacion;
     }
 }
