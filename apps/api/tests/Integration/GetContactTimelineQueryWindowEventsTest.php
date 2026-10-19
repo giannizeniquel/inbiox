@@ -6,7 +6,7 @@ namespace App\Tests\Integration;
 
 use App\Contacto\Query\GetLineaDeTiempoDeContactoQuery;
 use App\Contacto\Contacto;
-use App\Conversacion\Conversation;
+use App\Conversacion\Conversacion;
 use App\Ticket\TipoDeEventoDeTicket;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
@@ -45,7 +45,7 @@ class GetContactTimelineQueryWindowEventsTest extends KernelTestCase
         $contact->setTelefono('+5491100000600');
         $this->em->persist($contact);
 
-        $conversation = new Conversation();
+        $conversation = new Conversacion();
         $conversation->setContact($contact);
         $this->em->persist($conversation);
 

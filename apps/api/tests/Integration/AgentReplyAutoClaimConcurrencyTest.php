@@ -6,7 +6,7 @@ namespace App\Tests\Integration;
 
 use App\Conversacion\UseCase\HandleOutboundMessageUseCase;
 use App\Contacto\Contacto;
-use App\Conversacion\Conversation;
+use App\Conversacion\Conversacion;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
 use App\Compartido\ConcurrencyException;
@@ -294,7 +294,7 @@ class AgentReplyAutoClaimConcurrencyTest extends KernelTestCase
         $contact->setTelefono('+549' . random_int(100000000, 999999999));
         $this->em->persist($contact);
 
-        $conversation = new Conversation();
+        $conversation = new Conversacion();
         $conversation->setContact($contact);
         $this->em->persist($conversation);
 

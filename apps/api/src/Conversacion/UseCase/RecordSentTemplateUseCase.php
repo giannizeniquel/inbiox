@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Conversacion\UseCase;
 
-use App\Conversacion\Message;
-use App\Conversacion\MessageDirection;
-use App\Conversacion\MessageSenderType;
+use App\Conversacion\Mensaje;
+use App\Conversacion\DireccionDeMensaje;
+use App\Conversacion\TipoDeRemitente;
 use App\Ticket\Ticket;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -26,14 +26,14 @@ final class RecordSentTemplateUseCase
     public function execute(Ticket $ticket, string $templateName, array $parameters, string $wamid, ?int $senderAgentId): void
     {
         $content = "Template: {$templateName}" . (!empty($parameters) ? ' (' . implode(', ', $parameters) . ')' : '');
-        $message = new Message();
+        $message = new Mensaje();
         $message->setContent($content);
         $message->setExternalId($wamid);
-        $message->setDirection(MessageDirection::OUTBOUND->value);
+        $message->setDirection(DireccionDeMensaje::OUTBOUND->value);
         $message->setDeliveryStatus('sent');
         $message->setUpdatedAt(new \DateTimeImmutable());
         $message->setSenderAgentId($senderAgentId);
-        $message->setSenderType(MessageSenderType::AGENT);
+        $message->setSenderType(TipoDeRemitente::AGENT);
         if ($ticket->getConversacion()) {
             $message->setConversation($ticket->getConversacion());
         }

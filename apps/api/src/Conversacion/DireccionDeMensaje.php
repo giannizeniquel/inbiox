@@ -2,7 +2,7 @@
 
 namespace App\Conversacion;
 
-enum MessageDirection: string
+enum DireccionDeMensaje: string
 {
     case INBOUND = 'inbound';
     case OUTBOUND = 'outbound';

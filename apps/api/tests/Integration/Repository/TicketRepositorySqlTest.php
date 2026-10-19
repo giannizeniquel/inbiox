@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Integration\Repository;
 
 use App\Contacto\Contacto;
-use App\Conversacion\Conversation;
+use App\Conversacion\Conversacion;
 use App\Ticket\Repository\TicketRepository;
 use App\Ticket\Ticket;
 use App\Ticket\EventoDeTicket;
@@ -62,7 +62,7 @@ class TicketRepositorySqlTest extends KernelTestCase
 
     private function createTicket(string $status, ?string $phoneNumberId = null, ?string $lastInboundAt = null): int
     {
-        $conversation = new Conversation();
+        $conversation = new Conversacion();
         $conversation->setContact($this->contact);
         $this->em->persist($conversation);
 

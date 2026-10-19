@@ -7,7 +7,7 @@ namespace App\Tests\Integration;
 use App\Ticket\Query\GetDetalleDeTicketQuery;
 use App\Ticket\Query\ListTicketsQuery;
 use App\Contacto\Contacto;
-use App\Conversacion\Conversation;
+use App\Conversacion\Conversacion;
 use App\Ticket\Ticket;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -49,7 +49,7 @@ class TicketQueriesLastInboundMessageAtTest extends KernelTestCase
         $contact->setTelefono('+5491100000700');
         $this->em->persist($contact);
 
-        $conversation = new Conversation();
+        $conversation = new Conversacion();
         $conversation->setContact($contact);
         $this->em->persist($conversation);
 

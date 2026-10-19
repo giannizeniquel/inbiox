@@ -14,8 +14,8 @@ use App\Compartido\EventCollector;
 use App\Conversacion\ConversationWindowPolicy;
 use App\Agente\Repository\AgenteRepository;
 use App\Contacto\Repository\ContactoRepository;
-use App\Conversacion\Repository\ConversationRepository;
-use App\Conversacion\Repository\MessageRepository;
+use App\Conversacion\Repository\ConversacionRepository;
+use App\Conversacion\Repository\MensajeRepository;
 use App\Compartido\Repository\ProcessedEventRepository;
 use App\Ticket\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -28,8 +28,8 @@ class HandleInboundMessageUseCaseTest extends TestCase
 {
     private EntityManagerInterface|MockObject $em;
     private ContactoRepository|MockObject $contactRepo;
-    private ConversationRepository|MockObject $conversationRepo;
-    private MessageRepository|MockObject $messageRepo;
+    private ConversacionRepository|MockObject $conversationRepo;
+    private MensajeRepository|MockObject $messageRepo;
     private TicketRepository|MockObject $ticketRepo;
     private EventDispatcherInterface|MockObject $eventDispatcher;
     private CambiarEstadoDeTicketUseCase|MockObject $transitionUseCase;
@@ -43,8 +43,8 @@ class HandleInboundMessageUseCaseTest extends TestCase
     {
         $this->em = $this->createMock(EntityManagerInterface::class);
         $this->contactRepo = $this->createMock(ContactoRepository::class);
-        $this->conversationRepo = $this->createMock(ConversationRepository::class);
-        $this->messageRepo = $this->createMock(MessageRepository::class);
+        $this->conversationRepo = $this->createMock(ConversacionRepository::class);
+        $this->messageRepo = $this->createMock(MensajeRepository::class);
         $this->ticketRepo = $this->createMock(TicketRepository::class);
         $this->eventDispatcher = $this->createMock(EventDispatcherInterface::class);
         $this->transitionUseCase = $this->createMock(CambiarEstadoDeTicketUseCase::class);
@@ -234,7 +234,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
 
         $this->contactRepo->method('findOneByTelefono')->willReturn($contact);
 
-        $existingConversation = $this->createMock(\App\Conversacion\Conversation::class);
+        $existingConversation = $this->createMock(\App\Conversacion\Conversacion::class);
         $existingConversation->method('getId')->willReturn(10);
         $existingConversation->method('getUpdatedAt')->willReturn(new \DateTimeImmutable());
 
@@ -287,7 +287,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
 
         $this->contactRepo->method('findOneByTelefono')->willReturn($contact);
 
-        $existingConversation = $this->createMock(\App\Conversacion\Conversation::class);
+        $existingConversation = $this->createMock(\App\Conversacion\Conversacion::class);
         $existingConversation->method('getId')->willReturn(10);
         $existingConversation->method('getUpdatedAt')->willReturn(new \DateTimeImmutable());
 

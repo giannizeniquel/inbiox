@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Conversacion\Controller;
 
 use Symfony\Component\Routing\Attribute\Route;
-use App\Conversacion\Message;
+use App\Conversacion\Mensaje;
 use App\Conversacion\MediaUrlService;
-use App\Conversacion\Repository\MessageRepository;
+use App\Conversacion\Repository\MensajeRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -17,7 +17,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class MediaUrlController extends AbstractController
 {
     public function __construct(
-        private readonly MessageRepository $messageRepository,
+        private readonly MensajeRepository $messageRepository,
         private readonly MediaUrlService $mediaUrlService,
     ) {}
 
@@ -30,7 +30,7 @@ class MediaUrlController extends AbstractController
      * @return JsonResponse
      */
     #[IsGranted('ACCESS', subject: 'message')]
-    public function __invoke(Message $message): JsonResponse
+    public function __invoke(Mensaje $message): JsonResponse
     {
         $media = $message->getMedia();
 

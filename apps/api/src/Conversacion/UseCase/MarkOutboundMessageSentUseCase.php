@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Conversacion\UseCase;
 
-use App\Conversacion\Repository\MessageRepository;
+use App\Conversacion\Repository\MensajeRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -16,7 +16,7 @@ final class MarkOutboundMessageSentUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly MessageRepository $messageRepository,
+        private readonly MensajeRepository $messageRepository,
     ) {}
 
     public function execute(int|string $messageId, string $wamid): void

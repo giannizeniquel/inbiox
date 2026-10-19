@@ -8,10 +8,10 @@ use App\Agente\Agente;
 use App\Compartido\Graph\GraphApiException;
 use App\Compartido\Graph\GraphClient;
 use App\Compartido\Storage\MediaStorageService;
-use App\Conversacion\Message;
+use App\Conversacion\Mensaje;
 use App\Conversacion\MessageCreatedEvent;
 use App\Conversacion\MessageUpdatedEvent;
-use App\Conversacion\MessageSenderType;
+use App\Conversacion\TipoDeRemitente;
 use App\Ticket\Ticket;
 use App\Ticket\TicketCreatedEvent;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -399,7 +399,7 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
         $this->assertAcknowledged($this->postValue(['messages' => [$this->textMessage('wamid.char-in-q', 'Hola?')]]));
 
         $auto = $this->connection()->fetchAssociative("SELECT content, external_id, delivery_status, sender_type, sender_agent_id FROM messages WHERE direction = 'outbound'");
-        self::assertSame(['Ya te respondemos', 'wamid.char-in-auto', 'sent', MessageSenderType::AUTOMATIC->value, (int) $agent->getId()], [
+        self::assertSame(['Ya te respondemos', 'wamid.char-in-auto', 'sent', TipoDeRemitente::AUTOMATIC->value, (int) $agent->getId()], [
             $auto['content'], $auto['external_id'], $auto['delivery_status'], $auto['sender_type'], (int) $auto['sender_agent_id'],
         ]);
         $outbox = $this->outboxRows();
@@ -414,15 +414,15 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
     //  Status updates
     // ────────────────────────────────────────────────────────
 
-    private function outboundMessage(Ticket $ticket, string $wamid, string $deliveryStatus): Message
+    private function outboundMessage(Ticket $ticket, string $wamid, string $deliveryStatus): Mensaje
     {
-        $message = new Message();
+        $message = new Mensaje();
         $message->setConversation($ticket->getConversacion());
         $message->setDirection('outbound');
         $message->setContent('respuesta');
         $message->setExternalId($wamid);
         $message->setDeliveryStatus($deliveryStatus);
-        $message->setSenderType(MessageSenderType::AGENT);
+        $message->setSenderType(TipoDeRemitente::AGENT);
         $this->em->persist($message);
         $this->em->flush();
 

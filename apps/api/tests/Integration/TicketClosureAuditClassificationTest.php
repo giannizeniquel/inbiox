@@ -7,7 +7,7 @@ namespace App\Tests\Integration;
 use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
 use App\Agente\Agente;
 use App\Contacto\Contacto;
-use App\Conversacion\Conversation;
+use App\Conversacion\Conversacion;
 use App\Ticket\TipoDeEventoDeTicket;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
@@ -112,7 +112,7 @@ class TicketClosureAuditClassificationTest extends WebTestCase
         $contact->setTelefono('+549110001' . \random_int(1000, 9999));
         $this->em->persist($contact);
 
-        $conversation = new Conversation();
+        $conversation = new Conversacion();
         $conversation->setContact($contact);
         $this->em->persist($conversation);
 

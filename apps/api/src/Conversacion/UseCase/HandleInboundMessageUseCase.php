@@ -3,20 +3,20 @@
 namespace App\Conversacion\UseCase;
 
 use App\Contacto\Contacto;
-use App\Conversacion\Conversation;
-use App\Conversacion\ConversationStatus;
+use App\Conversacion\Conversacion;
+use App\Conversacion\EstadoDeConversacion;
 use App\Compartido\EventCollector;
 use App\Conversacion\MessageCreatedEvent;
 use App\Ticket\TicketCreatedEvent;
-use App\Conversacion\Message;
-use App\Conversacion\MessageSenderType;
+use App\Conversacion\Mensaje;
+use App\Conversacion\TipoDeRemitente;
 use App\Compartido\Outbox\OutboxEvent;
 use App\Compartido\Outbox\OutboxWriter;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
 use App\Contacto\Repository\ContactoRepository;
-use App\Conversacion\Repository\ConversationRepository;
-use App\Conversacion\Repository\MessageRepository;
+use App\Conversacion\Repository\ConversacionRepository;
+use App\Conversacion\Repository\MensajeRepository;
 use App\Ticket\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\DBAL\LockMode;
@@ -35,8 +35,8 @@ class HandleInboundMessageUseCase
     public function __construct(
         private EntityManagerInterface $em,
         private ContactoRepository $contactRepo,
-        private ConversationRepository $conversationRepo,
-        private MessageRepository $messageRepo,
+        private ConversacionRepository $conversationRepo,
+        private MensajeRepository $messageRepo,
         private TicketRepository $ticketRepo,
         private EventDispatcherInterface $eventDispatcher,
         private CambiarEstadoDeTicketUseCase $transitionUseCase,
@@ -227,13 +227,13 @@ foreach ($events as $event) {
         return $contact;
     }
 
-    private function findOrCreateOpenConversation(Contacto $contact, ?string $phoneNumberId): Conversation
+    private function findOrCreateOpenConversation(Contacto $contact, ?string $phoneNumberId): Conversacion
     {
         $conversation = $this->conversationRepo->findOpenByContact($contact, $phoneNumberId);
         if (!$conversation) {
-            $conversation = new Conversation();
+            $conversation = new Conversacion();
             $conversation->setContact($contact);
-            $conversation->setStatus(ConversationStatus::OPEN->value);
+            $conversation->setStatus(EstadoDeConversacion::OPEN->value);
             if ($phoneNumberId !== null) {
                 $conversation->setPhoneNumberId($phoneNumberId);
             }
@@ -243,7 +243,7 @@ foreach ($events as $event) {
         return $conversation;
     }
 
-    private function findAlreadyStoredMessage(?string $externalId): ?Message
+    private function findAlreadyStoredMessage(?string $externalId): ?Mensaje
     {
         if (!$externalId) {
             return null;
@@ -253,16 +253,16 @@ foreach ($events as $event) {
     }
 
     /** Persists the message and flushes (first flush), so it has an id for the media key. */
-    private function storeInboundMessage(Conversation $conversation, string $message, ?string $externalId): Message
+    private function storeInboundMessage(Conversacion $conversation, string $message, ?string $externalId): Mensaje
     {
-        $msg = new Message();
+        $msg = new Mensaje();
         $msg->setConversation($conversation);
         $msg->setDirection('inbound');
         $msg->setContent($message);
         if ($externalId) {
             $msg->setExternalId($externalId);
         }
-        $msg->setSenderType(MessageSenderType::CONTACT);
+        $msg->setSenderType(TipoDeRemitente::CONTACT);
 
         $this->em->persist($msg);
         $this->em->flush();
@@ -275,7 +275,7 @@ foreach ($events as $event) {
      * transaction is open (contradiction track, S10). A failure only logs:
      * the message stays stored without media. Success flushes (second flush).
      */
-    private function downloadMediaInsideTransaction(Message $msg, ?array $mediaDownloadPayload): void
+    private function downloadMediaInsideTransaction(Mensaje $msg, ?array $mediaDownloadPayload): void
     {
         if (!$mediaDownloadPayload || $this->mediaDownloadService === null) {
             return;
@@ -327,7 +327,7 @@ foreach ($events as $event) {
      *
      * @return array{0: Ticket, 1: bool} the ticket and whether it is new
      */
-    private function findOrReopenOrCreateTicketAndLock(Contacto $contact, Conversation $conversation, ?string $phoneNumberId): array
+    private function findOrReopenOrCreateTicketAndLock(Contacto $contact, Conversacion $conversation, ?string $phoneNumberId): array
     {
         $ticket = $this->ticketRepo->findNoCerradoByContacto($contact, $phoneNumberId);
         $wasReopened = false;
@@ -407,7 +407,7 @@ foreach ($events as $event) {
         return 'waiting_to_active';
     }
 
-    private function touchTimestamps(Conversation $conversation, Contacto $contact, Ticket $ticket, Message $msg): void
+    private function touchTimestamps(Conversacion $conversation, Contacto $contact, Ticket $ticket, Mensaje $msg): void
     {
         $conversation->setLastMessageAt($msg->getCreatedAt());
         $conversation->setUpdatedAt(new \DateTimeImmutable());
@@ -426,7 +426,7 @@ foreach ($events as $event) {
      * Collected after the last flush, so the ticket has its id. The sequence
      * increments are saved by the outbox writer's flush.
      */
-    private function collectInboundEvents(Ticket $ticket, bool $isNewTicket, Message $msg, string $message, Contacto $contact): void
+    private function collectInboundEvents(Ticket $ticket, bool $isNewTicket, Mensaje $msg, string $message, Contacto $contact): void
     {
         if ($isNewTicket) {
             $this->eventCollector->collect(new TicketCreatedEvent(
@@ -446,7 +446,7 @@ foreach ($events as $event) {
             occurredAt: new \DateTimeImmutable(),
             seq: $ticket->incrementLastEventSeq(),
             version: 1,
-            direction: \App\Conversacion\MessageDirection::INBOUND,
+            direction: \App\Conversacion\DireccionDeMensaje::INBOUND,
             messageId: $msg->getId(),
             content: $message,
             senderName: $contact->getNombre(),
@@ -458,7 +458,7 @@ foreach ($events as $event) {
      * Inbound automation rules, then the auto-assignment request. Its
      * listener runs synchronously, inside the inbound transaction.
      */
-    private function runRulesAndRequestAutoAssignment(Ticket $ticket, Message $msg): void
+    private function runRulesAndRequestAutoAssignment(Ticket $ticket, Mensaje $msg): void
     {
         $ruleContext = new ContextoDeRegla($ticket, $msg, 'inbound');
         $this->ruleExecutor->execute($ruleContext);
@@ -468,7 +468,7 @@ foreach ($events as $event) {
         }
     }
 
-    private function getTicketForConversation(Conversation $conversation): ?Ticket
+    private function getTicketForConversation(Conversacion $conversation): ?Ticket
     {
         return $this->ticketRepo->findByConversacion($conversation);
     }

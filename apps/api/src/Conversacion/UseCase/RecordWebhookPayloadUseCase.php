@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Conversacion\UseCase;
 
-use App\Conversacion\WebhookPayload;
+use App\Conversacion\PayloadWebhook;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -44,7 +44,7 @@ final class RecordWebhookPayloadUseCase
             }
         }
 
-        $webhookPayload = new WebhookPayload(
+        $webhookPayload = new PayloadWebhook(
             eventType: $eventType,
             payload: $payload,
             receivedAt: new \DateTimeImmutable(),

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Characterization;
 
-use App\Conversacion\Message;
+use App\Conversacion\Mensaje;
 
 /**
  * Characterization of the workspace actions of App\Administracion\Controller\MiEspacioDeTrabajoController:
@@ -193,7 +193,7 @@ final class MeWorkspaceControllerCharacterizationTest extends CharacterizationTe
         $readTicket = $this->createTicket('active', $agent->getId());
         $readTicket->setPhoneNumberId('char-me-quiet');
         $readTicket->setUltimaLecturaAt(new \DateTimeImmutable('+1 hour'));
-        $message = new Message();
+        $message = new Mensaje();
         $message->setConversation($readTicket->getConversacion());
         $message->setDirection('inbound');
         $message->setContent('old');

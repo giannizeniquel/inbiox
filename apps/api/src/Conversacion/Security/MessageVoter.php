@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Conversacion\Security;
 
-use App\Conversacion\Message;
+use App\Conversacion\Mensaje;
 use App\Administracion\Usuario;
 use App\Ticket\Repository\TicketRepository;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -29,7 +29,7 @@ final class MessageVoter extends Voter
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        return $attribute === self::ACCESS && $subject instanceof Message;
+        return $attribute === self::ACCESS && $subject instanceof Mensaje;
     }
 
     protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token): bool
@@ -40,7 +40,7 @@ final class MessageVoter extends Voter
             return false;
         }
 
-        /** @var Message $message */
+        /** @var Mensaje $message */
         $message = $subject;
         $conversation = $message->getConversation();
 

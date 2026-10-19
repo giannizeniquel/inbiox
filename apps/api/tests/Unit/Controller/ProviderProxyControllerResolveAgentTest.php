@@ -14,7 +14,7 @@ use App\Conversacion\UseCase\SendOutboundMessageUseCase;
 use App\Conversacion\UseCase\SendTemplateUseCase;
 use App\Conversacion\UseCase\UploadMediaUseCase;
 use App\Conversacion\Controller\ProviderProxyController;
-use App\Conversacion\Repository\MessageRepository;
+use App\Conversacion\Repository\MensajeRepository;
 use App\Agente\Agente;
 use App\Administracion\Usuario;
 use App\Compartido\Storage\MediaStorageService;
@@ -44,7 +44,7 @@ class ProviderProxyControllerResolveAgentTest extends TestCase
                 $this->createMock(TicketRepository::class),
                 $this->createMock(GraphClient::class),
                 $this->createMock(HandleOutboundMessageUseCase::class),
-                new MarkOutboundMessageSentUseCase($em, $this->createMock(MessageRepository::class)),
+                new MarkOutboundMessageSentUseCase($em, $this->createMock(MensajeRepository::class)),
             ),
             new SendTemplateUseCase(
                 $this->createMock(TicketRepository::class),

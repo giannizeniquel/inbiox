@@ -10,19 +10,19 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(name: 'idx_messages_conversation_created_id', columns: ['conversation_id', 'created_at', 'id'])]
 #[ORM\Index(name: 'idx_messages_sender_type_created_at', columns: ['sender_type', 'created_at'])]
 #[ORM\Index(name: 'idx_messages_sender_agent_id', columns: ['sender_agent_id'])]
-class Message
+class Mensaje
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(name: 'id', type: 'bigint')]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(targetEntity: Conversation::class, inversedBy: 'messages')]
+    #[ORM\ManyToOne(targetEntity: Conversacion::class, inversedBy: 'messages')]
     #[ORM\JoinColumn(name: 'conversation_id', referencedColumnName: 'id', nullable: false)]
-    private ?Conversation $conversation = null;
+    private ?Conversacion $conversation = null;
 
     #[ORM\Column(name: 'direction', type: 'string', length: 10)]
-    private string $direction = MessageDirection::INBOUND->value;
+    private string $direction = DireccionDeMensaje::INBOUND->value;
 
     #[ORM\Column(name: 'external_id', type: 'string', length: 100, unique: true, nullable: true)]
     private ?string $externalId = null;
@@ -61,12 +61,12 @@ class Message
         return $this->id;
     }
 
-    public function getConversation(): ?Conversation
+    public function getConversation(): ?Conversacion
     {
         return $this->conversation;
     }
 
-    public function setConversation(Conversation $conversation): self
+    public function setConversation(Conversacion $conversation): self
     {
         $this->conversation = $conversation;
         return $this;
@@ -170,7 +170,7 @@ class Message
         return $this->senderType;
     }
 
-    public function setSenderType(MessageSenderType $senderType): self
+    public function setSenderType(TipoDeRemitente $senderType): self
     {
         $this->senderType = $senderType->value;
         return $this;

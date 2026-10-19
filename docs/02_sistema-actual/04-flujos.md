@@ -73,7 +73,7 @@ flowchart TD
 | 7 | Busca o crea el contacto (no mira si está `inactive`). | `:212-228` | R-C3 |
 | 8 | Busca la conversación `open` del contacto para ese número; si no hay, la crea. | `:230-244` | |
 | 9 | Si el WAMID ya existe, termina (idempotencia ante reintentos de Meta). | `:178-187`, `:246-253` | R-M2 |
-| 10 | Crea el `Message` (`inbound`, `sender_type=contact`); si hay media, la descarga de Meta y la sube a S3 (errores tragados). | `:256-321` | R-M4 |
+| 10 | Crea el `Mensaje` (`inbound`, `sender_type=contact`); si hay media, la descarga de Meta y la sube a S3 (errores tragados). | `:256-321` | R-M4 |
 | 11 | Busca un ticket no cerrado del contacto en ese número. Si no hay, intenta reabrir uno cerrado por ventana; si no, crea uno `new`/`medium`. | `:330-372`; `Ticket/Repository/TicketRepository.php:42-61, 105-132` | R-T1, R-T16 |
 | 12 | Si el ticket existía: bloqueo pesimista; `waiting → active`. | `:374-388`, `:394-408` | R-T7 |
 | 13 | Actualiza `last_message_at`, `updated_at` y **`last_inbound_message_at`** (único escritor). | `:410-423` | R-W3 |
@@ -114,7 +114,7 @@ flowchart TD
 | 7 | **Guard de ticket resuelto/cerrado:** si el remitente no es supervisor/admin ni el dueño → 409 `TICKET_NOT_OWNED`. | `:197-204`; `Ticket/TicketResponsabilidadGuard.php:35-46` | R-A7 |
 | 8 | **Guard de ventana de 24 h:** vencida o sin mensaje del cliente → 422 `CONVERSATION_WINDOW_EXPIRED`, sin persistir nada. | `:210-212`; `Conversacion/ConversationWindowPolicy.php:30-56` | R-W1 |
 | 9 | **Auto-claim:** si el ticket no está resuelto/cerrado y el remitente no es el dueño → `AUTO_ASSIGN` (sin dueño) o `REASSIGN` (otro dueño). No mira disponibilidad ni capacidad. | `:222-254` | R-A6 |
-| 10 | Crea el `Message` (`outbound`, `sender_type=agent`, `sender_agent_id`). | `:257-269` | R-M4 |
+| 10 | Crea el `Mensaje` (`outbound`, `sender_type=agent`, `sender_agent_id`). | `:257-269` | R-M4 |
 | 11 | Estado: `new → active`, `active → waiting`; registra `first_response_at`. Como el paso 9 ya pasó `new → active`, el primer mensaje deja el ticket en `waiting`. | `:272-305` | R-T5, R-T6 |
 | 12 | Guarda `ProcessedEvent`, recolecta `MessageCreatedEvent`, commit, escribe outbox (omite `InboxUpdatedEvent`, agrega `assignee_id`). | `:308-426` | |
 | 13 | **Recién ahora** llama a Graph API (`sendMessage` o `sendMediaMessage`) con el `phone_number_id` del ticket. Si falla → error al usuario, **pero el mensaje ya quedó guardado como `sent`** y el ticket ya cambió. | `SendOutboundMessageUseCase.php:77-97`; errores → JSON en `ProviderProxyController.php:72-123` | R-M6 |
@@ -142,7 +142,7 @@ flowchart TD
 1. Valida `ticketId`, `templateName`, `language`, `parameters` (array).
 2. Carga ticket → contacto → teléfono (`Ticket::telefonoDestinatario()`, compartido con `send`).
 3. `GraphClient::sendTemplate(...)` con el `phone_number_id` del ticket.
-4. Si Meta devuelve WAMID, resuelve el agente (lo crea si el usuario no tiene; solo en este caso) y persiste un `Message` outbound con contenido `"Template: {nombre} (params)"`, `sender_type=agent`. Devuelve `messageId` = WAMID (no el id de base, a diferencia de `send`).
+4. Si Meta devuelve WAMID, resuelve el agente (lo crea si el usuario no tiene; solo en este caso) y persiste un `Mensaje` outbound con contenido `"Template: {nombre} (params)"`, `sender_type=agent`. Devuelve `messageId` = WAMID (no el id de base, a diferencia de `send`).
 
 **Lo que este flujo no hace** (a diferencia de F2): no valida la ventana de 24 h (**correcto y deliberado**, R-W6); no aplica guard de dueño, auto-claim, cambio de estado, `first_response_at`, idempotencia ni eventos de tiempo real. Si esas omisiones son intencionales: **Regla no confirmada**. Para la métrica de demora, la plantilla cuenta como respuesta humana.
 

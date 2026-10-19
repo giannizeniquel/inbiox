@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Characterization;
 
-use App\Conversacion\Message;
+use App\Conversacion\Mensaje;
 use App\Conversacion\Query\GetTicketMessagesQuery;
 use App\Ticket\Query\GetDetalleDeTicketQuery;
 use App\Ticket\Ticket;
@@ -18,9 +18,9 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
 {
     private const UTC_Z_DATETIME = '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/';
 
-    private function addMessage(Ticket $ticket, string $direction, string $content): Message
+    private function addMessage(Ticket $ticket, string $direction, string $content): Mensaje
     {
-        $message = new Message();
+        $message = new Mensaje();
         $message->setConversation($ticket->getConversacion());
         $message->setDirection($direction);
         $message->setContent($content);

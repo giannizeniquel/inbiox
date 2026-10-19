@@ -14,7 +14,7 @@ final readonly class MessageCreatedEvent extends DomainEvent
         \DateTimeImmutable $occurredAt,
         int $seq,
         int $version,
-        public MessageDirection $direction,
+        public DireccionDeMensaje $direction,
         public int $messageId,
         public string $content = '',
         public ?string $senderName = null,

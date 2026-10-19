@@ -8,12 +8,12 @@ use App\Disponibilidad\DisponibilidadDeAgenteService;
 use App\Compartido\Graph\GraphClient;
 
 use App\Agente\Agente;
-use App\Conversacion\Conversation;
+use App\Conversacion\Conversacion;
 use App\Compartido\EventCollector;
 use App\Conversacion\MessageCreatedEvent;
-use App\Conversacion\Message;
-use App\Conversacion\MessageDirection;
-use App\Conversacion\MessageSenderType;
+use App\Conversacion\Mensaje;
+use App\Conversacion\DireccionDeMensaje;
+use App\Conversacion\TipoDeRemitente;
 use App\Conversacion\ConversationWindowPolicy;
 use App\Compartido\ProcessedEvent;
 use App\Ticket\Ticket;
@@ -151,7 +151,7 @@ final class RespuestaAutomaticaService
         $conversacion = $ticket->getConversacion();
         $mensajeSaliente = null;
         if ($conversacion !== null) {
-            $mensajeSaliente = new Message();
+            $mensajeSaliente = new Mensaje();
             $mensajeSaliente->setConversation($conversacion);
             $mensajeSaliente->setDirection('outbound');
             $mensajeSaliente->setContent($mensajeDeRespuestaAutomatica);
@@ -160,7 +160,7 @@ final class RespuestaAutomaticaService
             }
             $mensajeSaliente->setDeliveryStatus('sent');
             $mensajeSaliente->setSenderAgentId($agente->getId());
-            $mensajeSaliente->setSenderType(MessageSenderType::AUTOMATIC);
+            $mensajeSaliente->setSenderType(TipoDeRemitente::AUTOMATIC);
             $this->em->persist($mensajeSaliente);
 
             // Update conversation timestamp
@@ -186,7 +186,7 @@ final class RespuestaAutomaticaService
                 occurredAt: new \DateTimeImmutable(),
                 seq: $ticket->incrementLastEventSeq(),
                 version: 1,
-                direction: MessageDirection::OUTBOUND,
+                direction: DireccionDeMensaje::OUTBOUND,
                 messageId: (int) $mensajeSaliente->getId(),
                 content: $mensajeDeRespuestaAutomatica,
                 senderName: $agente->getNombre(),

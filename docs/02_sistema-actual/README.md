@@ -42,8 +42,8 @@ Una bandeja de atención compartida: los mensajes que llegan por **WhatsApp Clou
 | Término | Qué significa en Inbiox | Dónde vive |
 |---|---|---|
 | **Contacto** | La persona del otro lado de WhatsApp. Se identifica por teléfono, **único en todo el sistema** (no por workspace). | `apps/api/src/Contacto/Contacto.php` |
-| **Conversación** | Historial de mensajes de un contacto con **un** número de WhatsApp. En la práctica nunca se cierra. | `Conversacion/Conversation.php` |
-| **Mensaje** | Un mensaje entrante (`inbound`) o saliente (`outbound`). Pertenece a la conversación, **no** al ticket. | `Conversacion/Message.php` |
+| **Conversación** | Historial de mensajes de un contacto con **un** número de WhatsApp. En la práctica nunca se cierra. | `Conversacion/Conversacion.php` |
+| **Mensaje** | Un mensaje entrante (`inbound`) o saliente (`outbound`). Pertenece a la conversación, **no** al ticket. | `Conversacion/Mensaje.php` |
 | **Ticket** | Un caso de atención: un "episodio" dentro de una conversación. Hay a lo sumo un ticket no cerrado por contacto y número. | `Ticket/Ticket.php` |
 | **Estado del ticket** | `new` → `active` → `waiting` → `resolved` → `closed`. Ver la máquina de estados (FSM) en [04-flujos.md](04-flujos.md#f4-transiciones-de-estado-del-ticket). | `Ticket/MaquinaDeEstadosDeTicket.php` |
 | **Dueño (owner)** | El agente asignado al ticket (`tickets.assigned_agent_id`). | `Asignacion/ResponsabilidadDeTicketService.php` |

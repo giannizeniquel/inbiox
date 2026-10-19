@@ -8,15 +8,15 @@ use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
 
 use App\Asignacion\ResponsabilidadDeTicketService;
 use App\Asignacion\TipoDeAsignacion;
-use App\Conversacion\Conversation;
-use App\Conversacion\ConversationStatus;
+use App\Conversacion\Conversacion;
+use App\Conversacion\EstadoDeConversacion;
 use App\Compartido\EventCollector;
 use App\Ticket\InboxUpdatedEvent;
 use App\Ticket\TicketUpdatedEvent;
 use App\Conversacion\MessageCreatedEvent;
-use App\Conversacion\Message;
-use App\Conversacion\MessageDirection;
-use App\Conversacion\MessageSenderType;
+use App\Conversacion\Mensaje;
+use App\Conversacion\DireccionDeMensaje;
+use App\Conversacion\TipoDeRemitente;
 use App\Compartido\Outbox\OutboxEvent;
 use App\Compartido\Outbox\OutboxWriter;
 use App\Compartido\ProcessedEvent;
@@ -30,8 +30,8 @@ use App\Compartido\ConcurrencyException;
 use App\Conversacion\ConversationWindowExpiredException;
 use App\Compartido\StateConflictException;
 use App\Agente\Repository\AgenteRepository;
-use App\Conversacion\Repository\ConversationRepository;
-use App\Conversacion\Repository\MessageRepository;
+use App\Conversacion\Repository\ConversacionRepository;
+use App\Conversacion\Repository\MensajeRepository;
 use App\Compartido\Repository\ProcessedEventRepository;
 use App\Ticket\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -48,8 +48,8 @@ class HandleOutboundMessageUseCase
 {
     public function __construct(
         private EntityManagerInterface $em,
-        private ConversationRepository $conversationRepo,
-        private MessageRepository $messageRepo,
+        private ConversacionRepository $conversationRepo,
+        private MensajeRepository $messageRepo,
         private TicketRepository $ticketRepo,
         private CambiarEstadoDeTicketUseCase $transitionUseCase,
         private ProcessedEventRepository $processedEventRepo,
@@ -329,14 +329,14 @@ class HandleOutboundMessageUseCase
         $this->em->flush();
     }
 
-    private function createOutboundMessage(Conversation $conversation, string $content, int $agentId, ?array $mediaMetadata): Message
+    private function createOutboundMessage(Conversacion $conversation, string $content, int $agentId, ?array $mediaMetadata): Mensaje
     {
-        $msg = new Message();
+        $msg = new Mensaje();
         $msg->setConversation($conversation);
         $msg->setDirection('outbound');
         $msg->setContent($content);
         $msg->setSenderAgentId($agentId > 0 ? $agentId : null);
-        $msg->setSenderType(MessageSenderType::AGENT);
+        $msg->setSenderType(TipoDeRemitente::AGENT);
 
         // Attach media metadata if provided
         if ($mediaMetadata !== null) {
@@ -396,7 +396,7 @@ class HandleOutboundMessageUseCase
      * outbound messages are broadcast over Mercure. The message must already
      * be flushed, because the event carries its id.
      */
-    private function collectMessageCreatedEvent(Ticket $ticket, int $ticketId, Message $msg, string $content, int $agentId): void
+    private function collectMessageCreatedEvent(Ticket $ticket, int $ticketId, Mensaje $msg, string $content, int $agentId): void
     {
         $senderName = $agentId > 0 ? $this->agentRepo->findById($agentId)?->getNombre() : null;
         $this->eventCollector->collect(new MessageCreatedEvent(
@@ -405,7 +405,7 @@ class HandleOutboundMessageUseCase
             occurredAt: new \DateTimeImmutable(),
             seq: $ticket->incrementLastEventSeq(),
             version: 1,
-            direction: MessageDirection::OUTBOUND,
+            direction: DireccionDeMensaje::OUTBOUND,
             messageId: $msg->getId(),
             content: $content,
             senderName: $senderName,

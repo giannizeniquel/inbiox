@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Repository;
 
-use App\Conversacion\Repository\MessageRepository;
+use App\Conversacion\Repository\MensajeRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -17,13 +17,13 @@ class MessageRepositoryReadTest extends KernelTestCase
 {
     use ReadModelFixture;
 
-    private MessageRepository $repo;
+    private MensajeRepository $repo;
 
     protected function setUp(): void
     {
         self::bootKernel();
         $this->beginFixture(static::getContainer()->get(EntityManagerInterface::class)->getConnection());
-        $this->repo = static::getContainer()->get(MessageRepository::class);
+        $this->repo = static::getContainer()->get(MensajeRepository::class);
     }
 
     protected function tearDown(): void

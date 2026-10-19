@@ -5,7 +5,7 @@ namespace App\Tests\Integration;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
 use App\Contacto\Contacto;
-use App\Conversacion\Conversation;
+use App\Conversacion\Conversacion;
 use App\Reporte\Repository\ReportingRepository;
 use App\Reporte\Query\ReportingService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -648,7 +648,7 @@ class Sprint09AReportingTest extends KernelTestCase
         $contact->setTelefono('+54' . random_int(3710000000, 3719999999));
         $this->em->persist($contact);
 
-        $conversation = new Conversation();
+        $conversation = new Conversacion();
         $conversation->setContact($contact);
         $conversation->setStatus('open');
         if ($phoneNumberId !== null) {
@@ -695,7 +695,7 @@ class Sprint09AReportingTest extends KernelTestCase
         $contact->setTelefono('+54' . random_int(3710000000, 3719999999));
         $this->em->persist($contact);
 
-        $conversation = new Conversation();
+        $conversation = new Conversacion();
         $conversation->setContact($contact);
         $conversation->setStatus('open');
         $this->em->persist($conversation);

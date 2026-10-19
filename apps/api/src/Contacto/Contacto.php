@@ -21,7 +21,7 @@ class Contacto
     #[ORM\Column(name: 'name', type: 'string', length: 255, nullable: true)]
     private ?string $nombre = null;
 
-    #[ORM\OneToMany(mappedBy: 'contact', targetEntity: \App\Conversacion\Conversation::class, cascade: ['persist', 'remove'])]
+    #[ORM\OneToMany(mappedBy: 'contact', targetEntity: \App\Conversacion\Conversacion::class, cascade: ['persist', 'remove'])]
     private Collection $conversaciones;
 
     #[ORM\Column(name: 'status', type: 'string', length: 20, nullable: true)]

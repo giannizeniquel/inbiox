@@ -6,7 +6,7 @@ use App\Ticket\TipoDeEventoDeTicket;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
 use App\Contacto\Contacto;
-use App\Conversacion\Conversation;
+use App\Conversacion\Conversacion;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\LockMode;
@@ -133,7 +133,7 @@ class TicketRepository extends ServiceEntityRepository
         return $id !== false ? $this->find((int) $id) : null;
     }
 
-    public function findByConversacion(Conversation $conversacion): ?Ticket
+    public function findByConversacion(Conversacion $conversacion): ?Ticket
     {
         return $this->findOneBy(['conversacion' => $conversacion]);
     }

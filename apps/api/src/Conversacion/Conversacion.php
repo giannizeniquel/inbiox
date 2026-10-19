@@ -9,7 +9,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'conversations')]
-class Conversation
+class Conversacion
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -20,11 +20,11 @@ class Conversation
     #[ORM\JoinColumn(name: 'contact_id', referencedColumnName: 'id')]
     private ?Contacto $contact = null;
 
-    #[ORM\OneToMany(mappedBy: 'conversation', targetEntity: Message::class, cascade: ['persist', 'remove'])]
+    #[ORM\OneToMany(mappedBy: 'conversation', targetEntity: Mensaje::class, cascade: ['persist', 'remove'])]
     private Collection $messages;
 
     #[ORM\Column(name: 'status', type: 'string', length: 20)]
-    private string $status = ConversationStatus::OPEN->value;
+    private string $status = EstadoDeConversacion::OPEN->value;
 
     #[ORM\Column(name: 'last_message_at', type: 'datetime_immutable', nullable: true)]
     private ?\DateTimeImmutable $lastMessageAt = null;

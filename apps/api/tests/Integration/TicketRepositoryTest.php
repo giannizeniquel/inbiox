@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Integration;
 
 use App\Contacto\Contacto;
-use App\Conversacion\Conversation;
+use App\Conversacion\Conversacion;
 use App\Ticket\EventoDeTicket;
 use App\Ticket\TipoDeEventoDeTicket;
 use App\Ticket\Ticket;
@@ -56,7 +56,7 @@ class TicketRepositoryTest extends KernelTestCase
 
     private function createClosedTicket(?string $phoneNumberId = null): int
     {
-        $conversation = new Conversation();
+        $conversation = new Conversacion();
         $conversation->setContact($this->contact);
         $this->em->persist($conversation);
 

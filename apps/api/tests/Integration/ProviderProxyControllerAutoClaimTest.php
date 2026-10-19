@@ -6,7 +6,7 @@ namespace App\Tests\Integration;
 
 use App\Agente\Agente;
 use App\Contacto\Contacto;
-use App\Conversacion\Conversation;
+use App\Conversacion\Conversacion;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
 use App\Administracion\Usuario;
@@ -95,7 +95,7 @@ class ProviderProxyControllerAutoClaimTest extends WebTestCase
         $contact->setTelefono('+5491100000098');
         $this->em->persist($contact);
 
-        $conversation = new Conversation();
+        $conversation = new Conversacion();
         $conversation->setContact($contact);
         $this->em->persist($conversation);
 

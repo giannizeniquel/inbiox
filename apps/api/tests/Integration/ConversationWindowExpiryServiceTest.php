@@ -6,7 +6,7 @@ namespace App\Tests\Integration;
 
 use App\Conversacion\UseCase\ConversationWindowExpiryService;
 use App\Contacto\Contacto;
-use App\Conversacion\Conversation;
+use App\Conversacion\Conversacion;
 use App\Ticket\TipoDeEventoDeTicket;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
@@ -49,7 +49,7 @@ class ConversationWindowExpiryServiceTest extends KernelTestCase
         $contact->setTelefono('+549110000' . random_int(1000, 9999));
         $this->em->persist($contact);
 
-        $conversation = new Conversation();
+        $conversation = new Conversacion();
         $conversation->setContact($contact);
         $this->em->persist($conversation);
 

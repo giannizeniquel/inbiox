@@ -7,8 +7,8 @@ namespace App\Tests\Integration;
 use App\Compartido\Graph\GraphClient;
 use App\Agente\Agente;
 use App\Contacto\Contacto;
-use App\Conversacion\Conversation;
-use App\Conversacion\MessageSenderType;
+use App\Conversacion\Conversacion;
+use App\Conversacion\TipoDeRemitente;
 use App\Ticket\Ticket;
 use App\Administracion\Usuario;
 use Doctrine\ORM\EntityManagerInterface;
@@ -83,7 +83,7 @@ class ProviderProxyControllerTemplateAttributionTest extends WebTestCase
         $contact->setTelefono('+5491100000400');
         $this->em->persist($contact);
 
-        $conversation = new Conversation();
+        $conversation = new Conversacion();
         $conversation->setContact($contact);
         $this->em->persist($conversation);
 
@@ -145,6 +145,6 @@ class ProviderProxyControllerTemplateAttributionTest extends WebTestCase
 
         self::assertNotFalse($row, 'Template message must be persisted');
         self::assertSame($agentId, (int) $row['sender_agent_id']);
-        self::assertSame(MessageSenderType::AGENT->value, $row['sender_type']);
+        self::assertSame(TipoDeRemitente::AGENT->value, $row['sender_type']);
     }
 }

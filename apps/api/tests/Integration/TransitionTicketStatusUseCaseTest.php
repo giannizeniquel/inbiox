@@ -8,7 +8,7 @@ use App\Ticket\UseCase\ResolverTicketUseCase;
 use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
 use App\Agente\Agente;
 use App\Contacto\Contacto;
-use App\Conversacion\Conversation;
+use App\Conversacion\Conversacion;
 use App\Ticket\TipoDeEventoDeTicket;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
@@ -56,7 +56,7 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
         $contact->setTelefono('+5491100000100');
         $this->em->persist($contact);
 
-        $conversation = new Conversation();
+        $conversation = new Conversacion();
         $conversation->setContact($contact);
         $this->em->persist($conversation);
 
@@ -246,7 +246,7 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
         $contact->setTelefono('+5491100000200');
         $this->em->persist($contact);
 
-        $conversation = new Conversation();
+        $conversation = new Conversacion();
         $conversation->setContact($contact);
         $this->em->persist($conversation);
 

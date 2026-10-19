@@ -2,7 +2,7 @@
 
 namespace App\Conversacion;
 
-enum ConversationStatus: string
+enum EstadoDeConversacion: string
 {
     case OPEN = 'open';
     case CLOSED = 'closed';

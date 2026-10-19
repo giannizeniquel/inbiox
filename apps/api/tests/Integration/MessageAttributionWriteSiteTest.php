@@ -8,8 +8,8 @@ use App\Conversacion\UseCase\HandleInboundMessageUseCase;
 use App\Conversacion\UseCase\HandleOutboundMessageUseCase;
 use App\Agente\Agente;
 use App\Contacto\Contacto;
-use App\Conversacion\Conversation;
-use App\Conversacion\MessageSenderType;
+use App\Conversacion\Conversacion;
+use App\Conversacion\TipoDeRemitente;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
 use Doctrine\ORM\EntityManagerInterface;
@@ -54,7 +54,7 @@ class MessageAttributionWriteSiteTest extends KernelTestCase
         $contact->setTelefono('+5491100000200');
         $this->em->persist($contact);
 
-        $conversation = new Conversation();
+        $conversation = new Conversacion();
         $conversation->setContact($contact);
         $this->em->persist($conversation);
 
@@ -92,7 +92,7 @@ class MessageAttributionWriteSiteTest extends KernelTestCase
         );
 
         self::assertSame($agentId, (int) $row['sender_agent_id']);
-        self::assertSame(MessageSenderType::AGENT->value, $row['sender_type']);
+        self::assertSame(TipoDeRemitente::AGENT->value, $row['sender_type']);
     }
 
     public function testHandleOutboundMessageSetsNullSenderAgentIdWhenAgentIdIsZero(): void
@@ -108,7 +108,7 @@ class MessageAttributionWriteSiteTest extends KernelTestCase
         );
 
         self::assertNull($row['sender_agent_id']);
-        self::assertSame(MessageSenderType::AGENT->value, $row['sender_type']);
+        self::assertSame(TipoDeRemitente::AGENT->value, $row['sender_type']);
     }
 
     public function testHandleInboundMessageSetsContactAttributionWithNullSenderAgentId(): void
@@ -122,6 +122,6 @@ class MessageAttributionWriteSiteTest extends KernelTestCase
         );
 
         self::assertNull($row['sender_agent_id']);
-        self::assertSame(MessageSenderType::CONTACT->value, $row['sender_type']);
+        self::assertSame(TipoDeRemitente::CONTACT->value, $row['sender_type']);
     }
 }

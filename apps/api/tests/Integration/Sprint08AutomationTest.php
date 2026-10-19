@@ -11,11 +11,11 @@ use App\Ticket\UseCase\AgregarEtiquetaATicketUseCase;
 use App\Conversacion\UseCase\HandleInboundMessageUseCase;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
-use App\Conversacion\Message;
+use App\Conversacion\Mensaje;
 use App\Ticket\Repository\EtiquetaRepository;
 use App\Ticket\Repository\TicketRepository;
 use App\Contacto\Contacto;
-use App\Conversacion\Conversation;
+use App\Conversacion\Conversacion;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -140,7 +140,7 @@ class Sprint08AutomationTest extends KernelTestCase
         $contact->setTelefono('+543711234567');
         $this->em->persist($contact);
 
-        $conversation = new Conversation();
+        $conversation = new Conversacion();
         $conversation->setContact($contact);
         $conversation->setStatus('open');
         $this->em->persist($conversation);
@@ -181,7 +181,7 @@ class Sprint08AutomationTest extends KernelTestCase
         $contact->setTelefono('+543711234567');
         $this->em->persist($contact);
 
-        $conversation = new Conversation();
+        $conversation = new Conversacion();
         $conversation->setContact($contact);
         $conversation->setStatus('open');
         $this->em->persist($conversation);
@@ -408,7 +408,7 @@ class Sprint08AutomationTest extends KernelTestCase
         $contact->setTelefono('+543711234567');
         $this->em->persist($contact);
 
-        $conversation = new Conversation();
+        $conversation = new Conversacion();
         $conversation->setContact($contact);
         $conversation->setStatus('open');
         $this->em->persist($conversation);
@@ -490,7 +490,7 @@ class Sprint08AutomationTest extends KernelTestCase
         $contact->setTelefono('+543711234567');
         $this->em->persist($contact);
 
-        $conversation = new Conversation();
+        $conversation = new Conversacion();
         $conversation->setContact($contact);
         $conversation->setStatus('open');
         $this->em->persist($conversation);
@@ -534,12 +534,12 @@ class Sprint08AutomationTest extends KernelTestCase
         return $ticket;
     }
 
-    private function createTestMessage(int $id): Message
+    private function createTestMessage(int $id): Mensaje
     {
-        $message = new Message();
+        $message = new Mensaje();
 
         // Set ID via reflection
-        $reflection = new \ReflectionProperty(Message::class, 'id');
+        $reflection = new \ReflectionProperty(Mensaje::class, 'id');
         $reflection->setAccessible(true);
         $reflection->setValue($message, $id);
 

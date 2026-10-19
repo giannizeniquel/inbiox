@@ -6,9 +6,9 @@ namespace App\Tests\Integration;
 
 use App\Asignacion\Asignacion;
 use App\Contacto\Contacto;
-use App\Conversacion\Conversation;
-use App\Conversacion\Message;
-use App\Conversacion\MessageDirection;
+use App\Conversacion\Conversacion;
+use App\Conversacion\Mensaje;
+use App\Conversacion\DireccionDeMensaje;
 use App\Compartido\Outbox\OutboxEvent;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
@@ -134,7 +134,7 @@ class Sprint15ContactTimelineTest extends WebTestCase
         $contactId = $contact->getId();
 
         // Conversation
-        $conversation = new Conversation();
+        $conversation = new Conversacion();
         $conversation->setContact($contact);
         $this->em->persist($conversation);
         $this->em->flush();
@@ -153,9 +153,9 @@ class Sprint15ContactTimelineTest extends WebTestCase
         $conn = $this->em->getConnection();
 
         // Message (newest event)
-        $message = new Message();
+        $message = new Mensaje();
         $message->setConversation($conversation);
-        $message->setDirection(MessageDirection::INBOUND->value);
+        $message->setDirection(DireccionDeMensaje::INBOUND->value);
         $message->setContent('Hello, I need help with my account setup please');
         $this->em->persist($message);
         $this->em->flush();

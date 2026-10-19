@@ -6,7 +6,7 @@ namespace App\Tests\Controller;
 
 use App\Agente\Agente;
 use App\Contacto\Contacto;
-use App\Conversacion\Conversation;
+use App\Conversacion\Conversacion;
 use App\Agente\Equipo;
 use App\Ticket\Ticket;
 use App\Administracion\Usuario;
@@ -122,7 +122,7 @@ class TicketControllerSetTeamTest extends WebTestCase
         $contact->setTelefono('+549110000' . random_int(1000, 9999));
         $this->em->persist($contact);
 
-        $conversation = new Conversation();
+        $conversation = new Conversacion();
         $conversation->setContact($contact);
         $this->em->persist($conversation);
 

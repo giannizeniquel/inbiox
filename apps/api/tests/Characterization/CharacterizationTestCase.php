@@ -8,7 +8,7 @@ use App\Administracion\Usuario;
 use App\Administracion\EspacioDeTrabajo;
 use App\Agente\Agente;
 use App\Contacto\Contacto;
-use App\Conversacion\Conversation;
+use App\Conversacion\Conversacion;
 use App\Ticket\Ticket;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
@@ -156,7 +156,7 @@ abstract class CharacterizationTestCase extends WebTestCase
     {
         $contact ??= $this->createContact('+54911' . \random_int(10000000, 99999999));
 
-        $conversation = new Conversation();
+        $conversation = new Conversacion();
         $conversation->setContact($contact);
         $this->em->persist($conversation);
 

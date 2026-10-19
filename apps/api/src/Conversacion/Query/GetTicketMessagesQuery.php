@@ -2,14 +2,14 @@
 
 namespace App\Conversacion\Query;
 
-use App\Conversacion\Repository\MessageRepository;
+use App\Conversacion\Repository\MensajeRepository;
 use App\Ticket\Repository\TicketRepository;
 
 class GetTicketMessagesQuery
 {
     public function __construct(
         private TicketRepository $ticketRepository,
-        private MessageRepository $messageRepository,
+        private MensajeRepository $messageRepository,
     ) {}
 
     public function execute(

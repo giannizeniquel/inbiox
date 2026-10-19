@@ -80,8 +80,8 @@ Tablas técnicas sin relaciones de negocio (no incluidas en el diagrama): `outbo
 | Entidad (tabla) | Archivo | Qué representa en el negocio | Campos clave |
 |---|---|---|---|
 | `Contacto` (`contacts`) | `Contacto/Contacto.php` | La persona que escribe por WhatsApp. **Global**: compartido por todos los números. | `phone` (UNIQUE global), `name`, `status` (`active`/`inactive`; "borrar" = `inactive`), `channel` (`whatsapp`/`other`), `email`, `owner_id` (sin FK; **destino desconocido: Regla no confirmada**) |
-| `Conversation` (`conversations`) | `Conversacion/Conversation.php` | Todo el historial de un contacto con un número. | `contact_id`, `status` (`open`/`closed`, pero `closed` **nunca se escribe**), `last_message_at`, `phone_number_id` |
-| `Message` (`messages`) | `Conversacion/Message.php` | Un mensaje entrante o saliente. | `conversation_id`, `direction`, `external_id` (WAMID), `content`, `delivery_status` (default `sent`), `failed_reason`, `media` (JSON), `sender_agent_id` (sin FK), `sender_type` (desde 12/09/2026; filas anteriores en `NULL`, sin backfill a propósito) |
+| `Conversacion` (`conversations`) | `Conversacion/Conversacion.php` | Todo el historial de un contacto con un número. | `contact_id`, `status` (`open`/`closed`, pero `closed` **nunca se escribe**), `last_message_at`, `phone_number_id` |
+| `Mensaje` (`messages`) | `Conversacion/Mensaje.php` | Un mensaje entrante o saliente. | `conversation_id`, `direction`, `external_id` (WAMID), `content`, `delivery_status` (default `sent`), `failed_reason`, `media` (JSON), `sender_agent_id` (sin FK), `sender_type` (desde 12/09/2026; filas anteriores en `NULL`, sin backfill a propósito) |
 | `Ticket` (`tickets`) | `Ticket/Ticket.php` | Un caso de atención (episodio). | `contact_id`, `conversation_id`, `status`, `priority` (siempre `medium`, sin uso), `assigned_agent_id` (sin FK), `first_response_at`, `resolved_at`, `closed_at`, `version` (bloqueo optimista), `last_event_seq`, `phone_number_id`, `team_id`, `last_read_at`, `last_inbound_message_at` |
 | `Asignacion` (`assignments`) | `Asignacion/Asignacion.php` | Auditoría de cada cambio de dueño. | `ticket_id`, `agent_id`, `previous_agent_id`, `type`, `assigned_at`, `assigned_by` (texto libre: `system`, `u:{id}` o lo que mande el cliente), `notes` |
 | `Agente` (`agents`) | `Agente/Agente.php` | La persona que atiende. | `name`, `user_id`, `active`, `is_available` (**legacy, nunca se escribe**), `max_active_tickets` (default 10, mínimo 1), `timezone`, `is_available_override` + `override_until`, `signature`, `notification_sound`, `desktop_notifications`, `auto_reply_enabled`, `auto_reply_message`, `active_workspace_id` |
@@ -100,7 +100,7 @@ Tablas técnicas sin relaciones de negocio (no incluidas en el diagrama): `outbo
 | `OutboxEvent` (`outbox_events`) | `Compartido/Outbox/OutboxEvent.php` | Cola de eventos a publicar en Mercure (`pending` → `published` / `dead_letter`). `aggregate_id` mezcla IDs de ticket y de agente según `aggregate_type`. |
 | `ProcessedEvent` (`processed_events`) | `Compartido/ProcessedEvent.php` | Idempotencia genérica (clave → resultado). Se usa para mensajes salientes y para el límite de auto-respuestas; no tiene que ver con tickets pese a su carpeta. |
 | `RegistroDeRegla` (`rule_execution_logs`) | `Automatizacion/RegistroDeRegla.php` | Idempotencia y log de reglas automáticas. |
-| `WebhookPayload` (`webhook_payloads`) | `Conversacion/WebhookPayload.php` | Copia cruda de cada POST de Meta, guardada antes de procesar. `processed` **nunca se pone en `true`**. Es lo único que queda si un mensaje se pierde. |
+| `PayloadWebhook` (`webhook_payloads`) | `Conversacion/PayloadWebhook.php` | Copia cruda de cada POST de Meta, guardada antes de procesar. `processed` **nunca se pone en `true`**. Es lo único que queda si un mensaje se pierde. |
 | `RefreshToken` (`refresh_tokens`) | `Autenticacion/RefreshToken.php` | Tokens de refresco de sesión (bundle Gesdinet). |
 
 ## Enums y valores fijos
@@ -108,9 +108,9 @@ Tablas técnicas sin relaciones de negocio (no incluidas en el diagrama): `outbo
 | Enum | Archivo | Valores | Notas |
 |---|---|---|---|
 | `EstadoDeTicket` | `Ticket/EstadoDeTicket.php` | `new`, `active`, `waiting`, `resolved`, `closed` | `Ticket::setEstado()` acepta cualquier texto. Transiciones en [04 § F4](04-flujos.md#f4-transiciones-de-estado-del-ticket). |
-| `ConversationStatus` | `Conversacion/ConversationStatus.php` | `open`, `closed` | `closed` nunca se usa. |
-| `MessageDirection` | `Conversacion/MessageDirection.php` | `inbound`, `outbound` | Los casos de uso escriben el texto literal, no el enum. |
-| `MessageSenderType` | `Conversacion/MessageSenderType.php` | `agent`, `automatic`, `contact` | Spec `message-attribution`. El frontend todavía no lo usa. |
+| `EstadoDeConversacion` | `Conversacion/EstadoDeConversacion.php` | `open`, `closed` | `closed` nunca se usa. |
+| `DireccionDeMensaje` | `Conversacion/DireccionDeMensaje.php` | `inbound`, `outbound` | Los casos de uso escriben el texto literal, no el enum. |
+| `TipoDeRemitente` | `Conversacion/TipoDeRemitente.php` | `agent`, `automatic`, `contact` | Spec `message-attribution`. El frontend todavía no lo usa. |
 | `TipoDeAsignacion` | `Asignacion/TipoDeAsignacion.php` | `AUTO_ASSIGN`, `MANUAL_ASSIGN`, `REASSIGN`, `UNASSIGN` | Solo `ResponsabilidadDeTicketService` crea filas de `Asignacion`. |
 | Roles | strings en `Usuario.roles` | `ROLE_ADMIN`, `ROLE_SUPERVISOR`, `ROLE_AGENT` | Jerarquía en `security.yaml` (el enum `Role`, sin uso, se borró en la fase 1). |
 | `MediaKind` | `Conversacion/MediaKind.php` | `image`, `video`, `audio`, `document` | |

@@ -8,7 +8,7 @@ use App\Automatizacion\ContextoDeRegla;
 use App\Automatizacion\ReglaDeEtiquetadoPorPalabraClave;
 use App\Automatizacion\ReglaDeReaperturaAutomatica;
 use App\Automatizacion\ReglaInterface;
-use App\Conversacion\Message;
+use App\Conversacion\Mensaje;
 use App\Ticket\Ticket;
 use PHPUnit\Framework\TestCase;
 
@@ -58,7 +58,7 @@ final class ReglaPersistedNamesCharacterizationTest extends TestCase
 
         $mensaje = null;
         if ($mensajeId !== null) {
-            $mensaje = new Message();
+            $mensaje = new Mensaje();
             $this->setId($mensaje, $mensajeId);
         }
 

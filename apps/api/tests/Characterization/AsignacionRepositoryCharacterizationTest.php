@@ -9,7 +9,7 @@ use App\Asignacion\Asignacion;
 use App\Asignacion\Repository\AsignacionRepository;
 use App\Asignacion\TipoDeAsignacion;
 use App\Contacto\Contacto;
-use App\Conversacion\Conversation;
+use App\Conversacion\Conversacion;
 use App\Ticket\EstadoDeTicket;
 use App\Ticket\Ticket;
 use Doctrine\ORM\EntityManagerInterface;
@@ -50,7 +50,7 @@ final class AsignacionRepositoryCharacterizationTest extends KernelTestCase
         $contacto->setTelefono('+5491100000800');
         $this->em->persist($contacto);
 
-        $conversation = new Conversation();
+        $conversation = new Conversacion();
         $conversation->setContact($contacto);
         $this->em->persist($conversation);
 

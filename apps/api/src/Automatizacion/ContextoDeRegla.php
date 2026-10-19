@@ -2,7 +2,7 @@
 
 namespace App\Automatizacion;
 
-use App\Conversacion\Message;
+use App\Conversacion\Mensaje;
 use App\Ticket\Ticket;
 
 /**
@@ -12,7 +12,7 @@ class ContextoDeRegla
 {
     public function __construct(
         private Ticket $ticket,
-        private ?Message $mensaje = null,
+        private ?Mensaje $mensaje = null,
         private string $tipoDeDisparador = 'inbound'
     ) {}
 
@@ -21,7 +21,7 @@ class ContextoDeRegla
         return $this->ticket;
     }
 
-    public function getMensaje(): ?Message
+    public function getMensaje(): ?Mensaje
     {
         return $this->mensaje;
     }

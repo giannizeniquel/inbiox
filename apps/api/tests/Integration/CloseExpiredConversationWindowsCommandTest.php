@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Integration;
 
 use App\Contacto\Contacto;
-use App\Conversacion\Conversation;
+use App\Conversacion\Conversacion;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
 use Doctrine\ORM\EntityManagerInterface;
@@ -50,7 +50,7 @@ class CloseExpiredConversationWindowsCommandTest extends KernelTestCase
         $contact->setTelefono('+549110001' . random_int(1000, 9999));
         $this->em->persist($contact);
 
-        $conversation = new Conversation();
+        $conversation = new Conversacion();
         $conversation->setContact($contact);
         $this->em->persist($conversation);
 

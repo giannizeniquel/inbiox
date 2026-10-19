@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Integration\Repository;
 
 use App\Contacto\Contacto;
-use App\Conversacion\Conversation;
+use App\Conversacion\Conversacion;
 use App\Ticket\Repository\EtiquetaRepository;
 use App\Ticket\Etiqueta;
 use App\Ticket\Ticket;
@@ -30,7 +30,7 @@ class TagRepositorySqlTest extends KernelTestCase
         $contact = new Contacto();
         $contact->setTelefono('+5491100009902');
         $em->persist($contact);
-        $conversation = new Conversation();
+        $conversation = new Conversacion();
         $conversation->setContact($contact);
         $em->persist($conversation);
         $ticket = new Ticket();

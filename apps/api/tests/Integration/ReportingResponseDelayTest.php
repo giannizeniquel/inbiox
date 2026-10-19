@@ -6,7 +6,7 @@ namespace App\Tests\Integration;
 
 use App\Agente\Agente;
 use App\Contacto\Contacto;
-use App\Conversacion\Conversation;
+use App\Conversacion\Conversacion;
 use App\Ticket\Ticket;
 use App\Administracion\Usuario;
 use App\Reporte\Repository\ReportingRepository;
@@ -91,14 +91,14 @@ class ReportingResponseDelayTest extends WebTestCase
         return $agent;
     }
 
-    private function createConversation(): Conversation
+    private function createConversation(): Conversacion
     {
         $contact = new Contacto();
         $contact->setTelefono('+5491100000000');
         $contact->setNombre('Test Contact');
         $this->em->persist($contact);
 
-        $conversation = new Conversation();
+        $conversation = new Conversacion();
         $conversation->setContact($contact);
         $this->em->persist($conversation);
         $this->em->flush();
@@ -106,7 +106,7 @@ class ReportingResponseDelayTest extends WebTestCase
         return $conversation;
     }
 
-    private function createTicket(Conversation $conversation, string $createdAt): Ticket
+    private function createTicket(Conversacion $conversation, string $createdAt): Ticket
     {
         $ticket = new Ticket();
         $ticket->setContacto($conversation->getContact());

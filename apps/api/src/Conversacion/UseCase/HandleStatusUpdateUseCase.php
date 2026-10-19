@@ -8,7 +8,7 @@ use App\Compartido\EventCollector;
 use App\Conversacion\MessageUpdatedEvent;
 use App\Compartido\Outbox\OutboxEvent;
 use App\Compartido\Outbox\OutboxWriter;
-use App\Conversacion\Repository\MessageRepository;
+use App\Conversacion\Repository\MensajeRepository;
 use App\Ticket\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -49,7 +49,7 @@ class HandleStatusUpdateUseCase
 
     public function __construct(
         private readonly EntityManagerInterface $em,
-        private readonly MessageRepository $messageRepo,
+        private readonly MensajeRepository $messageRepo,
         private readonly TicketRepository $ticketRepo,
         private readonly EventCollector $eventCollector,
         private readonly OutboxWriter $outboxWriter,
@@ -163,7 +163,7 @@ class HandleStatusUpdateUseCase
     /**
      * Persist a MessageUpdatedEvent to the outbox for Mercure delivery.
      */
-    private function publishUpdatedEvent(\App\Conversacion\Message $message, string $newStatus): void
+    private function publishUpdatedEvent(\App\Conversacion\Mensaje $message, string $newStatus): void
     {
         // Resolve ticket ID through the conversation chain
         $conversation = $message->getConversation();

@@ -11,11 +11,11 @@ use App\Agente\Agente;
 use App\Disponibilidad\Turno;
 use App\Disponibilidad\Repository\TurnoRepository;
 use App\Contacto\Contacto;
-use App\Conversacion\Conversation;
+use App\Conversacion\Conversacion;
 use App\Compartido\EventCollector;
 use App\Conversacion\ConversationWindowPolicy;
-use App\Conversacion\Message;
-use App\Conversacion\MessageSenderType;
+use App\Conversacion\Mensaje;
+use App\Conversacion\TipoDeRemitente;
 use App\Compartido\ProcessedEvent;
 use App\Ticket\Ticket;
 use App\Compartido\Graph\GraphApiException;
@@ -125,7 +125,7 @@ class AutoReplyServiceTest extends TestCase
         ?Agente $agent = null,
         ?Contacto $contact = null,
         ?string $phoneNumberId = '123456789',
-        ?Conversation $conversation = null,
+        ?Conversacion $conversation = null,
         ?\DateTimeImmutable $lastInboundMessageAt = new \DateTimeImmutable('-1 hour'),
     ): Ticket {
         $ticket = new Ticket();
@@ -305,7 +305,7 @@ class AutoReplyServiceTest extends TestCase
     {
         $agent = $this->createAgent();
         $contact = $this->createContact(phone: '+5493625123456');
-        $conversation = new Conversation();
+        $conversation = new Conversacion();
         $conversation->setContact($contact);
         $conversation->setStatus('open');
         $ticket = $this->createTicket(agent: $agent, contact: $contact, phoneNumberId: '123456789', conversation: $conversation);
@@ -416,7 +416,7 @@ class AutoReplyServiceTest extends TestCase
     {
         $agent = $this->createAgent(id: 7);
         $contact = $this->createContact(phone: '+5493625123456');
-        $conversation = new Conversation();
+        $conversation = new Conversacion();
         $conversation->setContact($contact);
         $conversation->setStatus('open');
         $ticket = $this->createTicket(agent: $agent, contact: $contact, phoneNumberId: '123456789', conversation: $conversation);
@@ -437,7 +437,7 @@ class AutoReplyServiceTest extends TestCase
 
         $persistedMessage = null;
         $this->em->method('persist')->willReturnCallback(function ($entity) use (&$persistedMessage) {
-            if ($entity instanceof Message) {
+            if ($entity instanceof Mensaje) {
                 $persistedMessage = $entity;
             }
         });
@@ -447,7 +447,7 @@ class AutoReplyServiceTest extends TestCase
 
         self::assertNotNull($persistedMessage, 'AutoReplyService must persist a Message entity');
         self::assertSame(7, $persistedMessage->getSenderAgentId());
-        self::assertSame(MessageSenderType::AUTOMATIC->value, $persistedMessage->getSenderType());
+        self::assertSame(TipoDeRemitente::AUTOMATIC->value, $persistedMessage->getSenderType());
     }
 
     // ────────────────────────────────────────────────────────────

@@ -7,7 +7,7 @@ namespace App\Tests\Characterization;
 use App\Compartido\Graph\GraphApiException;
 use App\Compartido\Graph\GraphClient;
 use App\Compartido\Storage\MediaStorageService;
-use App\Conversacion\Conversation;
+use App\Conversacion\Conversacion;
 use App\Ticket\Ticket;
 use PHPUnit\Framework\MockObject\MockObject;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -247,7 +247,7 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
     public function testTemplateToATicketWithoutContactIsPhoneNotFoundRawBody(): void
     {
         $contact = $this->createContact(self::CONTACT_PHONE);
-        $conversation = new Conversation();
+        $conversation = new Conversacion();
         $conversation->setContact($contact);
         $this->em->persist($conversation);
         $ticket = new Ticket();

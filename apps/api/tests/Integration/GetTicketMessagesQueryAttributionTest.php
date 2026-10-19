@@ -7,9 +7,9 @@ namespace App\Tests\Integration;
 use App\Conversacion\Query\GetTicketMessagesQuery;
 use App\Agente\Agente;
 use App\Contacto\Contacto;
-use App\Conversacion\Conversation;
-use App\Conversacion\Message;
-use App\Conversacion\MessageSenderType;
+use App\Conversacion\Conversacion;
+use App\Conversacion\Mensaje;
+use App\Conversacion\TipoDeRemitente;
 use App\Ticket\Ticket;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -55,7 +55,7 @@ class GetTicketMessagesQueryAttributionTest extends KernelTestCase
         $contact->setTelefono('+5491100000500');
         $this->em->persist($contact);
 
-        $conversation = new Conversation();
+        $conversation = new Conversacion();
         $conversation->setContact($contact);
         $this->em->persist($conversation);
 
@@ -67,16 +67,16 @@ class GetTicketMessagesQueryAttributionTest extends KernelTestCase
         $this->em->flush();
 
         // Attributed message (post-migration write path)
-        $attributed = new Message();
+        $attributed = new Mensaje();
         $attributed->setConversation($conversation);
         $attributed->setDirection('outbound');
         $attributed->setContent('Attributed reply');
         $attributed->setSenderAgentId($agentId);
-        $attributed->setSenderType(MessageSenderType::AGENT);
+        $attributed->setSenderType(TipoDeRemitente::AGENT);
         $this->em->persist($attributed);
 
         // Legacy message (simulates a pre-migration row: never touch the setters)
-        $legacy = new Message();
+        $legacy = new Mensaje();
         $legacy->setConversation($conversation);
         $legacy->setDirection('inbound');
         $legacy->setContent('Legacy message');

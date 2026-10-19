@@ -2,7 +2,7 @@
 
 namespace App\Conversacion;
 
-enum MessageSenderType: string
+enum TipoDeRemitente: string
 {
     case AGENT = 'agent';
     case AUTOMATIC = 'automatic';

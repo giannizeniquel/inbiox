@@ -16,7 +16,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Table(name: 'webhook_payloads')]
 #[ORM\Index(name: 'idx_webhook_payloads_event_type', columns: ['event_type'])]
 #[ORM\Index(name: 'idx_webhook_payloads_received_at', columns: ['received_at'])]
-class WebhookPayload
+class PayloadWebhook
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]

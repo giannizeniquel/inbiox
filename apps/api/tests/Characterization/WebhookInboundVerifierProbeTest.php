@@ -8,9 +8,9 @@ use App\Agente\Agente;
 use App\Compartido\Graph\GraphApiException;
 use App\Compartido\Graph\GraphClient;
 use App\Compartido\Storage\MediaStorageService;
-use App\Conversacion\Message;
+use App\Conversacion\Mensaje;
 use App\Conversacion\MessageCreatedEvent;
-use App\Conversacion\MessageSenderType;
+use App\Conversacion\TipoDeRemitente;
 use App\Conversacion\MessageUpdatedEvent;
 use App\Conversacion\UseCase\HandleInboundMessageUseCase;
 use App\Ticket\Ticket;
@@ -168,13 +168,13 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
 
     private function outboundMessage(Ticket $ticket, string $wamid): void
     {
-        $message = new Message();
+        $message = new Mensaje();
         $message->setConversation($ticket->getConversacion());
         $message->setDirection('outbound');
         $message->setContent('respuesta');
         $message->setExternalId($wamid);
         $message->setDeliveryStatus('sent');
-        $message->setSenderType(MessageSenderType::AGENT);
+        $message->setSenderType(TipoDeRemitente::AGENT);
         $this->em->persist($message);
         $this->em->flush();
     }

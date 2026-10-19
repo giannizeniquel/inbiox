@@ -2,30 +2,30 @@
 
 namespace App\Conversacion\Repository;
 
-use App\Conversacion\Conversation;
-use App\Conversacion\Message;
+use App\Conversacion\Conversacion;
+use App\Conversacion\Mensaje;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
-class MessageRepository extends ServiceEntityRepository
+class MensajeRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, Message::class);
+        parent::__construct($registry, Mensaje::class);
     }
 
-    public function findByExternalId(string $externalId): ?Message
+    public function findByExternalId(string $externalId): ?Mensaje
     {
         return $this->findOneBy(['externalId' => $externalId]);
     }
 
-    public function findByConversation(Conversation $conversation): array
+    public function findByConversation(Conversacion $conversation): array
     {
         return $this->findBy(['conversation' => $conversation]);
     }
 
-    public function findById(int $id): ?Message
+    public function findById(int $id): ?Mensaje
     {
         return $this->find($id);
     }
