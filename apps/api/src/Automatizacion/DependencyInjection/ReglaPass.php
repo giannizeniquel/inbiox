@@ -43,7 +43,7 @@ class ReglaPass implements CompilerPassInterface
 
             // Check if it's one of our known rule classes
             if (in_array($class, $knownRuleClasses, true)) {
-                $ruleExecutorDefinition->addMethodCall('addRule', [new Reference($id)]);
+                $ruleExecutorDefinition->addMethodCall('agregarRegla', [new Reference($id)]);
             }
         }
     }

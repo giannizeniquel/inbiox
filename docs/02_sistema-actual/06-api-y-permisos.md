@@ -122,7 +122,7 @@ Todas **Agente**, salvo export. Filtran por workspace activo; nunca por agente.
 | GET | `/api/me/settings` | `getSettings` | Agente | |
 | PUT | `/api/me/profile` | `updateProfile` | Agente | Firma. |
 | PUT | `/api/me/notifications` | `updateNotifications` | Agente | Se guarda; el frontend no lo usa. |
-| PUT | `/api/me/auto-reply` | `updateAutoReply` | Agente | |
+| PUT | `/api/me/auto-reply` | `updateRespuestaAutomatica` | Agente | |
 | GET | `/api/me/shifts` | `getShifts` | Agente | |
 | PUT | `/api/me/shifts` | `replaceShifts` | Agente | `ReplaceAgentShiftsUseCase`. |
 | GET | `/api/me/workspace` | `getActiveWorkspace` | Auth | |

@@ -6,7 +6,7 @@ use App\Ticket\UseCase\AgregarEtiquetaATicketUseCase;
 
 class ReglaDeEtiquetadoPorPalabraClave implements ReglaInterface
 {
-    private const KEYWORD = 'error';
+    private const PALABRA_CLAVE = 'error';
 
     public function __construct(
         private AgregarEtiquetaATicketUseCase $addTagUseCase,
@@ -15,38 +15,38 @@ class ReglaDeEtiquetadoPorPalabraClave implements ReglaInterface
     public function supports(ContextoDeRegla $context): bool
     {
         // Only supports inbound messages
-        if ($context->getTriggerType() !== 'inbound') {
+        if ($context->getTipoDeDisparador() !== 'inbound') {
             return false;
         }
 
-        $message = $context->getMessage();
+        $message = $context->getMensaje();
         if (!$message) {
             return false;
         }
 
         // Case-insensitive substring match for "error"
         $content = $message->getContent();
-        return stripos($content, self::KEYWORD) !== false;
+        return stripos($content, self::PALABRA_CLAVE) !== false;
     }
 
     public function execute(ContextoDeRegla $context): void
     {
         $this->addTagUseCase->execute(
             $context->getTicketId(),
-            self::KEYWORD,
+            self::PALABRA_CLAVE,
             'system'
         );
     }
 
-    public function getName(): string
+    public function getNombre(): string
     {
         return 'keyword_tagging';
     }
 
-    public function buildExecutionKey(ContextoDeRegla $context): string
+    public function armarClaveDeEjecucion(ContextoDeRegla $context): string
     {
         $ticketId = $context->getTicketId();
-        $messageId = $context->getMessageId() ?? 'no_message';
+        $messageId = $context->getMensajeId() ?? 'no_message';
         return "tag_error:{$ticketId}:{$messageId}";
     }
 }

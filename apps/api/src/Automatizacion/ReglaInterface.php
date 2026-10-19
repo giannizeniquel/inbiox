@@ -17,10 +17,10 @@ interface ReglaInterface
     /**
      * Get unique name for this rule.
      */
-    public function getName(): string;
+    public function getNombre(): string;
 
     /**
      * Build execution key for idempotency check.
      */
-    public function buildExecutionKey(ContextoDeRegla $context): string;
+    public function armarClaveDeEjecucion(ContextoDeRegla $context): string;
 }

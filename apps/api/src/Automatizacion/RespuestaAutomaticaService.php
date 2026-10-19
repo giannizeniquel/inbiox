@@ -38,7 +38,7 @@ use Symfony\Component\Uid\Ulid;
  */
 final class RespuestaAutomaticaService
 {
-    private const AUTO_REPLY_WINDOW_HOURS = 2;
+    private const HORAS_DE_VENTANA_DE_RESPUESTA_AUTOMATICA = 2;
 
     public function __construct(
         private readonly AgentRepository $agentRepo,
@@ -57,10 +57,10 @@ final class RespuestaAutomaticaService
      * This is a fire-and-forget method: it catches all exceptions and logs them,
      * never re-throwing. Called AFTER the inbound message transaction commits.
      */
-    public function maybeSend(Ticket $ticket): void
+    public function enviarSiCorresponde(Ticket $ticket): void
     {
         try {
-            $this->doMaybeSend($ticket);
+            $this->ejecutarEnvioSiCorresponde($ticket);
         } catch (\Throwable $e) {
             $this->logger->warning('AutoReplyService::maybeSend unexpected error: {message}', [
                 'message' => $e->getMessage(),
@@ -70,10 +70,10 @@ final class RespuestaAutomaticaService
         }
     }
 
-    private function doMaybeSend(Ticket $ticket): void
+    private function ejecutarEnvioSiCorresponde(Ticket $ticket): void
     {
         // 1. Resolve target agent
-        $agent = $this->resolveTargetAgent($ticket);
+        $agent = $this->buscarAgenteDestino($ticket);
         if ($agent === null) {
             return; // No eligible agent
         }
@@ -103,7 +103,7 @@ final class RespuestaAutomaticaService
         $contactId = (int) $contact->getId();
         $rateLimitKey = \sprintf('auto-reply:%d', $contactId);
 
-        if ($this->hasRecentAutoReply($rateLimitKey)) {
+        if ($this->hasRespuestaAutomaticaReciente($rateLimitKey)) {
             $this->logger->info('AutoReply rate-limited for contact {contactId}', [
                 'contactId' => $contactId,
                 'ticket_id' => $ticket->getId(),
@@ -207,7 +207,7 @@ final class RespuestaAutomaticaService
      * 2. First active agent in the workspace matching the ticket's phoneNumberId
      *    with auto_reply_enabled = true
      */
-    private function resolveTargetAgent(Ticket $ticket): ?Agent
+    private function buscarAgenteDestino(Ticket $ticket): ?Agent
     {
         $assignedAgentId = $ticket->getAgenteAsignadoId();
 
@@ -243,7 +243,7 @@ final class RespuestaAutomaticaService
     /**
      * Check if a recent auto-reply was sent for the given rate-limit key.
      */
-    private function hasRecentAutoReply(string $rateLimitKey): bool
+    private function hasRespuestaAutomaticaReciente(string $rateLimitKey): bool
     {
         $existing = $this->processedEventRepo->findByEventId($rateLimitKey);
         if ($existing === null) {
@@ -251,7 +251,7 @@ final class RespuestaAutomaticaService
         }
 
         $windowEnd = $existing->getProcessedAt()->modify(
-            \sprintf('+%d hours', self::AUTO_REPLY_WINDOW_HOURS)
+            \sprintf('+%d hours', self::HORAS_DE_VENTANA_DE_RESPUESTA_AUTOMATICA)
         );
 
         return $windowEnd >= new \DateTimeImmutable('now');

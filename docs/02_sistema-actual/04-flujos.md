@@ -80,7 +80,7 @@ flowchart TD
 | 14 | Recolecta `TicketCreatedEvent` / `MessageCreatedEvent`. | `:429-455` | |
 | 15 | Ejecuta reglas `inbound` (`ReglaDeEtiquetadoPorPalabraClave`, `ReglaDeReaperturaAutomatica`). | `:461-465` | R-R1, R-T8 |
 | 16 | Despacha `TicketNeedsAutoAssignmentEvent` → listener → `AutoAssignTicketUseCase::executeInTransaction()` **dentro de la misma transacción**. | `:466-468`; `Asignacion/EventListener/TicketAutoAssignmentRequestedListener.php:17-20` | ver F6 |
-| 17 | Commit. Después: `RespuestaAutomaticaService::maybeSend()` y escritura de eventos en el outbox. | `:83-99`, `:107-156` | ver F9, F13 |
+| 17 | Commit. Después: `RespuestaAutomaticaService::enviarSiCorresponde()` y escritura de eventos en el outbox. | `:83-99`, `:107-156` | ver F9, F13 |
 
 - **Entidades:** Contacto, Conversation, Message, Ticket, EventoDeTicket, Etiqueta/EtiquetaDeTicket, Assignment, Agent, OutboxEvent, WebhookPayload, ProcessedEvent, RegistroDeRegla.
 - **Persistencia:** `webhook_payloads`, `contacts`, `conversations`, `messages`, `tickets`, `ticket_events`, `tags`/`ticket_tags`, `rule_execution_logs`, `assignments`, `processed_events`, `outbox_events`.
@@ -306,7 +306,7 @@ stateDiagram-v2
 1. Agente objetivo: el dueño si está activo; si no, el **primer** agente activo con auto-respuesta habilitada del workspace del ticket (`:207-238`).
 2. Requiere `auto_reply_enabled` y mensaje no vacío (`:79-86`).
 3. Solo responde si ese agente **no** está disponible según `isAvailable()` (incluye capacidad): un agente en turno pero lleno dispara el aviso de ausencia (`:88-92`).
-4. Máximo una por contacto cada **2 h** (`AUTO_REPLY_WINDOW_HOURS = 2`, `:38`; el docblock `:31` y el análisis de brecha dicen 4 h). Guardado en `processed_events`.
+4. Máximo una por contacto cada **2 h** (`HORAS_DE_VENTANA_DE_RESPUESTA_AUTOMATICA = 2`, `:38`; el docblock `:31` y el análisis de brecha dicen 4 h). Guardado en `processed_events`.
 5. Respeta la ventana de 24 h; envía por Graph; persiste el mensaje con `sender_type=automatic`.
 
 **Si falla, revisar:** `RespuestaAutomaticaService.php` (errores tragados en `:60-66`) → configuración del agente en `/settings` → `processed_events` (clave `auto-reply:{contactId}`) → `rule_execution_logs` para las reglas.

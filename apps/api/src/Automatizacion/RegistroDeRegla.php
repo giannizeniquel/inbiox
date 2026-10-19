@@ -16,33 +16,33 @@ class RegistroDeRegla
     private ?int $id = null;
 
     #[ORM\Column(name: 'execution_key', type: 'string', length: 255, unique: true)]
-    private string $executionKey;
+    private string $claveDeEjecucion;
 
     #[ORM\Column(name: 'rule_name', type: 'string', length: 100)]
-    private string $ruleName;
+    private string $nombreDeRegla;
 
     #[ORM\Column(name: 'ticket_id', type: 'bigint', nullable: true)]
     private ?int $ticketId = null;
 
     #[ORM\Column(name: 'message_id', type: 'bigint', nullable: true)]
-    private ?int $messageId = null;
+    private ?int $mensajeId = null;
 
     #[ORM\Column(name: 'executed_at', type: 'datetime_immutable')]
-    private \DateTimeImmutable $executedAt;
+    private \DateTimeImmutable $ejecutadoAt;
 
     #[ORM\Column(name: 'result_status', type: 'string', length: 20)]
-    private string $resultStatus = 'success';
+    private string $estadoDeResultado = 'success';
 
     #[ORM\Column(name: 'result_data', type: 'json', nullable: true)]
-    private ?array $resultData = null;
+    private ?array $datosDeResultado = null;
 
     public function __construct(string $executionKey, string $ruleName, ?int $ticketId = null, ?int $messageId = null)
     {
-        $this->executionKey = $executionKey;
-        $this->ruleName = $ruleName;
+        $this->claveDeEjecucion = $executionKey;
+        $this->nombreDeRegla = $ruleName;
         $this->ticketId = $ticketId;
-        $this->messageId = $messageId;
-        $this->executedAt = new \DateTimeImmutable();
+        $this->mensajeId = $messageId;
+        $this->ejecutadoAt = new \DateTimeImmutable();
     }
 
     public function getId(): ?int
@@ -50,14 +50,14 @@ class RegistroDeRegla
         return $this->id;
     }
 
-    public function getExecutionKey(): string
+    public function getClaveDeEjecucion(): string
     {
-        return $this->executionKey;
+        return $this->claveDeEjecucion;
     }
 
-    public function getRuleName(): string
+    public function getNombreDeRegla(): string
     {
-        return $this->ruleName;
+        return $this->nombreDeRegla;
     }
 
     public function getTicketId(): ?int
@@ -65,35 +65,35 @@ class RegistroDeRegla
         return $this->ticketId;
     }
 
-    public function getMessageId(): ?int
+    public function getMensajeId(): ?int
     {
-        return $this->messageId;
+        return $this->mensajeId;
     }
 
-    public function getExecutedAt(): \DateTimeImmutable
+    public function getEjecutadoAt(): \DateTimeImmutable
     {
-        return $this->executedAt;
+        return $this->ejecutadoAt;
     }
 
-    public function getResultStatus(): string
+    public function getEstadoDeResultado(): string
     {
-        return $this->resultStatus;
+        return $this->estadoDeResultado;
     }
 
-    public function setResultStatus(string $resultStatus): self
+    public function setEstadoDeResultado(string $resultStatus): self
     {
-        $this->resultStatus = $resultStatus;
+        $this->estadoDeResultado = $resultStatus;
         return $this;
     }
 
-    public function getResultData(): ?array
+    public function getDatosDeResultado(): ?array
     {
-        return $this->resultData;
+        return $this->datosDeResultado;
     }
 
-    public function setResultData(?array $resultData): self
+    public function setDatosDeResultado(?array $resultData): self
     {
-        $this->resultData = $resultData;
+        $this->datosDeResultado = $resultData;
         return $this;
     }
 }

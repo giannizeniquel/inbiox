@@ -12,8 +12,8 @@ class ContextoDeRegla
 {
     public function __construct(
         private Ticket $ticket,
-        private ?Message $message = null,
-        private string $triggerType = 'inbound'
+        private ?Message $mensaje = null,
+        private string $tipoDeDisparador = 'inbound'
     ) {}
 
     public function getTicket(): Ticket
@@ -21,14 +21,14 @@ class ContextoDeRegla
         return $this->ticket;
     }
 
-    public function getMessage(): ?Message
+    public function getMensaje(): ?Message
     {
-        return $this->message;
+        return $this->mensaje;
     }
 
-    public function getTriggerType(): string
+    public function getTipoDeDisparador(): string
     {
-        return $this->triggerType;
+        return $this->tipoDeDisparador;
     }
 
     public function getTicketId(): int
@@ -36,8 +36,8 @@ class ContextoDeRegla
         return $this->ticket->getId();
     }
 
-    public function getMessageId(): ?int
+    public function getMensajeId(): ?int
     {
-        return $this->message?->getId();
+        return $this->mensaje?->getId();
     }
 }

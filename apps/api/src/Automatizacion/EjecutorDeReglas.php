@@ -10,7 +10,7 @@ class EjecutorDeReglas
     /**
      * @var ReglaInterface[]
      */
-    private array $rules = [];
+    private array $reglas = [];
 
     public function __construct(
         private RegistroDeReglaRepository $executionLogRepo,
@@ -18,16 +18,16 @@ class EjecutorDeReglas
         iterable $rules = [],
     ) {
         foreach ($rules as $rule) {
-            $this->rules[] = $rule;
+            $this->reglas[] = $rule;
         }
     }
 
     /**
      * Add a rule to be executed.
      */
-    public function addRule(ReglaInterface $rule): void
+    public function agregarRegla(ReglaInterface $rule): void
     {
-        $this->rules[] = $rule;
+        $this->reglas[] = $rule;
     }
 
     /**
@@ -35,15 +35,15 @@ class EjecutorDeReglas
      */
     public function execute(ContextoDeRegla $context): void
     {
-        foreach ($this->rules as $rule) {
+        foreach ($this->reglas as $rule) {
             if (!$rule->supports($context)) {
                 continue;
             }
 
-            $executionKey = $rule->buildExecutionKey($context);
+            $executionKey = $rule->armarClaveDeEjecucion($context);
 
             // Idempotency check
-            if ($this->executionLogRepo->findByExecutionKey($executionKey)) {
+            if ($this->executionLogRepo->findByClaveDeEjecucion($executionKey)) {
                 continue;
             }
 
@@ -53,21 +53,21 @@ class EjecutorDeReglas
                 // Log successful execution
                 $log = new RegistroDeRegla(
                     $executionKey,
-                    $rule->getName(),
+                    $rule->getNombre(),
                     $context->getTicketId(),
-                    $context->getMessageId()
+                    $context->getMensajeId()
                 );
                 $this->executionLogRepo->save($log);
             } catch (\Throwable $e) {
                 // Log failed execution but don't break the chain
                 $log = new RegistroDeRegla(
                     $executionKey,
-                    $rule->getName(),
+                    $rule->getNombre(),
                     $context->getTicketId(),
-                    $context->getMessageId()
+                    $context->getMensajeId()
                 );
-                $log->setResultStatus('failed');
-                $log->setResultData(['error' => $e->getMessage()]);
+                $log->setEstadoDeResultado('failed');
+                $log->setDatosDeResultado(['error' => $e->getMessage()]);
                 $this->executionLogRepo->save($log);
             }
         }

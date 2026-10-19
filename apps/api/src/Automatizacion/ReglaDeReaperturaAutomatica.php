@@ -17,7 +17,7 @@ class ReglaDeReaperturaAutomatica implements ReglaInterface
     public function supports(ContextoDeRegla $context): bool
     {
         // Only supports inbound messages on resolved tickets
-        if ($context->getTriggerType() !== 'inbound') {
+        if ($context->getTipoDeDisparador() !== 'inbound') {
             return false;
         }
 
@@ -46,15 +46,15 @@ class ReglaDeReaperturaAutomatica implements ReglaInterface
         $this->em->flush();
     }
 
-    public function getName(): string
+    public function getNombre(): string
     {
         return 'auto_reopen';
     }
 
-    public function buildExecutionKey(ContextoDeRegla $context): string
+    public function armarClaveDeEjecucion(ContextoDeRegla $context): string
     {
         $ticketId = $context->getTicketId();
-        $messageId = $context->getMessageId() ?? 'no_message';
+        $messageId = $context->getMensajeId() ?? 'no_message';
         return "auto_reopen:{$ticketId}:{$messageId}";
     }
 }

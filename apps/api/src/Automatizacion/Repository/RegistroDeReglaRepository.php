@@ -16,9 +16,9 @@ class RegistroDeReglaRepository extends ServiceEntityRepository
         parent::__construct($registry, RegistroDeRegla::class);
     }
 
-    public function findByExecutionKey(string $executionKey): ?RegistroDeRegla
+    public function findByClaveDeEjecucion(string $executionKey): ?RegistroDeRegla
     {
-        return $this->findOneBy(['executionKey' => $executionKey]);
+        return $this->findOneBy(['claveDeEjecucion' => $executionKey]);
     }
 
     public function save(RegistroDeRegla $executionLog): void

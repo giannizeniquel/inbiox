@@ -87,7 +87,7 @@ class HandleInboundMessageUseCase
             if ($ticketId !== null) {
                 $ticket = $this->ticketRepo->find($ticketId);
                 if ($ticket !== null) {
-                    $this->autoReplyService->maybeSend($ticket);
+                    $this->autoReplyService->enviarSiCorresponde($ticket);
                 }
             }
         } catch (\Throwable $e) {

@@ -29,9 +29,9 @@ final class MiRespuestaAutomaticaController
 
     #[IsGranted('ROLE_AGENT')]
     #[Route('/api/me/auto-reply', name: 'app_me_auto_reply', methods: ['PUT'])]
-    public function updateAutoReply(#[MapRequestPayload] UpdateRespuestaAutomaticaRequest $request): JsonResponse
+    public function updateRespuestaAutomatica(#[MapRequestPayload] UpdateRespuestaAutomaticaRequest $request): JsonResponse
     {
-        $agent = $this->getAgent();
+        $agent = $this->getAgente();
         if (null === $agent) {
             return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
         }
@@ -44,7 +44,7 @@ final class MiRespuestaAutomaticaController
         ]);
     }
 
-    private function getAgent(): ?Agent
+    private function getAgente(): ?Agent
     {
         $user = $this->security->getUser();
 

@@ -223,12 +223,12 @@ class Sprint08AutomationTest extends KernelTestCase
         // Assert - verify all required methods exist
         $this->assertTrue(method_exists($rule, 'supports'), 'Rule must have supports() method');
         $this->assertTrue(method_exists($rule, 'execute'), 'Rule must have execute() method');
-        $this->assertTrue(method_exists($rule, 'getName'), 'Rule must have getName() method');
-        $this->assertTrue(method_exists($rule, 'buildExecutionKey'), 'Rule must have buildExecutionKey() method');
+        $this->assertTrue(method_exists($rule, 'getNombre'), 'Rule must have getNombre() method');
+        $this->assertTrue(method_exists($rule, 'armarClaveDeEjecucion'), 'Rule must have armarClaveDeEjecucion() method');
 
         // Assert - getName returns string
-        $this->assertIsString($rule->getName());
-        $this->assertNotEmpty($rule->getName());
+        $this->assertIsString($rule->getNombre());
+        $this->assertNotEmpty($rule->getNombre());
     }
 
     /**
@@ -240,7 +240,7 @@ class Sprint08AutomationTest extends KernelTestCase
         $rule = $this->createMockAutoReopenRule();
 
         // Assert
-        $this->assertEquals('auto_reopen', $rule->getName());
+        $this->assertEquals('auto_reopen', $rule->getNombre());
     }
 
     // ============================================
@@ -315,7 +315,7 @@ class Sprint08AutomationTest extends KernelTestCase
         $context = new ContextoDeRegla($ticket, $message, 'inbound');
 
         // Act
-        $key = $rule->buildExecutionKey($context);
+        $key = $rule->armarClaveDeEjecucion($context);
 
         // Assert
         $this->assertStringContainsString('auto_reopen', $key);

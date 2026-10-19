@@ -201,7 +201,7 @@ class AutoReplyServiceTest extends TestCase
 
         $this->graphClient->expects(self::never())->method('sendMessage');
 
-        $this->service->maybeSend($ticket);
+        $this->service->enviarSiCorresponde($ticket);
     }
 
     // ────────────────────────────────────────────────────────────
@@ -221,7 +221,7 @@ class AutoReplyServiceTest extends TestCase
 
         $this->graphClient->expects(self::never())->method('sendMessage');
 
-        $this->service->maybeSend($ticket);
+        $this->service->enviarSiCorresponde($ticket);
     }
 
     public function testDoesNotSendWhenMessageIsEmpty(): void
@@ -237,7 +237,7 @@ class AutoReplyServiceTest extends TestCase
 
         $this->graphClient->expects(self::never())->method('sendMessage');
 
-        $this->service->maybeSend($ticket);
+        $this->service->enviarSiCorresponde($ticket);
     }
 
     // ────────────────────────────────────────────────────────────
@@ -263,7 +263,7 @@ class AutoReplyServiceTest extends TestCase
 
         $this->graphClient->expects(self::never())->method('sendMessage');
 
-        $this->service->maybeSend($ticket);
+        $this->service->enviarSiCorresponde($ticket);
     }
 
     // ────────────────────────────────────────────────────────────
@@ -294,7 +294,7 @@ class AutoReplyServiceTest extends TestCase
 
         $this->graphClient->expects(self::never())->method('sendMessage');
 
-        $this->service->maybeSend($ticket);
+        $this->service->enviarSiCorresponde($ticket);
     }
 
     // ────────────────────────────────────────────────────────────
@@ -330,7 +330,7 @@ class AutoReplyServiceTest extends TestCase
         $this->em->method('persist');
         $this->em->method('flush');
 
-        $this->service->maybeSend($ticket);
+        $this->service->enviarSiCorresponde($ticket);
     }
 
     // ────────────────────────────────────────────────────────────
@@ -368,7 +368,7 @@ class AutoReplyServiceTest extends TestCase
         $this->em->expects(self::never())->method('flush');
 
         // This should not throw
-        $this->service->maybeSend($ticket);
+        $this->service->enviarSiCorresponde($ticket);
 
         // Assertion: we reached here without exception
         $this->assertTrue(true);
@@ -405,7 +405,7 @@ class AutoReplyServiceTest extends TestCase
             ->method('info')
             ->with(self::stringContains('window'));
 
-        $this->service->maybeSend($ticket);
+        $this->service->enviarSiCorresponde($ticket);
     }
 
     // ────────────────────────────────────────────────────────────
@@ -443,7 +443,7 @@ class AutoReplyServiceTest extends TestCase
         });
         $this->em->method('flush');
 
-        $this->service->maybeSend($ticket);
+        $this->service->enviarSiCorresponde($ticket);
 
         self::assertNotNull($persistedMessage, 'AutoReplyService must persist a Message entity');
         self::assertSame(7, $persistedMessage->getSenderAgentId());
@@ -461,6 +461,6 @@ class AutoReplyServiceTest extends TestCase
         $this->agentRepo->expects(self::never())->method('findById');
         $this->graphClient->expects(self::never())->method('sendMessage');
 
-        $this->service->maybeSend($ticket);
+        $this->service->enviarSiCorresponde($ticket);
     }
 }
