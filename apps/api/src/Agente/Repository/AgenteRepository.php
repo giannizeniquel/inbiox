@@ -42,16 +42,16 @@ class AgenteRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    public function findAllActive(): array
+    public function findActivos(): array
     {
-        return $this->findBy(['active' => true]);
+        return $this->findBy(['activo' => true]);
     }
 
     /** @return Agente[] */
-    public function findByWorkspace(Workspace $workspace): array
+    public function findByEspacioDeTrabajo(Workspace $workspace): array
     {
         return $this->createQueryBuilder('a')
-            ->innerJoin('a.workspaces', 'w')
+            ->innerJoin('a.espaciosDeTrabajo', 'w')
             ->where('w.id = :workspaceId')
             ->setParameter('workspaceId', $workspace->getId())
             ->orderBy('a.id', 'ASC')
@@ -64,12 +64,12 @@ class AgenteRepository extends ServiceEntityRepository
      *
      * @return Agente[]
      */
-    public function findActiveByWorkspace(Workspace $workspace): array
+    public function findActivosByEspacioDeTrabajo(Workspace $workspace): array
     {
         return $this->createQueryBuilder('a')
-            ->innerJoin('a.workspaces', 'w')
+            ->innerJoin('a.espaciosDeTrabajo', 'w')
             ->where('w.id = :workspaceId')
-            ->andWhere('a.active = true')
+            ->andWhere('a.activo = true')
             ->setParameter('workspaceId', $workspace->getId())
             ->orderBy('a.id', 'ASC')
             ->getQuery()
@@ -101,10 +101,10 @@ class AgenteRepository extends ServiceEntityRepository
      *
      * @return Agente[]
      */
-    public function findPageWithUser(int $offset, int $limit): array
+    public function findPaginaConUsuario(int $offset, int $limit): array
     {
         return $this->createQueryBuilder('a')
-            ->leftJoin('a.user', 'u')
+            ->leftJoin('a.usuario', 'u')
             ->addSelect('u')
             ->setFirstResult($offset)
             ->setMaxResults($limit)

@@ -56,8 +56,8 @@ final class SetDisponibilidadManualUseCase
             $now = new \DateTimeImmutable();
             $disponibilidadManualHasta = $ttlMinutes !== null ? $now->modify(\sprintf('+%d minutes', $ttlMinutes)) : null;
 
-            $agente->setIsAvailableOverride($isDisponible);
-            $agente->setOverrideUntil($disponibilidadManualHasta);
+            $agente->setDisponibilidadManual($isDisponible);
+            $agente->setDisponibilidadManualHasta($disponibilidadManualHasta);
 
             // 3. Persist
             $this->em->flush();
@@ -73,7 +73,7 @@ final class SetDisponibilidadManualUseCase
                     'is_available'    => $isDisponible,
                     'override_active' => true,
                     'current_load'    => $cargaActual,
-                    'max_capacity'    => $agente->getMaxActiveTickets(),
+                    'max_capacity'    => $agente->getMaxTicketsActivos(),
                     'timestamp'       => $now->format('Y-m-d\TH:i:s\Z'),
                 ],
             ];
@@ -83,7 +83,7 @@ final class SetDisponibilidadManualUseCase
                 'is_available'    => $isDisponible,
                 'override_active' => true,
                 'current_load'    => $cargaActual,
-                'max_capacity'    => $agente->getMaxActiveTickets(),
+                'max_capacity'    => $agente->getMaxTicketsActivos(),
             ];
         });
 

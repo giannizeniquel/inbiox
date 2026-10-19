@@ -130,7 +130,7 @@ final class AdministracionEdgeCasesCharacterizationTest extends Characterization
         $kept = $this->createAgent('Kept');
         $workspace->addAgent($kept);
         $team = new Equipo($workspace, 'Edge team');
-        $team->addAgent($kept);
+        $team->addAgente($kept);
         $this->em->persist($team);
         $this->em->flush();
         $token = $this->adminToken();

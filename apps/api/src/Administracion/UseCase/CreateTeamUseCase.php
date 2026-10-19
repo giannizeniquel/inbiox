@@ -44,14 +44,14 @@ final class CreateTeamUseCase
             throw new \InvalidArgumentException('Workspace not found');
         }
 
-        if (null !== $this->teamRepository->findOneBy(['workspace' => $workspace, 'name' => $name])) {
+        if (null !== $this->teamRepository->findOneBy(['espacioDeTrabajo' => $workspace, 'nombre' => $name])) {
             throw new StateConflictException('A team with this name already exists in this workspace');
         }
 
         $team = new Equipo($workspace, $name);
 
         if (isset($data['isActive'])) {
-            $team->setActive((bool) $data['isActive']);
+            $team->setActivo((bool) $data['isActive']);
         }
 
         $this->entityManager->persist($team);

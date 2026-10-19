@@ -317,9 +317,9 @@ class Sprint10ConcurrencyTest extends KernelTestCase
     public function testOverrideFalseBlocksAssignment(): void
     {
         $agent = new Agente('Override Blocked');
-        $agent->setMaxActiveTickets(5);
-        $agent->setTimezone('UTC');
-        $agent->setIsAvailableOverride(false); // explicitly blocked
+        $agent->setMaxTicketsActivos(5);
+        $agent->setZonaHoraria('UTC');
+        $agent->setDisponibilidadManual(false); // explicitly blocked
         $this->em->persist($agent);
 
         $shift = new Turno($agent, 1, new \DateTimeImmutable('00:00:00'), new \DateTimeImmutable('23:59:59'));

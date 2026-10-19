@@ -47,18 +47,18 @@ final class TeamController
             return new JsonResponse([]);
         }
 
-        $workspaces = $agent->getWorkspaces()->toArray();
+        $workspaces = $agent->getEspaciosDeTrabajo()->toArray();
         if ([] === $workspaces) {
             return new JsonResponse([]);
         }
 
-        $teams = $this->teamRepository->findByWorkspaces($workspaces);
+        $teams = $this->teamRepository->findByEspaciosDeTrabajo($workspaces);
 
         $items = array_map(fn(Equipo $t) => [
             'id' => (int) $t->getId(),
-            'workspace_id' => (int) $t->getWorkspace()->getId(),
-            'name' => $t->getName(),
-            'is_active' => $t->isActive(),
+            'workspace_id' => (int) $t->getEspacioDeTrabajo()->getId(),
+            'name' => $t->getNombre(),
+            'is_active' => $t->isActivo(),
         ], $teams);
 
         return new JsonResponse($items);

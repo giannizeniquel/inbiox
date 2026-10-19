@@ -142,7 +142,7 @@ final class UserController
             'roles' => $user->getRoles(),
             'is_active' => $user->isActive(),
             'agent_id' => null !== $agent ? (int) $agent->getId() : null,
-            'agent_name' => null !== $agent ? $agent->getName() : null,
+            'agent_name' => null !== $agent ? $agent->getNombre() : null,
             'created_at' => $user->getCreatedAt()->format('Y-m-d\TH:i:sP'),
             'updated_at' => $user->getUpdatedAt()?->format('Y-m-d\TH:i:sP'),
         ];

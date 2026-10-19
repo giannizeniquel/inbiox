@@ -32,16 +32,16 @@ final class UpdateTeamUseCase
                 throw new \InvalidArgumentException('name must be a non-empty string');
             }
 
-            $duplicate = $this->teamRepository->findOneBy(['workspace' => $team->getWorkspace(), 'name' => $data['name']]);
+            $duplicate = $this->teamRepository->findOneBy(['espacioDeTrabajo' => $team->getEspacioDeTrabajo(), 'nombre' => $data['name']]);
             if (null !== $duplicate && $duplicate->getId() !== $team->getId()) {
                 throw new StateConflictException('A team with this name already exists in this workspace');
             }
 
-            $team->setName($data['name']);
+            $team->setNombre($data['name']);
         }
 
         if (isset($data['isActive'])) {
-            $team->setActive((bool) $data['isActive']);
+            $team->setActivo((bool) $data['isActive']);
         }
 
         $this->entityManager->flush();

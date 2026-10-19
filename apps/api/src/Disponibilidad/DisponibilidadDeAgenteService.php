@@ -39,26 +39,26 @@ final class DisponibilidadDeAgenteService
     public function isDisponible(Agente $agente, \DateTimeImmutable $atUtc): bool
     {
         // Step 1: Account active check
-        if (!$agente->isActive()) {
+        if (!$agente->isActivo()) {
             return false;
         }
 
         // Step 2: Override check (dominates schedule and capacity)
-        if ($agente->getIsAvailableOverride() !== null) {
-            if ($agente->getOverrideUntil() === null || $agente->getOverrideUntil() >= $atUtc) {
-                return $agente->getIsAvailableOverride();
+        if ($agente->getDisponibilidadManual() !== null) {
+            if ($agente->getDisponibilidadManualHasta() === null || $agente->getDisponibilidadManualHasta() >= $atUtc) {
+                return $agente->getDisponibilidadManual();
             }
         }
 
         // Step 3: Schedule check
-        $localTime = $this->utcToLocal($atUtc, $agente->getTimezone());
-        if (!$this->hasTurnoEnHorario($localTime, $agente->getShifts()->toArray())) {
+        $localTime = $this->utcToLocal($atUtc, $agente->getZonaHoraria());
+        if (!$this->hasTurnoEnHorario($localTime, $agente->getTurnos()->toArray())) {
             return false;
         }
 
         // Step 4: Capacity check
         $cantidadDeActivos = $this->countTicketsActivos($agente->getId());
-        if ($cantidadDeActivos >= $agente->getMaxActiveTickets()) {
+        if ($cantidadDeActivos >= $agente->getMaxTicketsActivos()) {
             return false;
         }
 
@@ -70,7 +70,7 @@ final class DisponibilidadDeAgenteService
      * Evaluate manual-assign eligibility ("Activo"/"Inactivo") for a single
      * agent at a given UTC moment.
      *
-     * Narrower than isAvailable(): account-active pre-filter, then override
+     * Narrower than isDisponible(): account-active pre-filter, then override
      * (if set and unexpired) takes precedence, ELSE shift-match. CAPACITY IS
      * NEVER CONSULTED — an in-shift agent at full capacity is still Activo.
      *
@@ -83,19 +83,19 @@ final class DisponibilidadDeAgenteService
     public function isActivoAhora(Agente $agente, array $turnos, \DateTimeImmutable $atUtc): bool
     {
         // Step 1: Account active check
-        if (!$agente->isActive()) {
+        if (!$agente->isActivo()) {
             return false;
         }
 
         // Step 2: Override check (dominates schedule; capacity never checked)
-        if ($agente->getIsAvailableOverride() !== null) {
-            if ($agente->getOverrideUntil() === null || $agente->getOverrideUntil() >= $atUtc) {
-                return $agente->getIsAvailableOverride();
+        if ($agente->getDisponibilidadManual() !== null) {
+            if ($agente->getDisponibilidadManualHasta() === null || $agente->getDisponibilidadManualHasta() >= $atUtc) {
+                return $agente->getDisponibilidadManual();
             }
         }
 
         // Step 3: Schedule check (capacity deliberately ignored)
-        $localTime = $this->utcToLocal($atUtc, $agente->getTimezone());
+        $localTime = $this->utcToLocal($atUtc, $agente->getZonaHoraria());
 
         return $this->hasTurnoEnHorario($localTime, $turnos);
     }
@@ -111,7 +111,7 @@ final class DisponibilidadDeAgenteService
     public function listarAgentesDisponibles(\DateTimeImmutable $atUtc): array
     {
         // 1. Fetch all active agents (1 query)
-        $agentes = $this->agentRepository->findAllActive();
+        $agentes = $this->agentRepository->findActivos();
         if (empty($agentes)) {
             return [];
         }
@@ -135,9 +135,9 @@ final class DisponibilidadDeAgenteService
             $agenteId = $agente->getId();
 
             // Override check
-            if ($agente->getIsAvailableOverride() !== null) {
-                if ($agente->getOverrideUntil() === null || $agente->getOverrideUntil() >= $atUtc) {
-                    if ($agente->getIsAvailableOverride()) {
+            if ($agente->getDisponibilidadManual() !== null) {
+                if ($agente->getDisponibilidadManualHasta() === null || $agente->getDisponibilidadManualHasta() >= $atUtc) {
+                    if ($agente->getDisponibilidadManual()) {
                         $disponible[] = $agente;
                     }
                     continue;
@@ -145,14 +145,14 @@ final class DisponibilidadDeAgenteService
             }
 
             // Schedule check (uses preloaded shifts — no lazy load)
-            $localTime = $this->utcToLocal($atUtc, $agente->getTimezone());
+            $localTime = $this->utcToLocal($atUtc, $agente->getZonaHoraria());
             if (!$this->hasTurnoEnHorario($localTime, $turnosPorAgente[$agenteId] ?? [])) {
                 continue;
             }
 
             // Capacity check
             $cantidadDeActivos = $this->countTicketsActivos($agenteId);
-            if ($cantidadDeActivos >= $agente->getMaxActiveTickets()) {
+            if ($cantidadDeActivos >= $agente->getMaxTicketsActivos()) {
                 continue;
             }
 
@@ -180,8 +180,8 @@ final class DisponibilidadDeAgenteService
     public function listarAgentesDelEspacioDeTrabajo(Workspace $espacioDeTrabajo, \DateTimeImmutable $atUtc): array
     {
         // 1. Fetch all workspace agents, then filter to active=true in PHP
-        $agentes = $this->agentRepository->findByWorkspace($espacioDeTrabajo);
-        $agentesActivos = \array_values(\array_filter($agentes, fn (Agente $a): bool => $a->isActive()));
+        $agentes = $this->agentRepository->findByEspacioDeTrabajo($espacioDeTrabajo);
+        $agentesActivos = \array_values(\array_filter($agentes, fn (Agente $a): bool => $a->isActivo()));
 
         if (empty($agentesActivos)) {
             return [];
@@ -227,17 +227,17 @@ final class DisponibilidadDeAgenteService
      *
      * This is a SCHEDULE-ONLY check — it does NOT consider override or capacity.
      * Used by reports and inbox enrichment for read-only projections.
-     * The full availability cascade is isAvailable().
+     * The full availability cascade is isDisponible().
      */
     public function isEnTurno(Agente $agente, \DateTimeImmutable $atUtc): bool
     {
-        if (!$agente->isActive()) {
+        if (!$agente->isActivo()) {
             return false;
         }
 
-        $localTime = $this->utcToLocal($atUtc, $agente->getTimezone());
+        $localTime = $this->utcToLocal($atUtc, $agente->getZonaHoraria());
 
-        return $this->hasTurnoEnHorario($localTime, $agente->getShifts()->toArray());
+        return $this->hasTurnoEnHorario($localTime, $agente->getTurnos()->toArray());
     }
 
     /**

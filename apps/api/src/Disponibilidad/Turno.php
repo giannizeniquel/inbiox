@@ -28,7 +28,7 @@ class Turno
     #[ORM\GeneratedValue]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(targetEntity: Agente::class, inversedBy: 'shifts')]
+    #[ORM\ManyToOne(targetEntity: Agente::class, inversedBy: 'turnos')]
     #[ORM\JoinColumn(name: 'agent_id', referencedColumnName: 'id', onDelete: 'CASCADE', nullable: false)]
     private ?Agente $agente = null;
 

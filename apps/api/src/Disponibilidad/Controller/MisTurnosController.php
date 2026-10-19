@@ -38,7 +38,7 @@ final class MisTurnosController
         }
 
         $turnos = [];
-        foreach ($agente->getShifts() as $turno) {
+        foreach ($agente->getTurnos() as $turno) {
             $turnos[] = [
                 'dayOfWeek' => $turno->getDiaDeLaSemana(),
                 'start' => $turno->getHoraDeInicio()->format('H:i'),

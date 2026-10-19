@@ -21,7 +21,7 @@ final class DeactivateTeamUseCase
 
     public function execute(Equipo $team): void
     {
-        $team->setActive(false);
+        $team->setActivo(false);
         $this->entityManager->flush();
     }
 }

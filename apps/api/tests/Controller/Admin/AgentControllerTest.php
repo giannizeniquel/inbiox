@@ -62,7 +62,7 @@ class AgentControllerTest extends WebTestCase
         $user->setIsActive($isActive);
 
         if (null !== $agent) {
-            $agent->setUser($user);
+            $agent->setUsuario($user);
             $this->em->persist($agent);
         }
 
@@ -402,7 +402,7 @@ class AgentControllerTest extends WebTestCase
 
         $this->em->clear();
         $updatedAgent = $this->em->getRepository(Agente::class)->find($agent->getId());
-        self::assertSame('Europe/Lisbon', $updatedAgent->getTimezone());
+        self::assertSame('Europe/Lisbon', $updatedAgent->getZonaHoraria());
     }
 
     public function testUpdateAgentOmittingTimezoneLeavesItUnchanged(): void
@@ -411,7 +411,7 @@ class AgentControllerTest extends WebTestCase
         $token = $this->login('supervisor@test.local');
 
         $agent = $this->createAgent('Timezone Agent');
-        $agent->setTimezone('Europe/Lisbon');
+        $agent->setZonaHoraria('Europe/Lisbon');
         $this->em->flush();
 
         $this->client->request('PUT', "/api/admin/agents/{$agent->getId()}", [], [], $this->authHeaders($token) + [
@@ -444,7 +444,7 @@ class AgentControllerTest extends WebTestCase
 
         $this->em->clear();
         $unchangedAgent = $this->em->getRepository(Agente::class)->find($agent->getId());
-        self::assertSame('UTC', $unchangedAgent->getTimezone());
+        self::assertSame('UTC', $unchangedAgent->getZonaHoraria());
     }
 
     public function testUpdateAgentWithNonStringTimezoneReturns400(): void
@@ -498,7 +498,7 @@ class AgentControllerTest extends WebTestCase
         $this->em->clear();
         $deletedAgent = $this->em->getRepository(Agente::class)->find($agent->getId());
         self::assertNotNull($deletedAgent, 'Agent must still exist (soft delete)');
-        self::assertFalse($deletedAgent->isActive(), 'Agent must be deactivated');
+        self::assertFalse($deletedAgent->isActivo(), 'Agent must be deactivated');
     }
 
     public function testDeleteNonExistentAgentReturns404(): void

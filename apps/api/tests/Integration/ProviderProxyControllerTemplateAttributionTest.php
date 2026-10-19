@@ -110,7 +110,7 @@ class ProviderProxyControllerTemplateAttributionTest extends WebTestCase
         $this->em->persist($user);
 
         $agent = new Agente('Template Agent');
-        $agent->setUser($user);
+        $agent->setUsuario($user);
         $this->em->persist($agent);
         $this->em->flush();
         $agentId = $agent->getId();

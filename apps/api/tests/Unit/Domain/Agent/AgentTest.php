@@ -21,9 +21,9 @@ class AgentTest extends TestCase
     {
         $agent = new Agente('Support Bot');
 
-        self::assertSame('Support Bot', $agent->getName());
-        self::assertNull($agent->getUser(), 'New agent must have null user');
-        self::assertTrue($agent->isActive());
+        self::assertSame('Support Bot', $agent->getNombre());
+        self::assertNull($agent->getUsuario(), 'New agent must have null user');
+        self::assertTrue($agent->isActivo());
     }
 
     public function testAgentNoEmailProperty(): void
@@ -40,9 +40,9 @@ class AgentTest extends TestCase
         $user->setEmail('agent@inbiox.local');
 
         $agent = new Agente('Linked Agent');
-        $agent->setUser($user);
+        $agent->setUsuario($user);
 
-        self::assertSame($user, $agent->getUser());
+        self::assertSame($user, $agent->getUsuario());
     }
 
     public function testUnlinkUserSetsNull(): void
@@ -51,11 +51,11 @@ class AgentTest extends TestCase
         $user->setEmail('agent@inbiox.local');
 
         $agent = new Agente('Linked Agent');
-        $agent->setUser($user);
-        self::assertNotNull($agent->getUser());
+        $agent->setUsuario($user);
+        self::assertNotNull($agent->getUsuario());
 
-        $agent->setUser(null);
-        self::assertNull($agent->getUser(), 'After unlink, user must be null');
+        $agent->setUsuario(null);
+        self::assertNull($agent->getUsuario(), 'After unlink, user must be null');
     }
 
     public function testUserCanExistWithoutAgent(): void
@@ -69,15 +69,15 @@ class AgentTest extends TestCase
     public function testAgentRemainsFunctionalForTicketAssignment(): void
     {
         $agent = new Agente('Support Bot');
-        $agent->setMaxActiveTickets(10);
-        $agent->setTimezone('UTC');
+        $agent->setMaxTicketsActivos(10);
+        $agent->setZonaHoraria('UTC');
 
-        self::assertSame(10, $agent->getMaxActiveTickets());
-        self::assertSame('UTC', $agent->getTimezone());
-        self::assertTrue($agent->isAvailable());
+        self::assertSame(10, $agent->getMaxTicketsActivos());
+        self::assertSame('UTC', $agent->getZonaHoraria());
+        self::assertTrue($agent->isDisponible());
 
         // Agent can operate without being linked to a user
-        self::assertNull($agent->getUser());
+        self::assertNull($agent->getUsuario());
     }
 
     public function testSetUserReturnsSelfForChaining(): void
@@ -86,7 +86,7 @@ class AgentTest extends TestCase
         $user->setEmail('agent@inbiox.local');
 
         $agent = new Agente('Chained Agent');
-        $result = $agent->setUser($user);
+        $result = $agent->setUsuario($user);
 
         self::assertSame($agent, $result);
     }
@@ -97,7 +97,7 @@ class AgentTest extends TestCase
         $user->setEmail('agent@inbiox.local');
 
         $agent = new Agente('BiDi Agent');
-        $agent->setUser($user);
+        $agent->setUsuario($user);
 
         // User's inverse side maps back to the same agent
         // Note: Doctrine manages the inversedBy — at entity level we set it explicitly
@@ -105,7 +105,7 @@ class AgentTest extends TestCase
         $user->setAgent($agent);
 
         self::assertSame($agent, $user->getAgent());
-        self::assertSame($user, $agent->getUser());
+        self::assertSame($user, $agent->getUsuario());
     }
 
     public function testSetTimezoneRejectsInvalidIana(): void
@@ -115,22 +115,22 @@ class AgentTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Invalid timezone: "Not/AZone"');
 
-        $agent->setTimezone('Not/AZone');
+        $agent->setZonaHoraria('Not/AZone');
     }
 
     public function testAgentKeepsExistingFields(): void
     {
         $agent = new Agente('Existing Fields Agent');
-        $agent->setActive(false);
-        $agent->setAvailable(false);
-        $agent->setMaxActiveTickets(15);
-        $agent->setTimezone('America/New_York');
+        $agent->setActivo(false);
+        $agent->setDisponible(false);
+        $agent->setMaxTicketsActivos(15);
+        $agent->setZonaHoraria('America/New_York');
 
-        self::assertFalse($agent->isActive());
-        self::assertFalse($agent->isAvailable());
-        self::assertSame(15, $agent->getMaxActiveTickets());
-        self::assertSame('America/New_York', $agent->getTimezone());
-        self::assertNotNull($agent->getCreatedAt());
-        self::assertNotNull($agent->getUpdatedAt());
+        self::assertFalse($agent->isActivo());
+        self::assertFalse($agent->isDisponible());
+        self::assertSame(15, $agent->getMaxTicketsActivos());
+        self::assertSame('America/New_York', $agent->getZonaHoraria());
+        self::assertNotNull($agent->getCreadoAt());
+        self::assertNotNull($agent->getActualizadoAt());
     }
 }

@@ -36,7 +36,7 @@ class Workspace
     private \DateTimeImmutable $updatedAt;
 
     /** Inverse side of Agent↔Workspace M:N */
-    #[ORM\ManyToMany(targetEntity: Agente::class, mappedBy: 'workspaces')]
+    #[ORM\ManyToMany(targetEntity: Agente::class, mappedBy: 'espaciosDeTrabajo')]
     private Collection $agents;
 
     public function __construct(string $phoneNumberId, string $displayName)
@@ -109,7 +109,7 @@ class Workspace
     {
         if (!$this->agents->contains($agent)) {
             $this->agents->add($agent);
-            $agent->addWorkspace($this);
+            $agent->addEspacioDeTrabajo($this);
         }
         return $this;
     }
@@ -117,7 +117,7 @@ class Workspace
     public function removeAgent(Agente $agent): self
     {
         if ($this->agents->removeElement($agent)) {
-            $agent->removeWorkspace($this);
+            $agent->removeEspacioDeTrabajo($this);
         }
         return $this;
     }

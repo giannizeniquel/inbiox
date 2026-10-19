@@ -87,7 +87,7 @@ class ProviderProxyControllerResolveAgentTest extends TestCase
         $reflectedId = new \ReflectionProperty($agent, 'id');
         $reflectedId->setAccessible(true);
         $reflectedId->setValue($agent, 42);
-        $agent->setUser($user);
+        $agent->setUsuario($user);
         $user->setAgent($agent);
 
         $agentRepository = $this->createMock(AgenteRepository::class);

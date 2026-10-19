@@ -66,7 +66,7 @@ class ProviderProxyControllerAutoClaimTest extends WebTestCase
         $this->em->persist($user);
 
         $agent = new Agente('Non-Owning Agent');
-        $agent->setUser($user);
+        $agent->setUsuario($user);
         $this->em->persist($agent);
         $this->em->flush();
 

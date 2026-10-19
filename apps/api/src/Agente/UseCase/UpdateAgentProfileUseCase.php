@@ -18,7 +18,7 @@ final class UpdateAgentProfileUseCase
      */
     public function execute(Agente $agent, ?string $signature): void
     {
-        $agent->setSignature($signature);
+        $agent->setFirma($signature);
         $this->entityManager->flush();
     }
 }

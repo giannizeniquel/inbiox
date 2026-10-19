@@ -65,7 +65,7 @@ class WorkspaceAgentControllerTest extends WebTestCase
         $user->setIsActive(true);
 
         if (null !== $agent) {
-            $agent->setUser($user);
+            $agent->setUsuario($user);
             $this->em->persist($agent);
         }
 
@@ -78,7 +78,7 @@ class WorkspaceAgentControllerTest extends WebTestCase
     private function createAgent(string $name = 'Test Agent', bool $active = true): Agente
     {
         $agent = new Agente($name);
-        $agent->setActive($active);
+        $agent->setActivo($active);
         $this->em->persist($agent);
         $this->em->flush();
 
@@ -106,7 +106,7 @@ class WorkspaceAgentControllerTest extends WebTestCase
         \assert($startTime !== false && $endTime !== false);
 
         $shift = new Turno($agent, $dayOfWeek, $startTime, $endTime);
-        $agent->addShift($shift);
+        $agent->addTurno($shift);
         $this->em->persist($shift);
         $this->em->flush();
 
@@ -189,7 +189,7 @@ class WorkspaceAgentControllerTest extends WebTestCase
 
         // Create agent with shift (Monday 08:00-16:00 UTC)
         $agent = $this->createAgent('Agent A');
-        $agent->addWorkspace($workspace);
+        $agent->addEspacioDeTrabajo($workspace);
         $this->createShift($agent, 1, '08:00', '16:00'); // Monday
 
         $this->createUser('agent@test.local', ['ROLE_AGENT'], $agent);
@@ -219,8 +219,8 @@ class WorkspaceAgentControllerTest extends WebTestCase
 
         // Agent explicitly Inactivo via override (deterministic, no shift needed)
         $agent = $this->createAgent('Agent A');
-        $agent->addWorkspace($workspace);
-        $agent->setIsAvailableOverride(false);
+        $agent->addEspacioDeTrabajo($workspace);
+        $agent->setDisponibilidadManual(false);
         $this->em->flush();
 
         $this->createUser('agent@test.local', ['ROLE_AGENT'], $agent);
@@ -242,7 +242,7 @@ class WorkspaceAgentControllerTest extends WebTestCase
 
         // Agent with active=false must never appear, regardless of shift/override
         $agent = $this->createAgent('Agent A', active: false);
-        $agent->addWorkspace($workspace);
+        $agent->addEspacioDeTrabajo($workspace);
         $this->em->flush();
 
         $requester = $this->createAgent('Requester');

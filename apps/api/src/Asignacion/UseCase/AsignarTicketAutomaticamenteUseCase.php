@@ -129,7 +129,7 @@ final class AsignarTicketAutomaticamenteUseCase
 
         foreach ($agentesDisponibles as $agente) {
             $cantidadDeActivos = $this->ticketRepo->countActivosDeAgente((int) $agente->getId());
-            if ($cantidadDeActivos >= $agente->getMaxActiveTickets()) {
+            if ($cantidadDeActivos >= $agente->getMaxTicketsActivos()) {
                 continue; // at capacity — skip
             }
 

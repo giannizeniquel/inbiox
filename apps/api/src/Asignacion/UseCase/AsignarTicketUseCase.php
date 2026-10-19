@@ -89,11 +89,11 @@ class AsignarTicketUseCase
             // Capacity is never checked here — only account-active + override/shift.
             $isActivoAhora = $this->disponibilidadDeAgenteService->isActivoAhora(
                 $agente,
-                $agente->getShifts()->toArray(),
+                $agente->getTurnos()->toArray(),
                 new \DateTimeImmutable('now', new \DateTimeZone('UTC')),
             );
             if (!$isActivoAhora) {
-                throw AgenteInactivoException::paraAgente($agenteId, $agente->getName());
+                throw AgenteInactivoException::paraAgente($agenteId, $agente->getNombre());
             }
 
             // Detect assignment type from current ownership
@@ -124,7 +124,7 @@ class AsignarTicketUseCase
                 'assignment_id' => $asignacion->getId(),
                 'ticket_id' => $ticket->getId(),
                 'agent_id' => $asignacion->getAgenteId(),
-                'agent_name' => $agente->getName(),
+                'agent_name' => $agente->getNombre(),
                 'assigned_by' => $asignacion->getAsignadoPor(),
                 'assigned_at' => $asignacion->getAsignadoAt()->format('Y-m-d H:i:s'),
                 'ticket_status' => $ticket->getEstado(),

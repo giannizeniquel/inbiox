@@ -23,31 +23,31 @@ class Equipo
 
     #[ORM\ManyToOne(targetEntity: Workspace::class)]
     #[ORM\JoinColumn(name: 'workspace_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
-    private Workspace $workspace;
+    private Workspace $espacioDeTrabajo;
 
     #[ORM\Column(name: 'name', type: Types::STRING, length: 255)]
-    private string $name;
+    private string $nombre;
 
     #[ORM\Column(name: 'is_active', type: Types::BOOLEAN, options: ['default' => true])]
-    private bool $isActive = true;
+    private bool $activo = true;
 
     #[ORM\Column(name: 'created_at', type: Types::DATETIME_IMMUTABLE)]
-    private \DateTimeImmutable $createdAt;
+    private \DateTimeImmutable $creadoAt;
 
     #[ORM\Column(name: 'updated_at', type: Types::DATETIME_IMMUTABLE)]
-    private \DateTimeImmutable $updatedAt;
+    private \DateTimeImmutable $actualizadoAt;
 
     /** Inverse side of Agent↔Team M:N */
-    #[ORM\ManyToMany(targetEntity: Agente::class, mappedBy: 'teams')]
-    private Collection $agents;
+    #[ORM\ManyToMany(targetEntity: Agente::class, mappedBy: 'equipos')]
+    private Collection $agentes;
 
     public function __construct(Workspace $workspace, string $name)
     {
-        $this->workspace = $workspace;
-        $this->name = $name;
-        $this->agents = new ArrayCollection();
-        $this->createdAt = new \DateTimeImmutable();
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->espacioDeTrabajo = $workspace;
+        $this->nombre = $name;
+        $this->agentes = new ArrayCollection();
+        $this->creadoAt = new \DateTimeImmutable();
+        $this->actualizadoAt = new \DateTimeImmutable();
     }
 
     public function getId(): ?int
@@ -55,49 +55,49 @@ class Equipo
         return $this->id;
     }
 
-    public function getWorkspace(): Workspace
+    public function getEspacioDeTrabajo(): Workspace
     {
-        return $this->workspace;
+        return $this->espacioDeTrabajo;
     }
 
-    public function getName(): string
+    public function getNombre(): string
     {
-        return $this->name;
+        return $this->nombre;
     }
 
-    public function setName(string $name): self
+    public function setNombre(string $name): self
     {
-        $this->name = $name;
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->nombre = $name;
+        $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
 
-    public function isActive(): bool
+    public function isActivo(): bool
     {
-        return $this->isActive;
+        return $this->activo;
     }
 
-    public function setActive(bool $isActive): self
+    public function setActivo(bool $isActive): self
     {
-        $this->isActive = $isActive;
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->activo = $isActive;
+        $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
 
-    public function getCreatedAt(): \DateTimeImmutable
+    public function getCreadoAt(): \DateTimeImmutable
     {
-        return $this->createdAt;
+        return $this->creadoAt;
     }
 
-    public function getUpdatedAt(): \DateTimeImmutable
+    public function getActualizadoAt(): \DateTimeImmutable
     {
-        return $this->updatedAt;
+        return $this->actualizadoAt;
     }
 
     /** @return Collection<int, Agente> */
-    public function getAgents(): Collection
+    public function getAgentes(): Collection
     {
-        return $this->agents;
+        return $this->agentes;
     }
 
     /**
@@ -113,28 +113,28 @@ class Equipo
      *
      * @throws \InvalidArgumentException if the agent is not a member of the team's workspace
      */
-    public function addAgent(Agente $agent): self
+    public function addAgente(Agente $agent): self
     {
-        if (!$agent->getWorkspaces()->contains($this->workspace)) {
+        if (!$agent->getEspaciosDeTrabajo()->contains($this->espacioDeTrabajo)) {
             throw new \InvalidArgumentException(sprintf(
                 'Agent %d does not belong to workspace %d of team "%s"',
                 $agent->getId() ?? 0,
-                $this->workspace->getId() ?? 0,
-                $this->name
+                $this->espacioDeTrabajo->getId() ?? 0,
+                $this->nombre
             ));
         }
 
-        if (!$this->agents->contains($agent)) {
-            $this->agents->add($agent);
-            $agent->addTeam($this);
+        if (!$this->agentes->contains($agent)) {
+            $this->agentes->add($agent);
+            $agent->addEquipo($this);
         }
         return $this;
     }
 
-    public function removeAgent(Agente $agent): self
+    public function removeAgente(Agente $agent): self
     {
-        if ($this->agents->removeElement($agent)) {
-            $agent->removeTeam($this);
+        if ($this->agentes->removeElement($agent)) {
+            $agent->removeEquipo($this);
         }
         return $this;
     }

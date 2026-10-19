@@ -19,10 +19,10 @@ final class UpdateNotificationPreferencesUseCase
     public function execute(Agente $agent, ?bool $sound, ?bool $desktop): void
     {
         if ($sound !== null) {
-            $agent->setNotificationSound($sound);
+            $agent->setSonidoDeNotificacion($sound);
         }
         if ($desktop !== null) {
-            $agent->setDesktopNotifications($desktop);
+            $agent->setNotificacionesDeEscritorio($desktop);
         }
 
         $this->entityManager->flush();

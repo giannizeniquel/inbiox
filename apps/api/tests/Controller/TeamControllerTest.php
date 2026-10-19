@@ -62,7 +62,7 @@ class TeamControllerTest extends WebTestCase
         $user->setIsActive(true);
 
         if (null !== $agent) {
-            $agent->setUser($user);
+            $agent->setUsuario($user);
             $this->em->persist($agent);
         }
 
@@ -93,7 +93,7 @@ class TeamControllerTest extends WebTestCase
     private function createTeam(Workspace $workspace, string $name, bool $active = true): Equipo
     {
         $team = new Equipo($workspace, $name);
-        $team->setActive($active);
+        $team->setActivo($active);
         $this->em->persist($team);
         $this->em->flush();
 
@@ -140,7 +140,7 @@ class TeamControllerTest extends WebTestCase
         $this->createTeam($workspaceB, 'Support B'); // must NOT appear
 
         $agent = $this->createAgent('Agent A');
-        $agent->addWorkspace($workspaceA);
+        $agent->addEspacioDeTrabajo($workspaceA);
         $this->createUser('agent@test.local', ['ROLE_AGENT'], $agent);
         $token = $this->login('agent@test.local');
 
@@ -176,7 +176,7 @@ class TeamControllerTest extends WebTestCase
         $team = $this->createTeam($workspace, 'Legacy Team', active: false);
 
         $agent = $this->createAgent('Agent A');
-        $agent->addWorkspace($workspace);
+        $agent->addEspacioDeTrabajo($workspace);
         $this->createUser('agent2@test.local', ['ROLE_AGENT'], $agent);
         $token = $this->login('agent2@test.local');
 

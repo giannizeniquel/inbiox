@@ -78,7 +78,7 @@ class Sprint10AgentManagementTest extends WebTestCase
         $user->setIsActive(true);
 
         if (null !== $agent) {
-            $agent->setUser($user);
+            $agent->setUsuario($user);
             $this->em->persist($agent);
         }
 
@@ -131,8 +131,8 @@ class Sprint10AgentManagementTest extends WebTestCase
     {
         // 1. Create an agent
         $agent = new Agente('Test Agent');
-        $agent->setMaxActiveTickets(5);
-        $agent->setTimezone('UTC');
+        $agent->setMaxTicketsActivos(5);
+        $agent->setZonaHoraria('UTC');
         $this->em->persist($agent);
         $this->em->flush();
 
@@ -213,8 +213,8 @@ class Sprint10AgentManagementTest extends WebTestCase
         $agents = [];
         for ($i = 1; $i <= 3; $i++) {
             $agent = new Agente("Agent $i");
-            $agent->setMaxActiveTickets(10);
-            $agent->setTimezone('UTC');
+            $agent->setMaxTicketsActivos(10);
+            $agent->setZonaHoraria('UTC');
             $this->em->persist($agent);
             $this->em->flush();
             $agents[] = $agent;
@@ -274,13 +274,13 @@ class Sprint10AgentManagementTest extends WebTestCase
     {
         // Create 2 agents
         $agentLow = new Agente('Low Load');
-        $agentLow->setMaxActiveTickets(10);
-        $agentLow->setTimezone('UTC');
+        $agentLow->setMaxTicketsActivos(10);
+        $agentLow->setZonaHoraria('UTC');
         $this->em->persist($agentLow);
 
         $agentHigh = new Agente('High Load');
-        $agentHigh->setMaxActiveTickets(10);
-        $agentHigh->setTimezone('UTC');
+        $agentHigh->setMaxTicketsActivos(10);
+        $agentHigh->setZonaHoraria('UTC');
         $this->em->persist($agentHigh);
         $this->em->flush();
 
@@ -330,8 +330,8 @@ class Sprint10AgentManagementTest extends WebTestCase
     {
         // Create an agent but with max_active_tickets = 0 (impossible via setter, so...)
         $agent = new Agente('Full Agent');
-        $agent->setMaxActiveTickets(1);
-        $agent->setTimezone('UTC');
+        $agent->setMaxTicketsActivos(1);
+        $agent->setZonaHoraria('UTC');
         $this->em->persist($agent);
         $this->em->flush();
 
@@ -381,8 +381,8 @@ class Sprint10AgentManagementTest extends WebTestCase
     public function testAlreadyAssignedTicketIsIdempotent(): void
     {
         $agent = new Agente('Owner');
-        $agent->setMaxActiveTickets(5);
-        $agent->setTimezone('UTC');
+        $agent->setMaxTicketsActivos(5);
+        $agent->setZonaHoraria('UTC');
         $this->em->persist($agent);
         $this->em->flush();
 
@@ -439,14 +439,14 @@ class Sprint10AgentManagementTest extends WebTestCase
     public function testAssignRejectsInactiveAgentForRoleAgent(): void
     {
         $ownerAgent = new Agente('Owner Agent');
-        $ownerAgent->setMaxActiveTickets(5);
+        $ownerAgent->setMaxTicketsActivos(5);
         $this->em->persist($ownerAgent);
         $this->em->flush();
         $this->createUser('owner@test.local', ['ROLE_AGENT'], $ownerAgent);
         $token = $this->login('owner@test.local');
 
         $inactiveAgent = new Agente('Inactivo Agent');
-        $inactiveAgent->setIsAvailableOverride(false);
+        $inactiveAgent->setDisponibilidadManual(false);
         $this->em->persist($inactiveAgent);
         $this->em->flush();
 
@@ -471,7 +471,7 @@ class Sprint10AgentManagementTest extends WebTestCase
         $token = $this->login('supervisor@test.local');
 
         $inactiveAgent = new Agente('Inactivo Agent');
-        $inactiveAgent->setIsAvailableOverride(false);
+        $inactiveAgent->setDisponibilidadManual(false);
         $this->em->persist($inactiveAgent);
         $this->em->flush();
 
@@ -494,7 +494,7 @@ class Sprint10AgentManagementTest extends WebTestCase
         $token = $this->login('admin@test.local');
 
         $inactiveAgent = new Agente('Inactivo Agent');
-        $inactiveAgent->setIsAvailableOverride(false);
+        $inactiveAgent->setDisponibilidadManual(false);
         $this->em->persist($inactiveAgent);
         $this->em->flush();
 
@@ -517,7 +517,7 @@ class Sprint10AgentManagementTest extends WebTestCase
         $token = $this->login('supervisor@test.local');
 
         $activeAgent = new Agente('Activo Agent');
-        $activeAgent->setIsAvailableOverride(true);
+        $activeAgent->setDisponibilidadManual(true);
         $this->em->persist($activeAgent);
         $this->em->flush();
 
@@ -540,7 +540,7 @@ class Sprint10AgentManagementTest extends WebTestCase
         $token = $this->login('admin@test.local');
 
         $inactiveAgent = new Agente('Inactivo Agent');
-        $inactiveAgent->setIsAvailableOverride(false);
+        $inactiveAgent->setDisponibilidadManual(false);
         $this->em->persist($inactiveAgent);
         $this->em->flush();
 

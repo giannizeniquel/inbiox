@@ -164,7 +164,7 @@ final class TeamController
 
         $assignedIds = array_map(
             fn(Agente $a) => (int) $a->getId(),
-            $team->getAgents()->toArray()
+            $team->getAgentes()->toArray()
         );
 
         return new JsonResponse([
@@ -179,19 +179,19 @@ final class TeamController
     private function serializeTeam(Equipo $team): array
     {
         $agentIds = [];
-        foreach ($team->getAgents() as $agent) {
+        foreach ($team->getAgentes() as $agent) {
             $agentIds[] = (int) $agent->getId();
         }
 
         return [
             'id' => (int) $team->getId(),
-            'workspace_id' => (int) $team->getWorkspace()->getId(),
-            'name' => $team->getName(),
-            'is_active' => $team->isActive(),
+            'workspace_id' => (int) $team->getEspacioDeTrabajo()->getId(),
+            'name' => $team->getNombre(),
+            'is_active' => $team->isActivo(),
             'agent_count' => count($agentIds),
             'agent_ids' => $agentIds,
-            'created_at' => $team->getCreatedAt()->format('Y-m-d\TH:i:sP'),
-            'updated_at' => $team->getUpdatedAt()->format('Y-m-d\TH:i:sP'),
+            'created_at' => $team->getCreadoAt()->format('Y-m-d\TH:i:sP'),
+            'updated_at' => $team->getActualizadoAt()->format('Y-m-d\TH:i:sP'),
         ];
     }
 }

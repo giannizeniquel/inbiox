@@ -74,7 +74,7 @@ class TicketClosureAuditClassificationTest extends WebTestCase
         $this->em->persist($user);
 
         if ($agent !== null) {
-            $agent->setUser($user);
+            $agent->setUsuario($user);
             $this->em->persist($agent);
         }
 

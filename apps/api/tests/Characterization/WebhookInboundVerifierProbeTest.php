@@ -489,9 +489,9 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
     public function testAFailingAutoReplySendStillStoresTheInboundMessage(): void
     {
         $agent = new Agente('Ausente');
-        $agent->setAutoReplyEnabled(true);
-        $agent->setAutoReplyMessage('Ya te respondemos');
-        $agent->addWorkspace($this->createWorkspace(self::PNID));
+        $agent->setRespuestaAutomaticaActiva(true);
+        $agent->setMensajeDeRespuestaAutomatica('Ya te respondemos');
+        $agent->addEspacioDeTrabajo($this->createWorkspace(self::PNID));
         $this->em->persist($agent);
         $this->em->flush();
         $this->graph->expects(self::once())->method('sendMessage')->willThrowException(new GraphApiException('Window closed', 131047));

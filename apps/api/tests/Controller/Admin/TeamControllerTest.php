@@ -69,7 +69,7 @@ class TeamControllerTest extends WebTestCase
         $user->setIsActive(true);
 
         if (null !== $agent) {
-            $agent->setUser($user);
+            $agent->setUsuario($user);
             $this->em->persist($agent);
         }
 
@@ -362,7 +362,7 @@ class TeamControllerTest extends WebTestCase
         $this->em->clear();
         $deactivated = $this->em->getRepository(Equipo::class)->find($team->getId());
         self::assertNotNull($deactivated, 'Team must still exist (soft delete)');
-        self::assertFalse($deactivated->isActive(), 'Team must be deactivated');
+        self::assertFalse($deactivated->isActivo(), 'Team must be deactivated');
     }
 
     public function testDeactivateTeamRetainsTicketAttribution(): void
@@ -407,9 +407,9 @@ class TeamControllerTest extends WebTestCase
         $team = $this->createTeam($workspace, 'Support');
 
         $agentA = $this->createAgent('Agent A');
-        $agentA->addWorkspace($workspace);
+        $agentA->addEspacioDeTrabajo($workspace);
         $agentB = $this->createAgent('Agent B');
-        $agentB->addWorkspace($workspace);
+        $agentB->addEspacioDeTrabajo($workspace);
         $this->em->flush();
 
         $this->client->request('PUT', "/api/admin/teams/{$team->getId()}/agents", [], [], $this->authHeaders($token) + [
@@ -434,9 +434,9 @@ class TeamControllerTest extends WebTestCase
         $team = $this->createTeam($workspaceA, 'Support');
 
         $agentInWorkspace = $this->createAgent('Agent In');
-        $agentInWorkspace->addWorkspace($workspaceA);
+        $agentInWorkspace->addEspacioDeTrabajo($workspaceA);
         $agentOutsideWorkspace = $this->createAgent('Agent Out');
-        $agentOutsideWorkspace->addWorkspace($workspaceB);
+        $agentOutsideWorkspace->addEspacioDeTrabajo($workspaceB);
         $this->em->flush();
 
         $this->client->request('PUT', "/api/admin/teams/{$team->getId()}/agents", [], [], $this->authHeaders($token) + [
@@ -448,6 +448,6 @@ class TeamControllerTest extends WebTestCase
         // Zero rows written — all-or-nothing rollback
         $this->em->clear();
         $reloadedTeam = $this->em->getRepository(Equipo::class)->find($team->getId());
-        self::assertCount(0, $reloadedTeam->getAgents(), 'No partial membership must be applied on rejection');
+        self::assertCount(0, $reloadedTeam->getAgentes(), 'No partial membership must be applied on rejection');
     }
 }

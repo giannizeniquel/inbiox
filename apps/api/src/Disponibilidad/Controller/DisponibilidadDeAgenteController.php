@@ -136,7 +136,7 @@ class DisponibilidadDeAgenteController
         }
 
         $nowUtc = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-        $localTz = new \DateTimeZone($agente->getTimezone());
+        $localTz = new \DateTimeZone($agente->getZonaHoraria());
         $localNow = $nowUtc->setTimezone($localTz);
 
         $isDisponible = $this->disponibilidadDeAgenteService->isDisponible($agente, $nowUtc);
@@ -150,11 +150,11 @@ class DisponibilidadDeAgenteController
         $disponibilidadManual = null;
         $disponibilidadManualVenceAt = null;
 
-        if ($agente->getIsAvailableOverride() !== null) {
-            if ($agente->getOverrideUntil() === null || $agente->getOverrideUntil() >= $nowUtc) {
+        if ($agente->getDisponibilidadManual() !== null) {
+            if ($agente->getDisponibilidadManualHasta() === null || $agente->getDisponibilidadManualHasta() >= $nowUtc) {
                 $disponibilidadManualActiva = true;
-                $disponibilidadManual = $agente->getIsAvailableOverride();
-                $disponibilidadManualVenceAt = $agente->getOverrideUntil()?->format('Y-m-d\TH:i:s\Z');
+                $disponibilidadManual = $agente->getDisponibilidadManual();
+                $disponibilidadManualVenceAt = $agente->getDisponibilidadManualHasta()?->format('Y-m-d\TH:i:s\Z');
             }
         }
 
@@ -162,9 +162,9 @@ class DisponibilidadDeAgenteController
             'agent_id'     => $id,
             'is_available' => $isDisponible,
             'is_in_shift'  => $isEnTurno,
-            'timezone'     => $agente->getTimezone(),
+            'timezone'     => $agente->getZonaHoraria(),
             'current_load' => $cargaActual,
-            'max_capacity' => $agente->getMaxActiveTickets(),
+            'max_capacity' => $agente->getMaxTicketsActivos(),
             'override'     => [
                 'active'       => $disponibilidadManualActiva,
                 'is_available' => $disponibilidadManual,
@@ -291,7 +291,7 @@ class DisponibilidadDeAgenteController
         $dow = (int) $localDateTime->format('N');
         $time = $localDateTime->format('H:i:s');
 
-        foreach ($agente->getShifts() as $turno) {
+        foreach ($agente->getTurnos() as $turno) {
             $horaDeInicio = $turno->getHoraDeInicio()->format('H:i:s');
             $horaDeFin = $turno->getHoraDeFin()->format('H:i:s');
 

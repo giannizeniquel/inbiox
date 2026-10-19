@@ -75,7 +75,7 @@ class SettingsPageTest extends WebTestCase
         $this->em->flush();
 
         $agent = new Agente('Settings Agent');
-        $agent->setUser($user);
+        $agent->setUsuario($user);
         $this->em->persist($agent);
         $this->em->flush();
 

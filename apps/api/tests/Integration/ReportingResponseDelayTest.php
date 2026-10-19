@@ -83,8 +83,8 @@ class ReportingResponseDelayTest extends WebTestCase
     private function createAgent(string $name): Agente
     {
         $agent = new Agente($name);
-        $agent->setMaxActiveTickets(10);
-        $agent->setActive(true);
+        $agent->setMaxTicketsActivos(10);
+        $agent->setActivo(true);
         $this->em->persist($agent);
         $this->em->flush();
 
@@ -177,7 +177,7 @@ class ReportingResponseDelayTest extends WebTestCase
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
         $user->setRoles(['ROLE_AGENT']);
         $user->setIsActive(true);
-        $agent->setUser($user);
+        $agent->setUsuario($user);
         $this->em->persist($agent);
         $this->em->persist($user);
         $this->em->flush();

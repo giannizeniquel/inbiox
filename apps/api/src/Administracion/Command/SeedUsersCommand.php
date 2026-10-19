@@ -57,11 +57,11 @@ final class SeedUsersCommand extends Command
 
             // Admin gets an Agent so workspace switcher works
             $agent = new Agente($a['email']);
-            $agent->setUser($user);
+            $agent->setUsuario($user);
             $user->setAgent($agent);
-            $agent->addWorkspace($ws1);
-            $agent->addWorkspace($ws2);
-            $agent->setActiveWorkspace($ws1);
+            $agent->addEspacioDeTrabajo($ws1);
+            $agent->addEspacioDeTrabajo($ws2);
+            $agent->setEspacioDeTrabajoActivo($ws1);
 
             $this->em->persist($user);
             $this->em->persist($agent);
@@ -81,11 +81,11 @@ final class SeedUsersCommand extends Command
 
             // Supervisor gets an Agent so workspace switcher works
             $agent = new Agente($s['email']);
-            $agent->setUser($user);
+            $agent->setUsuario($user);
             $user->setAgent($agent);
-            $agent->addWorkspace($ws1);
-            $agent->addWorkspace($ws2);
-            $agent->setActiveWorkspace($ws1);
+            $agent->addEspacioDeTrabajo($ws1);
+            $agent->addEspacioDeTrabajo($ws2);
+            $agent->setEspacioDeTrabajoActivo($ws1);
 
             $this->em->persist($user);
             $this->em->persist($agent);
@@ -108,13 +108,13 @@ final class SeedUsersCommand extends Command
             $user->setRoles(['ROLE_AGENT']);
 
             $agent = new Agente($a['name']);
-            $agent->setUser($user);
+            $agent->setUsuario($user);
             $user->setAgent($agent);
 
             foreach ($a['ws'] as $ws) {
-                $agent->addWorkspace($ws);
+                $agent->addEspacioDeTrabajo($ws);
             }
-            $agent->setActiveWorkspace($a['active']);
+            $agent->setEspacioDeTrabajoActivo($a['active']);
 
             $this->em->persist($user);
             $this->em->persist($agent);

@@ -18,13 +18,13 @@ final class UnlinkUserFromAgentUseCase
      */
     public function execute(Agente $agent): void
     {
-        $user = $agent->getUser();
+        $user = $agent->getUsuario();
 
         if (null === $user) {
             throw new \InvalidArgumentException('Agent has no linked user');
         }
 
-        $agent->setUser(null);
+        $agent->setUsuario(null);
         $user->setAgent(null);
         $this->entityManager->flush();
     }

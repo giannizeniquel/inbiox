@@ -104,7 +104,7 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
             "UPDATE tickets SET phone_number_id = 'char-rep-ws' WHERE status = 'active'",
         );
         $agent = $this->createAgent('Scoped');
-        $agent->setActiveWorkspace($workspace);
+        $agent->setEspacioDeTrabajoActivo($workspace);
         $token = $this->loginAs('reports-agent@characterization.local', ['ROLE_AGENT'], $agent);
 
         $response = $this->request('GET', '/api/reports/counts?' . self::WINDOW, $token);
@@ -159,7 +159,7 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
         // whole day, so one per weekday keeps the agent in shift at any time.
         foreach (range(1, 7) as $dayOfWeek) {
             $shift = new Turno($this->owner, $dayOfWeek, new \DateTimeImmutable('00:00:00'), new \DateTimeImmutable('00:00:00'));
-            $this->owner->addShift($shift);
+            $this->owner->addTurno($shift);
             $this->em->persist($shift);
         }
         $this->em->flush();
@@ -245,8 +245,8 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
     public function testAvailableAgentsForASupervisor(): void
     {
         $this->seedTickets();
-        $this->owner->setIsAvailableOverride(true);
-        $this->createAgent('Off Override')->setIsAvailableOverride(false);
+        $this->owner->setDisponibilidadManual(true);
+        $this->createAgent('Off Override')->setDisponibilidadManual(false);
         $this->em->flush();
         $token = $this->supervisorToken();
 
@@ -261,14 +261,14 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
     public function testAvailableAgentsAreFilteredByTheAgentsActiveWorkspace(): void
     {
         $this->seedTickets();
-        $this->owner->setIsAvailableOverride(true);
+        $this->owner->setDisponibilidadManual(true);
         $workspace = $this->createWorkspace('char-rep-avail', 'Reports');
         $member = $this->createAgent('Workspace Member');
-        $member->setIsAvailableOverride(true);
-        $member->addWorkspace($workspace);
+        $member->setDisponibilidadManual(true);
+        $member->addEspacioDeTrabajo($workspace);
         $viewer = $this->createAgent('Viewer');
-        $viewer->addWorkspace($workspace);
-        $viewer->setActiveWorkspace($workspace);
+        $viewer->addEspacioDeTrabajo($workspace);
+        $viewer->setEspacioDeTrabajoActivo($workspace);
         $this->em->flush();
         $token = $this->loginAs('reports-avail@characterization.local', ['ROLE_AGENT'], $viewer);
 

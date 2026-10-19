@@ -24,23 +24,23 @@ class TeamTest extends TestCase
         $workspace = new Workspace('+1000000000', 'Workspace A');
         $team = new Equipo($workspace, 'Support');
 
-        self::assertTrue($team->isActive(), 'New team must default to active');
-        self::assertSame($workspace, $team->getWorkspace());
-        self::assertSame('Support', $team->getName());
-        self::assertCount(0, $team->getAgents());
+        self::assertTrue($team->isActivo(), 'New team must default to active');
+        self::assertSame($workspace, $team->getEspacioDeTrabajo());
+        self::assertSame('Support', $team->getNombre());
+        self::assertCount(0, $team->getAgentes());
     }
 
     public function testAddAgentAlreadyInTeamWorkspaceSucceeds(): void
     {
         $workspace = new Workspace('+1000000000', 'Workspace A');
         $agent = new Agente('Agent A');
-        $agent->addWorkspace($workspace);
+        $agent->addEspacioDeTrabajo($workspace);
 
         $team = new Equipo($workspace, 'Support');
-        $team->addAgent($agent);
+        $team->addAgente($agent);
 
-        self::assertTrue($team->getAgents()->contains($agent));
-        self::assertTrue($agent->getTeams()->contains($team), 'Agent inverse side must be updated');
+        self::assertTrue($team->getAgentes()->contains($agent));
+        self::assertTrue($agent->getEquipos()->contains($team), 'Agent inverse side must be updated');
     }
 
     public function testAddAgentOutsideTeamWorkspaceThrows(): void
@@ -49,12 +49,12 @@ class TeamTest extends TestCase
         $workspaceB = new Workspace('+2000000000', 'Workspace B');
 
         $agent = new Agente('Agent B');
-        $agent->addWorkspace($workspaceB); // agent belongs to B, not A
+        $agent->addEspacioDeTrabajo($workspaceB); // agent belongs to B, not A
 
         $team = new Equipo($workspaceA, 'Support');
 
         $this->expectException(\InvalidArgumentException::class);
-        $team->addAgent($agent);
+        $team->addAgente($agent);
     }
 
     public function testAddAgentOutsideTeamWorkspaceCreatesNoMembership(): void
@@ -63,32 +63,32 @@ class TeamTest extends TestCase
         $workspaceB = new Workspace('+2000000000', 'Workspace B');
 
         $agent = new Agente('Agent B');
-        $agent->addWorkspace($workspaceB);
+        $agent->addEspacioDeTrabajo($workspaceB);
 
         $team = new Equipo($workspaceA, 'Support');
 
         try {
-            $team->addAgent($agent);
+            $team->addAgente($agent);
         } catch (\InvalidArgumentException) {
             // expected
         }
 
-        self::assertFalse($team->getAgents()->contains($agent), 'No membership row must be created on rejection');
-        self::assertFalse($agent->getTeams()->contains($team), 'Agent inverse side must not be updated on rejection');
+        self::assertFalse($team->getAgentes()->contains($agent), 'No membership row must be created on rejection');
+        self::assertFalse($agent->getEquipos()->contains($team), 'Agent inverse side must not be updated on rejection');
     }
 
     public function testRemoveAgentUpdatesBothSides(): void
     {
         $workspace = new Workspace('+1000000000', 'Workspace A');
         $agent = new Agente('Agent A');
-        $agent->addWorkspace($workspace);
+        $agent->addEspacioDeTrabajo($workspace);
 
         $team = new Equipo($workspace, 'Support');
-        $team->addAgent($agent);
-        $team->removeAgent($agent);
+        $team->addAgente($agent);
+        $team->removeAgente($agent);
 
-        self::assertFalse($team->getAgents()->contains($agent));
-        self::assertFalse($agent->getTeams()->contains($team));
+        self::assertFalse($team->getAgentes()->contains($agent));
+        self::assertFalse($agent->getEquipos()->contains($team));
     }
 
     public function testSetActiveTogglesFlag(): void
@@ -96,7 +96,7 @@ class TeamTest extends TestCase
         $workspace = new Workspace('+1000000000', 'Workspace A');
         $team = new Equipo($workspace, 'Support');
 
-        $team->setActive(false);
-        self::assertFalse($team->isActive());
+        $team->setActivo(false);
+        self::assertFalse($team->isActivo());
     }
 }

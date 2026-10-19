@@ -53,7 +53,7 @@ final class SetActiveWorkspaceUseCase
 
         if ($canUseAnyWorkspace) {
             $agent = $this->ensureAgentForUser->execute($user);
-            $agent->setActiveWorkspace($workspace);
+            $agent->setEspacioDeTrabajoActivo($workspace);
             $this->entityManager->flush();
 
             return $workspace;
@@ -64,11 +64,11 @@ final class SetActiveWorkspaceUseCase
             throw new NotFoundException('Agent not found');
         }
 
-        if (!$agent->getWorkspaces()->contains($workspace)) {
+        if (!$agent->getEspaciosDeTrabajo()->contains($workspace)) {
             throw new WorkspaceNotAssignedException('Agent is not assigned to this workspace');
         }
 
-        $agent->setActiveWorkspace($workspace);
+        $agent->setEspacioDeTrabajoActivo($workspace);
         $this->entityManager->flush();
 
         return $workspace;

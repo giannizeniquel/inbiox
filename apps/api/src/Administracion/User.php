@@ -39,7 +39,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(name: 'updated_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
 
-    #[ORM\OneToOne(mappedBy: 'user', targetEntity: Agente::class)]
+    #[ORM\OneToOne(mappedBy: 'usuario', targetEntity: Agente::class)]
     private ?Agente $agent = null;
 
     public function __construct()

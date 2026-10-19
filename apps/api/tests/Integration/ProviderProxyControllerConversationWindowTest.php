@@ -66,7 +66,7 @@ class ProviderProxyControllerConversationWindowTest extends WebTestCase
         $this->em->persist($user);
 
         $agent = new Agente('Window Test Agent');
-        $agent->setUser($user);
+        $agent->setUsuario($user);
         $this->em->persist($agent);
         $this->em->flush();
 

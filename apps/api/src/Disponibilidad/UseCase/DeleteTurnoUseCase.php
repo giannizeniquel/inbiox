@@ -69,7 +69,7 @@ final class DeleteTurnoUseCase
             $horaDeFin = $turno->getHoraDeFin()->format('H:i');
 
             // 3. Remove shift
-            $agente->removeShift($turno);
+            $agente->removeTurno($turno);
             $this->em->remove($turno);
 
             // 4. Persist

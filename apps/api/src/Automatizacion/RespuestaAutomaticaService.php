@@ -79,11 +79,11 @@ final class RespuestaAutomaticaService
         }
 
         // 2. Check auto-reply is enabled and has a message
-        if (!$agente->isAutoReplyEnabled()) {
+        if (!$agente->isRespuestaAutomaticaActiva()) {
             return;
         }
 
-        $mensajeDeRespuestaAutomatica = $agente->getAutoReplyMessage();
+        $mensajeDeRespuestaAutomatica = $agente->getMensajeDeRespuestaAutomatica();
         if ($mensajeDeRespuestaAutomatica === null || \trim($mensajeDeRespuestaAutomatica) === '') {
             return;
         }
@@ -189,7 +189,7 @@ final class RespuestaAutomaticaService
                 direction: MessageDirection::OUTBOUND,
                 messageId: (int) $mensajeSaliente->getId(),
                 content: $mensajeDeRespuestaAutomatica,
-                senderName: $agente->getName(),
+                senderName: $agente->getNombre(),
             ));
         }
 
@@ -213,7 +213,7 @@ final class RespuestaAutomaticaService
 
         if ($agenteAsignadoId !== null) {
             $agente = $this->agentRepo->findById($agenteAsignadoId);
-            if ($agente !== null && $agente->isActive()) {
+            if ($agente !== null && $agente->isActivo()) {
                 return $agente;
             }
         }
@@ -221,12 +221,12 @@ final class RespuestaAutomaticaService
         // Fallback: find first active agent with auto_reply_enabled
         // Use the ticket's phoneNumberId to scope to the right workspace
         $phoneNumberId = $ticket->getPhoneNumberId();
-        $agentesActivos = $this->agentRepo->findAllActive();
+        $agentesActivos = $this->agentRepo->findActivos();
         foreach ($agentesActivos as $candidato) {
-            if ($candidato->isAutoReplyEnabled()) {
+            if ($candidato->isRespuestaAutomaticaActiva()) {
                 // Check if this agent is in a workspace matching the ticket's phoneNumberId
                 if ($phoneNumberId !== null) {
-                    foreach ($candidato->getWorkspaces() as $ws) {
+                    foreach ($candidato->getEspaciosDeTrabajo() as $ws) {
                         if ($ws->getPhoneNumberId() === $phoneNumberId) {
                             return $candidato;
                         }

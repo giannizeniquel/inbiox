@@ -29,7 +29,7 @@ class WorkspaceScopeTest extends TestCase
         $workspace->method('getPhoneNumberId')->willReturn('1146240195247464');
 
         $agent = $this->createMock(Agente::class);
-        $agent->method('getActiveWorkspace')->willReturn($workspace);
+        $agent->method('getEspacioDeTrabajoActivo')->willReturn($workspace);
 
         $user = new User();
         $user->setRoles(['ROLE_AGENT']);
@@ -78,7 +78,7 @@ class WorkspaceScopeTest extends TestCase
     public function testAgentWithoutActiveWorkspaceReturnsNull(): void
     {
         $agent = $this->createMock(Agente::class);
-        $agent->method('getActiveWorkspace')->willReturn(null);
+        $agent->method('getEspacioDeTrabajoActivo')->willReturn(null);
 
         $user = new User();
         $user->setRoles(['ROLE_AGENT']);

@@ -24,12 +24,12 @@ class EquipoRepository extends ServiceEntityRepository
      *
      * @return Equipo[] ordered by name
      */
-    public function findByWorkspaces(array $workspaces): array
+    public function findByEspaciosDeTrabajo(array $workspaces): array
     {
         return $this->createQueryBuilder('t')
-            ->andWhere('t.workspace IN (:workspaces)')
+            ->andWhere('t.espacioDeTrabajo IN (:workspaces)')
             ->setParameter('workspaces', $workspaces)
-            ->orderBy('t.name', 'ASC')
+            ->orderBy('t.nombre', 'ASC')
             ->getQuery()
             ->getResult();
     }

@@ -82,11 +82,11 @@ final class SeedReportsCommand extends Command
 
         foreach ($agentConfigs as $cfg) {
             $agent = new Agente($cfg['name']);
-            $agent->setMaxActiveTickets($cfg['max_active']);
-            $agent->setTimezone($cfg['tz']);
-            $agent->setActive(true);
-            $agent->addWorkspace($ws1);
-            $agent->setActiveWorkspace($ws1);
+            $agent->setMaxTicketsActivos($cfg['max_active']);
+            $agent->setZonaHoraria($cfg['tz']);
+            $agent->setActivo(true);
+            $agent->addEspacioDeTrabajo($ws1);
+            $agent->setEspacioDeTrabajoActivo($ws1);
             $this->em->persist($agent);
             $agents[] = $agent;
         }

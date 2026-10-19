@@ -23,7 +23,7 @@ final class AsignacionControllersCharacterizationTest extends CharacterizationTe
     public function testAutoAssignPicksAnAvailableAgentAndWritesOutbox(): void
     {
         $available = $this->createAgent('Available');
-        $available->setIsAvailableOverride(true);
+        $available->setDisponibilidadManual(true);
         $this->em->flush();
         $ticket = $this->createTicket('new');
         // Any ROLE_AGENT may trigger auto-assignment of any ticket.
@@ -126,7 +126,7 @@ final class AsignacionControllersCharacterizationTest extends CharacterizationTe
     public function testAutoAssignInvalidArgumentBecomesGeneric500(): void
     {
         $available = $this->createAgent('Available');
-        $available->setIsAvailableOverride(true);
+        $available->setDisponibilidadManual(true);
         $this->em->flush();
         $ticket = $this->createTicket('new');
         $token = $this->loginAs('auto-caller@characterization.local', ['ROLE_AGENT']);

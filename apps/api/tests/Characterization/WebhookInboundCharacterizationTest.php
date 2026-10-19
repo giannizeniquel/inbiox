@@ -387,9 +387,9 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
     public function testAutoReplyFromAnUnavailableAgentIsSentStoredAndWrittenThird(): void
     {
         $agent = new Agente('Ausente');
-        $agent->setAutoReplyEnabled(true);
-        $agent->setAutoReplyMessage('Ya te respondemos');
-        $agent->addWorkspace($this->createWorkspace(self::PHONE_NUMBER_ID));
+        $agent->setRespuestaAutomaticaActiva(true);
+        $agent->setMensajeDeRespuestaAutomatica('Ya te respondemos');
+        $agent->addEspacioDeTrabajo($this->createWorkspace(self::PHONE_NUMBER_ID));
         $this->em->persist($agent);
         $this->em->flush();
         $this->graph->expects(self::once())->method('sendMessage')

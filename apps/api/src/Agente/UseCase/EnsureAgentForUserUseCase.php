@@ -22,11 +22,11 @@ final class EnsureAgentForUserUseCase
 
     public function execute(User $user): Agente
     {
-        $agent = $user->getAgent() ?? $this->agentRepository->findOneBy(['user' => $user]);
+        $agent = $user->getAgent() ?? $this->agentRepository->findOneBy(['usuario' => $user]);
 
         if ($agent === null) {
             $agent = new Agente($user->getEmail() ?? 'Admin');
-            $agent->setUser($user);
+            $agent->setUsuario($user);
             $this->entityManager->persist($agent);
             $this->entityManager->flush();
         }

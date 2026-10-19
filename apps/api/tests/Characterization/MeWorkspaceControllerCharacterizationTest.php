@@ -31,7 +31,7 @@ final class MeWorkspaceControllerCharacterizationTest extends CharacterizationTe
     {
         $workspace = $this->createWorkspace('char-me-ws', 'Mine');
         $agent = $this->createAgent('Me');
-        $agent->setActiveWorkspace($workspace);
+        $agent->setEspacioDeTrabajoActivo($workspace);
         $token = $this->loginAs('me-ws@characterization.local', ['ROLE_AGENT'], $agent);
 
         $response = $this->request('GET', '/api/me/workspace', $token);

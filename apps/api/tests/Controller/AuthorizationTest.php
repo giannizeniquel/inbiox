@@ -66,7 +66,7 @@ class AuthorizationTest extends WebTestCase
         $user->setIsActive($isActive);
 
         if (null !== $agent) {
-            $agent->setUser($user);
+            $agent->setUsuario($user);
             $this->em->persist($agent);
         }
 

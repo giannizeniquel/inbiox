@@ -20,9 +20,9 @@ final class UpdateConfiguracionDeRespuestaAutomaticaUseCase
     public function execute(Agente $agente, ?bool $habilitado, ?string $mensaje): void
     {
         if ($habilitado !== null) {
-            $agente->setAutoReplyEnabled($habilitado);
+            $agente->setRespuestaAutomaticaActiva($habilitado);
         }
-        $agente->setAutoReplyMessage($mensaje);
+        $agente->setMensajeDeRespuestaAutomatica($mensaje);
 
         $this->entityManager->flush();
     }

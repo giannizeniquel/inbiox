@@ -125,7 +125,7 @@ Tablas técnicas sin relaciones de negocio (no incluidas en el diagrama): `outbo
 | Agente ↔ Workspace | N : M (`agent_workspace`) | Sí | Determina qué workspaces puede elegir un agente. |
 | Agente → Workspace activo | N : 0..1 | Sí (`SET NULL`) | Preferencia del selector. |
 | Equipo → Workspace | N : 1 | Sí (`CASCADE`) | |
-| Agente ↔ Equipo | N : M (`agent_team`) | Sí | Solo agentes del mismo workspace (`Equipo::addAgent()`). |
+| Agente ↔ Equipo | N : M (`agent_team`) | Sí | Solo agentes del mismo workspace (`Equipo::addAgente()`). |
 | Agente → Turno | 1 : N | Sí (`CASCADE`) | |
 | Contacto → Conversation | 1 : N (una por número) | Sí | |
 | Conversation → Message | 1 : N | Sí | |

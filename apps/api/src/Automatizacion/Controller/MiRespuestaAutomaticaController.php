@@ -39,8 +39,8 @@ final class MiRespuestaAutomaticaController
         $this->updateConfiguracionDeRespuestaAutomaticaUseCase->execute($agente, $request->enabled, $request->message);
 
         return new JsonResponse([
-            'enabled' => $agente->isAutoReplyEnabled(),
-            'message' => $agente->getAutoReplyMessage(),
+            'enabled' => $agente->isRespuestaAutomaticaActiva(),
+            'message' => $agente->getMensajeDeRespuestaAutomatica(),
         ]);
     }
 

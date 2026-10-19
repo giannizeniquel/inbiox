@@ -54,7 +54,7 @@ final class WorkspaceScope
             return null;
         }
 
-        $activeWorkspace = $agent->getActiveWorkspace();
+        $activeWorkspace = $agent->getEspacioDeTrabajoActivo();
 
         if (null === $activeWorkspace) {
             return null;

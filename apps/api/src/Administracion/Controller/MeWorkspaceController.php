@@ -45,7 +45,7 @@ final class MeWorkspaceController
             return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
         }
 
-        $activeWorkspace = $agent->getActiveWorkspace();
+        $activeWorkspace = $agent->getEspacioDeTrabajoActivo();
         if (null === $activeWorkspace) {
             return new JsonResponse(
                 ['workspace_id' => null, 'phone_number_id' => null, 'display_name' => null],
@@ -111,7 +111,7 @@ final class MeWorkspaceController
 
         $agentId = (int) $agent->getId();
         $items = [];
-        foreach ($agent->getWorkspaces()->toArray() as $w) {
+        foreach ($agent->getEspaciosDeTrabajo()->toArray() as $w) {
             $hasPending = $this->ticketRepository->hasPendientesDeAgente($w->getPhoneNumberId(), $agentId);
             $items[] = array_merge(WorkspaceDTO::fromEntity($w)->toArray(), ['has_pending' => $hasPending]);
         }

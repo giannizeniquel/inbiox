@@ -33,7 +33,7 @@ final class CreateAgentUseCase
         }
 
         $agent = new Agente($name);
-        $agent->setTimezone($timezone);
+        $agent->setZonaHoraria($timezone);
         $this->entityManager->persist($agent);
         $this->entityManager->flush();
 

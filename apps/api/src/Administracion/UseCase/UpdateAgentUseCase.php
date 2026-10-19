@@ -29,20 +29,20 @@ final class UpdateAgentUseCase
             }
             // Agent has no name setter. Reflection sets the name without
             // touching updated_at, which is the current behavior.
-            $nameProp = new \ReflectionProperty(Agente::class, 'name');
+            $nameProp = new \ReflectionProperty(Agente::class, 'nombre');
             $nameProp->setAccessible(true);
             $nameProp->setValue($agent, $data['name']);
         }
 
         if (isset($data['active'])) {
-            $agent->setActive((bool) $data['active']);
+            $agent->setActivo((bool) $data['active']);
         }
 
         if (isset($data['timezone'])) {
             if (!\is_string($data['timezone'])) {
                 throw new \InvalidArgumentException('timezone must be a string');
             }
-            $agent->setTimezone($data['timezone']);
+            $agent->setZonaHoraria($data['timezone']);
         }
 
         $this->entityManager->flush();

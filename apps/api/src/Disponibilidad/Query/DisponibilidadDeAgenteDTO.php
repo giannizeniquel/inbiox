@@ -23,10 +23,10 @@ class DisponibilidadDeAgenteDTO
     {
         return new self(
             id: (int) $agente->getId(),
-            nombre: $agente->getName(),
+            nombre: $agente->getNombre(),
             isActivoAhora: $isActivoAhora,
             cantidadDeTicketsActivos: $cantidadDeTicketsActivos,
-            maxTicketsActivos: $agente->getMaxActiveTickets(),
+            maxTicketsActivos: $agente->getMaxTicketsActivos(),
         );
     }
 

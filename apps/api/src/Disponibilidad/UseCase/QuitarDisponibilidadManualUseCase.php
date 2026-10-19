@@ -51,8 +51,8 @@ final class QuitarDisponibilidadManualUseCase
             $this->em->lock($agente, LockMode::PESSIMISTIC_WRITE);
 
             // 2. Clear override fields
-            $agente->setIsAvailableOverride(null);
-            $agente->setOverrideUntil(null);
+            $agente->setDisponibilidadManual(null);
+            $agente->setDisponibilidadManualHasta(null);
 
             // 3. Persist
             $this->em->flush();
@@ -71,7 +71,7 @@ final class QuitarDisponibilidadManualUseCase
                     'is_available'    => false, // will be re-evaluated on next check
                     'override_active' => false,
                     'current_load'    => $cargaActual,
-                    'max_capacity'    => $agente->getMaxActiveTickets(),
+                    'max_capacity'    => $agente->getMaxTicketsActivos(),
                     'timestamp'       => $now->format('Y-m-d\TH:i:s\Z'),
                 ],
             ];
@@ -80,7 +80,7 @@ final class QuitarDisponibilidadManualUseCase
                 'agent_id'        => $agenteId,
                 'override_active' => false,
                 'current_load'    => $cargaActual,
-                'max_capacity'    => $agente->getMaxActiveTickets(),
+                'max_capacity'    => $agente->getMaxTicketsActivos(),
             ];
         });
 

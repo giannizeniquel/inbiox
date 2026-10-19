@@ -44,7 +44,7 @@ final class SetEquipoDeTicketUseCase
             throw new \InvalidArgumentException('Team not found');
         }
 
-        if ($equipo->getWorkspace()->getPhoneNumberId() !== $ticket->getPhoneNumberId()) {
+        if ($equipo->getEspacioDeTrabajo()->getPhoneNumberId() !== $ticket->getPhoneNumberId()) {
             throw new \InvalidArgumentException('Team does not belong to the same workspace as the ticket');
         }
 

@@ -37,8 +37,8 @@ final class AssignTeamAgentsUseCase
         // design.md D3) which rolls back the whole batch (hard reject,
         // all-or-nothing), mirroring AssignWorkspaceAgentsUseCase.
         $this->entityManager->wrapInTransaction(function () use ($team, $agentIds): void {
-            foreach ($team->getAgents() as $existingAgent) {
-                $team->removeAgent($existingAgent);
+            foreach ($team->getAgentes() as $existingAgent) {
+                $team->removeAgente($existingAgent);
             }
 
             foreach ($agentIds as $agentId) {
@@ -47,7 +47,7 @@ final class AssignTeamAgentsUseCase
                 }
                 $agent = $this->agentRepository->find($agentId);
                 if (null !== $agent) {
-                    $team->addAgent($agent);
+                    $team->addAgente($agent);
                 }
             }
         });

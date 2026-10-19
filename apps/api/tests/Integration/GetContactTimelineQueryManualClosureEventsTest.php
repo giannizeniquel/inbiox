@@ -103,7 +103,7 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
         $this->em->persist($user);
 
         $agent = new Agente($agentName);
-        $agent->setUser($user);
+        $agent->setUsuario($user);
         $this->em->persist($agent);
         $this->em->flush();
 

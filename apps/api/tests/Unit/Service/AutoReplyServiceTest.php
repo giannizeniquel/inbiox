@@ -97,9 +97,9 @@ class AutoReplyServiceTest extends TestCase
         ?string $autoReplyMessage = 'We are away right now.',
     ): Agente {
         $agent = new Agente('Agent-'.$id);
-        $agent->setActive($active);
-        $agent->setAutoReplyEnabled($autoReplyEnabled);
-        $agent->setAutoReplyMessage($autoReplyMessage);
+        $agent->setActivo($active);
+        $agent->setRespuestaAutomaticaActiva($autoReplyEnabled);
+        $agent->setMensajeDeRespuestaAutomatica($autoReplyMessage);
 
         // Set id via reflection
         $prop = new \ReflectionProperty($agent, 'id');
@@ -151,7 +151,7 @@ class AutoReplyServiceTest extends TestCase
      * AND ensuring capacity is below max.
      *
      * The agent's local time is UTC. A shift on the current DOW that covers
-     * the current time will make isAvailable() pass step 3 (schedule).
+     * the current time will make isDisponible() pass step 3 (schedule).
      */
     private function makeAgentAvailable(Agente $agent): void
     {
@@ -165,7 +165,7 @@ class AutoReplyServiceTest extends TestCase
         \assert($startTime !== false && $endTime !== false);
 
         $shift = new Turno($agent, $dow, $startTime, $endTime);
-        $agent->addShift($shift);
+        $agent->addTurno($shift);
     }
 
     /**

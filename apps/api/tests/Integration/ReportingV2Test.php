@@ -398,11 +398,11 @@ class ReportingV2Test extends WebTestCase
         $agents = [];
         for ($i = 1; $i <= 5; $i++) {
             $agent = new Agente("Test Agent {$i}");
-            $agent->setMaxActiveTickets(10);
-            $agent->setTimezone('UTC');
-            $agent->setActive(true);
-            $agent->addWorkspace($ws1);
-            $agent->setActiveWorkspace($ws1);
+            $agent->setMaxTicketsActivos(10);
+            $agent->setZonaHoraria('UTC');
+            $agent->setActivo(true);
+            $agent->addEspacioDeTrabajo($ws1);
+            $agent->setEspacioDeTrabajoActivo($ws1);
             $this->em->persist($agent);
             $agents[] = $agent;
         }

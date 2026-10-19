@@ -24,78 +24,78 @@ class Agente
     private ?int $id = null;
 
     #[ORM\Column(name: 'name', type: Types::STRING, length: 255)]
-    private string $name;
+    private string $nombre;
 
     #[ORM\OneToOne(targetEntity: User::class, inversedBy: 'agent')]
     #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: true, unique: true)]
-    private ?User $user = null;
+    private ?User $usuario = null;
 
     #[ORM\Column(name: 'active', type: Types::BOOLEAN, options: ['default' => true])]
-    private bool $active = true;
+    private bool $activo = true;
 
     #[ORM\Column(name: 'is_available', type: Types::BOOLEAN, options: ['default' => true])]
-    private bool $isAvailable = true;
+    private bool $disponible = true;
 
     #[ORM\Column(name: 'max_active_tickets', type: Types::INTEGER, options: ['default' => 10])]
-    private int $maxActiveTickets = 10;
+    private int $maxTicketsActivos = 10;
 
     #[ORM\Column(name: 'timezone', type: Types::STRING, length: 64, options: ['default' => 'UTC'])]
-    private string $timezone = 'UTC';
+    private string $zonaHoraria = 'UTC';
 
     #[ORM\Column(name: 'is_available_override', type: Types::BOOLEAN, nullable: true)]
-    private ?bool $isAvailableOverride = null;
+    private ?bool $disponibilidadManual = null;
 
     #[ORM\Column(name: 'override_until', type: Types::DATETIME_IMMUTABLE, nullable: true, options: ['comment' => '(DC2Type:datetime_immutable)'])]
-    private ?\DateTimeImmutable $overrideUntil = null;
+    private ?\DateTimeImmutable $disponibilidadManualHasta = null;
 
     #[ORM\Column(name: 'signature', type: Types::TEXT, nullable: true)]
-    private ?string $signature = null;
+    private ?string $firma = null;
 
     #[ORM\Column(name: 'notification_sound', type: Types::BOOLEAN, options: ['default' => true])]
-    private bool $notificationSound = true;
+    private bool $sonidoDeNotificacion = true;
 
     #[ORM\Column(name: 'desktop_notifications', type: Types::BOOLEAN, options: ['default' => true])]
-    private bool $desktopNotifications = true;
+    private bool $notificacionesDeEscritorio = true;
 
     #[ORM\Column(name: 'auto_reply_enabled', type: Types::BOOLEAN, options: ['default' => false])]
-    private bool $autoReplyEnabled = false;
+    private bool $respuestaAutomaticaActiva = false;
 
     #[ORM\Column(name: 'auto_reply_message', type: Types::TEXT, nullable: true)]
-    private ?string $autoReplyMessage = null;
+    private ?string $mensajeDeRespuestaAutomatica = null;
 
     #[ORM\Column(name: 'created_at', type: Types::DATETIME_IMMUTABLE)]
-    private \DateTimeImmutable $createdAt;
+    private \DateTimeImmutable $creadoAt;
 
     #[ORM\Column(name: 'updated_at', type: Types::DATETIME_IMMUTABLE)]
-    private \DateTimeImmutable $updatedAt;
+    private \DateTimeImmutable $actualizadoAt;
 
     #[ORM\OneToMany(targetEntity: Turno::class, mappedBy: 'agente', orphanRemoval: true)]
-    private Collection $shifts;
+    private Collection $turnos;
 
     #[ORM\ManyToMany(targetEntity: Workspace::class, inversedBy: 'agents')]
     #[ORM\JoinTable(name: 'agent_workspace')]
     #[ORM\JoinColumn(name: 'agent_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     #[ORM\InverseJoinColumn(name: 'workspace_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
-    private Collection $workspaces;
+    private Collection $espaciosDeTrabajo;
 
     #[ORM\ManyToOne(targetEntity: Workspace::class)]
     #[ORM\JoinColumn(name: 'active_workspace_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
-    private ?Workspace $activeWorkspace = null;
+    private ?Workspace $espacioDeTrabajoActivo = null;
 
-    #[ORM\ManyToMany(targetEntity: Equipo::class, inversedBy: 'agents')]
+    #[ORM\ManyToMany(targetEntity: Equipo::class, inversedBy: 'agentes')]
     #[ORM\JoinTable(name: 'agent_team')]
     #[ORM\JoinColumn(name: 'agent_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     #[ORM\InverseJoinColumn(name: 'team_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
-    private Collection $teams;
+    private Collection $equipos;
 
     public function __construct(string $name)
     {
-        $this->name = $name;
-        $this->shifts = new ArrayCollection();
-        $this->workspaces = new ArrayCollection();
-        $this->teams = new ArrayCollection();
-        $this->createdAt = new \DateTimeImmutable();
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->nombre = $name;
+        $this->turnos = new ArrayCollection();
+        $this->espaciosDeTrabajo = new ArrayCollection();
+        $this->equipos = new ArrayCollection();
+        $this->creadoAt = new \DateTimeImmutable();
+        $this->actualizadoAt = new \DateTimeImmutable();
     }
 
     public function getId(): ?int
@@ -103,121 +103,121 @@ class Agente
         return $this->id;
     }
 
-    public function getName(): string
+    public function getNombre(): string
     {
-        return $this->name;
+        return $this->nombre;
     }
 
-    public function getUser(): ?User
+    public function getUsuario(): ?User
     {
-        return $this->user;
+        return $this->usuario;
     }
 
-    public function setUser(?User $user): self
+    public function setUsuario(?User $user): self
     {
-        $this->user = $user;
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->usuario = $user;
+        $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
 
-    public function isActive(): bool
+    public function isActivo(): bool
     {
-        return $this->active;
+        return $this->activo;
     }
 
-    public function setActive(bool $active): self
+    public function setActivo(bool $active): self
     {
-        $this->active = $active;
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->activo = $active;
+        $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
 
-    public function isAvailable(): bool
+    public function isDisponible(): bool
     {
-        return $this->isAvailable;
+        return $this->disponible;
     }
 
-    public function setAvailable(bool $isAvailable): self
+    public function setDisponible(bool $isAvailable): self
     {
-        $this->isAvailable = $isAvailable;
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->disponible = $isAvailable;
+        $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
 
-    public function getMaxActiveTickets(): int
+    public function getMaxTicketsActivos(): int
     {
-        return $this->maxActiveTickets;
+        return $this->maxTicketsActivos;
     }
 
-    public function setMaxActiveTickets(int $maxActiveTickets): self
+    public function setMaxTicketsActivos(int $maxActiveTickets): self
     {
         if ($maxActiveTickets < 1) {
             throw new \InvalidArgumentException('maxActiveTickets must be at least 1');
         }
-        $this->maxActiveTickets = $maxActiveTickets;
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->maxTicketsActivos = $maxActiveTickets;
+        $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
 
-    public function getTimezone(): string
+    public function getZonaHoraria(): string
     {
-        return $this->timezone;
+        return $this->zonaHoraria;
     }
 
-    public function setTimezone(string $timezone): self
+    public function setZonaHoraria(string $timezone): self
     {
         try {
             new \DateTimeZone($timezone);
         } catch (\Exception $e) {
             throw new \InvalidArgumentException(\sprintf('Invalid timezone: "%s"', $timezone));
         }
-        $this->timezone = $timezone;
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->zonaHoraria = $timezone;
+        $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
 
-    public function getIsAvailableOverride(): ?bool
+    public function getDisponibilidadManual(): ?bool
     {
-        return $this->isAvailableOverride;
+        return $this->disponibilidadManual;
     }
 
-    public function setIsAvailableOverride(?bool $isAvailableOverride): self
+    public function setDisponibilidadManual(?bool $isAvailableOverride): self
     {
-        $this->isAvailableOverride = $isAvailableOverride;
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->disponibilidadManual = $isAvailableOverride;
+        $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
 
-    public function getOverrideUntil(): ?\DateTimeImmutable
+    public function getDisponibilidadManualHasta(): ?\DateTimeImmutable
     {
-        return $this->overrideUntil;
+        return $this->disponibilidadManualHasta;
     }
 
-    public function setOverrideUntil(?\DateTimeImmutable $overrideUntil): self
+    public function setDisponibilidadManualHasta(?\DateTimeImmutable $overrideUntil): self
     {
-        $this->overrideUntil = $overrideUntil;
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->disponibilidadManualHasta = $overrideUntil;
+        $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
 
     /** @return Collection<int, Turno> */
-    public function getShifts(): Collection
+    public function getTurnos(): Collection
     {
-        return $this->shifts;
+        return $this->turnos;
     }
 
-    public function addShift(Turno $shift): self
+    public function addTurno(Turno $shift): self
     {
-        if (!$this->shifts->contains($shift)) {
-            $this->shifts->add($shift);
+        if (!$this->turnos->contains($shift)) {
+            $this->turnos->add($shift);
             $shift->setAgente($this);
         }
         return $this;
     }
 
-    public function removeShift(Turno $shift): self
+    public function removeTurno(Turno $shift): self
     {
-        if ($this->shifts->removeElement($shift)) {
+        if ($this->turnos->removeElement($shift)) {
             if ($shift->getAgente() === $this) {
                 $shift->setAgente(null);
             }
@@ -226,124 +226,124 @@ class Agente
     }
 
     /** @return Collection<int, Workspace> */
-    public function getWorkspaces(): Collection
+    public function getEspaciosDeTrabajo(): Collection
     {
-        return $this->workspaces;
+        return $this->espaciosDeTrabajo;
     }
 
-    public function addWorkspace(Workspace $workspace): self
+    public function addEspacioDeTrabajo(Workspace $workspace): self
     {
-        if (!$this->workspaces->contains($workspace)) {
-            $this->workspaces->add($workspace);
+        if (!$this->espaciosDeTrabajo->contains($workspace)) {
+            $this->espaciosDeTrabajo->add($workspace);
         }
         return $this;
     }
 
-    public function removeWorkspace(Workspace $workspace): self
+    public function removeEspacioDeTrabajo(Workspace $workspace): self
     {
-        $this->workspaces->removeElement($workspace);
+        $this->espaciosDeTrabajo->removeElement($workspace);
         return $this;
     }
 
     /** @return Collection<int, Equipo> */
-    public function getTeams(): Collection
+    public function getEquipos(): Collection
     {
-        return $this->teams;
+        return $this->equipos;
     }
 
-    public function addTeam(Equipo $team): self
+    public function addEquipo(Equipo $team): self
     {
-        if (!$this->teams->contains($team)) {
-            $this->teams->add($team);
+        if (!$this->equipos->contains($team)) {
+            $this->equipos->add($team);
         }
         return $this;
     }
 
-    public function removeTeam(Equipo $team): self
+    public function removeEquipo(Equipo $team): self
     {
-        $this->teams->removeElement($team);
+        $this->equipos->removeElement($team);
         return $this;
     }
 
-    public function getSignature(): ?string
+    public function getFirma(): ?string
     {
-        return $this->signature;
+        return $this->firma;
     }
 
-    public function setSignature(?string $signature): self
+    public function setFirma(?string $signature): self
     {
-        $this->signature = $signature;
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->firma = $signature;
+        $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
 
-    public function hasNotificationSound(): bool
+    public function hasSonidoDeNotificacion(): bool
     {
-        return $this->notificationSound;
+        return $this->sonidoDeNotificacion;
     }
 
-    public function setNotificationSound(bool $notificationSound): self
+    public function setSonidoDeNotificacion(bool $notificationSound): self
     {
-        $this->notificationSound = $notificationSound;
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->sonidoDeNotificacion = $notificationSound;
+        $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
 
-    public function hasDesktopNotifications(): bool
+    public function hasNotificacionesDeEscritorio(): bool
     {
-        return $this->desktopNotifications;
+        return $this->notificacionesDeEscritorio;
     }
 
-    public function setDesktopNotifications(bool $desktopNotifications): self
+    public function setNotificacionesDeEscritorio(bool $desktopNotifications): self
     {
-        $this->desktopNotifications = $desktopNotifications;
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->notificacionesDeEscritorio = $desktopNotifications;
+        $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
 
-    public function isAutoReplyEnabled(): bool
+    public function isRespuestaAutomaticaActiva(): bool
     {
-        return $this->autoReplyEnabled;
+        return $this->respuestaAutomaticaActiva;
     }
 
-    public function setAutoReplyEnabled(bool $autoReplyEnabled): self
+    public function setRespuestaAutomaticaActiva(bool $autoReplyEnabled): self
     {
-        $this->autoReplyEnabled = $autoReplyEnabled;
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->respuestaAutomaticaActiva = $autoReplyEnabled;
+        $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
 
-    public function getAutoReplyMessage(): ?string
+    public function getMensajeDeRespuestaAutomatica(): ?string
     {
-        return $this->autoReplyMessage;
+        return $this->mensajeDeRespuestaAutomatica;
     }
 
-    public function setAutoReplyMessage(?string $autoReplyMessage): self
+    public function setMensajeDeRespuestaAutomatica(?string $autoReplyMessage): self
     {
-        $this->autoReplyMessage = $autoReplyMessage;
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->mensajeDeRespuestaAutomatica = $autoReplyMessage;
+        $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
 
-    public function getActiveWorkspace(): ?Workspace
+    public function getEspacioDeTrabajoActivo(): ?Workspace
     {
-        return $this->activeWorkspace;
+        return $this->espacioDeTrabajoActivo;
     }
 
-    public function setActiveWorkspace(?Workspace $activeWorkspace): self
+    public function setEspacioDeTrabajoActivo(?Workspace $activeWorkspace): self
     {
-        $this->activeWorkspace = $activeWorkspace;
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->espacioDeTrabajoActivo = $activeWorkspace;
+        $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
 
-    public function getCreatedAt(): \DateTimeImmutable
+    public function getCreadoAt(): \DateTimeImmutable
     {
-        return $this->createdAt;
+        return $this->creadoAt;
     }
 
-    public function getUpdatedAt(): \DateTimeImmutable
+    public function getActualizadoAt(): \DateTimeImmutable
     {
-        return $this->updatedAt;
+        return $this->actualizadoAt;
     }
 }

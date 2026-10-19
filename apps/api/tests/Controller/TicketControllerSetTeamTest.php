@@ -75,7 +75,7 @@ class TicketControllerSetTeamTest extends WebTestCase
         $this->em->persist($user);
 
         $agent = new Agente('Agent for ' . $email);
-        $agent->setUser($user);
+        $agent->setUsuario($user);
         $this->em->persist($agent);
         $this->em->flush();
 

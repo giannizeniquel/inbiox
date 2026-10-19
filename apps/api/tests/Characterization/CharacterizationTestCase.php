@@ -113,7 +113,7 @@ abstract class CharacterizationTestCase extends WebTestCase
         $this->em->persist($user);
 
         if (null !== $agent) {
-            $agent->setUser($user);
+            $agent->setUsuario($user);
             $user->setAgent($agent);
             $this->em->persist($agent);
         }

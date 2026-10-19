@@ -43,29 +43,29 @@ final class MeController
             return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
         }
 
-        $user = $agent->getUser();
+        $user = $agent->getUsuario();
 
         // Profile
         $profile = [
-            'name' => $agent->getName(),
+            'name' => $agent->getNombre(),
             'email' => $user?->getEmail() ?? '',
-            'signature' => $agent->getSignature(),
+            'signature' => $agent->getFirma(),
         ];
 
         // Notifications
         $notifications = [
-            'sound' => $agent->hasNotificationSound(),
-            'desktop' => $agent->hasDesktopNotifications(),
+            'sound' => $agent->hasSonidoDeNotificacion(),
+            'desktop' => $agent->hasNotificacionesDeEscritorio(),
         ];
 
         // AutoReply
         $autoReply = [
-            'enabled' => $agent->isAutoReplyEnabled(),
-            'message' => $agent->getAutoReplyMessage(),
+            'enabled' => $agent->isRespuestaAutomaticaActiva(),
+            'message' => $agent->getMensajeDeRespuestaAutomatica(),
         ];
 
         // Workspace
-        $activeWorkspace = $agent->getActiveWorkspace();
+        $activeWorkspace = $agent->getEspacioDeTrabajoActivo();
         $workspaceData = null;
         if ($activeWorkspace !== null) {
             $workspaceData = [
@@ -77,7 +77,7 @@ final class MeController
 
         // Business hours (shifts)
         $businessHours = [];
-        foreach ($agent->getShifts() as $shift) {
+        foreach ($agent->getTurnos() as $shift) {
             $businessHours[] = [
                 'dayOfWeek' => $shift->getDiaDeLaSemana(),
                 'start' => $shift->getHoraDeInicio()->format('H:i'),
@@ -111,9 +111,9 @@ final class MeController
         $this->updateAgentProfileUseCase->execute($agent, $request->signature);
 
         return new JsonResponse([
-            'name' => $agent->getName(),
-            'email' => $agent->getUser()?->getEmail() ?? '',
-            'signature' => $agent->getSignature(),
+            'name' => $agent->getNombre(),
+            'email' => $agent->getUsuario()?->getEmail() ?? '',
+            'signature' => $agent->getFirma(),
         ]);
     }
 
@@ -129,8 +129,8 @@ final class MeController
         $this->updateNotificationPreferencesUseCase->execute($agent, $request->sound, $request->desktop);
 
         return new JsonResponse([
-            'sound' => $agent->hasNotificationSound(),
-            'desktop' => $agent->hasDesktopNotifications(),
+            'sound' => $agent->hasSonidoDeNotificacion(),
+            'desktop' => $agent->hasNotificacionesDeEscritorio(),
         ]);
     }
 

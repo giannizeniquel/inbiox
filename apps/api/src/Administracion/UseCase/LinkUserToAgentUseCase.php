@@ -46,7 +46,7 @@ final class LinkUserToAgentUseCase
             throw new \InvalidArgumentException('Cannot link a deactivated user to an agent');
         }
 
-        if (null !== $agent->getUser()) {
+        if (null !== $agent->getUsuario()) {
             throw new \InvalidArgumentException('Agent already linked to a user');
         }
 
@@ -55,7 +55,7 @@ final class LinkUserToAgentUseCase
             throw new \InvalidArgumentException('User already linked to an agent');
         }
 
-        $agent->setUser($user);
+        $agent->setUsuario($user);
         $user->setAgent($agent);
 
         try {

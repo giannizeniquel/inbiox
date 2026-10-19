@@ -66,7 +66,7 @@ final class CreateTurnoUseCase
             }
 
             $turno = new Turno($agente, $diaDeLaSemana, $inicio, $fin);
-            $agente->addShift($turno);
+            $agente->addTurno($turno);
 
             // 3. Persist
             $this->em->persist($turno);

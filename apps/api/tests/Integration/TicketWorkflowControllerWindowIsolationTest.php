@@ -71,7 +71,7 @@ class TicketWorkflowControllerWindowIsolationTest extends WebTestCase
         $this->em->persist($user);
 
         $agent = new Agente('Isolation Test Agent');
-        $agent->setUser($user);
+        $agent->setUsuario($user);
         $this->em->persist($agent);
         $this->em->flush();
 

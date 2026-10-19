@@ -398,7 +398,7 @@ class HandleOutboundMessageUseCase
      */
     private function collectMessageCreatedEvent(Ticket $ticket, int $ticketId, Message $msg, string $content, int $agentId): void
     {
-        $senderName = $agentId > 0 ? $this->agentRepo->findById($agentId)?->getName() : null;
+        $senderName = $agentId > 0 ? $this->agentRepo->findById($agentId)?->getNombre() : null;
         $this->eventCollector->collect(new MessageCreatedEvent(
             eventId: new Ulid(),
             ticketId: $ticketId,
@@ -443,7 +443,7 @@ class HandleOutboundMessageUseCase
                     // Fetch agent name for the frontend
                     $agent = $this->agentRepo->findById($event->ownerAgentId);
                     if ($agent !== null) {
-                        $payload['assignee_name'] = $agent->getName();
+                        $payload['assignee_name'] = $agent->getNombre();
                     }
                 }
             } elseif ($event instanceof InboxUpdatedEvent) {

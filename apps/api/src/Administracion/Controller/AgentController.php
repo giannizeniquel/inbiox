@@ -38,7 +38,7 @@ final class AgentController
         $offset = ($page - 1) * $limit;
 
         $total = $this->agentRepository->count([]);
-        $agents = $this->agentRepository->findPageWithUser($offset, $limit);
+        $agents = $this->agentRepository->findPaginaConUsuario($offset, $limit);
 
         $items = array_map(fn(Agente $agent) => $this->serializeAgent($agent), $agents);
 
@@ -126,18 +126,18 @@ final class AgentController
      */
     private function serializeAgent(Agente $agent): array
     {
-        $user = $agent->getUser();
+        $user = $agent->getUsuario();
 
         return [
             'id' => (int) $agent->getId(),
-            'name' => $agent->getName(),
-            'active' => $agent->isActive(),
-            'timezone' => $agent->getTimezone(),
-            'is_available' => $agent->isAvailable(),
+            'name' => $agent->getNombre(),
+            'active' => $agent->isActivo(),
+            'timezone' => $agent->getZonaHoraria(),
+            'is_available' => $agent->isDisponible(),
             'user_id' => null !== $user ? (int) $user->getId() : null,
             'user_email' => null !== $user ? $user->getEmail() : null,
-            'created_at' => $agent->getCreatedAt()->format('Y-m-d\TH:i:sP'),
-            'updated_at' => $agent->getUpdatedAt()->format('Y-m-d\TH:i:sP'),
+            'created_at' => $agent->getCreadoAt()->format('Y-m-d\TH:i:sP'),
+            'updated_at' => $agent->getActualizadoAt()->format('Y-m-d\TH:i:sP'),
         ];
     }
 }

@@ -66,7 +66,7 @@ class ContactImportControllerTest extends WebTestCase
         $user->setIsActive(true);
 
         if (null !== $agent) {
-            $agent->setUser($user);
+            $agent->setUsuario($user);
             $this->em->persist($agent);
         }
 

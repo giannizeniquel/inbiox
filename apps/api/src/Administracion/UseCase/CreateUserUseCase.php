@@ -57,10 +57,10 @@ final class CreateUserUseCase
             if (null === $agent) {
                 throw new NotFoundException('Agent not found');
             }
-            if (null !== $agent->getUser()) {
+            if (null !== $agent->getUsuario()) {
                 throw new StateConflictException('Agent already linked to another user');
             }
-            $agent->setUser($user);
+            $agent->setUsuario($user);
             $user->setAgent($agent);
         }
 

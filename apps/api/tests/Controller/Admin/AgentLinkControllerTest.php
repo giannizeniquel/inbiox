@@ -65,7 +65,7 @@ class AgentLinkControllerTest extends WebTestCase
         $user->setIsActive($isActive);
 
         if (null !== $agent) {
-            $agent->setUser($user);
+            $agent->setUsuario($user);
             $this->em->persist($agent);
         }
 
@@ -154,7 +154,7 @@ class AgentLinkControllerTest extends WebTestCase
 
         $agent = $this->createAgent('Linked Agent');
         $existingUser = $this->createUser('existing@test.local');
-        $agent->setUser($existingUser);
+        $agent->setUsuario($existingUser);
         $this->em->flush();
 
         $newUser = $this->createUser('new@test.local');
@@ -178,7 +178,7 @@ class AgentLinkControllerTest extends WebTestCase
         $agent1 = $this->createAgent('Agent 1');
         $agent2 = $this->createAgent('Agent 2');
         $user = $this->createUser('user@test.local');
-        $agent1->setUser($user);
+        $agent1->setUsuario($user);
         $this->em->flush();
 
         $this->client->request('POST', "/api/admin/agents/{$agent2->getId()}/link-user", [], [], $this->authHeaders($token) + [
@@ -251,7 +251,7 @@ class AgentLinkControllerTest extends WebTestCase
 
         $agent = $this->createAgent('Agent');
         $user = $this->createUser('user@test.local');
-        $agent->setUser($user);
+        $agent->setUsuario($user);
         $this->em->flush();
 
         $this->client->request('DELETE', "/api/admin/agents/{$agent->getId()}/link-user", [], [], $this->authHeaders($token));
@@ -261,7 +261,7 @@ class AgentLinkControllerTest extends WebTestCase
         // Verify the link is removed
         $this->em->clear();
         $updatedAgent = $this->em->getRepository(Agente::class)->find($agent->getId());
-        self::assertNull($updatedAgent->getUser());
+        self::assertNull($updatedAgent->getUsuario());
     }
 
     public function testUnlinkUserReturns400IfNoLink(): void

@@ -18,7 +18,7 @@ final class DeactivateAgentUseCase
 
     public function execute(Agente $agent): void
     {
-        $agent->setActive(false);
+        $agent->setActivo(false);
         $this->entityManager->flush();
     }
 }

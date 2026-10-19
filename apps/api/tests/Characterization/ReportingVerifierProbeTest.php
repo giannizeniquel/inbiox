@@ -98,8 +98,8 @@ final class ReportingVerifierProbeTest extends CharacterizationTestCase
 
         $viewer = $this->createAgent('Viewer');
         $this->token($viewer->getId(), 'viewer');
-        $viewer->addWorkspace($workspace);
-        $viewer->setActiveWorkspace($workspace);
+        $viewer->addEspacioDeTrabajo($workspace);
+        $viewer->setEspacioDeTrabajoActivo($workspace);
         $this->em->flush();
 
         return $this->loginAs('probe-agent@characterization.local', ['ROLE_AGENT'], $viewer);
@@ -272,8 +272,8 @@ final class ReportingVerifierProbeTest extends CharacterizationTestCase
         $viewer = $this->createAgent('Viewer');
         $this->token($viewer->getId(), 'viewer');
         $workspace = $this->em->getRepository(\App\Administracion\Workspace::class)->findOneBy(['phoneNumberId' => 'probe-ws']);
-        $viewer->addWorkspace($workspace);
-        $viewer->setActiveWorkspace($workspace);
+        $viewer->addEspacioDeTrabajo($workspace);
+        $viewer->setEspacioDeTrabajoActivo($workspace);
         $this->em->flush();
         $agentToken = $this->loginAs('probe-agent2@characterization.local', ['ROLE_AGENT'], $viewer);
         $supToken = $this->loginAs('probe-sup2@characterization.local', ['ROLE_SUPERVISOR']);

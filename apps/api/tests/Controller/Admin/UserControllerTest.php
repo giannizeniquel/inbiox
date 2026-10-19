@@ -106,7 +106,7 @@ class UserControllerTest extends WebTestCase
         $agent = $this->createAgent('Agent');
         $this->createUser('agent@test.local', ['ROLE_AGENT']);
         $user = $this->em->getRepository(User::class)->findOneBy(['email' => 'agent@test.local']);
-        $agent->setUser($user);
+        $agent->setUsuario($user);
         $this->em->flush();
 
         $token = $this->login('agent@test.local');

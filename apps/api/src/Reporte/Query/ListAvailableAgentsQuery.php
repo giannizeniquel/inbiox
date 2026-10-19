@@ -34,7 +34,7 @@ final class ListAvailableAgentsQuery
             // Filter by workspace if scoped
             if ($phoneNumberId !== null) {
                 $isInWorkspace = false;
-                foreach ($agent->getWorkspaces() as $ws) {
+                foreach ($agent->getEspaciosDeTrabajo() as $ws) {
                     if ($ws->getPhoneNumberId() === $phoneNumberId) {
                         $isInWorkspace = true;
                         break;
@@ -47,7 +47,7 @@ final class ListAvailableAgentsQuery
 
             $result[] = [
                 'agent_id' => $agent->getId(),
-                'agent_name' => $agent->getName(),
+                'agent_name' => $agent->getNombre(),
                 'in_shift' => true,
                 'active_tickets' => $this->ticketRepository->countActivosDeAgente($agent->getId()),
             ];

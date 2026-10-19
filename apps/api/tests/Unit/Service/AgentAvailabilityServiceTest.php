@@ -66,15 +66,15 @@ class AgentAvailabilityServiceTest extends TestCase
         int $maxActiveTickets = 5,
     ): Agente {
         $agent = new Agente('Agent-'.$id);
-        $agent->setActive($active);
-        $agent->setTimezone($timezone);
-        $agent->setMaxActiveTickets($maxActiveTickets);
+        $agent->setActivo($active);
+        $agent->setZonaHoraria($timezone);
+        $agent->setMaxTicketsActivos($maxActiveTickets);
 
         if ($isAvailableOverride !== null) {
-            $agent->setIsAvailableOverride($isAvailableOverride);
+            $agent->setDisponibilidadManual($isAvailableOverride);
         }
         if ($overrideUntil !== null) {
-            $agent->setOverrideUntil($overrideUntil);
+            $agent->setDisponibilidadManualHasta($overrideUntil);
         }
 
         $this->setEntityId($agent, $id);
@@ -95,7 +95,7 @@ class AgentAvailabilityServiceTest extends TestCase
         \assert($startTime !== false && $endTime !== false);
 
         $shift = new Turno($agent, $dayOfWeek, $startTime, $endTime);
-        $agent->addShift($shift);
+        $agent->addTurno($shift);
 
         $this->setEntityId($shift, $id);
 
@@ -150,21 +150,21 @@ class AgentAvailabilityServiceTest extends TestCase
     public function testDefaultTimezoneIsUtc(): void
     {
         $agent = new Agente('Test');
-        self::assertSame('UTC', $agent->getTimezone());
+        self::assertSame('UTC', $agent->getZonaHoraria());
     }
 
     public function testValidTimezoneAccepted(): void
     {
         $agent = new Agente('Test');
-        $agent->setTimezone('America/Argentina/Buenos_Aires');
-        self::assertSame('America/Argentina/Buenos_Aires', $agent->getTimezone());
+        $agent->setZonaHoraria('America/Argentina/Buenos_Aires');
+        self::assertSame('America/Argentina/Buenos_Aires', $agent->getZonaHoraria());
     }
 
     public function testInvalidTimezoneThrows(): void
     {
         $agent = new Agente('Test');
         $this->expectException(\InvalidArgumentException::class);
-        $agent->setTimezone('Invalid/Timezone');
+        $agent->setZonaHoraria('Invalid/Timezone');
     }
 
     // ────────────────────────────────────────────────────────────
@@ -847,7 +847,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
         $at = $this->utcDateTime('2026-06-15', '12:00');
 
-        // Expect TWO COUNT queries (one per isAvailable call)
+        // Expect TWO COUNT queries (one per isDisponible call)
         $this->ticketRepository->expects(self::exactly(2))
             ->method('countActivosDeAgente')
             ->willReturnOnConsecutiveCalls(2, 2);
@@ -875,7 +875,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $this->expectNoActiveTicketCount();
         $result = $this->service->isActivoAhora(
             $agent,
-            $agent->getShifts()->toArray(),
+            $agent->getTurnos()->toArray(),
             $this->utcDateTime('2026-06-15', '12:00'), // Monday, in shift
         );
 
@@ -905,7 +905,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $this->expectNoActiveTicketCount();
         $result = $this->service->isActivoAhora(
             $agent,
-            $agent->getShifts()->toArray(),
+            $agent->getTurnos()->toArray(),
             $this->utcDateTime('2026-06-15', '12:00'), // Monday, in shift — override still wins
         );
 
@@ -923,7 +923,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $this->expectNoActiveTicketCount();
         $result = $this->service->isActivoAhora(
             $agent,
-            $agent->getShifts()->toArray(),
+            $agent->getTurnos()->toArray(),
             $this->utcDateTime('2026-06-15', '12:00'),
         );
 
@@ -941,7 +941,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $this->expectNoActiveTicketCount();
         $result = $this->service->isActivoAhora(
             $agent,
-            $agent->getShifts()->toArray(),
+            $agent->getTurnos()->toArray(),
             $this->utcDateTime('2026-06-16', '12:00'),
         );
 
@@ -957,7 +957,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $this->expectNoActiveTicketCount();
         $result = $this->service->isActivoAhora(
             $agent,
-            $agent->getShifts()->toArray(),
+            $agent->getTurnos()->toArray(),
             $this->utcDateTime('2026-06-15', '12:00'),
         );
 
@@ -973,7 +973,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $this->expectNoActiveTicketCount();
         $result = $this->service->isActivoAhora(
             $agent,
-            $agent->getShifts()->toArray(),
+            $agent->getTurnos()->toArray(),
             $this->utcDateTime('2026-06-16', '12:00'), // Tuesday
         );
 
@@ -1001,7 +1001,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $this->expectNoActiveTicketCount();
         $result = $this->service->isActivoAhora(
             $agent,
-            $agent->getShifts()->toArray(),
+            $agent->getTurnos()->toArray(),
             $this->utcDateTime('2026-06-15', '12:00'),
         );
 
@@ -1015,7 +1015,7 @@ class AgentAvailabilityServiceTest extends TestCase
     public function testListAvailableAgentsReturnsEmptyWhenNoActive(): void
     {
         $this->agentRepository->expects(self::once())
-            ->method('findAllActive')
+            ->method('findActivos')
             ->willReturn([]);
 
         $result = $this->service->listarAgentesDisponibles(new \DateTimeImmutable('now'));
@@ -1033,7 +1033,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $this->createShift($agentOutShift, 2, '08:00', '16:00'); // Tuesday, not Monday
 
         $this->agentRepository->expects(self::once())
-            ->method('findAllActive')
+            ->method('findActivos')
             ->willReturn([$agentInShift, $agentOutShift]);
 
         // Batch-load shifts
@@ -1041,8 +1041,8 @@ class AgentAvailabilityServiceTest extends TestCase
             ->method('findByAgentes')
             ->with([1, 2])
             ->willReturn(\array_merge(
-                $agentInShift->getShifts()->toArray(),
-                $agentOutShift->getShifts()->toArray(),
+                $agentInShift->getTurnos()->toArray(),
+                $agentOutShift->getTurnos()->toArray(),
             ));
 
         $this->expectActiveTicketCount(1, 2);
@@ -1065,15 +1065,15 @@ class AgentAvailabilityServiceTest extends TestCase
         $this->createShift($agentFull, 1, '08:00', '16:00');
 
         $this->agentRepository->expects(self::once())
-            ->method('findAllActive')
+            ->method('findActivos')
             ->willReturn([$agentFree, $agentFull]);
 
         $this->agentShiftRepository->expects(self::once())
             ->method('findByAgentes')
             ->with([1, 2])
             ->willReturn(\array_merge(
-                $agentFree->getShifts()->toArray(),
-                $agentFull->getShifts()->toArray(),
+                $agentFree->getTurnos()->toArray(),
+                $agentFull->getTurnos()->toArray(),
             ));
 
         // Both COUNT queries will be called. We need to handle the
@@ -1106,13 +1106,13 @@ class AgentAvailabilityServiceTest extends TestCase
         $this->createShift($agentNoOverride, 1, '08:00', '16:00');
 
         $this->agentRepository->expects(self::once())
-            ->method('findAllActive')
+            ->method('findActivos')
             ->willReturn([$agentOverride, $agentNoOverride]);
 
         $this->agentShiftRepository->expects(self::once())
             ->method('findByAgentes')
             ->with([1, 2])
-            ->willReturn($agentNoOverride->getShifts()->toArray());
+            ->willReturn($agentNoOverride->getTurnos()->toArray());
 
         $this->expectActiveTicketCount(2, 0);
 
@@ -1134,18 +1134,18 @@ class AgentAvailabilityServiceTest extends TestCase
         $agent2 = $this->createAgent(id: 2);
         $this->createShift($agent2, 1, '08:00', '16:00');
 
-        // findAllActive returns them in arbitrary order (3, 1, 2)
+        // findActivos returns them in arbitrary order (3, 1, 2)
         $this->agentRepository->expects(self::once())
-            ->method('findAllActive')
+            ->method('findActivos')
             ->willReturn([$agent3, $agent1, $agent2]);
 
         $this->agentShiftRepository->expects(self::once())
             ->method('findByAgentes')
             ->with([3, 1, 2])
             ->willReturn(\array_merge(
-                $agent3->getShifts()->toArray(),
-                $agent1->getShifts()->toArray(),
-                $agent2->getShifts()->toArray(),
+                $agent3->getTurnos()->toArray(),
+                $agent1->getTurnos()->toArray(),
+                $agent2->getTurnos()->toArray(),
             ));
 
         // Each agent's count query
@@ -1175,7 +1175,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $this->createShift($agent, 1, '08:00', '16:00');
 
         $this->agentRepository->expects(self::once())
-            ->method('findAllActive')
+            ->method('findActivos')
             ->willReturn([$agent]);
 
         // Even if findByAgentes is called, we shouldn't need to load shifts
@@ -1183,7 +1183,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $this->agentShiftRepository->expects(self::once())
             ->method('findByAgentes')
             ->with([1])
-            ->willReturn($agent->getShifts()->toArray());
+            ->willReturn($agent->getTurnos()->toArray());
 
         $this->ticketRepository->expects(self::never())->method('countActivosDeAgente');
 
@@ -1204,7 +1204,7 @@ class AgentAvailabilityServiceTest extends TestCase
      * Manual test scenario from verification:
      * Agent with timezone America/Argentina/Buenos_Aires,
      * shift Friday 22:00-06:00,
-     * verify isAvailable at Saturday 02:30 UTC = true.
+     * verify isDisponible at Saturday 02:30 UTC = true.
      *
      * This is automated here with the cross-timezone + cross-midnight setup.
      */
@@ -1228,7 +1228,7 @@ class AgentAvailabilityServiceTest extends TestCase
 
     /**
      * Manual test scenario from verification:
-     * Same agent, isAvailable at Saturday 09:00 local = false.
+     * Same agent, isDisponible at Saturday 09:00 local = false.
      */
     public function testManualVerificationCrossMidnightFalse(): void
     {
@@ -1261,7 +1261,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $workspace->method('getId')->willReturn(1);
 
         $this->agentRepository->expects(self::once())
-            ->method('findByWorkspace')
+            ->method('findByEspacioDeTrabajo')
             ->with($workspace)
             ->willReturn([]);
 
@@ -1283,7 +1283,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $inactiveAgent = $this->createAgent(id: 2, active: false);
 
         $this->agentRepository->expects(self::once())
-            ->method('findByWorkspace')
+            ->method('findByEspacioDeTrabajo')
             ->with($workspace)
             ->willReturn([$activeAgent, $inactiveAgent]);
 
@@ -1314,7 +1314,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $agent = $this->createAgent(id: 1, isAvailableOverride: true, overrideUntil: null, maxActiveTickets: 1);
 
         $this->agentRepository->expects(self::once())
-            ->method('findByWorkspace')
+            ->method('findByEspacioDeTrabajo')
             ->with($workspace)
             ->willReturn([$agent]);
 
@@ -1348,7 +1348,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $agentActivo = $this->createAgent(id: 2, isAvailableOverride: true, overrideUntil: null);
 
         $this->agentRepository->expects(self::once())
-            ->method('findByWorkspace')
+            ->method('findByEspacioDeTrabajo')
             ->with($workspace)
             ->willReturn([$agentInactivo, $agentActivo]);
 
@@ -1385,7 +1385,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $agent2 = $this->createAgent(id: 2, isAvailableOverride: true, overrideUntil: null);
 
         $this->agentRepository->expects(self::once())
-            ->method('findByWorkspace')
+            ->method('findByEspacioDeTrabajo')
             ->with($workspace)
             ->willReturn([$agent3, $agent1, $agent2]);
 
@@ -1418,7 +1418,7 @@ class AgentAvailabilityServiceTest extends TestCase
         $agent = $this->createAgent(id: 1, isAvailableOverride: true, overrideUntil: null, maxActiveTickets: 5);
 
         $this->agentRepository->expects(self::once())
-            ->method('findByWorkspace')
+            ->method('findByEspacioDeTrabajo')
             ->with($workspace)
             ->willReturn([$agent]);
 
