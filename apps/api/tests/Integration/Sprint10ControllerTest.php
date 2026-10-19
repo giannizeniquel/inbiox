@@ -14,7 +14,7 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 /**
  * HTTP-level integration tests for Sprint 10 Agent Management endpoints.
  *
- * Covers AgentAvailabilityController's 5 endpoints:
+ * Covers DisponibilidadDeAgenteController's 5 endpoints:
  *   POST   /agents/{id}/availability
  *   DELETE /agents/{id}/availability
  *   GET    /agents/{id}/availability

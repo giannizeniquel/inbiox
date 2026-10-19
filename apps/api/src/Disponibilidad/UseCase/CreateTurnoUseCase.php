@@ -57,7 +57,7 @@ final class CreateTurnoUseCase
 
             $this->em->lock($agente, LockMode::PESSIMISTIC_WRITE);
 
-            // 2. Create AgentShift entity
+            // 2. Create Turno entity
             $inicio = \DateTimeImmutable::createFromFormat('H:i', $horaDeInicio);
             $fin = \DateTimeImmutable::createFromFormat('H:i', $horaDeFin);
 

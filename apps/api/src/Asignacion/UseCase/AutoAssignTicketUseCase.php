@@ -22,7 +22,7 @@ use Doctrine\ORM\EntityManagerInterface;
  *
  * Pipeline (single transaction):
  *   1. SELECT ticket FOR UPDATE (idempotent)
- *   2. listAvailableAgents() via DisponibilidadDeAgenteService (SOLE eligibility check)
+ *   2. listarAgentesDisponibles() via DisponibilidadDeAgenteService (SOLE eligibility check)
  *   3. SELECT agents FOR UPDATE WHERE id IN (...)
  *   4. Re-filter capacity inside lock (COUNT may have changed)
  *   5. Tiebreaker: lowest active count → fewest AUTO_ASSIGN today → lowest id
@@ -105,7 +105,7 @@ final class AutoAssignTicketUseCase
             ];
         }
 
-        // 3. Get available agents via AgentAvailabilityService (SOLE eligibility check)
+        // 3. Get available agents via DisponibilidadDeAgenteService (SOLE eligibility check)
         //    This uses the full cascade: active → override → schedule → capacity.
         $nowUtc = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
         $availableAgents = $this->availabilityService->listarAgentesDisponibles($nowUtc);

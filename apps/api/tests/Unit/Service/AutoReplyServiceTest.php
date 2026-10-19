@@ -66,7 +66,7 @@ class AutoReplyServiceTest extends TestCase
         $this->eventCollector = $this->createMock(EventCollector::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
-        // Create REAL AgentAvailabilityService with mocked deps
+        // Create REAL DisponibilidadDeAgenteService with mocked deps
         $this->ticketRepo = $this->createMock(TicketRepository::class);
         $this->availabilityService = new DisponibilidadDeAgenteService(
             $this->agentRepo,

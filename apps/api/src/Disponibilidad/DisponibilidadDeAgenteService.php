@@ -34,7 +34,7 @@ final class DisponibilidadDeAgenteService
      * Evaluate whether a single agent is available at a given UTC moment.
      *
      * The agent's shifts are loaded from the entity (lazy-loads if not already
-     * initialized). For batch evaluation, use listAvailableAgents().
+     * initialized). For batch evaluation, use listarAgentesDisponibles().
      */
     public function isDisponible(Agent $agente, \DateTimeImmutable $atUtc): bool
     {
@@ -75,7 +75,7 @@ final class DisponibilidadDeAgenteService
      * NEVER CONSULTED — an in-shift agent at full capacity is still Activo.
      *
      * Shifts are passed explicitly so both the batch roster (preloaded via
-     * findByAgents()) and a single-agent guard check can call this with no
+     * findByAgentes()) and a single-agent guard check can call this with no
      * N+1 query.
      *
      * @param Turno[] $turnos
@@ -170,7 +170,7 @@ final class DisponibilidadDeAgenteService
      * `active = true` agent (an `active = false` agent NEVER appears),
      * each carrying a computed `is_active_now` (Activo/Inactivo) flag.
      *
-     * Unlike listAvailableAgents()/listAvailableAgentsInWorkspace() (removed),
+     * Unlike listarAgentesDisponibles()/listAvailableAgentsInWorkspace() (removed),
      * this does NOT filter agents out — it always returns the roster so the
      * UI can show who exists and why they are or aren't currently assignable.
      * Capacity is NEVER consulted for eligibility (only reported for display).

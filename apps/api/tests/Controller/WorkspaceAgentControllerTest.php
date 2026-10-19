@@ -13,7 +13,7 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
- * Integration tests for WorkspaceAgentController.
+ * Integration tests for AgentesDisponiblesController.
  *
  * Covers:
  * - GET /api/workspaces/{id}/available-agents

@@ -1009,7 +1009,7 @@ class AgentAvailabilityServiceTest extends TestCase
     }
 
     // ────────────────────────────────────────────────────────────
-    //  listAvailableAgents
+    //  listarAgentesDisponibles
     // ────────────────────────────────────────────────────────────
 
     public function testListAvailableAgentsReturnsEmptyWhenNoActive(): void
@@ -1178,7 +1178,7 @@ class AgentAvailabilityServiceTest extends TestCase
             ->method('findAllActive')
             ->willReturn([$agent]);
 
-        // Even if findByAgents is called, we shouldn't need to load shifts
+        // Even if findByAgentes is called, we shouldn't need to load shifts
         // because override=false blocks before schedule check
         $this->agentShiftRepository->expects(self::once())
             ->method('findByAgentes')
@@ -1249,7 +1249,7 @@ class AgentAvailabilityServiceTest extends TestCase
     }
 
     // ────────────────────────────────────────────────────────────
-    //  listWorkspaceAgentRoster
+    //  listarAgentesDelEspacioDeTrabajo
     //  Spec: agent-assignment-eligibility — Workspace Agent Roster Endpoint.
     //  Returns EVERY active=true workspace agent (never active=false),
     //  each carrying is_active_now (override-or-shift, capacity ignored).
