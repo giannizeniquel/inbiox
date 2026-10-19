@@ -211,7 +211,7 @@ class WorkspaceAgentControllerTest extends WebTestCase
     /**
      * Roster behavior (not survivor-list): an agent outside their shift, with
      * no override, is still RETURNED in the roster — just flagged Inactivo.
-     * Uses isAvailableOverride=false for determinism (not weekday-dependent).
+     * Uses disponibilidadManual=false for determinism (not weekday-dependent).
      */
     public function testAgentWithoutActiveShiftReturnedAsInactivo(): void
     {

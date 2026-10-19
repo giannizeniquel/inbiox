@@ -431,7 +431,7 @@ class Sprint10AgentManagementTest extends WebTestCase
     // ────────────────────────────────────────────────────────
     //  Assign-time Activo guard (ticket-assign-dropdown-status, Phase 3)
     //
-    //  HARD BLOCK for every role — no bypass. Uses isAvailableOverride for
+    //  HARD BLOCK for every role — no bypass. Uses disponibilidadManual for
     //  deterministic Activo/Inactivo state (not weekday-dependent).
     // ────────────────────────────────────────────────────────
 
