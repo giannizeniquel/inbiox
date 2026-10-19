@@ -119,9 +119,9 @@ Todas **Agente**, salvo export. Filtran por workspace activo; nunca por agente.
 
 | Método | Path | Acción | Rol | Nota |
 |---|---|---|---|---|
-| GET | `/api/me/settings` | `getSettings` | Agente | |
-| PUT | `/api/me/profile` | `updateProfile` | Agente | Firma. |
-| PUT | `/api/me/notifications` | `updateNotifications` | Agente | Se guarda; el frontend no lo usa. |
+| GET | `/api/me/settings` | `getConfiguracion` | Agente | |
+| PUT | `/api/me/profile` | `updatePerfil` | Agente | Firma. |
+| PUT | `/api/me/notifications` | `updateNotificaciones` | Agente | Se guarda; el frontend no lo usa. |
 | PUT | `/api/me/auto-reply` | `updateRespuestaAutomatica` | Agente | |
 | GET | `/api/me/shifts` | `getTurnos` | Agente | |
 | PUT | `/api/me/shifts` | `reemplazarTurnos` | Agente | `ReemplazarTurnosUseCase`. |
@@ -134,7 +134,7 @@ Todas **Agente**, salvo export. Filtran por workspace activo; nunca por agente.
 | Método | Path | Controlador::acción | Rol | Nota |
 |---|---|---|---|---|
 | GET | `/api/workspaces/{id}/available-agents` | `AgentesDisponiblesController::listarAgentesDisponibles` | Agente (no verifica pertenencia al workspace) | Roster del desplegable. |
-| GET | `/api/teams` | `EquipoController::list` | Agente | Equipos de mis workspaces. |
+| GET | `/api/teams` | `EquipoController::listar` | Agente | Equipos de mis workspaces. |
 | POST/DELETE/GET | `/api/agents/{id}/availability` | `DisponibilidadDeAgenteController::setDisponibilidadManual` / `quitarDisponibilidadManual` / `getDisponibilidad` | Agente **sobre cualquier agente** ([R3](00-estado-y-pendientes.md#r3-cualquier-agente-modifica-disponibilidad-y-turnos-de-cualquier-agente)) | |
 | POST | `/api/agents/{id}/shifts` | `createTurno` | ídem | |
 | DELETE | `/api/agents/{id}/shifts/{shiftId}` | `deleteTurno` | ídem | |

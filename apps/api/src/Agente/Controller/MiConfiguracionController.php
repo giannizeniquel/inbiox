@@ -36,9 +36,9 @@ final class MiConfiguracionController
 
     #[IsGranted('ROLE_AGENT')]
     #[Route('/api/me/settings', name: 'app_me_settings', methods: ['GET'])]
-    public function getSettings(): JsonResponse
+    public function getConfiguracion(): JsonResponse
     {
-        $agent = $this->getAgent();
+        $agent = $this->getAgente();
         if (null === $agent) {
             return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
         }
@@ -101,9 +101,9 @@ final class MiConfiguracionController
 
     #[IsGranted('ROLE_AGENT')]
     #[Route('/api/me/profile', name: 'app_me_profile', methods: ['PUT'])]
-    public function updateProfile(#[MapRequestPayload] UpdatePerfilRequest $request): JsonResponse
+    public function updatePerfil(#[MapRequestPayload] UpdatePerfilRequest $request): JsonResponse
     {
-        $agent = $this->getAgent();
+        $agent = $this->getAgente();
         if (null === $agent) {
             return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
         }
@@ -119,9 +119,9 @@ final class MiConfiguracionController
 
     #[IsGranted('ROLE_AGENT')]
     #[Route('/api/me/notifications', name: 'app_me_notifications', methods: ['PUT'])]
-    public function updateNotifications(#[MapRequestPayload] UpdateNotificacionesRequest $request): JsonResponse
+    public function updateNotificaciones(#[MapRequestPayload] UpdateNotificacionesRequest $request): JsonResponse
     {
-        $agent = $this->getAgent();
+        $agent = $this->getAgente();
         if (null === $agent) {
             return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
         }
@@ -134,7 +134,7 @@ final class MiConfiguracionController
         ]);
     }
 
-    private function getAgent(): ?Agente
+    private function getAgente(): ?Agente
     {
         $user = $this->security->getUser();
 

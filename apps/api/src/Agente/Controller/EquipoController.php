@@ -35,7 +35,7 @@ final class EquipoController
     ) {}
 
     #[Route('/api/teams', name: 'app_teams_list', methods: ['GET'])]
-    public function list(): JsonResponse
+    public function listar(): JsonResponse
     {
         $user = $this->security->getUser();
         if (!$user instanceof User) {
