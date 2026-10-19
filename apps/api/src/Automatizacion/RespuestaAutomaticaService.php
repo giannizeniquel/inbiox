@@ -36,7 +36,7 @@ use Symfony\Component\Uid\Ulid;
  * If any condition fails, the method returns silently (fire-and-forget).
  * Exceptions from GraphClient are caught and logged — never propagated.
  */
-final class AutoReplyService
+final class RespuestaAutomaticaService
 {
     private const AUTO_REPLY_WINDOW_HOURS = 2;
 

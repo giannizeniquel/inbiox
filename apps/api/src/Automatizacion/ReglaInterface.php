@@ -2,17 +2,17 @@
 
 namespace App\Automatizacion;
 
-interface RuleInterface
+interface ReglaInterface
 {
     /**
      * Check if this rule supports the given context.
      */
-    public function supports(RuleContext $context): bool;
+    public function supports(ContextoDeRegla $context): bool;
 
     /**
      * Execute the rule's action.
      */
-    public function execute(RuleContext $context): void;
+    public function execute(ContextoDeRegla $context): void;
 
     /**
      * Get unique name for this rule.
@@ -22,5 +22,5 @@ interface RuleInterface
     /**
      * Build execution key for idempotency check.
      */
-    public function buildExecutionKey(RuleContext $context): string;
+    public function buildExecutionKey(ContextoDeRegla $context): string;
 }

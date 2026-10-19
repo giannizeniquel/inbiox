@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Service;
 
 use App\Disponibilidad\AgentAvailabilityService;
-use App\Automatizacion\AutoReplyService;
+use App\Automatizacion\RespuestaAutomaticaService;
 use App\Compartido\Graph\GraphClient;
 use App\Agente\Agent;
 use App\Disponibilidad\AgentShift;
@@ -29,7 +29,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * Unit tests for AutoReplyService::maybeSend.
+ * Unit tests for RespuestaAutomaticaService::maybeSend.
  *
  * Coverage:
  * 1. Does NOT send when auto_reply_enabled = false
@@ -54,7 +54,7 @@ class AutoReplyServiceTest extends TestCase
     private EventCollector&MockObject $eventCollector;
     private LoggerInterface&MockObject $logger;
     private ConversationWindowPolicy $windowPolicy;
-    private AutoReplyService $service;
+    private RespuestaAutomaticaService $service;
 
     protected function setUp(): void
     {
@@ -76,7 +76,7 @@ class AutoReplyServiceTest extends TestCase
 
         $this->windowPolicy = new ConversationWindowPolicy(safetyMarginMinutes: 5);
 
-        $this->service = new AutoReplyService(
+        $this->service = new RespuestaAutomaticaService(
             $this->agentRepo,
             $this->availabilityService,
             $this->graphClient,

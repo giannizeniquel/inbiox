@@ -57,7 +57,7 @@ Una bandeja de atención compartida: los mensajes que llegan por **WhatsApp Clou
 | **Capacidad** | Máximo de tickets activos (`new`/`active`/`waiting`) por agente; por defecto 10. | `Agent.php` (`max_active_tickets`) |
 | **Auto-asignación** | El sistema elige un agente disponible con menos carga cuando llega un mensaje. | `Asignacion/UseCase/AutoAssignTicketUseCase.php` |
 | **Auto-claim** | Cuando un agente responde un ticket no resuelto ni cerrado, pasa a ser su dueño, **aunque el ticket ya tuviera otro dueño** (se registra como `REASSIGN` y se lo quita al anterior). | `Conversacion/UseCase/HandleOutboundMessageUseCase.php:224-246` |
-| **Auto-respuesta** | Mensaje fijo que se envía al cliente si su agente no está disponible (máximo 1 cada 2 h por contacto). | `Automatizacion/AutoReplyService.php` |
+| **Auto-respuesta** | Mensaje fijo que se envía al cliente si su agente no está disponible (máximo 1 cada 2 h por contacto). | `Automatizacion/RespuestaAutomaticaService.php` |
 | **Ventana de 24 h** | Regla de Meta: solo se puede enviar texto libre hasta 24 h después del último mensaje del cliente. Pasado ese plazo hay que usar una **plantilla**. | `Conversacion/ConversationWindowPolicy.php` |
 | **Plantilla (template)** | Mensaje pre-aprobado por Meta que se puede enviar fuera de la ventana de 24 h. Hoy no tiene UI. | `ProviderProxyController::sendTemplate` → `SendTemplateUseCase` |
 | **WAMID** | Identificador que Meta asigna a cada mensaje de WhatsApp. Se guarda en `messages.external_id`. | — |

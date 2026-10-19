@@ -42,7 +42,7 @@ Estas son las preguntas que solo el desarrollador (o el cliente) puede responder
 | R-T5 | Primera respuesta del agente: `new → active` y se registra `first_response_at`. | `HandleOutboundMessageUseCase.php:281-309` | Negocio | **Confirmada** — métrica FRT (análisis de brecha fila #16). |
 | R-T6 | Cuando el agente responde, el ticket pasa a `waiting` (espera al cliente). | `HandleOutboundMessageUseCase.php:285-288` | Negocio | Regla no confirmada. |
 | R-T7 | Cuando el cliente responde a un ticket `waiting`, vuelve a `active`. | `HandleInboundMessageUseCase.php:394-408` | Negocio | Regla no confirmada (implícita en la FSM). |
-| R-T8 | Cuando el cliente escribe en un ticket `resolved`, se reabre en `waiting`. | `Automatizacion/AutoReopenRule.php:17-47` | Negocio | Reapertura: **Confirmada** (análisis de brecha fila #13). Destino `waiting`: Regla no confirmada. |
+| R-T8 | Cuando el cliente escribe en un ticket `resolved`, se reabre en `waiting`. | `Automatizacion/ReglaDeReaperturaAutomatica.php:17-47` | Negocio | Reapertura: **Confirmada** (análisis de brecha fila #13). Destino `waiting`: Regla no confirmada. |
 | R-T9 | Resolver o cerrar quita el dueño y deja auditoría `UNASSIGN`. | `Ticket/UseCase/CambiarEstadoDeTicketUseCase.php:37-61` (llamado en `:99`, `:172`, `:289`) → `AssignmentService.php:65` | Técnica | **Regla no confirmada.** El docblock (`:21-22`) lo justifica como corrección de auditoría "W1". Efectos graves: ver [R6](00-estado-y-pendientes.md#r6-resolver-quita-el-dueño-contradicción-autoinfligida). |
 | R-T10 | El cierre manual (`/close`) solo aplica a tickets `resolved`. | `CambiarEstadoDeTicketUseCase.php:283-285` | Negocio | **Confirmada** — spec `whatsapp-conversation-window` "No Regression to Manual Closure". |
 | R-T11 | Desde `/transition`, un ticket `active`/`waiting` puede ir directo a `closed`. | `MaquinaDeEstadosDeTicket.php:39-48` | Técnica | Regla no confirmada. La transición se agregó para la ventana de 24 h (`:20-24`) y de paso habilita el cierre manual directo. |
@@ -56,7 +56,7 @@ Estas son las preguntas que solo el desarrollador (o el cliente) puede responder
 
 | ID | Regla | Dónde | Clasif. | Estado |
 |---|---|---|---|---|
-| R-W1 | No se puede enviar texto libre si pasaron 24 h (menos un margen) desde el último mensaje del cliente; sin mensaje registrado, tampoco. | `Conversacion/ConversationWindowPolicy.php:30-38`; `HandleOutboundMessageUseCase.php:214-216`; `Automatizacion/AutoReplyService.php:129-135` | Negocio (regla de Meta) | **Confirmada** — spec `whatsapp-conversation-window` "Free-Text Send Blocking". |
+| R-W1 | No se puede enviar texto libre si pasaron 24 h (menos un margen) desde el último mensaje del cliente; sin mensaje registrado, tampoco. | `Conversacion/ConversationWindowPolicy.php:30-38`; `HandleOutboundMessageUseCase.php:214-216`; `Automatizacion/RespuestaAutomaticaService.php:129-135` | Negocio (regla de Meta) | **Confirmada** — spec `whatsapp-conversation-window` "Free-Text Send Blocking". |
 | R-W2 | El margen de seguridad es configurable (5 min). | `config/services.yaml:70-80`; `.env` | Técnica | **Confirmada** — spec "Configurable Safety Margin". |
 | R-W3 | Solo los mensajes entrantes actualizan `last_inbound_message_at`. | `HandleInboundMessageUseCase.php:422` | Negocio | **Confirmada** — spec "Inbound Message Timestamp Tracking". |
 | R-W4 | Los tickets con ventana vencida se cierran automáticamente (incluso `new` y `resolved`). | `Conversacion/UseCase/ConversationWindowExpiryService.php:31-36, 55-93` | Negocio | **Confirmada** — spec "Automatic Closure on Window Expiry". Solo corre con el profile `window-closer`. |
@@ -119,10 +119,10 @@ Estas son las preguntas que solo el desarrollador (o el cliente) puede responder
 
 | ID | Regla | Dónde | Clasif. | Estado |
 |---|---|---|---|---|
-| R-R1 | Un mensaje entrante que contiene "error" etiqueta el ticket como `error`. | `Automatizacion/KeywordTaggingRule.php:9-39` | Accidental (demo) | **Confirmada como demo** — análisis de brecha §1 y fila #1. |
-| R-R2 | Cada regla se ejecuta una sola vez por clave; si falla, no se reintenta. | `Automatizacion/RuleExecutorService.php:43-72` | Técnica | Regla no confirmada. |
-| R-R3 | Auto-respuesta solo si el agente objetivo no está disponible y la tiene activada. | `AutoReplyService.php:75-95` | Negocio | **Confirmada** — spec `message-attribution` ("unavailable-agent auto-reply"); fila #6b. |
-| R-R4 | Máximo una auto-respuesta por contacto cada 2 h. | `AutoReplyService.php:41` | Negocio | **Contradicción**: código 2 h; docblock `:31` y análisis de brecha fila #6b dicen 4 h. Regla no confirmada. |
+| R-R1 | Un mensaje entrante que contiene "error" etiqueta el ticket como `error`. | `Automatizacion/ReglaDeEtiquetadoPorPalabraClave.php:9-39` | Accidental (demo) | **Confirmada como demo** — análisis de brecha §1 y fila #1. |
+| R-R2 | Cada regla se ejecuta una sola vez por clave; si falla, no se reintenta. | `Automatizacion/EjecutorDeReglas.php:43-72` | Técnica | Regla no confirmada. |
+| R-R3 | Auto-respuesta solo si el agente objetivo no está disponible y la tiene activada. | `RespuestaAutomaticaService.php:75-95` | Negocio | **Confirmada** — spec `message-attribution` ("unavailable-agent auto-reply"); fila #6b. |
+| R-R4 | Máximo una auto-respuesta por contacto cada 2 h. | `RespuestaAutomaticaService.php:41` | Negocio | **Contradicción**: código 2 h; docblock `:31` y análisis de brecha fila #6b dicen 4 h. Regla no confirmada. |
 
 ## Contactos, etiquetas y equipos
 
@@ -162,7 +162,7 @@ Detalle en [07](07-frontend.md#lógica-de-negocio-que-vive-en-el-frontend).
 | Normalización de teléfono | entrante, `NormalizadorDeTelefono`, `UpdateContactoUseCase` | **No** (umbrales distintos). |
 | Cierre automático | `ConversationWindowExpiryService` (vivo). `AutoCloseRule` y `AutoCloseTicketUseCase` se borraron en la fase 1. | Resuelto: queda un solo criterio. |
 | Validación de turnos | `CreateAgentShiftUseCase`, `ReplaceAgentShiftsUseCase`, `ShiftInputDTO`, CHECK de la tabla | Mismas reglas, distintos nombres de campo y mensajes. |
-| Ventana de 24 h | `HandleOutboundMessageUseCase.php:214`, `AutoReplyService.php:129`, frontend `composer.component.ts:70-76` | Sí (el frontend usa el reloj del navegador; el backend manda). |
+| Ventana de 24 h | `HandleOutboundMessageUseCase.php:214`, `RespuestaAutomaticaService.php:129`, frontend `composer.component.ts:70-76` | Sí (el frontend usa el reloj del navegador; el backend manda). |
 | FSM del ticket | `MaquinaDeEstadosDeTicket.php`; frontend `status-actions.component.ts:21-27` (componente sin uso) y `ticket.store.ts:182-187` (`new → active` al asignar) | La copia del frontend no se usa; la transición implícita sí. |
 | Ticket resuelto/cerrado bloquea cambios de dueño | `TicketVoter` (asignación manual, 409 para todos) y `TicketResponsabilidadGuard` (respuesta, permite a privilegiados) | Distintos a propósito; documentado en cada lugar. |
 | Permiso para asignar | `TicketVoter::ASSIGN` y `ticket-list.component.ts:219-236` | Sí. |

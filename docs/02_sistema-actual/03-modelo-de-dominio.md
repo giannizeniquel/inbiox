@@ -99,7 +99,7 @@ Tablas técnicas sin relaciones de negocio (no incluidas en el diagrama): `outbo
 |---|---|---|
 | `OutboxEvent` (`outbox_events`) | `Compartido/Outbox/OutboxEvent.php` | Cola de eventos a publicar en Mercure (`pending` → `published` / `dead_letter`). `aggregate_id` mezcla IDs de ticket y de agente según `aggregate_type`. |
 | `ProcessedEvent` (`processed_events`) | `Compartido/ProcessedEvent.php` | Idempotencia genérica (clave → resultado). Se usa para mensajes salientes y para el límite de auto-respuestas; no tiene que ver con tickets pese a su carpeta. |
-| `RuleExecutionLog` (`rule_execution_logs`) | `Automatizacion/RuleExecutionLog.php` | Idempotencia y log de reglas automáticas. |
+| `RegistroDeRegla` (`rule_execution_logs`) | `Automatizacion/RegistroDeRegla.php` | Idempotencia y log de reglas automáticas. |
 | `WebhookPayload` (`webhook_payloads`) | `Conversacion/WebhookPayload.php` | Copia cruda de cada POST de Meta, guardada antes de procesar. `processed` **nunca se pone en `true`**. Es lo único que queda si un mensaje se pierde. |
 | `RefreshToken` (`refresh_tokens`) | `Autenticacion/RefreshToken.php` | Tokens de refresco de sesión (bundle Gesdinet). |
 

@@ -7,7 +7,7 @@ namespace App\Automatizacion\UseCase;
 use App\Agente\Agent;
 use Doctrine\ORM\EntityManagerInterface;
 
-final class UpdateAutoReplySettingsUseCase
+final class UpdateConfiguracionDeRespuestaAutomaticaUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,

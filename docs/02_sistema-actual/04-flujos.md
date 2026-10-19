@@ -78,11 +78,11 @@ flowchart TD
 | 12 | Si el ticket existía: bloqueo pesimista; `waiting → active`. | `:374-388`, `:394-408` | R-T7 |
 | 13 | Actualiza `last_message_at`, `updated_at` y **`last_inbound_message_at`** (único escritor). | `:410-423` | R-W3 |
 | 14 | Recolecta `TicketCreatedEvent` / `MessageCreatedEvent`. | `:429-455` | |
-| 15 | Ejecuta reglas `inbound` (`KeywordTaggingRule`, `AutoReopenRule`). | `:461-465` | R-R1, R-T8 |
+| 15 | Ejecuta reglas `inbound` (`ReglaDeEtiquetadoPorPalabraClave`, `ReglaDeReaperturaAutomatica`). | `:461-465` | R-R1, R-T8 |
 | 16 | Despacha `TicketNeedsAutoAssignmentEvent` → listener → `AutoAssignTicketUseCase::executeInTransaction()` **dentro de la misma transacción**. | `:466-468`; `Asignacion/EventListener/TicketAutoAssignmentRequestedListener.php:17-20` | ver F6 |
-| 17 | Commit. Después: `AutoReplyService::maybeSend()` y escritura de eventos en el outbox. | `:83-99`, `:107-156` | ver F9, F13 |
+| 17 | Commit. Después: `RespuestaAutomaticaService::maybeSend()` y escritura de eventos en el outbox. | `:83-99`, `:107-156` | ver F9, F13 |
 
-- **Entidades:** Contact, Conversation, Message, Ticket, EventoDeTicket, Tag/EtiquetaDeTicket, Assignment, Agent, OutboxEvent, WebhookPayload, ProcessedEvent, RuleExecutionLog.
+- **Entidades:** Contacto, Conversation, Message, Ticket, EventoDeTicket, Etiqueta/EtiquetaDeTicket, Assignment, Agent, OutboxEvent, WebhookPayload, ProcessedEvent, RegistroDeRegla.
 - **Persistencia:** `webhook_payloads`, `contacts`, `conversations`, `messages`, `tickets`, `ticket_events`, `tags`/`ticket_tags`, `rule_execution_logs`, `assignments`, `processed_events`, `outbox_events`.
 - **Efectos laterales:** descarga de media de Meta; posible auto-respuesta por Graph API; eventos en tiempo real.
 - **Resultado:** el mensaje queda en la conversación; el ticket queda `new` (sin dueño), `active` (con dueño auto-asignado) o `waiting` (si estaba resuelto).
@@ -165,7 +165,7 @@ stateDiagram-v2
     waiting --> active : el cliente responde
     waiting --> resolved
     waiting --> closed
-    resolved --> waiting : el cliente escribe (AutoReopenRule)
+    resolved --> waiting : el cliente escribe (ReglaDeReaperturaAutomatica)
     resolved --> closed
     closed --> active : solo si se cerró por ventana 24 h (fuera de la FSM)
 ```
@@ -188,7 +188,7 @@ stateDiagram-v2
 | 4 | El controlador clasifica el cierre (`owner`/`override`/`unowned`) y guarda un `EventoDeTicket` con `source = u:{userId}`. Si falla, solo se loguea. | `Ticket/ClasificadorDeAuditoriaDeCierre.php:25-38`; `Ticket/UseCase/RegistrarAuditoriaDeCierreUseCase.php` | R-T15 |
 | 5 | **No se escribe nada en el outbox**: los demás navegadores no se enteran hasta recargar. | — | P-5 |
 
-**Quién más cambia `tickets.status`** (fuera de este flujo): `AssignmentService` (`new → active` al asignar), `HandleInboundMessageUseCase` (`waiting → active`), `HandleOutboundMessageUseCase` (`new → active`, `active → waiting`), `AutoReopenRule` (`resolved → waiting`), `cerrarPorVentanaVencida` y `reabrirPorMensajeEntrante` (F8), `DebugController::status` (dev).
+**Quién más cambia `tickets.status`** (fuera de este flujo): `AssignmentService` (`new → active` al asignar), `HandleInboundMessageUseCase` (`waiting → active`), `HandleOutboundMessageUseCase` (`new → active`, `active → waiting`), `ReglaDeReaperturaAutomatica` (`resolved → waiting`), `cerrarPorVentanaVencida` y `reabrirPorMensajeEntrante` (F8), `DebugController::status` (dev).
 
 **Si falla, revisar:**
 1. 403 → voter: `TicketVoter.php` (¿el usuario tiene agente vinculado? ¿es el dueño?).
@@ -293,15 +293,15 @@ stateDiagram-v2
 
 ## F9. Reglas automáticas y auto-respuesta
 
-**Motor:** `Automatizacion/RuleExecutorService.php:36-74`. Para cada regla que soporta el disparador: arma una clave, si ya existe en `rule_execution_logs` la salta, ejecuta y registra éxito o fallo. **Una regla que falló nunca se reintenta** (la misma clave ya existe). Las reglas se registran a mano en `Automatizacion/DependencyInjection/RulePass.php:29-33`.
+**Motor:** `Automatizacion/EjecutorDeReglas.php:36-74`. Para cada regla que soporta el disparador: arma una clave, si ya existe en `rule_execution_logs` la salta, ejecuta y registra éxito o fallo. **Una regla que falló nunca se reintenta** (la misma clave ya existe). Las reglas se registran a mano en `Automatizacion/DependencyInjection/ReglaPass.php:29-33`.
 
 | Regla | Disparador | Qué hace | ¿Corre? |
 |---|---|---|---|
-| `Automatizacion/KeywordTaggingRule.php` | `inbound` | Si el texto contiene "error" (subcadena) → tag `error`. | **Sí** (demo hardcodeada). |
-| `Automatizacion/AutoReopenRule.php` | `inbound` | `resolved → waiting` + `EventoDeTicket(auto_reopened)`. | **Sí.** |
+| `Automatizacion/ReglaDeEtiquetadoPorPalabraClave.php` | `inbound` | Si el texto contiene "error" (subcadena) → tag `error`. | **Sí** (demo hardcodeada). |
+| `Automatizacion/ReglaDeReaperturaAutomatica.php` | `inbound` | `resolved → waiting` + `EventoDeTicket(auto_reopened)`. | **Sí.** |
 | ~~`Domain/Rule/AutoCloseRule.php`~~ | `manual` | `resolved → closed` si `updated_at` ≥ 24 h. | **Borrado en la fase 1 de la limpieza.** Nunca se disparaba. |
 
-**Auto-respuesta** (`Automatizacion/AutoReplyService.php`, post-commit del mensaje entrante):
+**Auto-respuesta** (`Automatizacion/RespuestaAutomaticaService.php`, post-commit del mensaje entrante):
 
 1. Agente objetivo: el dueño si está activo; si no, el **primer** agente activo con auto-respuesta habilitada del workspace del ticket (`:207-238`).
 2. Requiere `auto_reply_enabled` y mensaje no vacío (`:79-86`).
@@ -309,14 +309,14 @@ stateDiagram-v2
 4. Máximo una por contacto cada **2 h** (`AUTO_REPLY_WINDOW_HOURS = 2`, `:38`; el docblock `:31` y el análisis de brecha dicen 4 h). Guardado en `processed_events`.
 5. Respeta la ventana de 24 h; envía por Graph; persiste el mensaje con `sender_type=automatic`.
 
-**Si falla, revisar:** `AutoReplyService.php` (errores tragados en `:60-66`) → configuración del agente en `/settings` → `processed_events` (clave `auto-reply:{contactId}`) → `rule_execution_logs` para las reglas.
+**Si falla, revisar:** `RespuestaAutomaticaService.php` (errores tragados en `:60-66`) → configuración del agente en `/settings` → `processed_events` (clave `auto-reply:{contactId}`) → `rule_execution_logs` para las reglas.
 
 ---
 
 ## F10. Etiquetas
 
-- **Productor único hoy:** `KeywordTaggingRule` (tag `error`).
-- `AgregarEtiquetaATicketUseCase` existe (normaliza a minúsculas, es idempotente, audita en `ticket_events`) y solo lo usa `KeywordTaggingRule`. **No hay forma HTTP de etiquetar a mano**: `TagController` (sin ruta) y `RemoveTagFromTicketUseCase` se borraron en la fase 1.
+- **Productor único hoy:** `ReglaDeEtiquetadoPorPalabraClave` (tag `error`).
+- `AgregarEtiquetaATicketUseCase` existe (normaliza a minúsculas, es idempotente, audita en `ticket_events`) y solo lo usa `ReglaDeEtiquetadoPorPalabraClave`. **No hay forma HTTP de etiquetar a mano**: `TagController` (sin ruta) y `RemoveTagFromTicketUseCase` se borraron en la fase 1.
 - **Filtro:** `GET /api/tickets?tag=a,b` (AND, máximo 5) en `Ticket/Query/FiltrosDeTicketBuilder.php:79-87`, y columna `tags` del export CSV. **Sin UI.**
 
 **Si falla, revisar:** `debug:router` (no hay ruta) → `FiltrosDeTicketBuilder.php` → `ticket_tags`.

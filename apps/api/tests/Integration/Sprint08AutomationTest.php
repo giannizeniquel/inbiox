@@ -3,10 +3,10 @@
 namespace App\Tests\Integration;
 
 use App\Ticket\Etiqueta;
-use App\Automatizacion\RuleInterface;
-use App\Automatizacion\RuleContext;
-use App\Automatizacion\AutoReopenRule;
-use App\Automatizacion\KeywordTaggingRule;
+use App\Automatizacion\ReglaInterface;
+use App\Automatizacion\ContextoDeRegla;
+use App\Automatizacion\ReglaDeReaperturaAutomatica;
+use App\Automatizacion\ReglaDeEtiquetadoPorPalabraClave;
 use App\Ticket\UseCase\AgregarEtiquetaATicketUseCase;
 use App\Conversacion\UseCase\HandleInboundMessageUseCase;
 use App\Ticket\Ticket;
@@ -25,9 +25,9 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
  * Tests cover:
  * - Etiqueta normalization (lowercase + trim)
  * - AddTagToTicket idempotency
- * - RuleInterface contract
- * - AutoReopenRule (resolved → waiting, closed NOT reopened)
- * - KeywordTaggingRule (error keyword detection)
+ * - ReglaInterface contract
+ * - ReglaDeReaperturaAutomatica (resolved → waiting, closed NOT reopened)
+ * - ReglaDeEtiquetadoPorPalabraClave (error keyword detection)
  * - RuleExecutorService (execution key prevents duplicates)
  * - HandleInboundMessageUseCase integration with rules
  */
@@ -211,12 +211,12 @@ class Sprint08AutomationTest extends KernelTestCase
     // ============================================
 
     /**
-     * Test RuleInterface contract - all methods present.
+     * Test ReglaInterface contract - all methods present.
      */
     public function testRuleInterfaceContract(): void
     {
         // Arrange
-        $rule = new KeywordTaggingRule(
+        $rule = new ReglaDeEtiquetadoPorPalabraClave(
             $this->addTagUseCase
         );
 
@@ -232,7 +232,7 @@ class Sprint08AutomationTest extends KernelTestCase
     }
 
     /**
-     * Test AutoReopenRule getName returns correct identifier.
+     * Test ReglaDeReaperturaAutomatica getName returns correct identifier.
      */
     public function testAutoReopenRuleGetName(): void
     {
@@ -248,63 +248,63 @@ class Sprint08AutomationTest extends KernelTestCase
     // ============================================
 
     /**
-     * Test AutoReopenRule supports resolved ticket with inbound trigger.
+     * Test ReglaDeReaperturaAutomatica supports resolved ticket with inbound trigger.
      */
     public function testAutoReopenRuleSupportsResolvedTicket(): void
     {
         // Arrange
         $rule = $this->createMockAutoReopenRule();
         $ticket = $this->createTestTicket(EstadoDeTicket::RESUELTO->value);
-        $context = new RuleContext($ticket, null, 'inbound');
+        $context = new ContextoDeRegla($ticket, null, 'inbound');
 
         // Assert
         $this->assertTrue($rule->supports($context));
     }
 
     /**
-     * Test AutoReopenRule does NOT support closed tickets.
+     * Test ReglaDeReaperturaAutomatica does NOT support closed tickets.
      */
     public function testAutoReopenRuleDoesNotSupportClosedTickets(): void
     {
         // Arrange
         $rule = $this->createMockAutoReopenRule();
         $ticket = $this->createTestTicket(EstadoDeTicket::CERRADO->value);
-        $context = new RuleContext($ticket, null, 'inbound');
+        $context = new ContextoDeRegla($ticket, null, 'inbound');
 
         // Assert
         $this->assertFalse($rule->supports($context));
     }
 
     /**
-     * Test AutoReopenRule does NOT support active tickets.
+     * Test ReglaDeReaperturaAutomatica does NOT support active tickets.
      */
     public function testAutoReopenRuleDoesNotSupportActiveTickets(): void
     {
         // Arrange
         $rule = $this->createMockAutoReopenRule();
         $ticket = $this->createTestTicket(EstadoDeTicket::ACTIVO->value);
-        $context = new RuleContext($ticket, null, 'inbound');
+        $context = new ContextoDeRegla($ticket, null, 'inbound');
 
         // Assert
         $this->assertFalse($rule->supports($context));
     }
 
     /**
-     * Test AutoReopenRule does NOT support outbound trigger.
+     * Test ReglaDeReaperturaAutomatica does NOT support outbound trigger.
      */
     public function testAutoReopenRuleDoesNotSupportOutbound(): void
     {
         // Arrange
         $rule = $this->createMockAutoReopenRule();
         $ticket = $this->createTestTicket(EstadoDeTicket::RESUELTO->value);
-        $context = new RuleContext($ticket, null, 'outbound');
+        $context = new ContextoDeRegla($ticket, null, 'outbound');
 
         // Assert
         $this->assertFalse($rule->supports($context));
     }
 
     /**
-     * Test AutoReopenRule buildExecutionKey includes ticket and message.
+     * Test ReglaDeReaperturaAutomatica buildExecutionKey includes ticket and message.
      */
     public function testAutoReopenRuleBuildExecutionKey(): void
     {
@@ -312,7 +312,7 @@ class Sprint08AutomationTest extends KernelTestCase
         $rule = $this->createMockAutoReopenRule();
         $ticket = $this->createTestTicket(EstadoDeTicket::RESUELTO->value);
         $message = $this->createTestMessage(123);
-        $context = new RuleContext($ticket, $message, 'inbound');
+        $context = new ContextoDeRegla($ticket, $message, 'inbound');
 
         // Act
         $key = $rule->buildExecutionKey($context);
@@ -331,64 +331,64 @@ class Sprint08AutomationTest extends KernelTestCase
     // ============================================
 
     /**
-     * Test KeywordTaggingRule detects "error" keyword in message.
+     * Test ReglaDeEtiquetadoPorPalabraClave detects "error" keyword in message.
      */
     public function testKeywordTaggingRuleDetectsErrorKeyword(): void
     {
         // Arrange
-        $rule = new KeywordTaggingRule($this->addTagUseCase);
+        $rule = new ReglaDeEtiquetadoPorPalabraClave($this->addTagUseCase);
         $ticket = $this->createTestTicket(EstadoDeTicket::ACTIVO->value);
         $message = $this->createTestMessage(123);
         $message->setContent('There is an error in the system');
-        $context = new RuleContext($ticket, $message, 'inbound');
+        $context = new ContextoDeRegla($ticket, $message, 'inbound');
 
         // Assert
         $this->assertTrue($rule->supports($context));
     }
 
     /**
-     * Test KeywordTaggingRule is case insensitive.
+     * Test ReglaDeEtiquetadoPorPalabraClave is case insensitive.
      */
     public function testKeywordTaggingRuleIsCaseInsensitive(): void
     {
         // Arrange
-        $rule = new KeywordTaggingRule($this->addTagUseCase);
+        $rule = new ReglaDeEtiquetadoPorPalabraClave($this->addTagUseCase);
         $ticket = $this->createTestTicket(EstadoDeTicket::ACTIVO->value);
         $message = $this->createTestMessage(123);
         $message->setContent('ERROR detected in the logs');
-        $context = new RuleContext($ticket, $message, 'inbound');
+        $context = new ContextoDeRegla($ticket, $message, 'inbound');
 
         // Assert
         $this->assertTrue($rule->supports($context));
     }
 
     /**
-     * Test KeywordTaggingRule does NOT match words containing "error".
+     * Test ReglaDeEtiquetadoPorPalabraClave does NOT match words containing "error".
      */
     public function testKeywordTaggingRuleDoesNotFalsePositive(): void
     {
         // Arrange - "error" is substring but not whole word
-        $rule = new KeywordTaggingRule($this->addTagUseCase);
+        $rule = new ReglaDeEtiquetadoPorPalabraClave($this->addTagUseCase);
         $ticket = $this->createTestTicket(EstadoDeTicket::ACTIVO->value);
         $message = $this->createTestMessage(123);
         $message->setContent('The errorHandler crashed'); // contains "error" as substring
-        $context = new RuleContext($ticket, $message, 'inbound');
+        $context = new ContextoDeRegla($ticket, $message, 'inbound');
 
         // Assert - stripos finds substring
         $this->assertTrue($rule->supports($context));
     }
 
     /**
-     * Test KeywordTaggingRule does NOT support outbound trigger.
+     * Test ReglaDeEtiquetadoPorPalabraClave does NOT support outbound trigger.
      */
     public function testKeywordTaggingRuleDoesNotSupportOutbound(): void
     {
         // Arrange
-        $rule = new KeywordTaggingRule($this->addTagUseCase);
+        $rule = new ReglaDeEtiquetadoPorPalabraClave($this->addTagUseCase);
         $ticket = $this->createTestTicket(EstadoDeTicket::ACTIVO->value);
         $message = $this->createTestMessage(123);
         $message->setContent('There is an error');
-        $context = new RuleContext($ticket, $message, 'outbound');
+        $context = new ContextoDeRegla($ticket, $message, 'outbound');
 
         // Assert
         $this->assertFalse($rule->supports($context));
@@ -434,8 +434,8 @@ class Sprint08AutomationTest extends KernelTestCase
         );
 
         // Get rule executor service
-        $ruleExecutor = static::getContainer()->get(\App\Automatizacion\RuleExecutorService::class);
-        $context = new RuleContext($ticket, null, 'inbound');
+        $ruleExecutor = static::getContainer()->get(\App\Automatizacion\EjecutorDeReglas::class);
+        $context = new ContextoDeRegla($ticket, null, 'inbound');
 
         // Act - execute rules (should skip due to idempotency)
         $ruleExecutor->execute($context);
@@ -546,11 +546,11 @@ class Sprint08AutomationTest extends KernelTestCase
         return $message;
     }
 
-    private function createMockAutoReopenRule(): AutoReopenRule
+    private function createMockAutoReopenRule(): ReglaDeReaperturaAutomatica
     {
         $transitionUseCase = $this->createMock(\App\Ticket\UseCase\CambiarEstadoDeTicketUseCase::class);
         $em = $this->createMock(EntityManagerInterface::class);
 
-        return new AutoReopenRule($transitionUseCase, $em);
+        return new ReglaDeReaperturaAutomatica($transitionUseCase, $em);
     }
 }

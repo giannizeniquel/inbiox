@@ -20,9 +20,9 @@ use App\Conversacion\Repository\MessageRepository;
 use App\Ticket\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\DBAL\LockMode;
-use App\Automatizacion\RuleExecutorService;
-use App\Automatizacion\AutoReplyService;
-use App\Automatizacion\RuleContext;
+use App\Automatizacion\EjecutorDeReglas;
+use App\Automatizacion\RespuestaAutomaticaService;
+use App\Automatizacion\ContextoDeRegla;
 use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
 use App\Conversacion\MediaDownloadService;
 use Psr\Log\LoggerInterface;
@@ -40,10 +40,10 @@ class HandleInboundMessageUseCase
         private TicketRepository $ticketRepo,
         private EventDispatcherInterface $eventDispatcher,
         private CambiarEstadoDeTicketUseCase $transitionUseCase,
-        private RuleExecutorService $ruleExecutor,
+        private EjecutorDeReglas $ruleExecutor,
         private EventCollector $eventCollector,
         private readonly OutboxWriter $outboxWriter,
-        private AutoReplyService $autoReplyService,
+        private RespuestaAutomaticaService $autoReplyService,
         private LoggerInterface $logger,
         private readonly ?MediaDownloadService $mediaDownloadService = null,
     ) {}
@@ -460,7 +460,7 @@ foreach ($events as $event) {
      */
     private function runRulesAndRequestAutoAssignment(Ticket $ticket, Message $msg): void
     {
-        $ruleContext = new RuleContext($ticket, $msg, 'inbound');
+        $ruleContext = new ContextoDeRegla($ticket, $msg, 'inbound');
         $this->ruleExecutor->execute($ruleContext);
 
         if ($ticket->getId()) {

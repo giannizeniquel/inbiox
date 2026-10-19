@@ -7,14 +7,14 @@ use App\Ticket\EstadoDeTicket;
 use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
 use Doctrine\ORM\EntityManagerInterface;
 
-class AutoReopenRule implements RuleInterface
+class ReglaDeReaperturaAutomatica implements ReglaInterface
 {
     public function __construct(
         private CambiarEstadoDeTicketUseCase $transitionUseCase,
         private EntityManagerInterface $em,
     ) {}
 
-    public function supports(RuleContext $context): bool
+    public function supports(ContextoDeRegla $context): bool
     {
         // Only supports inbound messages on resolved tickets
         if ($context->getTriggerType() !== 'inbound') {
@@ -30,7 +30,7 @@ class AutoReopenRule implements RuleInterface
         return $ticket->getEstado() === EstadoDeTicket::RESUELTO->value;
     }
 
-    public function execute(RuleContext $context): void
+    public function execute(ContextoDeRegla $context): void
     {
         // Transition resolved → waiting (NOT to active)
         $this->transitionUseCase->execute(
@@ -51,7 +51,7 @@ class AutoReopenRule implements RuleInterface
         return 'auto_reopen';
     }
 
-    public function buildExecutionKey(RuleContext $context): string
+    public function buildExecutionKey(ContextoDeRegla $context): string
     {
         $ticketId = $context->getTicketId();
         $messageId = $context->getMessageId() ?? 'no_message';

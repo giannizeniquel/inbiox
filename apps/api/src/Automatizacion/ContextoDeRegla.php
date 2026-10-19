@@ -8,7 +8,7 @@ use App\Ticket\Ticket;
 /**
  * Value object representing the context for rule execution.
  */
-class RuleContext
+class ContextoDeRegla
 {
     public function __construct(
         private Ticket $ticket,

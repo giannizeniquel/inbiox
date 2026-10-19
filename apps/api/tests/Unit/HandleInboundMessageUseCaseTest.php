@@ -3,12 +3,12 @@
 namespace App\Tests\Unit;
 
 use App\Disponibilidad\AgentAvailabilityService;
-use App\Automatizacion\AutoReplyService;
+use App\Automatizacion\RespuestaAutomaticaService;
 use App\Compartido\Outbox\OutboxWriter;
 use App\Compartido\Graph\GraphClient;
 use App\Conversacion\UseCase\HandleInboundMessageUseCase;
 use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
-use App\Automatizacion\RuleExecutorService;
+use App\Automatizacion\EjecutorDeReglas;
 use App\Disponibilidad\Repository\AgentShiftRepository;
 use App\Compartido\EventCollector;
 use App\Conversacion\ConversationWindowPolicy;
@@ -33,9 +33,9 @@ class HandleInboundMessageUseCaseTest extends TestCase
     private TicketRepository|MockObject $ticketRepo;
     private EventDispatcherInterface|MockObject $eventDispatcher;
     private CambiarEstadoDeTicketUseCase|MockObject $transitionUseCase;
-    private RuleExecutorService|MockObject $ruleExecutor;
+    private EjecutorDeReglas|MockObject $ruleExecutor;
     private EventCollector|MockObject $eventCollector;
-    private AutoReplyService $autoReplyService;
+    private RespuestaAutomaticaService $autoReplyService;
     private LoggerInterface|MockObject $logger;
     private HandleInboundMessageUseCase $useCase;
 
@@ -48,7 +48,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
         $this->ticketRepo = $this->createMock(TicketRepository::class);
         $this->eventDispatcher = $this->createMock(EventDispatcherInterface::class);
         $this->transitionUseCase = $this->createMock(CambiarEstadoDeTicketUseCase::class);
-        $this->ruleExecutor = $this->createMock(RuleExecutorService::class);
+        $this->ruleExecutor = $this->createMock(EjecutorDeReglas::class);
         $this->eventCollector = $this->createMock(EventCollector::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
@@ -58,7 +58,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
         $availabilityService = new AgentAvailabilityService($agentRepo, $agentShiftRepo, $this->ticketRepo);
         $graphClient = $this->createMock(GraphClient::class);
         $processedEventRepo = $this->createMock(ProcessedEventRepository::class);
-        $this->autoReplyService = new AutoReplyService(
+        $this->autoReplyService = new RespuestaAutomaticaService(
             $agentRepo,
             $availabilityService,
             $graphClient,

@@ -22,8 +22,8 @@ use App\Compartido\Outbox\OutboxWriter;
 use App\Compartido\ProcessedEvent;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
-use App\Automatizacion\RuleExecutorService;
-use App\Automatizacion\RuleContext;
+use App\Automatizacion\EjecutorDeReglas;
+use App\Automatizacion\ContextoDeRegla;
 use App\Conversacion\ConversationWindowPolicy;
 use App\Ticket\TicketResponsabilidadGuard;
 use App\Compartido\ConcurrencyException;
@@ -53,7 +53,7 @@ class HandleOutboundMessageUseCase
         private TicketRepository $ticketRepo,
         private CambiarEstadoDeTicketUseCase $transitionUseCase,
         private ProcessedEventRepository $processedEventRepo,
-        private RuleExecutorService $ruleExecutor,
+        private EjecutorDeReglas $ruleExecutor,
         private AssignmentService $assignmentService,
         private AgentRepository $agentRepo,
         private EventCollector $eventCollector,
@@ -238,7 +238,7 @@ class HandleOutboundMessageUseCase
             $this->em->flush();
 
             // Execute automation rules (outbound trigger)
-            $ruleContext = new RuleContext($ticket, $msg, 'outbound');
+            $ruleContext = new ContextoDeRegla($ticket, $msg, 'outbound');
             $this->ruleExecutor->execute($ruleContext);
 
             return [

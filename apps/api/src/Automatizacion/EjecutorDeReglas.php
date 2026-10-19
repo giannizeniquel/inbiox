@@ -2,18 +2,18 @@
 
 namespace App\Automatizacion;
 
-use App\Automatizacion\Repository\RuleExecutionLogRepository;
+use App\Automatizacion\Repository\RegistroDeReglaRepository;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
-class RuleExecutorService
+class EjecutorDeReglas
 {
     /**
-     * @var RuleInterface[]
+     * @var ReglaInterface[]
      */
     private array $rules = [];
 
     public function __construct(
-        private RuleExecutionLogRepository $executionLogRepo,
+        private RegistroDeReglaRepository $executionLogRepo,
         private EventDispatcherInterface $eventDispatcher,
         iterable $rules = [],
     ) {
@@ -25,7 +25,7 @@ class RuleExecutorService
     /**
      * Add a rule to be executed.
      */
-    public function addRule(RuleInterface $rule): void
+    public function addRule(ReglaInterface $rule): void
     {
         $this->rules[] = $rule;
     }
@@ -33,7 +33,7 @@ class RuleExecutorService
     /**
      * Execute all rules that support the given context.
      */
-    public function execute(RuleContext $context): void
+    public function execute(ContextoDeRegla $context): void
     {
         foreach ($this->rules as $rule) {
             if (!$rule->supports($context)) {
@@ -51,7 +51,7 @@ class RuleExecutorService
                 $rule->execute($context);
 
                 // Log successful execution
-                $log = new RuleExecutionLog(
+                $log = new RegistroDeRegla(
                     $executionKey,
                     $rule->getName(),
                     $context->getTicketId(),
@@ -60,7 +60,7 @@ class RuleExecutorService
                 $this->executionLogRepo->save($log);
             } catch (\Throwable $e) {
                 // Log failed execution but don't break the chain
-                $log = new RuleExecutionLog(
+                $log = new RegistroDeRegla(
                     $executionKey,
                     $rule->getName(),
                     $context->getTicketId(),

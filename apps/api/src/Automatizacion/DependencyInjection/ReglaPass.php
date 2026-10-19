@@ -2,33 +2,33 @@
 
 namespace App\Automatizacion\DependencyInjection;
 
-use App\Automatizacion\RuleInterface;
+use App\Automatizacion\ReglaInterface;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
 
 /**
  * Compiler pass to register all rules with RuleExecutorService.
- * Automatically discovers all services implementing RuleInterface.
+ * Automatically discovers all services implementing ReglaInterface.
  */
-class RulePass implements CompilerPassInterface
+class ReglaPass implements CompilerPassInterface
 {
     public function process(ContainerBuilder $container): void
     {
         // Get the RuleExecutorService definition
-        if (!$container->has('App\Automatizacion\RuleExecutorService')) {
+        if (!$container->has('App\Automatizacion\EjecutorDeReglas')) {
             return;
         }
 
-        $ruleExecutorDefinition = $container->getDefinition('App\Automatizacion\RuleExecutorService');
+        $ruleExecutorDefinition = $container->getDefinition('App\Automatizacion\EjecutorDeReglas');
 
         // Get all service definitions
         $definitions = $container->getDefinitions();
 
         // Rule classes we know implement RuleInterface
         $knownRuleClasses = [
-            'App\Automatizacion\AutoReopenRule',
-            'App\Automatizacion\KeywordTaggingRule',
+            'App\Automatizacion\ReglaDeReaperturaAutomatica',
+            'App\Automatizacion\ReglaDeEtiquetadoPorPalabraClave',
         ];
 
         foreach ($definitions as $id => $definition) {

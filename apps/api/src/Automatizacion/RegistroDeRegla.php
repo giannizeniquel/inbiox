@@ -8,7 +8,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity]
 #[ORM\Table(name: 'rule_execution_logs')]
 #[ORM\UniqueConstraint(columns: ['execution_key'])]
-class RuleExecutionLog
+class RegistroDeRegla
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]

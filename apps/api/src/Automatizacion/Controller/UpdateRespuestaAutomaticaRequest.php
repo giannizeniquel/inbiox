@@ -6,7 +6,7 @@ namespace App\Automatizacion\Controller;
 
 use Symfony\Component\Validator\Constraints as Assert;
 
-class UpdateAutoReplyRequest
+class UpdateRespuestaAutomaticaRequest
 {
     #[Assert\Type(type: 'bool', message: 'enabled must be a boolean')]
     public ?bool $enabled = null;

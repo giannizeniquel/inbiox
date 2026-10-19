@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Automatizacion\RuleExecutorService;
+use App\Automatizacion\EjecutorDeReglas;
 use App\Conversacion\UseCase\HandleOutboundMessageUseCase;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversation;
-use App\Automatizacion\RuleContext;
+use App\Automatizacion\ContextoDeRegla;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
 use App\Compartido\StateConflictException;
@@ -142,7 +142,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
      * method in normal operation. This test instead forces the abort via
      * the NEW `\Throwable` branch (design.md D6's second clear-on-abort
      * path) using a single fault-injecting test double for
-     * `RuleExecutorService` — the LAST collaborator called, after
+     * `EjecutorDeReglas` — the LAST collaborator called, after
      * `recordOwnershipChange()`, the Message, and the ProcessedEvent have
      * already been flushed within the same still-open transaction. Every
      * other collaborator (EntityManager, EventCollector, AssignmentService,
@@ -154,15 +154,15 @@ class AgentReplyAutoClaimTest extends KernelTestCase
         $ticketId = $this->seedTicket(EstadoDeTicket::ACTIVO->value, null);
 
         $explodingRuleExecutor = new class(
-            static::getContainer()->get(\App\Automatizacion\Repository\RuleExecutionLogRepository::class),
+            static::getContainer()->get(\App\Automatizacion\Repository\RegistroDeReglaRepository::class),
             static::getContainer()->get(\Symfony\Component\EventDispatcher\EventDispatcherInterface::class),
-        ) extends RuleExecutorService {
-            public function execute(RuleContext $context): void
+        ) extends EjecutorDeReglas {
+            public function execute(ContextoDeRegla $context): void
             {
                 throw new \RuntimeException('Simulated failure after ownership change was collected');
             }
         };
-        static::getContainer()->set(RuleExecutorService::class, $explodingRuleExecutor);
+        static::getContainer()->set(EjecutorDeReglas::class, $explodingRuleExecutor);
 
         $useCase = static::getContainer()->get(HandleOutboundMessageUseCase::class);
 

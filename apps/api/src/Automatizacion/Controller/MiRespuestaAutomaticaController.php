@@ -6,7 +6,7 @@ namespace App\Automatizacion\Controller;
 
 use App\Administracion\User;
 use App\Agente\Agent;
-use App\Automatizacion\UseCase\UpdateAutoReplySettingsUseCase;
+use App\Automatizacion\UseCase\UpdateConfiguracionDeRespuestaAutomaticaUseCase;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -20,16 +20,16 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * PUT /api/me/auto-reply — update auto-reply settings
  */
 #[IsGranted('IS_AUTHENTICATED_FULLY')]
-final class MeAutoReplyController
+final class MiRespuestaAutomaticaController
 {
     public function __construct(
         private readonly Security $security,
-        private readonly UpdateAutoReplySettingsUseCase $updateAutoReplySettingsUseCase,
+        private readonly UpdateConfiguracionDeRespuestaAutomaticaUseCase $updateAutoReplySettingsUseCase,
     ) {}
 
     #[IsGranted('ROLE_AGENT')]
     #[Route('/api/me/auto-reply', name: 'app_me_auto_reply', methods: ['PUT'])]
-    public function updateAutoReply(#[MapRequestPayload] UpdateAutoReplyRequest $request): JsonResponse
+    public function updateAutoReply(#[MapRequestPayload] UpdateRespuestaAutomaticaRequest $request): JsonResponse
     {
         $agent = $this->getAgent();
         if (null === $agent) {

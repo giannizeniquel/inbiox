@@ -4,7 +4,7 @@ namespace App\Automatizacion;
 
 use App\Ticket\UseCase\AgregarEtiquetaATicketUseCase;
 
-class KeywordTaggingRule implements RuleInterface
+class ReglaDeEtiquetadoPorPalabraClave implements ReglaInterface
 {
     private const KEYWORD = 'error';
 
@@ -12,7 +12,7 @@ class KeywordTaggingRule implements RuleInterface
         private AgregarEtiquetaATicketUseCase $addTagUseCase,
     ) {}
 
-    public function supports(RuleContext $context): bool
+    public function supports(ContextoDeRegla $context): bool
     {
         // Only supports inbound messages
         if ($context->getTriggerType() !== 'inbound') {
@@ -29,7 +29,7 @@ class KeywordTaggingRule implements RuleInterface
         return stripos($content, self::KEYWORD) !== false;
     }
 
-    public function execute(RuleContext $context): void
+    public function execute(ContextoDeRegla $context): void
     {
         $this->addTagUseCase->execute(
             $context->getTicketId(),
@@ -43,7 +43,7 @@ class KeywordTaggingRule implements RuleInterface
         return 'keyword_tagging';
     }
 
-    public function buildExecutionKey(RuleContext $context): string
+    public function buildExecutionKey(ContextoDeRegla $context): string
     {
         $ticketId = $context->getTicketId();
         $messageId = $context->getMessageId() ?? 'no_message';

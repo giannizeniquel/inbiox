@@ -115,7 +115,7 @@ Todas **Agente**, salvo export. Filtran por workspace activo; nunca por agente.
 
 > Verificado en `ReportingController.php`: solo `frt`, `rt`, `counts`, `volume`, `agents` y `export` leen `teamId`. Los demás lo ignoran aunque el frontend lo envíe (p. ej. `response-delay`).
 
-### G. Autoservicio (`MeController`, `MeAutoReplyController`, `MeShiftsController`, `MeWorkspaceController`; todos con clase `IS_AUTHENTICATED_FULLY`)
+### G. Autoservicio (`MeController`, `MiRespuestaAutomaticaController`, `MeShiftsController`, `MeWorkspaceController`; todos con clase `IS_AUTHENTICATED_FULLY`)
 
 | Método | Path | Acción | Rol | Nota |
 |---|---|---|---|---|
