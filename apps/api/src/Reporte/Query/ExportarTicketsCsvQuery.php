@@ -48,17 +48,17 @@ class ExportarTicketsCsvQuery
     private const COLUMNAS_A_ESCAPAR = ['contact_name', 'assigned_agent', 'tags'];
 
     public function __construct(
-        private FiltrosDeTicketBuilder $ticketFilterBuilder,
+        private FiltrosDeTicketBuilder $filtrosDeTicketBuilder,
         private TicketRepository $ticketRepository,
-        private EtiquetaRepository $tagRepository,
+        private EtiquetaRepository $etiquetaRepository,
     ) {}
 
     /**
-     * @param string|null $agentId 'mine'-style agent id filter (unused directly; kept for parity with ListTicketsQuery's $filter/$agentId pair)
-     * @param string|null $status Comma-separated status filter
-     * @param string|null $tag Comma-separated tag names (AND semantics, max 5)
+     * @param string|null $agenteId 'mine'-style agent id filter (unused directly; kept for parity with ListTicketsQuery's $filter/$agenteId pair)
+     * @param string|null $estado Comma-separated status filter
+     * @param string|null $etiqueta Comma-separated tag names (AND semantics, max 5)
      * @param string|null $phoneNumberId Workspace scope
-     * @param int|null $teamId Single-select team filter, composable with $tag
+     * @param int|null $equipoId Single-select team filter, composable with $etiqueta
      *
      * @return int total number of data rows written
      */
@@ -66,23 +66,23 @@ class ExportarTicketsCsvQuery
         Writer $writer,
         \DateTimeImmutable $from,
         \DateTimeImmutable $to,
-        ?string $agentId = null,
-        ?string $status = null,
-        ?string $tag = null,
+        ?string $agenteId = null,
+        ?string $estado = null,
+        ?string $etiqueta = null,
         ?string $phoneNumberId = null,
-        ?int $teamId = null,
+        ?int $equipoId = null,
     ): int {
         $writer->insertOne(self::COLUMNAS);
 
         $escapeFormula = new EscapeFormula();
 
-        $filters = $this->ticketFilterBuilder->build(
-            filtro: $agentId ? 'mine' : 'all',
-            agenteId: $agentId,
-            estado: $status,
+        $filters = $this->filtrosDeTicketBuilder->build(
+            filtro: $agenteId ? 'mine' : 'all',
+            agenteId: $agenteId,
+            estado: $estado,
             phoneNumberId: $phoneNumberId,
-            etiqueta: $tag,
-            equipoId: $teamId,
+            etiqueta: $etiqueta,
+            equipoId: $equipoId,
         );
         $fromBound = $from->format('Y-m-d H:i:s');
         $toBound = $to->format('Y-m-d H:i:s');
@@ -99,7 +99,7 @@ class ExportarTicketsCsvQuery
             }
 
             $ticketIds = array_map(fn($row) => (int) $row['id'], $rows);
-            $tagsByTicket = $this->fetchEtiquetasPorTicket($ticketIds);
+            $etiquetasPorTicket = $this->fetchEtiquetasPorTicket($ticketIds);
 
             foreach ($rows as $row) {
                 $ticketId = (int) $row['id'];
@@ -117,7 +117,7 @@ class ExportarTicketsCsvQuery
                     'closed_at' => $this->toUtcIso($row['closed_at']),
                     'first_response_seconds' => $row['first_response_seconds'] ?? '',
                     'resolution_seconds' => $row['resolution_seconds'] ?? '',
-                    'tags' => implode(';', $tagsByTicket[$ticketId] ?? []),
+                    'tags' => implode(';', $etiquetasPorTicket[$ticketId] ?? []),
                     'phone_number_id' => $row['phone_number_id'] ?? '',
                 ];
 
@@ -147,14 +147,14 @@ class ExportarTicketsCsvQuery
             return [];
         }
 
-        $rows = $this->tagRepository->findNombresByTicketIds($ticketIds);
+        $rows = $this->etiquetaRepository->findNombresByTicketIds($ticketIds);
 
-        $tagsByTicket = [];
+        $etiquetasPorTicket = [];
         foreach ($rows as $row) {
-            $tagsByTicket[(int) $row['ticket_id']][] = $row['name'];
+            $etiquetasPorTicket[(int) $row['ticket_id']][] = $row['name'];
         }
 
-        return $tagsByTicket;
+        return $etiquetasPorTicket;
     }
 
     private function toUtcIso(mixed $value): string

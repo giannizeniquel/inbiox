@@ -20,7 +20,7 @@ use Doctrine\Persistence\ManagerRegistry;
  * - Volume over time
  * - Agent performance
  *
- * All methods support optional ?int $agentId parameter for ownership scoping.
+ * All methods support optional ?int $agenteId parameter for ownership scoping.
  */
 class ReporteRepository extends ServiceEntityRepository
 {
@@ -70,13 +70,13 @@ class ReporteRepository extends ServiceEntityRepository
      * @param array<string, mixed> $params Query parameters, extended in place
      * @param string $alias Alias of the tickets table in the query
      */
-    private function ticketFilterClause(array &$params, string $alias, ?int $agentId, ?string $phoneNumberId, ?int $teamId): string
+    private function ticketFilterClause(array &$params, string $alias, ?int $agenteId, ?string $phoneNumberId, ?int $equipoId): string
     {
         $clause = '';
 
-        if ($agentId !== null) {
+        if ($agenteId !== null) {
             $clause .= " AND {$alias}.assigned_agent_id = :agentId";
-            $params['agentId'] = $agentId;
+            $params['agentId'] = $agenteId;
         }
 
         if ($phoneNumberId !== null) {
@@ -84,9 +84,9 @@ class ReporteRepository extends ServiceEntityRepository
             $params['phoneNumberId'] = $phoneNumberId;
         }
 
-        if ($teamId !== null) {
+        if ($equipoId !== null) {
             $clause .= " AND {$alias}.team_id = :teamId";
-            $params['teamId'] = $teamId;
+            $params['teamId'] = $equipoId;
         }
 
         return $clause;
@@ -104,12 +104,12 @@ class ReporteRepository extends ServiceEntityRepository
      *
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
-     * @param int|null $agentId Optional filter by assigned agent
+     * @param int|null $agenteId Optional filter by assigned agent
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
-     * @param int|null $teamId Optional filter by team (single-select)
+     * @param int|null $equipoId Optional filter by team (single-select)
      * @return array{avg_frt_seconds: float|null, min_frt_seconds: int|null, max_frt_seconds: int|null, avg_frt_minutes: float|null, min_frt_minutes: int|null, max_frt_minutes: int|null}
      */
-    public function getMetricasDeFrt(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
+    public function getMetricasDeFrt(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agenteId = null, ?string $phoneNumberId = null, ?int $equipoId = null): array
     {
         $conn = $this->entityManager->getConnection();
         
@@ -125,7 +125,7 @@ class ReporteRepository extends ServiceEntityRepository
         
         $params = ['from' => $from->format('Y-m-d H:i:s'), 'to' => $to->format('Y-m-d H:i:s')];
         
-        $sql .= $this->ticketFilterClause($params, 't', $agentId, $phoneNumberId, $teamId);
+        $sql .= $this->ticketFilterClause($params, 't', $agenteId, $phoneNumberId, $equipoId);
 
         $result = $conn->fetchAssociative($sql, $params);
 
@@ -155,12 +155,12 @@ class ReporteRepository extends ServiceEntityRepository
      *
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
-     * @param int|null $agentId Optional filter by assigned agent
+     * @param int|null $agenteId Optional filter by assigned agent
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
-     * @param int|null $teamId Optional filter by team (single-select)
+     * @param int|null $equipoId Optional filter by team (single-select)
      * @return array{avg_rt_seconds: float|null, min_rt_seconds: int|null, max_rt_seconds: int|null, avg_rt_minutes: float|null, min_rt_minutes: int|null, max_rt_minutes: int|null}
      */
-    public function getMetricasDeRt(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
+    public function getMetricasDeRt(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agenteId = null, ?string $phoneNumberId = null, ?int $equipoId = null): array
     {
         $conn = $this->entityManager->getConnection();
         
@@ -176,7 +176,7 @@ class ReporteRepository extends ServiceEntityRepository
         
         $params = ['from' => $from->format('Y-m-d H:i:s'), 'to' => $to->format('Y-m-d H:i:s')];
         
-        $sql .= $this->ticketFilterClause($params, 't', $agentId, $phoneNumberId, $teamId);
+        $sql .= $this->ticketFilterClause($params, 't', $agenteId, $phoneNumberId, $equipoId);
 
         $result = $conn->fetchAssociative($sql, $params);
 
@@ -199,12 +199,12 @@ class ReporteRepository extends ServiceEntityRepository
      *
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
-     * @param int|null $agentId Optional filter by assigned agent
+     * @param int|null $agenteId Optional filter by assigned agent
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
-     * @param int|null $teamId Optional filter by team (single-select)
+     * @param int|null $equipoId Optional filter by team (single-select)
      * @return array{new: int, active: int, waiting: int, resolved: int, closed: int}
      */
-    public function getConteosPorEstado(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
+    public function getConteosPorEstado(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agenteId = null, ?string $phoneNumberId = null, ?int $equipoId = null): array
     {
         $qb = $this->createQueryBuilder('t');
 
@@ -214,9 +214,9 @@ class ReporteRepository extends ServiceEntityRepository
             ->setParameter('from', $from)
             ->setParameter('to', $to);
 
-        if ($agentId !== null) {
+        if ($agenteId !== null) {
             $qb->andWhere('t.agenteAsignadoId = :agentId')
-               ->setParameter('agentId', $agentId);
+               ->setParameter('agentId', $agenteId);
         }
 
         if ($phoneNumberId !== null) {
@@ -224,14 +224,14 @@ class ReporteRepository extends ServiceEntityRepository
                ->setParameter('phoneNumberId', $phoneNumberId);
         }
 
-        if ($teamId !== null) {
+        if ($equipoId !== null) {
             $qb->andWhere('t.equipo = :teamId')
-               ->setParameter('teamId', $teamId);
+               ->setParameter('teamId', $equipoId);
         }
 
         $results = $qb->getQuery()->getResult();
 
-        $counts = [
+        $conteos = [
             'new' => 0,
             'active' => 0,
             'waiting' => 0,
@@ -240,13 +240,13 @@ class ReporteRepository extends ServiceEntityRepository
         ];
 
         foreach ($results as $row) {
-            $status = $row['status'];
-            if (isset($counts[$status])) {
-                $counts[$status] = (int) $row['count'];
+            $estado = $row['status'];
+            if (isset($conteos[$estado])) {
+                $conteos[$estado] = (int) $row['count'];
             }
         }
 
-        return $counts;
+        return $conteos;
     }
 
     /**
@@ -258,17 +258,17 @@ class ReporteRepository extends ServiceEntityRepository
      *
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
-     * @param int|null $agentId Optional filter by assigned agent
+     * @param int|null $agenteId Optional filter by assigned agent
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
-     * @param int|null $teamId Optional filter by team (single-select)
+     * @param int|null $equipoId Optional filter by team (single-select)
      * @return array<int, array{date: string, tickets_created: int, tickets_resolved: int}>
      */
-    public function getVolumenEnElTiempo(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
+    public function getVolumenEnElTiempo(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agenteId = null, ?string $phoneNumberId = null, ?int $equipoId = null): array
     {
         $conn = $this->entityManager->getConnection();
         $params = ['from' => $from->format('Y-m-d H:i:s'), 'to' => $to->format('Y-m-d H:i:s')];
 
-        $filterClause = $this->ticketFilterClause($params, 't', $agentId, $phoneNumberId, $teamId);
+        $filterClause = $this->ticketFilterClause($params, 't', $agenteId, $phoneNumberId, $equipoId);
 
         // Created tickets grouped by date
         $sqlCreated = 'SELECT DATE(t.created_at) as date, COUNT(t.id) as tickets_created
@@ -287,10 +287,10 @@ class ReporteRepository extends ServiceEntityRepository
         $resolvedResults = $conn->fetchAllAssociative($sqlResolved, $params);
 
         // Merge results
-        $volumeMap = [];
+        $mapaDeVolumen = [];
         foreach ($createdResults as $row) {
             $date = $row['date'];
-            $volumeMap[$date] = [
+            $mapaDeVolumen[$date] = [
                 'date' => $date,
                 'tickets_created' => (int) $row['tickets_created'],
                 'tickets_resolved' => 0,
@@ -299,20 +299,20 @@ class ReporteRepository extends ServiceEntityRepository
 
         foreach ($resolvedResults as $row) {
             $date = $row['date'];
-            if (!isset($volumeMap[$date])) {
-                $volumeMap[$date] = [
+            if (!isset($mapaDeVolumen[$date])) {
+                $mapaDeVolumen[$date] = [
                     'date' => $date,
                     'tickets_created' => 0,
                     'tickets_resolved' => 0,
                 ];
             }
-            $volumeMap[$date]['tickets_resolved'] = (int) $row['tickets_resolved'];
+            $mapaDeVolumen[$date]['tickets_resolved'] = (int) $row['tickets_resolved'];
         }
 
         // Sort by date
-        ksort($volumeMap);
+        ksort($mapaDeVolumen);
 
-        return array_values($volumeMap);
+        return array_values($mapaDeVolumen);
     }
 
     /**
@@ -327,12 +327,12 @@ class ReporteRepository extends ServiceEntityRepository
      *
      * @param \DateTimeImmutable $from Start of date range (UTC)
      * @param \DateTimeImmutable $to End of date range (UTC)
-     * @param int|null $agentId Optional filter by specific agent
+     * @param int|null $agenteId Optional filter by specific agent
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
-     * @param int|null $teamId Optional filter by team (single-select)
+     * @param int|null $equipoId Optional filter by team (single-select)
      * @return array<int, array{agent_id: int, agent_name: string|null, tickets_assigned: int, tickets_resolved: int, current_active_tickets: int, max_active_tickets: int, current_load: float, avg_frt_seconds: float|null, avg_frt_minutes: float|null, avg_rt_seconds: float|null, avg_rt_minutes: float|null}>
      */
-    public function getRendimientoDeAgentes(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agentId = null, ?string $phoneNumberId = null, ?int $teamId = null): array
+    public function getRendimientoDeAgentes(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agenteId = null, ?string $phoneNumberId = null, ?int $equipoId = null): array
     {
         $conn = $this->entityManager->getConnection();
 
@@ -340,8 +340,8 @@ class ReporteRepository extends ServiceEntityRepository
         $rtTimeDiff = $this->getTimeDiffExpression('t.created_at', 't.resolved_at');
 
         $params = ['from' => $from->format('Y-m-d H:i:s'), 'to' => $to->format('Y-m-d H:i:s')];
-        $subFilterClause = $this->ticketFilterClause($params, 't2', null, $phoneNumberId, $teamId);
-        $joinFilterClause = $this->ticketFilterClause($params, 't', null, $phoneNumberId, $teamId);
+        $subFilterClause = $this->ticketFilterClause($params, 't2', null, $phoneNumberId, $equipoId);
+        $joinFilterClause = $this->ticketFilterClause($params, 't', null, $phoneNumberId, $equipoId);
 
         $sql = "SELECT
             a.id as agent_id,
@@ -359,31 +359,31 @@ class ReporteRepository extends ServiceEntityRepository
             AND t.created_at >= :from AND t.created_at < :to{$joinFilterClause}
         WHERE a.active = 1";
 
-        if ($agentId !== null) {
+        if ($agenteId !== null) {
             $sql .= ' AND a.id = :agentId';
-            $params['agentId'] = $agentId;
+            $params['agentId'] = $agenteId;
         }
 
         $sql .= " GROUP BY a.id, a.name, a.max_active_tickets ORDER BY a.id ASC";
         
         $results = $conn->fetchAllAssociative($sql, $params);
         
-        $agentMetrics = [];
+        $metricasDeAgentes = [];
         foreach ($results as $row) {
-            $agentId = (int) $row['agent_id'];
+            $agenteId = (int) $row['agent_id'];
             $avgFrt = $row['avg_frt'] !== null ? (float) $row['avg_frt'] : null;
             $avgRt = $row['avg_rt'] !== null ? (float) $row['avg_rt'] : null;
-            $maxActive = (int) ($row['max_active_tickets'] ?? 10);
-            $currentActive = (int) ($row['current_active_tickets'] ?? 0);
+            $maxActivos = (int) ($row['max_active_tickets'] ?? 10);
+            $activosActuales = (int) ($row['current_active_tickets'] ?? 0);
             
-            $agentMetrics[] = [
-                'agent_id' => $agentId,
+            $metricasDeAgentes[] = [
+                'agent_id' => $agenteId,
                 'agent_name' => $row['agent_name'],
                 'tickets_assigned' => (int) $row['tickets_assigned'],
                 'tickets_resolved' => (int) $row['tickets_resolved'],
-                'current_active_tickets' => $currentActive,
-                'max_active_tickets' => $maxActive,
-                'current_load' => $maxActive > 0 ? round($currentActive / $maxActive, 2) : 0.0,
+                'current_active_tickets' => $activosActuales,
+                'max_active_tickets' => $maxActivos,
+                'current_load' => $maxActivos > 0 ? round($activosActuales / $maxActivos, 2) : 0.0,
                 'avg_frt_seconds' => $avgFrt,
                 'avg_frt_minutes' => $avgFrt !== null ? round($avgFrt / 60, 2) : null,
                 'avg_rt_seconds' => $avgRt,
@@ -391,7 +391,7 @@ class ReporteRepository extends ServiceEntityRepository
             ];
         }
         
-        return $agentMetrics;
+        return $metricasDeAgentes;
     }
 
     /**
@@ -401,11 +401,11 @@ class ReporteRepository extends ServiceEntityRepository
      * query, and converting it is a separate change from this cleanup. Tested
      * by ReportingV2Test and ReportingControllerCharacterizationTest.
      *
-     * @param int|null $agentId Optional filter by specific agent
+     * @param int|null $agenteId Optional filter by specific agent
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
      * @return array<int, array{agent_id: int, agent_name: string, active_tickets: int, max_capacity: int, load_percent: float}>
      */
-    public function getCargaDeAgentes(?int $agentId = null, ?string $phoneNumberId = null): array
+    public function getCargaDeAgentes(?int $agenteId = null, ?string $phoneNumberId = null): array
     {
         $conn = $this->entityManager->getConnection();
 
@@ -413,9 +413,9 @@ class ReporteRepository extends ServiceEntityRepository
         $workspaceClause = $this->ticketFilterClause($params, 't', null, $phoneNumberId, null);
 
         $agentClause = '';
-        if ($agentId !== null) {
+        if ($agenteId !== null) {
             $agentClause = ' AND a.id = :agentId';
-            $params['agentId'] = $agentId;
+            $params['agentId'] = $agenteId;
         }
 
         $sql = "SELECT
@@ -431,20 +431,20 @@ class ReporteRepository extends ServiceEntityRepository
 
         $results = $conn->fetchAllAssociative($sql, $params);
 
-        $agentMetrics = [];
+        $metricasDeAgentes = [];
         foreach ($results as $row) {
-            $maxCapacity = (int) $row['max_capacity'];
-            $activeTickets = (int) $row['active_tickets'];
-            $agentMetrics[] = [
+            $capacidadMaxima = (int) $row['max_capacity'];
+            $ticketsActivos = (int) $row['active_tickets'];
+            $metricasDeAgentes[] = [
                 'agent_id' => (int) $row['agent_id'],
                 'agent_name' => $row['agent_name'],
-                'active_tickets' => $activeTickets,
-                'max_capacity' => $maxCapacity,
-                'load_percent' => $maxCapacity > 0 ? round($activeTickets / $maxCapacity * 100, 1) : 0.0,
+                'active_tickets' => $ticketsActivos,
+                'max_capacity' => $capacidadMaxima,
+                'load_percent' => $capacidadMaxima > 0 ? round($ticketsActivos / $capacidadMaxima * 100, 1) : 0.0,
             ];
         }
 
-        return $agentMetrics;
+        return $metricasDeAgentes;
     }
 
     /**
@@ -553,16 +553,16 @@ class ReporteRepository extends ServiceEntityRepository
 
         $results = $conn->fetchAllAssociative($sql, $params);
 
-        $trend = [];
+        $tendencia = [];
         foreach ($results as $row) {
-            $trend[] = [
+            $tendencia[] = [
                 'date' => $row['date'],
                 'avg_frt_seconds' => $row['avg_frt'] !== null ? round((float) $row['avg_frt'], 1) : 0.0,
                 'ticket_count' => (int) $row['ticket_count'],
             ];
         }
 
-        return $trend;
+        return $tendencia;
     }
 
     /**
@@ -614,11 +614,11 @@ class ReporteRepository extends ServiceEntityRepository
 
         $results = $conn->fetchAllAssociative($sql, $params);
 
-        $heatmap = [];
+        $mapaDeCalor = [];
         foreach ($results as $row) {
             $count = (int) $row['count'];
             if ($count > 0) {
-                $heatmap[] = [
+                $mapaDeCalor[] = [
                     'day_of_week' => (int) $row['day_of_week'],
                     'hour' => (int) $row['hour'],
                     'count' => $count,
@@ -626,7 +626,7 @@ class ReporteRepository extends ServiceEntityRepository
             }
         }
 
-        return $heatmap;
+        return $mapaDeCalor;
     }
 
     /**
@@ -637,11 +637,11 @@ class ReporteRepository extends ServiceEntityRepository
      * by ReportingV2Test and ReportingControllerCharacterizationTest.
      *
      * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
-     * @param int $threshold Minimum ticket count (default 3)
+     * @param int $umbral Minimum ticket count (default 3)
      * @param int $days Lookback window in days (default 90)
      * @return array<int, array{contact_id: int, contact_name: string|null, email: string|null, ticket_count: int, last_ticket_at: string}>
      */
-    public function getContactosRecurrentes(?string $phoneNumberId = null, int $threshold = 3, int $days = 90): array
+    public function getContactosRecurrentes(?string $phoneNumberId = null, int $umbral = 3, int $days = 90): array
     {
         $conn = $this->entityManager->getConnection();
 
@@ -665,13 +665,13 @@ class ReporteRepository extends ServiceEntityRepository
                   HAVING COUNT(t.id) >= :threshold
                   ORDER BY ticket_count DESC';
 
-        $params['threshold'] = $threshold;
+        $params['threshold'] = $umbral;
 
         $results = $conn->fetchAllAssociative($sql, $params);
 
-        $recurring = [];
+        $recurrentes = [];
         foreach ($results as $row) {
-            $recurring[] = [
+            $recurrentes[] = [
                 'contact_id' => (int) $row['contact_id'],
                 'contact_name' => $row['contact_name'],
                 'email' => $row['email'],
@@ -680,7 +680,7 @@ class ReporteRepository extends ServiceEntityRepository
             ];
         }
 
-        return $recurring;
+        return $recurrentes;
     }
 
     /**
@@ -724,9 +724,9 @@ class ReporteRepository extends ServiceEntityRepository
 
         $results = $conn->fetchAllAssociative($sql, $params, ['limit' => ParameterType::INTEGER]);
 
-        $reopened = [];
+        $reabiertos = [];
         foreach ($results as $row) {
-            $reopened[] = [
+            $reabiertos[] = [
                 'ticket_id' => (int) $row['ticket_id'],
                 'contact_name' => $row['contact_name'],
                 'resolved_at' => $row['resolved_at'],
@@ -735,7 +735,7 @@ class ReporteRepository extends ServiceEntityRepository
             ];
         }
 
-        return $reopened;
+        return $reabiertos;
     }
 
     /**
@@ -890,25 +890,25 @@ class ReporteRepository extends ServiceEntityRepository
     private function agregarFilasDeDemoraDeRespuesta(array $rows): array
     {
         $aggregateSampleCount = 0;
-        $aggregateSumDelay = 0.0;
-        $unansweredInboundCount = 0;
-        $perAgent = [];
+        $sumaDeDemoraAgregada = 0.0;
+        $cantidadDeEntrantesSinResponder = 0;
+        $porAgente = [];
 
         foreach ($rows as $row) {
             $sampleCount = (int) $row['sample_count'];
-            $sumDelay = $row['sum_delay'] !== null ? (float) $row['sum_delay'] : null;
-            $unansweredInboundCount += (int) $row['unanswered_count'];
+            $sumaDeDemora = $row['sum_delay'] !== null ? (float) $row['sum_delay'] : null;
+            $cantidadDeEntrantesSinResponder += (int) $row['unanswered_count'];
 
             if ($sampleCount > 0) {
                 $aggregateSampleCount += $sampleCount;
-                $aggregateSumDelay += $sumDelay ?? 0.0;
+                $sumaDeDemoraAgregada += $sumaDeDemora ?? 0.0;
             }
 
             if ($row['agent_id'] !== null) {
-                $perAgent[] = [
+                $porAgente[] = [
                     'agent_id' => (int) $row['agent_id'],
                     'agent_name' => $row['agent_name'],
-                    'avg_delay_seconds' => $sampleCount > 0 ? round($sumDelay / $sampleCount, 2) : null,
+                    'avg_delay_seconds' => $sampleCount > 0 ? round($sumaDeDemora / $sampleCount, 2) : null,
                     'sample_count' => $sampleCount,
                 ];
             }
@@ -916,11 +916,11 @@ class ReporteRepository extends ServiceEntityRepository
 
         return [
             'aggregate' => [
-                'avg_delay_seconds' => $aggregateSampleCount > 0 ? round($aggregateSumDelay / $aggregateSampleCount, 2) : null,
+                'avg_delay_seconds' => $aggregateSampleCount > 0 ? round($sumaDeDemoraAgregada / $aggregateSampleCount, 2) : null,
                 'sample_count' => $aggregateSampleCount,
-                'unanswered_inbound_count' => $unansweredInboundCount,
+                'unanswered_inbound_count' => $cantidadDeEntrantesSinResponder,
             ],
-            'per_agent' => $perAgent,
+            'per_agent' => $porAgente,
         ];
     }
 
@@ -940,24 +940,24 @@ class ReporteRepository extends ServiceEntityRepository
      */
     public function getParticipacionEnTicket(int $ticketId): ?array
     {
-        $episode = $this->findEpisodioDeParticipacion($ticketId);
-        if ($episode === null) {
+        $episodio = $this->findEpisodioDeParticipacion($ticketId);
+        if ($episodio === null) {
             return null;
         }
 
-        $cutoff = $this->getCorteDeAtribucion();
-        $pairRows = $this->fetchFilasDeParesDeParticipacion($episode, $cutoff);
-        $messageCounts = $this->countMensajesDelEpisodioPorRemitente($episode);
-        [$pairs, $participantStats, $unansweredInboundCount] = $this->plegarParesDeParticipacion($pairRows);
-        $participants = $this->armarParticipantes($messageCounts['by_agent'], $participantStats);
+        $corte = $this->getCorteDeAtribucion();
+        $pairRows = $this->fetchFilasDeParesDeParticipacion($episodio, $corte);
+        $cantidadesDeMensajes = $this->countMensajesDelEpisodioPorRemitente($episodio);
+        [$pairs, $estadisticasDeParticipantes, $cantidadDeEntrantesSinResponder] = $this->plegarParesDeParticipacion($pairRows);
+        $participantes = $this->armarParticipantes($cantidadesDeMensajes['by_agent'], $estadisticasDeParticipantes);
 
         return [
             'ticket_id' => $ticketId,
-            'data_available_from' => $cutoff,
-            'partial_data' => $messageCounts['unattributed'] > 0 || $cutoff === null,
-            'participants' => $participants,
-            'automatic_message_count' => $messageCounts['automatic'],
-            'unanswered_inbound_count' => $unansweredInboundCount,
+            'data_available_from' => $corte,
+            'partial_data' => $cantidadesDeMensajes['unattributed'] > 0 || $corte === null,
+            'participants' => $participantes,
+            'automatic_message_count' => $cantidadesDeMensajes['automatic'],
+            'unanswered_inbound_count' => $cantidadDeEntrantesSinResponder,
             'pairs' => $pairs,
         ];
     }
@@ -982,8 +982,8 @@ class ReporteRepository extends ServiceEntityRepository
             return null;
         }
 
-        $conversationId = (int) $ticketRow['conversation_id'];
-        $episodeStart = $ticketRow['created_at'];
+        $conversacionId = (int) $ticketRow['conversation_id'];
+        $inicioDeEpisodio = $ticketRow['created_at'];
 
         // Episode end: next ticket on the same conversation, (created_at, id)
         // lexicographic tie-break — same order as the LEAD() version, so both
@@ -993,12 +993,12 @@ class ReporteRepository extends ServiceEntityRepository
              WHERE t2.conversation_id = :conversationId
                AND (t2.created_at > :episodeStart
                     OR (t2.created_at = :episodeStart AND t2.id > :ticketId))',
-            ['conversationId' => $conversationId, 'episodeStart' => $episodeStart, 'ticketId' => $ticketId]
+            ['conversationId' => $conversacionId, 'episodeStart' => $inicioDeEpisodio, 'ticketId' => $ticketId]
         );
 
         return [
-            'conversation_id' => $conversationId,
-            'start' => $episodeStart,
+            'conversation_id' => $conversacionId,
+            'start' => $inicioDeEpisodio,
             'end' => $episodeEndRow['episode_end'] ?? null,
         ];
     }
@@ -1007,23 +1007,23 @@ class ReporteRepository extends ServiceEntityRepository
      * One row per inbound burst of the episode (attributed messages after
      * the cutoff only), joined to the agent reply that closed it, if any.
      *
-     * @param array{conversation_id: int, start: string, end: string|null} $episode
+     * @param array{conversation_id: int, start: string, end: string|null} $episodio
      * @return list<array<string, mixed>>
      */
-    private function fetchFilasDeParesDeParticipacion(array $episode, ?\DateTimeImmutable $cutoff): array
+    private function fetchFilasDeParesDeParticipacion(array $episodio, ?\DateTimeImmutable $corte): array
     {
         $conn = $this->entityManager->getConnection();
         $timeDiff = $this->getTimeDiffExpression('b.inbound_at', 'r.reply_at');
 
         $params = [
-            'conversationId' => $episode['conversation_id'],
-            'episodeStart' => $episode['start'],
-            'cutoff' => $cutoff !== null ? $cutoff->format('Y-m-d H:i:s') : '1970-01-01 00:00:00',
+            'conversationId' => $episodio['conversation_id'],
+            'episodeStart' => $episodio['start'],
+            'cutoff' => $corte !== null ? $corte->format('Y-m-d H:i:s') : '1970-01-01 00:00:00',
         ];
         $episodeEndClause = '';
-        if ($episode['end'] !== null) {
+        if ($episodio['end'] !== null) {
             $episodeEndClause = ' AND m.created_at < :episodeEnd';
-            $params['episodeEnd'] = $episode['end'];
+            $params['episodeEnd'] = $episodio['end'];
         }
 
         $sql = "WITH msgs AS (
@@ -1069,18 +1069,18 @@ class ReporteRepository extends ServiceEntityRepository
      * NULL rows) for message counts / automatic activity / unattributed
      * detection — independent of the cutoff-filtered seq/bursts pipeline.
      *
-     * @param array{conversation_id: int, start: string, end: string|null} $episode
+     * @param array{conversation_id: int, start: string, end: string|null} $episodio
      * @return array{by_agent: array<int, int>, automatic: int, unattributed: int}
      */
-    private function countMensajesDelEpisodioPorRemitente(array $episode): array
+    private function countMensajesDelEpisodioPorRemitente(array $episodio): array
     {
         $conn = $this->entityManager->getConnection();
 
-        $rollupParams = ['conversationId' => $episode['conversation_id'], 'episodeStart' => $episode['start']];
+        $rollupParams = ['conversationId' => $episodio['conversation_id'], 'episodeStart' => $episodio['start']];
         $rollupEpisodeEndClause = '';
-        if ($episode['end'] !== null) {
+        if ($episodio['end'] !== null) {
             $rollupEpisodeEndClause = ' AND m.created_at < :episodeEnd';
-            $rollupParams['episodeEnd'] = $episode['end'];
+            $rollupParams['episodeEnd'] = $episodio['end'];
         }
         $rollupSql = "SELECT m.sender_type, m.sender_agent_id, COUNT(*) AS message_count
             FROM messages m
@@ -1089,25 +1089,25 @@ class ReporteRepository extends ServiceEntityRepository
             GROUP BY m.sender_type, m.sender_agent_id";
         $rollupRows = $conn->fetchAllAssociative($rollupSql, $rollupParams);
 
-        $messageCountByAgent = [];
-        $automaticMessageCount = 0;
-        $unattributedCount = 0;
+        $mensajesPorAgente = [];
+        $cantidadDeMensajesAutomaticos = 0;
+        $cantidadSinAtribuir = 0;
         foreach ($rollupRows as $row) {
             $count = (int) $row['message_count'];
             if ($row['sender_type'] === null) {
-                $unattributedCount += $count;
+                $cantidadSinAtribuir += $count;
             } elseif ($row['sender_type'] === 'automatic') {
-                $automaticMessageCount += $count;
+                $cantidadDeMensajesAutomaticos += $count;
             } elseif ($row['sender_type'] === 'agent' && $row['sender_agent_id'] !== null) {
-                $agentId = (int) $row['sender_agent_id'];
-                $messageCountByAgent[$agentId] = ($messageCountByAgent[$agentId] ?? 0) + $count;
+                $agenteId = (int) $row['sender_agent_id'];
+                $mensajesPorAgente[$agenteId] = ($mensajesPorAgente[$agenteId] ?? 0) + $count;
             }
         }
 
         return [
-            'by_agent' => $messageCountByAgent,
-            'automatic' => $automaticMessageCount,
-            'unattributed' => $unattributedCount,
+            'by_agent' => $mensajesPorAgente,
+            'automatic' => $cantidadDeMensajesAutomaticos,
+            'unattributed' => $cantidadSinAtribuir,
         ];
     }
 
@@ -1120,83 +1120,83 @@ class ReporteRepository extends ServiceEntityRepository
      */
     private function plegarParesDeParticipacion(array $pairRows): array
     {
-        $participantStats = [];
-        $unansweredInboundCount = 0;
+        $estadisticasDeParticipantes = [];
+        $cantidadDeEntrantesSinResponder = 0;
         $pairs = [];
 
         foreach ($pairRows as $row) {
-            $agentId = $row['agent_id'] !== null ? (int) $row['agent_id'] : null;
-            $delaySeconds = $row['delay_seconds'] !== null ? (float) $row['delay_seconds'] : null;
+            $agenteId = $row['agent_id'] !== null ? (int) $row['agent_id'] : null;
+            $segundosDeDemora = $row['delay_seconds'] !== null ? (float) $row['delay_seconds'] : null;
 
             $pairs[] = [
                 'run_start_at' => $row['inbound_at'],
                 'reply_at' => $row['reply_at'],
-                'agent_id' => $agentId,
-                'delay_seconds' => $delaySeconds,
+                'agent_id' => $agenteId,
+                'delay_seconds' => $segundosDeDemora,
             ];
 
-            if ($agentId === null) {
-                $unansweredInboundCount++;
+            if ($agenteId === null) {
+                $cantidadDeEntrantesSinResponder++;
                 continue;
             }
 
-            if (!isset($participantStats[$agentId])) {
-                $participantStats[$agentId] = [
+            if (!isset($estadisticasDeParticipantes[$agenteId])) {
+                $estadisticasDeParticipantes[$agenteId] = [
                     'agent_name' => $row['agent_name'],
                     'sample_count' => 0,
                     'sum_delay' => 0.0,
                 ];
             }
-            $participantStats[$agentId]['sample_count']++;
-            $participantStats[$agentId]['sum_delay'] += $delaySeconds ?? 0.0;
+            $estadisticasDeParticipantes[$agenteId]['sample_count']++;
+            $estadisticasDeParticipantes[$agenteId]['sum_delay'] += $segundosDeDemora ?? 0.0;
         }
 
-        return [$pairs, $participantStats, $unansweredInboundCount];
+        return [$pairs, $estadisticasDeParticipantes, $cantidadDeEntrantesSinResponder];
     }
 
     /**
      * One entry per agent who wrote in the episode or answered a burst,
      * sorted by agent id.
      *
-     * @param array<int, int> $messageCountByAgent
-     * @param array<int, array{agent_name: string|null, sample_count: int, sum_delay: float}> $participantStats
+     * @param array<int, int> $mensajesPorAgente
+     * @param array<int, array{agent_name: string|null, sample_count: int, sum_delay: float}> $estadisticasDeParticipantes
      * @return list<array{agent_id: int, agent_name: string|null, message_count: int, sample_count: int, avg_delay_seconds: float|null}>
      */
-    private function armarParticipantes(array $messageCountByAgent, array $participantStats): array
+    private function armarParticipantes(array $mensajesPorAgente, array $estadisticasDeParticipantes): array
     {
         $conn = $this->entityManager->getConnection();
 
         // Fallback agent-name lookup: an agent who replied without a
         // preceding unanswered burst (unprompted message) has message_count
         // but never appears in $participantStats.
-        $missingAgentIds = array_diff(array_keys($messageCountByAgent), array_keys($participantStats));
-        $agentNameMap = [];
-        if (!empty($missingAgentIds)) {
+        $agenteIdsFaltantes = array_diff(array_keys($mensajesPorAgente), array_keys($estadisticasDeParticipantes));
+        $nombresDeAgentes = [];
+        if (!empty($agenteIdsFaltantes)) {
             $nameRows = $conn->fetchAllAssociative(
                 'SELECT id, name FROM agents WHERE id IN (?)',
-                [array_values(array_map('intval', $missingAgentIds))],
+                [array_values(array_map('intval', $agenteIdsFaltantes))],
                 [ArrayParameterType::INTEGER]
             );
             foreach ($nameRows as $nameRow) {
-                $agentNameMap[(int) $nameRow['id']] = $nameRow['name'];
+                $nombresDeAgentes[(int) $nameRow['id']] = $nameRow['name'];
             }
         }
 
-        $agentIds = array_unique(array_merge(array_keys($messageCountByAgent), array_keys($participantStats)));
-        sort($agentIds);
-        $participants = [];
-        foreach ($agentIds as $agentId) {
-            $stats = $participantStats[$agentId] ?? ['agent_name' => null, 'sample_count' => 0, 'sum_delay' => 0.0];
-            $participants[] = [
-                'agent_id' => $agentId,
-                'agent_name' => $stats['agent_name'] ?? $agentNameMap[$agentId] ?? null,
-                'message_count' => $messageCountByAgent[$agentId] ?? 0,
-                'sample_count' => $stats['sample_count'],
-                'avg_delay_seconds' => $stats['sample_count'] > 0 ? round($stats['sum_delay'] / $stats['sample_count'], 2) : null,
+        $agenteIds = array_unique(array_merge(array_keys($mensajesPorAgente), array_keys($estadisticasDeParticipantes)));
+        sort($agenteIds);
+        $participantes = [];
+        foreach ($agenteIds as $agenteId) {
+            $estadisticas = $estadisticasDeParticipantes[$agenteId] ?? ['agent_name' => null, 'sample_count' => 0, 'sum_delay' => 0.0];
+            $participantes[] = [
+                'agent_id' => $agenteId,
+                'agent_name' => $estadisticas['agent_name'] ?? $nombresDeAgentes[$agenteId] ?? null,
+                'message_count' => $mensajesPorAgente[$agenteId] ?? 0,
+                'sample_count' => $estadisticas['sample_count'],
+                'avg_delay_seconds' => $estadisticas['sample_count'] > 0 ? round($estadisticas['sum_delay'] / $estadisticas['sample_count'], 2) : null,
             ];
         }
 
-        return $participants;
+        return $participantes;
     }
 
     /**

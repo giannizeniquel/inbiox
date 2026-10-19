@@ -32,7 +32,7 @@ final class SeedReportesCommand extends Command
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
-        private readonly ReporteRepository $reportingRepo,
+        private readonly ReporteRepository $reporteRepo,
     ) {
         parent::__construct();
     }
@@ -58,20 +58,20 @@ final class SeedReportesCommand extends Command
 
         // ── Truncate tables (order matters for foreign keys) ──
         $output->writeln('Truncating existing data...');
-        $this->reportingRepo->truncateSeedTables();
+        $this->reporteRepo->truncateSeedTables();
 
         // ── Load existing workspaces ──
-        $workspaceRepo = $this->em->getRepository(EspacioDeTrabajo::class);
-        $workspaces = $workspaceRepo->findBy([], ['id' => 'ASC']);
-        if (empty($workspaces)) {
+        $espacioDeTrabajoRepo = $this->em->getRepository(EspacioDeTrabajo::class);
+        $espaciosDeTrabajo = $espacioDeTrabajoRepo->findBy([], ['id' => 'ASC']);
+        if (empty($espaciosDeTrabajo)) {
             $output->writeln('<error>No workspaces found. Run app:seed-users first.</error>');
             return Command::FAILURE;
         }
-        $ws1 = $workspaces[0];
+        $ws1 = $espaciosDeTrabajo[0];
 
         // ── 5 Agents ──
         $output->writeln('Creating 5 agents...');
-        $agents = [];
+        $agentes = [];
         $agentConfigs = [
             ['name' => 'María García',   'max_active' => 10, 'tz' => 'America/Argentina/Buenos_Aires'],
             ['name' => 'Carlos López',   'max_active' => 8,  'tz' => 'America/Argentina/Buenos_Aires'],
@@ -81,14 +81,14 @@ final class SeedReportesCommand extends Command
         ];
 
         foreach ($agentConfigs as $cfg) {
-            $agent = new Agente($cfg['name']);
-            $agent->setMaxTicketsActivos($cfg['max_active']);
-            $agent->setZonaHoraria($cfg['tz']);
-            $agent->setActivo(true);
-            $agent->addEspacioDeTrabajo($ws1);
-            $agent->setEspacioDeTrabajoActivo($ws1);
-            $this->em->persist($agent);
-            $agents[] = $agent;
+            $agente = new Agente($cfg['name']);
+            $agente->setMaxTicketsActivos($cfg['max_active']);
+            $agente->setZonaHoraria($cfg['tz']);
+            $agente->setActivo(true);
+            $agente->addEspacioDeTrabajo($ws1);
+            $agente->setEspacioDeTrabajoActivo($ws1);
+            $this->em->persist($agente);
+            $agentes[] = $agente;
         }
         $this->em->flush();
 
@@ -97,75 +97,75 @@ final class SeedReportesCommand extends Command
         $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
         $currentDow = (int) $now->format('N'); // 1=Monday, 7=Sunday
 
-        foreach ($agents as $agent) {
+        foreach ($agentes as $agente) {
             // Mon-Fri, 09:00-18:00 local time
             for ($day = 1; $day <= 5; $day++) {
-                $shift = new Turno(
-                    $agent,
+                $turno = new Turno(
+                    $agente,
                     $day,
                     new \DateTimeImmutable('09:00:00'),
                     new \DateTimeImmutable('18:00:00')
                 );
-                $this->em->persist($shift);
+                $this->em->persist($turno);
             }
         }
         $this->em->flush();
 
         // ── 10 Contacts ──
         $output->writeln('Creating 10 contacts...');
-        $contacts = [];
+        $contactos = [];
         for ($i = 1; $i <= 10; $i++) {
-            $contact = new Contacto();
-            $contact->setTelefono(sprintf('+54911%07d', $i));
-            $contact->setNombre("Contacto {$i}");
-            $contact->setEmail("contacto{$i}@test.com");
-            $this->em->persist($contact);
-            $contacts[] = $contact;
+            $contacto = new Contacto();
+            $contacto->setTelefono(sprintf('+54911%07d', $i));
+            $contacto->setNombre("Contacto {$i}");
+            $contacto->setEmail("contacto{$i}@test.com");
+            $this->em->persist($contacto);
+            $contactos[] = $contacto;
         }
         $this->em->flush();
 
         // ── 55 Tickets over 90 days ──
         $output->writeln('Creating 55 tickets...');
-        $statuses = ['new', 'active', 'waiting', 'resolved', 'closed'];
-        $priorities = ['low', 'medium', 'high', 'urgent'];
+        $estados = ['new', 'active', 'waiting', 'resolved', 'closed'];
+        $prioridades = ['low', 'medium', 'high', 'urgent'];
         $baseTime = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->modify('-90 days');
 
         $tickets = [];
         for ($i = 1; $i <= 55; $i++) {
             $dayOffset = random_int(0, 89);
             $hourOffset = random_int(6, 22); // Business hours UTC
-            $createdAt = $baseTime->modify("+{$dayOffset} days +{$hourOffset} hours");
+            $creadoAt = $baseTime->modify("+{$dayOffset} days +{$hourOffset} hours");
 
             $ticket = new Ticket();
-            $ticket->setContacto($contacts[array_rand($contacts)]);
-            $ticket->setEstado($statuses[array_rand($statuses)]);
-            $ticket->setPrioridad($priorities[array_rand($priorities)]);
-            $ticket->setCreadoAt($createdAt);
-            $ticket->setActualizadoAt($createdAt);
+            $ticket->setContacto($contactos[array_rand($contactos)]);
+            $ticket->setEstado($estados[array_rand($estados)]);
+            $ticket->setPrioridad($prioridades[array_rand($prioridades)]);
+            $ticket->setCreadoAt($creadoAt);
+            $ticket->setActualizadoAt($creadoAt);
 
             // Assign to agent (first 45 assigned, last 10 unassigned)
             if ($i <= 45) {
-                $agent = $agents[array_rand($agents)];
-                $ticket->setAgenteAsignadoId($agent->getId());
+                $agente = $agentes[array_rand($agentes)];
+                $ticket->setAgenteAsignadoId($agente->getId());
             }
             // Last 10 tickets remain unassigned
 
             // Set first_response_at for ~70% of tickets
             if (random_int(1, 100) <= 70) {
                 $frtMinutes = random_int(1, 120);
-                $ticket->setPrimeraRespuestaAt($createdAt->modify("+{$frtMinutes} minutes"));
+                $ticket->setPrimeraRespuestaAt($creadoAt->modify("+{$frtMinutes} minutes"));
             }
 
             // Set resolved_at for ~60% of tickets
             if (random_int(1, 100) <= 60) {
                 $rtMinutes = random_int(30, 480);
-                $resolvedAt = $createdAt->modify("+{$rtMinutes} minutes");
-                $ticket->setResueltoAt($resolvedAt);
+                $resueltoAt = $creadoAt->modify("+{$rtMinutes} minutes");
+                $ticket->setResueltoAt($resueltoAt);
             }
 
             // Set closed_at for ~30% of tickets
             if (random_int(1, 100) <= 30) {
-                $ticket->setCerradoAt($createdAt->modify('+1 day'));
+                $ticket->setCerradoAt($creadoAt->modify('+1 day'));
             }
 
             // Workspace phone_number_id
@@ -178,15 +178,15 @@ final class SeedReportesCommand extends Command
 
         // ── Auto-reopened events (3 tickets) ──
         $output->writeln('Creating auto_reopened events...');
-        $reopenedCount = 0;
+        $cantidadDeReabiertos = 0;
         foreach ($tickets as $ticket) {
-            if ($reopenedCount >= 3) {
+            if ($cantidadDeReabiertos >= 3) {
                 break;
             }
             if ($ticket->getResueltoAt() !== null) {
                 $event = new EventoDeTicket($ticket->getId(), 'auto_reopened', 'system');
                 $this->em->persist($event);
-                $reopenedCount++;
+                $cantidadDeReabiertos++;
             }
         }
         $this->em->flush();
@@ -194,10 +194,10 @@ final class SeedReportesCommand extends Command
         // ── Summary ──
         $output->writeln('');
         $output->writeln('✅ Seed complete:');
-        $output->writeln(sprintf('   Agents: %d', count($agents)));
-        $output->writeln(sprintf('   Contacts: %d', count($contacts)));
+        $output->writeln(sprintf('   Agents: %d', count($agentes)));
+        $output->writeln(sprintf('   Contacts: %d', count($contactos)));
         $output->writeln(sprintf('   Tickets: %d', count($tickets)));
-        $output->writeln(sprintf('   Auto-reopened events: %d', $reopenedCount));
+        $output->writeln(sprintf('   Auto-reopened events: %d', $cantidadDeReabiertos));
         $output->writeln('   Agent shifts: 5 agents × 5 days = 25 shifts');
 
         return Command::SUCCESS;

@@ -37,12 +37,12 @@ class ReporteController
     private const DATETIME_FORMAT = 'Y-m-d\TH:i:sZ';
 
     public function __construct(
-        private ReporteService $reportingService,
-        private ListarAgentesDisponiblesQuery $listAvailableAgents,
+        private ReporteService $reporteService,
+        private ListarAgentesDisponiblesQuery $listarAgentesDisponibles,
         private OwnershipScope $ownershipScope,
         private WorkspaceScope $workspaceScope,
-        private ExportarTicketsCsvQuery $exportTicketsCsvQuery,
-        private FiltrosDeTicketBuilder $ticketFilterBuilder,
+        private ExportarTicketsCsvQuery $exportarTicketsCsvQuery,
+        private FiltrosDeTicketBuilder $filtrosDeTicketBuilder,
     ) {}
 
     /**
@@ -87,9 +87,9 @@ class ReporteController
      */
     private function getEquipoId(Request $request): ?int
     {
-        $teamId = $request->query->get('teamId');
+        $equipoId = $request->query->get('teamId');
 
-        return null !== $teamId ? (int) $teamId : null;
+        return null !== $equipoId ? (int) $equipoId : null;
     }
 
     /**
@@ -103,18 +103,18 @@ class ReporteController
         try {
             $from = $this->parseDateTime($request->query->get('from'));
             $to = $this->parseDateTime($request->query->get('to'));
-            $agentId = $request->query->get('agent_id') ? (int) $request->query->get('agent_id') : null;
+            $agenteId = $request->query->get('agent_id') ? (int) $request->query->get('agent_id') : null;
 
             // Ownership scoping: force agent_id for AGENT role
-            $scopeAgentId = $this->getAgenteIdDeAlcance();
-            if (null !== $scopeAgentId) {
-                $agentId = $scopeAgentId;
+            $agenteIdDeAlcance = $this->getAgenteIdDeAlcance();
+            if (null !== $agenteIdDeAlcance) {
+                $agenteId = $agenteIdDeAlcance;
             }
 
             $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
-            $teamId = $this->getEquipoId($request);
+            $equipoId = $this->getEquipoId($request);
 
-            $metrics = $this->reportingService->getFrt($from, $to, $agentId, $phoneNumberId, $teamId);
+            $metrics = $this->reporteService->getFrt($from, $to, $agenteId, $phoneNumberId, $equipoId);
             return new JsonResponse($metrics);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
@@ -133,10 +133,10 @@ class ReporteController
             $from = $this->parseDateTime($request->query->get('from'));
             $to = $this->parseDateTime($request->query->get('to'));
 
-            $scopeAgentId = $this->getAgenteIdDeAlcance();
+            $agenteIdDeAlcance = $this->getAgenteIdDeAlcance();
             $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
-            $teamId = $this->getEquipoId($request);
-            $metrics = $this->reportingService->getRt($from, $to, $scopeAgentId, $phoneNumberId, $teamId);
+            $equipoId = $this->getEquipoId($request);
+            $metrics = $this->reporteService->getRt($from, $to, $agenteIdDeAlcance, $phoneNumberId, $equipoId);
 
             return new JsonResponse($metrics);
         } catch (\InvalidArgumentException $e) {
@@ -156,12 +156,12 @@ class ReporteController
             $from = $this->parseDateTime($request->query->get('from'));
             $to = $this->parseDateTime($request->query->get('to'));
 
-            $scopeAgentId = $this->getAgenteIdDeAlcance();
+            $agenteIdDeAlcance = $this->getAgenteIdDeAlcance();
             $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
-            $teamId = $this->getEquipoId($request);
-            $counts = $this->reportingService->getConteos($from, $to, $scopeAgentId, $phoneNumberId, $teamId);
+            $equipoId = $this->getEquipoId($request);
+            $conteos = $this->reporteService->getConteos($from, $to, $agenteIdDeAlcance, $phoneNumberId, $equipoId);
 
-            return new JsonResponse($counts);
+            return new JsonResponse($conteos);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }
@@ -179,12 +179,12 @@ class ReporteController
             $from = $this->parseDateTime($request->query->get('from'));
             $to = $this->parseDateTime($request->query->get('to'));
 
-            $scopeAgentId = $this->getAgenteIdDeAlcance();
+            $agenteIdDeAlcance = $this->getAgenteIdDeAlcance();
             $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
-            $teamId = $this->getEquipoId($request);
-            $volume = $this->reportingService->getVolumen($from, $to, $scopeAgentId, $phoneNumberId, $teamId);
+            $equipoId = $this->getEquipoId($request);
+            $volumen = $this->reporteService->getVolumen($from, $to, $agenteIdDeAlcance, $phoneNumberId, $equipoId);
 
-            return new JsonResponse($volume);
+            return new JsonResponse($volumen);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }
@@ -201,18 +201,18 @@ class ReporteController
         try {
             $from = $this->parseDateTime($request->query->get('from'));
             $to = $this->parseDateTime($request->query->get('to'));
-            $agentId = $request->query->get('agent_id') ? (int) $request->query->get('agent_id') : null;
+            $agenteId = $request->query->get('agent_id') ? (int) $request->query->get('agent_id') : null;
 
             // Ownership scoping: force agent_id for AGENT role
-            $scopeAgentId = $this->getAgenteIdDeAlcance();
-            if (null !== $scopeAgentId) {
-                $agentId = $scopeAgentId;
+            $agenteIdDeAlcance = $this->getAgenteIdDeAlcance();
+            if (null !== $agenteIdDeAlcance) {
+                $agenteId = $agenteIdDeAlcance;
             }
 
             $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
-            $teamId = $this->getEquipoId($request);
-            $performance = $this->reportingService->getRendimientoDeAgentes($from, $to, $agentId, $phoneNumberId, $teamId);
-            return new JsonResponse($performance);
+            $equipoId = $this->getEquipoId($request);
+            $rendimiento = $this->reporteService->getRendimientoDeAgentes($from, $to, $agenteId, $phoneNumberId, $equipoId);
+            return new JsonResponse($rendimiento);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }
@@ -226,15 +226,15 @@ class ReporteController
     #[Route('/api/reports/agent-load', name: 'app_report_agent_load', methods: ['GET'])]
     public function cargaDeAgentes(Request $request): JsonResponse
     {
-        $agentId = $request->query->get('agent_id') ? (int) $request->query->get('agent_id') : null;
+        $agenteId = $request->query->get('agent_id') ? (int) $request->query->get('agent_id') : null;
 
-        $scopeAgentId = $this->getAgenteIdDeAlcance();
-        if (null !== $scopeAgentId) {
-            $agentId = $scopeAgentId;
+        $agenteIdDeAlcance = $this->getAgenteIdDeAlcance();
+        if (null !== $agenteIdDeAlcance) {
+            $agenteId = $agenteIdDeAlcance;
         }
 
         $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
-        $metrics = $this->reportingService->getCargaDeAgentes($agentId, $phoneNumberId);
+        $metrics = $this->reporteService->getCargaDeAgentes($agenteId, $phoneNumberId);
 
         return new JsonResponse($metrics);
     }
@@ -252,7 +252,7 @@ class ReporteController
             $from = $request->query->get('from') ? $this->parseDateTime($request->query->get('from')) : null;
             $to = $request->query->get('to') ? $this->parseDateTime($request->query->get('to')) : null;
 
-            $result = $this->reportingService->getSinAsignar($phoneNumberId, $from, $to);
+            $result = $this->reporteService->getSinAsignar($phoneNumberId, $from, $to);
 
             return new JsonResponse($result);
         } catch (\InvalidArgumentException $e) {
@@ -268,7 +268,7 @@ class ReporteController
     #[Route('/api/reports/available-agents', name: 'app_report_available_agents', methods: ['GET'])]
     public function agentesDisponibles(Request $request): JsonResponse
     {
-        $result = $this->listAvailableAgents->execute($this->getPhoneNumberIdDeAlcance(), new \DateTimeImmutable());
+        $result = $this->listarAgentesDisponibles->execute($this->getPhoneNumberIdDeAlcance(), new \DateTimeImmutable());
 
         return new JsonResponse($result);
     }
@@ -286,9 +286,9 @@ class ReporteController
             $to = $this->parseDateTime($request->query->get('to'));
             $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
 
-            $trend = $this->reportingService->getTendenciaDeFrt($from, $to, $phoneNumberId);
+            $tendencia = $this->reporteService->getTendenciaDeFrt($from, $to, $phoneNumberId);
 
-            return new JsonResponse($trend);
+            return new JsonResponse($tendencia);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }
@@ -307,9 +307,9 @@ class ReporteController
             $to = $this->parseDateTime($request->query->get('to'));
             $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
 
-            $heatmap = $this->reportingService->getMapaDeCalor($from, $to, $phoneNumberId);
+            $mapaDeCalor = $this->reporteService->getMapaDeCalor($from, $to, $phoneNumberId);
 
-            return new JsonResponse($heatmap);
+            return new JsonResponse($mapaDeCalor);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }
@@ -324,9 +324,9 @@ class ReporteController
     public function contactosRecurrentes(Request $request): JsonResponse
     {
         $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
-        $threshold = $request->query->get('threshold') ? (int) $request->query->get('threshold') : 3;
+        $umbral = $request->query->get('threshold') ? (int) $request->query->get('threshold') : 3;
 
-        $result = $this->reportingService->getContactosRecurrentes($phoneNumberId, $threshold);
+        $result = $this->reporteService->getContactosRecurrentes($phoneNumberId, $umbral);
 
         return new JsonResponse($result);
     }
@@ -344,7 +344,7 @@ class ReporteController
             $to = $this->parseDateTime($request->query->get('to'));
             $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
 
-            $result = $this->reportingService->getReabiertos($from, $to, $phoneNumberId);
+            $result = $this->reporteService->getReabiertos($from, $to, $phoneNumberId);
 
             return new JsonResponse($result);
         } catch (\InvalidArgumentException $e) {
@@ -373,23 +373,23 @@ class ReporteController
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }
 
-        $agentId = $request->query->get('agent_id');
-        $status = $request->query->get('status');
-        $tag = $request->query->get('tag');
+        $agenteId = $request->query->get('agent_id');
+        $estado = $request->query->get('status');
+        $etiqueta = $request->query->get('tag');
         $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
-        $teamId = $this->getEquipoId($request);
+        $equipoId = $this->getEquipoId($request);
 
         // Validate filter args up front (no DB query — same pure builder used
         // inside ExportarTicketsCsvQuery::stream) so an invalid request (e.g.
         // >5 tags) fails with 400 before any streaming/headers are sent.
         try {
-            $this->ticketFilterBuilder->build(
-                filtro: $agentId ? 'mine' : 'all',
-                agenteId: $agentId,
-                estado: $status,
+            $this->filtrosDeTicketBuilder->build(
+                filtro: $agenteId ? 'mine' : 'all',
+                agenteId: $agenteId,
+                estado: $estado,
                 phoneNumberId: $phoneNumberId,
-                etiqueta: $tag,
-                equipoId: $teamId,
+                etiqueta: $etiqueta,
+                equipoId: $equipoId,
             );
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
@@ -397,8 +397,8 @@ class ReporteController
 
         $filename = sprintf('tickets_%s_%s.csv', $from->format('Y-m-d'), $to->format('Y-m-d'));
 
-        $exportQuery = $this->exportTicketsCsvQuery;
-        $response = new StreamedResponse(function () use ($exportQuery, $from, $to, $agentId, $status, $tag, $phoneNumberId, $teamId): void {
+        $exportarQuery = $this->exportarTicketsCsvQuery;
+        $response = new StreamedResponse(function () use ($exportarQuery, $from, $to, $agenteId, $estado, $etiqueta, $phoneNumberId, $equipoId): void {
             set_time_limit(0);
 
             $stream = fopen('php://output', 'w+');
@@ -410,7 +410,7 @@ class ReporteController
 
             $writer = Writer::createFromStream($stream);
 
-            $exportQuery->stream($writer, $from, $to, $agentId, $status, $tag, $phoneNumberId, $teamId);
+            $exportarQuery->stream($writer, $from, $to, $agenteId, $estado, $etiqueta, $phoneNumberId, $equipoId);
         });
 
         $response->headers->set('Content-Type', 'text/csv; charset=utf-8');
@@ -434,7 +434,7 @@ class ReporteController
             $to = $this->parseDateTime($request->query->get('to'));
             $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
 
-            $result = $this->reportingService->getDemoraDeRespuesta($from, $to, $phoneNumberId);
+            $result = $this->reporteService->getDemoraDeRespuesta($from, $to, $phoneNumberId);
 
             return new JsonResponse($result);
         } catch (\InvalidArgumentException $e) {
@@ -450,7 +450,7 @@ class ReporteController
     #[Route('/api/reports/tickets/{id}/participation', name: 'app_report_ticket_participation', methods: ['GET'])]
     public function participacionEnTicket(Request $request, int $id): JsonResponse
     {
-        $result = $this->reportingService->getParticipacionEnTicket($id);
+        $result = $this->reporteService->getParticipacionEnTicket($id);
 
         if ($result === null) {
             return new JsonResponse(['error' => 'Ticket not found'], 404);

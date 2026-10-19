@@ -15,7 +15,7 @@ use App\Ticket\Repository\TicketRepository;
 final class ListarAgentesDisponiblesQuery
 {
     public function __construct(
-        private readonly DisponibilidadDeAgenteService $agentAvailabilityService,
+        private readonly DisponibilidadDeAgenteService $disponibilidadDeAgenteService,
         private readonly TicketRepository $ticketRepository,
     ) {}
 
@@ -27,29 +27,29 @@ final class ListarAgentesDisponiblesQuery
      */
     public function execute(?string $phoneNumberId, \DateTimeImmutable $atUtc): array
     {
-        $available = $this->agentAvailabilityService->listarAgentesDisponibles($atUtc);
+        $disponibles = $this->disponibilidadDeAgenteService->listarAgentesDisponibles($atUtc);
 
         $result = [];
-        foreach ($available as $agent) {
+        foreach ($disponibles as $agente) {
             // Filter by workspace if scoped
             if ($phoneNumberId !== null) {
-                $isInWorkspace = false;
-                foreach ($agent->getEspaciosDeTrabajo() as $ws) {
+                $enEspacioDeTrabajo = false;
+                foreach ($agente->getEspaciosDeTrabajo() as $ws) {
                     if ($ws->getPhoneNumberId() === $phoneNumberId) {
-                        $isInWorkspace = true;
+                        $enEspacioDeTrabajo = true;
                         break;
                     }
                 }
-                if (!$isInWorkspace) {
+                if (!$enEspacioDeTrabajo) {
                     continue;
                 }
             }
 
             $result[] = [
-                'agent_id' => $agent->getId(),
-                'agent_name' => $agent->getNombre(),
+                'agent_id' => $agente->getId(),
+                'agent_name' => $agente->getNombre(),
                 'in_shift' => true,
-                'active_tickets' => $this->ticketRepository->countActivosDeAgente($agent->getId()),
+                'active_tickets' => $this->ticketRepository->countActivosDeAgente($agente->getId()),
             ];
         }
 
