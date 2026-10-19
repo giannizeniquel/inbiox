@@ -115,7 +115,7 @@ Todas **Agente**, salvo export. Filtran por workspace activo; nunca por agente.
 
 > Verificado en `ReportingController.php`: solo `frt`, `rt`, `counts`, `volume`, `agents` y `export` leen `teamId`. Los demás lo ignoran aunque el frontend lo envíe (p. ej. `response-delay`).
 
-### G. Autoservicio (`MeController`, `MiRespuestaAutomaticaController`, `MisTurnosController`, `MeWorkspaceController`; todos con clase `IS_AUTHENTICATED_FULLY`)
+### G. Autoservicio (`MiConfiguracionController`, `MiRespuestaAutomaticaController`, `MisTurnosController`, `MeWorkspaceController`; todos con clase `IS_AUTHENTICATED_FULLY`)
 
 | Método | Path | Acción | Rol | Nota |
 |---|---|---|---|---|
@@ -134,7 +134,7 @@ Todas **Agente**, salvo export. Filtran por workspace activo; nunca por agente.
 | Método | Path | Controlador::acción | Rol | Nota |
 |---|---|---|---|---|
 | GET | `/api/workspaces/{id}/available-agents` | `AgentesDisponiblesController::listarAgentesDisponibles` | Agente (no verifica pertenencia al workspace) | Roster del desplegable. |
-| GET | `/api/teams` | `TeamController::list` | Agente | Equipos de mis workspaces. |
+| GET | `/api/teams` | `EquipoController::list` | Agente | Equipos de mis workspaces. |
 | POST/DELETE/GET | `/api/agents/{id}/availability` | `DisponibilidadDeAgenteController::setDisponibilidadManual` / `quitarDisponibilidadManual` / `getDisponibilidad` | Agente **sobre cualquier agente** ([R3](00-estado-y-pendientes.md#r3-cualquier-agente-modifica-disponibilidad-y-turnos-de-cualquier-agente)) | |
 | POST | `/api/agents/{id}/shifts` | `createTurno` | ídem | |
 | DELETE | `/api/agents/{id}/shifts/{shiftId}` | `deleteTurno` | ídem | |

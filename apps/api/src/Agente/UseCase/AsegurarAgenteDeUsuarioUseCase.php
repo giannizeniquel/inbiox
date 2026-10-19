@@ -13,7 +13,7 @@ use Doctrine\ORM\EntityManagerInterface;
  * Returns the user's agent, creating one (name = email) when the user has
  * none, e.g. an admin who sends a message or switches workspace.
  */
-final class EnsureAgentForUserUseCase
+final class AsegurarAgenteDeUsuarioUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,

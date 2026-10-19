@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Conversacion\Controller;
 
 use App\Compartido\Graph\GraphClient;
-use App\Agente\UseCase\EnsureAgentForUserUseCase;
+use App\Agente\UseCase\AsegurarAgenteDeUsuarioUseCase;
 use App\Conversacion\UseCase\SendOutboundMessageUseCase;
 use App\Conversacion\UseCase\SendTemplateUseCase;
 use App\Conversacion\UseCase\UploadMediaUseCase;
@@ -36,7 +36,7 @@ class ProviderProxyController extends AbstractController
         private readonly GraphClient $graphClient,
         private readonly SendOutboundMessageUseCase $sendOutboundMessage,
         private readonly SendTemplateUseCase $sendTemplateUseCase,
-        private readonly EnsureAgentForUserUseCase $ensureAgentForUser,
+        private readonly AsegurarAgenteDeUsuarioUseCase $ensureAgentForUser,
         private readonly UploadMediaUseCase $uploadMediaUseCase,
     ) {}
 

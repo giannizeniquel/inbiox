@@ -27,7 +27,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * filters even though it's hidden from NEW-assignment pickers.
  */
 #[IsGranted('ROLE_AGENT')]
-final class TeamController
+final class EquipoController
 {
     public function __construct(
         private readonly EquipoRepository $teamRepository,

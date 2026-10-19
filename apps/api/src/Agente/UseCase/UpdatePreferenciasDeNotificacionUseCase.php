@@ -7,7 +7,7 @@ namespace App\Agente\UseCase;
 use App\Agente\Agente;
 use Doctrine\ORM\EntityManagerInterface;
 
-final class UpdateNotificationPreferencesUseCase
+final class UpdatePreferenciasDeNotificacionUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,

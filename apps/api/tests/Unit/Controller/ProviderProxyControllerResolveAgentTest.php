@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Controller;
 
 use App\Agente\Repository\AgenteRepository;
-use App\Agente\UseCase\EnsureAgentForUserUseCase;
+use App\Agente\UseCase\AsegurarAgenteDeUsuarioUseCase;
 use App\Compartido\Graph\GraphClient;
 use App\Conversacion\UseCase\HandleOutboundMessageUseCase;
 use App\Conversacion\UseCase\MarkOutboundMessageSentUseCase;
@@ -27,7 +27,7 @@ use PHPUnit\Framework\TestCase;
  * Unit tests for `ProviderProxyController::resolveActingAgentId()` (design.md
  * D4) — the private helper extracted from `send()`'s original inline
  * fallback, reused by `sendTemplate()`. Since phase 3d it delegates to
- * `EnsureAgentForUserUseCase`, built here over the mocked EntityManager.
+ * `AsegurarAgenteDeUsuarioUseCase`, built here over the mocked EntityManager.
  *
  * spec.md "Attribution at Template Send":
  *   - Scenario: Agent sends a template message → resolved agent id, AGENT
@@ -51,7 +51,7 @@ class ProviderProxyControllerResolveAgentTest extends TestCase
                 $this->createMock(GraphClient::class),
                 new RecordSentTemplateUseCase($em),
             ),
-            new EnsureAgentForUserUseCase($em, $agentRepository),
+            new AsegurarAgenteDeUsuarioUseCase($em, $agentRepository),
             new UploadMediaUseCase(
                 $this->createMock(MediaValidator::class),
                 $this->createMock(GraphClient::class),

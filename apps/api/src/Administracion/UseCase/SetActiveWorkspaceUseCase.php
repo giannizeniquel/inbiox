@@ -8,7 +8,7 @@ use App\Administracion\Repository\WorkspaceRepository;
 use App\Administracion\User;
 use App\Administracion\Workspace;
 use App\Administracion\WorkspaceNotAssignedException;
-use App\Agente\UseCase\EnsureAgentForUserUseCase;
+use App\Agente\UseCase\AsegurarAgenteDeUsuarioUseCase;
 use App\Compartido\NotFoundException;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -17,7 +17,7 @@ final class SetActiveWorkspaceUseCase
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly WorkspaceRepository $workspaceRepository,
-        private readonly EnsureAgentForUserUseCase $ensureAgentForUser,
+        private readonly AsegurarAgenteDeUsuarioUseCase $ensureAgentForUser,
     ) {}
 
     /**

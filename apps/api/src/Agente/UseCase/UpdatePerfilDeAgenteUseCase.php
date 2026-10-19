@@ -7,7 +7,7 @@ namespace App\Agente\UseCase;
 use App\Agente\Agente;
 use Doctrine\ORM\EntityManagerInterface;
 
-final class UpdateAgentProfileUseCase
+final class UpdatePerfilDeAgenteUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,

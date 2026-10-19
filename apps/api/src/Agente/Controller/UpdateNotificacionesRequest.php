@@ -6,7 +6,7 @@ namespace App\Agente\Controller;
 
 use Symfony\Component\Validator\Constraints as Assert;
 
-class UpdateNotificationsRequest
+class UpdateNotificacionesRequest
 {
     #[Assert\Type(type: 'bool', message: 'sound must be a boolean')]
     public ?bool $sound = null;

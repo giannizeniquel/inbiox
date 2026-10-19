@@ -14,7 +14,7 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 /**
  * HTTP-level integration tests for the Settings Page endpoints.
  *
- * Covers MeController settings endpoints:
+ * Covers MiConfiguracionController settings endpoints:
  *   GET  /api/me/settings
  *   PUT  /api/me/profile
  *   PUT  /api/me/notifications

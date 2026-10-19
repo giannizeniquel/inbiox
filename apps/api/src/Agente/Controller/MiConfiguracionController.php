@@ -6,8 +6,8 @@ namespace App\Agente\Controller;
 
 use App\Administracion\User;
 use App\Agente\Agente;
-use App\Agente\UseCase\UpdateAgentProfileUseCase;
-use App\Agente\UseCase\UpdateNotificationPreferencesUseCase;
+use App\Agente\UseCase\UpdatePerfilDeAgenteUseCase;
+use App\Agente\UseCase\UpdatePreferenciasDeNotificacionUseCase;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,12 +26,12 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * Automatizacion, shifts in Disponibilidad, workspaces in Administracion.
  */
 #[IsGranted('IS_AUTHENTICATED_FULLY')]
-final class MeController
+final class MiConfiguracionController
 {
     public function __construct(
         private readonly Security $security,
-        private readonly UpdateAgentProfileUseCase $updateAgentProfileUseCase,
-        private readonly UpdateNotificationPreferencesUseCase $updateNotificationPreferencesUseCase,
+        private readonly UpdatePerfilDeAgenteUseCase $updateAgentProfileUseCase,
+        private readonly UpdatePreferenciasDeNotificacionUseCase $updateNotificationPreferencesUseCase,
     ) {}
 
     #[IsGranted('ROLE_AGENT')]
@@ -101,7 +101,7 @@ final class MeController
 
     #[IsGranted('ROLE_AGENT')]
     #[Route('/api/me/profile', name: 'app_me_profile', methods: ['PUT'])]
-    public function updateProfile(#[MapRequestPayload] UpdateProfileRequest $request): JsonResponse
+    public function updateProfile(#[MapRequestPayload] UpdatePerfilRequest $request): JsonResponse
     {
         $agent = $this->getAgent();
         if (null === $agent) {
@@ -119,7 +119,7 @@ final class MeController
 
     #[IsGranted('ROLE_AGENT')]
     #[Route('/api/me/notifications', name: 'app_me_notifications', methods: ['PUT'])]
-    public function updateNotifications(#[MapRequestPayload] UpdateNotificationsRequest $request): JsonResponse
+    public function updateNotifications(#[MapRequestPayload] UpdateNotificacionesRequest $request): JsonResponse
     {
         $agent = $this->getAgent();
         if (null === $agent) {

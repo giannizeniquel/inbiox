@@ -7,7 +7,7 @@ namespace App\Tests\Characterization;
 use App\Conversacion\Message;
 
 /**
- * Characterization of the workspace actions of App\Agente\Controller\MeController:
+ * Characterization of the workspace actions of App\Administracion\Controller\MeWorkspaceController:
  * app_me_workspace, app_me_workspace_set, app_me_workspaces.
  */
 final class MeWorkspaceControllerCharacterizationTest extends CharacterizationTestCase
