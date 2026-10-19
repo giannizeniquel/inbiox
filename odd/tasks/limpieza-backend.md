@@ -765,3 +765,6 @@ Later phases, each with its own branch and task list when it starts:
 - **L107 (2026-10-19):** 5-8b, `Agente` controller actions (`2f67172`): `MiConfiguracionController` `getConfiguracion`, `updatePerfil`, `updateNotificaciones`, private `getAgente`; `EquipoController::listar`. Use cases keep `execute`; the request properties (`signature`, `sound`, `desktop`) are the JSON contract and stay.
   - Gates: `lint:container` OK; `schema:validate` OK; router 91 = 91, only controller actions differ; PHPStan level 0 (29) and level 2 (37) equivalent (the two `$_em` messages name `AgenteRepository` since 5-7a); schema dumps unchanged. Full suite 976: exactly the 6 baseline failures. `docs/02` updated.
   - Next: 5-8c, parameters and variables.
+- **L108 (2026-10-19):** 5-8c, parameters, variables and own properties of the `Agente` controllers and use cases (`fa6f896`), tokenizer script; request DTOs excluded (JSON contract), `$request->signature/sound/desktop` fetches unchanged. No named-argument callers broke.
+  - Gates: string literals identical; `lint:container` OK; `schema:validate` OK; router 91 = 91; PHPStan level 0 (29) and level 2 (37) equivalent; schema dumps unchanged. Full suite 976: exactly the 6 baseline failures.
+  - Next: one independent verifier for the whole `Agente` module (5-7 and 5-8, baseline `342c5b8`).
