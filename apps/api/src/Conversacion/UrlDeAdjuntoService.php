@@ -18,7 +18,7 @@ class UrlDeAdjuntoService
      *
      * @return array{url: string, expiresAt: \DateTimeImmutable}
      */
-    public function temporaryUrl(string $key): array
+    public function getUrlTemporal(string $key): array
     {
         $expiresAt = new \DateTimeImmutable("+{$this->urlTtl} seconds");
         $url = $this->storageService->temporaryUrl($key, $this->urlTtl);

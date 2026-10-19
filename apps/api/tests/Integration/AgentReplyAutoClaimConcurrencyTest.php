@@ -148,7 +148,7 @@ class AgentReplyAutoClaimConcurrencyTest extends KernelTestCase
 
         $threw = false;
         try {
-            $useCase->processOutboundMessage($ticketId, 'blocked reply', $agentId);
+            $useCase->procesarMensajeSaliente($ticketId, 'blocked reply', $agentId);
         } catch (\Throwable $e) {
             $threw = true;
             self::assertNotInstanceOf(
@@ -224,7 +224,7 @@ class AgentReplyAutoClaimConcurrencyTest extends KernelTestCase
 
                     /** @var ProcesarMensajeSalienteUseCase $useCase */
                     $useCase = $container->get(ProcesarMensajeSalienteUseCase::class);
-                    $useCase->processOutboundMessage($ticketId, "reply from agent $agentId", $agentId);
+                    $useCase->procesarMensajeSaliente($ticketId, "reply from agent $agentId", $agentId);
 
                     file_put_contents($tmpFile, "ok|$agentId\n", FILE_APPEND);
                     exit(0);

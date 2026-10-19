@@ -41,7 +41,7 @@ class ProxyDeProveedorController extends AbstractController
     ) {}
 
     #[Route('/api/provider/send', name: 'app_provider_send', methods: ['POST'])]
-    public function send(Request $request, #[CurrentUser] ?Usuario $user): JsonResponse
+    public function enviar(Request $request, #[CurrentUser] ?Usuario $user): JsonResponse
     {
         $payload = json_decode($request->getContent(), true);
 
@@ -63,7 +63,7 @@ class ProxyDeProveedorController extends AbstractController
 
         // Resolve agent ID from authenticated user (degrades to null, never
         // fails the send — design.md D4).
-        $agentId = $this->resolveActingAgentId($user) ?? 0;
+        $agentId = $this->getAgenteQueActuaId($user) ?? 0;
 
         // Resolved/closed ownership guard (design.md D3): role_hierarchy makes
         // ROLE_ADMIN inherit ROLE_SUPERVISOR, so this single check covers both.
@@ -142,7 +142,7 @@ class ProxyDeProveedorController extends AbstractController
      * find one so they can be assigned to tickets. Extracted from send()'s
      * original inline fallback (design.md D4).
      */
-    private function resolveActingAgentId(?Usuario $user): ?int
+    private function getAgenteQueActuaId(?Usuario $user): ?int
     {
         if ($user === null) {
             return null;
@@ -156,7 +156,7 @@ class ProxyDeProveedorController extends AbstractController
     }
 
     #[Route('/api/provider/template/send', name: 'app_provider_template_send', methods: ['POST'])]
-    public function sendTemplate(Request $request, #[CurrentUser] ?Usuario $user): JsonResponse
+    public function enviarPlantilla(Request $request, #[CurrentUser] ?Usuario $user): JsonResponse
     {
         $payload = json_decode($request->getContent(), true);
 
@@ -189,7 +189,7 @@ class ProxyDeProveedorController extends AbstractController
                 templateName: $templateName,
                 language: $language,
                 parameters: $parameters,
-                resolveSenderAgentId: fn (): ?int => $this->resolveActingAgentId($user),
+                resolveSenderAgentId: fn (): ?int => $this->getAgenteQueActuaId($user),
             );
         } catch (NotFoundException $e) {
             return new JsonResponse(
@@ -225,7 +225,7 @@ class ProxyDeProveedorController extends AbstractController
     }
 
     #[Route('/api/provider/media/upload', name: 'app_provider_media_upload', methods: ['POST'])]
-    public function uploadMedia(Request $request, #[CurrentUser] ?Usuario $user): JsonResponse
+    public function subirAdjunto(Request $request, #[CurrentUser] ?Usuario $user): JsonResponse
     {
         /** @var UploadedFile|null $file */
         $file = $request->files->get('file');
@@ -249,8 +249,8 @@ class ProxyDeProveedorController extends AbstractController
             return new JsonResponse(
                 [
                     'error' => 'FILE_TOO_LARGE',
-                    'maxSize' => $e->getMaxSize(),
-                    'kind' => $e->getKind(),
+                    'maxSize' => $e->getTamanioMaximo(),
+                    'kind' => $e->getTipo(),
                 ],
                 Response::HTTP_REQUEST_ENTITY_TOO_LARGE
             );
@@ -277,7 +277,7 @@ class ProxyDeProveedorController extends AbstractController
     }
 
     #[Route('/api/provider/media/{mediaId}', name: 'app_provider_media_download', methods: ['GET'])]
-    public function downloadMedia(string $mediaId): Response
+    public function descargarAdjunto(string $mediaId): Response
     {
         try {
             $content = $this->graphClient->downloadMedia($mediaId);

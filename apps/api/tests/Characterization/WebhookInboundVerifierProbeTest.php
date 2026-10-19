@@ -421,8 +421,8 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
     {
         $useCase = static::getContainer()->get(ProcesarMensajeEntranteUseCase::class);
 
-        $first = $useCase->processInboundMessage(self::FROM, 'directo', 'wamid.probe-direct', self::PNID, 'Ana');
-        $again = $useCase->processInboundMessage(self::FROM, 'directo', 'wamid.probe-direct', self::PNID);
+        $first = $useCase->procesarMensajeEntrante(self::FROM, 'directo', 'wamid.probe-direct', self::PNID, 'Ana');
+        $again = $useCase->procesarMensajeEntrante(self::FROM, 'directo', 'wamid.probe-direct', self::PNID);
 
         self::assertSame(['contact_id', 'conversation_id', 'message_id', 'ticket_id', 'ticket_status', 'transition', 'status'], \array_keys($first));
         self::assertSame(['new', null, 'ok'], [$first['ticket_status'], $first['transition'], $first['status']]);
@@ -434,7 +434,7 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Invalid phone number');
-        $useCase->processInboundMessage('123', 'corto');
+        $useCase->procesarMensajeEntrante('123', 'corto');
     }
 
     // ────────────────────────────────────────────────────────

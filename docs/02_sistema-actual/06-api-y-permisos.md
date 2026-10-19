@@ -67,10 +67,10 @@ Leyenda "Rol": **Público**, **Auth** (cualquier usuario autenticado), **Agente*
 
 | Método | Path | Controlador::acción | Rol | Delega en / nota |
 |---|---|---|---|---|
-| POST | `/api/provider/send` | `ProxyDeProveedorController::send` (`:44-135`) | Agente | `EnviarMensajeSalienteUseCase` (`ProcesarMensajeSalienteUseCase` + `GraphClient`). Crea un agente si el usuario no tiene. |
-| POST | `/api/provider/template/send` | `::sendTemplate` (`:159-225`) | Agente | `EnviarPlantillaUseCase` (`GraphClient::sendTemplate`); persiste el mensaje directo. Sin UI. |
-| POST | `/api/provider/media/upload` | `::uploadMedia` (`:228-277`) | Agente | `SubirAdjuntoUseCase`: `ValidadorDeAdjunto` → `GraphClient::uploadMedia` (siempre con el número por defecto) → `MediaStorageService`. |
-| GET | `/api/provider/media/{mediaId}` | `::downloadMedia` (`:280-296`) | Agente | **Sin chequeo de pertenencia** (esquiva `MensajeVoter`). |
+| POST | `/api/provider/send` | `ProxyDeProveedorController::enviar` (`:44-135`) | Agente | `EnviarMensajeSalienteUseCase` (`ProcesarMensajeSalienteUseCase` + `GraphClient`). Crea un agente si el usuario no tiene. |
+| POST | `/api/provider/template/send` | `::enviarPlantilla` (`:159-225`) | Agente | `EnviarPlantillaUseCase` (`GraphClient::sendTemplate`); persiste el mensaje directo. Sin UI. |
+| POST | `/api/provider/media/upload` | `::subirAdjunto` (`:228-277`) | Agente | `SubirAdjuntoUseCase`: `ValidadorDeAdjunto` → `GraphClient::uploadMedia` (siempre con el número por defecto) → `MediaStorageService`. |
+| GET | `/api/provider/media/{mediaId}` | `::descargarAdjunto` (`:280-296`) | Agente | **Sin chequeo de pertenencia** (esquiva `MensajeVoter`). |
 | GET | `/api/messages/{id}/media` | `UrlDeAdjuntoController::__invoke` | Agente + `MensajeVoter::ACCESS` (solo el asignado o supervisor+) | URL prefirmada de S3. |
 
 ### D. Webhook de Meta

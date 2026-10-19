@@ -50,7 +50,7 @@ class CerrarVentanasVencidasCommand extends Command
             $safetyMargin !== null ? sprintf(', safety-margin=%d', $safetyMargin) : ''
         ));
 
-        $count = $this->expiryService->closeExpired($dryRun, $limit, $safetyMargin);
+        $count = $this->expiryService->cerrarVencidos($dryRun, $limit, $safetyMargin);
 
         $output->writeln(sprintf(
             '%s %d ticket(s) with an expired conversation window',

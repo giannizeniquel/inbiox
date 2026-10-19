@@ -6,14 +6,14 @@ namespace App\Conversacion;
 
 class ValidadorDeAdjunto
 {
-    private const MAX_SIZE = [
+    private const TAMANIO_MAXIMO = [
         'image' => 5 * 1024 * 1024,     // 5 MB
         'video' => 16 * 1024 * 1024,    // 16 MB
         'audio' => 16 * 1024 * 1024,    // 16 MB
         'document' => 100 * 1024 * 1024, // 100 MB
     ];
 
-    private const ALLOWED_MIME = [
+    private const MIME_PERMITIDOS = [
         // images
         'image/jpeg',
         'image/png',
@@ -67,25 +67,25 @@ class ValidadorDeAdjunto
      * @throws AdjuntoDemasiadoGrandeException if file exceeds kind-specific cap
      * @throws MimeDeAdjuntoNoPermitidoException if MIME type is not in whitelist
      */
-    public function validate(string $mimeType, int $fileSize): void
+    public function validar(string $mimeType, int $fileSize): void
     {
-        $this->validateMimeType($mimeType);
-        $this->validateSize($mimeType, $fileSize);
+        $this->validarMime($mimeType);
+        $this->validarTamanio($mimeType, $fileSize);
     }
 
     /**
      * Get the max allowed size for a given MIME type.
      */
-    public function getMaxSize(string $mimeType): int
+    public function getTamanioMaximo(string $mimeType): int
     {
         $kind = TipoDeAdjunto::fromMime($mimeType);
-        return self::MAX_SIZE[$kind->value];
+        return self::TAMANIO_MAXIMO[$kind->value];
     }
 
-    private function validateMimeType(string $mimeType): void
+    private function validarMime(string $mimeType): void
     {
-        $normalized = $this->normalizeMimeType($mimeType);
-        if (!in_array($normalized, self::ALLOWED_MIME, true)) {
+        $normalized = $this->normalizarMime($mimeType);
+        if (!in_array($normalized, self::MIME_PERMITIDOS, true)) {
             throw new MimeDeAdjuntoNoPermitidoException($mimeType);
         }
     }
@@ -95,15 +95,15 @@ class ValidadorDeAdjunto
      * and lowercasing. WhatsApp voice notes arrive as "audio/ogg; codecs=opus"
      * but the whitelist stores the bare "audio/ogg".
      */
-    private function normalizeMimeType(string $mimeType): string
+    private function normalizarMime(string $mimeType): string
     {
         return strtolower(trim(explode(';', $mimeType)[0]));
     }
 
-    private function validateSize(string $mimeType, int $fileSize): void
+    private function validarTamanio(string $mimeType, int $fileSize): void
     {
         $kind = TipoDeAdjunto::fromMime($mimeType);
-        $maxSize = self::MAX_SIZE[$kind->value];
+        $maxSize = self::TAMANIO_MAXIMO[$kind->value];
 
         if ($fileSize > $maxSize) {
             throw new AdjuntoDemasiadoGrandeException($maxSize, $kind->value);

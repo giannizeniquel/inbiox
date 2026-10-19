@@ -14,7 +14,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
- * `VencimientoDeVentanaService::closeExpired()` (design.md Phase 6 —
+ * `VencimientoDeVentanaService::cerrarVencidos()` (design.md Phase 6 —
  * the scheduled closure batch job).
  */
 class ConversationWindowExpiryServiceTest extends KernelTestCase
@@ -74,7 +74,7 @@ class ConversationWindowExpiryServiceTest extends KernelTestCase
         $nullInbound = $this->createTicket(EstadoDeTicket::NUEVO->value, null);
 
         $service = static::getContainer()->get(VencimientoDeVentanaService::class);
-        $count = $service->closeExpired(dryRun: false, limit: 200);
+        $count = $service->cerrarVencidos(dryRun: false, limit: 200);
 
         self::assertSame(1, $count);
 
@@ -105,7 +105,7 @@ class ConversationWindowExpiryServiceTest extends KernelTestCase
         $ticketId = $this->createTicket(EstadoDeTicket::NUEVO->value, new \DateTimeImmutable('-25 hours'));
 
         $service = static::getContainer()->get(VencimientoDeVentanaService::class);
-        $count = $service->closeExpired(dryRun: false, limit: 200);
+        $count = $service->cerrarVencidos(dryRun: false, limit: 200);
 
         self::assertSame(1, $count);
         self::assertSame(
@@ -119,7 +119,7 @@ class ConversationWindowExpiryServiceTest extends KernelTestCase
         $ticketId = $this->createTicket(EstadoDeTicket::ACTIVO->value, new \DateTimeImmutable('-25 hours'));
 
         $service = static::getContainer()->get(VencimientoDeVentanaService::class);
-        $count = $service->closeExpired(dryRun: true, limit: 200);
+        $count = $service->cerrarVencidos(dryRun: true, limit: 200);
 
         self::assertSame(1, $count);
         self::assertSame(
@@ -152,7 +152,7 @@ class ConversationWindowExpiryServiceTest extends KernelTestCase
         );
 
         $service = static::getContainer()->get(VencimientoDeVentanaService::class);
-        $count = $service->closeExpired(dryRun: false, limit: 200);
+        $count = $service->cerrarVencidos(dryRun: false, limit: 200);
 
         // Only the genuinely eligible ticket is counted/closed; the
         // already-closed one is excluded by the WHERE clause itself, so this

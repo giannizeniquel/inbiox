@@ -126,7 +126,7 @@ final class RespuestaAutomaticaService
         // WhatsApp 24h conversation-window guard: an auto-reply is fire-and-
         // forget, so an expired window is not an error — just an early
         // return with a log line, never a throw (design.md caller table).
-        if (!$this->windowPolicy->isOpenForSending($ticket->getUltimoMensajeEntranteAt(), new \DateTimeImmutable())) {
+        if (!$this->windowPolicy->isAbiertaParaEnviar($ticket->getUltimoMensajeEntranteAt(), new \DateTimeImmutable())) {
             $this->logger->info('AutoReply skipped: conversation window has expired', [
                 'contactId' => $contactoId,
                 'ticket_id' => $ticket->getId(),

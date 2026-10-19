@@ -27,7 +27,7 @@ use Symfony\Component\Uid\Ulid;
  */
 class ProcesarActualizacionDeEstadoUseCase
 {
-    private const STATUS_ORDER = [
+    private const ORDEN_DE_ESTADOS = [
         'sending' => 0,
         'sent' => 1,
         'delivered' => 2,
@@ -35,7 +35,7 @@ class ProcesarActualizacionDeEstadoUseCase
         'failed' => 99,
     ];
 
-    private const TERMINAL_STATUSES = ['read', 'failed'];
+    private const ESTADOS_FINALES = ['read', 'failed'];
 
     private const META_TO_INBIOX = [
         'sent' => 'sent',
@@ -44,7 +44,7 @@ class ProcesarActualizacionDeEstadoUseCase
         'failed' => 'failed',
     ];
 
-    /** @var string|null Current phoneNumberId being processed (set during processStatusUpdate) */
+    /** @var string|null Current phoneNumberId being processed (set during procesarActualizacionDeEstado) */
     private ?string $currentPhoneNumberId = null;
 
     public function __construct(
@@ -62,7 +62,7 @@ class ProcesarActualizacionDeEstadoUseCase
      * @param array  $statusEntry The status entry from value.statuses[]
      * @param string|null $phoneNumberId Optional phone number ID from metadata (reserved for multi-number)
      */
-    public function processStatusUpdate(array $statusEntry, ?string $phoneNumberId = null): void
+    public function procesarActualizacionDeEstado(array $statusEntry, ?string $phoneNumberId = null): void
     {
         // Store for outbox event payload inclusion (CAP-7 / META-019)
         $this->currentPhoneNumberId = $phoneNumberId;
@@ -107,7 +107,7 @@ class ProcesarActualizacionDeEstadoUseCase
         // 4. Validate transition (forward-only FSM, terminal-aware)
         $currentStatus = $message->getEstadoDeEntrega();
 
-        if (!$this->isValidTransition($currentStatus, $newStatus)) {
+        if (!$this->isTransicionValida($currentStatus, $newStatus)) {
             $this->logger->info('Skipping invalid status transition', [
                 'wamid' => $wamid,
                 'from' => $currentStatus,
@@ -130,7 +130,7 @@ class ProcesarActualizacionDeEstadoUseCase
         $this->em->flush();
 
         // 7. Publish MessageUpdatedEvent via Outbox → Mercure
-        $this->publishUpdatedEvent($message, $newStatus);
+        $this->registrarMessageUpdatedEvent($message, $newStatus);
     }
 
     /**
@@ -141,10 +141,10 @@ class ProcesarActualizacionDeEstadoUseCase
      * - 'failed' is reachable from ANY non-terminal state
      * - All other transitions must be strictly forward (order increasing)
      */
-    private function isValidTransition(string $from, string $to): bool
+    private function isTransicionValida(string $from, string $to): bool
     {
         // No transitions out of terminal states
-        if (in_array($from, self::TERMINAL_STATUSES, true)) {
+        if (in_array($from, self::ESTADOS_FINALES, true)) {
             return false;
         }
 
@@ -154,8 +154,8 @@ class ProcesarActualizacionDeEstadoUseCase
         }
 
         // Forward-only: new status must have higher order
-        $fromOrder = self::STATUS_ORDER[$from] ?? -1;
-        $toOrder = self::STATUS_ORDER[$to] ?? -1;
+        $fromOrder = self::ORDEN_DE_ESTADOS[$from] ?? -1;
+        $toOrder = self::ORDEN_DE_ESTADOS[$to] ?? -1;
 
         return $toOrder > $fromOrder;
     }
@@ -163,7 +163,7 @@ class ProcesarActualizacionDeEstadoUseCase
     /**
      * Persist a MessageUpdatedEvent to the outbox for Mercure delivery.
      */
-    private function publishUpdatedEvent(\App\Conversacion\Mensaje $message, string $newStatus): void
+    private function registrarMessageUpdatedEvent(\App\Conversacion\Mensaje $message, string $newStatus): void
     {
         // Resolve ticket ID through the conversation chain
         $conversation = $message->getConversacion();

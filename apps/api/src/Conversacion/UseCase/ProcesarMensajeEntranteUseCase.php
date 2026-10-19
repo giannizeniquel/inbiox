@@ -60,7 +60,7 @@ class ProcesarMensajeEntranteUseCase
      *
      * @return array{contact_id: int, conversation_id: int, message_id: int, ticket_id: int|null, status: string}
      */
-    public function processInboundMessage(
+    public function procesarMensajeEntrante(
         string $phone,
         string $message,
         ?string $externalId = null,
@@ -170,33 +170,33 @@ foreach ($events as $event) {
         ?string $contactName = null,
         ?array $mediaDownloadPayload = null,
     ): array {
-        $contact = $this->findOrCreateContact($phone, $contactName);
-        $conversation = $this->findOrCreateOpenConversation($contact, $phoneNumberId);
+        $contact = $this->findOrCreateContacto($phone, $contactName);
+        $conversation = $this->findOrCreateConversacionAbierta($contact, $phoneNumberId);
 
         // Idempotency by WAMID. It runs after the contact and conversation
         // may have been created, so a duplicate still stores those.
-        $existingMessage = $this->findAlreadyStoredMessage($externalId);
+        $existingMessage = $this->findMensajeYaGuardado($externalId);
         if ($existingMessage) {
             return [
                 'contact_id' => $contact->getId(),
                 'conversation_id' => $conversation->getId(),
                 'message_id' => $existingMessage->getId(),
-                'ticket_id' => $this->getTicketForConversation($conversation)?->getId(),
+                'ticket_id' => $this->getTicketDeConversacion($conversation)?->getId(),
                 'status' => 'ok'
             ];
         }
 
-        $msg = $this->storeInboundMessage($conversation, $message, $externalId);
-        $this->downloadMediaInsideTransaction($msg, $mediaDownloadPayload);
+        $msg = $this->guardarMensajeEntrante($conversation, $message, $externalId);
+        $this->descargarAdjuntoEnLaTransaccion($msg, $mediaDownloadPayload);
 
-        [$ticket, $isNewTicket] = $this->findOrReopenOrCreateTicketAndLock($contact, $conversation, $phoneNumberId);
-        $transition = $this->moveWaitingTicketToActive($ticket);
+        [$ticket, $isNewTicket] = $this->findOrReabrirOrCreateTicketBloqueado($contact, $conversation, $phoneNumberId);
+        $transition = $this->activarTicketEnEspera($ticket);
 
-        $this->touchTimestamps($conversation, $contact, $ticket, $msg);
+        $this->actualizarFechas($conversation, $contact, $ticket, $msg);
         $this->em->flush();
 
-        $this->collectInboundEvents($ticket, $isNewTicket, $msg, $message, $contact);
-        $this->runRulesAndRequestAutoAssignment($ticket, $msg);
+        $this->registrarEventosDeEntrada($ticket, $isNewTicket, $msg, $message, $contact);
+        $this->ejecutarReglasYPedirAsignacionAutomatica($ticket, $msg);
 
         return [
             'contact_id' => $contact->getId(),
@@ -209,7 +209,7 @@ foreach ($events as $event) {
         ];
     }
 
-    private function findOrCreateContact(string $phone, ?string $contactName): Contacto
+    private function findOrCreateContacto(string $phone, ?string $contactName): Contacto
     {
         $contact = $this->contactRepo->findOneByTelefono($phone);
         if (!$contact) {
@@ -227,7 +227,7 @@ foreach ($events as $event) {
         return $contact;
     }
 
-    private function findOrCreateOpenConversation(Contacto $contact, ?string $phoneNumberId): Conversacion
+    private function findOrCreateConversacionAbierta(Contacto $contact, ?string $phoneNumberId): Conversacion
     {
         $conversation = $this->conversationRepo->findAbiertaByContacto($contact, $phoneNumberId);
         if (!$conversation) {
@@ -243,7 +243,7 @@ foreach ($events as $event) {
         return $conversation;
     }
 
-    private function findAlreadyStoredMessage(?string $externalId): ?Mensaje
+    private function findMensajeYaGuardado(?string $externalId): ?Mensaje
     {
         if (!$externalId) {
             return null;
@@ -253,7 +253,7 @@ foreach ($events as $event) {
     }
 
     /** Persists the message and flushes (first flush), so it has an id for the media key. */
-    private function storeInboundMessage(Conversacion $conversation, string $message, ?string $externalId): Mensaje
+    private function guardarMensajeEntrante(Conversacion $conversation, string $message, ?string $externalId): Mensaje
     {
         $msg = new Mensaje();
         $msg->setConversacion($conversation);
@@ -275,7 +275,7 @@ foreach ($events as $event) {
      * transaction is open (contradiction track, S10). A failure only logs:
      * the message stays stored without media. Success flushes (second flush).
      */
-    private function downloadMediaInsideTransaction(Mensaje $msg, ?array $mediaDownloadPayload): void
+    private function descargarAdjuntoEnLaTransaccion(Mensaje $msg, ?array $mediaDownloadPayload): void
     {
         if (!$mediaDownloadPayload || $this->mediaDownloadService === null) {
             return;
@@ -291,7 +291,7 @@ foreach ($events as $event) {
             $tenantId = 'default'; // Default tenant prefix
             $ticketId = $msg->getId(); // Use message ID as part of key
 
-            $mediaResult = $this->mediaDownloadService->downloadAndStore(
+            $mediaResult = $this->mediaDownloadService->descargarYGuardar(
                 mediaId: $mediaId,
                 mimeType: $mimeType,
                 tenantId: $tenantId,
@@ -327,7 +327,7 @@ foreach ($events as $event) {
      *
      * @return array{0: Ticket, 1: bool} the ticket and whether it is new
      */
-    private function findOrReopenOrCreateTicketAndLock(Contacto $contact, Conversacion $conversation, ?string $phoneNumberId): array
+    private function findOrReabrirOrCreateTicketBloqueado(Contacto $contact, Conversacion $conversation, ?string $phoneNumberId): array
     {
         $ticket = $this->ticketRepo->findNoCerradoByContacto($contact, $phoneNumberId);
         $wasReopened = false;
@@ -391,7 +391,7 @@ foreach ($events as $event) {
      * FSM transition on a customer response. The transition writes with raw
      * SQL and the managed ticket keeps `waiting` (contradiction track, S10).
      */
-    private function moveWaitingTicketToActive(Ticket $ticket): ?string
+    private function activarTicketEnEspera(Ticket $ticket): ?string
     {
         if ($ticket->getEstado() !== EstadoDeTicket::EN_ESPERA->value) {
             return null;
@@ -407,7 +407,7 @@ foreach ($events as $event) {
         return 'waiting_to_active';
     }
 
-    private function touchTimestamps(Conversacion $conversation, Contacto $contact, Ticket $ticket, Mensaje $msg): void
+    private function actualizarFechas(Conversacion $conversation, Contacto $contact, Ticket $ticket, Mensaje $msg): void
     {
         $conversation->setUltimoMensajeAt($msg->getCreadoAt());
         $conversation->setActualizadoAt(new \DateTimeImmutable());
@@ -426,7 +426,7 @@ foreach ($events as $event) {
      * Collected after the last flush, so the ticket has its id. The sequence
      * increments are saved by the outbox writer's flush.
      */
-    private function collectInboundEvents(Ticket $ticket, bool $isNewTicket, Mensaje $msg, string $message, Contacto $contact): void
+    private function registrarEventosDeEntrada(Ticket $ticket, bool $isNewTicket, Mensaje $msg, string $message, Contacto $contact): void
     {
         if ($isNewTicket) {
             $this->eventCollector->collect(new TicketCreatedEvent(
@@ -458,7 +458,7 @@ foreach ($events as $event) {
      * Inbound automation rules, then the auto-assignment request. Its
      * listener runs synchronously, inside the inbound transaction.
      */
-    private function runRulesAndRequestAutoAssignment(Ticket $ticket, Mensaje $msg): void
+    private function ejecutarReglasYPedirAsignacionAutomatica(Ticket $ticket, Mensaje $msg): void
     {
         $ruleContext = new ContextoDeRegla($ticket, $msg, 'inbound');
         $this->ruleExecutor->execute($ruleContext);
@@ -468,7 +468,7 @@ foreach ($events as $event) {
         }
     }
 
-    private function getTicketForConversation(Conversacion $conversation): ?Ticket
+    private function getTicketDeConversacion(Conversacion $conversation): ?Ticket
     {
         return $this->ticketRepo->findByConversacion($conversation);
     }

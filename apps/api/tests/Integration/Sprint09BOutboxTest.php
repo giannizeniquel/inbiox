@@ -68,7 +68,7 @@ class Sprint09BOutboxTest extends KernelTestCase
         $useCase = static::getContainer()->get(ProcesarMensajeEntranteUseCase::class);
 
         // Act
-        $result = $useCase->processInboundMessage('+5491155555555', 'Hello test message');
+        $result = $useCase->procesarMensajeEntrante('+5491155555555', 'Hello test message');
 
         // Assert - OutboxEvent exists
         $outboxRepo = $this->em->getRepository(OutboxEvent::class);
@@ -178,10 +178,10 @@ class Sprint09BOutboxTest extends KernelTestCase
         $phone = '+5491155555556';
 
         // First message - creates ticket + message
-        $useCase->processInboundMessage($phone, 'First message');
+        $useCase->procesarMensajeEntrante($phone, 'First message');
 
         // Second message (same conversation)
-        $useCase->processInboundMessage($phone, 'Second message');
+        $useCase->procesarMensajeEntrante($phone, 'Second message');
 
         // Get only message.created events
         $events = $this->em->getConnection()->fetchAllAssociative(
@@ -217,7 +217,7 @@ class Sprint09BOutboxTest extends KernelTestCase
         $useCase = static::getContainer()->get(ProcesarMensajeEntranteUseCase::class);
 
         // Act
-        $useCase->processInboundMessage('+5491155555557', 'Test message');
+        $useCase->procesarMensajeEntrante('+5491155555557', 'Test message');
 
         // Assert
         $outboxRepo = $this->em->getRepository(OutboxEvent::class);

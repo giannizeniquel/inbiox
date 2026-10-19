@@ -38,7 +38,7 @@ final class SubirAdjuntoUseCase
      */
     public function execute(string $filePath, string $mimeType, int $fileSize, string $filename, mixed $ticketId): array
     {
-        $this->mediaValidator->validate($mimeType, $fileSize);
+        $this->mediaValidator->validar($mimeType, $fileSize);
 
         $graphResult = $this->graphClient->uploadMedia($filePath, $mimeType);
         $mediaId = $graphResult['id'] ?? '';

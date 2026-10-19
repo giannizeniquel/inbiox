@@ -84,7 +84,7 @@ class MessageAttributionWriteSiteTest extends KernelTestCase
         $ticketId = $this->createTicket();
 
         $useCase = static::getContainer()->get(ProcesarMensajeSalienteUseCase::class);
-        $result = $useCase->processOutboundMessage($ticketId, 'Hi, how can I help?', $agentId);
+        $result = $useCase->procesarMensajeSaliente($ticketId, 'Hi, how can I help?', $agentId);
 
         $row = $this->em->getConnection()->fetchAssociative(
             'SELECT sender_agent_id, sender_type FROM messages WHERE id = ?',
@@ -100,7 +100,7 @@ class MessageAttributionWriteSiteTest extends KernelTestCase
         $ticketId = $this->createTicket();
 
         $useCase = static::getContainer()->get(ProcesarMensajeSalienteUseCase::class);
-        $result = $useCase->processOutboundMessage($ticketId, 'System note', 0);
+        $result = $useCase->procesarMensajeSaliente($ticketId, 'System note', 0);
 
         $row = $this->em->getConnection()->fetchAssociative(
             'SELECT sender_agent_id, sender_type FROM messages WHERE id = ?',
@@ -114,7 +114,7 @@ class MessageAttributionWriteSiteTest extends KernelTestCase
     public function testHandleInboundMessageSetsContactAttributionWithNullSenderAgentId(): void
     {
         $useCase = static::getContainer()->get(ProcesarMensajeEntranteUseCase::class);
-        $result = $useCase->processInboundMessage('+5491155551234', 'Hello, I need help');
+        $result = $useCase->procesarMensajeEntrante('+5491155551234', 'Hello, I need help');
 
         $row = $this->em->getConnection()->fetchAssociative(
             'SELECT sender_agent_id, sender_type FROM messages WHERE id = ?',

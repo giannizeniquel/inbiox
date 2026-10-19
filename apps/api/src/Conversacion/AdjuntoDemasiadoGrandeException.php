@@ -18,12 +18,12 @@ class AdjuntoDemasiadoGrandeException extends HttpException
         );
     }
 
-    public function getMaxSize(): int
+    public function getTamanioMaximo(): int
     {
         return $this->maxSize;
     }
 
-    public function getKind(): string
+    public function getTipo(): string
     {
         return $this->kind;
     }

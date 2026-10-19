@@ -158,7 +158,7 @@ class Sprint09BReplayTest extends KernelTestCase
         $useCase = static::getContainer()->get(\App\Conversacion\UseCase\ProcesarMensajeEntranteUseCase::class);
         
         // First message
-        $useCase->processInboundMessage('+5491111111111', 'Msg 1');
+        $useCase->procesarMensajeEntrante('+5491111111111', 'Msg 1');
         
         // Get seq after first message
         $events = $this->em->getConnection()->fetchAllAssociative(

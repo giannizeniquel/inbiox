@@ -20,7 +20,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
  * Resolved/Closed Ticket Ownership Guard, and No Event Leakage requirements.
  *
  * First-ever `agentId > 0` integration coverage for
- * `ProcesarMensajeSalienteUseCase::processOutboundMessage()` — this path
+ * `ProcesarMensajeSalienteUseCase::procesarMensajeSaliente()` — this path
  * shipped live with ZERO tests before this change.
  */
 class AgentReplyAutoClaimTest extends KernelTestCase
@@ -61,7 +61,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
         $ticketId = $this->seedTicket(EstadoDeTicket::ACTIVO->value, null);
 
         $useCase = static::getContainer()->get(ProcesarMensajeSalienteUseCase::class);
-        $result = $useCase->processOutboundMessage($ticketId, 'Hi, how can I help?', $agentId);
+        $result = $useCase->procesarMensajeSaliente($ticketId, 'Hi, how can I help?', $agentId);
 
         self::assertSame('ok', $result['status']);
 
@@ -88,7 +88,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
         $ticketId = $this->seedTicket(EstadoDeTicket::ACTIVO->value, $agentA);
 
         $useCase = static::getContainer()->get(ProcesarMensajeSalienteUseCase::class);
-        $result = $useCase->processOutboundMessage($ticketId, 'Taking over this one', $agentB);
+        $result = $useCase->procesarMensajeSaliente($ticketId, 'Taking over this one', $agentB);
 
         self::assertSame('ok', $result['status']);
 
@@ -111,7 +111,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
         $ticketId = $this->seedTicket(EstadoDeTicket::ACTIVO->value, $agentA);
 
         $useCase = static::getContainer()->get(ProcesarMensajeSalienteUseCase::class);
-        $result = $useCase->processOutboundMessage($ticketId, 'Following up', $agentA);
+        $result = $useCase->procesarMensajeSaliente($ticketId, 'Following up', $agentA);
 
         self::assertSame('ok', $result['status']);
 
@@ -168,7 +168,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
 
         $threw = false;
         try {
-            $useCase->processOutboundMessage($ticketId, 'this attempt must roll back', $agentId);
+            $useCase->procesarMensajeSaliente($ticketId, 'this attempt must roll back', $agentId);
         } catch (\RuntimeException $e) {
             $threw = true;
             self::assertSame('Simulated failure after ownership change was collected', $e->getMessage());
@@ -200,7 +200,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
         $this->em = static::getContainer()->get(EntityManagerInterface::class);
 
         $useCase = static::getContainer()->get(ProcesarMensajeSalienteUseCase::class);
-        $result = $useCase->processOutboundMessage($ticketId, 'retry after the rollback', $agentId);
+        $result = $useCase->procesarMensajeSaliente($ticketId, 'retry after the rollback', $agentId);
         self::assertSame('ok', $result['status']);
 
         $this->em->clear();
@@ -234,7 +234,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
         $ticketId = $this->seedTicket(EstadoDeTicket::RESUELTO->value, $owner);
 
         $useCase = static::getContainer()->get(ProcesarMensajeSalienteUseCase::class);
-        $result = $useCase->processOutboundMessage(
+        $result = $useCase->procesarMensajeSaliente(
             ticketId: $ticketId,
             content: 'Closing remarks from a supervisor',
             agentId: $supervisor,
@@ -261,7 +261,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
         $ticketId = $this->seedTicket(EstadoDeTicket::RESUELTO->value, $owner);
 
         $useCase = static::getContainer()->get(ProcesarMensajeSalienteUseCase::class);
-        $result = $useCase->processOutboundMessage(
+        $result = $useCase->procesarMensajeSaliente(
             ticketId: $ticketId,
             content: 'One more thing',
             agentId: $owner,
@@ -288,7 +288,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
         $this->expectException(StateConflictException::class);
 
         try {
-            $useCase->processOutboundMessage(
+            $useCase->procesarMensajeSaliente(
                 ticketId: $ticketId,
                 content: 'I am taking this ticket',
                 agentId: $intruder,
@@ -318,7 +318,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
         $useCase = static::getContainer()->get(ProcesarMensajeSalienteUseCase::class);
 
         $this->expectException(StateConflictException::class);
-        $useCase->processOutboundMessage(
+        $useCase->procesarMensajeSaliente(
             ticketId: $ticketId,
             content: 'I am taking this ticket',
             agentId: $intruder,
@@ -333,7 +333,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
         $ticketId = $this->seedTicket(EstadoDeTicket::RESUELTO->value, $owner);
 
         $useCase = static::getContainer()->get(ProcesarMensajeSalienteUseCase::class);
-        $result = $useCase->processOutboundMessage($ticketId, 'system message', 0);
+        $result = $useCase->procesarMensajeSaliente($ticketId, 'system message', 0);
 
         self::assertSame('ok', $result['status']);
     }

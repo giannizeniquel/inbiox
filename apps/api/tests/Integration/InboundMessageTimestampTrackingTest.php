@@ -48,7 +48,7 @@ class InboundMessageTimestampTrackingTest extends KernelTestCase
         $inboundUseCase = static::getContainer()->get(ProcesarMensajeEntranteUseCase::class);
 
         $before = (new \DateTimeImmutable())->modify('-2 seconds');
-        $result = $inboundUseCase->processInboundMessage('+5491100000500', 'Hello');
+        $result = $inboundUseCase->procesarMensajeEntrante('+5491100000500', 'Hello');
         $after = (new \DateTimeImmutable())->modify('+2 seconds');
 
         $lastInbound = $this->em->getConnection()->fetchOne(
@@ -67,7 +67,7 @@ class InboundMessageTimestampTrackingTest extends KernelTestCase
         $inboundUseCase = static::getContainer()->get(ProcesarMensajeEntranteUseCase::class);
         $outboundUseCase = static::getContainer()->get(ProcesarMensajeSalienteUseCase::class);
 
-        $result = $inboundUseCase->processInboundMessage('+5491100000501', 'Hello');
+        $result = $inboundUseCase->procesarMensajeEntrante('+5491100000501', 'Hello');
         $ticketId = $result['ticket_id'];
 
         $before = $this->em->getConnection()->fetchOne(
@@ -75,7 +75,7 @@ class InboundMessageTimestampTrackingTest extends KernelTestCase
             [$ticketId]
         );
 
-        $outboundUseCase->processOutboundMessage($ticketId, 'Agent reply', 0);
+        $outboundUseCase->procesarMensajeSaliente($ticketId, 'Agent reply', 0);
 
         $after = $this->em->getConnection()->fetchOne(
             'SELECT last_inbound_message_at FROM tickets WHERE id = ?',

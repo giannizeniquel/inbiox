@@ -31,7 +31,7 @@ class VentanaVencidaException extends \RuntimeException
         return $this->ticketId;
     }
 
-    public function getLastInboundMessageAt(): ?\DateTimeImmutable
+    public function getUltimoMensajeEntranteAt(): ?\DateTimeImmutable
     {
         return $this->lastInboundMessageAt;
     }

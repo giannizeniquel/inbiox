@@ -66,7 +66,7 @@ final class EnviarMensajeSalienteUseCase
         }
 
         // Creates the Message and applies the assignment and status changes.
-        $result = $this->outboundUseCase->processOutboundMessage(
+        $result = $this->outboundUseCase->procesarMensajeSaliente(
             ticketId: $ticketId,
             content: $content,
             agentId: $agentId,

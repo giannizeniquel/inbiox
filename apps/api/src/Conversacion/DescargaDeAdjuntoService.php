@@ -32,7 +32,7 @@ class DescargaDeAdjuntoService
      * @return array{key: string, size: int, mimeType: string, kind: string}|null
      *         Null if download or storage fails
      */
-    public function downloadAndStore(
+    public function descargarYGuardar(
         string $mediaId,
         string $mimeType,
         string $tenantId,
@@ -58,7 +58,7 @@ class DescargaDeAdjuntoService
 
         // Validate size (skip validation if graph already sent it — we still enforce)
         try {
-            $this->validator->validate($mimeType, $size);
+            $this->validator->validar($mimeType, $size);
         } catch (\Throwable $e) {
             $this->logger->warning('Downloaded media failed validation', [
                 'mediaId' => $mediaId,

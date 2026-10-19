@@ -21,37 +21,37 @@ namespace App\Conversacion;
  */
 final class PoliticaDeVentana
 {
-    public const WINDOW_HOURS = 24;
+    public const HORAS_DE_VENTANA = 24;
 
     public function __construct(private readonly int $safetyMarginMinutes = 0)
     {
     }
 
     /** Sending: null => false (fail closed). */
-    public function isOpenForSending(?\DateTimeImmutable $lastInboundMessageAt, \DateTimeImmutable $now): bool
+    public function isAbiertaParaEnviar(?\DateTimeImmutable $lastInboundMessageAt, \DateTimeImmutable $now): bool
     {
         if ($lastInboundMessageAt === null) {
             return false;
         }
 
-        return $now < $this->expiresAt($lastInboundMessageAt);
+        return $now < $this->getVenceAt($lastInboundMessageAt);
     }
 
     /** Expiry-closing: null => false (fail open — do not close tickets with no known inbound). */
-    public function isExpiredForClosing(?\DateTimeImmutable $lastInboundMessageAt, \DateTimeImmutable $now): bool
+    public function isVencidaParaCerrar(?\DateTimeImmutable $lastInboundMessageAt, \DateTimeImmutable $now): bool
     {
         if ($lastInboundMessageAt === null) {
             return false;
         }
 
-        return $now >= $this->expiresAt($lastInboundMessageAt);
+        return $now >= $this->getVenceAt($lastInboundMessageAt);
     }
 
     /** Effective deadline = lastInbound + 24h - safetyMargin. */
-    public function expiresAt(\DateTimeImmutable $lastInboundMessageAt): \DateTimeImmutable
+    public function getVenceAt(\DateTimeImmutable $lastInboundMessageAt): \DateTimeImmutable
     {
         return $lastInboundMessageAt
-            ->modify(sprintf('+%d hours', self::WINDOW_HOURS))
+            ->modify(sprintf('+%d hours', self::HORAS_DE_VENTANA))
             ->modify(sprintf('-%d minutes', $this->safetyMarginMinutes));
     }
 }

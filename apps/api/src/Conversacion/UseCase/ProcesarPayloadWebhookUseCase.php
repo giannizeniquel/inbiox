@@ -117,7 +117,7 @@ final class ProcesarPayloadWebhookUseCase
                         }
 
                         try {
-                            $result = $this->handleInboundMessage->processInboundMessage(
+                            $result = $this->handleInboundMessage->procesarMensajeEntrante(
                                 $from,
                                 $text,
                                 $wamid,
@@ -146,7 +146,7 @@ final class ProcesarPayloadWebhookUseCase
                 // Handle status updates — pass phoneNumberId for multi-number (CAP-7)
                 if (isset($value['statuses']) && is_array($value['statuses'])) {
                     foreach ($value['statuses'] as $statusEntry) {
-                        $this->handleStatusUpdate->processStatusUpdate($statusEntry, $phoneNumberId);
+                        $this->handleStatusUpdate->procesarActualizacionDeEstado($statusEntry, $phoneNumberId);
                     }
                 }
             }

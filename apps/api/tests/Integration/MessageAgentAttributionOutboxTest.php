@@ -76,7 +76,7 @@ class MessageAgentAttributionOutboxTest extends KernelTestCase
         $this->em->clear();
 
         $useCase = static::getContainer()->get(ProcesarMensajeSalienteUseCase::class);
-        $result = $useCase->processOutboundMessage($ticketId, 'Thanks for reaching out', $agentId);
+        $result = $useCase->procesarMensajeSaliente($ticketId, 'Thanks for reaching out', $agentId);
 
         $outboxRepo = $this->em->getRepository(OutboxEvent::class);
         $events = $outboxRepo->findAll();

@@ -59,7 +59,7 @@ Una bandeja de atención compartida: los mensajes que llegan por **WhatsApp Clou
 | **Auto-claim** | Cuando un agente responde un ticket no resuelto ni cerrado, pasa a ser su dueño, **aunque el ticket ya tuviera otro dueño** (se registra como `REASSIGN` y se lo quita al anterior). | `Conversacion/UseCase/ProcesarMensajeSalienteUseCase.php:224-246` |
 | **Auto-respuesta** | Mensaje fijo que se envía al cliente si su agente no está disponible (máximo 1 cada 2 h por contacto). | `Automatizacion/RespuestaAutomaticaService.php` |
 | **Ventana de 24 h** | Regla de Meta: solo se puede enviar texto libre hasta 24 h después del último mensaje del cliente. Pasado ese plazo hay que usar una **plantilla**. | `Conversacion/PoliticaDeVentana.php` |
-| **Plantilla (template)** | Mensaje pre-aprobado por Meta que se puede enviar fuera de la ventana de 24 h. Hoy no tiene UI. | `ProxyDeProveedorController::sendTemplate` → `EnviarPlantillaUseCase` |
+| **Plantilla (template)** | Mensaje pre-aprobado por Meta que se puede enviar fuera de la ventana de 24 h. Hoy no tiene UI. | `ProxyDeProveedorController::enviarPlantilla` → `EnviarPlantillaUseCase` |
 | **WAMID** | Identificador que Meta asigna a cada mensaje de WhatsApp. Se guarda en `messages.external_id`. | — |
 | **Webhook** | Endpoint público `POST /webhook` donde Meta envía mensajes entrantes y estados de entrega. | `Conversacion/Controller/WebhookController.php` |
 | **Outbox** | Tabla `outbox_events` donde los casos de uso dejan eventos para publicar después en tiempo real. Patrón "transactional outbox". | `Compartido/Outbox/OutboxEvent.php` |

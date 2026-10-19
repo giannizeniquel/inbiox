@@ -38,13 +38,13 @@ class GetMensajesDeTicketQuery
         }
         
         if ($direction === 'backward') {
-            return $this->getMessagesBackward($conversationId, $cursorData, $limit, $offset);
+            return $this->getMensajesHaciaAtras($conversationId, $cursorData, $limit, $offset);
         }
         
-        return $this->getMessagesForward($conversationId, $cursorData, $limit);
+        return $this->getMensajesHaciaAdelante($conversationId, $cursorData, $limit);
     }
     
-    private function getMessagesForward(int $conversationId, ?array $cursorData, int $limit): array
+    private function getMensajesHaciaAdelante(int $conversationId, ?array $cursorData, int $limit): array
     {
         $hasCursor = $cursorData && isset($cursorData['created_at'], $cursorData['id']);
         $results = $this->messageRepository->findPaginaAscendente(
@@ -81,7 +81,7 @@ class GetMensajesDeTicketQuery
         return ['items' => $items, 'has_more' => $hasMore, 'next_cursor' => $nextCursor];
     }
 
-    private function getMessagesBackward(int $conversationId, ?array $cursorData, int $limit, int $offset = 0): array
+    private function getMensajesHaciaAtras(int $conversationId, ?array $cursorData, int $limit, int $offset = 0): array
     {
         $hasCursor = $cursorData && isset($cursorData['created_at'], $cursorData['id']);
         $results = $this->messageRepository->findPaginaDescendente(

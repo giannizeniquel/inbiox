@@ -46,7 +46,7 @@ class ConversationWindowOutboundGuardTest extends KernelTestCase
     public function testOutboundSendIsRejectedOnAnExpiredWindowWithNoPhantomMessageOrTransition(): void
     {
         $inboundUseCase = static::getContainer()->get(ProcesarMensajeEntranteUseCase::class);
-        $inboundUseCase->processInboundMessage('+5491100000001', 'Hello, need help');
+        $inboundUseCase->procesarMensajeEntrante('+5491100000001', 'Hello, need help');
 
         $ticket = $this->em->getConnection()->fetchAssociative(
             'SELECT id, status FROM tickets ORDER BY id DESC LIMIT 1'
@@ -69,7 +69,7 @@ class ConversationWindowOutboundGuardTest extends KernelTestCase
         $this->expectException(VentanaVencidaException::class);
 
         try {
-            $outboundUseCase->processOutboundMessage($ticketId, 'Sorry for the delay', 0);
+            $outboundUseCase->procesarMensajeSaliente($ticketId, 'Sorry for the delay', 0);
         } finally {
             $messageCountAfter = (int) $this->em->getConnection()->fetchOne('SELECT COUNT(*) FROM messages');
             self::assertSame($messageCountBefore, $messageCountAfter, 'No message row must be persisted on a blocked send');
@@ -82,7 +82,7 @@ class ConversationWindowOutboundGuardTest extends KernelTestCase
     public function testOutboundSendSucceedsInsideTheWindow(): void
     {
         $inboundUseCase = static::getContainer()->get(ProcesarMensajeEntranteUseCase::class);
-        $inboundUseCase->processInboundMessage('+5491100000002', 'Hello, need help');
+        $inboundUseCase->procesarMensajeEntrante('+5491100000002', 'Hello, need help');
 
         $ticket = $this->em->getConnection()->fetchAssociative(
             'SELECT id FROM tickets ORDER BY id DESC LIMIT 1'
@@ -99,7 +99,7 @@ class ConversationWindowOutboundGuardTest extends KernelTestCase
         $this->em->clear();
 
         $outboundUseCase = static::getContainer()->get(ProcesarMensajeSalienteUseCase::class);
-        $result = $outboundUseCase->processOutboundMessage($ticketId, 'Hi, how can I help?', 0);
+        $result = $outboundUseCase->procesarMensajeSaliente($ticketId, 'Hi, how can I help?', 0);
 
         self::assertSame('ok', $result['status']);
         self::assertNotNull($result['message_id']);

@@ -68,7 +68,7 @@ flowchart TD
 | 2 | POST: valida `X-Hub-Signature-256` (HMAC-SHA256 con `META_APP_SECRET`). Inválida → 401. JSON inválido → 400. | `:98-119`, `:150-164` | R-M8 |
 | 3 | Guarda el payload crudo en `webhook_payloads` (si falla, se loguea y sigue). | `:121-130`; `Conversacion/UseCase/RegistrarPayloadWebhookUseCase.php` | |
 | 4 | Por cada `entry[].changes[].value` de WhatsApp: toma `metadata.phone_number_id` y el nombre de perfil. Descarta tipos no soportados. | `Conversacion/UseCase/ProcesarPayloadWebhookUseCase.php:38-118` | R-M1 |
-| 5 | Llama `ProcesarMensajeEntranteUseCase::processInboundMessage()`. Cualquier excepción se loguea **y se traga**. | `ProcesarPayloadWebhookUseCase.php:119-143`; los estados no tienen catch propio (`:147-151`) | |
+| 5 | Llama `ProcesarMensajeEntranteUseCase::procesarMensajeEntrante()`. Cualquier excepción se loguea **y se traga**. | `ProcesarPayloadWebhookUseCase.php:119-143`; los estados no tienen catch propio (`:147-151`) | |
 | 6 | Normaliza el teléfono (solo dígitos, mínimo 10, antepone `+`). | `Conversacion/UseCase/ProcesarMensajeEntranteUseCase.php:69-75` | R-C2 |
 | 7 | Busca o crea el contacto (no mira si está `inactive`). | `:212-228` | R-C3 |
 | 8 | Busca la conversación `open` del contacto para ese número; si no hay, la crea. | `:230-244` | |
@@ -101,7 +101,7 @@ flowchart TD
 
 ## F2. Respuesta del agente
 
-**Entrada:** Composer → `MessageSenderService.send()` → `SendMessageUseCase` → `WhatsAppCloudProvider.sendMessage()` → `POST /api/provider/send` → `Conversacion/Controller/ProxyDeProveedorController::send` → `Conversacion/UseCase/EnviarMensajeSalienteUseCase.php`, `ROLE_AGENT`.
+**Entrada:** Composer → `MessageSenderService.send()` → `SendMessageUseCase` → `WhatsAppCloudProvider.sendMessage()` → `POST /api/provider/send` → `Conversacion/Controller/ProxyDeProveedorController::enviar` → `Conversacion/UseCase/EnviarMensajeSalienteUseCase.php`, `ROLE_AGENT`.
 
 | # | Paso | Dónde | Regla |
 |---|---|---|---|
@@ -127,7 +127,7 @@ flowchart TD
 
 **Si falla, revisar:**
 1. Respuesta HTTP: 422 = ventana de 24 h; 409 `TICKET_NOT_OWNED` = guard de resuelto ([R6](00-estado-y-pendientes.md#r6-resolver-quita-el-dueño-contradicción-autoinfligida)); 422/429/502 desde `mapGraphErrorCode` = error de Meta.
-2. `Conversacion/UseCase/EnviarMensajeSalienteUseCase.php::execute`, y `Conversacion/Controller/ProxyDeProveedorController.php::send` y `::mapGraphErrorCode` (`:301-323`).
+2. `Conversacion/UseCase/EnviarMensajeSalienteUseCase.php::execute`, y `Conversacion/Controller/ProxyDeProveedorController.php::enviar` y `::mapGraphErrorCode` (`:301-323`).
 3. `Conversacion/UseCase/ProcesarMensajeSalienteUseCase.php`.
 4. `Conversacion/PoliticaDeVentana.php`, `Ticket/TicketResponsabilidadGuard.php`.
 5. `Compartido/Graph/GraphClient.php` (incluye el workaround `normalizePhone()` para un número de prueba).
@@ -137,7 +137,7 @@ flowchart TD
 
 ## F3. Envío de plantilla
 
-**Entrada:** `POST /api/provider/template/send` → `ProxyDeProveedorController::sendTemplate` (`:159-225`) → `Conversacion/UseCase/EnviarPlantillaUseCase.php`, `ROLE_AGENT`. **No hay UI** (`WhatsAppCloudProvider.sendTemplate()` no se llama).
+**Entrada:** `POST /api/provider/template/send` → `ProxyDeProveedorController::enviarPlantilla` (`:159-225`) → `Conversacion/UseCase/EnviarPlantillaUseCase.php`, `ROLE_AGENT`. **No hay UI** (`WhatsAppCloudProvider.sendTemplate()` no se llama).
 
 1. Valida `ticketId`, `templateName`, `language`, `parameters` (array).
 2. Carga ticket → contacto → teléfono (`Ticket::telefonoDestinatario()`, compartido con `send`).
@@ -146,7 +146,7 @@ flowchart TD
 
 **Lo que este flujo no hace** (a diferencia de F2): no valida la ventana de 24 h (**correcto y deliberado**, R-W6); no aplica guard de dueño, auto-claim, cambio de estado, `first_response_at`, idempotencia ni eventos de tiempo real. Si esas omisiones son intencionales: **Regla no confirmada**. Para la métrica de demora, la plantilla cuenta como respuesta humana.
 
-**Si falla, revisar:** `ProxyDeProveedorController::sendTemplate` → `EnviarPlantillaUseCase` → `GraphClient::sendTemplate` → configuración de la plantilla en Meta.
+**Si falla, revisar:** `ProxyDeProveedorController::enviarPlantilla` → `EnviarPlantillaUseCase` → `GraphClient::sendTemplate` → configuración de la plantilla en Meta.
 
 ---
 
@@ -380,7 +380,7 @@ Ver el diagrama y la tabla de archivos en [02 § Tiempo real](02-arquitectura-y-
 
 ## F14. Estado de entrega de mensajes
 
-**Entrada:** `POST /webhook` con `value.statuses[]` → `ProcesarActualizacionDeEstadoUseCase::processStatusUpdate()`.
+**Entrada:** `POST /webhook` con `value.statuses[]` → `ProcesarActualizacionDeEstadoUseCase::procesarActualizacionDeEstado()`.
 
 1. Busca el mensaje por WAMID (`messages.external_id`).
 2. Aplica la FSM "solo hacia adelante" (`sending` → `sent` → `delivered` → `read`; `failed` desde cualquier no final) (`:142-159`).

@@ -26,7 +26,7 @@ final class VencimientoDeVentanaService
      *                excluded (already closed); this mirrors the widened
      *                FSM's closing side (task 0.9).
      */
-    private const ELIGIBLE_STATUSES = [
+    private const ESTADOS_ELEGIBLES = [
         EstadoDeTicket::NUEVO->value,
         EstadoDeTicket::ACTIVO->value,
         EstadoDeTicket::EN_ESPERA->value,
@@ -50,15 +50,15 @@ final class VencimientoDeVentanaService
      * @param int      $limit             Max tickets processed in one batch.
      * @param int|null $safetyMarginOverride Overrides the DI-bound default margin, if provided.
      */
-    public function closeExpired(bool $dryRun, int $limit, ?int $safetyMarginOverride = null): int
+    public function cerrarVencidos(bool $dryRun, int $limit, ?int $safetyMarginOverride = null): int
     {
         $margin = $safetyMarginOverride ?? $this->safetyMarginMinutes;
         $threshold = (new \DateTimeImmutable())
-            ->modify(sprintf('-%d hours', PoliticaDeVentana::WINDOW_HOURS))
+            ->modify(sprintf('-%d hours', PoliticaDeVentana::HORAS_DE_VENTANA))
             ->modify(sprintf('+%d minutes', $margin));
 
         $ids = $this->ticketRepo->findIdsConVentanaVencida(
-            self::ELIGIBLE_STATUSES,
+            self::ESTADOS_ELEGIBLES,
             $threshold->format('Y-m-d H:i:s'),
             $limit,
         );

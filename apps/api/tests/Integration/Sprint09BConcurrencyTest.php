@@ -73,7 +73,7 @@ class Sprint09BConcurrencyTest extends KernelTestCase
         $phone = '+5491188888888';
         
         // First message creates ticket (seq increments)
-        $useCase->processInboundMessage($phone, 'Initial message');
+        $useCase->procesarMensajeEntrante($phone, 'Initial message');
         
         // Get ticket info
         $ticket = $this->em->getConnection()->fetchAssociative(
@@ -159,7 +159,7 @@ class Sprint09BConcurrencyTest extends KernelTestCase
         // Create ticket via UseCase
         $useCase = static::getContainer()->get(ProcesarMensajeEntranteUseCase::class);
         $phone = '+5491199999999';
-        $useCase->processInboundMessage($phone, 'First');
+        $useCase->procesarMensajeEntrante($phone, 'First');
         
         $ticket = $this->em->getConnection()->fetchAssociative(
             'SELECT id, last_event_seq FROM tickets ORDER BY id DESC LIMIT 1'

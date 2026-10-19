@@ -24,7 +24,7 @@ class ConversationWindowPolicyTest extends TestCase
         $now = new \DateTimeImmutable('2026-01-02 12:00:00');
         $lastInbound = $now->modify('-1 hour');
 
-        self::assertTrue($policy->isOpenForSending($lastInbound, $now));
+        self::assertTrue($policy->isAbiertaParaEnviar($lastInbound, $now));
     }
 
     public function testIsOpenForSendingIsFalseExactlyAtTheLiteral24hBoundaryWithNoMargin(): void
@@ -34,7 +34,7 @@ class ConversationWindowPolicyTest extends TestCase
         $lastInbound = $now->modify('-24 hours');
 
         // Elapsed time equals the window exactly: treated as no longer open.
-        self::assertFalse($policy->isOpenForSending($lastInbound, $now));
+        self::assertFalse($policy->isAbiertaParaEnviar($lastInbound, $now));
     }
 
     public function testIsOpenForSendingIsTrueOneMinuteBeforeTheEffectiveBoundary(): void
@@ -44,7 +44,7 @@ class ConversationWindowPolicyTest extends TestCase
         // Effective boundary = lastInbound + 24h - 5min = 2026-01-02 11:55:00.
         $now = $lastInbound->modify('+23 hours +53 minutes');
 
-        self::assertTrue($policy->isOpenForSending($lastInbound, $now));
+        self::assertTrue($policy->isAbiertaParaEnviar($lastInbound, $now));
     }
 
     public function testIsOpenForSendingIsFalseAfterTheEffectiveBoundaryWithinTheSafetyMargin(): void
@@ -55,14 +55,14 @@ class ConversationWindowPolicyTest extends TestCase
         // inside the literal 24h window (spec.md "Send rejected within the margin").
         $now = $lastInbound->modify('+23 hours +56 minutes');
 
-        self::assertFalse($policy->isOpenForSending($lastInbound, $now));
+        self::assertFalse($policy->isAbiertaParaEnviar($lastInbound, $now));
     }
 
     public function testIsOpenForSendingFailsClosedWhenLastInboundMessageAtIsNull(): void
     {
         $policy = new PoliticaDeVentana(safetyMarginMinutes: 5);
 
-        self::assertFalse($policy->isOpenForSending(null, new \DateTimeImmutable()));
+        self::assertFalse($policy->isAbiertaParaEnviar(null, new \DateTimeImmutable()));
     }
 
     public function testIsExpiredForClosingIsFalseWellInsideTheWindow(): void
@@ -71,7 +71,7 @@ class ConversationWindowPolicyTest extends TestCase
         $now = new \DateTimeImmutable('2026-01-02 12:00:00');
         $lastInbound = $now->modify('-1 hour');
 
-        self::assertFalse($policy->isExpiredForClosing($lastInbound, $now));
+        self::assertFalse($policy->isVencidaParaCerrar($lastInbound, $now));
     }
 
     public function testIsExpiredForClosingIsTrueExactlyAtTheLiteral24hBoundaryWithNoMargin(): void
@@ -80,7 +80,7 @@ class ConversationWindowPolicyTest extends TestCase
         $now = new \DateTimeImmutable('2026-01-02 12:00:00');
         $lastInbound = $now->modify('-24 hours');
 
-        self::assertTrue($policy->isExpiredForClosing($lastInbound, $now));
+        self::assertTrue($policy->isVencidaParaCerrar($lastInbound, $now));
     }
 
     public function testIsExpiredForClosingIsTrueAfterTheEffectiveBoundary(): void
@@ -89,7 +89,7 @@ class ConversationWindowPolicyTest extends TestCase
         $lastInbound = new \DateTimeImmutable('2026-01-01 12:00:00');
         $now = $lastInbound->modify('+23 hours +56 minutes');
 
-        self::assertTrue($policy->isExpiredForClosing($lastInbound, $now));
+        self::assertTrue($policy->isVencidaParaCerrar($lastInbound, $now));
     }
 
     public function testIsExpiredForClosingFailsOpenWhenLastInboundMessageAtIsNull(): void
@@ -98,7 +98,7 @@ class ConversationWindowPolicyTest extends TestCase
         // for pre-existing tickets with no recorded inbound message.
         $policy = new PoliticaDeVentana(safetyMarginMinutes: 5);
 
-        self::assertFalse($policy->isExpiredForClosing(null, new \DateTimeImmutable()));
+        self::assertFalse($policy->isVencidaParaCerrar(null, new \DateTimeImmutable()));
     }
 
     public function testExpiresAtSubtractsTheSafetyMarginFromTheLiteral24hBoundary(): void
@@ -108,7 +108,7 @@ class ConversationWindowPolicyTest extends TestCase
 
         $expected = new \DateTimeImmutable('2026-01-02 11:55:00');
 
-        self::assertEquals($expected, $policy->expiresAt($lastInbound));
+        self::assertEquals($expected, $policy->getVenceAt($lastInbound));
     }
 
     public function testExpiresAtWithZeroMarginEqualsTheLiteral24hBoundary(): void
@@ -118,6 +118,6 @@ class ConversationWindowPolicyTest extends TestCase
 
         $expected = new \DateTimeImmutable('2026-01-02 12:00:00');
 
-        self::assertEquals($expected, $policy->expiresAt($lastInbound));
+        self::assertEquals($expected, $policy->getVenceAt($lastInbound));
     }
 }

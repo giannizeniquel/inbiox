@@ -24,7 +24,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Unit tests for `ProxyDeProveedorController::resolveActingAgentId()` (design.md
+ * Unit tests for `ProxyDeProveedorController::getAgenteQueActuaId()` (design.md
  * D4) — the private helper extracted from `send()`'s original inline
  * fallback, reused by `sendTemplate()`. Since phase 3d it delegates to
  * `AsegurarAgenteDeUsuarioUseCase`, built here over the mocked EntityManager.
@@ -62,7 +62,7 @@ class ProviderProxyControllerResolveAgentTest extends TestCase
 
     private function invokeResolveActingAgentId(ProxyDeProveedorController $controller, ?Usuario $user): ?int
     {
-        $method = new \ReflectionMethod($controller, 'resolveActingAgentId');
+        $method = new \ReflectionMethod($controller, 'getAgenteQueActuaId');
         $method->setAccessible(true);
 
         return $method->invoke($controller, $user);

@@ -72,7 +72,7 @@ class ProcesarMensajeSalienteUseCase
      * @param array|null $mediaMetadata Optional media metadata: {key, mimeType, filename, size, kind, providerId, caption}
      * @return array
      */
-    public function processOutboundMessage(
+    public function procesarMensajeSaliente(
         int $ticketId,
         string $content,
         int $agentId,
@@ -195,7 +195,7 @@ class ProcesarMensajeSalienteUseCase
             }
 
             $skipOwnershipChange = TicketResponsabilidadGuard::isResueltoOCerrado($ticket->getEstado());
-            $this->guardSend($ticket, $ticketId, $agentId, $senderIsPrivileged);
+            $this->verificarEnvio($ticket, $ticketId, $agentId, $senderIsPrivileged);
 
             // Get conversation
             $conversation = $ticket->getConversacion();
@@ -205,12 +205,12 @@ class ProcesarMensajeSalienteUseCase
 
             // Skipped on resolved/closed tickets — ownership is frozen there.
             if (!$skipOwnershipChange) {
-                $this->claimTicketForReplyingAgent($ticket, $agentId);
+                $this->tomarTicketParaAgenteQueResponde($ticket, $agentId);
             }
 
-            $msg = $this->createOutboundMessage($conversation, $content, $agentId, $mediaMetadata);
+            $msg = $this->createMensajeSaliente($conversation, $content, $agentId, $mediaMetadata);
 
-            [$currentStatus, $newStatus, $transition, $shouldSetFirstResponse] = $this->applyReplyTransition($ticket, $ticketId);
+            [$currentStatus, $newStatus, $transition, $shouldSetFirstResponse] = $this->aplicarTransicionDeRespuesta($ticket, $ticketId);
 
             // Update conversation timestamps
             $conversation->setUltimoMensajeAt($msg->getCreadoAt());
@@ -232,7 +232,7 @@ class ProcesarMensajeSalienteUseCase
 
             $this->em->flush();
 
-            $this->collectMessageCreatedEvent($ticket, $ticketId, $msg, $content, $agentId);
+            $this->registrarMessageCreatedEvent($ticket, $ticketId, $msg, $content, $agentId);
 
             // Flush again to persist the bumped lastEventSeq (design.md D5).
             $this->em->flush();
@@ -269,7 +269,7 @@ class ProcesarMensajeSalienteUseCase
      * message row is persisted and before any FSM transition — never a
      * phantom "sent" message.
      */
-    private function guardSend(Ticket $ticket, int $ticketId, int $agentId, bool $senderIsPrivileged): void
+    private function verificarEnvio(Ticket $ticket, int $ticketId, int $agentId, bool $senderIsPrivileged): void
     {
         $status = $ticket->getEstado();
         if (TicketResponsabilidadGuard::bloqueaReasignacion($status, $senderIsPrivileged, $agentId, $ticket->getAgenteAsignadoId())) {
@@ -279,7 +279,7 @@ class ProcesarMensajeSalienteUseCase
             ));
         }
 
-        if (!$this->windowPolicy->isOpenForSending($ticket->getUltimoMensajeEntranteAt(), new \DateTimeImmutable())) {
+        if (!$this->windowPolicy->isAbiertaParaEnviar($ticket->getUltimoMensajeEntranteAt(), new \DateTimeImmutable())) {
             throw new VentanaVencidaException($ticketId, $ticket->getUltimoMensajeEntranteAt());
         }
     }
@@ -288,7 +288,7 @@ class ProcesarMensajeSalienteUseCase
      * Assigns the ticket to the replying agent when someone else (or nobody)
      * owns it. An unknown agent, or agent id 0, leaves the ticket as it is.
      */
-    private function claimTicketForReplyingAgent(Ticket $ticket, int $agentId): void
+    private function tomarTicketParaAgenteQueResponde(Ticket $ticket, int $agentId): void
     {
         $currentAssigneeId = $ticket->getAgenteAsignadoId();
         if ($agentId <= 0 || $currentAssigneeId === $agentId) {
@@ -329,7 +329,7 @@ class ProcesarMensajeSalienteUseCase
         $this->em->flush();
     }
 
-    private function createOutboundMessage(Conversacion $conversation, string $content, int $agentId, ?array $mediaMetadata): Mensaje
+    private function createMensajeSaliente(Conversacion $conversation, string $content, int $agentId, ?array $mediaMetadata): Mensaje
     {
         $msg = new Mensaje();
         $msg->setConversacion($conversation);
@@ -354,7 +354,7 @@ class ProcesarMensajeSalienteUseCase
      *
      * @return array{0: string, 1: string, 2: ?string, 3: bool} previous status, new status, transition name, whether first response was set
      */
-    private function applyReplyTransition(Ticket $ticket, int $ticketId): array
+    private function aplicarTransicionDeRespuesta(Ticket $ticket, int $ticketId): array
     {
         $currentStatus = $ticket->getEstado();
         $shouldSetFirstResponse = empty($ticket->getPrimeraRespuestaAt());
@@ -396,7 +396,7 @@ class ProcesarMensajeSalienteUseCase
      * outbound messages are broadcast over Mercure. The message must already
      * be flushed, because the event carries its id.
      */
-    private function collectMessageCreatedEvent(Ticket $ticket, int $ticketId, Mensaje $msg, string $content, int $agentId): void
+    private function registrarMessageCreatedEvent(Ticket $ticket, int $ticketId, Mensaje $msg, string $content, int $agentId): void
     {
         $senderName = $agentId > 0 ? $this->agentRepo->findById($agentId)?->getNombre() : null;
         $this->eventCollector->collect(new MessageCreatedEvent(

@@ -89,21 +89,21 @@ class HandleInboundMessageUseCaseTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
 
-        $this->useCase->processInboundMessage('123', 'Test');
+        $this->useCase->procesarMensajeEntrante('123', 'Test');
     }
 
     public function testProcessInboundMessageThrowsForEmptyPhone(): void
     {
         $this->expectException(\InvalidArgumentException::class);
 
-        $this->useCase->processInboundMessage('', 'Test message');
+        $this->useCase->procesarMensajeEntrante('', 'Test message');
     }
 
     public function testProcessInboundMessageThrowsForShortPhone(): void
     {
         $this->expectException(\InvalidArgumentException::class);
 
-        $this->useCase->processInboundMessage('+123', 'Test');
+        $this->useCase->procesarMensajeEntrante('+123', 'Test');
     }
 
     public function testPhoneNormalization(): void
@@ -209,7 +209,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
         $this->eventDispatcher->method('dispatch');
         $this->eventCollector->method('collect');
 
-        $result = $this->useCase->processInboundMessage($phone, $message, null, $phoneNumberId);
+        $result = $this->useCase->procesarMensajeEntrante($phone, $message, null, $phoneNumberId);
 
         $this->assertArrayHasKey('status', $result);
         $this->assertEquals('ok', $result['status']);
@@ -263,7 +263,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
         $this->eventDispatcher->method('dispatch');
         $this->eventCollector->method('collect');
 
-        $result = $this->useCase->processInboundMessage($phone, $message, null, $phoneNumberId);
+        $result = $this->useCase->procesarMensajeEntrante($phone, $message, null, $phoneNumberId);
 
         $this->assertArrayHasKey('status', $result);
         $this->assertEquals('ok', $result['status']);
@@ -316,7 +316,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
         $this->eventDispatcher->method('dispatch');
         $this->eventCollector->method('collect');
 
-        $result = $this->useCase->processInboundMessage($phone, $message);
+        $result = $this->useCase->procesarMensajeEntrante($phone, $message);
 
         $this->assertArrayHasKey('status', $result);
         $this->assertEquals('ok', $result['status']);

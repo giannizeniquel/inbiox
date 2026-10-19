@@ -6,22 +6,22 @@ namespace App\Conversacion;
 
 enum TipoDeAdjunto: string
 {
-    case IMAGE = 'image';
+    case IMAGEN = 'image';
     case VIDEO = 'video';
     case AUDIO = 'audio';
-    case DOCUMENT = 'document';
+    case DOCUMENTO = 'document';
 
     /**
      * Map a MIME type to the corresponding TipoDeAdjunto.
-     * Unknown MIME types default to DOCUMENT.
+     * Unknown MIME types default to DOCUMENTO.
      */
     public static function fromMime(string $mimeType): self
     {
         return match (true) {
-            str_starts_with($mimeType, 'image/') => self::IMAGE,
+            str_starts_with($mimeType, 'image/') => self::IMAGEN,
             str_starts_with($mimeType, 'video/') => self::VIDEO,
             str_starts_with($mimeType, 'audio/') => self::AUDIO,
-            default => self::DOCUMENT,
+            default => self::DOCUMENTO,
         };
     }
 
@@ -31,10 +31,10 @@ enum TipoDeAdjunto: string
     public static function toExtension(TipoDeAdjunto $kind): string
     {
         return match ($kind) {
-            self::IMAGE => 'jpg',
+            self::IMAGEN => 'jpg',
             self::VIDEO => 'mp4',
             self::AUDIO => 'ogg',
-            self::DOCUMENT => 'pdf',
+            self::DOCUMENTO => 'pdf',
         };
     }
 }

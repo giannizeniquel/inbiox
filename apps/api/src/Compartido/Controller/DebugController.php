@@ -54,7 +54,7 @@ class DebugController extends AbstractController
         $message = $messages[array_rand($messages)];
         
         try {
-            $result = $this->handleInbound->processInboundMessage(
+            $result = $this->handleInbound->procesarMensajeEntrante(
                 '+54911' . str_pad($ticketId, 8, '0', STR_PAD_LEFT),
                 $message
             );
@@ -91,7 +91,7 @@ class DebugController extends AbstractController
         $message = $responses[array_rand($responses)];
         
         try {
-            $result = $this->handleInbound->processInboundMessage(
+            $result = $this->handleInbound->procesarMensajeEntrante(
                 '+54911' . str_pad($ticketId, 8, '0', STR_PAD_LEFT),
                 $message
             );

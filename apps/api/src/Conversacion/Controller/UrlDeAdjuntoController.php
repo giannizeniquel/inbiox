@@ -41,7 +41,7 @@ class UrlDeAdjuntoController extends AbstractController
             );
         }
 
-        $urlData = $this->mediaUrlService->temporaryUrl($media['key']);
+        $urlData = $this->mediaUrlService->getUrlTemporal($media['key']);
 
         return new JsonResponse([
             'url' => $urlData['url'],

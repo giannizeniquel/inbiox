@@ -459,7 +459,7 @@ class Sprint08AutomationTest extends KernelTestCase
         $useCase = static::getContainer()->get(ProcesarMensajeEntranteUseCase::class);
 
         // Act - send message with "error" keyword
-        $result = $useCase->processInboundMessage(
+        $result = $useCase->procesarMensajeEntrante(
             '+543711234567',
             'There is an error in the system'
         );
@@ -504,7 +504,7 @@ class Sprint08AutomationTest extends KernelTestCase
 
         // Act - send inbound message to resolved ticket
         $useCase = static::getContainer()->get(ProcesarMensajeEntranteUseCase::class);
-        $result = $useCase->processInboundMessage(
+        $result = $useCase->procesarMensajeEntrante(
             '+543711234567',
             'I need more help with this issue'
         );
