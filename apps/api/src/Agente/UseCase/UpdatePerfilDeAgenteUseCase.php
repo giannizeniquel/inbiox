@@ -16,9 +16,9 @@ final class UpdatePerfilDeAgenteUseCase
     /**
      * Sets the signature; null clears it.
      */
-    public function execute(Agente $agent, ?string $signature): void
+    public function execute(Agente $agente, ?string $firma): void
     {
-        $agent->setFirma($signature);
+        $agente->setFirma($firma);
         $this->entityManager->flush();
     }
 }

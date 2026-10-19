@@ -16,13 +16,13 @@ final class UpdatePreferenciasDeNotificacionUseCase
     /**
      * A null preference is left unchanged.
      */
-    public function execute(Agente $agent, ?bool $sound, ?bool $desktop): void
+    public function execute(Agente $agente, ?bool $sonido, ?bool $escritorio): void
     {
-        if ($sound !== null) {
-            $agent->setSonidoDeNotificacion($sound);
+        if ($sonido !== null) {
+            $agente->setSonidoDeNotificacion($sonido);
         }
-        if ($desktop !== null) {
-            $agent->setNotificacionesDeEscritorio($desktop);
+        if ($escritorio !== null) {
+            $agente->setNotificacionesDeEscritorio($escritorio);
         }
 
         $this->entityManager->flush();

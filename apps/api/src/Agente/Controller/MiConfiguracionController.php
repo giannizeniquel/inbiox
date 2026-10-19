@@ -30,72 +30,72 @@ final class MiConfiguracionController
 {
     public function __construct(
         private readonly Security $security,
-        private readonly UpdatePerfilDeAgenteUseCase $updateAgentProfileUseCase,
-        private readonly UpdatePreferenciasDeNotificacionUseCase $updateNotificationPreferencesUseCase,
+        private readonly UpdatePerfilDeAgenteUseCase $updatePerfilDeAgenteUseCase,
+        private readonly UpdatePreferenciasDeNotificacionUseCase $updatePreferenciasDeNotificacionUseCase,
     ) {}
 
     #[IsGranted('ROLE_AGENT')]
     #[Route('/api/me/settings', name: 'app_me_settings', methods: ['GET'])]
     public function getConfiguracion(): JsonResponse
     {
-        $agent = $this->getAgente();
-        if (null === $agent) {
+        $agente = $this->getAgente();
+        if (null === $agente) {
             return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
         }
 
-        $user = $agent->getUsuario();
+        $usuario = $agente->getUsuario();
 
         // Profile
-        $profile = [
-            'name' => $agent->getNombre(),
-            'email' => $user?->getEmail() ?? '',
-            'signature' => $agent->getFirma(),
+        $perfil = [
+            'name' => $agente->getNombre(),
+            'email' => $usuario?->getEmail() ?? '',
+            'signature' => $agente->getFirma(),
         ];
 
         // Notifications
-        $notifications = [
-            'sound' => $agent->hasSonidoDeNotificacion(),
-            'desktop' => $agent->hasNotificacionesDeEscritorio(),
+        $notificaciones = [
+            'sound' => $agente->hasSonidoDeNotificacion(),
+            'desktop' => $agente->hasNotificacionesDeEscritorio(),
         ];
 
         // AutoReply
-        $autoReply = [
-            'enabled' => $agent->isRespuestaAutomaticaActiva(),
-            'message' => $agent->getMensajeDeRespuestaAutomatica(),
+        $respuestaAutomatica = [
+            'enabled' => $agente->isRespuestaAutomaticaActiva(),
+            'message' => $agente->getMensajeDeRespuestaAutomatica(),
         ];
 
         // Workspace
-        $activeWorkspace = $agent->getEspacioDeTrabajoActivo();
-        $workspaceData = null;
-        if ($activeWorkspace !== null) {
-            $workspaceData = [
-                'id' => (int) $activeWorkspace->getId(),
-                'displayName' => $activeWorkspace->getDisplayName(),
-                'phoneNumberId' => $activeWorkspace->getPhoneNumberId(),
+        $espacioDeTrabajoActivo = $agente->getEspacioDeTrabajoActivo();
+        $datosDelEspacioDeTrabajo = null;
+        if ($espacioDeTrabajoActivo !== null) {
+            $datosDelEspacioDeTrabajo = [
+                'id' => (int) $espacioDeTrabajoActivo->getId(),
+                'displayName' => $espacioDeTrabajoActivo->getDisplayName(),
+                'phoneNumberId' => $espacioDeTrabajoActivo->getPhoneNumberId(),
             ];
         }
 
         // Business hours (shifts)
-        $businessHours = [];
-        foreach ($agent->getTurnos() as $shift) {
-            $businessHours[] = [
-                'dayOfWeek' => $shift->getDiaDeLaSemana(),
-                'start' => $shift->getHoraDeInicio()->format('H:i'),
-                'end' => $shift->getHoraDeFin()->format('H:i'),
+        $horarioDeAtencion = [];
+        foreach ($agente->getTurnos() as $turno) {
+            $horarioDeAtencion[] = [
+                'dayOfWeek' => $turno->getDiaDeLaSemana(),
+                'start' => $turno->getHoraDeInicio()->format('H:i'),
+                'end' => $turno->getHoraDeFin()->format('H:i'),
             ];
         }
 
         // Sort shifts by dayOfWeek then start
-        \usort($businessHours, function (array $a, array $b) {
+        \usort($horarioDeAtencion, function (array $a, array $b) {
             return [$a['dayOfWeek'], $a['start']] <=> [$b['dayOfWeek'], $b['start']];
         });
 
         return new JsonResponse([
-            'profile' => $profile,
-            'notifications' => $notifications,
-            'autoReply' => $autoReply,
-            'workspace' => $workspaceData,
-            'businessHours' => $businessHours,
+            'profile' => $perfil,
+            'notifications' => $notificaciones,
+            'autoReply' => $respuestaAutomatica,
+            'workspace' => $datosDelEspacioDeTrabajo,
+            'businessHours' => $horarioDeAtencion,
         ]);
     }
 
@@ -103,17 +103,17 @@ final class MiConfiguracionController
     #[Route('/api/me/profile', name: 'app_me_profile', methods: ['PUT'])]
     public function updatePerfil(#[MapRequestPayload] UpdatePerfilRequest $request): JsonResponse
     {
-        $agent = $this->getAgente();
-        if (null === $agent) {
+        $agente = $this->getAgente();
+        if (null === $agente) {
             return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
         }
 
-        $this->updateAgentProfileUseCase->execute($agent, $request->signature);
+        $this->updatePerfilDeAgenteUseCase->execute($agente, $request->signature);
 
         return new JsonResponse([
-            'name' => $agent->getNombre(),
-            'email' => $agent->getUsuario()?->getEmail() ?? '',
-            'signature' => $agent->getFirma(),
+            'name' => $agente->getNombre(),
+            'email' => $agente->getUsuario()?->getEmail() ?? '',
+            'signature' => $agente->getFirma(),
         ]);
     }
 
@@ -121,27 +121,27 @@ final class MiConfiguracionController
     #[Route('/api/me/notifications', name: 'app_me_notifications', methods: ['PUT'])]
     public function updateNotificaciones(#[MapRequestPayload] UpdateNotificacionesRequest $request): JsonResponse
     {
-        $agent = $this->getAgente();
-        if (null === $agent) {
+        $agente = $this->getAgente();
+        if (null === $agente) {
             return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
         }
 
-        $this->updateNotificationPreferencesUseCase->execute($agent, $request->sound, $request->desktop);
+        $this->updatePreferenciasDeNotificacionUseCase->execute($agente, $request->sound, $request->desktop);
 
         return new JsonResponse([
-            'sound' => $agent->hasSonidoDeNotificacion(),
-            'desktop' => $agent->hasNotificacionesDeEscritorio(),
+            'sound' => $agente->hasSonidoDeNotificacion(),
+            'desktop' => $agente->hasNotificacionesDeEscritorio(),
         ]);
     }
 
     private function getAgente(): ?Agente
     {
-        $user = $this->security->getUser();
+        $usuario = $this->security->getUser();
 
-        if (!$user instanceof User) {
+        if (!$usuario instanceof User) {
             return null;
         }
 
-        return $user->getAgent();
+        return $usuario->getAgent();
     }
 }

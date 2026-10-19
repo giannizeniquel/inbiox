@@ -17,20 +17,20 @@ final class AsegurarAgenteDeUsuarioUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly AgenteRepository $agentRepository,
+        private readonly AgenteRepository $agenteRepository,
     ) {}
 
-    public function execute(User $user): Agente
+    public function execute(User $usuario): Agente
     {
-        $agent = $user->getAgent() ?? $this->agentRepository->findOneBy(['usuario' => $user]);
+        $agente = $usuario->getAgent() ?? $this->agenteRepository->findOneBy(['usuario' => $usuario]);
 
-        if ($agent === null) {
-            $agent = new Agente($user->getEmail() ?? 'Admin');
-            $agent->setUsuario($user);
-            $this->entityManager->persist($agent);
+        if ($agente === null) {
+            $agente = new Agente($usuario->getEmail() ?? 'Admin');
+            $agente->setUsuario($usuario);
+            $this->entityManager->persist($agente);
             $this->entityManager->flush();
         }
 
-        return $agent;
+        return $agente;
     }
 }

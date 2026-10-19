@@ -30,36 +30,36 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class EquipoController
 {
     public function __construct(
-        private readonly EquipoRepository $teamRepository,
+        private readonly EquipoRepository $equipoRepository,
         private readonly Security $security,
     ) {}
 
     #[Route('/api/teams', name: 'app_teams_list', methods: ['GET'])]
     public function listar(): JsonResponse
     {
-        $user = $this->security->getUser();
-        if (!$user instanceof User) {
+        $usuario = $this->security->getUser();
+        if (!$usuario instanceof User) {
             return new JsonResponse(['error' => 'Unauthorized'], 401);
         }
 
-        $agent = $user->getAgent();
-        if (null === $agent) {
+        $agente = $usuario->getAgent();
+        if (null === $agente) {
             return new JsonResponse([]);
         }
 
-        $workspaces = $agent->getEspaciosDeTrabajo()->toArray();
-        if ([] === $workspaces) {
+        $espaciosDeTrabajo = $agente->getEspaciosDeTrabajo()->toArray();
+        if ([] === $espaciosDeTrabajo) {
             return new JsonResponse([]);
         }
 
-        $teams = $this->teamRepository->findByEspaciosDeTrabajo($workspaces);
+        $equipos = $this->equipoRepository->findByEspaciosDeTrabajo($espaciosDeTrabajo);
 
         $items = array_map(fn(Equipo $t) => [
             'id' => (int) $t->getId(),
             'workspace_id' => (int) $t->getEspacioDeTrabajo()->getId(),
             'name' => $t->getNombre(),
             'is_active' => $t->isActivo(),
-        ], $teams);
+        ], $equipos);
 
         return new JsonResponse($items);
     }
