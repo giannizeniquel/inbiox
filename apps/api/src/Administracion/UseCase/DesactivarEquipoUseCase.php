@@ -19,9 +19,9 @@ final class DesactivarEquipoUseCase
         private readonly EntityManagerInterface $entityManager,
     ) {}
 
-    public function execute(Equipo $team): void
+    public function execute(Equipo $equipo): void
     {
-        $team->setActivo(false);
+        $equipo->setActivo(false);
         $this->entityManager->flush();
     }
 }

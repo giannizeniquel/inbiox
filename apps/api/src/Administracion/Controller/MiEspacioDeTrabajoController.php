@@ -31,29 +31,29 @@ final class MiEspacioDeTrabajoController
 {
     public function __construct(
         private readonly Security $security,
-        private readonly EspacioDeTrabajoRepository $workspaceRepository,
+        private readonly EspacioDeTrabajoRepository $espacioDeTrabajoRepository,
         private readonly TicketRepository $ticketRepository,
-        private readonly SetEspacioDeTrabajoActivoUseCase $setActiveWorkspaceUseCase,
+        private readonly SetEspacioDeTrabajoActivoUseCase $setEspacioDeTrabajoActivoUseCase,
     ) {}
 
     #[Route('/api/me/workspace', name: 'app_me_workspace', methods: ['GET'])]
     public function getEspacioDeTrabajoActivo(): JsonResponse
     {
-        $user = $this->security->getUser();
-        $agent = $user instanceof Usuario ? $user->getAgente() : null;
-        if (null === $agent) {
+        $usuario = $this->security->getUser();
+        $agente = $usuario instanceof Usuario ? $usuario->getAgente() : null;
+        if (null === $agente) {
             return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
         }
 
-        $activeWorkspace = $agent->getEspacioDeTrabajoActivo();
-        if (null === $activeWorkspace) {
+        $espacioDeTrabajoActivo = $agente->getEspacioDeTrabajoActivo();
+        if (null === $espacioDeTrabajoActivo) {
             return new JsonResponse(
                 ['workspace_id' => null, 'phone_number_id' => null, 'display_name' => null],
                 Response::HTTP_NOT_FOUND,
             );
         }
 
-        return new JsonResponse(EspacioDeTrabajoActivoDTO::fromEntity($activeWorkspace)->toArray());
+        return new JsonResponse(EspacioDeTrabajoActivoDTO::fromEntity($espacioDeTrabajoActivo)->toArray());
     }
 
     #[Route('/api/me/workspace', name: 'app_me_workspace_set', methods: ['PUT'])]
@@ -66,14 +66,14 @@ final class MiEspacioDeTrabajoController
         }
 
         // Unreachable with the entity user provider; kept as a guard.
-        $user = $this->security->getUser();
-        if (!$user instanceof Usuario) {
+        $usuario = $this->security->getUser();
+        if (!$usuario instanceof Usuario) {
             return new JsonResponse(['error' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
         }
 
         try {
-            $workspace = $this->setActiveWorkspaceUseCase->execute(
-                $user,
+            $espacioDeTrabajo = $this->setEspacioDeTrabajoActivoUseCase->execute(
+                $usuario,
                 $this->security->isGranted('ROLE_ADMIN') || $this->security->isGranted('ROLE_SUPERVISOR'),
                 \is_array($data) ? $data : [],
             );
@@ -85,35 +85,35 @@ final class MiEspacioDeTrabajoController
             return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
         }
 
-        return new JsonResponse(EspacioDeTrabajoActivoDTO::fromEntity($workspace)->toArray());
+        return new JsonResponse(EspacioDeTrabajoActivoDTO::fromEntity($espacioDeTrabajo)->toArray());
     }
 
     #[Route('/api/me/workspaces', name: 'app_me_workspaces', methods: ['GET'])]
     public function listarMisEspaciosDeTrabajo(): JsonResponse
     {
-        $user = $this->security->getUser();
-        if (!$user instanceof Usuario) {
+        $usuario = $this->security->getUser();
+        if (!$usuario instanceof Usuario) {
             return new JsonResponse(['error' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
         }
 
         // Admin/Supervisor: see ALL workspaces
         if ($this->security->isGranted('ROLE_ADMIN') || $this->security->isGranted('ROLE_SUPERVISOR')) {
-            $workspaces = $this->workspaceRepository->findBy(['activo' => true]);
-            $items = array_map(fn(EspacioDeTrabajo $w) => EspacioDeTrabajoDTO::fromEntity($w)->toArray(), $workspaces);
+            $espaciosDeTrabajo = $this->espacioDeTrabajoRepository->findBy(['activo' => true]);
+            $items = array_map(fn(EspacioDeTrabajo $w) => EspacioDeTrabajoDTO::fromEntity($w)->toArray(), $espaciosDeTrabajo);
             return new JsonResponse($items);
         }
 
         // Agent: only assigned workspaces
-        $agent = $user->getAgente();
-        if (null === $agent) {
+        $agente = $usuario->getAgente();
+        if (null === $agente) {
             return new JsonResponse([], Response::HTTP_OK);
         }
 
-        $agentId = (int) $agent->getId();
+        $agenteId = (int) $agente->getId();
         $items = [];
-        foreach ($agent->getEspaciosDeTrabajo()->toArray() as $w) {
-            $hasPending = $this->ticketRepository->hasPendientesDeAgente($w->getPhoneNumberId(), $agentId);
-            $items[] = array_merge(EspacioDeTrabajoDTO::fromEntity($w)->toArray(), ['has_pending' => $hasPending]);
+        foreach ($agente->getEspaciosDeTrabajo()->toArray() as $w) {
+            $hasPendientes = $this->ticketRepository->hasPendientesDeAgente($w->getPhoneNumberId(), $agenteId);
+            $items[] = array_merge(EspacioDeTrabajoDTO::fromEntity($w)->toArray(), ['has_pending' => $hasPendientes]);
         }
 
         return new JsonResponse($items);

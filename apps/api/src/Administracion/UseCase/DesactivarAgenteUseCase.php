@@ -16,9 +16,9 @@ final class DesactivarAgenteUseCase
         private readonly EntityManagerInterface $entityManager,
     ) {}
 
-    public function execute(Agente $agent): void
+    public function execute(Agente $agente): void
     {
-        $agent->setActivo(false);
+        $agente->setActivo(false);
         $this->entityManager->flush();
     }
 }

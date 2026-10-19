@@ -25,9 +25,9 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class VinculoDeAgenteController
 {
     public function __construct(
-        private readonly AgenteRepository $agentRepository,
-        private readonly VincularUsuarioConAgenteUseCase $linkUserToAgentUseCase,
-        private readonly DesvincularUsuarioDeAgenteUseCase $unlinkUserFromAgentUseCase,
+        private readonly AgenteRepository $agenteRepository,
+        private readonly VincularUsuarioConAgenteUseCase $vincularUsuarioConAgenteUseCase,
+        private readonly DesvincularUsuarioDeAgenteUseCase $desvincularUsuarioDeAgenteUseCase,
     ) {}
 
     /**
@@ -42,9 +42,9 @@ final class VinculoDeAgenteController
     #[Route('/api/admin/agents/{id}/link-user', name: 'admin_agents_link_user', methods: ['POST'])]
     public function vincularUsuario(int $id, Request $request): JsonResponse
     {
-        $agent = $this->agentRepository->find($id);
+        $agente = $this->agenteRepository->find($id);
 
-        if (null === $agent) {
+        if (null === $agente) {
             return new JsonResponse(['error' => 'Agent not found'], 404);
         }
 
@@ -55,7 +55,7 @@ final class VinculoDeAgenteController
         }
 
         try {
-            $user = $this->linkUserToAgentUseCase->execute($agent, \is_array($data) ? $data : []);
+            $usuario = $this->vincularUsuarioConAgenteUseCase->execute($agente, \is_array($data) ? $data : []);
         } catch (NotFoundException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 404);
         } catch (StateConflictException $e) {
@@ -65,9 +65,9 @@ final class VinculoDeAgenteController
         }
 
         return new JsonResponse([
-            'id' => (int) $agent->getId(),
-            'user_id' => (int) $user->getId(),
-            'user_email' => $user->getEmail(),
+            'id' => (int) $agente->getId(),
+            'user_id' => (int) $usuario->getId(),
+            'user_email' => $usuario->getEmail(),
         ]);
     }
 
@@ -79,14 +79,14 @@ final class VinculoDeAgenteController
     #[Route('/api/admin/agents/{id}/link-user', name: 'admin_agents_unlink_user', methods: ['DELETE'])]
     public function desvincularUsuario(int $id): JsonResponse
     {
-        $agent = $this->agentRepository->find($id);
+        $agente = $this->agenteRepository->find($id);
 
-        if (null === $agent) {
+        if (null === $agente) {
             return new JsonResponse(['error' => 'Agent not found'], 404);
         }
 
         try {
-            $this->unlinkUserFromAgentUseCase->execute($agent);
+            $this->desvincularUsuarioDeAgenteUseCase->execute($agente);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }

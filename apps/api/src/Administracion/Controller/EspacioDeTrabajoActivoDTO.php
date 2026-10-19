@@ -12,17 +12,17 @@ use App\Administracion\EspacioDeTrabajo;
 class EspacioDeTrabajoActivoDTO
 {
     public function __construct(
-        public readonly int $workspaceId,
+        public readonly int $espacioDeTrabajoId,
         public readonly string $phoneNumberId,
-        public readonly string $displayName,
+        public readonly string $nombreVisible,
     ) {}
 
-    public static function fromEntity(EspacioDeTrabajo $workspace): self
+    public static function fromEntity(EspacioDeTrabajo $espacioDeTrabajo): self
     {
         return new self(
-            workspaceId: (int) $workspace->getId(),
-            phoneNumberId: $workspace->getPhoneNumberId(),
-            displayName: $workspace->getNombreVisible(),
+            espacioDeTrabajoId: (int) $espacioDeTrabajo->getId(),
+            phoneNumberId: $espacioDeTrabajo->getPhoneNumberId(),
+            nombreVisible: $espacioDeTrabajo->getNombreVisible(),
         );
     }
 
@@ -32,9 +32,9 @@ class EspacioDeTrabajoActivoDTO
     public function toArray(): array
     {
         return [
-            'workspace_id' => $this->workspaceId,
+            'workspace_id' => $this->espacioDeTrabajoId,
             'phone_number_id' => $this->phoneNumberId,
-            'display_name' => $this->displayName,
+            'display_name' => $this->nombreVisible,
         ];
     }
 }

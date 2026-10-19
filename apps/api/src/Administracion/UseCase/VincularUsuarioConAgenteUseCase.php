@@ -16,7 +16,7 @@ final class VincularUsuarioConAgenteUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly UsuarioRepository $userRepository,
+        private readonly UsuarioRepository $usuarioRepository,
     ) {}
 
     /**
@@ -27,36 +27,36 @@ final class VincularUsuarioConAgenteUseCase
      * @throws NotFoundException         when the user does not exist
      * @throws StateConflictException    when the database rejects the link as a duplicate
      */
-    public function execute(Agente $agent, array $data): Usuario
+    public function execute(Agente $agente, array $data): Usuario
     {
-        $userId = $data['user_id'] ?? null;
+        $usuarioId = $data['user_id'] ?? null;
 
-        if (null === $userId || !\is_int($userId)) {
+        if (null === $usuarioId || !\is_int($usuarioId)) {
             throw new \InvalidArgumentException('user_id is required and must be an integer');
         }
 
-        $user = $this->userRepository->find($userId);
+        $usuario = $this->usuarioRepository->find($usuarioId);
 
-        if (null === $user) {
+        if (null === $usuario) {
             throw new NotFoundException('User not found');
         }
 
         // Q3: Deny linking deactivated user to agent
-        if (!$user->isActivo()) {
+        if (!$usuario->isActivo()) {
             throw new \InvalidArgumentException('Cannot link a deactivated user to an agent');
         }
 
-        if (null !== $agent->getUsuario()) {
+        if (null !== $agente->getUsuario()) {
             throw new \InvalidArgumentException('Agent already linked to a user');
         }
 
         // Check if user already has an agent (UNIQUE constraint)
-        if (null !== $user->getAgente()) {
+        if (null !== $usuario->getAgente()) {
             throw new \InvalidArgumentException('User already linked to an agent');
         }
 
-        $agent->setUsuario($user);
-        $user->setAgente($agent);
+        $agente->setUsuario($usuario);
+        $usuario->setAgente($agente);
 
         try {
             $this->entityManager->flush();
@@ -65,6 +65,6 @@ final class VincularUsuarioConAgenteUseCase
             throw new StateConflictException('Link conflict: agent or user already linked', 0, $e);
         }
 
-        return $user;
+        return $usuario;
     }
 }

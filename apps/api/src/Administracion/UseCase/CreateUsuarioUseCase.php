@@ -16,8 +16,8 @@ final class CreateUsuarioUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly UsuarioRepository $userRepository,
-        private readonly AgenteRepository $agentRepository,
+        private readonly UsuarioRepository $usuarioRepository,
+        private readonly AgenteRepository $agenteRepository,
         private readonly UserPasswordHasherInterface $passwordHasher,
     ) {}
 
@@ -42,31 +42,31 @@ final class CreateUsuarioUseCase
             throw new \InvalidArgumentException('email and password must be strings');
         }
 
-        if (null !== $this->userRepository->findOneBy(['email' => $email])) {
+        if (null !== $this->usuarioRepository->findOneBy(['email' => $email])) {
             throw new StateConflictException('Email already exists');
         }
 
-        $user = new Usuario();
-        $user->setEmail($email);
-        $user->setPassword($this->passwordHasher->hashPassword($user, $password));
-        $user->setRoles($roles);
+        $usuario = new Usuario();
+        $usuario->setEmail($email);
+        $usuario->setPassword($this->passwordHasher->hashPassword($usuario, $password));
+        $usuario->setRoles($roles);
 
         // Optional agent link
         if (isset($data['agent_id']) && null !== $data['agent_id']) {
-            $agent = $this->agentRepository->find($data['agent_id']);
-            if (null === $agent) {
+            $agente = $this->agenteRepository->find($data['agent_id']);
+            if (null === $agente) {
                 throw new NotFoundException('Agent not found');
             }
-            if (null !== $agent->getUsuario()) {
+            if (null !== $agente->getUsuario()) {
                 throw new StateConflictException('Agent already linked to another user');
             }
-            $agent->setUsuario($user);
-            $user->setAgente($agent);
+            $agente->setUsuario($usuario);
+            $usuario->setAgente($agente);
         }
 
-        $this->entityManager->persist($user);
+        $this->entityManager->persist($usuario);
         $this->entityManager->flush();
 
-        return $user;
+        return $usuario;
     }
 }

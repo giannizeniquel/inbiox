@@ -13,7 +13,7 @@ final class CreateEspacioDeTrabajoUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly EspacioDeTrabajoRepository $workspaceRepository,
+        private readonly EspacioDeTrabajoRepository $espacioDeTrabajoRepository,
     ) {}
 
     /**
@@ -25,29 +25,29 @@ final class CreateEspacioDeTrabajoUseCase
     public function execute(array $data): EspacioDeTrabajo
     {
         $phoneNumberId = $data['phoneNumberId'] ?? null;
-        $displayName = $data['displayName'] ?? null;
+        $nombreVisible = $data['displayName'] ?? null;
 
         if (empty($phoneNumberId) || !\is_string($phoneNumberId)) {
             throw new \InvalidArgumentException('phoneNumberId is required and must be a string');
         }
 
-        if (empty($displayName) || !\is_string($displayName)) {
+        if (empty($nombreVisible) || !\is_string($nombreVisible)) {
             throw new \InvalidArgumentException('displayName is required and must be a string');
         }
 
-        if (null !== $this->workspaceRepository->findOneBy(['phoneNumberId' => $phoneNumberId])) {
+        if (null !== $this->espacioDeTrabajoRepository->findOneBy(['phoneNumberId' => $phoneNumberId])) {
             throw new StateConflictException('A workspace with this phone number ID already exists');
         }
 
-        $workspace = new EspacioDeTrabajo($phoneNumberId, $displayName);
+        $espacioDeTrabajo = new EspacioDeTrabajo($phoneNumberId, $nombreVisible);
 
         if (isset($data['isActive'])) {
-            $workspace->setActivo((bool) $data['isActive']);
+            $espacioDeTrabajo->setActivo((bool) $data['isActive']);
         }
 
-        $this->entityManager->persist($workspace);
+        $this->entityManager->persist($espacioDeTrabajo);
         $this->entityManager->flush();
 
-        return $workspace;
+        return $espacioDeTrabajo;
     }
 }

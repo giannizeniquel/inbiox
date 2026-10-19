@@ -31,69 +31,69 @@ final class SeedUsuariosCommand extends Command
         $password = 'password123';
 
         // Load existing workspaces
-        $workspaceRepo = $this->em->getRepository(EspacioDeTrabajo::class);
-        $workspaces = $workspaceRepo->findBy([], ['id' => 'ASC']);
-        if (empty($workspaces)) {
+        $espacioDeTrabajoRepo = $this->em->getRepository(EspacioDeTrabajo::class);
+        $espaciosDeTrabajo = $espacioDeTrabajoRepo->findBy([], ['id' => 'ASC']);
+        if (empty($espaciosDeTrabajo)) {
             $output->writeln('<error>No workspaces found. Run migrations first.</error>');
             return Command::FAILURE;
         }
-        $ws1 = $workspaces[0];
-        $ws2 = $workspaces[1] ?? $workspaces[0];
+        $ws1 = $espaciosDeTrabajo[0];
+        $ws2 = $espaciosDeTrabajo[1] ?? $espaciosDeTrabajo[0];
         $output->writeln(sprintf('Workspaces: %s (%s), %s (%s)',
             $ws1->getNombreVisible(), $ws1->getPhoneNumberId(),
             $ws2->getNombreVisible(), $ws2->getPhoneNumberId(),
         ));
 
         // ── 2 Admins (with Agent for workspace switching) ──
-        $admins = [
+        $administradores = [
             ['email' => 'admin1@inbiox.local'],
             ['email' => 'admin2@inbiox.local'],
         ];
-        foreach ($admins as $a) {
-            $user = new Usuario();
-            $user->setEmail($a['email']);
-            $user->setPassword($this->hasher->hashPassword($user, $password));
-            $user->setRoles(['ROLE_ADMIN']);
+        foreach ($administradores as $a) {
+            $usuario = new Usuario();
+            $usuario->setEmail($a['email']);
+            $usuario->setPassword($this->hasher->hashPassword($usuario, $password));
+            $usuario->setRoles(['ROLE_ADMIN']);
 
             // Admin gets an Agent so workspace switcher works
-            $agent = new Agente($a['email']);
-            $agent->setUsuario($user);
-            $user->setAgente($agent);
-            $agent->addEspacioDeTrabajo($ws1);
-            $agent->addEspacioDeTrabajo($ws2);
-            $agent->setEspacioDeTrabajoActivo($ws1);
+            $agente = new Agente($a['email']);
+            $agente->setUsuario($usuario);
+            $usuario->setAgente($agente);
+            $agente->addEspacioDeTrabajo($ws1);
+            $agente->addEspacioDeTrabajo($ws2);
+            $agente->setEspacioDeTrabajoActivo($ws1);
 
-            $this->em->persist($user);
-            $this->em->persist($agent);
+            $this->em->persist($usuario);
+            $this->em->persist($agente);
             $output->writeln("Admin: {$a['email']} — active: {$ws1->getNombreVisible()}");
         }
 
         // ── 2 Supervisores (with Agent for workspace switching) ──
-        $supervisors = [
+        $supervisores = [
             ['email' => 'super1@inbiox.local'],
             ['email' => 'super2@inbiox.local'],
         ];
-        foreach ($supervisors as $s) {
-            $user = new Usuario();
-            $user->setEmail($s['email']);
-            $user->setPassword($this->hasher->hashPassword($user, $password));
-            $user->setRoles(['ROLE_SUPERVISOR']);
+        foreach ($supervisores as $s) {
+            $usuario = new Usuario();
+            $usuario->setEmail($s['email']);
+            $usuario->setPassword($this->hasher->hashPassword($usuario, $password));
+            $usuario->setRoles(['ROLE_SUPERVISOR']);
 
             // Supervisor gets an Agent so workspace switcher works
-            $agent = new Agente($s['email']);
-            $agent->setUsuario($user);
-            $user->setAgente($agent);
-            $agent->addEspacioDeTrabajo($ws1);
-            $agent->addEspacioDeTrabajo($ws2);
-            $agent->setEspacioDeTrabajoActivo($ws1);
+            $agente = new Agente($s['email']);
+            $agente->setUsuario($usuario);
+            $usuario->setAgente($agente);
+            $agente->addEspacioDeTrabajo($ws1);
+            $agente->addEspacioDeTrabajo($ws2);
+            $agente->setEspacioDeTrabajoActivo($ws1);
 
-            $this->em->persist($user);
-            $this->em->persist($agent);
+            $this->em->persist($usuario);
+            $this->em->persist($agente);
             $output->writeln("Supervisor: {$s['email']} — active: {$ws1->getNombreVisible()}");
         }
 
         // ── 6 Agentes ────────────────────────────
-        $agents = [
+        $agentes = [
             ['email' => 'agent1@inbiox.local', 'name' => 'María García',   'ws' => [$ws1, $ws2], 'active' => $ws1],
             ['email' => 'agent2@inbiox.local', 'name' => 'Carlos López',   'ws' => [$ws1, $ws2], 'active' => $ws1],
             ['email' => 'agent3@inbiox.local', 'name' => 'Ana Martínez',   'ws' => [$ws1],       'active' => $ws1],
@@ -101,23 +101,23 @@ final class SeedUsuariosCommand extends Command
             ['email' => 'agent5@inbiox.local', 'name' => 'Laura Fernández', 'ws' => [$ws2],       'active' => $ws2],
             ['email' => 'agent6@inbiox.local', 'name' => 'Diego Sánchez',  'ws' => [$ws2],       'active' => $ws2],
         ];
-        foreach ($agents as $a) {
-            $user = new Usuario();
-            $user->setEmail($a['email']);
-            $user->setPassword($this->hasher->hashPassword($user, $password));
-            $user->setRoles(['ROLE_AGENT']);
+        foreach ($agentes as $a) {
+            $usuario = new Usuario();
+            $usuario->setEmail($a['email']);
+            $usuario->setPassword($this->hasher->hashPassword($usuario, $password));
+            $usuario->setRoles(['ROLE_AGENT']);
 
-            $agent = new Agente($a['name']);
-            $agent->setUsuario($user);
-            $user->setAgente($agent);
+            $agente = new Agente($a['name']);
+            $agente->setUsuario($usuario);
+            $usuario->setAgente($agente);
 
             foreach ($a['ws'] as $ws) {
-                $agent->addEspacioDeTrabajo($ws);
+                $agente->addEspacioDeTrabajo($ws);
             }
-            $agent->setEspacioDeTrabajoActivo($a['active']);
+            $agente->setEspacioDeTrabajoActivo($a['active']);
 
-            $this->em->persist($user);
-            $this->em->persist($agent);
+            $this->em->persist($usuario);
+            $this->em->persist($agente);
             $output->writeln(sprintf('Agent: %s (%s) — active: %s',
                 $a['email'], $a['name'], $a['active']->getNombreVisible()));
         }

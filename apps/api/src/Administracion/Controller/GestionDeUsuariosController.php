@@ -26,31 +26,31 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class GestionDeUsuariosController
 {
     public function __construct(
-        private readonly UsuarioRepository $userRepository,
-        private readonly CreateUsuarioUseCase $createUserUseCase,
-        private readonly UpdateUsuarioUseCase $updateUserUseCase,
-        private readonly DesactivarUsuarioUseCase $deactivateUserUseCase,
+        private readonly UsuarioRepository $usuarioRepository,
+        private readonly CreateUsuarioUseCase $createUsuarioUseCase,
+        private readonly UpdateUsuarioUseCase $updateUsuarioUseCase,
+        private readonly DesactivarUsuarioUseCase $desactivarUsuarioUseCase,
     ) {}
 
     #[Route('/api/admin/users', name: 'admin_users_list', methods: ['GET'])]
     public function listar(Request $request): JsonResponse
     {
-        $page = max(1, (int) $request->query->get('page', 1));
+        $pagina = max(1, (int) $request->query->get('page', 1));
         $limit = min(100, max(1, (int) $request->query->get('limit', 20)));
-        $offset = ($page - 1) * $limit;
+        $offset = ($pagina - 1) * $limit;
 
-        $total = $this->userRepository->count([]);
-        $users = $this->userRepository->findPaginaConAgente($offset, $limit);
+        $total = $this->usuarioRepository->count([]);
+        $usuarios = $this->usuarioRepository->findPaginaConAgente($offset, $limit);
 
-        $items = array_map(fn(Usuario $user) => $this->serializeUsuario($user), $users);
+        $items = array_map(fn(Usuario $usuario) => $this->serializeUsuario($usuario), $usuarios);
 
         return new JsonResponse([
             'data' => $items,
             'meta' => [
-                'page' => $page,
+                'page' => $pagina,
                 'limit' => $limit,
                 'total' => $total,
-                'has_next' => ($page * $limit) < $total,
+                'has_next' => ($pagina * $limit) < $total,
             ],
         ]);
     }
@@ -65,7 +65,7 @@ final class GestionDeUsuariosController
         }
 
         try {
-            $user = $this->createUserUseCase->execute(\is_array($data) ? $data : []);
+            $usuario = $this->createUsuarioUseCase->execute(\is_array($data) ? $data : []);
         } catch (NotFoundException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 404);
         } catch (StateConflictException $e) {
@@ -74,27 +74,27 @@ final class GestionDeUsuariosController
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }
 
-        return new JsonResponse($this->serializeUsuario($user), Response::HTTP_CREATED);
+        return new JsonResponse($this->serializeUsuario($usuario), Response::HTTP_CREATED);
     }
 
     #[Route('/api/admin/users/{id}', name: 'admin_users_get', methods: ['GET'])]
     public function get(int $id): JsonResponse
     {
-        $user = $this->userRepository->find($id);
+        $usuario = $this->usuarioRepository->find($id);
 
-        if (null === $user) {
+        if (null === $usuario) {
             return new JsonResponse(['error' => 'User not found'], 404);
         }
 
-        return new JsonResponse($this->serializeUsuario($user));
+        return new JsonResponse($this->serializeUsuario($usuario));
     }
 
     #[Route('/api/admin/users/{id}', name: 'admin_users_update', methods: ['PUT'])]
     public function update(int $id, Request $request): JsonResponse
     {
-        $user = $this->userRepository->find($id);
+        $usuario = $this->usuarioRepository->find($id);
 
-        if (null === $user) {
+        if (null === $usuario) {
             return new JsonResponse(['error' => 'User not found'], 404);
         }
 
@@ -105,26 +105,26 @@ final class GestionDeUsuariosController
         }
 
         try {
-            $this->updateUserUseCase->execute($user, \is_array($data) ? $data : []);
+            $this->updateUsuarioUseCase->execute($usuario, \is_array($data) ? $data : []);
         } catch (StateConflictException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 409);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }
 
-        return new JsonResponse($this->serializeUsuario($user));
+        return new JsonResponse($this->serializeUsuario($usuario));
     }
 
     #[Route('/api/admin/users/{id}', name: 'admin_users_delete', methods: ['DELETE'])]
     public function delete(int $id): JsonResponse
     {
-        $user = $this->userRepository->find($id);
+        $usuario = $this->usuarioRepository->find($id);
 
-        if (null === $user) {
+        if (null === $usuario) {
             return new JsonResponse(['error' => 'User not found'], 404);
         }
 
-        $this->deactivateUserUseCase->execute($user);
+        $this->desactivarUsuarioUseCase->execute($usuario);
 
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
@@ -132,19 +132,19 @@ final class GestionDeUsuariosController
     /**
      * @return array<string, mixed>
      */
-    private function serializeUsuario(Usuario $user): array
+    private function serializeUsuario(Usuario $usuario): array
     {
-        $agent = $user->getAgente();
+        $agente = $usuario->getAgente();
 
         return [
-            'id' => (int) $user->getId(),
-            'email' => $user->getEmail(),
-            'roles' => $user->getRoles(),
-            'is_active' => $user->isActivo(),
-            'agent_id' => null !== $agent ? (int) $agent->getId() : null,
-            'agent_name' => null !== $agent ? $agent->getNombre() : null,
-            'created_at' => $user->getCreadoAt()->format('Y-m-d\TH:i:sP'),
-            'updated_at' => $user->getActualizadoAt()?->format('Y-m-d\TH:i:sP'),
+            'id' => (int) $usuario->getId(),
+            'email' => $usuario->getEmail(),
+            'roles' => $usuario->getRoles(),
+            'is_active' => $usuario->isActivo(),
+            'agent_id' => null !== $agente ? (int) $agente->getId() : null,
+            'agent_name' => null !== $agente ? $agente->getNombre() : null,
+            'created_at' => $usuario->getCreadoAt()->format('Y-m-d\TH:i:sP'),
+            'updated_at' => $usuario->getActualizadoAt()?->format('Y-m-d\TH:i:sP'),
         ];
     }
 }

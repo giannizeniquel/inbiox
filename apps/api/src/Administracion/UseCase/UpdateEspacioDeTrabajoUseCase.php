@@ -21,24 +21,24 @@ final class UpdateEspacioDeTrabajoUseCase
      *
      * @throws \InvalidArgumentException when a field is invalid
      */
-    public function execute(EspacioDeTrabajo $workspace, array $data): void
+    public function execute(EspacioDeTrabajo $espacioDeTrabajo, array $data): void
     {
         if (isset($data['phoneNumberId'])) {
             if (!\is_string($data['phoneNumberId']) || empty($data['phoneNumberId'])) {
                 throw new \InvalidArgumentException('phoneNumberId must be a non-empty string');
             }
-            $workspace->setPhoneNumberId($data['phoneNumberId']);
+            $espacioDeTrabajo->setPhoneNumberId($data['phoneNumberId']);
         }
 
         if (isset($data['displayName'])) {
             if (!\is_string($data['displayName']) || empty($data['displayName'])) {
                 throw new \InvalidArgumentException('displayName must be a non-empty string');
             }
-            $workspace->setNombreVisible($data['displayName']);
+            $espacioDeTrabajo->setNombreVisible($data['displayName']);
         }
 
         if (isset($data['isActive'])) {
-            $workspace->setActivo((bool) $data['isActive']);
+            $espacioDeTrabajo->setActivo((bool) $data['isActive']);
         }
 
         $this->entityManager->flush();

@@ -14,24 +14,24 @@ class EspacioDeTrabajoDTO
     public function __construct(
         public readonly int $id,
         public readonly string $phoneNumberId,
-        public readonly string $displayName,
-        public readonly bool $isActive,
-        public readonly string $createdAt,
-        public readonly string $updatedAt,
-        public readonly int $agentCount = 0,
-        public readonly bool $hasPending = false,
+        public readonly string $nombreVisible,
+        public readonly bool $activo,
+        public readonly string $creadoAt,
+        public readonly string $actualizadoAt,
+        public readonly int $cantidadDeAgentes = 0,
+        public readonly bool $hasPendientes = false,
     ) {}
 
-    public static function fromEntity(EspacioDeTrabajo $workspace, int $agentCount = 0): self
+    public static function fromEntity(EspacioDeTrabajo $espacioDeTrabajo, int $cantidadDeAgentes = 0): self
     {
         return new self(
-            id: (int) $workspace->getId(),
-            phoneNumberId: $workspace->getPhoneNumberId(),
-            displayName: $workspace->getNombreVisible(),
-            isActive: $workspace->isActivo(),
-            createdAt: $workspace->getCreadoAt()->format('Y-m-d\TH:i:sP'),
-            updatedAt: $workspace->getActualizadoAt()->format('Y-m-d\TH:i:sP'),
-            agentCount: $agentCount,
+            id: (int) $espacioDeTrabajo->getId(),
+            phoneNumberId: $espacioDeTrabajo->getPhoneNumberId(),
+            nombreVisible: $espacioDeTrabajo->getNombreVisible(),
+            activo: $espacioDeTrabajo->isActivo(),
+            creadoAt: $espacioDeTrabajo->getCreadoAt()->format('Y-m-d\TH:i:sP'),
+            actualizadoAt: $espacioDeTrabajo->getActualizadoAt()->format('Y-m-d\TH:i:sP'),
+            cantidadDeAgentes: $cantidadDeAgentes,
         );
     }
 
@@ -43,12 +43,12 @@ class EspacioDeTrabajoDTO
         return [
             'id' => $this->id,
             'phone_number_id' => $this->phoneNumberId,
-            'display_name' => $this->displayName,
-            'is_active' => $this->isActive,
-            'created_at' => $this->createdAt,
-            'updated_at' => $this->updatedAt,
-            'agent_count' => $this->agentCount,
-            'has_pending' => $this->hasPending,
+            'display_name' => $this->nombreVisible,
+            'is_active' => $this->activo,
+            'created_at' => $this->creadoAt,
+            'updated_at' => $this->actualizadoAt,
+            'agent_count' => $this->cantidadDeAgentes,
+            'has_pending' => $this->hasPendientes,
         ];
     }
 }

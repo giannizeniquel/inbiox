@@ -110,9 +110,9 @@ class Usuario implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->activo;
     }
 
-    public function setActivo(bool $isActive): self
+    public function setActivo(bool $activo): self
     {
-        $this->activo = $isActive;
+        $this->activo = $activo;
         $this->touch();
         return $this;
     }
@@ -132,9 +132,9 @@ class Usuario implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->agente;
     }
 
-    public function setAgente(?Agente $agent): self
+    public function setAgente(?Agente $agente): self
     {
-        $this->agente = $agent;
+        $this->agente = $agente;
         return $this;
     }
 

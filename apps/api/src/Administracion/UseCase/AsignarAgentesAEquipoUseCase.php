@@ -15,7 +15,7 @@ final class AsignarAgentesAEquipoUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly AgenteRepository $agentRepository,
+        private readonly AgenteRepository $agenteRepository,
     ) {}
 
     /**
@@ -24,11 +24,11 @@ final class AsignarAgentesAEquipoUseCase
      * @throws \InvalidArgumentException when agentIds is invalid, or an agent
      *                                   is outside the team's workspace
      */
-    public function execute(Equipo $team, array $data): void
+    public function execute(Equipo $equipo, array $data): void
     {
-        $agentIds = $data['agentIds'] ?? [];
+        $agenteIds = $data['agentIds'] ?? [];
 
-        if (!\is_array($agentIds)) {
+        if (!\is_array($agenteIds)) {
             throw new \InvalidArgumentException('agentIds must be an array of integers');
         }
 
@@ -36,18 +36,18 @@ final class AsignarAgentesAEquipoUseCase
         // \InvalidArgumentException (workspace-membership invariant,
         // design.md D3) which rolls back the whole batch (hard reject,
         // all-or-nothing), mirroring AssignWorkspaceAgentsUseCase.
-        $this->entityManager->wrapInTransaction(function () use ($team, $agentIds): void {
-            foreach ($team->getAgentes() as $existingAgent) {
-                $team->removeAgente($existingAgent);
+        $this->entityManager->wrapInTransaction(function () use ($equipo, $agenteIds): void {
+            foreach ($equipo->getAgentes() as $agenteExistente) {
+                $equipo->removeAgente($agenteExistente);
             }
 
-            foreach ($agentIds as $agentId) {
-                if (!\is_int($agentId)) {
+            foreach ($agenteIds as $agenteId) {
+                if (!\is_int($agenteId)) {
                     throw new \InvalidArgumentException('agentIds must contain only integers');
                 }
-                $agent = $this->agentRepository->find($agentId);
-                if (null !== $agent) {
-                    $team->addAgente($agent);
+                $agente = $this->agenteRepository->find($agenteId);
+                if (null !== $agente) {
+                    $equipo->addAgente($agente);
                 }
             }
         });

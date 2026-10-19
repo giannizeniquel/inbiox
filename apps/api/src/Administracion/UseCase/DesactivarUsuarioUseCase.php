@@ -16,9 +16,9 @@ final class DesactivarUsuarioUseCase
         private readonly EntityManagerInterface $entityManager,
     ) {}
 
-    public function execute(Usuario $user): void
+    public function execute(Usuario $usuario): void
     {
-        $user->setActivo(false);
+        $usuario->setActivo(false);
         $this->entityManager->flush();
     }
 }

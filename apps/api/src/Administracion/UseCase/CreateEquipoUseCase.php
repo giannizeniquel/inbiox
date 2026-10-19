@@ -14,8 +14,8 @@ final class CreateEquipoUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly EspacioDeTrabajoRepository $workspaceRepository,
-        private readonly EquipoRepository $teamRepository,
+        private readonly EspacioDeTrabajoRepository $espacioDeTrabajoRepository,
+        private readonly EquipoRepository $equipoRepository,
     ) {}
 
     /**
@@ -26,37 +26,37 @@ final class CreateEquipoUseCase
      */
     public function execute(array $data): Equipo
     {
-        $workspaceId = $data['workspaceId'] ?? null;
-        $name = $data['name'] ?? null;
+        $espacioDeTrabajoId = $data['workspaceId'] ?? null;
+        $nombre = $data['name'] ?? null;
 
-        if (empty($workspaceId) || !\is_int($workspaceId)) {
+        if (empty($espacioDeTrabajoId) || !\is_int($espacioDeTrabajoId)) {
             throw new \InvalidArgumentException('workspaceId is required and must be an integer');
         }
 
-        if (empty($name) || !\is_string($name)) {
+        if (empty($nombre) || !\is_string($nombre)) {
             throw new \InvalidArgumentException('name is required and must be a string');
         }
 
-        $workspace = $this->workspaceRepository->find($workspaceId);
+        $espacioDeTrabajo = $this->espacioDeTrabajoRepository->find($espacioDeTrabajoId);
 
         // An unknown workspace is a 400, not a 404 (current behavior).
-        if (null === $workspace) {
+        if (null === $espacioDeTrabajo) {
             throw new \InvalidArgumentException('Workspace not found');
         }
 
-        if (null !== $this->teamRepository->findOneBy(['espacioDeTrabajo' => $workspace, 'nombre' => $name])) {
+        if (null !== $this->equipoRepository->findOneBy(['espacioDeTrabajo' => $espacioDeTrabajo, 'nombre' => $nombre])) {
             throw new StateConflictException('A team with this name already exists in this workspace');
         }
 
-        $team = new Equipo($workspace, $name);
+        $equipo = new Equipo($espacioDeTrabajo, $nombre);
 
         if (isset($data['isActive'])) {
-            $team->setActivo((bool) $data['isActive']);
+            $equipo->setActivo((bool) $data['isActive']);
         }
 
-        $this->entityManager->persist($team);
+        $this->entityManager->persist($equipo);
         $this->entityManager->flush();
 
-        return $team;
+        return $equipo;
     }
 }

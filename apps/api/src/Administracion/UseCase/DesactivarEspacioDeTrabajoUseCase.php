@@ -16,9 +16,9 @@ final class DesactivarEspacioDeTrabajoUseCase
         private readonly EntityManagerInterface $entityManager,
     ) {}
 
-    public function execute(EspacioDeTrabajo $workspace): void
+    public function execute(EspacioDeTrabajo $espacioDeTrabajo): void
     {
-        $workspace->setActivo(false);
+        $espacioDeTrabajo->setActivo(false);
         $this->entityManager->flush();
     }
 }

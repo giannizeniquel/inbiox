@@ -39,10 +39,10 @@ class EspacioDeTrabajo
     #[ORM\ManyToMany(targetEntity: Agente::class, mappedBy: 'espaciosDeTrabajo')]
     private Collection $agentes;
 
-    public function __construct(string $phoneNumberId, string $displayName)
+    public function __construct(string $phoneNumberId, string $nombreVisible)
     {
         $this->phoneNumberId = $phoneNumberId;
-        $this->nombreVisible = $displayName;
+        $this->nombreVisible = $nombreVisible;
         $this->agentes = new ArrayCollection();
         $this->creadoAt = new \DateTimeImmutable();
         $this->actualizadoAt = new \DateTimeImmutable();
@@ -70,9 +70,9 @@ class EspacioDeTrabajo
         return $this->nombreVisible;
     }
 
-    public function setNombreVisible(string $displayName): self
+    public function setNombreVisible(string $nombreVisible): self
     {
-        $this->nombreVisible = $displayName;
+        $this->nombreVisible = $nombreVisible;
         $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
@@ -82,9 +82,9 @@ class EspacioDeTrabajo
         return $this->activo;
     }
 
-    public function setActivo(bool $isActive): self
+    public function setActivo(bool $activo): self
     {
-        $this->activo = $isActive;
+        $this->activo = $activo;
         $this->actualizadoAt = new \DateTimeImmutable();
         return $this;
     }
@@ -105,19 +105,19 @@ class EspacioDeTrabajo
         return $this->agentes;
     }
 
-    public function addAgente(Agente $agent): self
+    public function addAgente(Agente $agente): self
     {
-        if (!$this->agentes->contains($agent)) {
-            $this->agentes->add($agent);
-            $agent->addEspacioDeTrabajo($this);
+        if (!$this->agentes->contains($agente)) {
+            $this->agentes->add($agente);
+            $agente->addEspacioDeTrabajo($this);
         }
         return $this;
     }
 
-    public function removeAgente(Agente $agent): self
+    public function removeAgente(Agente $agente): self
     {
-        if ($this->agentes->removeElement($agent)) {
-            $agent->removeEspacioDeTrabajo($this);
+        if ($this->agentes->removeElement($agente)) {
+            $agente->removeEspacioDeTrabajo($this);
         }
         return $this;
     }

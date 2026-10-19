@@ -35,13 +35,13 @@ class UsuarioRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    public function findOtroByEmail(string $email, int $excludedId): ?Usuario
+    public function findOtroByEmail(string $email, int $idExcluido): ?Usuario
     {
         return $this->createQueryBuilder('u')
             ->where('u.email = :email')
             ->andWhere('u.id != :id')
             ->setParameter('email', $email)
-            ->setParameter('id', $excludedId)
+            ->setParameter('id', $idExcluido)
             ->getQuery()
             ->getOneOrNullResult();
     }

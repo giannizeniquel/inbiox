@@ -20,23 +20,23 @@ final class CreateAgenteUseCase
      */
     public function execute(array $data): Agente
     {
-        $name = $data['name'] ?? null;
+        $nombre = $data['name'] ?? null;
 
-        if (empty($name) || !\is_string($name)) {
+        if (empty($nombre) || !\is_string($nombre)) {
             throw new \InvalidArgumentException('name is required and must be a string');
         }
 
-        $timezone = $data['timezone'] ?? 'UTC';
+        $zonaHoraria = $data['timezone'] ?? 'UTC';
 
-        if (!\is_string($timezone)) {
+        if (!\is_string($zonaHoraria)) {
             throw new \InvalidArgumentException('timezone must be a string');
         }
 
-        $agent = new Agente($name);
-        $agent->setZonaHoraria($timezone);
-        $this->entityManager->persist($agent);
+        $agente = new Agente($nombre);
+        $agente->setZonaHoraria($zonaHoraria);
+        $this->entityManager->persist($agente);
         $this->entityManager->flush();
 
-        return $agent;
+        return $agente;
     }
 }

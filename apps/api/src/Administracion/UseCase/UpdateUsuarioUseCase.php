@@ -14,7 +14,7 @@ final class UpdateUsuarioUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly UsuarioRepository $userRepository,
+        private readonly UsuarioRepository $usuarioRepository,
         private readonly UserPasswordHasherInterface $passwordHasher,
     ) {}
 
@@ -27,34 +27,34 @@ final class UpdateUsuarioUseCase
      * @throws \InvalidArgumentException when a field is invalid
      * @throws StateConflictException    when another user has the email
      */
-    public function execute(Usuario $user, array $data): void
+    public function execute(Usuario $usuario, array $data): void
     {
         if (isset($data['email'])) {
             if (!\is_string($data['email']) || empty($data['email'])) {
                 throw new \InvalidArgumentException('email must be a non-empty string');
             }
-            if (null !== $this->userRepository->findOtroByEmail($data['email'], (int) $user->getId())) {
+            if (null !== $this->usuarioRepository->findOtroByEmail($data['email'], (int) $usuario->getId())) {
                 throw new StateConflictException('Email already in use');
             }
-            $user->setEmail($data['email']);
+            $usuario->setEmail($data['email']);
         }
 
         if (isset($data['password'])) {
             if (!\is_string($data['password']) || empty($data['password'])) {
                 throw new \InvalidArgumentException('password must be a non-empty string');
             }
-            $user->setPassword($this->passwordHasher->hashPassword($user, $data['password']));
+            $usuario->setPassword($this->passwordHasher->hashPassword($usuario, $data['password']));
         }
 
         if (isset($data['roles'])) {
             if (!\is_array($data['roles'])) {
                 throw new \InvalidArgumentException('roles must be an array');
             }
-            $user->setRoles($data['roles']);
+            $usuario->setRoles($data['roles']);
         }
 
         if (isset($data['is_active'])) {
-            $user->setActivo((bool) $data['is_active']);
+            $usuario->setActivo((bool) $data['is_active']);
         }
 
         $this->entityManager->flush();

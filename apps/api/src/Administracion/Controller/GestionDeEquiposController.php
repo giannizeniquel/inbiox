@@ -39,32 +39,32 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class GestionDeEquiposController
 {
     public function __construct(
-        private readonly EquipoRepository $teamRepository,
-        private readonly CreateEquipoUseCase $createTeamUseCase,
-        private readonly UpdateEquipoUseCase $updateTeamUseCase,
-        private readonly DesactivarEquipoUseCase $deactivateTeamUseCase,
-        private readonly AsignarAgentesAEquipoUseCase $assignTeamAgentsUseCase,
+        private readonly EquipoRepository $equipoRepository,
+        private readonly CreateEquipoUseCase $createEquipoUseCase,
+        private readonly UpdateEquipoUseCase $updateEquipoUseCase,
+        private readonly DesactivarEquipoUseCase $desactivarEquipoUseCase,
+        private readonly AsignarAgentesAEquipoUseCase $asignarAgentesAEquipoUseCase,
     ) {}
 
     #[Route('/api/admin/teams', name: 'app_admin_teams_list', methods: ['GET'])]
     public function listar(Request $request): JsonResponse
     {
-        $page = max(1, (int) $request->query->get('page', 1));
+        $pagina = max(1, (int) $request->query->get('page', 1));
         $limit = min(100, max(1, (int) $request->query->get('limit', 20)));
-        $offset = ($page - 1) * $limit;
+        $offset = ($pagina - 1) * $limit;
 
-        $total = $this->teamRepository->count([]);
-        $teams = $this->teamRepository->findBy([], ['id' => 'DESC'], $limit, $offset);
+        $total = $this->equipoRepository->count([]);
+        $equipos = $this->equipoRepository->findBy([], ['id' => 'DESC'], $limit, $offset);
 
-        $items = array_map(fn(Equipo $t) => $this->serializeEquipo($t), $teams);
+        $items = array_map(fn(Equipo $t) => $this->serializeEquipo($t), $equipos);
 
         return new JsonResponse([
             'data' => $items,
             'meta' => [
-                'page' => $page,
+                'page' => $pagina,
                 'limit' => $limit,
                 'total' => $total,
-                'has_next' => ($page * $limit) < $total,
+                'has_next' => ($pagina * $limit) < $total,
             ],
         ]);
     }
@@ -79,34 +79,34 @@ final class GestionDeEquiposController
         }
 
         try {
-            $team = $this->createTeamUseCase->execute(\is_array($data) ? $data : []);
+            $equipo = $this->createEquipoUseCase->execute(\is_array($data) ? $data : []);
         } catch (StateConflictException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 409);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }
 
-        return new JsonResponse($this->serializeEquipo($team), Response::HTTP_CREATED);
+        return new JsonResponse($this->serializeEquipo($equipo), Response::HTTP_CREATED);
     }
 
     #[Route('/api/admin/teams/{id}', name: 'app_admin_teams_get', methods: ['GET'])]
     public function get(int $id): JsonResponse
     {
-        $team = $this->teamRepository->find($id);
+        $equipo = $this->equipoRepository->find($id);
 
-        if (null === $team) {
+        if (null === $equipo) {
             return new JsonResponse(['error' => 'Team not found'], 404);
         }
 
-        return new JsonResponse($this->serializeEquipo($team));
+        return new JsonResponse($this->serializeEquipo($equipo));
     }
 
     #[Route('/api/admin/teams/{id}', name: 'app_admin_teams_update', methods: ['PUT'])]
     public function update(int $id, Request $request): JsonResponse
     {
-        $team = $this->teamRepository->find($id);
+        $equipo = $this->equipoRepository->find($id);
 
-        if (null === $team) {
+        if (null === $equipo) {
             return new JsonResponse(['error' => 'Team not found'], 404);
         }
 
@@ -117,26 +117,26 @@ final class GestionDeEquiposController
         }
 
         try {
-            $this->updateTeamUseCase->execute($team, \is_array($data) ? $data : []);
+            $this->updateEquipoUseCase->execute($equipo, \is_array($data) ? $data : []);
         } catch (StateConflictException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 409);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }
 
-        return new JsonResponse($this->serializeEquipo($team));
+        return new JsonResponse($this->serializeEquipo($equipo));
     }
 
     #[Route('/api/admin/teams/{id}', name: 'app_admin_teams_delete', methods: ['DELETE'])]
     public function delete(int $id): JsonResponse
     {
-        $team = $this->teamRepository->find($id);
+        $equipo = $this->equipoRepository->find($id);
 
-        if (null === $team) {
+        if (null === $equipo) {
             return new JsonResponse(['error' => 'Team not found'], 404);
         }
 
-        $this->deactivateTeamUseCase->execute($team);
+        $this->desactivarEquipoUseCase->execute($equipo);
 
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
@@ -144,9 +144,9 @@ final class GestionDeEquiposController
     #[Route('/api/admin/teams/{id}/agents', name: 'app_admin_teams_assign_agents', methods: ['PUT'])]
     public function asignarAgentes(int $id, Request $request): JsonResponse
     {
-        $team = $this->teamRepository->find($id);
+        $equipo = $this->equipoRepository->find($id);
 
-        if (null === $team) {
+        if (null === $equipo) {
             return new JsonResponse(['error' => 'Team not found'], 404);
         }
 
@@ -157,41 +157,41 @@ final class GestionDeEquiposController
         }
 
         try {
-            $this->assignTeamAgentsUseCase->execute($team, \is_array($data) ? $data : []);
+            $this->asignarAgentesAEquipoUseCase->execute($equipo, \is_array($data) ? $data : []);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }
 
-        $assignedIds = array_map(
+        $idsAsignados = array_map(
             fn(Agente $a) => (int) $a->getId(),
-            $team->getAgentes()->toArray()
+            $equipo->getAgentes()->toArray()
         );
 
         return new JsonResponse([
-            'team_id' => (int) $team->getId(),
-            'agent_ids' => array_values($assignedIds),
+            'team_id' => (int) $equipo->getId(),
+            'agent_ids' => array_values($idsAsignados),
         ]);
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function serializeEquipo(Equipo $team): array
+    private function serializeEquipo(Equipo $equipo): array
     {
-        $agentIds = [];
-        foreach ($team->getAgentes() as $agent) {
-            $agentIds[] = (int) $agent->getId();
+        $agenteIds = [];
+        foreach ($equipo->getAgentes() as $agente) {
+            $agenteIds[] = (int) $agente->getId();
         }
 
         return [
-            'id' => (int) $team->getId(),
-            'workspace_id' => (int) $team->getEspacioDeTrabajo()->getId(),
-            'name' => $team->getNombre(),
-            'is_active' => $team->isActivo(),
-            'agent_count' => count($agentIds),
-            'agent_ids' => $agentIds,
-            'created_at' => $team->getCreadoAt()->format('Y-m-d\TH:i:sP'),
-            'updated_at' => $team->getActualizadoAt()->format('Y-m-d\TH:i:sP'),
+            'id' => (int) $equipo->getId(),
+            'workspace_id' => (int) $equipo->getEspacioDeTrabajo()->getId(),
+            'name' => $equipo->getNombre(),
+            'is_active' => $equipo->isActivo(),
+            'agent_count' => count($agenteIds),
+            'agent_ids' => $agenteIds,
+            'created_at' => $equipo->getCreadoAt()->format('Y-m-d\TH:i:sP'),
+            'updated_at' => $equipo->getActualizadoAt()->format('Y-m-d\TH:i:sP'),
         ];
     }
 }

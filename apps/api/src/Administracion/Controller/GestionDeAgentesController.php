@@ -24,31 +24,31 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class GestionDeAgentesController
 {
     public function __construct(
-        private readonly AgenteRepository $agentRepository,
-        private readonly CreateAgenteUseCase $createAgentUseCase,
-        private readonly UpdateAgenteUseCase $updateAgentUseCase,
-        private readonly DesactivarAgenteUseCase $deactivateAgentUseCase,
+        private readonly AgenteRepository $agenteRepository,
+        private readonly CreateAgenteUseCase $createAgenteUseCase,
+        private readonly UpdateAgenteUseCase $updateAgenteUseCase,
+        private readonly DesactivarAgenteUseCase $desactivarAgenteUseCase,
     ) {}
 
     #[Route('/api/admin/agents', name: 'admin_agents_list', methods: ['GET'])]
     public function listar(Request $request): JsonResponse
     {
-        $page = max(1, (int) $request->query->get('page', 1));
+        $pagina = max(1, (int) $request->query->get('page', 1));
         $limit = min(100, max(1, (int) $request->query->get('limit', 20)));
-        $offset = ($page - 1) * $limit;
+        $offset = ($pagina - 1) * $limit;
 
-        $total = $this->agentRepository->count([]);
-        $agents = $this->agentRepository->findPaginaConUsuario($offset, $limit);
+        $total = $this->agenteRepository->count([]);
+        $agentes = $this->agenteRepository->findPaginaConUsuario($offset, $limit);
 
-        $items = array_map(fn(Agente $agent) => $this->serializeAgente($agent), $agents);
+        $items = array_map(fn(Agente $agente) => $this->serializeAgente($agente), $agentes);
 
         return new JsonResponse([
             'data' => $items,
             'meta' => [
-                'page' => $page,
+                'page' => $pagina,
                 'limit' => $limit,
                 'total' => $total,
-                'has_next' => ($page * $limit) < $total,
+                'has_next' => ($pagina * $limit) < $total,
             ],
         ]);
     }
@@ -63,32 +63,32 @@ final class GestionDeAgentesController
         }
 
         try {
-            $agent = $this->createAgentUseCase->execute(\is_array($data) ? $data : []);
+            $agente = $this->createAgenteUseCase->execute(\is_array($data) ? $data : []);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }
 
-        return new JsonResponse($this->serializeAgente($agent), Response::HTTP_CREATED);
+        return new JsonResponse($this->serializeAgente($agente), Response::HTTP_CREATED);
     }
 
     #[Route('/api/admin/agents/{id}', name: 'admin_agents_get', methods: ['GET'])]
     public function get(int $id): JsonResponse
     {
-        $agent = $this->agentRepository->find($id);
+        $agente = $this->agenteRepository->find($id);
 
-        if (null === $agent) {
+        if (null === $agente) {
             return new JsonResponse(['error' => 'Agent not found'], 404);
         }
 
-        return new JsonResponse($this->serializeAgente($agent));
+        return new JsonResponse($this->serializeAgente($agente));
     }
 
     #[Route('/api/admin/agents/{id}', name: 'admin_agents_update', methods: ['PUT'])]
     public function update(int $id, Request $request): JsonResponse
     {
-        $agent = $this->agentRepository->find($id);
+        $agente = $this->agenteRepository->find($id);
 
-        if (null === $agent) {
+        if (null === $agente) {
             return new JsonResponse(['error' => 'Agent not found'], 404);
         }
 
@@ -99,24 +99,24 @@ final class GestionDeAgentesController
         }
 
         try {
-            $this->updateAgentUseCase->execute($agent, \is_array($data) ? $data : []);
+            $this->updateAgenteUseCase->execute($agente, \is_array($data) ? $data : []);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }
 
-        return new JsonResponse($this->serializeAgente($agent));
+        return new JsonResponse($this->serializeAgente($agente));
     }
 
     #[Route('/api/admin/agents/{id}', name: 'admin_agents_delete', methods: ['DELETE'])]
     public function delete(int $id): JsonResponse
     {
-        $agent = $this->agentRepository->find($id);
+        $agente = $this->agenteRepository->find($id);
 
-        if (null === $agent) {
+        if (null === $agente) {
             return new JsonResponse(['error' => 'Agent not found'], 404);
         }
 
-        $this->deactivateAgentUseCase->execute($agent);
+        $this->desactivarAgenteUseCase->execute($agente);
 
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
@@ -124,20 +124,20 @@ final class GestionDeAgentesController
     /**
      * @return array<string, mixed>
      */
-    private function serializeAgente(Agente $agent): array
+    private function serializeAgente(Agente $agente): array
     {
-        $user = $agent->getUsuario();
+        $usuario = $agente->getUsuario();
 
         return [
-            'id' => (int) $agent->getId(),
-            'name' => $agent->getNombre(),
-            'active' => $agent->isActivo(),
-            'timezone' => $agent->getZonaHoraria(),
-            'is_available' => $agent->isDisponible(),
-            'user_id' => null !== $user ? (int) $user->getId() : null,
-            'user_email' => null !== $user ? $user->getEmail() : null,
-            'created_at' => $agent->getCreadoAt()->format('Y-m-d\TH:i:sP'),
-            'updated_at' => $agent->getActualizadoAt()->format('Y-m-d\TH:i:sP'),
+            'id' => (int) $agente->getId(),
+            'name' => $agente->getNombre(),
+            'active' => $agente->isActivo(),
+            'timezone' => $agente->getZonaHoraria(),
+            'is_available' => $agente->isDisponible(),
+            'user_id' => null !== $usuario ? (int) $usuario->getId() : null,
+            'user_email' => null !== $usuario ? $usuario->getEmail() : null,
+            'created_at' => $agente->getCreadoAt()->format('Y-m-d\TH:i:sP'),
+            'updated_at' => $agente->getActualizadoAt()->format('Y-m-d\TH:i:sP'),
         ];
     }
 }

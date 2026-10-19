@@ -16,14 +16,14 @@ final class SetEspacioDeTrabajoActivoUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly EspacioDeTrabajoRepository $workspaceRepository,
-        private readonly AsegurarAgenteDeUsuarioUseCase $ensureAgentForUser,
+        private readonly EspacioDeTrabajoRepository $espacioDeTrabajoRepository,
+        private readonly AsegurarAgenteDeUsuarioUseCase $asegurarAgenteDeUsuario,
     ) {}
 
     /**
      * Sets the user's active workspace.
      *
-     * Admins and supervisors ($canUseAnyWorkspace) may pick any active
+     * Admins and supervisors ($puedeUsarCualquierEspacioDeTrabajo) may pick any active
      * workspace; if they have no agent, one is created for them. Agents may
      * only pick a workspace they are assigned to.
      *
@@ -33,44 +33,44 @@ final class SetEspacioDeTrabajoActivoUseCase
      * @throws NotFoundException             when the workspace, or the agent of an agent-role user, does not exist
      * @throws EspacioDeTrabajoNoAsignadoException when an agent is not assigned to the workspace
      */
-    public function execute(Usuario $user, bool $canUseAnyWorkspace, array $data): EspacioDeTrabajo
+    public function execute(Usuario $usuario, bool $puedeUsarCualquierEspacioDeTrabajo, array $data): EspacioDeTrabajo
     {
-        $workspaceId = $data['workspaceId'] ?? null;
+        $espacioDeTrabajoId = $data['workspaceId'] ?? null;
 
-        if (null === $workspaceId || !\is_int($workspaceId)) {
+        if (null === $espacioDeTrabajoId || !\is_int($espacioDeTrabajoId)) {
             throw new \InvalidArgumentException('workspaceId is required and must be an integer');
         }
 
-        $workspace = $this->workspaceRepository->find($workspaceId);
+        $espacioDeTrabajo = $this->espacioDeTrabajoRepository->find($espacioDeTrabajoId);
 
-        if (null === $workspace) {
+        if (null === $espacioDeTrabajo) {
             throw new NotFoundException('Workspace not found');
         }
 
-        if (!$workspace->isActivo()) {
+        if (!$espacioDeTrabajo->isActivo()) {
             throw new \InvalidArgumentException('Workspace is not active');
         }
 
-        if ($canUseAnyWorkspace) {
-            $agent = $this->ensureAgentForUser->execute($user);
-            $agent->setEspacioDeTrabajoActivo($workspace);
+        if ($puedeUsarCualquierEspacioDeTrabajo) {
+            $agente = $this->asegurarAgenteDeUsuario->execute($usuario);
+            $agente->setEspacioDeTrabajoActivo($espacioDeTrabajo);
             $this->entityManager->flush();
 
-            return $workspace;
+            return $espacioDeTrabajo;
         }
 
-        $agent = $user->getAgente();
-        if (null === $agent) {
+        $agente = $usuario->getAgente();
+        if (null === $agente) {
             throw new NotFoundException('Agent not found');
         }
 
-        if (!$agent->getEspaciosDeTrabajo()->contains($workspace)) {
+        if (!$agente->getEspaciosDeTrabajo()->contains($espacioDeTrabajo)) {
             throw new EspacioDeTrabajoNoAsignadoException('Agent is not assigned to this workspace');
         }
 
-        $agent->setEspacioDeTrabajoActivo($workspace);
+        $agente->setEspacioDeTrabajoActivo($espacioDeTrabajo);
         $this->entityManager->flush();
 
-        return $workspace;
+        return $espacioDeTrabajo;
     }
 }

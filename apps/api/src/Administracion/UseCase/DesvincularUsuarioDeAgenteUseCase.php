@@ -16,16 +16,16 @@ final class DesvincularUsuarioDeAgenteUseCase
     /**
      * @throws \InvalidArgumentException when the agent has no linked user
      */
-    public function execute(Agente $agent): void
+    public function execute(Agente $agente): void
     {
-        $user = $agent->getUsuario();
+        $usuario = $agente->getUsuario();
 
-        if (null === $user) {
+        if (null === $usuario) {
             throw new \InvalidArgumentException('Agent has no linked user');
         }
 
-        $agent->setUsuario(null);
-        $user->setAgente(null);
+        $agente->setUsuario(null);
+        $usuario->setAgente(null);
         $this->entityManager->flush();
     }
 }

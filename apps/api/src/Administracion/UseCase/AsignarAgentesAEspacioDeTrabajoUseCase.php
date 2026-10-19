@@ -15,7 +15,7 @@ final class AsignarAgentesAEspacioDeTrabajoUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly AgenteRepository $agentRepository,
+        private readonly AgenteRepository $agenteRepository,
     ) {}
 
     /**
@@ -23,27 +23,27 @@ final class AsignarAgentesAEspacioDeTrabajoUseCase
      *
      * @throws \InvalidArgumentException when agentIds is invalid
      */
-    public function execute(EspacioDeTrabajo $workspace, array $data): void
+    public function execute(EspacioDeTrabajo $espacioDeTrabajo, array $data): void
     {
-        $agentIds = $data['agentIds'] ?? [];
+        $agenteIds = $data['agentIds'] ?? [];
 
-        if (!\is_array($agentIds)) {
+        if (!\is_array($agenteIds)) {
             throw new \InvalidArgumentException('agentIds must be an array of integers');
         }
 
         // All-or-nothing: a non-integer id rolls back the whole batch.
-        $this->entityManager->wrapInTransaction(function () use ($workspace, $agentIds): void {
-            foreach ($workspace->getAgentes() as $existingAgent) {
-                $workspace->removeAgente($existingAgent);
+        $this->entityManager->wrapInTransaction(function () use ($espacioDeTrabajo, $agenteIds): void {
+            foreach ($espacioDeTrabajo->getAgentes() as $agenteExistente) {
+                $espacioDeTrabajo->removeAgente($agenteExistente);
             }
 
-            foreach ($agentIds as $agentId) {
-                if (!\is_int($agentId)) {
+            foreach ($agenteIds as $agenteId) {
+                if (!\is_int($agenteId)) {
                     throw new \InvalidArgumentException('agentIds must contain only integers');
                 }
-                $agent = $this->agentRepository->find($agentId);
-                if (null !== $agent) {
-                    $workspace->addAgente($agent);
+                $agente = $this->agenteRepository->find($agenteId);
+                if (null !== $agente) {
+                    $espacioDeTrabajo->addAgente($agente);
                 }
             }
         });
