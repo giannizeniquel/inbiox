@@ -24,25 +24,25 @@ class PayloadWebhook
     private ?int $id = null;
 
     #[ORM\Column(name: 'event_type', type: 'string', length: 50)]
-    private string $eventType;
+    private string $tipoDeEvento;
 
     #[ORM\Column(name: 'payload', type: 'json')]
     private array $payload;
 
     #[ORM\Column(name: 'received_at', type: 'datetime_immutable')]
-    private \DateTimeImmutable $receivedAt;
+    private \DateTimeImmutable $recibidoAt;
 
     #[ORM\Column(name: 'phone_number_id', type: 'string', length: 36, nullable: true)]
     private ?string $phoneNumberId = null;
 
     #[ORM\Column(name: 'processed', type: 'boolean', options: ['default' => false])]
-    private bool $processed = false;
+    private bool $procesado = false;
 
     public function __construct(string $eventType, array $payload, \DateTimeImmutable $receivedAt, ?string $phoneNumberId = null)
     {
-        $this->eventType = $eventType;
+        $this->tipoDeEvento = $eventType;
         $this->payload = $payload;
-        $this->receivedAt = $receivedAt;
+        $this->recibidoAt = $receivedAt;
         $this->phoneNumberId = $phoneNumberId;
     }
 
@@ -51,9 +51,9 @@ class PayloadWebhook
         return $this->id;
     }
 
-    public function getEventType(): string
+    public function getTipoDeEvento(): string
     {
-        return $this->eventType;
+        return $this->tipoDeEvento;
     }
 
     public function getPayload(): array
@@ -61,9 +61,9 @@ class PayloadWebhook
         return $this->payload;
     }
 
-    public function getReceivedAt(): \DateTimeImmutable
+    public function getRecibidoAt(): \DateTimeImmutable
     {
-        return $this->receivedAt;
+        return $this->recibidoAt;
     }
 
     public function getPhoneNumberId(): ?string
@@ -77,14 +77,14 @@ class PayloadWebhook
         return $this;
     }
 
-    public function isProcessed(): bool
+    public function isProcesado(): bool
     {
-        return $this->processed;
+        return $this->procesado;
     }
 
-    public function setProcessed(bool $processed): self
+    public function setProcesado(bool $processed): self
     {
-        $this->processed = $processed;
+        $this->procesado = $processed;
 
         return $this;
     }

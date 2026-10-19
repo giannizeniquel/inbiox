@@ -56,7 +56,7 @@ class GetTicketMessagesQueryAttributionTest extends KernelTestCase
         $this->em->persist($contact);
 
         $conversation = new Conversacion();
-        $conversation->setContact($contact);
+        $conversation->setContacto($contact);
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
@@ -68,18 +68,18 @@ class GetTicketMessagesQueryAttributionTest extends KernelTestCase
 
         // Attributed message (post-migration write path)
         $attributed = new Mensaje();
-        $attributed->setConversation($conversation);
-        $attributed->setDirection('outbound');
-        $attributed->setContent('Attributed reply');
-        $attributed->setSenderAgentId($agentId);
-        $attributed->setSenderType(TipoDeRemitente::AGENT);
+        $attributed->setConversacion($conversation);
+        $attributed->setDireccion('outbound');
+        $attributed->setContenido('Attributed reply');
+        $attributed->setAgenteRemitenteId($agentId);
+        $attributed->setTipoDeRemitente(TipoDeRemitente::AGENTE);
         $this->em->persist($attributed);
 
         // Legacy message (simulates a pre-migration row: never touch the setters)
         $legacy = new Mensaje();
-        $legacy->setConversation($conversation);
-        $legacy->setDirection('inbound');
-        $legacy->setContent('Legacy message');
+        $legacy->setConversacion($conversation);
+        $legacy->setDireccion('inbound');
+        $legacy->setContenido('Legacy message');
         $this->em->persist($legacy);
 
         $this->em->flush();

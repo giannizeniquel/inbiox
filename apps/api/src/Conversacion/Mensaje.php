@@ -17,43 +17,43 @@ class Mensaje
     #[ORM\Column(name: 'id', type: 'bigint')]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(targetEntity: Conversacion::class, inversedBy: 'messages')]
+    #[ORM\ManyToOne(targetEntity: Conversacion::class, inversedBy: 'mensajes')]
     #[ORM\JoinColumn(name: 'conversation_id', referencedColumnName: 'id', nullable: false)]
-    private ?Conversacion $conversation = null;
+    private ?Conversacion $conversacion = null;
 
     #[ORM\Column(name: 'direction', type: 'string', length: 10)]
-    private string $direction = DireccionDeMensaje::INBOUND->value;
+    private string $direccion = DireccionDeMensaje::ENTRANTE->value;
 
     #[ORM\Column(name: 'external_id', type: 'string', length: 100, unique: true, nullable: true)]
     private ?string $externalId = null;
 
     #[ORM\Column(name: 'content', type: 'text')]
-    private string $content;
+    private string $contenido;
 
     #[ORM\Column(name: 'delivery_status', type: 'string', length: 20, options: ['default' => 'sent'])]
-    private string $deliveryStatus = 'sent';
+    private string $estadoDeEntrega = 'sent';
 
     #[ORM\Column(name: 'failed_reason', type: 'string', length: 255, nullable: true)]
-    private ?string $failedReason = null;
+    private ?string $motivoDeFallo = null;
 
     #[ORM\Column(name: 'updated_at', type: 'datetime_immutable', nullable: true)]
-    private ?\DateTimeImmutable $updatedAt = null;
+    private ?\DateTimeImmutable $actualizadoAt = null;
 
     #[ORM\Column(name: 'media', type: 'json', nullable: true)]
-    private ?array $media = null;
+    private ?array $adjunto = null;
 
     #[ORM\Column(name: 'sender_agent_id', type: 'bigint', nullable: true)]
-    private ?int $senderAgentId = null;
+    private ?int $agenteRemitenteId = null;
 
     #[ORM\Column(name: 'sender_type', type: 'string', length: 20, nullable: true)]
-    private ?string $senderType = null;
+    private ?string $tipoDeRemitente = null;
 
     #[ORM\Column(name: 'created_at', type: 'datetime_immutable')]
-    private \DateTimeImmutable $createdAt;
+    private \DateTimeImmutable $creadoAt;
 
     public function __construct()
     {
-        $this->createdAt = new \DateTimeImmutable();
+        $this->creadoAt = new \DateTimeImmutable();
     }
 
     public function getId(): ?int
@@ -61,25 +61,25 @@ class Mensaje
         return $this->id;
     }
 
-    public function getConversation(): ?Conversacion
+    public function getConversacion(): ?Conversacion
     {
-        return $this->conversation;
+        return $this->conversacion;
     }
 
-    public function setConversation(Conversacion $conversation): self
+    public function setConversacion(Conversacion $conversation): self
     {
-        $this->conversation = $conversation;
+        $this->conversacion = $conversation;
         return $this;
     }
 
-    public function getDirection(): string
+    public function getDireccion(): string
     {
-        return $this->direction;
+        return $this->direccion;
     }
 
-    public function setDirection(string $direction): self
+    public function setDireccion(string $direction): self
     {
-        $this->direction = $direction;
+        $this->direccion = $direction;
         return $this;
     }
 
@@ -94,85 +94,85 @@ class Mensaje
         return $this;
     }
 
-    public function getContent(): string
+    public function getContenido(): string
     {
-        return $this->content;
+        return $this->contenido;
     }
 
-    public function setContent(string $content): self
+    public function setContenido(string $content): self
     {
-        $this->content = $content;
+        $this->contenido = $content;
         return $this;
     }
 
-    public function getDeliveryStatus(): string
+    public function getEstadoDeEntrega(): string
     {
-        return $this->deliveryStatus;
+        return $this->estadoDeEntrega;
     }
 
-    public function setDeliveryStatus(string $deliveryStatus): self
+    public function setEstadoDeEntrega(string $deliveryStatus): self
     {
-        $this->deliveryStatus = $deliveryStatus;
+        $this->estadoDeEntrega = $deliveryStatus;
         return $this;
     }
 
-    public function getFailedReason(): ?string
+    public function getMotivoDeFallo(): ?string
     {
-        return $this->failedReason;
+        return $this->motivoDeFallo;
     }
 
-    public function setFailedReason(?string $failedReason): self
+    public function setMotivoDeFallo(?string $failedReason): self
     {
-        $this->failedReason = $failedReason;
+        $this->motivoDeFallo = $failedReason;
         return $this;
     }
 
-    public function getUpdatedAt(): ?\DateTimeImmutable
+    public function getActualizadoAt(): ?\DateTimeImmutable
     {
-        return $this->updatedAt;
+        return $this->actualizadoAt;
     }
 
-    public function setUpdatedAt(?\DateTimeImmutable $updatedAt): self
+    public function setActualizadoAt(?\DateTimeImmutable $updatedAt): self
     {
-        $this->updatedAt = $updatedAt;
+        $this->actualizadoAt = $updatedAt;
         return $this;
     }
 
-    public function getMedia(): ?array
+    public function getAdjunto(): ?array
     {
-        return $this->media;
+        return $this->adjunto;
     }
 
-    public function setMedia(?array $media): self
+    public function setAdjunto(?array $media): self
     {
-        $this->media = $media;
+        $this->adjunto = $media;
         return $this;
     }
 
-    public function getCreatedAt(): \DateTimeImmutable
+    public function getCreadoAt(): \DateTimeImmutable
     {
-        return $this->createdAt;
+        return $this->creadoAt;
     }
 
-    public function getSenderAgentId(): ?int
+    public function getAgenteRemitenteId(): ?int
     {
-        return $this->senderAgentId;
+        return $this->agenteRemitenteId;
     }
 
-    public function setSenderAgentId(?int $senderAgentId): self
+    public function setAgenteRemitenteId(?int $senderAgentId): self
     {
-        $this->senderAgentId = $senderAgentId;
+        $this->agenteRemitenteId = $senderAgentId;
         return $this;
     }
 
-    public function getSenderType(): ?string
+    public function getTipoDeRemitente(): ?string
     {
-        return $this->senderType;
+        return $this->tipoDeRemitente;
     }
 
-    public function setSenderType(TipoDeRemitente $senderType): self
+    public function setTipoDeRemitente(TipoDeRemitente $senderType): self
     {
-        $this->senderType = $senderType->value;
+        $this->tipoDeRemitente = $senderType->value;
         return $this;
     }
 }

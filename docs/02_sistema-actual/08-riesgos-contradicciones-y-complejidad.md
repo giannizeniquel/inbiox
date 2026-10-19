@@ -89,8 +89,8 @@ Formato pedido por el método: qué es · por qué parece existir · ¿respaldad
 |---|---|---|
 | `src/Entity/` | Carpeta vacía del esqueleto de Symfony. | `doctrine.yaml:16-22` |
 | `Agente.is_available` / `setDisponible()` | Columna legacy nunca escrita (pero expuesta en la API admin). | `Agente.php:36-37, 135-145` |
-| `PayloadWebhook.processed` | Nunca se pone en `true`. | búsqueda de `setProcessed` |
-| `EstadoDeConversacion::CLOSED` | Nunca escrito. | búsqueda |
+| `PayloadWebhook.procesado` | Nunca se pone en `true`. | búsqueda de `setProcesado` |
+| `EstadoDeConversacion::CERRADA` | Nunca escrito. | búsqueda |
 | Reglas con disparador `outbound` | El motor se invoca; ninguna regla lo soporta. | `HandleOutboundMessageUseCase.php:352-353` |
 | `Contacto.owner_id` | Se guarda y filtra; **no se sabe a qué apunta ni para qué sirve.** | `Contacto.php:33-34` |
 | `Ticket.priority` | Siempre `medium`; el evento envía `priority: 1` fijo. **Propósito no confirmado.** | `HandleInboundMessageUseCase.php:366, 439` |

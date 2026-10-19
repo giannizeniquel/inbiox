@@ -194,9 +194,9 @@ final class MeWorkspaceControllerCharacterizationTest extends CharacterizationTe
         $readTicket->setPhoneNumberId('char-me-quiet');
         $readTicket->setUltimaLecturaAt(new \DateTimeImmutable('+1 hour'));
         $message = new Mensaje();
-        $message->setConversation($readTicket->getConversacion());
-        $message->setDirection('inbound');
-        $message->setContent('old');
+        $message->setConversacion($readTicket->getConversacion());
+        $message->setDireccion('inbound');
+        $message->setContenido('old');
         $this->em->persist($message);
         $this->em->flush();
 

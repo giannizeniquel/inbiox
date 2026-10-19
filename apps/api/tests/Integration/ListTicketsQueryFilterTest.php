@@ -59,7 +59,7 @@ class ListTicketsQueryFilterTest extends KernelTestCase
         $this->em->persist($contact);
 
         $conversation = new Conversacion();
-        $conversation->setContact($contact);
+        $conversation->setContacto($contact);
         $this->em->persist($conversation);
 
         $ticket = new Ticket();

@@ -213,8 +213,8 @@ class HandleOutboundMessageUseCase
             [$currentStatus, $newStatus, $transition, $shouldSetFirstResponse] = $this->applyReplyTransition($ticket, $ticketId);
 
             // Update conversation timestamps
-            $conversation->setLastMessageAt($msg->getCreatedAt());
-            $conversation->setUpdatedAt(new \DateTimeImmutable());
+            $conversation->setUltimoMensajeAt($msg->getCreadoAt());
+            $conversation->setActualizadoAt(new \DateTimeImmutable());
             $ticket->marcarActualizado();
 
             // Store processed event for idempotency
@@ -332,15 +332,15 @@ class HandleOutboundMessageUseCase
     private function createOutboundMessage(Conversacion $conversation, string $content, int $agentId, ?array $mediaMetadata): Mensaje
     {
         $msg = new Mensaje();
-        $msg->setConversation($conversation);
-        $msg->setDirection('outbound');
-        $msg->setContent($content);
-        $msg->setSenderAgentId($agentId > 0 ? $agentId : null);
-        $msg->setSenderType(TipoDeRemitente::AGENT);
+        $msg->setConversacion($conversation);
+        $msg->setDireccion('outbound');
+        $msg->setContenido($content);
+        $msg->setAgenteRemitenteId($agentId > 0 ? $agentId : null);
+        $msg->setTipoDeRemitente(TipoDeRemitente::AGENTE);
 
         // Attach media metadata if provided
         if ($mediaMetadata !== null) {
-            $msg->setMedia($mediaMetadata);
+            $msg->setAdjunto($mediaMetadata);
         }
 
         $this->em->persist($msg);
@@ -405,11 +405,11 @@ class HandleOutboundMessageUseCase
             occurredAt: new \DateTimeImmutable(),
             seq: $ticket->incrementLastEventSeq(),
             version: 1,
-            direction: DireccionDeMensaje::OUTBOUND,
+            direction: DireccionDeMensaje::SALIENTE,
             messageId: $msg->getId(),
             content: $content,
             senderName: $senderName,
-            media: $msg->getMedia(),
+            media: $msg->getAdjunto(),
         ));
     }
 

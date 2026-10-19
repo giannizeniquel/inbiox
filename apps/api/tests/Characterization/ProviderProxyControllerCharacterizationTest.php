@@ -304,7 +304,7 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
     {
         $contact = $this->createContact(self::CONTACT_PHONE);
         $conversation = new Conversacion();
-        $conversation->setContact($contact);
+        $conversation->setContacto($contact);
         $this->em->persist($conversation);
         $ticket = new Ticket();
         $ticket->setConversacion($conversation);

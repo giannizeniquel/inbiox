@@ -55,7 +55,7 @@ class MessageAttributionWriteSiteTest extends KernelTestCase
         $this->em->persist($contact);
 
         $conversation = new Conversacion();
-        $conversation->setContact($contact);
+        $conversation->setContacto($contact);
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
@@ -92,7 +92,7 @@ class MessageAttributionWriteSiteTest extends KernelTestCase
         );
 
         self::assertSame($agentId, (int) $row['sender_agent_id']);
-        self::assertSame(TipoDeRemitente::AGENT->value, $row['sender_type']);
+        self::assertSame(TipoDeRemitente::AGENTE->value, $row['sender_type']);
     }
 
     public function testHandleOutboundMessageSetsNullSenderAgentIdWhenAgentIdIsZero(): void
@@ -108,7 +108,7 @@ class MessageAttributionWriteSiteTest extends KernelTestCase
         );
 
         self::assertNull($row['sender_agent_id']);
-        self::assertSame(TipoDeRemitente::AGENT->value, $row['sender_type']);
+        self::assertSame(TipoDeRemitente::AGENTE->value, $row['sender_type']);
     }
 
     public function testHandleInboundMessageSetsContactAttributionWithNullSenderAgentId(): void
@@ -122,6 +122,6 @@ class MessageAttributionWriteSiteTest extends KernelTestCase
         );
 
         self::assertNull($row['sender_agent_id']);
-        self::assertSame(TipoDeRemitente::CONTACT->value, $row['sender_type']);
+        self::assertSame(TipoDeRemitente::CONTACTO->value, $row['sender_type']);
     }
 }

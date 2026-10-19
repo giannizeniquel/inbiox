@@ -105,7 +105,7 @@ class HandleStatusUpdateUseCase
         }
 
         // 4. Validate transition (forward-only FSM, terminal-aware)
-        $currentStatus = $message->getDeliveryStatus();
+        $currentStatus = $message->getEstadoDeEntrega();
 
         if (!$this->isValidTransition($currentStatus, $newStatus)) {
             $this->logger->info('Skipping invalid status transition', [
@@ -118,13 +118,13 @@ class HandleStatusUpdateUseCase
         }
 
         // 5. Update Message entity
-        $message->setDeliveryStatus($newStatus);
+        $message->setEstadoDeEntrega($newStatus);
 
         if ($newStatus === 'failed' && !empty($errors)) {
-            $message->setFailedReason($errors[0]['title'] ?? 'Unknown error');
+            $message->setMotivoDeFallo($errors[0]['title'] ?? 'Unknown error');
         }
 
-        $message->setUpdatedAt(new \DateTimeImmutable());
+        $message->setActualizadoAt(new \DateTimeImmutable());
 
         // 6. Persist the message update
         $this->em->flush();
@@ -166,7 +166,7 @@ class HandleStatusUpdateUseCase
     private function publishUpdatedEvent(\App\Conversacion\Mensaje $message, string $newStatus): void
     {
         // Resolve ticket ID through the conversation chain
-        $conversation = $message->getConversation();
+        $conversation = $message->getConversacion();
 
         if (!$conversation) {
             $this->logger->warning('Cannot publish MessageUpdatedEvent: message has no conversation', [
@@ -201,7 +201,7 @@ class HandleStatusUpdateUseCase
             version: 1,
             messageId: (int) $message->getId(),
             deliveryStatus: $newStatus,
-            failedReason: $message->getFailedReason(),
+            failedReason: $message->getMotivoDeFallo(),
         ));
 
         // Persist collected events to the outbox table

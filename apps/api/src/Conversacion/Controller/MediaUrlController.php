@@ -32,7 +32,7 @@ class MediaUrlController extends AbstractController
     #[IsGranted('ACCESS', subject: 'message')]
     public function __invoke(Mensaje $message): JsonResponse
     {
-        $media = $message->getMedia();
+        $media = $message->getAdjunto();
 
         if ($media === null || !isset($media['key'])) {
             return new JsonResponse(

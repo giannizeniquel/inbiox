@@ -57,7 +57,7 @@ class TicketRepositoryTest extends KernelTestCase
     private function createClosedTicket(?string $phoneNumberId = null): int
     {
         $conversation = new Conversacion();
-        $conversation->setContact($this->contact);
+        $conversation->setContacto($this->contact);
         $this->em->persist($conversation);
 
         $ticket = new Ticket();

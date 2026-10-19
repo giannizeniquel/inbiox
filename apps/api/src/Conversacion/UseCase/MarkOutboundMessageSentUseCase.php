@@ -27,7 +27,7 @@ final class MarkOutboundMessageSentUseCase
         }
 
         $message->setExternalId($wamid);
-        $message->setDeliveryStatus('sent');
+        $message->setEstadoDeEntrega('sent');
         $this->entityManager->flush();
     }
 }

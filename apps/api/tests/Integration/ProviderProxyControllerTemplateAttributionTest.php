@@ -84,7 +84,7 @@ class ProviderProxyControllerTemplateAttributionTest extends WebTestCase
         $this->em->persist($contact);
 
         $conversation = new Conversacion();
-        $conversation->setContact($contact);
+        $conversation->setContacto($contact);
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
@@ -145,6 +145,6 @@ class ProviderProxyControllerTemplateAttributionTest extends WebTestCase
 
         self::assertNotFalse($row, 'Template message must be persisted');
         self::assertSame($agentId, (int) $row['sender_agent_id']);
-        self::assertSame(TipoDeRemitente::AGENT->value, $row['sender_type']);
+        self::assertSame(TipoDeRemitente::AGENTE->value, $row['sender_type']);
     }
 }

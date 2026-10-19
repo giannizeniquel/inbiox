@@ -51,7 +51,7 @@ final class AsignacionRepositoryCharacterizationTest extends KernelTestCase
         $this->em->persist($contacto);
 
         $conversation = new Conversacion();
-        $conversation->setContact($contacto);
+        $conversation->setContacto($contacto);
         $this->em->persist($conversation);
 
         $this->ticket = new Ticket();

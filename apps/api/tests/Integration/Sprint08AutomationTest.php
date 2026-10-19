@@ -141,8 +141,8 @@ class Sprint08AutomationTest extends KernelTestCase
         $this->em->persist($contact);
 
         $conversation = new Conversacion();
-        $conversation->setContact($contact);
-        $conversation->setStatus('open');
+        $conversation->setContacto($contact);
+        $conversation->setEstado('open');
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
@@ -182,8 +182,8 @@ class Sprint08AutomationTest extends KernelTestCase
         $this->em->persist($contact);
 
         $conversation = new Conversacion();
-        $conversation->setContact($contact);
-        $conversation->setStatus('open');
+        $conversation->setContacto($contact);
+        $conversation->setEstado('open');
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
@@ -339,7 +339,7 @@ class Sprint08AutomationTest extends KernelTestCase
         $rule = new ReglaDeEtiquetadoPorPalabraClave($this->addTagUseCase);
         $ticket = $this->createTestTicket(EstadoDeTicket::ACTIVO->value);
         $message = $this->createTestMessage(123);
-        $message->setContent('There is an error in the system');
+        $message->setContenido('There is an error in the system');
         $context = new ContextoDeRegla($ticket, $message, 'inbound');
 
         // Assert
@@ -355,7 +355,7 @@ class Sprint08AutomationTest extends KernelTestCase
         $rule = new ReglaDeEtiquetadoPorPalabraClave($this->addTagUseCase);
         $ticket = $this->createTestTicket(EstadoDeTicket::ACTIVO->value);
         $message = $this->createTestMessage(123);
-        $message->setContent('ERROR detected in the logs');
+        $message->setContenido('ERROR detected in the logs');
         $context = new ContextoDeRegla($ticket, $message, 'inbound');
 
         // Assert
@@ -371,7 +371,7 @@ class Sprint08AutomationTest extends KernelTestCase
         $rule = new ReglaDeEtiquetadoPorPalabraClave($this->addTagUseCase);
         $ticket = $this->createTestTicket(EstadoDeTicket::ACTIVO->value);
         $message = $this->createTestMessage(123);
-        $message->setContent('The errorHandler crashed'); // contains "error" as substring
+        $message->setContenido('The errorHandler crashed'); // contains "error" as substring
         $context = new ContextoDeRegla($ticket, $message, 'inbound');
 
         // Assert - stripos finds substring
@@ -387,7 +387,7 @@ class Sprint08AutomationTest extends KernelTestCase
         $rule = new ReglaDeEtiquetadoPorPalabraClave($this->addTagUseCase);
         $ticket = $this->createTestTicket(EstadoDeTicket::ACTIVO->value);
         $message = $this->createTestMessage(123);
-        $message->setContent('There is an error');
+        $message->setContenido('There is an error');
         $context = new ContextoDeRegla($ticket, $message, 'outbound');
 
         // Assert
@@ -409,8 +409,8 @@ class Sprint08AutomationTest extends KernelTestCase
         $this->em->persist($contact);
 
         $conversation = new Conversacion();
-        $conversation->setContact($contact);
-        $conversation->setStatus('open');
+        $conversation->setContacto($contact);
+        $conversation->setEstado('open');
         $this->em->persist($conversation);
 
         $ticket = new Ticket();
@@ -491,8 +491,8 @@ class Sprint08AutomationTest extends KernelTestCase
         $this->em->persist($contact);
 
         $conversation = new Conversacion();
-        $conversation->setContact($contact);
-        $conversation->setStatus('open');
+        $conversation->setContacto($contact);
+        $conversation->setEstado('open');
         $this->em->persist($conversation);
 
         $ticket = new Ticket();

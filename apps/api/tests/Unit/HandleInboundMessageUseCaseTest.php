@@ -193,7 +193,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
         // No open conversation in workspace B -> must create new
         $this->conversationRepo
             ->expects($this->once())
-            ->method('findOpenByContact')
+            ->method('findAbiertaByContacto')
             ->with($contact, 'B')
             ->willReturn(null);
 
@@ -236,7 +236,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
 
         $existingConversation = $this->createMock(\App\Conversacion\Conversacion::class);
         $existingConversation->method('getId')->willReturn(10);
-        $existingConversation->method('getUpdatedAt')->willReturn(new \DateTimeImmutable());
+        $existingConversation->method('getActualizadoAt')->willReturn(new \DateTimeImmutable());
 
         $existingTicket = $this->createMock(\App\Ticket\Ticket::class);
         $existingTicket->method('getId')->willReturn(20);
@@ -247,7 +247,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
         // Existing conversation + ticket in workspace A -> reused
         $this->conversationRepo
             ->expects($this->once())
-            ->method('findOpenByContact')
+            ->method('findAbiertaByContacto')
             ->with($contact, 'A')
             ->willReturn($existingConversation);
 
@@ -289,7 +289,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
 
         $existingConversation = $this->createMock(\App\Conversacion\Conversacion::class);
         $existingConversation->method('getId')->willReturn(10);
-        $existingConversation->method('getUpdatedAt')->willReturn(new \DateTimeImmutable());
+        $existingConversation->method('getActualizadoAt')->willReturn(new \DateTimeImmutable());
 
         $existingTicket = $this->createMock(\App\Ticket\Ticket::class);
         $existingTicket->method('getId')->willReturn(20);
@@ -297,10 +297,10 @@ class HandleInboundMessageUseCaseTest extends TestCase
         $existingTicket->method('getActualizadoAt')->willReturn(new \DateTimeImmutable());
         $existingTicket->method('incrementLastEventSeq')->willReturn(1);
 
-        // Legacy: findOpenByContact called with null -> finds regardless of workspace
+        // Legacy: findAbiertaByContacto called with null -> finds regardless of workspace
         $this->conversationRepo
             ->expects($this->once())
-            ->method('findOpenByContact')
+            ->method('findAbiertaByContacto')
             ->with($contact, null)
             ->willReturn($existingConversation);
 

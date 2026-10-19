@@ -649,8 +649,8 @@ class Sprint09AReportingTest extends KernelTestCase
         $this->em->persist($contact);
 
         $conversation = new Conversacion();
-        $conversation->setContact($contact);
-        $conversation->setStatus('open');
+        $conversation->setContacto($contact);
+        $conversation->setEstado('open');
         if ($phoneNumberId !== null) {
             $conversation->setPhoneNumberId($phoneNumberId);
         }
@@ -696,8 +696,8 @@ class Sprint09AReportingTest extends KernelTestCase
         $this->em->persist($contact);
 
         $conversation = new Conversacion();
-        $conversation->setContact($contact);
-        $conversation->setStatus('open');
+        $conversation->setContacto($contact);
+        $conversation->setEstado('open');
         $this->em->persist($conversation);
 
         $ticket = new Ticket();

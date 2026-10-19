@@ -152,20 +152,20 @@ final class RespuestaAutomaticaService
         $mensajeSaliente = null;
         if ($conversacion !== null) {
             $mensajeSaliente = new Mensaje();
-            $mensajeSaliente->setConversation($conversacion);
-            $mensajeSaliente->setDirection('outbound');
-            $mensajeSaliente->setContent($mensajeDeRespuestaAutomatica);
+            $mensajeSaliente->setConversacion($conversacion);
+            $mensajeSaliente->setDireccion('outbound');
+            $mensajeSaliente->setContenido($mensajeDeRespuestaAutomatica);
             if ($wamid !== null) {
                 $mensajeSaliente->setExternalId($wamid);
             }
-            $mensajeSaliente->setDeliveryStatus('sent');
-            $mensajeSaliente->setSenderAgentId($agente->getId());
-            $mensajeSaliente->setSenderType(TipoDeRemitente::AUTOMATIC);
+            $mensajeSaliente->setEstadoDeEntrega('sent');
+            $mensajeSaliente->setAgenteRemitenteId($agente->getId());
+            $mensajeSaliente->setTipoDeRemitente(TipoDeRemitente::AUTOMATICO);
             $this->em->persist($mensajeSaliente);
 
             // Update conversation timestamp
-            $conversacion->setLastMessageAt($mensajeSaliente->getCreatedAt());
-            $conversacion->setUpdatedAt(new \DateTimeImmutable());
+            $conversacion->setUltimoMensajeAt($mensajeSaliente->getCreadoAt());
+            $conversacion->setActualizadoAt(new \DateTimeImmutable());
         }
 
         // 7. Upsert rate-limit key (update timestamp or insert new)
@@ -186,7 +186,7 @@ final class RespuestaAutomaticaService
                 occurredAt: new \DateTimeImmutable(),
                 seq: $ticket->incrementLastEventSeq(),
                 version: 1,
-                direction: DireccionDeMensaje::OUTBOUND,
+                direction: DireccionDeMensaje::SALIENTE,
                 messageId: (int) $mensajeSaliente->getId(),
                 content: $mensajeDeRespuestaAutomatica,
                 senderName: $agente->getNombre(),

@@ -229,11 +229,11 @@ foreach ($events as $event) {
 
     private function findOrCreateOpenConversation(Contacto $contact, ?string $phoneNumberId): Conversacion
     {
-        $conversation = $this->conversationRepo->findOpenByContact($contact, $phoneNumberId);
+        $conversation = $this->conversationRepo->findAbiertaByContacto($contact, $phoneNumberId);
         if (!$conversation) {
             $conversation = new Conversacion();
-            $conversation->setContact($contact);
-            $conversation->setStatus(EstadoDeConversacion::OPEN->value);
+            $conversation->setContacto($contact);
+            $conversation->setEstado(EstadoDeConversacion::ABIERTA->value);
             if ($phoneNumberId !== null) {
                 $conversation->setPhoneNumberId($phoneNumberId);
             }
@@ -256,13 +256,13 @@ foreach ($events as $event) {
     private function storeInboundMessage(Conversacion $conversation, string $message, ?string $externalId): Mensaje
     {
         $msg = new Mensaje();
-        $msg->setConversation($conversation);
-        $msg->setDirection('inbound');
-        $msg->setContent($message);
+        $msg->setConversacion($conversation);
+        $msg->setDireccion('inbound');
+        $msg->setContenido($message);
         if ($externalId) {
             $msg->setExternalId($externalId);
         }
-        $msg->setSenderType(TipoDeRemitente::CONTACT);
+        $msg->setTipoDeRemitente(TipoDeRemitente::CONTACTO);
 
         $this->em->persist($msg);
         $this->em->flush();
@@ -300,7 +300,7 @@ foreach ($events as $event) {
             );
 
             if ($mediaResult !== null) {
-                $msg->setMedia([
+                $msg->setAdjunto([
                     'key' => $mediaResult['key'],
                     'mimeType' => $mimeType,
                     'filename' => $filename,
@@ -409,8 +409,8 @@ foreach ($events as $event) {
 
     private function touchTimestamps(Conversacion $conversation, Contacto $contact, Ticket $ticket, Mensaje $msg): void
     {
-        $conversation->setLastMessageAt($msg->getCreatedAt());
-        $conversation->setUpdatedAt(new \DateTimeImmutable());
+        $conversation->setUltimoMensajeAt($msg->getCreadoAt());
+        $conversation->setActualizadoAt(new \DateTimeImmutable());
         $contact->setActualizadoAt(new \DateTimeImmutable());
         $ticket->setActualizadoAt(new \DateTimeImmutable());
 
@@ -419,7 +419,7 @@ foreach ($events as $event) {
         // must fire on every inbound message, for both a brand-new ticket
         // and a reused/reopened one, and on no other path (outbound sends
         // and auto-replies never touch this field).
-        $ticket->setUltimoMensajeEntranteAt($msg->getCreatedAt());
+        $ticket->setUltimoMensajeEntranteAt($msg->getCreadoAt());
     }
 
     /**
@@ -446,11 +446,11 @@ foreach ($events as $event) {
             occurredAt: new \DateTimeImmutable(),
             seq: $ticket->incrementLastEventSeq(),
             version: 1,
-            direction: \App\Conversacion\DireccionDeMensaje::INBOUND,
+            direction: \App\Conversacion\DireccionDeMensaje::ENTRANTE,
             messageId: $msg->getId(),
             content: $message,
             senderName: $contact->getNombre(),
-            media: $msg->getMedia(),
+            media: $msg->getAdjunto(),
         ));
     }
 

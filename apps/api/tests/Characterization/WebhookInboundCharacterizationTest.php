@@ -399,7 +399,7 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
         $this->assertAcknowledged($this->postValue(['messages' => [$this->textMessage('wamid.char-in-q', 'Hola?')]]));
 
         $auto = $this->connection()->fetchAssociative("SELECT content, external_id, delivery_status, sender_type, sender_agent_id FROM messages WHERE direction = 'outbound'");
-        self::assertSame(['Ya te respondemos', 'wamid.char-in-auto', 'sent', TipoDeRemitente::AUTOMATIC->value, (int) $agent->getId()], [
+        self::assertSame(['Ya te respondemos', 'wamid.char-in-auto', 'sent', TipoDeRemitente::AUTOMATICO->value, (int) $agent->getId()], [
             $auto['content'], $auto['external_id'], $auto['delivery_status'], $auto['sender_type'], (int) $auto['sender_agent_id'],
         ]);
         $outbox = $this->outboxRows();
@@ -417,12 +417,12 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
     private function outboundMessage(Ticket $ticket, string $wamid, string $deliveryStatus): Mensaje
     {
         $message = new Mensaje();
-        $message->setConversation($ticket->getConversacion());
-        $message->setDirection('outbound');
-        $message->setContent('respuesta');
+        $message->setConversacion($ticket->getConversacion());
+        $message->setDireccion('outbound');
+        $message->setContenido('respuesta');
         $message->setExternalId($wamid);
-        $message->setDeliveryStatus($deliveryStatus);
-        $message->setSenderType(TipoDeRemitente::AGENT);
+        $message->setEstadoDeEntrega($deliveryStatus);
+        $message->setTipoDeRemitente(TipoDeRemitente::AGENTE);
         $this->em->persist($message);
         $this->em->flush();
 

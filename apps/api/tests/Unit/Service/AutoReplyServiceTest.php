@@ -306,8 +306,8 @@ class AutoReplyServiceTest extends TestCase
         $agent = $this->createAgent();
         $contact = $this->createContact(phone: '+5493625123456');
         $conversation = new Conversacion();
-        $conversation->setContact($contact);
-        $conversation->setStatus('open');
+        $conversation->setContacto($contact);
+        $conversation->setEstado('open');
         $ticket = $this->createTicket(agent: $agent, contact: $contact, phoneNumberId: '123456789', conversation: $conversation);
 
         $this->agentRepo->expects(self::once())
@@ -417,8 +417,8 @@ class AutoReplyServiceTest extends TestCase
         $agent = $this->createAgent(id: 7);
         $contact = $this->createContact(phone: '+5493625123456');
         $conversation = new Conversacion();
-        $conversation->setContact($contact);
-        $conversation->setStatus('open');
+        $conversation->setContacto($contact);
+        $conversation->setEstado('open');
         $ticket = $this->createTicket(agent: $agent, contact: $contact, phoneNumberId: '123456789', conversation: $conversation);
 
         $this->agentRepo->expects(self::once())
@@ -446,8 +446,8 @@ class AutoReplyServiceTest extends TestCase
         $this->service->enviarSiCorresponde($ticket);
 
         self::assertNotNull($persistedMessage, 'AutoReplyService must persist a Message entity');
-        self::assertSame(7, $persistedMessage->getSenderAgentId());
-        self::assertSame(TipoDeRemitente::AUTOMATIC->value, $persistedMessage->getSenderType());
+        self::assertSame(7, $persistedMessage->getAgenteRemitenteId());
+        self::assertSame(TipoDeRemitente::AUTOMATICO->value, $persistedMessage->getTipoDeRemitente());
     }
 
     // ────────────────────────────────────────────────────────────

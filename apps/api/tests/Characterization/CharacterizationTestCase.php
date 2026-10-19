@@ -157,7 +157,7 @@ abstract class CharacterizationTestCase extends WebTestCase
         $contact ??= $this->createContact('+54911' . \random_int(10000000, 99999999));
 
         $conversation = new Conversacion();
-        $conversation->setContact($contact);
+        $conversation->setContacto($contact);
         $this->em->persist($conversation);
 
         $ticket = new Ticket();

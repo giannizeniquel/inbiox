@@ -25,7 +25,7 @@ class ReglaDeEtiquetadoPorPalabraClave implements ReglaInterface
         }
 
         // Case-insensitive substring match for "error"
-        $contenido = $mensaje->getContent();
+        $contenido = $mensaje->getContenido();
         return stripos($contenido, self::PALABRA_CLAVE) !== false;
     }
 

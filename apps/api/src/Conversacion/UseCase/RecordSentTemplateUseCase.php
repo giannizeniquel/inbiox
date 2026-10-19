@@ -27,15 +27,15 @@ final class RecordSentTemplateUseCase
     {
         $content = "Template: {$templateName}" . (!empty($parameters) ? ' (' . implode(', ', $parameters) . ')' : '');
         $message = new Mensaje();
-        $message->setContent($content);
+        $message->setContenido($content);
         $message->setExternalId($wamid);
-        $message->setDirection(DireccionDeMensaje::OUTBOUND->value);
-        $message->setDeliveryStatus('sent');
-        $message->setUpdatedAt(new \DateTimeImmutable());
-        $message->setSenderAgentId($senderAgentId);
-        $message->setSenderType(TipoDeRemitente::AGENT);
+        $message->setDireccion(DireccionDeMensaje::SALIENTE->value);
+        $message->setEstadoDeEntrega('sent');
+        $message->setActualizadoAt(new \DateTimeImmutable());
+        $message->setAgenteRemitenteId($senderAgentId);
+        $message->setTipoDeRemitente(TipoDeRemitente::AGENTE);
         if ($ticket->getConversacion()) {
-            $message->setConversation($ticket->getConversacion());
+            $message->setConversacion($ticket->getConversacion());
         }
         $this->entityManager->persist($message);
         $this->entityManager->flush();

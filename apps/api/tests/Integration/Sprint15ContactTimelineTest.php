@@ -135,7 +135,7 @@ class Sprint15ContactTimelineTest extends WebTestCase
 
         // Conversation
         $conversation = new Conversacion();
-        $conversation->setContact($contact);
+        $conversation->setContacto($contact);
         $this->em->persist($conversation);
         $this->em->flush();
         $conversationId = $conversation->getId();
@@ -154,9 +154,9 @@ class Sprint15ContactTimelineTest extends WebTestCase
 
         // Message (newest event)
         $message = new Mensaje();
-        $message->setConversation($conversation);
-        $message->setDirection(DireccionDeMensaje::INBOUND->value);
-        $message->setContent('Hello, I need help with my account setup please');
+        $message->setConversacion($conversation);
+        $message->setDireccion(DireccionDeMensaje::ENTRANTE->value);
+        $message->setContenido('Hello, I need help with my account setup please');
         $this->em->persist($message);
         $this->em->flush();
 

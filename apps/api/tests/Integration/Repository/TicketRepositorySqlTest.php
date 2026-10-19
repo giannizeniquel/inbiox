@@ -63,7 +63,7 @@ class TicketRepositorySqlTest extends KernelTestCase
     private function createTicket(string $status, ?string $phoneNumberId = null, ?string $lastInboundAt = null): int
     {
         $conversation = new Conversacion();
-        $conversation->setContact($this->contact);
+        $conversation->setContacto($this->contact);
         $this->em->persist($conversation);
 
         $ticket = new Ticket();

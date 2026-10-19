@@ -18,31 +18,31 @@ class Conversacion
 
     #[ORM\ManyToOne(targetEntity: Contacto::class, inversedBy: 'conversaciones')]
     #[ORM\JoinColumn(name: 'contact_id', referencedColumnName: 'id')]
-    private ?Contacto $contact = null;
+    private ?Contacto $contacto = null;
 
-    #[ORM\OneToMany(mappedBy: 'conversation', targetEntity: Mensaje::class, cascade: ['persist', 'remove'])]
-    private Collection $messages;
+    #[ORM\OneToMany(mappedBy: 'conversacion', targetEntity: Mensaje::class, cascade: ['persist', 'remove'])]
+    private Collection $mensajes;
 
     #[ORM\Column(name: 'status', type: 'string', length: 20)]
-    private string $status = EstadoDeConversacion::OPEN->value;
+    private string $estado = EstadoDeConversacion::ABIERTA->value;
 
     #[ORM\Column(name: 'last_message_at', type: 'datetime_immutable', nullable: true)]
-    private ?\DateTimeImmutable $lastMessageAt = null;
+    private ?\DateTimeImmutable $ultimoMensajeAt = null;
 
     #[ORM\Column(name: 'created_at', type: 'datetime_immutable')]
-    private \DateTimeImmutable $createdAt;
+    private \DateTimeImmutable $creadoAt;
 
     #[ORM\Column(name: 'updated_at', type: 'datetime_immutable')]
-    private \DateTimeImmutable $updatedAt;
+    private \DateTimeImmutable $actualizadoAt;
 
     #[ORM\Column(name: 'phone_number_id', type: 'string', length: 36, nullable: true)]
     private ?string $phoneNumberId = null;
 
     public function __construct()
     {
-        $this->createdAt = new \DateTimeImmutable();
-        $this->updatedAt = new \DateTimeImmutable();
-        $this->messages = new ArrayCollection();
+        $this->creadoAt = new \DateTimeImmutable();
+        $this->actualizadoAt = new \DateTimeImmutable();
+        $this->mensajes = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -50,57 +50,57 @@ class Conversacion
         return $this->id;
     }
 
-    public function getContact(): ?Contacto
+    public function getContacto(): ?Contacto
     {
-        return $this->contact;
+        return $this->contacto;
     }
 
-    public function setContact(Contacto $contact): self
+    public function setContacto(Contacto $contact): self
     {
-        $this->contact = $contact;
+        $this->contacto = $contact;
         return $this;
     }
 
-    public function getMessages(): Collection
+    public function getMensajes(): Collection
     {
-        return $this->messages;
+        return $this->mensajes;
     }
 
-    public function getStatus(): string
+    public function getEstado(): string
     {
-        return $this->status;
+        return $this->estado;
     }
 
-    public function setStatus(string $status): self
+    public function setEstado(string $status): self
     {
-        $this->status = $status;
+        $this->estado = $status;
         return $this;
     }
 
-    public function getLastMessageAt(): ?\DateTimeImmutable
+    public function getUltimoMensajeAt(): ?\DateTimeImmutable
     {
-        return $this->lastMessageAt;
+        return $this->ultimoMensajeAt;
     }
 
-    public function setLastMessageAt(?\DateTimeImmutable $lastMessageAt): self
+    public function setUltimoMensajeAt(?\DateTimeImmutable $lastMessageAt): self
     {
-        $this->lastMessageAt = $lastMessageAt;
+        $this->ultimoMensajeAt = $lastMessageAt;
         return $this;
     }
 
-    public function getCreatedAt(): \DateTimeImmutable
+    public function getCreadoAt(): \DateTimeImmutable
     {
-        return $this->createdAt;
+        return $this->creadoAt;
     }
 
-    public function getUpdatedAt(): \DateTimeImmutable
+    public function getActualizadoAt(): \DateTimeImmutable
     {
-        return $this->updatedAt;
+        return $this->actualizadoAt;
     }
 
-    public function setUpdatedAt(\DateTimeImmutable $updatedAt): self
+    public function setActualizadoAt(\DateTimeImmutable $updatedAt): self
     {
-        $this->updatedAt = $updatedAt;
+        $this->actualizadoAt = $updatedAt;
         return $this;
     }
 

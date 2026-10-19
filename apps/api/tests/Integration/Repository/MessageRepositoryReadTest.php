@@ -40,7 +40,7 @@ class MessageRepositoryReadTest extends KernelTestCase
 
     public function testAscendingPage(): void
     {
-        $rows = $this->repo->findPageAscending(880001, null, null, 3);
+        $rows = $this->repo->findPaginaAscendente(880001, null, null, 3);
 
         self::assertSame([880001, 880002, 880003], $this->ids($rows));
         self::assertSame(
@@ -51,23 +51,23 @@ class MessageRepositoryReadTest extends KernelTestCase
 
     public function testAscendingCursorUsesCreatedAtThenId(): void
     {
-        self::assertSame([880003, 880004], $this->ids($this->repo->findPageAscending(880001, '2026-01-01 10:00:00', 880002, 2)));
+        self::assertSame([880003, 880004], $this->ids($this->repo->findPaginaAscendente(880001, '2026-01-01 10:00:00', 880002, 2)));
     }
 
     public function testDescendingPage(): void
     {
-        self::assertSame([880005, 880004, 880003], $this->ids($this->repo->findPageDescending(880001, null, null, 3)));
+        self::assertSame([880005, 880004, 880003], $this->ids($this->repo->findPaginaDescendente(880001, null, null, 3)));
     }
 
     public function testDescendingCursorUsesCreatedAtThenId(): void
     {
-        self::assertSame([880002, 880001], $this->ids($this->repo->findPageDescending(880001, '2026-01-01 10:00:00', 880003, 5)));
+        self::assertSame([880002, 880001], $this->ids($this->repo->findPaginaDescendente(880001, '2026-01-01 10:00:00', 880003, 5)));
     }
 
     public function testDescendingOffsetSkipsRowsAndIgnoresNonPositiveValues(): void
     {
-        self::assertSame([880004, 880003], $this->ids($this->repo->findPageDescending(880001, null, null, 2, 1)));
-        self::assertSame([880005, 880004], $this->ids($this->repo->findPageDescending(880001, null, null, 2, 0)));
-        self::assertSame([880005, 880004], $this->ids($this->repo->findPageDescending(880001, null, null, 2, -3)));
+        self::assertSame([880004, 880003], $this->ids($this->repo->findPaginaDescendente(880001, null, null, 2, 1)));
+        self::assertSame([880005, 880004], $this->ids($this->repo->findPaginaDescendente(880001, null, null, 2, 0)));
+        self::assertSame([880005, 880004], $this->ids($this->repo->findPaginaDescendente(880001, null, null, 2, -3)));
     }
 }

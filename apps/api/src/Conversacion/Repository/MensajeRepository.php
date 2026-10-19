@@ -20,9 +20,9 @@ class MensajeRepository extends ServiceEntityRepository
         return $this->findOneBy(['externalId' => $externalId]);
     }
 
-    public function findByConversation(Conversacion $conversation): array
+    public function findByConversacion(Conversacion $conversation): array
     {
-        return $this->findBy(['conversation' => $conversation]);
+        return $this->findBy(['conversacion' => $conversation]);
     }
 
     public function findById(int $id): ?Mensaje
@@ -37,9 +37,9 @@ class MensajeRepository extends ServiceEntityRepository
      *
      * @return list<array<string, mixed>>
      */
-    public function findPageAscending(int $conversationId, mixed $cursorCreatedAt, ?int $cursorId, int $maxResults): array
+    public function findPaginaAscendente(int $conversationId, mixed $cursorCreatedAt, ?int $cursorId, int $maxResults): array
     {
-        $qb = $this->createPageQueryBuilder($conversationId);
+        $qb = $this->createPaginaQueryBuilder($conversationId);
 
         if ($cursorId !== null) {
             $qb->andWhere('(created_at > :cursorCreatedAt OR (created_at = :cursorCreatedAt AND id > :cursorId))')
@@ -61,9 +61,9 @@ class MensajeRepository extends ServiceEntityRepository
      *
      * @return list<array<string, mixed>>
      */
-    public function findPageDescending(int $conversationId, mixed $cursorCreatedAt, ?int $cursorId, int $maxResults, int $offset = 0): array
+    public function findPaginaDescendente(int $conversationId, mixed $cursorCreatedAt, ?int $cursorId, int $maxResults, int $offset = 0): array
     {
-        $qb = $this->createPageQueryBuilder($conversationId);
+        $qb = $this->createPaginaQueryBuilder($conversationId);
 
         if ($cursorId !== null) {
             $qb->andWhere('(created_at < :cursorCreatedAt OR (created_at = :cursorCreatedAt AND id < :cursorId))')
@@ -82,7 +82,7 @@ class MensajeRepository extends ServiceEntityRepository
         return $qb->fetchAllAssociative();
     }
 
-    private function createPageQueryBuilder(int $conversationId): QueryBuilder
+    private function createPaginaQueryBuilder(int $conversationId): QueryBuilder
     {
         return $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->select('id', 'content', 'direction', 'created_at', 'media', 'sender_agent_id', 'sender_type')

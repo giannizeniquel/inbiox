@@ -31,7 +31,7 @@ class TagRepositorySqlTest extends KernelTestCase
         $contact->setTelefono('+5491100009902');
         $em->persist($contact);
         $conversation = new Conversacion();
-        $conversation->setContact($contact);
+        $conversation->setContacto($contact);
         $em->persist($conversation);
         $ticket = new Ticket();
         $ticket->setContacto($contact);

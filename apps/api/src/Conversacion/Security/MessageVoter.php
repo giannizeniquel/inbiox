@@ -42,7 +42,7 @@ final class MessageVoter extends Voter
 
         /** @var Mensaje $message */
         $message = $subject;
-        $conversation = $message->getConversation();
+        $conversation = $message->getConversacion();
 
         if ($conversation === null) {
             return false;

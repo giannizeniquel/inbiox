@@ -169,12 +169,12 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
     private function outboundMessage(Ticket $ticket, string $wamid): void
     {
         $message = new Mensaje();
-        $message->setConversation($ticket->getConversacion());
-        $message->setDirection('outbound');
-        $message->setContent('respuesta');
+        $message->setConversacion($ticket->getConversacion());
+        $message->setDireccion('outbound');
+        $message->setContenido('respuesta');
         $message->setExternalId($wamid);
-        $message->setDeliveryStatus('sent');
-        $message->setSenderType(TipoDeRemitente::AGENT);
+        $message->setEstadoDeEntrega('sent');
+        $message->setTipoDeRemitente(TipoDeRemitente::AGENTE);
         $this->em->persist($message);
         $this->em->flush();
     }
