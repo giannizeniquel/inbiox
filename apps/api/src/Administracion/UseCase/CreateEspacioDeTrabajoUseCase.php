@@ -42,7 +42,7 @@ final class CreateEspacioDeTrabajoUseCase
         $workspace = new EspacioDeTrabajo($phoneNumberId, $displayName);
 
         if (isset($data['isActive'])) {
-            $workspace->setActive((bool) $data['isActive']);
+            $workspace->setActivo((bool) $data['isActive']);
         }
 
         $this->entityManager->persist($workspace);

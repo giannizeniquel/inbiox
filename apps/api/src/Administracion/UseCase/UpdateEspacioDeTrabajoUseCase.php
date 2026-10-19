@@ -34,11 +34,11 @@ final class UpdateEspacioDeTrabajoUseCase
             if (!\is_string($data['displayName']) || empty($data['displayName'])) {
                 throw new \InvalidArgumentException('displayName must be a non-empty string');
             }
-            $workspace->setDisplayName($data['displayName']);
+            $workspace->setNombreVisible($data['displayName']);
         }
 
         if (isset($data['isActive'])) {
-            $workspace->setActive((bool) $data['isActive']);
+            $workspace->setActivo((bool) $data['isActive']);
         }
 
         $this->entityManager->flush();

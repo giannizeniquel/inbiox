@@ -62,7 +62,7 @@ class AgentLinkControllerTest extends WebTestCase
         $user->setEmail($email);
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
         $user->setRoles($roles);
-        $user->setIsActive($isActive);
+        $user->setActivo($isActive);
 
         if (null !== $agent) {
             $agent->setUsuario($user);

@@ -22,7 +22,7 @@ class EspacioDeTrabajoActivoDTO
         return new self(
             workspaceId: (int) $workspace->getId(),
             phoneNumberId: $workspace->getPhoneNumberId(),
-            displayName: $workspace->getDisplayName(),
+            displayName: $workspace->getNombreVisible(),
         );
     }
 

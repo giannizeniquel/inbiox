@@ -59,7 +59,7 @@ class UserControllerTest extends WebTestCase
         $user->setEmail($email);
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
         $user->setRoles($roles);
-        $user->setIsActive($isActive);
+        $user->setActivo($isActive);
 
         $this->em->persist($user);
         $this->em->flush();
@@ -363,7 +363,7 @@ class UserControllerTest extends WebTestCase
         $this->em->clear();
         $deletedUser = $this->em->getRepository(Usuario::class)->find($user->getId());
         self::assertNotNull($deletedUser, 'User must still exist (soft delete)');
-        self::assertFalse($deletedUser->isActive(), 'User must be deactivated');
+        self::assertFalse($deletedUser->isActivo(), 'User must be deactivated');
     }
 
     public function testDeleteNonExistentUserReturns404(): void

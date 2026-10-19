@@ -56,7 +56,7 @@ final class MeWorkspaceControllerCharacterizationTest extends CharacterizationTe
     {
         $workspace = $this->createWorkspace('char-me-set', 'Assigned');
         $agent = $this->createAgent('Me');
-        $workspace->addAgent($agent);
+        $workspace->addAgente($agent);
         $token = $this->loginAs('me-set@characterization.local', ['ROLE_AGENT'], $agent);
 
         $response = $this->request('PUT', '/api/me/workspace', $token, ['workspaceId' => $workspace->getId()]);
@@ -133,7 +133,7 @@ final class MeWorkspaceControllerCharacterizationTest extends CharacterizationTe
     public function testSetActiveWorkspaceErrors(): void
     {
         $inactive = $this->createWorkspace('char-me-inactive', 'Inactive');
-        $inactive->setActive(false);
+        $inactive->setActivo(false);
         $this->em->flush();
         $token = $this->loginAs('me-err@characterization.local', ['ROLE_AGENT'], $this->createAgent('Me'));
 
@@ -149,9 +149,9 @@ final class MeWorkspaceControllerCharacterizationTest extends CharacterizationTe
     public function testAdminListsAllActiveWorkspaces(): void
     {
         $active = $this->createWorkspace('char-me-list-a', 'Active');
-        $active->addAgent($this->createAgent('Member'));
+        $active->addAgente($this->createAgent('Member'));
         $inactive = $this->createWorkspace('char-me-list-i', 'Inactive');
-        $inactive->setActive(false);
+        $inactive->setActivo(false);
         $this->em->flush();
         $token = $this->loginAs('me-admin@characterization.local', ['ROLE_ADMIN']);
 
@@ -182,8 +182,8 @@ final class MeWorkspaceControllerCharacterizationTest extends CharacterizationTe
         $pending = $this->createWorkspace('char-me-pend', 'Pending');
         $quiet = $this->createWorkspace('char-me-quiet', 'Quiet');
         $this->createWorkspace('char-me-notmine', 'Not mine');
-        $pending->addAgent($agent);
-        $quiet->addAgent($agent);
+        $pending->addAgente($agent);
+        $quiet->addAgente($agent);
         $this->em->flush();
 
         // An assigned, never-read ticket in the "pending" workspace.

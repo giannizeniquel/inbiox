@@ -107,7 +107,7 @@ class Equipo
      * This is a HARD REJECT (design.md D3) — not a warning, not a
      * StateConflictException. There is no use-case precedent for the
      * workspace-membership equivalent (that logic is inline in
-     * WorkspaceController::assignAgents), and \InvalidArgumentException
+     * GestionDeEspaciosDeTrabajoController::asignarAgentes), and \InvalidArgumentException
      * already maps to 400 in Controller/Admin/* via the existing catch
      * block, which is the correct response for malformed input.
      *

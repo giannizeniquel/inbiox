@@ -156,7 +156,7 @@ class FlujoDeTicketController
 
     private function motivoDeRechazoDeCierre(Ticket $ticket, ?Usuario $usuario): string
     {
-        if ($usuario === null || $usuario->getAgent() === null) {
+        if ($usuario === null || $usuario->getAgente() === null) {
             return 'no_linked_agent';
         }
 

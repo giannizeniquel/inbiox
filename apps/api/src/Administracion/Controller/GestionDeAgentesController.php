@@ -31,7 +31,7 @@ final class GestionDeAgentesController
     ) {}
 
     #[Route('/api/admin/agents', name: 'admin_agents_list', methods: ['GET'])]
-    public function list(Request $request): JsonResponse
+    public function listar(Request $request): JsonResponse
     {
         $page = max(1, (int) $request->query->get('page', 1));
         $limit = min(100, max(1, (int) $request->query->get('limit', 20)));
@@ -40,7 +40,7 @@ final class GestionDeAgentesController
         $total = $this->agentRepository->count([]);
         $agents = $this->agentRepository->findPaginaConUsuario($offset, $limit);
 
-        $items = array_map(fn(Agente $agent) => $this->serializeAgent($agent), $agents);
+        $items = array_map(fn(Agente $agent) => $this->serializeAgente($agent), $agents);
 
         return new JsonResponse([
             'data' => $items,
@@ -68,7 +68,7 @@ final class GestionDeAgentesController
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }
 
-        return new JsonResponse($this->serializeAgent($agent), Response::HTTP_CREATED);
+        return new JsonResponse($this->serializeAgente($agent), Response::HTTP_CREATED);
     }
 
     #[Route('/api/admin/agents/{id}', name: 'admin_agents_get', methods: ['GET'])]
@@ -80,7 +80,7 @@ final class GestionDeAgentesController
             return new JsonResponse(['error' => 'Agent not found'], 404);
         }
 
-        return new JsonResponse($this->serializeAgent($agent));
+        return new JsonResponse($this->serializeAgente($agent));
     }
 
     #[Route('/api/admin/agents/{id}', name: 'admin_agents_update', methods: ['PUT'])]
@@ -104,7 +104,7 @@ final class GestionDeAgentesController
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }
 
-        return new JsonResponse($this->serializeAgent($agent));
+        return new JsonResponse($this->serializeAgente($agent));
     }
 
     #[Route('/api/admin/agents/{id}', name: 'admin_agents_delete', methods: ['DELETE'])]
@@ -124,7 +124,7 @@ final class GestionDeAgentesController
     /**
      * @return array<string, mixed>
      */
-    private function serializeAgent(Agente $agent): array
+    private function serializeAgente(Agente $agent): array
     {
         $user = $agent->getUsuario();
 

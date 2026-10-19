@@ -42,7 +42,7 @@ final class VincularUsuarioConAgenteUseCase
         }
 
         // Q3: Deny linking deactivated user to agent
-        if (!$user->isActive()) {
+        if (!$user->isActivo()) {
             throw new \InvalidArgumentException('Cannot link a deactivated user to an agent');
         }
 
@@ -51,12 +51,12 @@ final class VincularUsuarioConAgenteUseCase
         }
 
         // Check if user already has an agent (UNIQUE constraint)
-        if (null !== $user->getAgent()) {
+        if (null !== $user->getAgente()) {
             throw new \InvalidArgumentException('User already linked to an agent');
         }
 
         $agent->setUsuario($user);
-        $user->setAgent($agent);
+        $user->setAgente($agent);
 
         try {
             $this->entityManager->flush();

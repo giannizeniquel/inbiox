@@ -33,8 +33,8 @@ final class AsignarAgentesAEspacioDeTrabajoUseCase
 
         // All-or-nothing: a non-integer id rolls back the whole batch.
         $this->entityManager->wrapInTransaction(function () use ($workspace, $agentIds): void {
-            foreach ($workspace->getAgents() as $existingAgent) {
-                $workspace->removeAgent($existingAgent);
+            foreach ($workspace->getAgentes() as $existingAgent) {
+                $workspace->removeAgente($existingAgent);
             }
 
             foreach ($agentIds as $agentId) {
@@ -43,7 +43,7 @@ final class AsignarAgentesAEspacioDeTrabajoUseCase
                 }
                 $agent = $this->agentRepository->find($agentId);
                 if (null !== $agent) {
-                    $workspace->addAgent($agent);
+                    $workspace->addAgente($agent);
                 }
             }
         });

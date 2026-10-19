@@ -125,9 +125,9 @@ Todas **Agente**, salvo export. Filtran por workspace activo; nunca por agente.
 | PUT | `/api/me/auto-reply` | `updateRespuestaAutomatica` | Agente | |
 | GET | `/api/me/shifts` | `getTurnos` | Agente | |
 | PUT | `/api/me/shifts` | `reemplazarTurnos` | Agente | `ReemplazarTurnosUseCase`. |
-| GET | `/api/me/workspace` | `getActiveWorkspace` | Auth | |
-| PUT | `/api/me/workspace` | `setActiveWorkspace` (`:310-372`) | Auth (agente: solo sus workspaces; supervisor/admin: cualquiera, y se les crea agente) | |
-| GET | `/api/me/workspaces` | `listMyWorkspaces` (`:391-461`) | Auth | SQL embebido (`has_pending`). |
+| GET | `/api/me/workspace` | `getEspacioDeTrabajoActivo` | Auth | |
+| PUT | `/api/me/workspace` | `setEspacioDeTrabajoActivo` (`:310-372`) | Auth (agente: solo sus workspaces; supervisor/admin: cualquiera, y se les crea agente) | |
+| GET | `/api/me/workspaces` | `listarMisEspaciosDeTrabajo` (`:391-461`) | Auth | SQL embebido (`has_pending`). |
 
 ### H. Workspaces, equipos y disponibilidad (no admin)
 
@@ -150,17 +150,17 @@ Todas **Agente**, salvo export. Filtran por workspace activo; nunca por agente.
 
 | Método | Path | Controlador | Rol | Nota |
 |---|---|---|---|---|
-| GET, POST | `/api/admin/users` | `Admin\GestionDeUsuariosController::list` / `create` | Admin | `roles` sin validar. |
+| GET, POST | `/api/admin/users` | `Admin\GestionDeUsuariosController::listar` / `create` | Admin | `roles` sin validar. |
 | GET, PUT, DELETE | `/api/admin/users/{id}` | `get` / `update` / `delete` (soft) | Admin | |
-| GET, POST | `/api/admin/agents` | `Admin\GestionDeAgentesController::list` / `create` | Supervisor | |
+| GET, POST | `/api/admin/agents` | `Admin\GestionDeAgentesController::listar` / `create` | Supervisor | |
 | GET, PUT, DELETE | `/api/admin/agents/{id}` | `get` / `update` / `delete` (soft) | Supervisor | |
-| POST, DELETE | `/api/admin/agents/{id}/link-user` | `Admin\VinculoDeAgenteController::linkUser` / `unlinkUser` | **Admin** (la clase es más estricta que `access_control`) | |
-| GET, POST | `/api/admin/workspaces` | `Admin\GestionDeEspaciosDeTrabajoController::list` / `create` | Admin | |
+| POST, DELETE | `/api/admin/agents/{id}/link-user` | `Admin\VinculoDeAgenteController::vincularUsuario` / `desvincularUsuario` | **Admin** (la clase es más estricta que `access_control`) | |
+| GET, POST | `/api/admin/workspaces` | `Admin\GestionDeEspaciosDeTrabajoController::listar` / `create` | Admin | |
 | GET, PUT, DELETE | `/api/admin/workspaces/{id}` | `get` / `update` / `delete` (soft) | Admin | |
-| PUT | `/api/admin/workspaces/{id}/agents` | `assignAgents` | Admin | |
-| GET, POST | `/api/admin/teams` | `Admin\GestionDeEquiposController::list` / `create` | Supervisor | |
+| PUT | `/api/admin/workspaces/{id}/agents` | `asignarAgentes` | Admin | |
+| GET, POST | `/api/admin/teams` | `Admin\GestionDeEquiposController::listar` / `create` | Supervisor | |
 | GET, PUT, DELETE | `/api/admin/teams/{id}` | `get` / `update` / `delete` (soft) | Supervisor | |
-| PUT | `/api/admin/teams/{id}/agents` | `assignAgents` | Supervisor | |
+| PUT | `/api/admin/teams/{id}/agents` | `asignarAgentes` | Supervisor | |
 
 ### K. Depuración (`DebugController`)
 

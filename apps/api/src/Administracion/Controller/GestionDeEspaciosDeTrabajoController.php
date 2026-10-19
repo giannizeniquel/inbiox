@@ -35,7 +35,7 @@ final class GestionDeEspaciosDeTrabajoController
     ) {}
 
     #[Route('/api/admin/workspaces', name: 'app_admin_workspaces_list', methods: ['GET'])]
-    public function list(Request $request): JsonResponse
+    public function listar(Request $request): JsonResponse
     {
         $page = max(1, (int) $request->query->get('page', 1));
         $limit = min(100, max(1, (int) $request->query->get('limit', 20)));
@@ -44,7 +44,7 @@ final class GestionDeEspaciosDeTrabajoController
         $total = $this->workspaceRepository->count([]);
         $workspaces = $this->workspaceRepository->findBy([], ['id' => 'DESC'], $limit, $offset);
 
-        $items = array_map(fn(EspacioDeTrabajo $w) => $this->serializeWorkspace($w), $workspaces);
+        $items = array_map(fn(EspacioDeTrabajo $w) => $this->serializeEspacioDeTrabajo($w), $workspaces);
 
         return new JsonResponse([
             'data' => $items,
@@ -74,7 +74,7 @@ final class GestionDeEspaciosDeTrabajoController
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }
 
-        return new JsonResponse($this->serializeWorkspace($workspace), Response::HTTP_CREATED);
+        return new JsonResponse($this->serializeEspacioDeTrabajo($workspace), Response::HTTP_CREATED);
     }
 
     #[Route('/api/admin/workspaces/{id}', name: 'app_admin_workspaces_get', methods: ['GET'])]
@@ -86,7 +86,7 @@ final class GestionDeEspaciosDeTrabajoController
             return new JsonResponse(['error' => 'Workspace not found'], 404);
         }
 
-        return new JsonResponse($this->serializeWorkspace($workspace));
+        return new JsonResponse($this->serializeEspacioDeTrabajo($workspace));
     }
 
     #[Route('/api/admin/workspaces/{id}', name: 'app_admin_workspaces_update', methods: ['PUT'])]
@@ -110,7 +110,7 @@ final class GestionDeEspaciosDeTrabajoController
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }
 
-        return new JsonResponse($this->serializeWorkspace($workspace));
+        return new JsonResponse($this->serializeEspacioDeTrabajo($workspace));
     }
 
     #[Route('/api/admin/workspaces/{id}', name: 'app_admin_workspaces_delete', methods: ['DELETE'])]
@@ -128,7 +128,7 @@ final class GestionDeEspaciosDeTrabajoController
     }
 
     #[Route('/api/admin/workspaces/{id}/agents', name: 'app_admin_workspaces_assign_agents', methods: ['PUT'])]
-    public function assignAgents(int $id, Request $request): JsonResponse
+    public function asignarAgentes(int $id, Request $request): JsonResponse
     {
         $workspace = $this->workspaceRepository->find($id);
 
@@ -150,7 +150,7 @@ final class GestionDeEspaciosDeTrabajoController
 
         $assignedIds = array_map(
             fn(Agente $a) => (int) $a->getId(),
-            $workspace->getAgents()->toArray()
+            $workspace->getAgentes()->toArray()
         );
 
         return new JsonResponse([
@@ -162,22 +162,22 @@ final class GestionDeEspaciosDeTrabajoController
     /**
      * @return array<string, mixed>
      */
-    private function serializeWorkspace(EspacioDeTrabajo $workspace): array
+    private function serializeEspacioDeTrabajo(EspacioDeTrabajo $workspace): array
     {
         $agentIds = [];
-        foreach ($workspace->getAgents() as $agent) {
+        foreach ($workspace->getAgentes() as $agent) {
             $agentIds[] = (int) $agent->getId();
         }
 
         return [
             'id' => (int) $workspace->getId(),
             'phone_number_id' => $workspace->getPhoneNumberId(),
-            'display_name' => $workspace->getDisplayName(),
-            'is_active' => $workspace->isActive(),
+            'display_name' => $workspace->getNombreVisible(),
+            'is_active' => $workspace->isActivo(),
             'agent_count' => count($agentIds),
             'agent_ids' => $agentIds,
-            'created_at' => $workspace->getCreatedAt()->format('Y-m-d\TH:i:sP'),
-            'updated_at' => $workspace->getUpdatedAt()->format('Y-m-d\TH:i:sP'),
+            'created_at' => $workspace->getCreadoAt()->format('Y-m-d\TH:i:sP'),
+            'updated_at' => $workspace->getActualizadoAt()->format('Y-m-d\TH:i:sP'),
         ];
     }
 }

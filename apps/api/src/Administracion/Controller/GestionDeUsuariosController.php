@@ -33,16 +33,16 @@ final class GestionDeUsuariosController
     ) {}
 
     #[Route('/api/admin/users', name: 'admin_users_list', methods: ['GET'])]
-    public function list(Request $request): JsonResponse
+    public function listar(Request $request): JsonResponse
     {
         $page = max(1, (int) $request->query->get('page', 1));
         $limit = min(100, max(1, (int) $request->query->get('limit', 20)));
         $offset = ($page - 1) * $limit;
 
         $total = $this->userRepository->count([]);
-        $users = $this->userRepository->findPageWithAgent($offset, $limit);
+        $users = $this->userRepository->findPaginaConAgente($offset, $limit);
 
-        $items = array_map(fn(Usuario $user) => $this->serializeUser($user), $users);
+        $items = array_map(fn(Usuario $user) => $this->serializeUsuario($user), $users);
 
         return new JsonResponse([
             'data' => $items,
@@ -74,7 +74,7 @@ final class GestionDeUsuariosController
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }
 
-        return new JsonResponse($this->serializeUser($user), Response::HTTP_CREATED);
+        return new JsonResponse($this->serializeUsuario($user), Response::HTTP_CREATED);
     }
 
     #[Route('/api/admin/users/{id}', name: 'admin_users_get', methods: ['GET'])]
@@ -86,7 +86,7 @@ final class GestionDeUsuariosController
             return new JsonResponse(['error' => 'User not found'], 404);
         }
 
-        return new JsonResponse($this->serializeUser($user));
+        return new JsonResponse($this->serializeUsuario($user));
     }
 
     #[Route('/api/admin/users/{id}', name: 'admin_users_update', methods: ['PUT'])]
@@ -112,7 +112,7 @@ final class GestionDeUsuariosController
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }
 
-        return new JsonResponse($this->serializeUser($user));
+        return new JsonResponse($this->serializeUsuario($user));
     }
 
     #[Route('/api/admin/users/{id}', name: 'admin_users_delete', methods: ['DELETE'])]
@@ -132,19 +132,19 @@ final class GestionDeUsuariosController
     /**
      * @return array<string, mixed>
      */
-    private function serializeUser(Usuario $user): array
+    private function serializeUsuario(Usuario $user): array
     {
-        $agent = $user->getAgent();
+        $agent = $user->getAgente();
 
         return [
             'id' => (int) $user->getId(),
             'email' => $user->getEmail(),
             'roles' => $user->getRoles(),
-            'is_active' => $user->isActive(),
+            'is_active' => $user->isActivo(),
             'agent_id' => null !== $agent ? (int) $agent->getId() : null,
             'agent_name' => null !== $agent ? $agent->getNombre() : null,
-            'created_at' => $user->getCreatedAt()->format('Y-m-d\TH:i:sP'),
-            'updated_at' => $user->getUpdatedAt()?->format('Y-m-d\TH:i:sP'),
+            'created_at' => $user->getCreadoAt()->format('Y-m-d\TH:i:sP'),
+            'updated_at' => $user->getActualizadoAt()?->format('Y-m-d\TH:i:sP'),
         ];
     }
 }

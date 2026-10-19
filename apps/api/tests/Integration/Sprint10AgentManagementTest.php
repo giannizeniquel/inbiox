@@ -75,7 +75,7 @@ class Sprint10AgentManagementTest extends WebTestCase
         $user->setEmail($email);
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
         $user->setRoles($roles);
-        $user->setIsActive(true);
+        $user->setActivo(true);
 
         if (null !== $agent) {
             $agent->setUsuario($user);

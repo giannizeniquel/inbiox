@@ -18,7 +18,7 @@ final class DesactivarUsuarioUseCase
 
     public function execute(Usuario $user): void
     {
-        $user->setIsActive(false);
+        $user->setActivo(false);
         $this->entityManager->flush();
     }
 }

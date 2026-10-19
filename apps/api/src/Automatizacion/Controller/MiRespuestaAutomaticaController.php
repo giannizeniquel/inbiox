@@ -52,6 +52,6 @@ final class MiRespuestaAutomaticaController
             return null;
         }
 
-        return $usuario->getAgent();
+        return $usuario->getAgente();
     }
 }

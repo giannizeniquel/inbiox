@@ -60,7 +60,7 @@ class AuthControllerTest extends WebTestCase
         $user->setEmail($email);
         $user->setPassword(\password_hash($password, \PASSWORD_BCRYPT));
         $user->setRoles($roles);
-        $user->setIsActive($isActive);
+        $user->setActivo($isActive);
 
         $this->em->persist($user);
         $this->em->flush();
@@ -473,7 +473,7 @@ class AuthControllerTest extends WebTestCase
         // Deactivate the user in the database
         $user = $this->em->getRepository(Usuario::class)->findOneBy(['email' => 'deactivate-test@inbiox.local']);
         self::assertNotNull($user);
-        $user->setIsActive(false);
+        $user->setActivo(false);
         $this->em->flush();
 
         // Now try to access /me with the same JWT — should be rejected

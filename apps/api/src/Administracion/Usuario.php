@@ -31,20 +31,20 @@ class Usuario implements UserInterface, PasswordAuthenticatedUserInterface
     private array $roles = [];
 
     #[ORM\Column(name: 'is_active', type: Types::BOOLEAN, options: ['default' => true])]
-    private bool $isActive = true;
+    private bool $activo = true;
 
     #[ORM\Column(name: 'created_at', type: Types::DATETIME_IMMUTABLE)]
-    private \DateTimeImmutable $createdAt;
+    private \DateTimeImmutable $creadoAt;
 
     #[ORM\Column(name: 'updated_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
-    private ?\DateTimeImmutable $updatedAt = null;
+    private ?\DateTimeImmutable $actualizadoAt = null;
 
     #[ORM\OneToOne(mappedBy: 'usuario', targetEntity: Agente::class)]
-    private ?Agente $agent = null;
+    private ?Agente $agente = null;
 
     public function __construct()
     {
-        $this->createdAt = new \DateTimeImmutable();
+        $this->creadoAt = new \DateTimeImmutable();
     }
 
     public function getId(): ?int
@@ -100,41 +100,41 @@ class Usuario implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getRawRoles(): array
+    public function getRolesGuardados(): array
     {
         return $this->roles;
     }
 
-    public function isActive(): bool
+    public function isActivo(): bool
     {
-        return $this->isActive;
+        return $this->activo;
     }
 
-    public function setIsActive(bool $isActive): self
+    public function setActivo(bool $isActive): self
     {
-        $this->isActive = $isActive;
+        $this->activo = $isActive;
         $this->touch();
         return $this;
     }
 
-    public function getCreatedAt(): \DateTimeImmutable
+    public function getCreadoAt(): \DateTimeImmutable
     {
-        return $this->createdAt;
+        return $this->creadoAt;
     }
 
-    public function getUpdatedAt(): ?\DateTimeImmutable
+    public function getActualizadoAt(): ?\DateTimeImmutable
     {
-        return $this->updatedAt;
+        return $this->actualizadoAt;
     }
 
-    public function getAgent(): ?Agente
+    public function getAgente(): ?Agente
     {
-        return $this->agent;
+        return $this->agente;
     }
 
-    public function setAgent(?Agente $agent): self
+    public function setAgente(?Agente $agent): self
     {
-        $this->agent = $agent;
+        $this->agente = $agent;
         return $this;
     }
 
@@ -145,6 +145,6 @@ class Usuario implements UserInterface, PasswordAuthenticatedUserInterface
 
     private function touch(): void
     {
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->actualizadoAt = new \DateTimeImmutable();
     }
 }

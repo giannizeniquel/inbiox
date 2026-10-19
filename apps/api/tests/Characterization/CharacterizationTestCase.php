@@ -109,12 +109,12 @@ abstract class CharacterizationTestCase extends WebTestCase
         $user->setEmail($email);
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
         $user->setRoles($roles);
-        $user->setIsActive(true);
+        $user->setActivo(true);
         $this->em->persist($user);
 
         if (null !== $agent) {
             $agent->setUsuario($user);
-            $user->setAgent($agent);
+            $user->setAgente($agent);
             $this->em->persist($agent);
         }
 

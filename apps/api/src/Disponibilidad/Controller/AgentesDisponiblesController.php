@@ -34,7 +34,7 @@ final class AgentesDisponiblesController
             return new JsonResponse(['error' => 'Workspace not found'], Response::HTTP_NOT_FOUND);
         }
 
-        if (!$espacioDeTrabajo->isActive()) {
+        if (!$espacioDeTrabajo->isActivo()) {
             return new JsonResponse(['error' => 'Workspace is not active'], Response::HTTP_BAD_REQUEST);
         }
 

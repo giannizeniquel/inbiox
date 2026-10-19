@@ -70,7 +70,7 @@ final class MiConfiguracionController
         if ($espacioDeTrabajoActivo !== null) {
             $datosDelEspacioDeTrabajo = [
                 'id' => (int) $espacioDeTrabajoActivo->getId(),
-                'displayName' => $espacioDeTrabajoActivo->getDisplayName(),
+                'displayName' => $espacioDeTrabajoActivo->getNombreVisible(),
                 'phoneNumberId' => $espacioDeTrabajoActivo->getPhoneNumberId(),
             ];
         }
@@ -142,6 +142,6 @@ final class MiConfiguracionController
             return null;
         }
 
-        return $usuario->getAgent();
+        return $usuario->getAgente();
     }
 }

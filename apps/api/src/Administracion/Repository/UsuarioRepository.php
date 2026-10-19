@@ -23,10 +23,10 @@ class UsuarioRepository extends ServiceEntityRepository
      *
      * @return Usuario[]
      */
-    public function findPageWithAgent(int $offset, int $limit): array
+    public function findPaginaConAgente(int $offset, int $limit): array
     {
         return $this->createQueryBuilder('u')
-            ->leftJoin('u.agent', 'a')
+            ->leftJoin('u.agente', 'a')
             ->addSelect('a')
             ->setFirstResult($offset)
             ->setMaxResults($limit)
@@ -35,7 +35,7 @@ class UsuarioRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    public function findOtherByEmail(string $email, int $excludedId): ?Usuario
+    public function findOtroByEmail(string $email, int $excludedId): ?Usuario
     {
         return $this->createQueryBuilder('u')
             ->where('u.email = :email')

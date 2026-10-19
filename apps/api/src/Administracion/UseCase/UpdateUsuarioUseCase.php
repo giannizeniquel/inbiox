@@ -33,7 +33,7 @@ final class UpdateUsuarioUseCase
             if (!\is_string($data['email']) || empty($data['email'])) {
                 throw new \InvalidArgumentException('email must be a non-empty string');
             }
-            if (null !== $this->userRepository->findOtherByEmail($data['email'], (int) $user->getId())) {
+            if (null !== $this->userRepository->findOtroByEmail($data['email'], (int) $user->getId())) {
                 throw new StateConflictException('Email already in use');
             }
             $user->setEmail($data['email']);
@@ -54,7 +54,7 @@ final class UpdateUsuarioUseCase
         }
 
         if (isset($data['is_active'])) {
-            $user->setIsActive((bool) $data['is_active']);
+            $user->setActivo((bool) $data['is_active']);
         }
 
         $this->entityManager->flush();

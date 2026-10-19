@@ -27,10 +27,10 @@ class EspacioDeTrabajoDTO
         return new self(
             id: (int) $workspace->getId(),
             phoneNumberId: $workspace->getPhoneNumberId(),
-            displayName: $workspace->getDisplayName(),
-            isActive: $workspace->isActive(),
-            createdAt: $workspace->getCreatedAt()->format('Y-m-d\TH:i:sP'),
-            updatedAt: $workspace->getUpdatedAt()->format('Y-m-d\TH:i:sP'),
+            displayName: $workspace->getNombreVisible(),
+            isActive: $workspace->isActivo(),
+            createdAt: $workspace->getCreadoAt()->format('Y-m-d\TH:i:sP'),
+            updatedAt: $workspace->getActualizadoAt()->format('Y-m-d\TH:i:sP'),
             agentCount: $agentCount,
         );
     }

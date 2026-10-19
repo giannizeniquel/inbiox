@@ -18,7 +18,7 @@ final class DesactivarEspacioDeTrabajoUseCase
 
     public function execute(EspacioDeTrabajo $workspace): void
     {
-        $workspace->setActive(false);
+        $workspace->setActivo(false);
         $this->entityManager->flush();
     }
 }

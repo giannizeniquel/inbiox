@@ -47,7 +47,7 @@ final class SetEspacioDeTrabajoActivoUseCase
             throw new NotFoundException('Workspace not found');
         }
 
-        if (!$workspace->isActive()) {
+        if (!$workspace->isActivo()) {
             throw new \InvalidArgumentException('Workspace is not active');
         }
 
@@ -59,7 +59,7 @@ final class SetEspacioDeTrabajoActivoUseCase
             return $workspace;
         }
 
-        $agent = $user->getAgent();
+        $agent = $user->getAgente();
         if (null === $agent) {
             throw new NotFoundException('Agent not found');
         }

@@ -29,8 +29,8 @@ class UserTest extends TestCase
         self::assertSame('admin@inbiox.local', $user->getEmail());
         self::assertSame('admin@inbiox.local', $user->getUserIdentifier());
         self::assertSame('hashed_password_here', $user->getPassword());
-        self::assertTrue($user->isActive(), 'is_active must default to true');
-        self::assertNotNull($user->getCreatedAt(), 'created_at must be auto-set');
+        self::assertTrue($user->isActivo(), 'is_active must default to true');
+        self::assertNotNull($user->getCreadoAt(), 'created_at must be auto-set');
     }
 
     public function testUserImplementsRequiredInterfaces(): void
@@ -89,13 +89,13 @@ class UserTest extends TestCase
     public function testIsActiveCanBeSet(): void
     {
         $user = new Usuario();
-        self::assertTrue($user->isActive());
+        self::assertTrue($user->isActivo());
 
-        $user->setIsActive(false);
-        self::assertFalse($user->isActive());
+        $user->setActivo(false);
+        self::assertFalse($user->isActivo());
 
-        $user->setIsActive(true);
-        self::assertTrue($user->isActive());
+        $user->setActivo(true);
+        self::assertTrue($user->isActivo());
     }
 
     public function testSetRolesUpdatesRawRoles(): void
@@ -103,14 +103,14 @@ class UserTest extends TestCase
         $user = new Usuario();
         $user->setRoles(['ROLE_ADMIN']);
 
-        $raw = $user->getRawRoles();
+        $raw = $user->getRolesGuardados();
         self::assertSame(['ROLE_ADMIN'], $raw);
     }
 
     public function testUserWithoutAgent(): void
     {
         $user = new Usuario();
-        self::assertNull($user->getAgent(), 'User created without Agent must have null agent');
+        self::assertNull($user->getAgente(), 'User created without Agent must have null agent');
     }
 
     public function testGetIdBeforePersistIsNull(): void
@@ -122,20 +122,20 @@ class UserTest extends TestCase
     public function testUpdatedAtIsInitiallyNull(): void
     {
         $user = new Usuario();
-        self::assertNull($user->getUpdatedAt());
+        self::assertNull($user->getActualizadoAt());
     }
 
     public function testSetIsActiveTouchesUpdatedAt(): void
     {
         $user = new Usuario();
-        $before = $user->getUpdatedAt();
+        $before = $user->getActualizadoAt();
 
         // Small delay to ensure timestamp changes
         \usleep(1000);
-        $user->setIsActive(false);
+        $user->setActivo(false);
 
-        $after = $user->getUpdatedAt();
+        $after = $user->getActualizadoAt();
         self::assertNotNull($after, 'updatedAt must be set after modification');
-        self::assertGreaterThan($before ?? $user->getCreatedAt(), $after);
+        self::assertGreaterThan($before ?? $user->getCreadoAt(), $after);
     }
 }

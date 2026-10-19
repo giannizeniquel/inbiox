@@ -145,7 +145,7 @@ class BandejaController
         }
 
         $usuario = $this->security->getUser();
-        $agenteActualId = $usuario instanceof Usuario ? $usuario->getAgent()?->getId() : null;
+        $agenteActualId = $usuario instanceof Usuario ? $usuario->getAgente()?->getId() : null;
 
         $this->marcarTicketLeidoUseCase->execute($ticket, $agenteActualId);
 

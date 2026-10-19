@@ -61,7 +61,7 @@ final class CreateUsuarioUseCase
                 throw new StateConflictException('Agent already linked to another user');
             }
             $agent->setUsuario($user);
-            $user->setAgent($agent);
+            $user->setAgente($agent);
         }
 
         $this->entityManager->persist($user);

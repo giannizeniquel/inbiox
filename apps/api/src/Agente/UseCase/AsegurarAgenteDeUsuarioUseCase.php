@@ -22,7 +22,7 @@ final class AsegurarAgenteDeUsuarioUseCase
 
     public function execute(Usuario $usuario): Agente
     {
-        $agente = $usuario->getAgent() ?? $this->agenteRepository->findOneBy(['usuario' => $usuario]);
+        $agente = $usuario->getAgente() ?? $this->agenteRepository->findOneBy(['usuario' => $usuario]);
 
         if ($agente === null) {
             $agente = new Agente($usuario->getEmail() ?? 'Admin');

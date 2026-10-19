@@ -31,7 +31,7 @@ final class UserChecker implements UserCheckerInterface
             return;
         }
 
-        if (!$user->isActive()) {
+        if (!$user->isActivo()) {
             $ex = new DisabledException('User account is disabled.');
             $ex->setUser($user);
             throw $ex;

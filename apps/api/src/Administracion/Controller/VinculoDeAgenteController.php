@@ -40,7 +40,7 @@ final class VinculoDeAgenteController
      * - 409 on UNIQUE constraint violation
      */
     #[Route('/api/admin/agents/{id}/link-user', name: 'admin_agents_link_user', methods: ['POST'])]
-    public function linkUser(int $id, Request $request): JsonResponse
+    public function vincularUsuario(int $id, Request $request): JsonResponse
     {
         $agent = $this->agentRepository->find($id);
 
@@ -77,7 +77,7 @@ final class VinculoDeAgenteController
      * Unlinks the User from an Agent.
      */
     #[Route('/api/admin/agents/{id}/link-user', name: 'admin_agents_unlink_user', methods: ['DELETE'])]
-    public function unlinkUser(int $id): JsonResponse
+    public function desvincularUsuario(int $id): JsonResponse
     {
         $agent = $this->agentRepository->find($id);
 

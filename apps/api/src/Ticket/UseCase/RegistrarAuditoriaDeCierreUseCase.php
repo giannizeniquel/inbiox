@@ -28,7 +28,7 @@ final class RegistrarAuditoriaDeCierreUseCase
 
     public function execute(int $ticketId, string $nuevoEstado, ?int $responsableAnteriorId, Usuario $usuario): void
     {
-        $agenteActuanteId = $usuario->getAgent()?->getId();
+        $agenteActuanteId = $usuario->getAgente()?->getId();
 
         $tipo = $this->clasificador->clasificar($nuevoEstado, $responsableAnteriorId, $agenteActuanteId);
         $origen = $this->clasificador->referenciaDeActor($usuario);

@@ -37,7 +37,7 @@ final class WorkspaceScope
      * via PUT /api/me/workspace. Admin/Supervisor can switch to any workspace;
      * Agent can only switch to assigned workspaces.
      *
-     * @see MeWorkspaceController::setActiveWorkspace()
+     * @see MiEspacioDeTrabajoController::setEspacioDeTrabajoActivo()
      * @see AsegurarAgenteDeUsuarioUseCase — auto-creates Agent for admin/supervisor
      */
     public function getActivePhoneNumberId(): ?string
@@ -48,7 +48,7 @@ final class WorkspaceScope
             return null;
         }
 
-        $agent = $user->getAgent();
+        $agent = $user->getAgente();
 
         if (null === $agent) {
             return null;

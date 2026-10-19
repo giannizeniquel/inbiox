@@ -40,8 +40,8 @@ final class SeedUsuariosCommand extends Command
         $ws1 = $workspaces[0];
         $ws2 = $workspaces[1] ?? $workspaces[0];
         $output->writeln(sprintf('Workspaces: %s (%s), %s (%s)',
-            $ws1->getDisplayName(), $ws1->getPhoneNumberId(),
-            $ws2->getDisplayName(), $ws2->getPhoneNumberId(),
+            $ws1->getNombreVisible(), $ws1->getPhoneNumberId(),
+            $ws2->getNombreVisible(), $ws2->getPhoneNumberId(),
         ));
 
         // ── 2 Admins (with Agent for workspace switching) ──
@@ -58,14 +58,14 @@ final class SeedUsuariosCommand extends Command
             // Admin gets an Agent so workspace switcher works
             $agent = new Agente($a['email']);
             $agent->setUsuario($user);
-            $user->setAgent($agent);
+            $user->setAgente($agent);
             $agent->addEspacioDeTrabajo($ws1);
             $agent->addEspacioDeTrabajo($ws2);
             $agent->setEspacioDeTrabajoActivo($ws1);
 
             $this->em->persist($user);
             $this->em->persist($agent);
-            $output->writeln("Admin: {$a['email']} — active: {$ws1->getDisplayName()}");
+            $output->writeln("Admin: {$a['email']} — active: {$ws1->getNombreVisible()}");
         }
 
         // ── 2 Supervisores (with Agent for workspace switching) ──
@@ -82,14 +82,14 @@ final class SeedUsuariosCommand extends Command
             // Supervisor gets an Agent so workspace switcher works
             $agent = new Agente($s['email']);
             $agent->setUsuario($user);
-            $user->setAgent($agent);
+            $user->setAgente($agent);
             $agent->addEspacioDeTrabajo($ws1);
             $agent->addEspacioDeTrabajo($ws2);
             $agent->setEspacioDeTrabajoActivo($ws1);
 
             $this->em->persist($user);
             $this->em->persist($agent);
-            $output->writeln("Supervisor: {$s['email']} — active: {$ws1->getDisplayName()}");
+            $output->writeln("Supervisor: {$s['email']} — active: {$ws1->getNombreVisible()}");
         }
 
         // ── 6 Agentes ────────────────────────────
@@ -109,7 +109,7 @@ final class SeedUsuariosCommand extends Command
 
             $agent = new Agente($a['name']);
             $agent->setUsuario($user);
-            $user->setAgent($agent);
+            $user->setAgente($agent);
 
             foreach ($a['ws'] as $ws) {
                 $agent->addEspacioDeTrabajo($ws);
@@ -119,7 +119,7 @@ final class SeedUsuariosCommand extends Command
             $this->em->persist($user);
             $this->em->persist($agent);
             $output->writeln(sprintf('Agent: %s (%s) — active: %s',
-                $a['email'], $a['name'], $a['active']->getDisplayName()));
+                $a['email'], $a['name'], $a['active']->getNombreVisible()));
         }
 
         $this->em->flush();

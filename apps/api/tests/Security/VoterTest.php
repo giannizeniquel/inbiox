@@ -59,7 +59,7 @@ class VoterTest extends TestCase
         if (null !== $userAgentId) {
             $agent = $this->createMock(Agente::class);
             $agent->method('getId')->willReturn($userAgentId);
-            $user->setAgent($agent);
+            $user->setAgente($agent);
         }
 
         $ticket = $this->createMock(Ticket::class);

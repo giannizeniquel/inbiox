@@ -38,7 +38,7 @@ class TicketWorkflowControllerAuditFailureTest extends TestCase
         $reflection->setAccessible(true);
         $reflection->setValue($user, 9);
         $user->setRoles(['ROLE_SUPERVISOR']);
-        $user->setAgent($agent);
+        $user->setAgente($agent);
 
         $ticket = $this->createMock(Ticket::class);
         $ticket->method('getAgenteAsignadoId')->willReturn(7);

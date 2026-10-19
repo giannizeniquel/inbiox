@@ -37,10 +37,10 @@ final class MiEspacioDeTrabajoController
     ) {}
 
     #[Route('/api/me/workspace', name: 'app_me_workspace', methods: ['GET'])]
-    public function getActiveWorkspace(): JsonResponse
+    public function getEspacioDeTrabajoActivo(): JsonResponse
     {
         $user = $this->security->getUser();
-        $agent = $user instanceof Usuario ? $user->getAgent() : null;
+        $agent = $user instanceof Usuario ? $user->getAgente() : null;
         if (null === $agent) {
             return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
         }
@@ -57,7 +57,7 @@ final class MiEspacioDeTrabajoController
     }
 
     #[Route('/api/me/workspace', name: 'app_me_workspace_set', methods: ['PUT'])]
-    public function setActiveWorkspace(Request $request): JsonResponse
+    public function setEspacioDeTrabajoActivo(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
 
@@ -89,7 +89,7 @@ final class MiEspacioDeTrabajoController
     }
 
     #[Route('/api/me/workspaces', name: 'app_me_workspaces', methods: ['GET'])]
-    public function listMyWorkspaces(): JsonResponse
+    public function listarMisEspaciosDeTrabajo(): JsonResponse
     {
         $user = $this->security->getUser();
         if (!$user instanceof Usuario) {
@@ -98,13 +98,13 @@ final class MiEspacioDeTrabajoController
 
         // Admin/Supervisor: see ALL workspaces
         if ($this->security->isGranted('ROLE_ADMIN') || $this->security->isGranted('ROLE_SUPERVISOR')) {
-            $workspaces = $this->workspaceRepository->findBy(['isActive' => true]);
+            $workspaces = $this->workspaceRepository->findBy(['activo' => true]);
             $items = array_map(fn(EspacioDeTrabajo $w) => EspacioDeTrabajoDTO::fromEntity($w)->toArray(), $workspaces);
             return new JsonResponse($items);
         }
 
         // Agent: only assigned workspaces
-        $agent = $user->getAgent();
+        $agent = $user->getAgente();
         if (null === $agent) {
             return new JsonResponse([], Response::HTTP_OK);
         }

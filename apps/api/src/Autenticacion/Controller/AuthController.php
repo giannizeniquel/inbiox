@@ -108,9 +108,9 @@ final class AuthController extends AbstractController
             'id' => $user->getId(),
             'email' => $user->getEmail(),
             'roles' => $user->getRoles(),
-            'is_active' => $user->isActive(),
-            'agent_id' => $user->getAgent()?->getId(),
-            'agent_name' => $user->getAgent()?->getNombre(),
+            'is_active' => $user->isActivo(),
+            'agent_id' => $user->getAgente()?->getId(),
+            'agent_name' => $user->getAgente()?->getNombre(),
         ]);
     }
 }

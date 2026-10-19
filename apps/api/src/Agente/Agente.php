@@ -26,7 +26,7 @@ class Agente
     #[ORM\Column(name: 'name', type: Types::STRING, length: 255)]
     private string $nombre;
 
-    #[ORM\OneToOne(targetEntity: Usuario::class, inversedBy: 'agent')]
+    #[ORM\OneToOne(targetEntity: Usuario::class, inversedBy: 'agente')]
     #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: true, unique: true)]
     private ?Usuario $usuario = null;
 
@@ -72,7 +72,7 @@ class Agente
     #[ORM\OneToMany(targetEntity: Turno::class, mappedBy: 'agente', orphanRemoval: true)]
     private Collection $turnos;
 
-    #[ORM\ManyToMany(targetEntity: EspacioDeTrabajo::class, inversedBy: 'agents')]
+    #[ORM\ManyToMany(targetEntity: EspacioDeTrabajo::class, inversedBy: 'agentes')]
     #[ORM\JoinTable(name: 'agent_workspace')]
     #[ORM\JoinColumn(name: 'agent_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     #[ORM\InverseJoinColumn(name: 'workspace_id', referencedColumnName: 'id', onDelete: 'CASCADE')]

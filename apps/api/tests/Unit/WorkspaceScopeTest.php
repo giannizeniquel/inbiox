@@ -33,7 +33,7 @@ class WorkspaceScopeTest extends TestCase
 
         $user = new Usuario();
         $user->setRoles(['ROLE_AGENT']);
-        $user->setAgent($agent);
+        $user->setAgente($agent);
 
         $security = $this->createMock(Security::class);
         $security->method('getUser')->willReturn($user);
@@ -82,7 +82,7 @@ class WorkspaceScopeTest extends TestCase
 
         $user = new Usuario();
         $user->setRoles(['ROLE_AGENT']);
-        $user->setAgent($agent);
+        $user->setAgente($agent);
 
         $security = $this->createMock(Security::class);
         $security->method('getUser')->willReturn($user);

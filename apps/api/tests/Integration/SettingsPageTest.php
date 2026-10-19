@@ -355,7 +355,7 @@ class SettingsPageTest extends WebTestCase
     {
         $user = $this->em->getRepository(Usuario::class)->findOneBy(['email' => 'settings-agent@inbiox.local']);
         \assert($user !== null);
-        $agent = $user->getAgent();
+        $agent = $user->getAgente();
         \assert($agent !== null);
         return $agent;
     }

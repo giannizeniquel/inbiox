@@ -63,7 +63,7 @@ class AgentTest extends TestCase
         $user = new Usuario();
         $user->setEmail('admin@inbiox.local');
 
-        self::assertNull($user->getAgent(), 'User created without Agent must have null agent');
+        self::assertNull($user->getAgente(), 'User created without Agent must have null agent');
     }
 
     public function testAgentRemainsFunctionalForTicketAssignment(): void
@@ -102,9 +102,9 @@ class AgentTest extends TestCase
         // User's inverse side maps back to the same agent
         // Note: Doctrine manages the inversedBy — at entity level we set it explicitly
         // The inverse side is set via User::setAgent
-        $user->setAgent($agent);
+        $user->setAgente($agent);
 
-        self::assertSame($agent, $user->getAgent());
+        self::assertSame($agent, $user->getAgente());
         self::assertSame($user, $agent->getUsuario());
     }
 

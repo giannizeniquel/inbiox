@@ -42,7 +42,7 @@ final class EquipoController
             return new JsonResponse(['error' => 'Unauthorized'], 401);
         }
 
-        $agente = $usuario->getAgent();
+        $agente = $usuario->getAgente();
         if (null === $agente) {
             return new JsonResponse([]);
         }

@@ -55,7 +55,7 @@ final class WorkspaceControllerCharacterizationTest extends CharacterizationTest
         $first = $this->createWorkspace('char-ws-1', 'First');
         $second = $this->createWorkspace('char-ws-2', 'Second');
         $agent = $this->createAgent('Member');
-        $second->addAgent($agent);
+        $second->addAgente($agent);
         $this->em->flush();
         $token = $this->adminToken();
 
@@ -224,7 +224,7 @@ final class WorkspaceControllerCharacterizationTest extends CharacterizationTest
         $old = $this->createAgent('Old');
         $new1 = $this->createAgent('New 1');
         $new2 = $this->createAgent('New 2');
-        $workspace->addAgent($old);
+        $workspace->addAgente($old);
         $this->em->flush();
         $token = $this->adminToken();
 
@@ -245,7 +245,7 @@ final class WorkspaceControllerCharacterizationTest extends CharacterizationTest
     public function testAssignAgentsWithEmptyBodyListClearsAgents(): void
     {
         $workspace = $this->createWorkspace('char-assign', 'Assign');
-        $workspace->addAgent($this->createAgent('Old'));
+        $workspace->addAgente($this->createAgent('Old'));
         $this->em->flush();
         $token = $this->adminToken();
 
@@ -260,7 +260,7 @@ final class WorkspaceControllerCharacterizationTest extends CharacterizationTest
     {
         $workspace = $this->createWorkspace('char-assign', 'Assign');
         $old = $this->createAgent('Old');
-        $workspace->addAgent($old);
+        $workspace->addAgente($old);
         $this->em->flush();
         $token = $this->adminToken();
         $uri = '/api/admin/workspaces/' . $workspace->getId() . '/agents';

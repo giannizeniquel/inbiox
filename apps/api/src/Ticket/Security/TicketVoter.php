@@ -94,7 +94,7 @@ final class TicketVoter extends Voter
 
         // AGENT can only act on own tickets
         if ($this->security->isGranted('ROLE_AGENT')) {
-            $agente = $usuario->getAgent();
+            $agente = $usuario->getAgente();
 
             if (null === $agente) {
                 return false; // R1: no linked agent → 403

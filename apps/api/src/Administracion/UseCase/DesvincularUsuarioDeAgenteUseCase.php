@@ -25,7 +25,7 @@ final class DesvincularUsuarioDeAgenteUseCase
         }
 
         $agent->setUsuario(null);
-        $user->setAgent(null);
+        $user->setAgente(null);
         $this->entityManager->flush();
     }
 }

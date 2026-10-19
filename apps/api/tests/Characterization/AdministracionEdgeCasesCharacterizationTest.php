@@ -94,7 +94,7 @@ final class AdministracionEdgeCasesCharacterizationTest extends Characterization
         $agent = $this->createAgent('Linked');
         $this->createUser('owner@characterization.local', ['ROLE_AGENT'], $agent);
         $inactive = $this->createUser('inactive@characterization.local', ['ROLE_AGENT']);
-        $inactive->setIsActive(false);
+        $inactive->setActivo(false);
         $this->em->flush();
         $token = $this->adminToken();
 
@@ -128,7 +128,7 @@ final class AdministracionEdgeCasesCharacterizationTest extends Characterization
     {
         $workspace = $this->createWorkspace('edge-ws-1');
         $kept = $this->createAgent('Kept');
-        $workspace->addAgent($kept);
+        $workspace->addAgente($kept);
         $team = new Equipo($workspace, 'Edge team');
         $team->addAgente($kept);
         $this->em->persist($team);

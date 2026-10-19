@@ -76,12 +76,12 @@ final class AgenteRelationsCharacterizationTest extends KernelTestCase
 
         $agente = $this->em->find(Agente::class, $agenteId);
         self::assertSame($usuarioId, $agente->getUsuario()?->getId());
-        self::assertSame($agenteId, $this->em->find(Usuario::class, $usuarioId)->getAgent()?->getId());
+        self::assertSame($agenteId, $this->em->find(Usuario::class, $usuarioId)->getAgente()?->getId());
         self::assertEqualsCanonicalizing([$primeroId, $segundoId], $this->ids($agente->getEspaciosDeTrabajo()));
         self::assertSame($segundoId, $agente->getEspacioDeTrabajoActivo()?->getId());
         self::assertSame([$equipoId], $this->ids($agente->getEquipos()));
         self::assertCount(1, $agente->getTurnos());
-        self::assertSame([$agenteId], $this->ids($this->em->find(EspacioDeTrabajo::class, $primeroId)->getAgents()));
+        self::assertSame([$agenteId], $this->ids($this->em->find(EspacioDeTrabajo::class, $primeroId)->getAgentes()));
         self::assertSame([$agenteId], $this->ids($this->em->find(Equipo::class, $equipoId)->getAgentes()));
 
         $conn = $this->em->getConnection();

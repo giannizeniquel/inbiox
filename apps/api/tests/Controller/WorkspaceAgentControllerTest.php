@@ -62,7 +62,7 @@ class WorkspaceAgentControllerTest extends WebTestCase
         $user->setEmail($email);
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
         $user->setRoles($roles);
-        $user->setIsActive(true);
+        $user->setActivo(true);
 
         if (null !== $agent) {
             $agent->setUsuario($user);
@@ -88,7 +88,7 @@ class WorkspaceAgentControllerTest extends WebTestCase
     private function createWorkspace(string $phoneNumberId = '+1234567890', bool $active = true): EspacioDeTrabajo
     {
         $workspace = new EspacioDeTrabajo($phoneNumberId, 'Test Workspace');
-        $workspace->setActive($active);
+        $workspace->setActivo($active);
         $this->em->persist($workspace);
         $this->em->flush();
 

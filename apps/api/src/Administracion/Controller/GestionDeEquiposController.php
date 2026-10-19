@@ -47,7 +47,7 @@ final class GestionDeEquiposController
     ) {}
 
     #[Route('/api/admin/teams', name: 'app_admin_teams_list', methods: ['GET'])]
-    public function list(Request $request): JsonResponse
+    public function listar(Request $request): JsonResponse
     {
         $page = max(1, (int) $request->query->get('page', 1));
         $limit = min(100, max(1, (int) $request->query->get('limit', 20)));
@@ -56,7 +56,7 @@ final class GestionDeEquiposController
         $total = $this->teamRepository->count([]);
         $teams = $this->teamRepository->findBy([], ['id' => 'DESC'], $limit, $offset);
 
-        $items = array_map(fn(Equipo $t) => $this->serializeTeam($t), $teams);
+        $items = array_map(fn(Equipo $t) => $this->serializeEquipo($t), $teams);
 
         return new JsonResponse([
             'data' => $items,
@@ -86,7 +86,7 @@ final class GestionDeEquiposController
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }
 
-        return new JsonResponse($this->serializeTeam($team), Response::HTTP_CREATED);
+        return new JsonResponse($this->serializeEquipo($team), Response::HTTP_CREATED);
     }
 
     #[Route('/api/admin/teams/{id}', name: 'app_admin_teams_get', methods: ['GET'])]
@@ -98,7 +98,7 @@ final class GestionDeEquiposController
             return new JsonResponse(['error' => 'Team not found'], 404);
         }
 
-        return new JsonResponse($this->serializeTeam($team));
+        return new JsonResponse($this->serializeEquipo($team));
     }
 
     #[Route('/api/admin/teams/{id}', name: 'app_admin_teams_update', methods: ['PUT'])]
@@ -124,7 +124,7 @@ final class GestionDeEquiposController
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }
 
-        return new JsonResponse($this->serializeTeam($team));
+        return new JsonResponse($this->serializeEquipo($team));
     }
 
     #[Route('/api/admin/teams/{id}', name: 'app_admin_teams_delete', methods: ['DELETE'])]
@@ -142,7 +142,7 @@ final class GestionDeEquiposController
     }
 
     #[Route('/api/admin/teams/{id}/agents', name: 'app_admin_teams_assign_agents', methods: ['PUT'])]
-    public function assignAgents(int $id, Request $request): JsonResponse
+    public function asignarAgentes(int $id, Request $request): JsonResponse
     {
         $team = $this->teamRepository->find($id);
 
@@ -176,7 +176,7 @@ final class GestionDeEquiposController
     /**
      * @return array<string, mixed>
      */
-    private function serializeTeam(Equipo $team): array
+    private function serializeEquipo(Equipo $team): array
     {
         $agentIds = [];
         foreach ($team->getAgentes() as $agent) {

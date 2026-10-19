@@ -27,7 +27,7 @@ final class MercureTokenController extends AbstractController
             return new JsonResponse(['error' => 'Unauthorized'], 401);
         }
 
-        $agent = $user->getAgent();
+        $agent = $user->getAgente();
         $token = $this->jwtService->issueForUser($user, $agent);
 
         return new JsonResponse(['token' => $token->toString()]);

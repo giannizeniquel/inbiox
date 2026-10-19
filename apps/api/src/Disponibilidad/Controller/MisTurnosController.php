@@ -80,6 +80,6 @@ final class MisTurnosController
             return null;
         }
 
-        return $usuario->getAgent();
+        return $usuario->getAgente();
     }
 }
