@@ -6,16 +6,16 @@ namespace App\Conversacion\Controller;
 
 use App\Compartido\Graph\GraphClient;
 use App\Agente\UseCase\AsegurarAgenteDeUsuarioUseCase;
-use App\Conversacion\UseCase\SendOutboundMessageUseCase;
-use App\Conversacion\UseCase\SendTemplateUseCase;
-use App\Conversacion\UseCase\UploadMediaUseCase;
+use App\Conversacion\UseCase\EnviarMensajeSalienteUseCase;
+use App\Conversacion\UseCase\EnviarPlantillaUseCase;
+use App\Conversacion\UseCase\SubirAdjuntoUseCase;
 use App\Administracion\Usuario;
-use App\Conversacion\ConversationWindowExpiredException;
-use App\Conversacion\RecipientPhoneNotFoundException;
+use App\Conversacion\VentanaVencidaException;
+use App\Conversacion\TelefonoDeDestinatarioNoEncontradoException;
 use App\Compartido\NotFoundException;
 use App\Compartido\Graph\GraphApiException;
-use App\Conversacion\MediaTooLargeException;
-use App\Conversacion\MediaTypeNotAllowedException;
+use App\Conversacion\AdjuntoDemasiadoGrandeException;
+use App\Conversacion\MimeDeAdjuntoNoPermitidoException;
 use App\Compartido\StateConflictException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -27,17 +27,17 @@ use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_AGENT')]
-class ProviderProxyController extends AbstractController
+class ProxyDeProveedorController extends AbstractController
 {
     private const GRAPH_AUTH_ERROR = 401;   // Meta auth/oauth errors
     private const GRAPH_RATE_LIMIT = 429;    // Too many requests
 
     public function __construct(
         private readonly GraphClient $graphClient,
-        private readonly SendOutboundMessageUseCase $sendOutboundMessage,
-        private readonly SendTemplateUseCase $sendTemplateUseCase,
+        private readonly EnviarMensajeSalienteUseCase $sendOutboundMessage,
+        private readonly EnviarPlantillaUseCase $sendTemplateUseCase,
         private readonly AsegurarAgenteDeUsuarioUseCase $ensureAgentForUser,
-        private readonly UploadMediaUseCase $uploadMediaUseCase,
+        private readonly SubirAdjuntoUseCase $uploadMediaUseCase,
     ) {}
 
     #[Route('/api/provider/send', name: 'app_provider_send', methods: ['POST'])]
@@ -82,7 +82,7 @@ class ProviderProxyController extends AbstractController
                 filename: $filename,
                 size: $size,
             );
-        } catch (ConversationWindowExpiredException $e) {
+        } catch (VentanaVencidaException $e) {
             return new JsonResponse(
                 [
                     'type' => 'CONVERSATION_WINDOW_EXPIRED',
@@ -103,7 +103,7 @@ class ProviderProxyController extends AbstractController
                 ['error' => $e->getMessage()],
                 Response::HTTP_NOT_FOUND
             );
-        } catch (RecipientPhoneNotFoundException $e) {
+        } catch (TelefonoDeDestinatarioNoEncontradoException $e) {
             return new JsonResponse(
                 ['type' => 'PHONE_NOT_FOUND', 'message' => $e->getMessage()],
                 Response::HTTP_UNPROCESSABLE_ENTITY
@@ -196,7 +196,7 @@ class ProviderProxyController extends AbstractController
                 ['error' => $e->getMessage()],
                 Response::HTTP_NOT_FOUND
             );
-        } catch (RecipientPhoneNotFoundException $e) {
+        } catch (TelefonoDeDestinatarioNoEncontradoException $e) {
             return new JsonResponse(
                 ['type' => 'PHONE_NOT_FOUND', 'message' => $e->getMessage()],
                 Response::HTTP_UNPROCESSABLE_ENTITY
@@ -245,7 +245,7 @@ class ProviderProxyController extends AbstractController
                 filename: $file->getClientOriginalName(),
                 ticketId: $request->request->all()['ticketId'] ?? null,
             );
-        } catch (MediaTooLargeException $e) {
+        } catch (AdjuntoDemasiadoGrandeException $e) {
             return new JsonResponse(
                 [
                     'error' => 'FILE_TOO_LARGE',
@@ -254,7 +254,7 @@ class ProviderProxyController extends AbstractController
                 ],
                 Response::HTTP_REQUEST_ENTITY_TOO_LARGE
             );
-        } catch (MediaTypeNotAllowedException $e) {
+        } catch (MimeDeAdjuntoNoPermitidoException $e) {
             return new JsonResponse(
                 [
                     'error' => 'UNSUPPORTED_TYPE',

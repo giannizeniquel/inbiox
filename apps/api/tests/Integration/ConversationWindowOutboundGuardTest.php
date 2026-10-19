@@ -2,9 +2,9 @@
 
 namespace App\Tests\Integration;
 
-use App\Conversacion\UseCase\HandleInboundMessageUseCase;
-use App\Conversacion\UseCase\HandleOutboundMessageUseCase;
-use App\Conversacion\ConversationWindowExpiredException;
+use App\Conversacion\UseCase\ProcesarMensajeEntranteUseCase;
+use App\Conversacion\UseCase\ProcesarMensajeSalienteUseCase;
+use App\Conversacion\VentanaVencidaException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -45,7 +45,7 @@ class ConversationWindowOutboundGuardTest extends KernelTestCase
 
     public function testOutboundSendIsRejectedOnAnExpiredWindowWithNoPhantomMessageOrTransition(): void
     {
-        $inboundUseCase = static::getContainer()->get(HandleInboundMessageUseCase::class);
+        $inboundUseCase = static::getContainer()->get(ProcesarMensajeEntranteUseCase::class);
         $inboundUseCase->processInboundMessage('+5491100000001', 'Hello, need help');
 
         $ticket = $this->em->getConnection()->fetchAssociative(
@@ -64,9 +64,9 @@ class ConversationWindowOutboundGuardTest extends KernelTestCase
 
         $messageCountBefore = (int) $this->em->getConnection()->fetchOne('SELECT COUNT(*) FROM messages');
 
-        $outboundUseCase = static::getContainer()->get(HandleOutboundMessageUseCase::class);
+        $outboundUseCase = static::getContainer()->get(ProcesarMensajeSalienteUseCase::class);
 
-        $this->expectException(ConversationWindowExpiredException::class);
+        $this->expectException(VentanaVencidaException::class);
 
         try {
             $outboundUseCase->processOutboundMessage($ticketId, 'Sorry for the delay', 0);
@@ -81,7 +81,7 @@ class ConversationWindowOutboundGuardTest extends KernelTestCase
 
     public function testOutboundSendSucceedsInsideTheWindow(): void
     {
-        $inboundUseCase = static::getContainer()->get(HandleInboundMessageUseCase::class);
+        $inboundUseCase = static::getContainer()->get(ProcesarMensajeEntranteUseCase::class);
         $inboundUseCase->processInboundMessage('+5491100000002', 'Hello, need help');
 
         $ticket = $this->em->getConnection()->fetchAssociative(
@@ -98,7 +98,7 @@ class ConversationWindowOutboundGuardTest extends KernelTestCase
         );
         $this->em->clear();
 
-        $outboundUseCase = static::getContainer()->get(HandleOutboundMessageUseCase::class);
+        $outboundUseCase = static::getContainer()->get(ProcesarMensajeSalienteUseCase::class);
         $result = $outboundUseCase->processOutboundMessage($ticketId, 'Hi, how can I help?', 0);
 
         self::assertSame('ok', $result['status']);

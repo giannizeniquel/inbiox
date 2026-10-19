@@ -18,7 +18,7 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
  * SUPERVISOR+ can access any message.
  * AGENT can access messages on tickets assigned to them.
  */
-final class MessageVoter extends Voter
+final class MensajeVoter extends Voter
 {
     public const ACCESS = 'ACCESS';
 

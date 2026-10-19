@@ -2,7 +2,7 @@
 
 namespace App\Compartido\Controller;
 
-use App\Conversacion\UseCase\HandleInboundMessageUseCase;
+use App\Conversacion\UseCase\ProcesarMensajeEntranteUseCase;
 use App\Asignacion\UseCase\AsignarTicketUseCase;
 use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -17,7 +17,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 class DebugController extends AbstractController
 {
     public function __construct(
-        private HandleInboundMessageUseCase $handleInbound,
+        private ProcesarMensajeEntranteUseCase $handleInbound,
         private AsignarTicketUseCase $assignTicket,
         private CambiarEstadoDeTicketUseCase $transitionStatus,
         private KernelInterface $kernel,

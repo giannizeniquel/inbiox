@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Conversacion\Controller;
 
-use App\Conversacion\UseCase\ProcessWebhookPayloadUseCase;
-use App\Conversacion\UseCase\RecordWebhookPayloadUseCase;
+use App\Conversacion\UseCase\ProcesarPayloadWebhookUseCase;
+use App\Conversacion\UseCase\RegistrarPayloadWebhookUseCase;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -26,8 +26,8 @@ class WebhookController extends AbstractController
     public function __construct(
         private readonly string $verifyToken,
         private readonly string $appSecret,
-        private readonly ProcessWebhookPayloadUseCase $processWebhookPayload,
-        private readonly RecordWebhookPayloadUseCase $recordWebhookPayload,
+        private readonly ProcesarPayloadWebhookUseCase $processWebhookPayload,
+        private readonly RegistrarPayloadWebhookUseCase $recordWebhookPayload,
         private readonly LoggerInterface $logger,
     ) {}
 

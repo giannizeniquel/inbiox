@@ -167,8 +167,8 @@ La auto-asignación corre **de forma síncrona dentro de la transacción del men
 ### R10. Mensaje marcado "enviado" que no se envió
 
 **[DATOS] · Confirmado (lectura).**
-`SendOutboundMessageUseCase` (llamado por `ProviderProxyController::send`) persiste el mensaje y cambia estado/dueño del ticket **antes** de llamar a WhatsApp. Si WhatsApp falla, se devuelve error pero el mensaje queda guardado con `delivery_status = 'sent'`. No hay compensación.
-El problema inverso también existe: cuando el caso de uso detecta un duplicado (`duplicate_skipped`), el caso de uso de envío **no lo revisa y envía igual a WhatsApp** (`SendOutboundMessageUseCase.php:69-91`). Como el frontend reintenta el POST automáticamente, un error de red puede hacer llegar **el mismo mensaje hasta 3 veces** al cliente mientras la base registra uno solo. Detalle en [04 § F2](04-flujos.md#f2-respuesta-del-agente).
+`EnviarMensajeSalienteUseCase` (llamado por `ProxyDeProveedorController::send`) persiste el mensaje y cambia estado/dueño del ticket **antes** de llamar a WhatsApp. Si WhatsApp falla, se devuelve error pero el mensaje queda guardado con `delivery_status = 'sent'`. No hay compensación.
+El problema inverso también existe: cuando el caso de uso detecta un duplicado (`duplicate_skipped`), el caso de uso de envío **no lo revisa y envía igual a WhatsApp** (`EnviarMensajeSalienteUseCase.php:69-91`). Como el frontend reintenta el POST automáticamente, un error de red puede hacer llegar **el mismo mensaje hasta 3 veces** al cliente mientras la base registra uno solo. Detalle en [04 § F2](04-flujos.md#f2-respuesta-del-agente).
 
 ### R11. Huecos en el tiempo real
 
@@ -178,7 +178,7 @@ Resolver, cerrar, transicionar y el cierre por ventana **no publican eventos**; 
 ### R12. Lista blanca de media acepta cualquier archivo
 
 **[SEG] (bajo) · Confirmado.**
-`apps/api/src/Conversacion/MediaValidator.php:56-61` acepta ejecutables, `application/octet-stream` (que funciona como comodín) y `image/svg+xml`. Fue una decisión explícita (commit `941afac`) para poder descargar cualquier adjunto de WhatsApp. Mitigante: los archivos se sirven por URL prefirmada de S3/MinIO en otro origen.
+`apps/api/src/Conversacion/ValidadorDeAdjunto.php:56-61` acepta ejecutables, `application/octet-stream` (que funciona como comodín) y `image/svg+xml`. Fue una decisión explícita (commit `941afac`) para poder descargar cualquier adjunto de WhatsApp. Mitigante: los archivos se sirven por URL prefirmada de S3/MinIO en otro origen.
 
 ### R13. Lecturas por ID sin filtro de workspace
 
@@ -206,7 +206,7 @@ El servicio `window-closer` está detrás de un *profile* de docker-compose: con
 ### R16. Concurrencia en asignación manual (TOCTOU)
 
 **[DATOS] · Confirmado (lectura); deuda ya registrada en el análisis de brecha.**
-`AsignarTicketUseCase.php:78-84` lee el ticket y después lo bloquea (`findById()` + `lock()`); el bloqueo no refresca la entidad. Bajo REPEATABLE READ, dos asignaciones simultáneas pueden registrar un tipo de asignación incorrecto y repetir el número de secuencia de eventos. Mismo patrón en `HandleInboundMessageUseCase.php:332,376`. El bug equivalente ya se corrigió en `HandleOutboundMessageUseCase` con `findByIdForUpdate()`.
+`AsignarTicketUseCase.php:78-84` lee el ticket y después lo bloquea (`findById()` + `lock()`); el bloqueo no refresca la entidad. Bajo REPEATABLE READ, dos asignaciones simultáneas pueden registrar un tipo de asignación incorrecto y repetir el número de secuencia de eventos. Mismo patrón en `ProcesarMensajeEntranteUseCase.php:332,376`. El bug equivalente ya se corrigió en `ProcesarMensajeSalienteUseCase` con `findByIdForUpdate()`.
 
 ### R17. Deuda de comprensión
 

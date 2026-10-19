@@ -11,12 +11,12 @@ use App\Compartido\Graph\GraphApiException;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Ulid;
 
-class MediaDownloadService
+class DescargaDeAdjuntoService
 {
     public function __construct(
         private readonly GraphClient $graphClient,
         private readonly MediaStorageService $storageService,
-        private readonly MediaValidator $validator,
+        private readonly ValidadorDeAdjunto $validator,
         private readonly LoggerInterface $logger,
     ) {}
 
@@ -54,7 +54,7 @@ class MediaDownloadService
         }
 
         $size = strlen($binary);
-        $kind = MediaKind::fromMime($mimeType);
+        $kind = TipoDeAdjunto::fromMime($mimeType);
 
         // Validate size (skip validation if graph already sent it — we still enforce)
         try {

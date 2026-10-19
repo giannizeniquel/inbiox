@@ -10,6 +10,6 @@ namespace App\Conversacion;
  *
  * Controllers map it to 422 `PHONE_NOT_FOUND` with the exception message.
  */
-final class RecipientPhoneNotFoundException extends \RuntimeException
+final class TelefonoDeDestinatarioNoEncontradoException extends \RuntimeException
 {
 }

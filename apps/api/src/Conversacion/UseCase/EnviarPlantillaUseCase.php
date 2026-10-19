@@ -7,7 +7,7 @@ namespace App\Conversacion\UseCase;
 use App\Compartido\Graph\GraphApiException;
 use App\Compartido\Graph\GraphClient;
 use App\Compartido\NotFoundException;
-use App\Conversacion\RecipientPhoneNotFoundException;
+use App\Conversacion\TelefonoDeDestinatarioNoEncontradoException;
 use App\Ticket\Repository\TicketRepository;
 
 /**
@@ -17,12 +17,12 @@ use App\Ticket\Repository\TicketRepository;
  * ticket's status or assignee. It stores a message only when Graph returns
  * a WAMID.
  */
-final class SendTemplateUseCase
+final class EnviarPlantillaUseCase
 {
     public function __construct(
         private readonly TicketRepository $ticketRepository,
         private readonly GraphClient $graphClient,
-        private readonly RecordSentTemplateUseCase $recordSentTemplate,
+        private readonly RegistrarPlantillaEnviadaUseCase $recordSentTemplate,
     ) {}
 
     /**
@@ -36,7 +36,7 @@ final class SendTemplateUseCase
      * @return ?string the WAMID
      *
      * @throws NotFoundException
-     * @throws RecipientPhoneNotFoundException
+     * @throws TelefonoDeDestinatarioNoEncontradoException
      * @throws GraphApiException
      */
     public function execute(

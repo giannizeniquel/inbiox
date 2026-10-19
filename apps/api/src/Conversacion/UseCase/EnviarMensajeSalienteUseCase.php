@@ -7,8 +7,8 @@ namespace App\Conversacion\UseCase;
 use App\Compartido\Graph\GraphApiException;
 use App\Compartido\Graph\GraphClient;
 use App\Compartido\NotFoundException;
-use App\Conversacion\MediaKind;
-use App\Conversacion\RecipientPhoneNotFoundException;
+use App\Conversacion\TipoDeAdjunto;
+use App\Conversacion\TelefonoDeDestinatarioNoEncontradoException;
 use App\Ticket\Repository\TicketRepository;
 
 /**
@@ -18,13 +18,13 @@ use App\Ticket\Repository\TicketRepository;
  * Graph call, so it stays stored when the recipient cannot be resolved or
  * Graph rejects the send.
  */
-final class SendOutboundMessageUseCase
+final class EnviarMensajeSalienteUseCase
 {
     public function __construct(
         private readonly TicketRepository $ticketRepository,
         private readonly GraphClient $graphClient,
-        private readonly HandleOutboundMessageUseCase $outboundUseCase,
-        private readonly MarkOutboundMessageSentUseCase $markOutboundMessageSent,
+        private readonly ProcesarMensajeSalienteUseCase $outboundUseCase,
+        private readonly MarcarMensajeSalienteEnviadoUseCase $markOutboundMessageSent,
     ) {}
 
     /**
@@ -35,7 +35,7 @@ final class SendOutboundMessageUseCase
      * @return array{messageId: mixed, externalId: ?string}
      *
      * @throws NotFoundException               the ticket disappeared after the message was stored
-     * @throws RecipientPhoneNotFoundException
+     * @throws TelefonoDeDestinatarioNoEncontradoException
      * @throws GraphApiException
      */
     public function execute(
@@ -61,7 +61,7 @@ final class SendOutboundMessageUseCase
                 'caption' => $caption,
                 'filename' => $filename,
                 'size' => $size,
-                'kind' => MediaKind::fromMime($mimeType)->value,
+                'kind' => TipoDeAdjunto::fromMime($mimeType)->value,
             ];
         }
 

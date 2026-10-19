@@ -12,7 +12,7 @@ use Doctrine\ORM\EntityManagerInterface;
  * so status webhooks can find it, and marks it sent. A missing message is
  * ignored.
  */
-final class MarkOutboundMessageSentUseCase
+final class MarcarMensajeSalienteEnviadoUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,

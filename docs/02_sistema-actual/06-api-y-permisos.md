@@ -52,7 +52,7 @@ Leyenda "Rol": **Público**, **Auth** (cualquier usuario autenticado), **Agente*
 |---|---|---|---|---|
 | GET | `/api/tickets` | `BandejaController::listarTickets` (`:41`) | Agente | `ListTicketsQuery`. Parámetros: `page`, `limit` (default 20, máx. 100), `filter`, `agent_id`, `status`, `search`, `sort`, `tag`, `teamId`. Filtra por workspace activo. |
 | GET | `/api/tickets/{id}` | `BandejaController::getTicket` (`:102`) | Agente | `GetDetalleDeTicketQuery`. **Sin filtro de workspace.** |
-| GET | `/api/tickets/{id}/messages` | `BandejaController::getMensajes` (`:124`) | Agente | `GetTicketMessagesQuery` (toda la conversación). Sin filtro de workspace. |
+| GET | `/api/tickets/{id}/messages` | `BandejaController::getMensajes` (`:124`) | Agente | `GetMensajesDeTicketQuery` (toda la conversación). Sin filtro de workspace. |
 | PUT | `/api/tickets/{id}/mark-read` | `BandejaController::marcarLeido` (`:168-214`) | Agente; efecto solo si es el dueño | SQL directo + evento `ticket.read`. |
 | POST | `/api/tickets/{id}/assign` | `AsignacionDeTicketController::asignar` (`:35-75`) | Agente + voter `ASSIGN` | `AsignarTicketUseCase`. |
 | GET | `/api/tickets/{id}/assignment` | `AsignacionDeTicketController::getAsignacion` (`:140`) | Agente | `AsignacionRepository::findByTicket`. Sin UI. |
@@ -67,11 +67,11 @@ Leyenda "Rol": **Público**, **Auth** (cualquier usuario autenticado), **Agente*
 
 | Método | Path | Controlador::acción | Rol | Delega en / nota |
 |---|---|---|---|---|
-| POST | `/api/provider/send` | `ProviderProxyController::send` (`:44-135`) | Agente | `SendOutboundMessageUseCase` (`HandleOutboundMessageUseCase` + `GraphClient`). Crea un agente si el usuario no tiene. |
-| POST | `/api/provider/template/send` | `::sendTemplate` (`:159-225`) | Agente | `SendTemplateUseCase` (`GraphClient::sendTemplate`); persiste el mensaje directo. Sin UI. |
-| POST | `/api/provider/media/upload` | `::uploadMedia` (`:228-277`) | Agente | `UploadMediaUseCase`: `MediaValidator` → `GraphClient::uploadMedia` (siempre con el número por defecto) → `MediaStorageService`. |
-| GET | `/api/provider/media/{mediaId}` | `::downloadMedia` (`:280-296`) | Agente | **Sin chequeo de pertenencia** (esquiva `MessageVoter`). |
-| GET | `/api/messages/{id}/media` | `MediaUrlController::__invoke` | Agente + `MessageVoter::ACCESS` (solo el asignado o supervisor+) | URL prefirmada de S3. |
+| POST | `/api/provider/send` | `ProxyDeProveedorController::send` (`:44-135`) | Agente | `EnviarMensajeSalienteUseCase` (`ProcesarMensajeSalienteUseCase` + `GraphClient`). Crea un agente si el usuario no tiene. |
+| POST | `/api/provider/template/send` | `::sendTemplate` (`:159-225`) | Agente | `EnviarPlantillaUseCase` (`GraphClient::sendTemplate`); persiste el mensaje directo. Sin UI. |
+| POST | `/api/provider/media/upload` | `::uploadMedia` (`:228-277`) | Agente | `SubirAdjuntoUseCase`: `ValidadorDeAdjunto` → `GraphClient::uploadMedia` (siempre con el número por defecto) → `MediaStorageService`. |
+| GET | `/api/provider/media/{mediaId}` | `::downloadMedia` (`:280-296`) | Agente | **Sin chequeo de pertenencia** (esquiva `MensajeVoter`). |
+| GET | `/api/messages/{id}/media` | `UrlDeAdjuntoController::__invoke` | Agente + `MensajeVoter::ACCESS` (solo el asignado o supervisor+) | URL prefirmada de S3. |
 
 ### D. Webhook de Meta
 

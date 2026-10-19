@@ -6,7 +6,7 @@ namespace App\Conversacion\Controller;
 
 use Symfony\Component\Routing\Attribute\Route;
 use App\Conversacion\Mensaje;
-use App\Conversacion\MediaUrlService;
+use App\Conversacion\UrlDeAdjuntoService;
 use App\Conversacion\Repository\MensajeRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -14,11 +14,11 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/api/messages/{id}/media', name: 'app_message_media_url', methods: ['GET'], requirements: ['id' => '\d+'])]
-class MediaUrlController extends AbstractController
+class UrlDeAdjuntoController extends AbstractController
 {
     public function __construct(
         private readonly MensajeRepository $messageRepository,
-        private readonly MediaUrlService $mediaUrlService,
+        private readonly UrlDeAdjuntoService $mediaUrlService,
     ) {}
 
     /**

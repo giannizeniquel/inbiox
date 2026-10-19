@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Conversacion\UseCase\HandleOutboundMessageUseCase;
+use App\Conversacion\UseCase\ProcesarMensajeSalienteUseCase;
 use App\Agente\Agente;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversacion;
@@ -75,7 +75,7 @@ class MessageAgentAttributionOutboxTest extends KernelTestCase
         \assert($ticketId !== null);
         $this->em->clear();
 
-        $useCase = static::getContainer()->get(HandleOutboundMessageUseCase::class);
+        $useCase = static::getContainer()->get(ProcesarMensajeSalienteUseCase::class);
         $result = $useCase->processOutboundMessage($ticketId, 'Thanks for reaching out', $agentId);
 
         $outboxRepo = $this->em->getRepository(OutboxEvent::class);

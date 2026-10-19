@@ -7,24 +7,24 @@ namespace App\Tests\Unit\Controller;
 use App\Agente\Repository\AgenteRepository;
 use App\Agente\UseCase\AsegurarAgenteDeUsuarioUseCase;
 use App\Compartido\Graph\GraphClient;
-use App\Conversacion\UseCase\HandleOutboundMessageUseCase;
-use App\Conversacion\UseCase\MarkOutboundMessageSentUseCase;
-use App\Conversacion\UseCase\RecordSentTemplateUseCase;
-use App\Conversacion\UseCase\SendOutboundMessageUseCase;
-use App\Conversacion\UseCase\SendTemplateUseCase;
-use App\Conversacion\UseCase\UploadMediaUseCase;
-use App\Conversacion\Controller\ProviderProxyController;
+use App\Conversacion\UseCase\ProcesarMensajeSalienteUseCase;
+use App\Conversacion\UseCase\MarcarMensajeSalienteEnviadoUseCase;
+use App\Conversacion\UseCase\RegistrarPlantillaEnviadaUseCase;
+use App\Conversacion\UseCase\EnviarMensajeSalienteUseCase;
+use App\Conversacion\UseCase\EnviarPlantillaUseCase;
+use App\Conversacion\UseCase\SubirAdjuntoUseCase;
+use App\Conversacion\Controller\ProxyDeProveedorController;
 use App\Conversacion\Repository\MensajeRepository;
 use App\Agente\Agente;
 use App\Administracion\Usuario;
 use App\Compartido\Storage\MediaStorageService;
-use App\Conversacion\MediaValidator;
+use App\Conversacion\ValidadorDeAdjunto;
 use App\Ticket\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Unit tests for `ProviderProxyController::resolveActingAgentId()` (design.md
+ * Unit tests for `ProxyDeProveedorController::resolveActingAgentId()` (design.md
  * D4) — the private helper extracted from `send()`'s original inline
  * fallback, reused by `sendTemplate()`. Since phase 3d it delegates to
  * `AsegurarAgenteDeUsuarioUseCase`, built here over the mocked EntityManager.
@@ -36,31 +36,31 @@ use PHPUnit\Framework\TestCase;
  */
 class ProviderProxyControllerResolveAgentTest extends TestCase
 {
-    private function makeController(EntityManagerInterface $em, AgenteRepository $agentRepository): ProviderProxyController
+    private function makeController(EntityManagerInterface $em, AgenteRepository $agentRepository): ProxyDeProveedorController
     {
-        return new ProviderProxyController(
+        return new ProxyDeProveedorController(
             $this->createMock(GraphClient::class),
-            new SendOutboundMessageUseCase(
+            new EnviarMensajeSalienteUseCase(
                 $this->createMock(TicketRepository::class),
                 $this->createMock(GraphClient::class),
-                $this->createMock(HandleOutboundMessageUseCase::class),
-                new MarkOutboundMessageSentUseCase($em, $this->createMock(MensajeRepository::class)),
+                $this->createMock(ProcesarMensajeSalienteUseCase::class),
+                new MarcarMensajeSalienteEnviadoUseCase($em, $this->createMock(MensajeRepository::class)),
             ),
-            new SendTemplateUseCase(
+            new EnviarPlantillaUseCase(
                 $this->createMock(TicketRepository::class),
                 $this->createMock(GraphClient::class),
-                new RecordSentTemplateUseCase($em),
+                new RegistrarPlantillaEnviadaUseCase($em),
             ),
             new AsegurarAgenteDeUsuarioUseCase($em, $agentRepository),
-            new UploadMediaUseCase(
-                $this->createMock(MediaValidator::class),
+            new SubirAdjuntoUseCase(
+                $this->createMock(ValidadorDeAdjunto::class),
                 $this->createMock(GraphClient::class),
                 $this->createMock(MediaStorageService::class),
             ),
         );
     }
 
-    private function invokeResolveActingAgentId(ProviderProxyController $controller, ?Usuario $user): ?int
+    private function invokeResolveActingAgentId(ProxyDeProveedorController $controller, ?Usuario $user): ?int
     {
         $method = new \ReflectionMethod($controller, 'resolveActingAgentId');
         $method->setAccessible(true);

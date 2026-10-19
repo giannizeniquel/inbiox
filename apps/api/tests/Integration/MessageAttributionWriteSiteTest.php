@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Conversacion\UseCase\HandleInboundMessageUseCase;
-use App\Conversacion\UseCase\HandleOutboundMessageUseCase;
+use App\Conversacion\UseCase\ProcesarMensajeEntranteUseCase;
+use App\Conversacion\UseCase\ProcesarMensajeSalienteUseCase;
 use App\Agente\Agente;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversacion;
@@ -83,7 +83,7 @@ class MessageAttributionWriteSiteTest extends KernelTestCase
 
         $ticketId = $this->createTicket();
 
-        $useCase = static::getContainer()->get(HandleOutboundMessageUseCase::class);
+        $useCase = static::getContainer()->get(ProcesarMensajeSalienteUseCase::class);
         $result = $useCase->processOutboundMessage($ticketId, 'Hi, how can I help?', $agentId);
 
         $row = $this->em->getConnection()->fetchAssociative(
@@ -99,7 +99,7 @@ class MessageAttributionWriteSiteTest extends KernelTestCase
     {
         $ticketId = $this->createTicket();
 
-        $useCase = static::getContainer()->get(HandleOutboundMessageUseCase::class);
+        $useCase = static::getContainer()->get(ProcesarMensajeSalienteUseCase::class);
         $result = $useCase->processOutboundMessage($ticketId, 'System note', 0);
 
         $row = $this->em->getConnection()->fetchAssociative(
@@ -113,7 +113,7 @@ class MessageAttributionWriteSiteTest extends KernelTestCase
 
     public function testHandleInboundMessageSetsContactAttributionWithNullSenderAgentId(): void
     {
-        $useCase = static::getContainer()->get(HandleInboundMessageUseCase::class);
+        $useCase = static::getContainer()->get(ProcesarMensajeEntranteUseCase::class);
         $result = $useCase->processInboundMessage('+5491155551234', 'Hello, I need help');
 
         $row = $this->em->getConnection()->fetchAssociative(

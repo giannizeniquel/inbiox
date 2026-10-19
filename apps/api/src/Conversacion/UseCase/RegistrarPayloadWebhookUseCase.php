@@ -13,7 +13,7 @@ use Doctrine\ORM\EntityManagerInterface;
  * It runs BEFORE dispatch so there is a record even if processing fails.
  * It extracts phone_number_id from metadata for multi-number traceability (CAP-7).
  */
-final class RecordWebhookPayloadUseCase
+final class RegistrarPayloadWebhookUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,

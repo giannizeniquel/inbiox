@@ -8,7 +8,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Routes a verified Meta webhook payload: inbound messages to
- * HandleInboundMessageUseCase, status updates to HandleStatusUpdateUseCase.
+ * ProcesarMensajeEntranteUseCase, status updates to ProcesarActualizacionDeEstadoUseCase.
  *
  * Meta's payload structure (META-002):
  *   entry[].changes[].value.messaging_product === 'whatsapp'
@@ -23,11 +23,11 @@ use Psr\Log\LoggerInterface;
  * next. Status entries have none: one that throws stops the rest of the
  * payload and the exception reaches the caller (contradiction track, S10).
  */
-final class ProcessWebhookPayloadUseCase
+final class ProcesarPayloadWebhookUseCase
 {
     public function __construct(
-        private readonly HandleInboundMessageUseCase $handleInboundMessage,
-        private readonly HandleStatusUpdateUseCase $handleStatusUpdate,
+        private readonly ProcesarMensajeEntranteUseCase $handleInboundMessage,
+        private readonly ProcesarActualizacionDeEstadoUseCase $handleStatusUpdate,
         private readonly LoggerInterface $logger,
     ) {}
 

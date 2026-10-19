@@ -7,19 +7,19 @@ namespace App\Conversacion\UseCase;
 use App\Compartido\Graph\GraphApiException;
 use App\Compartido\Graph\GraphClient;
 use App\Compartido\Storage\MediaStorageService;
-use App\Conversacion\MediaTooLargeException;
-use App\Conversacion\MediaTypeNotAllowedException;
-use App\Conversacion\MediaValidator;
+use App\Conversacion\AdjuntoDemasiadoGrandeException;
+use App\Conversacion\MimeDeAdjuntoNoPermitidoException;
+use App\Conversacion\ValidadorDeAdjunto;
 use Symfony\Component\Uid\Ulid;
 
 /**
  * Uploads an agent's attachment to WhatsApp and keeps a copy in object
  * storage, so a later send can reference it by its Graph media id.
  */
-final class UploadMediaUseCase
+final class SubirAdjuntoUseCase
 {
     public function __construct(
-        private readonly MediaValidator $mediaValidator,
+        private readonly ValidadorDeAdjunto $mediaValidator,
         private readonly GraphClient $graphClient,
         private readonly MediaStorageService $mediaStorageService,
     ) {}
@@ -32,8 +32,8 @@ final class UploadMediaUseCase
      *
      * @return array{mediaId: mixed, key: ?string}
      *
-     * @throws MediaTooLargeException
-     * @throws MediaTypeNotAllowedException
+     * @throws AdjuntoDemasiadoGrandeException
+     * @throws MimeDeAdjuntoNoPermitidoException
      * @throws GraphApiException
      */
     public function execute(string $filePath, string $mimeType, int $fileSize, string $filename, mixed $ticketId): array

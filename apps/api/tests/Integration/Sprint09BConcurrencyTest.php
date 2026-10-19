@@ -2,7 +2,7 @@
 
 namespace App\Tests\Integration;
 
-use App\Conversacion\UseCase\HandleInboundMessageUseCase;
+use App\Conversacion\UseCase\ProcesarMensajeEntranteUseCase;
 use App\Asignacion\UseCase\AsignarTicketUseCase;
 use App\Ticket\Ticket;
 use App\Compartido\Outbox\OutboxEvent;
@@ -69,7 +69,7 @@ class Sprint09BConcurrencyTest extends KernelTestCase
     public function test_concurrent_updates_produce_unique_seqs(): void
     {
         // Use UseCase to create initial ticket and message
-        $useCase = static::getContainer()->get(HandleInboundMessageUseCase::class);
+        $useCase = static::getContainer()->get(ProcesarMensajeEntranteUseCase::class);
         $phone = '+5491188888888';
         
         // First message creates ticket (seq increments)
@@ -157,7 +157,7 @@ class Sprint09BConcurrencyTest extends KernelTestCase
     public function test_sequential_updates_increment_correctly(): void
     {
         // Create ticket via UseCase
-        $useCase = static::getContainer()->get(HandleInboundMessageUseCase::class);
+        $useCase = static::getContainer()->get(ProcesarMensajeEntranteUseCase::class);
         $phone = '+5491199999999';
         $useCase->processInboundMessage($phone, 'First');
         

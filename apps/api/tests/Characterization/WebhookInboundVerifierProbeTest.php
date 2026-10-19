@@ -12,7 +12,7 @@ use App\Conversacion\Mensaje;
 use App\Conversacion\MessageCreatedEvent;
 use App\Conversacion\TipoDeRemitente;
 use App\Conversacion\MessageUpdatedEvent;
-use App\Conversacion\UseCase\HandleInboundMessageUseCase;
+use App\Conversacion\UseCase\ProcesarMensajeEntranteUseCase;
 use App\Ticket\Ticket;
 use App\Ticket\TicketCreatedEvent;
 use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
@@ -24,7 +24,7 @@ use Symfony\Component\HttpFoundation\Response;
  * Regression probes for phase 4b (S10): the inbound webhook keeps the same
  * responses, rows, log lines and failure cuts after moving the payload
  * routing into ProcessWebhookPayloadUseCase and splitting
- * HandleInboundMessageUseCase::executeInternal. Graph and storage are stubbed.
+ * ProcesarMensajeEntranteUseCase::executeInternal. Graph and storage are stubbed.
  *
  * Characterization: current behavior, not necessarily desired.
  */
@@ -419,7 +419,7 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
 
     public function testDirectCallReturnsTheSameResultShape(): void
     {
-        $useCase = static::getContainer()->get(HandleInboundMessageUseCase::class);
+        $useCase = static::getContainer()->get(ProcesarMensajeEntranteUseCase::class);
 
         $first = $useCase->processInboundMessage(self::FROM, 'directo', 'wamid.probe-direct', self::PNID, 'Ana');
         $again = $useCase->processInboundMessage(self::FROM, 'directo', 'wamid.probe-direct', self::PNID);

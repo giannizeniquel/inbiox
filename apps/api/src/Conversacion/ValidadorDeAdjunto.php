@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Conversacion;
 
-class MediaValidator
+class ValidadorDeAdjunto
 {
     private const MAX_SIZE = [
         'image' => 5 * 1024 * 1024,     // 5 MB
@@ -64,8 +64,8 @@ class MediaValidator
     /**
      * Validate a file upload against size caps and MIME whitelist.
      *
-     * @throws MediaTooLargeException if file exceeds kind-specific cap
-     * @throws MediaTypeNotAllowedException if MIME type is not in whitelist
+     * @throws AdjuntoDemasiadoGrandeException if file exceeds kind-specific cap
+     * @throws MimeDeAdjuntoNoPermitidoException if MIME type is not in whitelist
      */
     public function validate(string $mimeType, int $fileSize): void
     {
@@ -78,7 +78,7 @@ class MediaValidator
      */
     public function getMaxSize(string $mimeType): int
     {
-        $kind = MediaKind::fromMime($mimeType);
+        $kind = TipoDeAdjunto::fromMime($mimeType);
         return self::MAX_SIZE[$kind->value];
     }
 
@@ -86,7 +86,7 @@ class MediaValidator
     {
         $normalized = $this->normalizeMimeType($mimeType);
         if (!in_array($normalized, self::ALLOWED_MIME, true)) {
-            throw new MediaTypeNotAllowedException($mimeType);
+            throw new MimeDeAdjuntoNoPermitidoException($mimeType);
         }
     }
 
@@ -102,11 +102,11 @@ class MediaValidator
 
     private function validateSize(string $mimeType, int $fileSize): void
     {
-        $kind = MediaKind::fromMime($mimeType);
+        $kind = TipoDeAdjunto::fromMime($mimeType);
         $maxSize = self::MAX_SIZE[$kind->value];
 
         if ($fileSize > $maxSize) {
-            throw new MediaTooLargeException($maxSize, $kind->value);
+            throw new AdjuntoDemasiadoGrandeException($maxSize, $kind->value);
         }
     }
 }

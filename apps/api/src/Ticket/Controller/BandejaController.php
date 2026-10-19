@@ -6,7 +6,7 @@ namespace App\Ticket\Controller;
 
 use App\Compartido\PaginationMetaDTO;
 use App\Ticket\Query\GetDetalleDeTicketQuery;
-use App\Conversacion\Query\GetTicketMessagesQuery;
+use App\Conversacion\Query\GetMensajesDeTicketQuery;
 use App\Ticket\Query\ListTicketsQuery;
 use App\Compartido\Security\OwnershipScope;
 use App\Compartido\Security\WorkspaceScope;
@@ -27,7 +27,7 @@ class BandejaController
     public function __construct(
         private ListTicketsQuery $listTicketsQuery,
         private GetDetalleDeTicketQuery $getDetalleDeTicketQuery,
-        private GetTicketMessagesQuery $getTicketMessagesQuery,
+        private GetMensajesDeTicketQuery $getTicketMessagesQuery,
         private OwnershipScope $ownershipScope,
         private WorkspaceScope $workspaceScope,
         private Security $security,

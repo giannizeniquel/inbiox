@@ -14,7 +14,7 @@ use App\Conversacion\MessageCreatedEvent;
 use App\Conversacion\Mensaje;
 use App\Conversacion\DireccionDeMensaje;
 use App\Conversacion\TipoDeRemitente;
-use App\Conversacion\ConversationWindowPolicy;
+use App\Conversacion\PoliticaDeVentana;
 use App\Compartido\ProcessedEvent;
 use App\Ticket\Ticket;
 use App\Compartido\Graph\GraphApiException;
@@ -48,7 +48,7 @@ final class RespuestaAutomaticaService
         private readonly EventCollector $eventCollector,
         private readonly LoggerInterface $logger,
         private readonly EntityManagerInterface $em,
-        private readonly ConversationWindowPolicy $windowPolicy,
+        private readonly PoliticaDeVentana $windowPolicy,
     ) {}
 
     /**

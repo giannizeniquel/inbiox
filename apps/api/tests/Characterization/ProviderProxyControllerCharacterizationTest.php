@@ -14,7 +14,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 /**
- * Characterization of App\Conversacion\Controller\ProviderProxyController
+ * Characterization of App\Conversacion\Controller\ProxyDeProveedorController
  * before phase 4a splits it: send, template send, media upload and media
  * download, with GraphClient (and media storage) replaced by mocks.
  *

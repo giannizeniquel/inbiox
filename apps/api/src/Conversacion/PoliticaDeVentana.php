@@ -19,7 +19,7 @@ namespace App\Conversacion;
  *               never auto-close a ticket with no known inbound message
  *               (mass-close mitigation for pre-existing tickets).
  */
-final class ConversationWindowPolicy
+final class PoliticaDeVentana
 {
     public const WINDOW_HOURS = 24;
 

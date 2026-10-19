@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Infrastructure\Storage;
 
-use App\Conversacion\MediaKind;
-use App\Conversacion\MediaTooLargeException;
-use App\Conversacion\MediaTypeNotAllowedException;
-use App\Conversacion\MediaValidator;
+use App\Conversacion\TipoDeAdjunto;
+use App\Conversacion\AdjuntoDemasiadoGrandeException;
+use App\Conversacion\MimeDeAdjuntoNoPermitidoException;
+use App\Conversacion\ValidadorDeAdjunto;
 use PHPUnit\Framework\TestCase;
 
 class MediaValidatorTest extends TestCase
 {
-    private MediaValidator $validator;
+    private ValidadorDeAdjunto $validator;
 
     protected function setUp(): void
     {
-        $this->validator = new MediaValidator();
+        $this->validator = new ValidadorDeAdjunto();
     }
 
     public function test_validates_jpeg_under_5mb(): void
@@ -27,7 +27,7 @@ class MediaValidatorTest extends TestCase
 
     public function test_rejects_image_over_5mb(): void
     {
-        $this->expectException(MediaTooLargeException::class);
+        $this->expectException(AdjuntoDemasiadoGrandeException::class);
 
         $this->validator->validate('image/jpeg', 5 * 1024 * 1024 + 1);
     }
@@ -40,7 +40,7 @@ class MediaValidatorTest extends TestCase
 
     public function test_rejects_png_over_5mb(): void
     {
-        $this->expectException(MediaTooLargeException::class);
+        $this->expectException(AdjuntoDemasiadoGrandeException::class);
 
         $this->validator->validate('image/png', 5 * 1024 * 1024 + 1024);
     }
@@ -59,7 +59,7 @@ class MediaValidatorTest extends TestCase
 
     public function test_rejects_video_over_16mb(): void
     {
-        $this->expectException(MediaTooLargeException::class);
+        $this->expectException(AdjuntoDemasiadoGrandeException::class);
 
         $this->validator->validate('video/mp4', 16 * 1024 * 1024 + 1);
     }
@@ -72,7 +72,7 @@ class MediaValidatorTest extends TestCase
 
     public function test_rejects_audio_over_16mb(): void
     {
-        $this->expectException(MediaTooLargeException::class);
+        $this->expectException(AdjuntoDemasiadoGrandeException::class);
 
         $this->validator->validate('audio/mpeg', 16 * 1024 * 1024 + 1024);
     }
@@ -85,21 +85,21 @@ class MediaValidatorTest extends TestCase
 
     public function test_rejects_pdf_over_100mb(): void
     {
-        $this->expectException(MediaTooLargeException::class);
+        $this->expectException(AdjuntoDemasiadoGrandeException::class);
 
         $this->validator->validate('application/pdf', 101 * 1024 * 1024);
     }
 
     public function test_rejects_exe_mime_type(): void
     {
-        $this->expectException(MediaTypeNotAllowedException::class);
+        $this->expectException(MimeDeAdjuntoNoPermitidoException::class);
 
         $this->validator->validate('application/x-msdownload', 1024);
     }
 
     public function test_rejects_application_octet_stream(): void
     {
-        $this->expectException(MediaTypeNotAllowedException::class);
+        $this->expectException(MimeDeAdjuntoNoPermitidoException::class);
 
         $this->validator->validate('application/octet-stream', 1024);
     }
@@ -150,25 +150,25 @@ class MediaValidatorTest extends TestCase
 
     public function test_media_kind_from_mime(): void
     {
-        $this->assertSame(MediaKind::IMAGE, MediaKind::fromMime('image/jpeg'));
-        $this->assertSame(MediaKind::IMAGE, MediaKind::fromMime('image/png'));
-        $this->assertSame(MediaKind::VIDEO, MediaKind::fromMime('video/mp4'));
-        $this->assertSame(MediaKind::AUDIO, MediaKind::fromMime('audio/ogg'));
-        $this->assertSame(MediaKind::DOCUMENT, MediaKind::fromMime('application/pdf'));
-        $this->assertSame(MediaKind::DOCUMENT, MediaKind::fromMime('text/plain'));
-        $this->assertSame(MediaKind::DOCUMENT, MediaKind::fromMime('application/msword'));
+        $this->assertSame(TipoDeAdjunto::IMAGE, TipoDeAdjunto::fromMime('image/jpeg'));
+        $this->assertSame(TipoDeAdjunto::IMAGE, TipoDeAdjunto::fromMime('image/png'));
+        $this->assertSame(TipoDeAdjunto::VIDEO, TipoDeAdjunto::fromMime('video/mp4'));
+        $this->assertSame(TipoDeAdjunto::AUDIO, TipoDeAdjunto::fromMime('audio/ogg'));
+        $this->assertSame(TipoDeAdjunto::DOCUMENT, TipoDeAdjunto::fromMime('application/pdf'));
+        $this->assertSame(TipoDeAdjunto::DOCUMENT, TipoDeAdjunto::fromMime('text/plain'));
+        $this->assertSame(TipoDeAdjunto::DOCUMENT, TipoDeAdjunto::fromMime('application/msword'));
     }
 
     public function test_media_kind_from_unknown_defaults_to_document(): void
     {
-        $this->assertSame(MediaKind::DOCUMENT, MediaKind::fromMime('application/x-custom'));
+        $this->assertSame(TipoDeAdjunto::DOCUMENT, TipoDeAdjunto::fromMime('application/x-custom'));
     }
 
     public function test_media_kind_to_extension(): void
     {
-        $this->assertSame('jpg', MediaKind::toExtension(MediaKind::IMAGE));
-        $this->assertSame('mp4', MediaKind::toExtension(MediaKind::VIDEO));
-        $this->assertSame('ogg', MediaKind::toExtension(MediaKind::AUDIO));
-        $this->assertSame('pdf', MediaKind::toExtension(MediaKind::DOCUMENT));
+        $this->assertSame('jpg', TipoDeAdjunto::toExtension(TipoDeAdjunto::IMAGE));
+        $this->assertSame('mp4', TipoDeAdjunto::toExtension(TipoDeAdjunto::VIDEO));
+        $this->assertSame('ogg', TipoDeAdjunto::toExtension(TipoDeAdjunto::AUDIO));
+        $this->assertSame('pdf', TipoDeAdjunto::toExtension(TipoDeAdjunto::DOCUMENT));
     }
 }

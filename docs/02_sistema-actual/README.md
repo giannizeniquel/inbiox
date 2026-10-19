@@ -56,10 +56,10 @@ Una bandeja de atención compartida: los mensajes que llegan por **WhatsApp Clou
 | **Override** | Disponibilidad forzada a mano ("disponible"/"no disponible"), con vencimiento opcional. Tiene prioridad sobre el turno. | `Agente.php` (`is_available_override`, `override_until`) |
 | **Capacidad** | Máximo de tickets activos (`new`/`active`/`waiting`) por agente; por defecto 10. | `Agente.php` (`max_active_tickets`) |
 | **Auto-asignación** | El sistema elige un agente disponible con menos carga cuando llega un mensaje. | `Asignacion/UseCase/AsignarTicketAutomaticamenteUseCase.php` |
-| **Auto-claim** | Cuando un agente responde un ticket no resuelto ni cerrado, pasa a ser su dueño, **aunque el ticket ya tuviera otro dueño** (se registra como `REASSIGN` y se lo quita al anterior). | `Conversacion/UseCase/HandleOutboundMessageUseCase.php:224-246` |
+| **Auto-claim** | Cuando un agente responde un ticket no resuelto ni cerrado, pasa a ser su dueño, **aunque el ticket ya tuviera otro dueño** (se registra como `REASSIGN` y se lo quita al anterior). | `Conversacion/UseCase/ProcesarMensajeSalienteUseCase.php:224-246` |
 | **Auto-respuesta** | Mensaje fijo que se envía al cliente si su agente no está disponible (máximo 1 cada 2 h por contacto). | `Automatizacion/RespuestaAutomaticaService.php` |
-| **Ventana de 24 h** | Regla de Meta: solo se puede enviar texto libre hasta 24 h después del último mensaje del cliente. Pasado ese plazo hay que usar una **plantilla**. | `Conversacion/ConversationWindowPolicy.php` |
-| **Plantilla (template)** | Mensaje pre-aprobado por Meta que se puede enviar fuera de la ventana de 24 h. Hoy no tiene UI. | `ProviderProxyController::sendTemplate` → `SendTemplateUseCase` |
+| **Ventana de 24 h** | Regla de Meta: solo se puede enviar texto libre hasta 24 h después del último mensaje del cliente. Pasado ese plazo hay que usar una **plantilla**. | `Conversacion/PoliticaDeVentana.php` |
+| **Plantilla (template)** | Mensaje pre-aprobado por Meta que se puede enviar fuera de la ventana de 24 h. Hoy no tiene UI. | `ProxyDeProveedorController::sendTemplate` → `EnviarPlantillaUseCase` |
 | **WAMID** | Identificador que Meta asigna a cada mensaje de WhatsApp. Se guarda en `messages.external_id`. | — |
 | **Webhook** | Endpoint público `POST /webhook` donde Meta envía mensajes entrantes y estados de entrega. | `Conversacion/Controller/WebhookController.php` |
 | **Outbox** | Tabla `outbox_events` donde los casos de uso dejan eventos para publicar después en tiempo real. Patrón "transactional outbox". | `Compartido/Outbox/OutboxEvent.php` |
@@ -68,7 +68,7 @@ Una bandeja de atención compartida: los mensajes que llegan por **WhatsApp Clou
 | **Mercure** | Servidor (hub) de Server-Sent Events (SSE). El navegador queda suscripto y recibe eventos sin recargar. | servicio `mercure` en `docker-compose.yml` |
 | **Topic** | "Canal" de Mercure. Hoy casi todo se publica en un único topic: `tickets`. | `MercureJwtService.php` |
 | **Caso de uso (use case)** | Clase que implementa una operación de negocio completa (backend `<Modulo>/UseCase/`, frontend `core/application/`). | — |
-| **Voter** | Clase de Symfony que decide si un usuario puede hacer algo sobre un objeto concreto (p. ej. resolver un ticket). Viven en `<Modulo>/Security/` (`Ticket/Security/TicketVoter`, `Conversacion/Security/MessageVoter`). | `Ticket/Security/`, `Conversacion/Security/` |
+| **Voter** | Clase de Symfony que decide si un usuario puede hacer algo sobre un objeto concreto (p. ej. resolver un ticket). Viven en `<Modulo>/Security/` (`Ticket/Security/TicketVoter`, `Conversacion/Security/MensajeVoter`). | `Ticket/Security/`, `Conversacion/Security/` |
 | **FSM** | *Finite State Machine*: tabla de transiciones de estado permitidas. | `MaquinaDeEstadosDeTicket.php` |
 | **Store** | En Angular, servicio con *signals* que guarda el estado compartido de la pantalla. | `apps/web/src/app/core/stores/` |
 | **Tier 1 / Tier 2** | Prioridades del backlog definidas en el análisis de brecha. | [`analisis-brecha-requerimientos.md`](../../analisis-brecha-requerimientos.md) |

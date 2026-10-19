@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Conversacion\UseCase\HandleInboundMessageUseCase;
-use App\Conversacion\UseCase\HandleOutboundMessageUseCase;
+use App\Conversacion\UseCase\ProcesarMensajeEntranteUseCase;
+use App\Conversacion\UseCase\ProcesarMensajeSalienteUseCase;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -14,7 +14,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
  * be set only by an inbound customer message, never by outbound activity.
  *
  * This is the single writer relied on by every other Phase 1-3 guard;
- * design.md assigns it to `HandleInboundMessageUseCase` step 8 (task 3.8).
+ * design.md assigns it to `ProcesarMensajeEntranteUseCase` step 8 (task 3.8).
  */
 class InboundMessageTimestampTrackingTest extends KernelTestCase
 {
@@ -45,7 +45,7 @@ class InboundMessageTimestampTrackingTest extends KernelTestCase
 
     public function testInboundMessageSetsLastInboundMessageAt(): void
     {
-        $inboundUseCase = static::getContainer()->get(HandleInboundMessageUseCase::class);
+        $inboundUseCase = static::getContainer()->get(ProcesarMensajeEntranteUseCase::class);
 
         $before = (new \DateTimeImmutable())->modify('-2 seconds');
         $result = $inboundUseCase->processInboundMessage('+5491100000500', 'Hello');
@@ -64,8 +64,8 @@ class InboundMessageTimestampTrackingTest extends KernelTestCase
 
     public function testOutboundActivityDoesNotChangeLastInboundMessageAt(): void
     {
-        $inboundUseCase = static::getContainer()->get(HandleInboundMessageUseCase::class);
-        $outboundUseCase = static::getContainer()->get(HandleOutboundMessageUseCase::class);
+        $inboundUseCase = static::getContainer()->get(ProcesarMensajeEntranteUseCase::class);
+        $outboundUseCase = static::getContainer()->get(ProcesarMensajeSalienteUseCase::class);
 
         $result = $inboundUseCase->processInboundMessage('+5491100000501', 'Hello');
         $ticketId = $result['ticket_id'];

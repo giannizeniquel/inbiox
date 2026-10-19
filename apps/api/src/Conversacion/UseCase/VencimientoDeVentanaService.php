@@ -5,21 +5,21 @@ declare(strict_types=1);
 namespace App\Conversacion\UseCase;
 
 use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
-use App\Conversacion\ConversationWindowPolicy;
+use App\Conversacion\PoliticaDeVentana;
 use App\Ticket\EstadoDeTicket;
 use App\Ticket\Repository\TicketRepository;
 use Psr\Log\LoggerInterface;
 
 /**
  * Scheduled batch closure for tickets whose WhatsApp 24h conversation window
- * has elapsed (design.md Phase 6, `App\Conversacion\Command\CloseExpiredConversationWindowsCommand`).
+ * has elapsed (design.md Phase 6, `App\Conversacion\Command\CerrarVentanasVencidasCommand`).
  *
  * No exemption for a `new`/never-worked ticket — Meta's rule is time-based,
  * not usage-based (proposal.md). `last_inbound_message_at IS NULL` never
  * closes (D8 fail-open: mass-close mitigation for pre-existing tickets with
  * no recorded inbound message).
  */
-final class ConversationWindowExpiryService
+final class VencimientoDeVentanaService
 {
     /**
      * @var string[] Statuses eligible for window-expiry closure. `closed` is
@@ -54,7 +54,7 @@ final class ConversationWindowExpiryService
     {
         $margin = $safetyMarginOverride ?? $this->safetyMarginMinutes;
         $threshold = (new \DateTimeImmutable())
-            ->modify(sprintf('-%d hours', ConversationWindowPolicy::WINDOW_HOURS))
+            ->modify(sprintf('-%d hours', PoliticaDeVentana::WINDOW_HOURS))
             ->modify(sprintf('+%d minutes', $margin));
 
         $ids = $this->ticketRepo->findIdsConVentanaVencida(

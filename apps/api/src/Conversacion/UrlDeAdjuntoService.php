@@ -6,7 +6,7 @@ namespace App\Conversacion;
 
 use App\Compartido\Storage\MediaStorageService;
 
-class MediaUrlService
+class UrlDeAdjuntoService
 {
     public function __construct(
         private readonly MediaStorageService $storageService,

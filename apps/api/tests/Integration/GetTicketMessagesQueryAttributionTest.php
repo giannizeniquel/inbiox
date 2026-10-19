@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Conversacion\Query\GetTicketMessagesQuery;
+use App\Conversacion\Query\GetMensajesDeTicketQuery;
 use App\Agente\Agente;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversacion;
@@ -15,7 +15,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
- * spec.md "Query and DTO Exposure": `GetTicketMessagesQuery` (both SELECT
+ * spec.md "Query and DTO Exposure": `GetMensajesDeTicketQuery` (both SELECT
  * variants) and `MessageDTO::toArray()` must expose `sender_agent_id` and
  * `sender_type`, including null for legacy (pre-migration) rows.
  */
@@ -95,7 +95,7 @@ class GetTicketMessagesQueryAttributionTest extends KernelTestCase
     {
         $ticketId = $this->createTicketWithMessages();
 
-        $query = static::getContainer()->get(GetTicketMessagesQuery::class);
+        $query = static::getContainer()->get(GetMensajesDeTicketQuery::class);
         $result = $query->execute($ticketId, direction: 'forward');
 
         self::assertCount(2, $result['items']);
@@ -116,7 +116,7 @@ class GetTicketMessagesQueryAttributionTest extends KernelTestCase
     {
         $ticketId = $this->createTicketWithMessages();
 
-        $query = static::getContainer()->get(GetTicketMessagesQuery::class);
+        $query = static::getContainer()->get(GetMensajesDeTicketQuery::class);
         $result = $query->execute($ticketId, direction: 'backward');
 
         self::assertCount(2, $result['items']);

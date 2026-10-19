@@ -14,7 +14,7 @@ use Doctrine\ORM\EntityManagerInterface;
  * Persists a template that Graph accepted as a new outbound message, with
  * its WAMID as externalId for webhook correlation.
  */
-final class RecordSentTemplateUseCase
+final class RegistrarPlantillaEnviadaUseCase
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,

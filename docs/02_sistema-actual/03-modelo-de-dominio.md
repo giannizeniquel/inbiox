@@ -23,7 +23,7 @@ Usuario (login + roles) ──1:1 opcional── Agente ──N:M── EspacioD
 
 Tres ideas que explican casi todo lo demás:
 
-1. **El mensaje pertenece a la conversación, no al ticket.** Por eso al abrir un ticket se ve también el historial de tickets anteriores del mismo contacto (`GetTicketMessagesQuery.php:22-52`). Los reportes de demora reconstruyen "qué mensajes son de qué ticket" por fechas (spec `response-delay-metrics`).
+1. **El mensaje pertenece a la conversación, no al ticket.** Por eso al abrir un ticket se ve también el historial de tickets anteriores del mismo contacto (`GetMensajesDeTicketQuery.php:22-52`). Los reportes de demora reconstruyen "qué mensajes son de qué ticket" por fechas (spec `response-delay-metrics`).
 2. **El contacto es global; el workspace se infiere del ticket.** El vínculo ticket ↔ workspace es una coincidencia de texto (`tickets.phone_number_id` = `workspaces.phone_number_id`), sin FK. Un webhook de un número no registrado crea tickets igual.
 3. **Usuario y Agente son cosas distintas.** El usuario inicia sesión; el agente atiende. Un admin puede no tener agente (y se le crea uno automáticamente al enviar un mensaje o cambiar de workspace).
 
@@ -113,9 +113,9 @@ Tablas técnicas sin relaciones de negocio (no incluidas en el diagrama): `outbo
 | `TipoDeRemitente` | `Conversacion/TipoDeRemitente.php` | `agent`, `automatic`, `contact` | Spec `message-attribution`. El frontend todavía no lo usa. |
 | `TipoDeAsignacion` | `Asignacion/TipoDeAsignacion.php` | `AUTO_ASSIGN`, `MANUAL_ASSIGN`, `REASSIGN`, `UNASSIGN` | Solo `ResponsabilidadDeTicketService` crea filas de `Asignacion`. |
 | Roles | strings en `Usuario.roles` | `ROLE_ADMIN`, `ROLE_SUPERVISOR`, `ROLE_AGENT` | Jerarquía en `security.yaml` (el enum `Role`, sin uso, se borró en la fase 1). |
-| `MediaKind` | `Conversacion/MediaKind.php` | `image`, `video`, `audio`, `document` | |
+| `TipoDeAdjunto` | `Conversacion/TipoDeAdjunto.php` | `image`, `video`, `audio`, `document` | |
 | `TipoDeEventoDeTicket` | `Ticket/TipoDeEventoDeTicket.php` | constantes de cierre/reapertura | `tag_added`, `tag_removed`, `auto_reopened`, `auto_closed` siguen como textos sueltos. |
-| Estado de entrega (textos) | `Conversacion/UseCase/HandleStatusUpdateUseCase.php:29-44` | `sending` → `sent` → `delivered` → `read`; `failed` | Solo avanza; `read` y `failed` son finales. |
+| Estado de entrega (textos) | `Conversacion/UseCase/ProcesarActualizacionDeEstadoUseCase.php:29-44` | `sending` → `sent` → `delivered` → `read`; `failed` | Solo avanza; `read` y `failed` son finales. |
 
 ## Relaciones: cardinalidad y claves foráneas
 

@@ -155,7 +155,7 @@ class Sprint09BReplayTest extends KernelTestCase
     public function test_seq_monotonically_increasing(): void
     {
         // Arrange - create multiple events
-        $useCase = static::getContainer()->get(\App\Conversacion\UseCase\HandleInboundMessageUseCase::class);
+        $useCase = static::getContainer()->get(\App\Conversacion\UseCase\ProcesarMensajeEntranteUseCase::class);
         
         // First message
         $useCase->processInboundMessage('+5491111111111', 'Msg 1');

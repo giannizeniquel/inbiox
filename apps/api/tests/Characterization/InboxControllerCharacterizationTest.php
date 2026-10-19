@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Characterization;
 
 use App\Conversacion\Mensaje;
-use App\Conversacion\Query\GetTicketMessagesQuery;
+use App\Conversacion\Query\GetMensajesDeTicketQuery;
 use App\Ticket\Query\GetDetalleDeTicketQuery;
 use App\Ticket\Ticket;
 
@@ -166,9 +166,9 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
     public function testMessagesInvalidArgumentFromQueryReturns400(): void
     {
         $token = $this->loginAs('inbox@characterization.local', ['ROLE_AGENT'], $this->createAgent('Me'));
-        $query = $this->createMock(GetTicketMessagesQuery::class);
+        $query = $this->createMock(GetMensajesDeTicketQuery::class);
         $query->method('execute')->willThrowException(new \InvalidArgumentException('bad cursor'));
-        static::getContainer()->set(GetTicketMessagesQuery::class, $query);
+        static::getContainer()->set(GetMensajesDeTicketQuery::class, $query);
 
         $this->assertJsonResponse(400, ['error' => 'bad cursor'], $this->request('GET', '/api/tickets/1/messages', $token));
     }

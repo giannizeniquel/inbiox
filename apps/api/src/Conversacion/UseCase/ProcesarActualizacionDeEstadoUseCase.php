@@ -25,7 +25,7 @@ use Symfony\Component\Uid\Ulid;
  *
  * Design: AD-4 — forward-only status FSM with terminal read/failed.
  */
-class HandleStatusUpdateUseCase
+class ProcesarActualizacionDeEstadoUseCase
 {
     private const STATUS_ORDER = [
         'sending' => 0,
@@ -211,7 +211,7 @@ class HandleStatusUpdateUseCase
     /**
      * Persist collected domain events from EventCollector to the OutboxEvent table.
      *
-     * Pattern matches HandleInboundMessageUseCase::persistEventsToOutbox().
+     * Pattern matches ProcesarMensajeEntranteUseCase::persistEventsToOutbox().
      */
     private function persistEventsToOutbox(): void
     {

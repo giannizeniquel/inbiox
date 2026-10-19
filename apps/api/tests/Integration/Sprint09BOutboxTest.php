@@ -2,7 +2,7 @@
 
 namespace App\Tests\Integration;
 
-use App\Conversacion\UseCase\HandleInboundMessageUseCase;
+use App\Conversacion\UseCase\ProcesarMensajeEntranteUseCase;
 use App\Asignacion\UseCase\AsignarTicketUseCase;
 use App\Compartido\Outbox\OutboxEvent;
 use App\Ticket\Ticket;
@@ -65,7 +65,7 @@ class Sprint09BOutboxTest extends KernelTestCase
     public function test_outbox_event_persisted_after_inbound_message(): void
     {
         // Arrange
-        $useCase = static::getContainer()->get(HandleInboundMessageUseCase::class);
+        $useCase = static::getContainer()->get(ProcesarMensajeEntranteUseCase::class);
 
         // Act
         $result = $useCase->processInboundMessage('+5491155555555', 'Hello test message');
@@ -174,7 +174,7 @@ class Sprint09BOutboxTest extends KernelTestCase
     public function test_sequence_increments_correctly(): void
     {
         // Arrange
-        $useCase = static::getContainer()->get(HandleInboundMessageUseCase::class);
+        $useCase = static::getContainer()->get(ProcesarMensajeEntranteUseCase::class);
         $phone = '+5491155555556';
 
         // First message - creates ticket + message
@@ -214,7 +214,7 @@ class Sprint09BOutboxTest extends KernelTestCase
     public function test_event_payload_contract(): void
     {
         // Arrange
-        $useCase = static::getContainer()->get(HandleInboundMessageUseCase::class);
+        $useCase = static::getContainer()->get(ProcesarMensajeEntranteUseCase::class);
 
         // Act
         $useCase->processInboundMessage('+5491155555557', 'Test message');

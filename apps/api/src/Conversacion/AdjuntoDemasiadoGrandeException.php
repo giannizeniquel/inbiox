@@ -6,7 +6,7 @@ namespace App\Conversacion;
 
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
-class MediaTooLargeException extends HttpException
+class AdjuntoDemasiadoGrandeException extends HttpException
 {
     public function __construct(
         private readonly int $maxSize,

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Conversacion;
 
-enum MediaKind: string
+enum TipoDeAdjunto: string
 {
     case IMAGE = 'image';
     case VIDEO = 'video';
@@ -12,7 +12,7 @@ enum MediaKind: string
     case DOCUMENT = 'document';
 
     /**
-     * Map a MIME type to the corresponding MediaKind.
+     * Map a MIME type to the corresponding TipoDeAdjunto.
      * Unknown MIME types default to DOCUMENT.
      */
     public static function fromMime(string $mimeType): self
@@ -26,9 +26,9 @@ enum MediaKind: string
     }
 
     /**
-     * Map a MediaKind to its file extension.
+     * Map a TipoDeAdjunto to its file extension.
      */
-    public static function toExtension(MediaKind $kind): string
+    public static function toExtension(TipoDeAdjunto $kind): string
     {
         return match ($kind) {
             self::IMAGE => 'jpg',

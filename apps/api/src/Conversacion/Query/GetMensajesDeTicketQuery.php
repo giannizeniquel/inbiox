@@ -5,7 +5,7 @@ namespace App\Conversacion\Query;
 use App\Conversacion\Repository\MensajeRepository;
 use App\Ticket\Repository\TicketRepository;
 
-class GetTicketMessagesQuery
+class GetMensajesDeTicketQuery
 {
     public function __construct(
         private TicketRepository $ticketRepository,
@@ -68,7 +68,7 @@ class GetTicketMessagesQuery
             ]));
         }
 
-        $items = array_map(fn($row) => new MessageDTO(
+        $items = array_map(fn($row) => new MensajeDTO(
             messageId: (int) $row['id'],
             direction: $row['direction'],
             content: $row['content'],
@@ -109,7 +109,7 @@ class GetTicketMessagesQuery
             ]));
         }
 
-        $items = array_map(fn($row) => new MessageDTO(
+        $items = array_map(fn($row) => new MensajeDTO(
             messageId: (int) $row['id'],
             direction: $row['direction'],
             content: $row['content'],

@@ -6,7 +6,7 @@ namespace App\Conversacion\Command;
 
 use App\Compartido\Command\OutboxPublishCommand;
 
-use App\Conversacion\UseCase\ConversationWindowExpiryService;
+use App\Conversacion\UseCase\VencimientoDeVentanaService;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -16,14 +16,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * Scheduled closure of WhatsApp 24h conversation-window-expired tickets
  * (design.md Phase 6). Thin wrapper delegating to
- * `ConversationWindowExpiryService`, mirroring `OutboxPublishCommand`'s
+ * `VencimientoDeVentanaService`, mirroring `OutboxPublishCommand`'s
  * shape — the loop-safe logic lives in the service, not here.
  */
 #[AsCommand(name: 'app:conversation-window:close-expired', description: 'Close tickets whose WhatsApp 24h conversation window has elapsed')]
-class CloseExpiredConversationWindowsCommand extends Command
+class CerrarVentanasVencidasCommand extends Command
 {
     public function __construct(
-        private readonly ConversationWindowExpiryService $expiryService,
+        private readonly VencimientoDeVentanaService $expiryService,
     ) {
         parent::__construct();
     }

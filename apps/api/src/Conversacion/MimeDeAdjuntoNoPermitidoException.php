@@ -6,7 +6,7 @@ namespace App\Conversacion;
 
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
-class MediaTypeNotAllowedException extends HttpException
+class MimeDeAdjuntoNoPermitidoException extends HttpException
 {
     public function __construct(
         private readonly string $mimeType,

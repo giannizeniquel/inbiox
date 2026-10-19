@@ -15,7 +15,7 @@ use App\Compartido\Graph\GraphApiException;
  * never reached Meta) and would be indistinguishable in logs from a genuine
  * Meta rejection.
  */
-class ConversationWindowExpiredException extends \RuntimeException
+class VentanaVencidaException extends \RuntimeException
 {
     public function __construct(
         private readonly int $ticketId,

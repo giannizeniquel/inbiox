@@ -63,11 +63,11 @@ services:
             $bucket: '%env(S3_BUCKET)%'
             $urlTtl: '%env(int:MEDIA_URL_TTL)%'
 
-    App\Conversacion\ConversationWindowPolicy:
+    App\Conversacion\PoliticaDeVentana:
         arguments:
             $safetyMarginMinutes: '%env(int:CONVERSATION_WINDOW_SAFETY_MARGIN_MINUTES)%'
 
-    App\Conversacion\UseCase\ConversationWindowExpiryService:
+    App\Conversacion\UseCase\VencimientoDeVentanaService:
         # Kept public: no other service injects this yet (only the Console
         # Command does), so Symfony's "remove unused private services" pass
         # would otherwise optimize it away entirely, including in tests.

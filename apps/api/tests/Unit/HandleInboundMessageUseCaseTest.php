@@ -6,12 +6,12 @@ use App\Disponibilidad\DisponibilidadDeAgenteService;
 use App\Automatizacion\RespuestaAutomaticaService;
 use App\Compartido\Outbox\OutboxWriter;
 use App\Compartido\Graph\GraphClient;
-use App\Conversacion\UseCase\HandleInboundMessageUseCase;
+use App\Conversacion\UseCase\ProcesarMensajeEntranteUseCase;
 use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
 use App\Automatizacion\EjecutorDeReglas;
 use App\Disponibilidad\Repository\TurnoRepository;
 use App\Compartido\EventCollector;
-use App\Conversacion\ConversationWindowPolicy;
+use App\Conversacion\PoliticaDeVentana;
 use App\Agente\Repository\AgenteRepository;
 use App\Contacto\Repository\ContactoRepository;
 use App\Conversacion\Repository\ConversacionRepository;
@@ -37,7 +37,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
     private EventCollector|MockObject $eventCollector;
     private RespuestaAutomaticaService $autoReplyService;
     private LoggerInterface|MockObject $logger;
-    private HandleInboundMessageUseCase $useCase;
+    private ProcesarMensajeEntranteUseCase $useCase;
 
     protected function setUp(): void
     {
@@ -66,10 +66,10 @@ class HandleInboundMessageUseCaseTest extends TestCase
             $this->eventCollector,
             $this->logger,
             $this->em,
-            new ConversationWindowPolicy(safetyMarginMinutes: 5),
+            new PoliticaDeVentana(safetyMarginMinutes: 5),
         );
 
-        $this->useCase = new HandleInboundMessageUseCase(
+        $this->useCase = new ProcesarMensajeEntranteUseCase(
             $this->em,
             $this->contactRepo,
             $this->conversationRepo,

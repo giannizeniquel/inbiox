@@ -13,7 +13,7 @@ use App\Disponibilidad\Repository\TurnoRepository;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversacion;
 use App\Compartido\EventCollector;
-use App\Conversacion\ConversationWindowPolicy;
+use App\Conversacion\PoliticaDeVentana;
 use App\Conversacion\Mensaje;
 use App\Conversacion\TipoDeRemitente;
 use App\Compartido\ProcessedEvent;
@@ -53,7 +53,7 @@ class AutoReplyServiceTest extends TestCase
     private ProcessedEventRepository&MockObject $processedEventRepo;
     private EventCollector&MockObject $eventCollector;
     private LoggerInterface&MockObject $logger;
-    private ConversationWindowPolicy $windowPolicy;
+    private PoliticaDeVentana $windowPolicy;
     private RespuestaAutomaticaService $service;
 
     protected function setUp(): void
@@ -74,7 +74,7 @@ class AutoReplyServiceTest extends TestCase
             $this->ticketRepo,
         );
 
-        $this->windowPolicy = new ConversationWindowPolicy(safetyMarginMinutes: 5);
+        $this->windowPolicy = new PoliticaDeVentana(safetyMarginMinutes: 5);
 
         $this->service = new RespuestaAutomaticaService(
             $this->agentRepo,

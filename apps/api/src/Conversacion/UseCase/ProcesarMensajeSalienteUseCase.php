@@ -24,10 +24,10 @@ use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
 use App\Automatizacion\EjecutorDeReglas;
 use App\Automatizacion\ContextoDeRegla;
-use App\Conversacion\ConversationWindowPolicy;
+use App\Conversacion\PoliticaDeVentana;
 use App\Ticket\TicketResponsabilidadGuard;
 use App\Compartido\ConcurrencyException;
-use App\Conversacion\ConversationWindowExpiredException;
+use App\Conversacion\VentanaVencidaException;
 use App\Compartido\StateConflictException;
 use App\Agente\Repository\AgenteRepository;
 use App\Conversacion\Repository\ConversacionRepository;
@@ -44,7 +44,7 @@ use Symfony\Component\Uid\Ulid;
  * Sets first_response_at on first agent reply.
  * Implements idempotency: duplicate messages are skipped.
  */
-class HandleOutboundMessageUseCase
+class ProcesarMensajeSalienteUseCase
 {
     public function __construct(
         private EntityManagerInterface $em,
@@ -58,7 +58,7 @@ class HandleOutboundMessageUseCase
         private AgenteRepository $agentRepo,
         private EventCollector $eventCollector,
         private readonly OutboxWriter $outboxWriter,
-        private ConversationWindowPolicy $windowPolicy,
+        private PoliticaDeVentana $windowPolicy,
     ) {}
 
     /**
@@ -280,7 +280,7 @@ class HandleOutboundMessageUseCase
         }
 
         if (!$this->windowPolicy->isOpenForSending($ticket->getUltimoMensajeEntranteAt(), new \DateTimeImmutable())) {
-            throw new ConversationWindowExpiredException($ticketId, $ticket->getUltimoMensajeEntranteAt());
+            throw new VentanaVencidaException($ticketId, $ticket->getUltimoMensajeEntranteAt());
         }
     }
 

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Conversacion\UseCase\ConversationWindowExpiryService;
+use App\Conversacion\UseCase\VencimientoDeVentanaService;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversacion;
 use App\Ticket\TipoDeEventoDeTicket;
@@ -14,7 +14,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
- * `ConversationWindowExpiryService::closeExpired()` (design.md Phase 6 —
+ * `VencimientoDeVentanaService::closeExpired()` (design.md Phase 6 —
  * the scheduled closure batch job).
  */
 class ConversationWindowExpiryServiceTest extends KernelTestCase
@@ -73,7 +73,7 @@ class ConversationWindowExpiryServiceTest extends KernelTestCase
         $notExpired = $this->createTicket(EstadoDeTicket::ACTIVO->value, new \DateTimeImmutable('-1 hour'));
         $nullInbound = $this->createTicket(EstadoDeTicket::NUEVO->value, null);
 
-        $service = static::getContainer()->get(ConversationWindowExpiryService::class);
+        $service = static::getContainer()->get(VencimientoDeVentanaService::class);
         $count = $service->closeExpired(dryRun: false, limit: 200);
 
         self::assertSame(1, $count);
@@ -104,7 +104,7 @@ class ConversationWindowExpiryServiceTest extends KernelTestCase
     {
         $ticketId = $this->createTicket(EstadoDeTicket::NUEVO->value, new \DateTimeImmutable('-25 hours'));
 
-        $service = static::getContainer()->get(ConversationWindowExpiryService::class);
+        $service = static::getContainer()->get(VencimientoDeVentanaService::class);
         $count = $service->closeExpired(dryRun: false, limit: 200);
 
         self::assertSame(1, $count);
@@ -118,7 +118,7 @@ class ConversationWindowExpiryServiceTest extends KernelTestCase
     {
         $ticketId = $this->createTicket(EstadoDeTicket::ACTIVO->value, new \DateTimeImmutable('-25 hours'));
 
-        $service = static::getContainer()->get(ConversationWindowExpiryService::class);
+        $service = static::getContainer()->get(VencimientoDeVentanaService::class);
         $count = $service->closeExpired(dryRun: true, limit: 200);
 
         self::assertSame(1, $count);
@@ -151,7 +151,7 @@ class ConversationWindowExpiryServiceTest extends KernelTestCase
             [EstadoDeTicket::CERRADO->value, $concurrentlyClosed]
         );
 
-        $service = static::getContainer()->get(ConversationWindowExpiryService::class);
+        $service = static::getContainer()->get(VencimientoDeVentanaService::class);
         $count = $service->closeExpired(dryRun: false, limit: 200);
 
         // Only the genuinely eligible ticket is counted/closed; the

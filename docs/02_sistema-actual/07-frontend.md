@@ -183,7 +183,7 @@ Limitaciones: detección de huecos desactivada (`:282-286`); `resyncAllTickets()
 | FSM de tickets | `status-actions.component.ts:21-27` | Componente sin uso. |
 | Ventana de 24 h | `composer.component.ts:7, 70-76` | Duplica R-W1 con el reloj del navegador; el backend manda. |
 | Quién puede asignar; no asignarse a uno mismo; estados asignables; agentes inactivos no elegibles | `ticket-list.component.ts:130-135, 219-236`; `ticket-card.component.ts:51-59, 142-146` | Duplica el voter y el guard "Activo"; "no asignarse a uno mismo" solo existe aquí. |
-| Validación de archivos | `message-sender.service.ts:48-53, 226-252` | Duplica `MediaValidator`; los límites pueden divergir. |
+| Validación de archivos | `message-sender.service.ts:48-53, 226-252` | Duplica `ValidadorDeAdjunto`; los límites pueden divergir. |
 | Roles por defecto `ROLE_AGENT` | `create-user.use-case.ts:66`, `update-user.use-case.ts:49` | Solo frontend. |
 | `loadPercentage`, nombres `Agent {id}` | `get-reports-dashboard.use-case.ts:158-162` | **Inventados.** |
 | Abiertos / cerrados agregados | `get-reports-dashboard.use-case.ts:148-151` | Coincide con el backend. |
@@ -214,7 +214,7 @@ Limitaciones: detección de huecos desactivada (`:282-286`); `resyncAllTickets()
 | Badge de no leídos incorrecto | `ticket.store.ts:114-129, 192-205`, `conversation.component.ts:195-208` |
 | No llegan mensajes en tiempo real | `core/realtime/mercure.service.ts`, `conversation.store.ts:65-96` |
 | Mensaje duplicado en pantalla | `conversation.store.ts:76-82, 176-199` |
-| El **cliente** recibe un mensaje repetido | Causa en el backend: `apps/api/src/Conversacion/UseCase/SendOutboundMessageUseCase.php:69-91` envía a WhatsApp aunque el mensaje sea `duplicate_skipped`, y `message-sender.service.ts:71-74` reintenta el POST. Ver [04 § F2](04-flujos.md#f2-respuesta-del-agente). |
+| El **cliente** recibe un mensaje repetido | Causa en el backend: `apps/api/src/Conversacion/UseCase/EnviarMensajeSalienteUseCase.php:69-91` envía a WhatsApp aunque el mensaje sea `duplicate_skipped`, y `message-sender.service.ts:71-74` reintenta el POST. Ver [04 § F2](04-flujos.md#f2-respuesta-del-agente). |
 | Mensaje fallido no se reintenta | `conversation.component.ts:281-286` vs `message-sender.service.ts:184-212` |
 | No puedo asignar | `ticket-list.component.ts:219-277`, `ticket-card.component.ts`, roster `available-agents` |
 | "Resolver" da error | `conversation.component.ts:295-322`, `core/api/workflow-api.service.ts:32-37` |

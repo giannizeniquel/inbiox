@@ -66,10 +66,10 @@ flowchart TD
 |---|---|---|---|
 | 1 | GET: verificación de suscripción (`hub.verify_token`). | `WebhookController.php:56-80` | |
 | 2 | POST: valida `X-Hub-Signature-256` (HMAC-SHA256 con `META_APP_SECRET`). Inválida → 401. JSON inválido → 400. | `:98-119`, `:150-164` | R-M8 |
-| 3 | Guarda el payload crudo en `webhook_payloads` (si falla, se loguea y sigue). | `:121-130`; `Conversacion/UseCase/RecordWebhookPayloadUseCase.php` | |
-| 4 | Por cada `entry[].changes[].value` de WhatsApp: toma `metadata.phone_number_id` y el nombre de perfil. Descarta tipos no soportados. | `Conversacion/UseCase/ProcessWebhookPayloadUseCase.php:38-118` | R-M1 |
-| 5 | Llama `HandleInboundMessageUseCase::processInboundMessage()`. Cualquier excepción se loguea **y se traga**. | `ProcessWebhookPayloadUseCase.php:119-143`; los estados no tienen catch propio (`:147-151`) | |
-| 6 | Normaliza el teléfono (solo dígitos, mínimo 10, antepone `+`). | `Conversacion/UseCase/HandleInboundMessageUseCase.php:69-75` | R-C2 |
+| 3 | Guarda el payload crudo en `webhook_payloads` (si falla, se loguea y sigue). | `:121-130`; `Conversacion/UseCase/RegistrarPayloadWebhookUseCase.php` | |
+| 4 | Por cada `entry[].changes[].value` de WhatsApp: toma `metadata.phone_number_id` y el nombre de perfil. Descarta tipos no soportados. | `Conversacion/UseCase/ProcesarPayloadWebhookUseCase.php:38-118` | R-M1 |
+| 5 | Llama `ProcesarMensajeEntranteUseCase::processInboundMessage()`. Cualquier excepción se loguea **y se traga**. | `ProcesarPayloadWebhookUseCase.php:119-143`; los estados no tienen catch propio (`:147-151`) | |
+| 6 | Normaliza el teléfono (solo dígitos, mínimo 10, antepone `+`). | `Conversacion/UseCase/ProcesarMensajeEntranteUseCase.php:69-75` | R-C2 |
 | 7 | Busca o crea el contacto (no mira si está `inactive`). | `:212-228` | R-C3 |
 | 8 | Busca la conversación `open` del contacto para ese número; si no hay, la crea. | `:230-244` | |
 | 9 | Si el WAMID ya existe, termina (idempotencia ante reintentos de Meta). | `:178-187`, `:246-253` | R-M2 |
@@ -91,45 +91,45 @@ flowchart TD
 
 **Si falla, revisar:**
 1. Logs de PHP (`docker logs inbiox_php`) y la tabla `webhook_payloads` (¿llegó el POST?).
-2. `Conversacion/Controller/WebhookController.php` (firma, JSON) y `Conversacion/UseCase/ProcessWebhookPayloadUseCase.php` (tipo de mensaje, excepciones tragadas en `:136-142`).
-3. `Conversacion/UseCase/HandleInboundMessageUseCase.php`.
+2. `Conversacion/Controller/WebhookController.php` (firma, JSON) y `Conversacion/UseCase/ProcesarPayloadWebhookUseCase.php` (tipo de mensaje, excepciones tragadas en `:136-142`).
+3. `Conversacion/UseCase/ProcesarMensajeEntranteUseCase.php`.
 4. `Asignacion/UseCase/AsignarTicketAutomaticamenteUseCase.php` (una excepción aquí revierte el mensaje).
 5. `Ticket/Repository/TicketRepository.php:42-61` (búsqueda del ticket no cerrado).
-6. `Conversacion/MediaDownloadService.php` (si falta el adjunto).
+6. `Conversacion/DescargaDeAdjuntoService.php` (si falta el adjunto).
 
 ---
 
 ## F2. Respuesta del agente
 
-**Entrada:** Composer → `MessageSenderService.send()` → `SendMessageUseCase` → `WhatsAppCloudProvider.sendMessage()` → `POST /api/provider/send` → `Conversacion/Controller/ProviderProxyController::send` → `Conversacion/UseCase/SendOutboundMessageUseCase.php`, `ROLE_AGENT`.
+**Entrada:** Composer → `MessageSenderService.send()` → `SendMessageUseCase` → `WhatsAppCloudProvider.sendMessage()` → `POST /api/provider/send` → `Conversacion/Controller/ProxyDeProveedorController::send` → `Conversacion/UseCase/EnviarMensajeSalienteUseCase.php`, `ROLE_AGENT`.
 
 | # | Paso | Dónde | Regla |
 |---|---|---|---|
 | 1 | (Frontend) Si la ventana de 24 h venció según el reloj del navegador, el composer se reemplaza por un aviso. | `features/inbox/components/composer/composer.component.ts:70-76` | R-W1 (copia) |
 | 2 | (Frontend) Adjuntos: valida tipo/tamaño, sube con `POST /api/provider/media/upload`, luego envía con `mediaId`. | `features/inbox/services/message-sender.service.ts:131-134, 226-252` | |
-| 3 | Valida `ticketId` y `content`. Resuelve el agente del usuario; **si no tiene, lo crea** (nombre = email). | `ProviderProxyController.php:46-66`; `Agente/UseCase/AsegurarAgenteDeUsuarioUseCase.php` | R-A12 |
+| 3 | Valida `ticketId` y `content`. Resuelve el agente del usuario; **si no tiene, lo crea** (nombre = email). | `ProxyDeProveedorController.php:46-66`; `Agente/UseCase/AsegurarAgenteDeUsuarioUseCase.php` | R-A12 |
 | 4 | `senderIsPrivileged = isGranted('ROLE_SUPERVISOR')`. | `:76` | |
-| 5 | Idempotencia: clave `outbound:{ticketId}:md5(texto o media)`; si ya existe, devuelve `duplicate_skipped` sin persistir. | `Conversacion/UseCase/HandleOutboundMessageUseCase.php:83-102` | R-M3 |
+| 5 | Idempotencia: clave `outbound:{ticketId}:md5(texto o media)`; si ya existe, devuelve `duplicate_skipped` sin persistir. | `Conversacion/UseCase/ProcesarMensajeSalienteUseCase.php:83-102` | R-M3 |
 | 6 | Hasta 3 intentos ante bloqueo optimista; transacción con `SELECT … FOR UPDATE`. | `:106-188` | |
 | 7 | **Guard de ticket resuelto/cerrado:** si el remitente no es supervisor/admin ni el dueño → 409 `TICKET_NOT_OWNED`. | `:197-204`; `Ticket/TicketResponsabilidadGuard.php:35-46` | R-A7 |
-| 8 | **Guard de ventana de 24 h:** vencida o sin mensaje del cliente → 422 `CONVERSATION_WINDOW_EXPIRED`, sin persistir nada. | `:210-212`; `Conversacion/ConversationWindowPolicy.php:30-56` | R-W1 |
+| 8 | **Guard de ventana de 24 h:** vencida o sin mensaje del cliente → 422 `CONVERSATION_WINDOW_EXPIRED`, sin persistir nada. | `:210-212`; `Conversacion/PoliticaDeVentana.php:30-56` | R-W1 |
 | 9 | **Auto-claim:** si el ticket no está resuelto/cerrado y el remitente no es el dueño → `AUTO_ASSIGN` (sin dueño) o `REASSIGN` (otro dueño). No mira disponibilidad ni capacidad. | `:222-254` | R-A6 |
 | 10 | Crea el `Mensaje` (`outbound`, `sender_type=agent`, `sender_agent_id`). | `:257-269` | R-M4 |
 | 11 | Estado: `new → active`, `active → waiting`; registra `first_response_at`. Como el paso 9 ya pasó `new → active`, el primer mensaje deja el ticket en `waiting`. | `:272-305` | R-T5, R-T6 |
 | 12 | Guarda `ProcessedEvent`, recolecta `MessageCreatedEvent`, commit, escribe outbox (omite `InboxUpdatedEvent`, agrega `assignee_id`). | `:308-426` | |
-| 13 | **Recién ahora** llama a Graph API (`sendMessage` o `sendMediaMessage`) con el `phone_number_id` del ticket. Si falla → error al usuario, **pero el mensaje ya quedó guardado como `sent`** y el ticket ya cambió. | `SendOutboundMessageUseCase.php:77-97`; errores → JSON en `ProviderProxyController.php:72-123` | R-M6 |
+| 13 | **Recién ahora** llama a Graph API (`sendMessage` o `sendMediaMessage`) con el `phone_number_id` del ticket. Si falla → error al usuario, **pero el mensaje ya quedó guardado como `sent`** y el ticket ya cambió. | `EnviarMensajeSalienteUseCase.php:77-97`; errores → JSON en `ProxyDeProveedorController.php:72-123` | R-M6 |
 | 14 | Guarda el WAMID en `messages.external_id` (para correlacionar estados de entrega). | `:174-184` | |
 | 15 | (Frontend) Confirma el mensaje optimista; si falla, `retryWithBackoff` **reintenta el POST 2 veces**. | `message-sender.service.ts:41-45, 71-74` | |
 
 - **Entidades:** Ticket, Message, Asignacion, Agente, ProcessedEvent, OutboxEvent.
 - **Resultado:** mensaje en WhatsApp y en la conversación; el remitente pasa a ser dueño (salvo resuelto/cerrado).
-- **Confirmado por lectura (no reproducido en ejecución):** ante un duplicado (paso 5) el caso de uso devuelve `status = duplicate_skipped` y `message_id = null`, pero `SendOutboundMessageUseCase` **no revisa ese resultado** (`:69-91`) y llama a Graph igual: el texto repetido se envía a WhatsApp sin quedar guardado. Combinado con el reintento automático del frontend (paso 15), un error de red puede hacer que el cliente reciba **el mismo mensaje hasta 3 veces**, mientras la base muestra uno solo. La idempotencia protege la base, no al cliente. Ver [R10](00-estado-y-pendientes.md#r10-mensaje-marcado-enviado-que-no-se-envió).
+- **Confirmado por lectura (no reproducido en ejecución):** ante un duplicado (paso 5) el caso de uso devuelve `status = duplicate_skipped` y `message_id = null`, pero `EnviarMensajeSalienteUseCase` **no revisa ese resultado** (`:69-91`) y llama a Graph igual: el texto repetido se envía a WhatsApp sin quedar guardado. Combinado con el reintento automático del frontend (paso 15), un error de red puede hacer que el cliente reciba **el mismo mensaje hasta 3 veces**, mientras la base muestra uno solo. La idempotencia protege la base, no al cliente. Ver [R10](00-estado-y-pendientes.md#r10-mensaje-marcado-enviado-que-no-se-envió).
 
 **Si falla, revisar:**
 1. Respuesta HTTP: 422 = ventana de 24 h; 409 `TICKET_NOT_OWNED` = guard de resuelto ([R6](00-estado-y-pendientes.md#r6-resolver-quita-el-dueño-contradicción-autoinfligida)); 422/429/502 desde `mapGraphErrorCode` = error de Meta.
-2. `Conversacion/UseCase/SendOutboundMessageUseCase.php::execute`, y `Conversacion/Controller/ProviderProxyController.php::send` y `::mapGraphErrorCode` (`:301-323`).
-3. `Conversacion/UseCase/HandleOutboundMessageUseCase.php`.
-4. `Conversacion/ConversationWindowPolicy.php`, `Ticket/TicketResponsabilidadGuard.php`.
+2. `Conversacion/UseCase/EnviarMensajeSalienteUseCase.php::execute`, y `Conversacion/Controller/ProxyDeProveedorController.php::send` y `::mapGraphErrorCode` (`:301-323`).
+3. `Conversacion/UseCase/ProcesarMensajeSalienteUseCase.php`.
+4. `Conversacion/PoliticaDeVentana.php`, `Ticket/TicketResponsabilidadGuard.php`.
 5. `Compartido/Graph/GraphClient.php` (incluye el workaround `normalizePhone()` para un número de prueba).
 6. Frontend: `message-sender.service.ts`, `core/providers/whatsapp-cloud.provider.ts` (rutas relativas `/api/provider/*`).
 
@@ -137,7 +137,7 @@ flowchart TD
 
 ## F3. Envío de plantilla
 
-**Entrada:** `POST /api/provider/template/send` → `ProviderProxyController::sendTemplate` (`:159-225`) → `Conversacion/UseCase/SendTemplateUseCase.php`, `ROLE_AGENT`. **No hay UI** (`WhatsAppCloudProvider.sendTemplate()` no se llama).
+**Entrada:** `POST /api/provider/template/send` → `ProxyDeProveedorController::sendTemplate` (`:159-225`) → `Conversacion/UseCase/EnviarPlantillaUseCase.php`, `ROLE_AGENT`. **No hay UI** (`WhatsAppCloudProvider.sendTemplate()` no se llama).
 
 1. Valida `ticketId`, `templateName`, `language`, `parameters` (array).
 2. Carga ticket → contacto → teléfono (`Ticket::telefonoDestinatario()`, compartido con `send`).
@@ -146,7 +146,7 @@ flowchart TD
 
 **Lo que este flujo no hace** (a diferencia de F2): no valida la ventana de 24 h (**correcto y deliberado**, R-W6); no aplica guard de dueño, auto-claim, cambio de estado, `first_response_at`, idempotencia ni eventos de tiempo real. Si esas omisiones son intencionales: **Regla no confirmada**. Para la métrica de demora, la plantilla cuenta como respuesta humana.
 
-**Si falla, revisar:** `ProviderProxyController::sendTemplate` → `SendTemplateUseCase` → `GraphClient::sendTemplate` → configuración de la plantilla en Meta.
+**Si falla, revisar:** `ProxyDeProveedorController::sendTemplate` → `EnviarPlantillaUseCase` → `GraphClient::sendTemplate` → configuración de la plantilla en Meta.
 
 ---
 
@@ -188,7 +188,7 @@ stateDiagram-v2
 | 4 | El controlador clasifica el cierre (`owner`/`override`/`unowned`) y guarda un `EventoDeTicket` con `source = u:{userId}`. Si falla, solo se loguea. | `Ticket/ClasificadorDeAuditoriaDeCierre.php:25-38`; `Ticket/UseCase/RegistrarAuditoriaDeCierreUseCase.php` | R-T15 |
 | 5 | **No se escribe nada en el outbox**: los demás navegadores no se enteran hasta recargar. | — | P-5 |
 
-**Quién más cambia `tickets.status`** (fuera de este flujo): `ResponsabilidadDeTicketService` (`new → active` al asignar), `HandleInboundMessageUseCase` (`waiting → active`), `HandleOutboundMessageUseCase` (`new → active`, `active → waiting`), `ReglaDeReaperturaAutomatica` (`resolved → waiting`), `cerrarPorVentanaVencida` y `reabrirPorMensajeEntrante` (F8), `DebugController::status` (dev).
+**Quién más cambia `tickets.status`** (fuera de este flujo): `ResponsabilidadDeTicketService` (`new → active` al asignar), `ProcesarMensajeEntranteUseCase` (`waiting → active`), `ProcesarMensajeSalienteUseCase` (`new → active`, `active → waiting`), `ReglaDeReaperturaAutomatica` (`resolved → waiting`), `cerrarPorVentanaVencida` y `reabrirPorMensajeEntrante` (F8), `DebugController::status` (dev).
 
 **Si falla, revisar:**
 1. 403 → voter: `TicketVoter.php` (¿el usuario tiene agente vinculado? ¿es el dueño?).
@@ -275,19 +275,19 @@ stateDiagram-v2
 
 ## F8. Ventana de 24 h: cierre automático y reapertura
 
-**Política** (`Conversacion/ConversationWindowPolicy.php`): límite = `last_inbound_message_at + 24 h − margen` (5 min, `CONVERSATION_WINDOW_SAFETY_MARGIN_MINUTES`). Para **enviar**, sin mensaje del cliente = ventana cerrada. Para **cerrar**, sin mensaje del cliente = no se cierra (evita cerrar en masa tickets viejos).
+**Política** (`Conversacion/PoliticaDeVentana.php`): límite = `last_inbound_message_at + 24 h − margen` (5 min, `CONVERSATION_WINDOW_SAFETY_MARGIN_MINUTES`). Para **enviar**, sin mensaje del cliente = ventana cerrada. Para **cerrar**, sin mensaje del cliente = no se cierra (evita cerrar en masa tickets viejos).
 
 **Cierre automático:**
 
 | # | Paso | Dónde |
 |---|---|---|
-| 1 | El servicio docker `window-closer` (profile opcional) corre `app:conversation-window:close-expired` cada 900 s. | `docker-compose.yml`; `Conversacion/Command/CloseExpiredConversationWindowsCommand.php` |
-| 2 | Selecciona hasta 200 tickets `new`/`active`/`waiting`/`resolved` con ventana vencida. | `Conversacion/UseCase/ConversationWindowExpiryService.php:55-93` |
+| 1 | El servicio docker `window-closer` (profile opcional) corre `app:conversation-window:close-expired` cada 900 s. | `docker-compose.yml`; `Conversacion/Command/CerrarVentanasVencidasCommand.php` |
+| 2 | Selecciona hasta 200 tickets `new`/`active`/`waiting`/`resolved` con ventana vencida. | `Conversacion/UseCase/VencimientoDeVentanaService.php:55-93` |
 | 3 | Por cada uno: `cerrarPorVentanaVencida()` → FSM a `closed`, `UNASSIGN` si hay dueño, `closed_at`, `EventoDeTicket(window_expired_closed, system)`. Un error en un ticket no corta el lote. | `CambiarEstadoDeTicketUseCase.php:152-192` |
 
 **Reapertura:** cuando llega un mensaje y no hay ticket no cerrado (F1 paso 11), si el **último** `ticket_event` del ticket cerrado es `window_expired_closed`, se reabre `closed → active` por SQL, `closed_at = NULL`, `EventoDeTicket(window_reopened)`; queda sin dueño y la auto-asignación del mismo mensaje lo reasigna (`CambiarEstadoDeTicketUseCase.php:210-258`). Un cierre manual nunca se reabre: el siguiente mensaje crea un ticket nuevo. Si después del cierre por ventana se agregó otro evento (p. ej. un tag), ya no es reabrible.
 
-**Si falla, revisar:** ¿está corriendo `inbiox_window_closer` (`docker ps`)? → ejecutar el comando con `--dry-run` → `ConversationWindowExpiryService.php` → `ConversationWindowPolicy.php` → `tickets.last_inbound_message_at` del ticket → `TicketRepository.php:105-132` (reapertura).
+**Si falla, revisar:** ¿está corriendo `inbiox_window_closer` (`docker ps`)? → ejecutar el comando con `--dry-run` → `VencimientoDeVentanaService.php` → `PoliticaDeVentana.php` → `tickets.last_inbound_message_at` del ticket → `TicketRepository.php:105-132` (reapertura).
 
 ---
 
@@ -380,7 +380,7 @@ Ver el diagrama y la tabla de archivos en [02 § Tiempo real](02-arquitectura-y-
 
 ## F14. Estado de entrega de mensajes
 
-**Entrada:** `POST /webhook` con `value.statuses[]` → `HandleStatusUpdateUseCase::processStatusUpdate()`.
+**Entrada:** `POST /webhook` con `value.statuses[]` → `ProcesarActualizacionDeEstadoUseCase::processStatusUpdate()`.
 
 1. Busca el mensaje por WAMID (`messages.external_id`).
 2. Aplica la FSM "solo hacia adelante" (`sending` → `sent` → `delivered` → `read`; `failed` desde cualquier no final) (`:142-159`).
@@ -390,7 +390,7 @@ Ver el diagrama y la tabla de archivos en [02 § Tiempo real](02-arquitectura-y-
 
 Un mensaje `failed` no afecta el estado del ticket.
 
-**Si falla, revisar:** `messages.external_id` del mensaje (¿se guardó el WAMID en F2 paso 14?) → `Conversacion/UseCase/HandleStatusUpdateUseCase.php` → `core/stores/conversation.store.ts:100-103` (en el navegador, un `status: null` se interpreta como `read`).
+**Si falla, revisar:** `messages.external_id` del mensaje (¿se guardó el WAMID en F2 paso 14?) → `Conversacion/UseCase/ProcesarActualizacionDeEstadoUseCase.php` → `core/stores/conversation.store.ts:100-103` (en el navegador, un `status: null` se interpreta como `read`).
 
 ---
 
@@ -438,7 +438,7 @@ Un mensaje `failed` no afecta el estado del ticket.
 | 1 | El shell, en la ruta `/inbox`, pinta directamente `TicketListComponent` + `ConversationComponent` (`InboxPageComponent` nunca se renderiza). | `shell/app-shell.component.html:24-37` |
 | 2 | `GET /api/tickets[?teamId=N]` **sin `page`/`limit`** → el backend devuelve 20. | `core/api/ticket-api.service.ts:20-34`; `Ticket/Controller/BandejaController.php:43-44`; `Ticket/Query/ListTicketsQuery.php` |
 | 3 | Pestañas Míos / Sin asignar / Todos y contadores: en el navegador sobre lo cargado. | `core/stores/ticket.store.ts:211-232` |
-| 4 | Abrir ticket: `GET /api/tickets/{id}/messages?limit=20&offset=0` (mensajes de toda la conversación); scroll hacia arriba pide más. | `ticket-list.component.ts:176-192`; `conversation.component.ts:370-403`; `Conversacion/Query/GetTicketMessagesQuery.php:22-52` |
+| 4 | Abrir ticket: `GET /api/tickets/{id}/messages?limit=20&offset=0` (mensajes de toda la conversación); scroll hacia arriba pide más. | `ticket-list.component.ts:176-192`; `conversation.component.ts:370-403`; `Conversacion/Query/GetMensajesDeTicketQuery.php:22-52` |
 | 5 | Marcar leído: `PUT /api/tickets/{id}/mark-read` (HttpClient directo). Solo tiene efecto si el usuario es el dueño; emite `ticket.read`. | `conversation.component.ts:195-208`; `Ticket/UseCase/MarcarTicketLeidoUseCase.php` (vía `OutboxWriter`) |
 | 6 | No leídos: +1 por `message.added` entrante si no es el ticket abierto; 0 con `ticket.read` o `ticket.assigned`. | `ticket.store.ts:114-129, 192-205` |
 | 7 | Deep link `/inbox?ticketId=X` (desde Contactos): `GET /api/tickets/{id}` + mensajes. | `shell/app-shell.component.ts:96-112` |

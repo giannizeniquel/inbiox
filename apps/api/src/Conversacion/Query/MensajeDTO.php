@@ -2,7 +2,7 @@
 
 namespace App\Conversacion\Query;
 
-class MessageDTO
+class MensajeDTO
 {
     public function __construct(
         public int $messageId,

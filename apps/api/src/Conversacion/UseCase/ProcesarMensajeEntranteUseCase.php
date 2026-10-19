@@ -24,13 +24,13 @@ use App\Automatizacion\EjecutorDeReglas;
 use App\Automatizacion\RespuestaAutomaticaService;
 use App\Automatizacion\ContextoDeRegla;
 use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
-use App\Conversacion\MediaDownloadService;
+use App\Conversacion\DescargaDeAdjuntoService;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use App\Asignacion\TicketRequiereAsignacionAutomaticaEvent;
 use Symfony\Component\Uid\Ulid;
 
-class HandleInboundMessageUseCase
+class ProcesarMensajeEntranteUseCase
 {
     public function __construct(
         private EntityManagerInterface $em,
@@ -45,7 +45,7 @@ class HandleInboundMessageUseCase
         private readonly OutboxWriter $outboxWriter,
         private RespuestaAutomaticaService $autoReplyService,
         private LoggerInterface $logger,
-        private readonly ?MediaDownloadService $mediaDownloadService = null,
+        private readonly ?DescargaDeAdjuntoService $mediaDownloadService = null,
     ) {}
 
     /**

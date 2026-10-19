@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Conversacion\UseCase\HandleOutboundMessageUseCase;
+use App\Conversacion\UseCase\ProcesarMensajeSalienteUseCase;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversacion;
 use App\Ticket\Ticket;
@@ -143,8 +143,8 @@ class AgentReplyAutoClaimConcurrencyTest extends KernelTestCase
 
         $this->em->getConnection()->executeStatement('SET SESSION innodb_lock_wait_timeout = 1');
 
-        /** @var HandleOutboundMessageUseCase $useCase */
-        $useCase = static::getContainer()->get(HandleOutboundMessageUseCase::class);
+        /** @var ProcesarMensajeSalienteUseCase $useCase */
+        $useCase = static::getContainer()->get(ProcesarMensajeSalienteUseCase::class);
 
         $threw = false;
         try {
@@ -222,8 +222,8 @@ class AgentReplyAutoClaimConcurrencyTest extends KernelTestCase
                     $childEm = $container->get(EntityManagerInterface::class);
                     $childEm->getConnection()->close(); // force a brand-new connection in this process
 
-                    /** @var HandleOutboundMessageUseCase $useCase */
-                    $useCase = $container->get(HandleOutboundMessageUseCase::class);
+                    /** @var ProcesarMensajeSalienteUseCase $useCase */
+                    $useCase = $container->get(ProcesarMensajeSalienteUseCase::class);
                     $useCase->processOutboundMessage($ticketId, "reply from agent $agentId", $agentId);
 
                     file_put_contents($tmpFile, "ok|$agentId\n", FILE_APPEND);

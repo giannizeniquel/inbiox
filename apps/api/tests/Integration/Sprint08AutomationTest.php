@@ -8,7 +8,7 @@ use App\Automatizacion\ContextoDeRegla;
 use App\Automatizacion\ReglaDeReaperturaAutomatica;
 use App\Automatizacion\ReglaDeEtiquetadoPorPalabraClave;
 use App\Ticket\UseCase\AgregarEtiquetaATicketUseCase;
-use App\Conversacion\UseCase\HandleInboundMessageUseCase;
+use App\Conversacion\UseCase\ProcesarMensajeEntranteUseCase;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
 use App\Conversacion\Mensaje;
@@ -29,7 +29,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
  * - ReglaDeReaperturaAutomatica (resolved → waiting, closed NOT reopened)
  * - ReglaDeEtiquetadoPorPalabraClave (error keyword detection)
  * - EjecutorDeReglas (execution key prevents duplicates)
- * - HandleInboundMessageUseCase integration with rules
+ * - ProcesarMensajeEntranteUseCase integration with rules
  */
 class Sprint08AutomationTest extends KernelTestCase
 {
@@ -451,12 +451,12 @@ class Sprint08AutomationTest extends KernelTestCase
     // ============================================
 
     /**
-     * Test HandleInboundMessageUseCase triggers automation rules.
+     * Test ProcesarMensajeEntranteUseCase triggers automation rules.
      */
     public function testHandleInboundMessageUseCaseWithRules(): void
     {
         // Arrange
-        $useCase = static::getContainer()->get(HandleInboundMessageUseCase::class);
+        $useCase = static::getContainer()->get(ProcesarMensajeEntranteUseCase::class);
 
         // Act - send message with "error" keyword
         $result = $useCase->processInboundMessage(
@@ -481,7 +481,7 @@ class Sprint08AutomationTest extends KernelTestCase
     }
 
     /**
-     * Test HandleInboundMessageUseCase with resolved ticket triggers auto-reopen.
+     * Test ProcesarMensajeEntranteUseCase with resolved ticket triggers auto-reopen.
      */
     public function testHandleInboundMessageResolvesTicketTriggersReopen(): void
     {
@@ -503,7 +503,7 @@ class Sprint08AutomationTest extends KernelTestCase
         $this->em->flush();
 
         // Act - send inbound message to resolved ticket
-        $useCase = static::getContainer()->get(HandleInboundMessageUseCase::class);
+        $useCase = static::getContainer()->get(ProcesarMensajeEntranteUseCase::class);
         $result = $useCase->processInboundMessage(
             '+543711234567',
             'I need more help with this issue'
