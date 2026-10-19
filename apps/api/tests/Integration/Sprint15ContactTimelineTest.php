@@ -210,7 +210,7 @@ class Sprint15ContactTimelineTest extends WebTestCase
         );
         // Override assigned_at to be the oldest
         $oldDate = (new \DateTimeImmutable())->modify('-4 hours');
-        $assignedAtProp = new \ReflectionProperty(Asignacion::class, 'assignedAt');
+        $assignedAtProp = new \ReflectionProperty(Asignacion::class, 'asignadoAt');
         $assignedAtProp->setAccessible(true);
         $assignedAtProp->setValue($assignment, $oldDate);
         $this->em->persist($assignment);

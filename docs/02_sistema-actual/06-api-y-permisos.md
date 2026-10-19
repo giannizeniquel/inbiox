@@ -54,10 +54,10 @@ Leyenda "Rol": **Público**, **Auth** (cualquier usuario autenticado), **Agente*
 | GET | `/api/tickets/{id}` | `BandejaController::getTicket` (`:102`) | Agente | `GetDetalleDeTicketQuery`. **Sin filtro de workspace.** |
 | GET | `/api/tickets/{id}/messages` | `BandejaController::getMensajes` (`:124`) | Agente | `GetTicketMessagesQuery` (toda la conversación). Sin filtro de workspace. |
 | PUT | `/api/tickets/{id}/mark-read` | `BandejaController::marcarLeido` (`:168-214`) | Agente; efecto solo si es el dueño | SQL directo + evento `ticket.read`. |
-| POST | `/api/tickets/{id}/assign` | `AsignacionDeTicketController::assign` (`:35-75`) | Agente + voter `ASSIGN` | `AsignarTicketUseCase`. |
-| GET | `/api/tickets/{id}/assignment` | `AsignacionDeTicketController::getAssignment` (`:140`) | Agente | `AsignacionRepository::findByTicket`. Sin UI. |
-| PUT | `/api/tickets/{id}/team` | `AsignacionDeTicketController::setTeam` (`:88-137`) | Agente (sin voter, design D5) | EntityManager directo. Sin UI. |
-| POST | `/api/tickets/{id}/auto-assign` | `AsignacionAutomaticaController::autoAssign` (`:22`) | Agente (sin voter) | `AsignarTicketAutomaticamenteUseCase::execute`. Sin UI. |
+| POST | `/api/tickets/{id}/assign` | `AsignacionDeTicketController::asignar` (`:35-75`) | Agente + voter `ASSIGN` | `AsignarTicketUseCase`. |
+| GET | `/api/tickets/{id}/assignment` | `AsignacionDeTicketController::getAsignacion` (`:140`) | Agente | `AsignacionRepository::findByTicket`. Sin UI. |
+| PUT | `/api/tickets/{id}/team` | `AsignacionDeTicketController::setEquipo` (`:88-137`) | Agente (sin voter, design D5) | EntityManager directo. Sin UI. |
+| POST | `/api/tickets/{id}/auto-assign` | `AsignacionAutomaticaController::asignarAutomaticamente` (`:22`) | Agente (sin voter) | `AsignarTicketAutomaticamenteUseCase::execute`. Sin UI. |
 | POST | `/api/tickets/{id}/transition` | `FlujoDeTicketController::transicionar` (`:39-85`) | Agente; voter `CLOSE` solo hacia `resolved`/`closed` | `CambiarEstadoDeTicketUseCase::execute`. Sin UI. |
 | POST | `/api/tickets/{id}/resolve` | `FlujoDeTicketController::resolver` (`:88`) | Agente + voter `CLOSE` | `ResolverTicketUseCase`. Botón "RESOLVER". |
 | POST | `/api/tickets/{id}/close` | `FlujoDeTicketController::cerrar` (`:116`) | Agente + voter `CLOSE` → en la práctica Supervisor | Sin UI. |

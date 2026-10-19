@@ -29,7 +29,7 @@ class AsignacionDeTicketController
     ) {}
 
     #[Route('/api/tickets/{id}/assign', name: 'app_ticket_assign', methods: ['POST'])]
-    public function assign(
+    public function asignar(
         int $id,
         #[MapRequestPayload] AsignarTicketRequest $request
     ): JsonResponse {
@@ -45,7 +45,7 @@ class AsignacionDeTicketController
                 return new JsonResponse(['error' => 'Forbidden'], 403);
             }
 
-            $result = $this->assignTicketUseCase->assignTicket(
+            $result = $this->assignTicketUseCase->asignar(
                 $id,
                 $request->agentId,
                 $request->assignedBy,
@@ -73,7 +73,7 @@ class AsignacionDeTicketController
      * unchanged.
      */
     #[Route('/api/tickets/{id}/team', name: 'app_ticket_set_team', methods: ['PUT'])]
-    public function setTeam(int $id, Request $request): JsonResponse
+    public function setEquipo(int $id, Request $request): JsonResponse
     {
         try {
             $ticket = $this->ticketRepo->findById($id);
@@ -96,7 +96,7 @@ class AsignacionDeTicketController
     }
 
     #[Route('/api/tickets/{id}/assignment', name: 'app_ticket_assignment', methods: ['GET'])]
-    public function getAssignment(int $id): JsonResponse
+    public function getAsignacion(int $id): JsonResponse
     {
         // Find the ticket first
         $ticket = $this->ticketRepo->findById($id);
@@ -112,10 +112,10 @@ class AsignacionDeTicketController
             'assignments' => array_map(function ($assignment) {
                 return [
                     'id' => $assignment->getId(),
-                    'agent_id' => $assignment->getAgentId(),
-                    'assigned_by' => $assignment->getAssignedBy(),
-                    'assigned_at' => $assignment->getAssignedAt()->format('Y-m-d H:i:s'),
-                    'notes' => $assignment->getNotes(),
+                    'agent_id' => $assignment->getAgenteId(),
+                    'assigned_by' => $assignment->getAsignadoPor(),
+                    'assigned_at' => $assignment->getAsignadoAt()->format('Y-m-d H:i:s'),
+                    'notes' => $assignment->getNotas(),
                 ];
             }, $assignments),
             'current_assignment' => null,
@@ -125,9 +125,9 @@ class AsignacionDeTicketController
         if (!empty($assignments)) {
             $current = $assignments[0]; // Already ordered by DESC
             $data['current_assignment'] = [
-                'agent_id' => $current->getAgentId(),
-                'assigned_by' => $current->getAssignedBy(),
-                'assigned_at' => $current->getAssignedAt()->format('Y-m-d H:i:s'),
+                'agent_id' => $current->getAgenteId(),
+                'assigned_by' => $current->getAsignadoPor(),
+                'assigned_at' => $current->getAsignadoAt()->format('Y-m-d H:i:s'),
             ];
         }
 

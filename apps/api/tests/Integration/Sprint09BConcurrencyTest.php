@@ -91,10 +91,10 @@ class Sprint09BConcurrencyTest extends KernelTestCase
         $assignUseCase2 = static::getContainer()->get(AsignarTicketUseCase::class);
         
         // First assignment → seq should increment
-        $assignUseCase1->assignTicket($ticketId, 1, 'admin', 'First assignment');
+        $assignUseCase1->asignar($ticketId, 1, 'admin', 'First assignment');
         
         // Second assignment → seq should be next
-        $assignUseCase2->assignTicket($ticketId, 2, 'admin', 'Second assignment');
+        $assignUseCase2->asignar($ticketId, 2, 'admin', 'Second assignment');
         
         // Get events
         $events = $this->em->getConnection()->fetchAllAssociative(
@@ -140,7 +140,7 @@ class Sprint09BConcurrencyTest extends KernelTestCase
         
         // Use AsignarTicketUseCase (applies pessimistic lock)
         $assignUseCase = static::getContainer()->get(AsignarTicketUseCase::class);
-        $assignUseCase->assignTicket(999, 1, 'admin', 'Test');
+        $assignUseCase->asignar(999, 1, 'admin', 'Test');
         
         // Verify seq incremented
         $em->clear();
@@ -172,7 +172,7 @@ class Sprint09BConcurrencyTest extends KernelTestCase
         
         // Do multiple assignments
         for ($i = 1; $i <= 4; $i++) {
-            $assignUseCase->assignTicket($ticketId, $i, 'admin', "Assign $i");
+            $assignUseCase->asignar($ticketId, $i, 'admin', "Assign $i");
         }
         
         // Verify final seq is higher than initial

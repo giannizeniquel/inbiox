@@ -17,7 +17,7 @@ use Doctrine\ORM\EntityManagerInterface;
  * SINGLE point of ownership change for tickets.
  *
  * NO other code may modify ticket.assigned_agent_id directly.
- * ALL ownership changes MUST go through recordOwnershipChange().
+ * ALL ownership changes MUST go through registrarCambioDeResponsable().
  *
  * This is the audit gateway: every change creates an Asignacion row,
  * updates the ticket, and emits domain events via EventCollector
@@ -42,7 +42,7 @@ final class ResponsabilidadDeTicketService
      *
      * @return Asignacion The created assignment record
      */
-    public function recordOwnershipChange(
+    public function registrarCambioDeResponsable(
         Ticket $ticket,
         ?Agent $agent,
         ?Agent $previousAgent,

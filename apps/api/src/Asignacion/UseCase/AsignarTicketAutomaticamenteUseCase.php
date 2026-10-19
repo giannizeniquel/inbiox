@@ -26,7 +26,7 @@ use Doctrine\ORM\EntityManagerInterface;
  *   3. SELECT agents FOR UPDATE WHERE id IN (...)
  *   4. Re-filter capacity inside lock (COUNT may have changed)
  *   5. Tiebreaker: lowest active count → fewest AUTO_ASSIGN today → lowest id
- *   6. ResponsabilidadDeTicketService.recordOwnershipChange()
+ *   6. ResponsabilidadDeTicketService.registrarCambioDeResponsable()
  *   7. Collect outbox events for PR4 Mercure
  *
  * The old hardcoded "WHERE active = 1 AND is_available = 1" filter is REMOVED.
@@ -35,7 +35,7 @@ use Doctrine\ORM\EntityManagerInterface;
 final class AsignarTicketAutomaticamenteUseCase
 {
     /** Track the last assignment type for outbox payload enrichment. */
-    private ?string $lastAssignmentType = null;
+    private ?string $ultimoTipoDeAsignacion = null;
 
     public function __construct(
         private EntityManagerInterface $em,
@@ -133,7 +133,7 @@ final class AsignarTicketAutomaticamenteUseCase
                 continue; // at capacity — skip
             }
 
-            $todayCount = $this->assignmentRepo->countAutoAssignedToday(
+            $todayCount = $this->assignmentRepo->countAsignacionesAutomaticasDeHoy(
                 (int) $agent->getId(),
                 $todayStart,
             );
@@ -185,12 +185,12 @@ final class AsignarTicketAutomaticamenteUseCase
         // 8. Record ownership change via ResponsabilidadDeTicketService (single point of change)
         //    This creates the Asignacion audit row, updates ticket.assigned_agent_id,
         //    and emits domain events.
-        $this->lastAssignmentType = TipoDeAsignacion::AUTO_ASSIGN->value;
-        $this->assignmentService->recordOwnershipChange(
+        $this->ultimoTipoDeAsignacion = TipoDeAsignacion::AUTOMATICA->value;
+        $this->assignmentService->registrarCambioDeResponsable(
             ticket: $ticket,
             agent: $selectedAgent,
             previousAgent: null,
-            type: TipoDeAsignacion::AUTO_ASSIGN,
+            type: TipoDeAsignacion::AUTOMATICA,
             assignedBy: 'system',
         );
 
@@ -231,7 +231,7 @@ final class AsignarTicketAutomaticamenteUseCase
                 $payload['status'] = $event->status?->value;
                 $payload['ownerAgentId'] = $event->ownerAgentId;
                 $payload['assignee_id'] = $event->ownerAgentId;
-                $payload['assignment_type'] = $this->lastAssignmentType;
+                $payload['assignment_type'] = $this->ultimoTipoDeAsignacion;
             }
 
             $outboxEvent = new OutboxEvent(

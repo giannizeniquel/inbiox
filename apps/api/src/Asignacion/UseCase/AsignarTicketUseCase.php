@@ -33,7 +33,7 @@ use Doctrine\DBAL\LockMode;
 class AsignarTicketUseCase
 {
     /** Track the last assignment type for outbox payload enrichment. */
-    private ?string $lastAssignmentType = null;
+    private ?string $ultimoTipoDeAsignacion = null;
 
     public function __construct(
         private EntityManagerInterface $em,
@@ -56,7 +56,7 @@ class AsignarTicketUseCase
      * @return array
      * @throws \InvalidArgumentException if ticket or agent not found
      */
-    public function assignTicket(int $ticketId, int $agentId, string $assignedBy, ?string $notes = null): array
+    public function asignar(int $ticketId, int $agentId, string $assignedBy, ?string $notes = null): array
     {
         // Validate input
         if ($agentId <= 0) {
@@ -67,7 +67,7 @@ class AsignarTicketUseCase
             throw new \InvalidArgumentException('Assigned by is required');
         }
 
-        $this->lastAssignmentType = null;
+        $this->ultimoTipoDeAsignacion = null;
 
         $result = $this->em->getConnection()->transactional(function () use ($ticketId, $agentId, $assignedBy, $notes) {
             // Find the agent
@@ -105,11 +105,11 @@ class AsignarTicketUseCase
                 $previousAgent = $this->agentRepo->findById($currentOwnerId);
             }
 
-            $type = $currentOwnerId !== null ? TipoDeAsignacion::REASSIGN : TipoDeAsignacion::MANUAL_ASSIGN;
-            $this->lastAssignmentType = $type->value;
+            $type = $currentOwnerId !== null ? TipoDeAsignacion::REASIGNACION : TipoDeAsignacion::MANUAL;
+            $this->ultimoTipoDeAsignacion = $type->value;
 
             // Route through ResponsabilidadDeTicketService (creates audit row, updates ticket, emits events)
-            $assignment = $this->assignmentService->recordOwnershipChange(
+            $assignment = $this->assignmentService->registrarCambioDeResponsable(
                 ticket: $ticket,
                 agent: $agent,
                 previousAgent: $previousAgent,
@@ -123,12 +123,12 @@ class AsignarTicketUseCase
             return [
                 'assignment_id' => $assignment->getId(),
                 'ticket_id' => $ticket->getId(),
-                'agent_id' => $assignment->getAgentId(),
+                'agent_id' => $assignment->getAgenteId(),
                 'agent_name' => $agent->getName(),
-                'assigned_by' => $assignment->getAssignedBy(),
-                'assigned_at' => $assignment->getAssignedAt()->format('Y-m-d H:i:s'),
+                'assigned_by' => $assignment->getAsignadoPor(),
+                'assigned_at' => $assignment->getAsignadoAt()->format('Y-m-d H:i:s'),
                 'ticket_status' => $ticket->getEstado(),
-                'notes' => $assignment->getNotes(),
+                'notes' => $assignment->getNotas(),
                 'status' => 'ok',
             ];
         });
@@ -166,7 +166,7 @@ class AsignarTicketUseCase
                 $payload['status'] = $event->status?->value;
                 $payload['ownerAgentId'] = $event->ownerAgentId;
                 $payload['assignee_id'] = $event->ownerAgentId;
-                $payload['assignment_type'] = $this->lastAssignmentType;
+                $payload['assignment_type'] = $this->ultimoTipoDeAsignacion;
             }
 
             $outboxEvent = new OutboxEvent(

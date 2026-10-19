@@ -51,11 +51,11 @@ class CambiarEstadoDeTicketUseCase
             return;
         }
 
-        $this->assignmentService->recordOwnershipChange(
+        $this->assignmentService->registrarCambioDeResponsable(
             ticket: $ticketEntity,
             agent: null,
             previousAgent: $agente,
-            type: TipoDeAsignacion::UNASSIGN,
+            type: TipoDeAsignacion::DESASIGNACION,
             assignedBy: $actor,
         );
     }

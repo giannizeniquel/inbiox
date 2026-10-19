@@ -210,7 +210,7 @@ stateDiagram-v2
 | 4 | Valida `agentId > 0` y `assignedBy` (texto **enviado por el cliente**). | `Asignacion/UseCase/AsignarTicketUseCase.php:57-66` | R-A11 |
 | 5 | Transacción; carga ticket y luego `lock()` (patrón con riesgo TOCTOU, [R16](00-estado-y-pendientes.md#r16-concurrencia-en-asignación-manual-toctou)). | `:70-84` | |
 | 6 | **Guard "Activo":** `isActivoAhora()` (cuenta activa → override → turno; **sin capacidad**). Si no → 409 `AGENT_NOT_ACTIVE`. Sin excepción para ningún rol. | `:86-95`; `DisponibilidadDeAgenteService.php:83-101` | R-A8 |
-| 7 | `REASSIGN` si ya tenía dueño, si no `MANUAL_ASSIGN` → `ResponsabilidadDeTicketService::recordOwnershipChange()` (fila `Asignacion`, `new → active`, eventos). | `:97-117`; `ResponsabilidadDeTicketService.php:45-111` | R-A1, R-T4 |
+| 7 | `REASSIGN` si ya tenía dueño, si no `MANUAL_ASSIGN` → `ResponsabilidadDeTicketService::registrarCambioDeResponsable()` (fila `Asignacion`, `new → active`, eventos). | `:97-117`; `ResponsabilidadDeTicketService.php:45-111` | R-A1, R-T4 |
 | 8 | Post-commit: eventos al outbox (los `InboxUpdatedEvent` terminan en dead letter). | `:135, 143-180` | P-1 |
 | 9 | (Frontend) Actualización optimista; si falla, rollback y mensaje 5 s; si 409 `AGENT_NOT_ACTIVE`, recarga el roster. | `ticket-list.component.ts:242-277` | |
 
@@ -232,7 +232,7 @@ stateDiagram-v2
 | 3 | `listarAgentesDisponibles()`: **todos** los agentes activos del sistema (sin filtro de workspace ni equipo), con cascada override → turno → capacidad. | `:112`; `DisponibilidadDeAgenteService.php:111-166` | R-A4, R-D1 |
 | 4 | Bloquea las filas de esos agentes y recalcula la carga (`new`/`active`/`waiting`) dentro del lock; descarta los que están al tope (incluso con override). | `:126-151` | R-A3 |
 | 5 | Desempate: menor carga → menos `AUTO_ASSIGN` hoy (UTC) → menor `agent.id`. | `:163-174` | R-A2 |
-| 6 | `recordOwnershipChange(..., AUTO_ASSIGN, 'system')`. | `:194-200` | |
+| 6 | `registrarCambioDeResponsable(..., AUTO_ASSIGN, 'system')`. | `:194-200` | |
 | 7 | Vía endpoint escribe eventos; vía mensaje entrante los deja en el colector (se publican sin `assignee_id`, P-4). | `:216-252` | |
 
 - **Razones de no asignación:** `ticket_not_found`, `already_assigned`, `no_agents_available`, `all_agents_at_capacity`.
@@ -348,7 +348,7 @@ Frontend: `features/contacts/` (pages, componentes de diálogo, `stores/contacts
 | CRUD | `/api/admin/teams[/{id}]` (supervisor+) | `Administracion/Controller/TeamController.php` | Nombre único por workspace; borrar = desactivar (no toca `tickets.team_id`). |
 | Membresía | `PUT /api/admin/teams/{id}/agents` | `:247-287` | Reemplaza la lista completa; `Team::addAgent()` rechaza agentes de otro workspace; IDs inexistentes se ignoran. |
 | Equipos para filtros | `GET /api/teams` | `Agente/Controller/TeamController.php:38-65` | Equipos de los workspaces del agente, incluidos inactivos. |
-| Asignar equipo a ticket | `PUT /api/tickets/{id}/team` (cualquier agente) | `AsignacionDeTicketController::setTeam` (`:88-137`) | Valida mismo workspace; **no** rechaza equipos inactivos (la spec dice que sí); no emite eventos. **Sin UI.** |
+| Asignar equipo a ticket | `PUT /api/tickets/{id}/team` (cualquier agente) | `AsignacionDeTicketController::setEquipo` (`:88-137`) | Valida mismo workspace; **no** rechaza equipos inactivos (la spec dice que sí); no emite eventos. **Sin UI.** |
 | Filtro | `GET /api/tickets?teamId=N`; 5 reportes con `teamId` | `FiltrosDeTicketBuilder`, `ReportingRepository` | Primer filtro server-side de la bandeja. |
 
 El equipo **no participa en la asignación** (ni manual ni automática).

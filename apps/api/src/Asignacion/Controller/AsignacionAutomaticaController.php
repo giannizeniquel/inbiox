@@ -17,7 +17,7 @@ class AsignacionAutomaticaController
     ) {}
 
     #[Route('/api/tickets/{id}/auto-assign', name: 'app_ticket_auto_assign', methods: ['POST'])]
-    public function autoAssign(int $id): JsonResponse
+    public function asignarAutomaticamente(int $id): JsonResponse
     {
         // Validate ticket ID
         if ($id <= 0) {

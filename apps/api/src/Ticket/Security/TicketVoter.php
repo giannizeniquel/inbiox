@@ -31,7 +31,7 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
  * If one is ever added, do not reuse the "own tickets only" logic below.
  *
  * Attribute matrix:
- *   - ASSIGN: invoked by TicketController::assign(). Rejects with a 409
+ *   - ASSIGN: invoked by AsignacionDeTicketController::asignar(). Rejects with a 409
  *     `StateConflictException` when the ticket is already resolved/closed,
  *     for every role, before the role checks below even run.
  *   - CLOSE: invoked by FlujoDeTicketController for resolve()/close()/

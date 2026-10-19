@@ -306,10 +306,10 @@ class HandleOutboundMessageUseCase
         }
 
         $type = $currentAssigneeId !== null
-            ? TipoDeAsignacion::REASSIGN
-            : TipoDeAsignacion::AUTO_ASSIGN;
+            ? TipoDeAsignacion::REASIGNACION
+            : TipoDeAsignacion::AUTOMATICA;
 
-        $this->assignmentService->recordOwnershipChange(
+        $this->assignmentService->registrarCambioDeResponsable(
             ticket: $ticket,
             agent: $agent,
             previousAgent: $previousAgent,

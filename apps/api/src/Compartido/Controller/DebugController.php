@@ -148,7 +148,7 @@ class DebugController extends AbstractController
 
         try {
             $agentId = $agentIds[array_rand($agentIds)];
-            $result = $this->assignTicket->assignTicket(
+            $result = $this->assignTicket->asignar(
                 $ticketId,
                 $agentId,
                 'system',

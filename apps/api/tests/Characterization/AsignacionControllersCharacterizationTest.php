@@ -9,7 +9,7 @@ use App\Ticket\Repository\TicketRepository;
 
 /**
  * Characterization of App\Asignacion\Controller\AsignacionAutomaticaController
- * (app_ticket_auto_assign) and App\Asignacion\Controller\AsignacionDeTicketController::getAssignment
+ * (app_ticket_auto_assign) and App\Asignacion\Controller\AsignacionDeTicketController::getAsignacion
  * (app_ticket_assignment).
  */
 final class AsignacionControllersCharacterizationTest extends CharacterizationTestCase

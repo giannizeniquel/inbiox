@@ -12,7 +12,7 @@ use App\Compartido\StateConflictException;
  *
  * HARD BLOCK for every role (ROLE_AGENT, ROLE_SUPERVISOR, ROLE_ADMIN) — no
  * bypass. Thrown inside AsignarTicketUseCase's transaction, after the
- * pessimistic lock, before recordOwnershipChange(): a rejection writes no
+ * pessimistic lock, before registrarCambioDeResponsable(): a rejection writes no
  * assignment row and emits no event; the transaction rolls back.
  *
  * Subclass of StateConflictException so existing generic 409 handling still

@@ -17,12 +17,12 @@ class AsignacionRepository extends ServiceEntityRepository
 
     public function findByTicket(Ticket $ticket): array
     {
-        return $this->findBy(['ticket' => $ticket], ['assignedAt' => 'DESC']);
+        return $this->findBy(['ticket' => $ticket], ['asignadoAt' => 'DESC']);
     }
 
-    public function findByAgent(int $agentId): array
+    public function findByAgente(int $agentId): array
     {
-        return $this->findBy(['agent' => $agentId], ['assignedAt' => 'DESC']);
+        return $this->findBy(['agente' => $agentId], ['asignadoAt' => 'DESC']);
     }
 
     public function findById(int $id): ?Asignacion
@@ -39,13 +39,13 @@ class AsignacionRepository extends ServiceEntityRepository
     /**
      * Find the current (most recent) assignment for a ticket
      */
-    public function findCurrentByTicket(int $ticketId): ?Asignacion
+    public function findActualByTicket(int $ticketId): ?Asignacion
     {
         return $this->createQueryBuilder('a')
             ->join('a.ticket', 't')
             ->where('t.id = :ticketId')
             ->setParameter('ticketId', $ticketId)
-            ->orderBy('a.assignedAt', 'DESC')
+            ->orderBy('a.asignadoAt', 'DESC')
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
@@ -57,16 +57,16 @@ class AsignacionRepository extends ServiceEntityRepository
      * Used as the second tiebreaker in the auto-assignment algorithm.
      * Uses index idx_assignments_agent_assigned_at (agent_id, assigned_at).
      */
-    public function countAutoAssignedToday(int $agentId, \DateTimeImmutable $todayStart): int
+    public function countAsignacionesAutomaticasDeHoy(int $agentId, \DateTimeImmutable $todayStart): int
     {
         return (int) $this->createQueryBuilder('a')
             ->select('COUNT(a.id)')
-            ->join('a.agent', 'ag')
+            ->join('a.agente', 'ag')
             ->where('ag.id = :agentId')
-            ->andWhere('a.type = :type')
-            ->andWhere('a.assignedAt >= :todayStart')
+            ->andWhere('a.tipo = :type')
+            ->andWhere('a.asignadoAt >= :todayStart')
             ->setParameter('agentId', $agentId)
-            ->setParameter('type', TipoDeAsignacion::AUTO_ASSIGN->value)
+            ->setParameter('type', TipoDeAsignacion::AUTOMATICA->value)
             ->setParameter('todayStart', $todayStart)
             ->getQuery()
             ->getSingleScalarResult();

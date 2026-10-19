@@ -143,7 +143,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
      * the NEW `\Throwable` branch (design.md D6's second clear-on-abort
      * path) using a single fault-injecting test double for
      * `EjecutorDeReglas` — the LAST collaborator called, after
-     * `recordOwnershipChange()`, the Message, and the ProcessedEvent have
+     * `registrarCambioDeResponsable()`, the Message, and the ProcessedEvent have
      * already been flushed within the same still-open transaction. Every
      * other collaborator (EntityManager, EventCollector, ResponsabilidadDeTicketService,
      * repositories) stays real.

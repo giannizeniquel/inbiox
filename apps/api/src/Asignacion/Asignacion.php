@@ -27,23 +27,23 @@ class Asignacion
 
     #[ORM\ManyToOne(targetEntity: Agent::class)]
     #[ORM\JoinColumn(name: "agent_id", referencedColumnName: "id", nullable: true)]
-    private ?Agent $agent = null;
+    private ?Agent $agente = null;
 
     #[ORM\Column(name: "type", type: Types::STRING, length: 20, options: ['default' => 'MANUAL_ASSIGN'])]
-    private string $type = 'MANUAL_ASSIGN';
+    private string $tipo = 'MANUAL_ASSIGN';
 
     #[ORM\ManyToOne(targetEntity: Agent::class)]
     #[ORM\JoinColumn(name: "previous_agent_id", referencedColumnName: "id", nullable: true)]
-    private ?Agent $previousAgent = null;
+    private ?Agent $agenteAnterior = null;
 
     #[ORM\Column(name: "assigned_at", type: "datetime_immutable")]
-    private \DateTimeImmutable $assignedAt;
+    private \DateTimeImmutable $asignadoAt;
 
     #[ORM\Column(name: "assigned_by", type: "string", length: 100)]
-    private string $assignedBy;
+    private string $asignadoPor;
 
     #[ORM\Column(name: "notes", type: "text", nullable: true)]
-    private ?string $notes = null;
+    private ?string $notas = null;
 
     public function __construct(
         Ticket $ticket,
@@ -54,12 +54,12 @@ class Asignacion
         ?Agent $previousAgent = null
     ) {
         $this->ticket = $ticket;
-        $this->agent = $agent;
-        $this->assignedBy = $assignedBy;
-        $this->type = $type;
-        $this->previousAgent = $previousAgent;
-        $this->assignedAt = new \DateTimeImmutable();
-        $this->notes = $notes;
+        $this->agente = $agent;
+        $this->asignadoPor = $assignedBy;
+        $this->tipo = $type;
+        $this->agenteAnterior = $previousAgent;
+        $this->asignadoAt = new \DateTimeImmutable();
+        $this->notas = $notes;
     }
 
     public function getId(): ?int
@@ -72,79 +72,79 @@ class Asignacion
         return $this->ticket;
     }
 
-    public function getAgent(): ?Agent
+    public function getAgente(): ?Agent
     {
-        return $this->agent;
+        return $this->agente;
     }
 
-    public function setAgent(?Agent $agent): self
+    public function setAgente(?Agent $agent): self
     {
-        $this->agent = $agent;
+        $this->agente = $agent;
         return $this;
     }
 
     /**
      * Compatibility wrapper — returns the agent ID from the relationship.
      */
-    public function getAgentId(): ?int
+    public function getAgenteId(): ?int
     {
-        return $this->agent?->getId();
+        return $this->agente?->getId();
     }
 
-    public function getPreviousAgent(): ?Agent
+    public function getAgenteAnterior(): ?Agent
     {
-        return $this->previousAgent;
+        return $this->agenteAnterior;
     }
 
-    public function setPreviousAgent(?Agent $previousAgent): self
+    public function setAgenteAnterior(?Agent $previousAgent): self
     {
-        $this->previousAgent = $previousAgent;
+        $this->agenteAnterior = $previousAgent;
         return $this;
     }
 
     /**
      * Compatibility wrapper — returns the previous agent ID from the relationship.
      */
-    public function getPreviousAgentId(): ?int
+    public function getAgenteAnteriorId(): ?int
     {
-        return $this->previousAgent?->getId();
+        return $this->agenteAnterior?->getId();
     }
 
-    public function getType(): string
+    public function getTipo(): string
     {
-        return $this->type;
+        return $this->tipo;
     }
 
-    public function setType(string $type): self
+    public function setTipo(string $type): self
     {
-        $this->type = $type;
+        $this->tipo = $type;
         return $this;
     }
 
-    public function getAssignedAt(): \DateTimeImmutable
+    public function getAsignadoAt(): \DateTimeImmutable
     {
-        return $this->assignedAt;
+        return $this->asignadoAt;
     }
 
-    public function getAssignedBy(): string
+    public function getAsignadoPor(): string
     {
-        return $this->assignedBy;
+        return $this->asignadoPor;
     }
 
-    public function setAssignedBy(string $assignedBy): self
+    public function setAsignadoPor(string $assignedBy): self
     {
-        $this->assignedBy = $assignedBy;
+        $this->asignadoPor = $assignedBy;
         return $this;
     }
 
-    public function getNotes(): ?string
+    public function getNotas(): ?string
     {
-        return $this->notes;
+        return $this->notas;
     }
 
-    public function setNotes(?string $notes): self
+    public function setNotas(?string $notes): self
     {
-        $this->notes = $notes;
+        $this->notas = $notes;
         return $this;
     }
 }
