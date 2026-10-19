@@ -10,7 +10,7 @@ use App\Contacto\Contacto;
 use App\Ticket\EventoDeTicket;
 use App\Ticket\Ticket;
 use App\Administracion\EspacioDeTrabajo;
-use App\Reporte\Repository\ReportingRepository;
+use App\Reporte\Repository\ReporteRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -28,11 +28,11 @@ use Symfony\Component\Console\Output\OutputInterface;
  * Run: docker exec inbiox_php php bin/console app:seed-reports
  */
 #[AsCommand(name: 'app:seed-reports', description: 'Seed test data for reporting integration tests')]
-final class SeedReportsCommand extends Command
+final class SeedReportesCommand extends Command
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
-        private readonly ReportingRepository $reportingRepo,
+        private readonly ReporteRepository $reportingRepo,
     ) {
         parent::__construct();
     }

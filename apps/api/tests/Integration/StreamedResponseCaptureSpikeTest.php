@@ -11,7 +11,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * Spike: proves the `ob_start(); $response->sendContent(); ob_get_clean();`
  * idiom captures `StreamedResponse` output inside this repo's `WebTestCase`
  * environment (headers already sent by the test client's kernel boot must
- * not interfere). This is a prerequisite proof for `ExportTicketsCsvQuery`'s
+ * not interfere). This is a prerequisite proof for `ExportarTicketsCsvQuery`'s
  * chunked-write design (`design.md`, Testing Strategy) — run and confirmed
  * BEFORE building the chunking logic on top of it.
  */

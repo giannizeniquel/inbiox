@@ -23,7 +23,7 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Regression probes for phase 4b (S10): the inbound webhook keeps the same
  * responses, rows, log lines and failure cuts after moving the payload
- * routing into ProcessWebhookPayloadUseCase and splitting
+ * routing into ProcesarPayloadWebhookUseCase and splitting
  * ProcesarMensajeEntranteUseCase::executeInternal. Graph and storage are stubbed.
  *
  * Characterization: current behavior, not necessarily desired.
@@ -455,7 +455,7 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
             $this->connection()->fetchAllAssociative("SELECT content, media FROM messages WHERE direction = 'inbound'"),
         );
         self::assertSame([[TicketCreatedEvent::class, 1], [MessageCreatedEvent::class, 2]], $this->outbox());
-        // MediaDownloadService absorbs the storage failure itself.
+        // DescargaDeAdjuntoService absorbs the storage failure itself.
         self::assertSame([], $this->logLines('Failed to process inbound media'));
     }
 

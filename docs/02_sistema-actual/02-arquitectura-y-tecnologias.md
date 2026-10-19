@@ -75,7 +75,7 @@ Todo en `apps/api/src/`, organizado **por módulo de negocio** desde la fase 2 d
 | `Agente/` | Agentes, equipos, perfil propio (`/api/me`). | `Agente.php`, `Equipo.php`, `Controller/MiConfiguracionController` (configuración, perfil y notificaciones; auto-respuesta, turnos y workspaces propios viven en Automatizacion, Disponibilidad y Administracion) |
 | `Disponibilidad/` | Turnos, disponibilidad manual. | `Turno.php`, `DisponibilidadDeAgenteService.php`, `UseCase/SetDisponibilidadManualUseCase` |
 | `Asignacion/` | Asignación manual y automática. | `ResponsabilidadDeTicketService.php`, `UseCase/AsignarTicketUseCase`, `UseCase/AsignarTicketAutomaticamenteUseCase`, `EventListener/AsignacionAutomaticaSolicitadaListener` |
-| `Reporte/` | Métricas y exportación. | `Controller/ReportingController`, `Query/ReportingService`, `Repository/ReportingRepository` |
+| `Reporte/` | Métricas y exportación. | `Controller/ReporteController`, `Query/ReporteService`, `Repository/ReporteRepository` |
 | `Automatizacion/` | Reglas y respuesta automática. | `EjecutorDeReglas.php`, `ReglaDeReaperturaAutomatica.php`, `ReglaDeEtiquetadoPorPalabraClave.php`, `RespuestaAutomaticaService.php`, `DependencyInjection/ReglaPass` (registra **a mano** las reglas) |
 | `Administracion/` | Espacios de trabajo, usuarios y el ABM de administración (`/api/admin/*`). | `Usuario.php`, `EspacioDeTrabajo.php`, `Controller/GestionDeUsuariosController`, `Controller/GestionDeAgentesController`, `UseCase/` (un caso de uso por cada escritura de administración) |
 | `Autenticacion/` | Login, refresh token, chequeo de usuarios inactivos. | `Controller/AutenticacionController`, `Security/VerificadorDeUsuario`, `RefreshToken.php` |

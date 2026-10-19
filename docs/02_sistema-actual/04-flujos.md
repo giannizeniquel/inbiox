@@ -349,7 +349,7 @@ Frontend: `features/contacts/` (pages, componentes de diálogo, `stores/contacts
 | Membresía | `PUT /api/admin/teams/{id}/agents` | `:247-287` | Reemplaza la lista completa; `Equipo::addAgente()` rechaza agentes de otro workspace; IDs inexistentes se ignoran. |
 | Equipos para filtros | `GET /api/teams` | `Agente/Controller/EquipoController.php:38-65` | Equipos de los workspaces del agente, incluidos inactivos. |
 | Asignar equipo a ticket | `PUT /api/tickets/{id}/team` (cualquier agente) | `AsignacionDeTicketController::setEquipo` (`:88-137`) | Valida mismo workspace; **no** rechaza equipos inactivos (la spec dice que sí); no emite eventos. **Sin UI.** |
-| Filtro | `GET /api/tickets?teamId=N`; 5 reportes con `teamId` | `FiltrosDeTicketBuilder`, `ReportingRepository` | Primer filtro server-side de la bandeja. |
+| Filtro | `GET /api/tickets?teamId=N`; 5 reportes con `teamId` | `FiltrosDeTicketBuilder`, `ReporteRepository` | Primer filtro server-side de la bandeja. |
 
 El equipo **no participa en la asignación** (ni manual ni automática).
 
@@ -396,23 +396,23 @@ Un mensaje `failed` no afecta el estado del ticket.
 
 ## F15. Reportes y exportación
 
-**Entrada:** `/reports` → `GetReportsDashboardUseCase` → 15 endpoints `GET /api/reports/*` → `Reporte/Controller/ReportingController.php` → `Reporte/Query/ReportingService.php` (fachada) → `Reporte/Repository/ReportingRepository.php` (SQL nativo).
+**Entrada:** `/reports` → `GetReportsDashboardUseCase` → 15 endpoints `GET /api/reports/*` → `Reporte/Controller/ReporteController.php` → `Reporte/Query/ReporteService.php` (fachada) → `Reporte/Repository/ReporteRepository.php` (SQL nativo).
 
 | Métrica | Definición en código | Observación |
 |---|---|---|
-| FRT | `first_response_at − created_at` de tickets creados en el rango | `ReportingRepository.php:112-144` |
+| FRT | `first_response_at − created_at` de tickets creados en el rango | `ReporteRepository.php:112-144` |
 | Resolución (RT) | `resolved_at − created_at` | `resolved_at` falta si se cerró directo sin pasar por `resolved` (`:163-195`). |
 | Rendimiento por agente | `LEFT JOIN tickets ON assigned_agent_id` | Resueltos/RT por agente quedan vacíos por R-T9 (`:335-395`). |
 | Sin asignar | `assigned_agent_id IS NULL`, sin filtrar estado | **Conteo siempre 0** (bug F, `:463-497`). |
 | Reabiertos | `ticket_events.type = 'auto_reopened'` | No cuenta `window_reopened` (`:699-739`). |
 | Demora de respuesta | Por episodio; ráfagas colapsadas; solo `sender_type='agent'` detiene el reloj; `partial_data` antes del corte de atribución | Spec `response-delay-metrics` (`:753-925`). |
 | Participación | Agentes que escribieron en el episodio | Spec `ticket-agent-participation` (`:941+`). |
-| Export CSV | Streaming por keyset, filtros compartidos con la bandeja, anti CSV-injection | `Reporte/Query/ExportTicketsCsvQuery.php`; supervisor+. |
+| Export CSV | Streaming por keyset, filtros compartidos con la bandeja, anti CSV-injection | `Reporte/Query/ExportarTicketsCsvQuery.php`; supervisor+. |
 
 - Ningún reporte se restringe por agente (`OwnershipScope` siempre `null`, decisión documentada). Se filtran por workspace activo y, en 5 casos, por equipo.
 - Frontend: tres bloques de llamadas en secuencia; cualquier error se muestra como 0. Nombres "Agent {id}" y `loadPercentage = asignados × 20` inventados en `core/application/reports/get-reports-dashboard.use-case.ts:158-162`. Fechas locales convertidas a UTC con desfase (`core/api/reports-api.service.ts:131-143`).
 
-**Si falla, revisar:** pestaña Red (¿403/500 silenciados como 0?) → `get-reports-dashboard.use-case.ts` → `ReportingController.php` → `ReportingRepository.php` (método del reporte).
+**Si falla, revisar:** pestaña Red (¿403/500 silenciados como 0?) → `get-reports-dashboard.use-case.ts` → `ReporteController.php` → `ReporteRepository.php` (método del reporte).
 
 ---
 

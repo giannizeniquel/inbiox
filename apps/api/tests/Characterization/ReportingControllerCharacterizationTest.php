@@ -6,11 +6,11 @@ namespace App\Tests\Characterization;
 
 use App\Agente\Agente;
 use App\Disponibilidad\Turno;
-use App\Reporte\Query\ReportingService;
+use App\Reporte\Query\ReporteService;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * Characterization of App\Reporte\Controller\ReportingController: every
+ * Characterization of App\Reporte\Controller\ReporteController: every
  * JSON endpoint except export (covered by ReportsCsvExportTest), plus the
  * generic 500 envelope (shape S1, "no trace" variant).
  */
@@ -470,9 +470,9 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
     public function testUnexpectedFailureReturnsGenericEnvelope(): void
     {
         $token = $this->supervisorToken();
-        $service = $this->createMock(ReportingService::class);
+        $service = $this->createMock(ReporteService::class);
         $service->method('getCounts')->willThrowException(new \RuntimeException('report exploded'));
-        static::getContainer()->set(ReportingService::class, $service);
+        static::getContainer()->set(ReporteService::class, $service);
 
         $response = $this->request('GET', '/api/reports/counts?' . self::WINDOW, $token);
 

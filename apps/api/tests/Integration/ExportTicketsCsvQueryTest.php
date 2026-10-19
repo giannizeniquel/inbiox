@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Reporte\Query\ExportTicketsCsvQuery;
+use App\Reporte\Query\ExportarTicketsCsvQuery;
 use App\Agente\Agente;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversacion;
@@ -20,7 +20,7 @@ use League\Csv\Writer;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
- * `reports-csv-export` spec/design: `ExportTicketsCsvQuery` keyset-chunked
+ * `reports-csv-export` spec/design: `ExportarTicketsCsvQuery` keyset-chunked
  * row streaming — filter reuse via `FiltrosDeTicketBuilder`, date-range clause
  * appended after builder params, 14-column contract, tag join.
  *
@@ -145,7 +145,7 @@ class ExportTicketsCsvQueryTest extends KernelTestCase
         ?string $phoneNumberId = null,
         ?int $teamId = null,
     ): array {
-        $query = static::getContainer()->get(ExportTicketsCsvQuery::class);
+        $query = static::getContainer()->get(ExportarTicketsCsvQuery::class);
         $writer = Writer::createFromString();
 
         $query->stream($writer, $from, $to, $agentId, $status, $tag, $phoneNumberId, $teamId);
@@ -159,11 +159,11 @@ class ExportTicketsCsvQueryTest extends KernelTestCase
     public function test_header_row_matches_column_contract(): void
     {
         $writer = Writer::createFromString();
-        $query = static::getContainer()->get(ExportTicketsCsvQuery::class);
+        $query = static::getContainer()->get(ExportarTicketsCsvQuery::class);
         $query->stream($writer, new \DateTimeImmutable('2020-01-01'), new \DateTimeImmutable('2030-01-01'));
 
         $reader = Reader::createFromString($writer->toString());
-        self::assertSame(ExportTicketsCsvQuery::COLUMNS, $reader->fetchOne(0));
+        self::assertSame(ExportarTicketsCsvQuery::COLUMNS, $reader->fetchOne(0));
     }
 
     public function test_row_shape_has_all_fourteen_columns_with_tags_joined(): void
@@ -259,7 +259,7 @@ class ExportTicketsCsvQueryTest extends KernelTestCase
         $this->createTicket(createdAt: new \DateTimeImmutable('2026-01-11'));
 
         $writer = Writer::createFromString();
-        $query = static::getContainer()->get(ExportTicketsCsvQuery::class);
+        $query = static::getContainer()->get(ExportarTicketsCsvQuery::class);
         $count = $query->stream($writer, new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-31'));
 
         self::assertSame(2, $count);

@@ -22,7 +22,7 @@ use League\Csv\Writer;
  * are walked in bounded-memory chunks with no gaps/duplicates — see
  * `design.md`, "keyset chunking, not an unbuffered PDO connection".
  */
-class ExportTicketsCsvQuery
+class ExportarTicketsCsvQuery
 {
     public const CHUNK_SIZE = 500;
 

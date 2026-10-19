@@ -6,13 +6,13 @@ namespace App\Tests\Integration\Repository;
 
 use App\Agente\Agente;
 use App\Contacto\Contacto;
-use App\Reporte\Repository\ReportingRepository;
+use App\Reporte\Repository\ReporteRepository;
 use App\Ticket\EventoDeTicket;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
- * ReportingRepository::truncateSeedTables(), moved out of SeedReportsCommand
+ * ReporteRepository::truncateSeedTables(), moved out of SeedReportesCommand
  * in phase 3c-1. It empties whole tables, exactly like `app:seed-reports`,
  * which ReportingV2Test already runs before each of its tests.
  */
@@ -22,7 +22,7 @@ class ReportingRepositorySqlTest extends KernelTestCase
     {
         self::bootKernel();
         $em = static::getContainer()->get(EntityManagerInterface::class);
-        $repo = static::getContainer()->get(ReportingRepository::class);
+        $repo = static::getContainer()->get(ReporteRepository::class);
         $conn = $em->getConnection();
 
         $contact = new Contacto();

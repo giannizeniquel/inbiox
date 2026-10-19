@@ -20,7 +20,7 @@ use Symfony\Bundle\SecurityBundle\Security;
  * WorkspaceScope), just not by individual agent ownership.
  *
  * This class (and the `agent_id` WHERE-clause plumbing that consumes it
- * in ReportingRepository/ReportingService) is kept in place so that
+ * in ReporteRepository/ReporteService) is kept in place so that
  * per-agent restriction can be reintroduced later without re-plumbing
  * every query — do not "fix" `getAgentId()` to return the current
  * agent's ID without an explicit product decision to do so.

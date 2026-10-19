@@ -9,27 +9,27 @@ use App\Conversacion\Conversacion;
 use App\Agente\Equipo;
 use App\Ticket\Ticket;
 use App\Administracion\EspacioDeTrabajo;
-use App\Reporte\Repository\ReportingRepository;
+use App\Reporte\Repository\ReporteRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
  * `reports` spec (Slice 3): optional `teamId` on the 5 ticket-scoped
- * `ReportingRepository` methods. `teamId=null` MUST be byte-identical to
+ * `ReporteRepository` methods. `teamId=null` MUST be byte-identical to
  * pre-change behavior; `teamId` set MUST narrow to matching `team_id` rows
  * only (design.md D4 — plain `t.team_id = :teamId`, no join).
  */
 class ReportingRepositoryTeamFilterTest extends KernelTestCase
 {
     private ?EntityManagerInterface $em = null;
-    private ?ReportingRepository $repo = null;
+    private ?ReporteRepository $repo = null;
     private int $phoneSeq = 0;
 
     protected function setUp(): void
     {
         self::bootKernel();
         $this->em = static::getContainer()->get(EntityManagerInterface::class);
-        $this->repo = static::getContainer()->get(ReportingRepository::class);
+        $this->repo = static::getContainer()->get(ReporteRepository::class);
 
         $conn = $this->em->getConnection();
         $conn->executeStatement('DELETE FROM outbox_events');

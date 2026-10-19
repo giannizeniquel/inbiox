@@ -96,7 +96,7 @@ class TicketRepository extends ServiceEntityRepository
      * reopen: the ticket's MOST RECENT `ticket_events` row must be of type
      * `window_expired_closed`. A ticket with zero events, a different
      * latest event type, or closed for another reason yields no match —
-     * unchanged, so `HandleInboundMessageUseCase` falls back to creating a
+     * unchanged, so `ProcesarMensajeEntranteUseCase` falls back to creating a
      * new ticket, exactly as it does today (design.md).
      *
      * DQL cannot express a correlated `ORDER BY ... LIMIT 1` subquery, so
@@ -456,7 +456,7 @@ class TicketRepository extends ServiceEntityRepository
     }
 
     /**
-     * One keyset chunk of the CSV export (`ExportTicketsCsvQuery`): tickets
+     * One keyset chunk of the CSV export (`ExportarTicketsCsvQuery`): tickets
      * matching the list filters, created within [`$from`, `$to`]
      * (`Y-m-d H:i:s`), with id greater than `$afterId`, by id ascending.
      *

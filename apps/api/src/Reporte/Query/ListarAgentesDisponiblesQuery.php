@@ -12,7 +12,7 @@ use App\Ticket\Repository\TicketRepository;
  * or forced by an override), optionally restricted to one workspace, with
  * their current number of active tickets.
  */
-final class ListAvailableAgentsQuery
+final class ListarAgentesDisponiblesQuery
 {
     public function __construct(
         private readonly DisponibilidadDeAgenteService $agentAvailabilityService,

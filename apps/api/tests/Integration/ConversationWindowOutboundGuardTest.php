@@ -89,7 +89,7 @@ class ConversationWindowOutboundGuardTest extends KernelTestCase
         );
         $ticketId = (int) $ticket['id'];
 
-        // `last_inbound_message_at` writing is wired in Phase 3 (HandleInboundMessageUseCase);
+        // `last_inbound_message_at` writing is wired in Phase 3 (ProcesarMensajeEntranteUseCase);
         // here in Phase 1 we only need a fresh timestamp on the ticket to exercise
         // the "inside the window" branch of the outbound guard in isolation.
         $this->em->getConnection()->executeStatement(

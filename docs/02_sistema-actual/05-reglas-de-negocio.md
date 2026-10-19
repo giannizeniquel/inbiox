@@ -86,7 +86,7 @@ Estas son las preguntas que solo el desarrollador (o el cliente) puede responder
 |---|---|---|---|---|
 | R-V1 | Bandeja compartida: todos los usuarios ven todos los tickets del workspace activo (no solo los propios). | `Compartido/Security/OwnershipScope.php:13-55`; `TicketVoter.php:19-23` | Negocio | **Contradicción documental.** `OwnershipScope` dice "confirmed product decision, sprint 16"; la spec `authorization` dice que el agente solo ve sus tickets; el análisis de brecha (§4.3) dice que la cola "sin asignar" estaba oculta a propósito. |
 | R-V2 | Sin workspace activo, el usuario ve datos de todos los workspaces. | `Compartido/Security/WorkspaceScope.php:43-64` | Técnica | Regla no confirmada (posible caso no previsto). |
-| R-V3 | Los reportes no se restringen por agente. | `OwnershipScope.php`; docblock de `ReportingController` | Negocio | **Confirmada** como decisión documentada en el código (Sprint 16). |
+| R-V3 | Los reportes no se restringen por agente. | `OwnershipScope.php`; docblock de `ReporteController` | Negocio | **Confirmada** como decisión documentada en el código (Sprint 16). |
 | R-V4 | Solo el agente asignado puede obtener la URL de un adjunto; cualquier agente puede leer el texto. | `src/Conversacion/Security/MensajeVoter.php` | Técnica | Regla no confirmada (inconsistente con R-V1). |
 
 ## Disponibilidad y turnos
@@ -158,7 +158,7 @@ Detalle en [07](07-frontend.md#lógica-de-negocio-que-vive-en-el-frontend).
 |---|---|---|
 | "Está en turno" | `DisponibilidadDeAgenteService::hasTurnoEnHorario` (`:262-290`) y `DisponibilidadDeAgenteController::isAgenteEnTurno` (`:340-369`) | No del todo: la del controlador no mira `active`. |
 | Cascada de disponibilidad | `isDisponible()`, `listarAgentesDisponibles()`, re-filtro en `AsignarTicketAutomaticamenteUseCase.php:135-139` | No: el re-filtro aplica capacidad también con override. |
-| "Tickets activos" = `new`/`active`/`waiting` | `DisponibilidadDeAgenteService.php:297-317`, `TicketRepository::countActivosDeAgente` (`:146-160`), `ReportingRepository.php:354-356`, `MaquinaDeEstadosDeTicket::isActiveForSLA` (sin uso), frontend `get-reports-dashboard.use-case.ts` | Sí (cinco copias). |
+| "Tickets activos" = `new`/`active`/`waiting` | `DisponibilidadDeAgenteService.php:297-317`, `TicketRepository::countActivosDeAgente` (`:146-160`), `ReporteRepository.php:354-356`, `MaquinaDeEstadosDeTicket::isActiveForSLA` (sin uso), frontend `get-reports-dashboard.use-case.ts` | Sí (cinco copias). |
 | Normalización de teléfono | entrante, `NormalizadorDeTelefono`, `UpdateContactoUseCase` | **No** (umbrales distintos). |
 | Cierre automático | `VencimientoDeVentanaService` (vivo). `AutoCloseRule` y `AutoCloseTicketUseCase` se borraron en la fase 1. | Resuelto: queda un solo criterio. |
 | Validación de turnos | `CreateTurnoUseCase`, `ReemplazarTurnosUseCase`, `DatosDeTurnoDTO`, CHECK de la tabla | Mismas reglas, distintos nombres de campo y mensajes. |

@@ -16,7 +16,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
  * spec.md "Query and DTO Exposure": `GetMensajesDeTicketQuery` (both SELECT
- * variants) and `MessageDTO::toArray()` must expose `sender_agent_id` and
+ * variants) and `MensajeDTO::toArray()` must expose `sender_agent_id` and
  * `sender_type`, including null for legacy (pre-migration) rows.
  */
 class GetTicketMessagesQueryAttributionTest extends KernelTestCase

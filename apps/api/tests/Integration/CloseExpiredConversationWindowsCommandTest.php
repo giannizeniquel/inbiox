@@ -15,7 +15,7 @@ use Symfony\Component\Console\Tester\CommandTester;
 
 /**
  * `app:conversation-window:close-expired` console command (design.md Phase 6).
- * Thin wrapper delegating to `ConversationWindowExpiryService`, mirroring
+ * Thin wrapper delegating to `VencimientoDeVentanaService`, mirroring
  * `OutboxPublishCommand`'s shape.
  */
 class CloseExpiredConversationWindowsCommandTest extends KernelTestCase

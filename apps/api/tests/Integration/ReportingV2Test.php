@@ -10,8 +10,8 @@ use App\Contacto\Contacto;
 use App\Ticket\EventoDeTicket;
 use App\Ticket\Ticket;
 use App\Administracion\Usuario;
-use App\Reporte\Repository\ReportingRepository;
-use App\Reporte\Query\ReportingService;
+use App\Reporte\Repository\ReporteRepository;
+use App\Reporte\Query\ReporteService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -22,7 +22,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
 /**
  * Integration tests for Reporting v2 — 7 new endpoints.
  *
- * Uses SeedReportsCommand to populate test data, then validates:
+ * Uses SeedReportesCommand to populate test data, then validates:
  * - 7 repository methods (SQL correctness, workspace scoping, edge cases)
  * - 7 HTTP smoke tests (200 + valid JSON shape)
  *
@@ -31,8 +31,8 @@ use Symfony\Component\Console\Output\BufferedOutput;
 class ReportingV2Test extends WebTestCase
 {
     private ?EntityManagerInterface $em = null;
-    private ?ReportingRepository $reportingRepo = null;
-    private ?ReportingService $reportingService = null;
+    private ?ReporteRepository $reportingRepo = null;
+    private ?ReporteService $reportingService = null;
     private ?KernelBrowser $client = null;
 
     private const ADMIN_EMAIL = 'reporting-v2-admin@test.local';
@@ -42,8 +42,8 @@ class ReportingV2Test extends WebTestCase
     {
         $this->client = static::createClient();
         $this->em = static::getContainer()->get(EntityManagerInterface::class);
-        $this->reportingRepo = static::getContainer()->get(ReportingRepository::class);
-        $this->reportingService = static::getContainer()->get(ReportingService::class);
+        $this->reportingRepo = static::getContainer()->get(ReporteRepository::class);
+        $this->reportingService = static::getContainer()->get(ReporteService::class);
 
         // Seed test data via command
         $this->seedTestData();

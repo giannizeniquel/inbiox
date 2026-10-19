@@ -7,7 +7,7 @@ namespace App\Ticket;
 /**
  * Pure predicate for the resolved/closed ownership guard (design.md D3-D5).
  *
- * Extracted out of `HandleOutboundMessageUseCase::executeTransactionWithRetry()`
+ * Extracted out of `ProcesarMensajeSalienteUseCase::executeTransactionWithRetry()`
  * so the guard's truth table (status x privileged x owner x agentId<=0) can
  * be unit-tested directly with zero mocks, instead of driving the whole
  * transactional use case through a heavy mock graph just to reach a single

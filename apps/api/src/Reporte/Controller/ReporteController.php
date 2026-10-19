@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Reporte\Controller;
 
-use App\Reporte\Query\ExportTicketsCsvQuery;
+use App\Reporte\Query\ExportarTicketsCsvQuery;
 use App\Ticket\Query\FiltrosDeTicketBuilder;
 use App\Compartido\Security\OwnershipScope;
 use App\Compartido\Security\WorkspaceScope;
-use App\Reporte\Query\ListAvailableAgentsQuery;
-use App\Reporte\Query\ReportingService;
+use App\Reporte\Query\ListarAgentesDisponiblesQuery;
+use App\Reporte\Query\ReporteService;
 use League\Csv\Bom;
 use League\Csv\Writer;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -32,16 +32,16 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * to any query.
  */
 #[IsGranted('ROLE_AGENT')]
-class ReportingController
+class ReporteController
 {
     private const DATETIME_FORMAT = 'Y-m-d\TH:i:sZ';
 
     public function __construct(
-        private ReportingService $reportingService,
-        private ListAvailableAgentsQuery $listAvailableAgents,
+        private ReporteService $reportingService,
+        private ListarAgentesDisponiblesQuery $listAvailableAgents,
         private OwnershipScope $ownershipScope,
         private WorkspaceScope $workspaceScope,
-        private ExportTicketsCsvQuery $exportTicketsCsvQuery,
+        private ExportarTicketsCsvQuery $exportTicketsCsvQuery,
         private FiltrosDeTicketBuilder $ticketFilterBuilder,
     ) {}
 
@@ -380,7 +380,7 @@ class ReportingController
         $teamId = $this->getTeamId($request);
 
         // Validate filter args up front (no DB query — same pure builder used
-        // inside ExportTicketsCsvQuery::stream) so an invalid request (e.g.
+        // inside ExportarTicketsCsvQuery::stream) so an invalid request (e.g.
         // >5 tags) fails with 400 before any streaming/headers are sent.
         try {
             $this->ticketFilterBuilder->build(

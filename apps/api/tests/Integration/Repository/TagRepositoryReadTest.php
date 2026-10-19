@@ -9,7 +9,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
- * EtiquetaRepository::findNamesByTicketIds(), moved out of ExportTicketsCsvQuery
+ * EtiquetaRepository::findNamesByTicketIds(), moved out of ExportarTicketsCsvQuery
  * in phase 3c-2.
  */
 class TagRepositoryReadTest extends KernelTestCase

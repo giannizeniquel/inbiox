@@ -9,7 +9,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
- * The message page SQL that phase 3c-2 moved out of GetTicketMessagesQuery.
+ * The message page SQL that phase 3c-2 moved out of GetMensajesDeTicketQuery.
  * Conversation 880001 has messages 880001..880005; 880002 and 880003 share
  * created_at 10:00, so the id breaks the tie.
  */

@@ -49,7 +49,7 @@ final class ProcesarPayloadWebhookUseCase
                 // Extract phone_number_id from metadata (CAP-7 / META-017)
                 $phoneNumberId = $value['metadata']['phone_number_id'] ?? null;
 
-                // Handle inbound messages — process via HandleInboundMessageUseCase
+                // Handle inbound messages — process via ProcesarMensajeEntranteUseCase
                 if (isset($value['messages']) && is_array($value['messages'])) {
                     // Build phone→name lookup from contacts[] (Meta sends wa_id + profile.name)
                     $nombresDeContacto = [];

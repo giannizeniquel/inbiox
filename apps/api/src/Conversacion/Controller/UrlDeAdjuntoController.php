@@ -25,7 +25,7 @@ class UrlDeAdjuntoController extends AbstractController
      * GET /api/messages/{id}/media
      *
      * Returns a pre-signed URL for accessing the message's media attachment.
-     * Requires ACCESS authorization on the message (via MessageVoter).
+     * Requires ACCESS authorization on the message (via MensajeVoter).
      *
      * @return JsonResponse
      */

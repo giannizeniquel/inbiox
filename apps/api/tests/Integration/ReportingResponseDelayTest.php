@@ -9,8 +9,8 @@ use App\Contacto\Contacto;
 use App\Conversacion\Conversacion;
 use App\Ticket\Ticket;
 use App\Administracion\Usuario;
-use App\Reporte\Repository\ReportingRepository;
-use App\Reporte\Query\ReportingService;
+use App\Reporte\Repository\ReporteRepository;
+use App\Reporte\Query\ReporteService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -35,7 +35,7 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
  * only (no Postgres test connection available — `docker ps` shows no
  * project-scoped Postgres container). Every assertion here therefore
  * exercises the MySQL code path only. `getTimeDiffExpression()` is the only
- * dialect-varying fragment (see ReportingRepository); the CTE/window-function
+ * dialect-varying fragment (see ReporteRepository); the CTE/window-function
  * bodies are otherwise byte-identical per design.md, but that portability
  * claim could not be independently re-verified against a live Postgres
  * connection in this environment — flagged as a known verification gap.
@@ -46,15 +46,15 @@ class ReportingResponseDelayTest extends WebTestCase
 
     private ?KernelBrowser $client = null;
     private ?EntityManagerInterface $em = null;
-    private ?ReportingRepository $reportingRepo = null;
-    private ?ReportingService $reportingService = null;
+    private ?ReporteRepository $reportingRepo = null;
+    private ?ReporteService $reportingService = null;
 
     protected function setUp(): void
     {
         $this->client = static::createClient();
         $this->em = static::getContainer()->get(EntityManagerInterface::class);
-        $this->reportingRepo = static::getContainer()->get(ReportingRepository::class);
-        $this->reportingService = static::getContainer()->get(ReportingService::class);
+        $this->reportingRepo = static::getContainer()->get(ReporteRepository::class);
+        $this->reportingService = static::getContainer()->get(ReporteService::class);
 
         $conn = $this->em->getConnection();
         $conn->executeStatement('DELETE FROM messages');

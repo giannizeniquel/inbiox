@@ -142,7 +142,7 @@ class ProcesarMensajeSalienteUseCase
                 $this->em->clear();
             } catch (\Throwable $e) {
                 // Any other abort (e.g. StateConflictException,
-                // ConversationWindowExpiredException) must also discard
+                // VentanaVencidaException) must also discard
                 // whatever this attempt collected before propagating —
                 // there is no retry for these, but the collector must not
                 // carry stale events into some later, unrelated call

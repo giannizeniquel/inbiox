@@ -91,29 +91,29 @@ Leyenda "Rol": **Público**, **Auth** (cualquier usuario autenticado), **Agente*
 | DELETE | `/api/contacts/{id}` | `::delete` | Agente (cualquiera, cualquier contacto) | `DeleteContactoUseCase`. Sin UI. |
 | GET | `/api/contacts/{id}/timeline` | `LineaDeTiempoDeContactoController::getLineaDeTiempo` | Agente | `GetLineaDeTiempoDeContactoQuery` |
 
-### F. Reportes (`ReportingController`)
+### F. Reportes (`ReporteController`)
 
 Todas **Agente**, salvo export. Filtran por workspace activo; nunca por agente.
 
 | Path | Acción | Delega en | ¿Filtro `teamId`? |
 |---|---|---|---|
-| `GET /api/reports/frt` | `frt` | `ReportingService::getFrt` | Sí |
+| `GET /api/reports/frt` | `frt` | `ReporteService::getFrt` | Sí |
 | `GET /api/reports/rt` | `rt` | `getRt` | Sí |
 | `GET /api/reports/counts` | `counts` | `getCounts` | Sí |
 | `GET /api/reports/volume` | `volume` | `getVolume` | Sí |
 | `GET /api/reports/agents` | `agents` | `getAgentPerformance` | Sí |
 | `GET /api/reports/agent-load` | `agentLoad` | `getAgentLoad` | — |
 | `GET /api/reports/unassigned` | `unassigned` | `getUnassigned` (**conteo roto**) | — |
-| `GET /api/reports/available-agents` | `availableAgents` | `Reporte/Query/ListAvailableAgentsQuery`: `DisponibilidadDeAgenteService::listarAgentesDisponibles` + filtro de workspace en PHP + un conteo de tickets activos por agente | — |
+| `GET /api/reports/available-agents` | `availableAgents` | `Reporte/Query/ListarAgentesDisponiblesQuery`: `DisponibilidadDeAgenteService::listarAgentesDisponibles` + filtro de workspace en PHP + un conteo de tickets activos por agente | — |
 | `GET /api/reports/frt-trend` | `frtTrend` | `getFrtTrend` | — |
 | `GET /api/reports/heatmap` | `heatmap` | `getHeatmap` | — |
 | `GET /api/reports/recurring-customers` | `recurringCustomers` | `getRecurringCustomers` | — |
 | `GET /api/reports/reopened` | `reopened` | `getReopened` | — |
-| `GET /api/reports/export` | `export` | `FiltrosDeTicketBuilder` + `ExportTicketsCsvQuery` — **Supervisor** | Filtros de la bandeja |
+| `GET /api/reports/export` | `export` | `FiltrosDeTicketBuilder` + `ExportarTicketsCsvQuery` — **Supervisor** | Filtros de la bandeja |
 | `GET /api/reports/response-delay` | `responseDelay` | `getResponseDelay` | — |
 | `GET /api/reports/tickets/{id}/participation` | `ticketParticipation` | `getTicketParticipation` (sin workspace) | — |
 
-> Verificado en `ReportingController.php`: solo `frt`, `rt`, `counts`, `volume`, `agents` y `export` leen `teamId`. Los demás lo ignoran aunque el frontend lo envíe (p. ej. `response-delay`).
+> Verificado en `ReporteController.php`: solo `frt`, `rt`, `counts`, `volume`, `agents` y `export` leen `teamId`. Los demás lo ignoran aunque el frontend lo envíe (p. ej. `response-delay`).
 
 ### G. Autoservicio (`MiConfiguracionController`, `MiRespuestaAutomaticaController`, `MisTurnosController`, `MiEspacioDeTrabajoController`; todos con clase `IS_AUTHENTICATED_FULLY`)
 

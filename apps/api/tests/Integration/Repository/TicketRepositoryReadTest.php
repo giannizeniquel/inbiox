@@ -11,8 +11,8 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
  * The read-side ticket SQL that phase 3c-2 moved out of ListTicketsQuery,
- * GetDetalleDeTicketQuery, GetTicketMessagesQuery, ListContactsQuery and
- * ExportTicketsCsvQuery into TicketRepository, plus countActiveForAgent().
+ * GetDetalleDeTicketQuery, GetMensajesDeTicketQuery, ListContactsQuery and
+ * ExportarTicketsCsvQuery into TicketRepository, plus countActiveForAgent().
  */
 class TicketRepositoryReadTest extends KernelTestCase
 {

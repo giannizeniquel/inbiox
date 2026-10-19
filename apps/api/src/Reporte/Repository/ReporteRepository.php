@@ -22,7 +22,7 @@ use Doctrine\Persistence\ManagerRegistry;
  *
  * All methods support optional ?int $agentId parameter for ownership scoping.
  */
-class ReportingRepository extends ServiceEntityRepository
+class ReporteRepository extends ServiceEntityRepository
 {
     private bool $isPostgres = false;
     

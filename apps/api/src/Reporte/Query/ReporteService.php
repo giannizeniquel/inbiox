@@ -6,7 +6,7 @@ namespace App\Reporte\Query;
 
 use App\Agente\Repository\AgenteRepository;
 use App\Disponibilidad\DisponibilidadDeAgenteService;
-use App\Reporte\Repository\ReportingRepository;
+use App\Reporte\Repository\ReporteRepository;
 
 /**
  * Service for reporting and metrics queries.
@@ -17,12 +17,12 @@ use App\Reporte\Repository\ReportingRepository;
  * Ownership scoping:
  * - All methods accept an optional ?int $agentId parameter for query-level filtering
  * - When set, all results are scoped to the given agent
- * - The controller (ReportingController) decides the scope based on user role
+ * - The controller (ReporteController) decides the scope based on user role
  */
-class ReportingService
+class ReporteService
 {
     public function __construct(
-        private ReportingRepository $reportingRepository,
+        private ReporteRepository $reportingRepository,
         private AgenteRepository $agentRepository,
         private DisponibilidadDeAgenteService $agentAvailabilityService,
     ) {}

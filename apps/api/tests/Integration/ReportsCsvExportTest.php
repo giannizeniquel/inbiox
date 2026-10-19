@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Reporte\Query\ExportTicketsCsvQuery;
+use App\Reporte\Query\ExportarTicketsCsvQuery;
 use App\Agente\Agente;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversacion;
@@ -225,7 +225,7 @@ class ReportsCsvExportTest extends WebTestCase
         self::assertStringStartsWith("\xEF\xBB\xBF", $body);
 
         $reader = Reader::createFromString(substr($body, 3));
-        self::assertSame(ExportTicketsCsvQuery::COLUMNS, $reader->fetchOne(0));
+        self::assertSame(ExportarTicketsCsvQuery::COLUMNS, $reader->fetchOne(0));
     }
 
     // ────────────────────────────────────────────────────────

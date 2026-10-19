@@ -6,8 +6,8 @@ use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversacion;
-use App\Reporte\Repository\ReportingRepository;
-use App\Reporte\Query\ReportingService;
+use App\Reporte\Repository\ReporteRepository;
+use App\Reporte\Query\ReporteService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -29,15 +29,15 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 class Sprint09AReportingTest extends KernelTestCase
 {
     private ?EntityManagerInterface $em = null;
-    private ?ReportingRepository $reportingRepo = null;
-    private ?ReportingService $reportingService = null;
+    private ?ReporteRepository $reportingRepo = null;
+    private ?ReporteService $reportingService = null;
 
     protected function setUp(): void
     {
         self::bootKernel();
         $this->em = static::getContainer()->get(EntityManagerInterface::class);
-        $this->reportingRepo = static::getContainer()->get(ReportingRepository::class);
-        $this->reportingService = static::getContainer()->get(ReportingService::class);
+        $this->reportingRepo = static::getContainer()->get(ReporteRepository::class);
+        $this->reportingService = static::getContainer()->get(ReporteService::class);
 
         // Clean up test data
         $this->em->getConnection()->executeStatement('DELETE FROM messages');
