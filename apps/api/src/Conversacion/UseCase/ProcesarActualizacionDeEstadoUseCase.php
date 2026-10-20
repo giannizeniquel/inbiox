@@ -51,7 +51,7 @@ class ProcesarActualizacionDeEstadoUseCase
         private readonly EntityManagerInterface $em,
         private readonly MensajeRepository $mensajeRepo,
         private readonly TicketRepository $ticketRepo,
-        private readonly RecolectorDeEventos $eventCollector,
+        private readonly RecolectorDeEventos $recolectorDeEventos,
         private readonly OutboxWriter $outboxWriter,
         private readonly LoggerInterface $logger,
     ) {}
@@ -193,7 +193,7 @@ class ProcesarActualizacionDeEstadoUseCase
         $occurredAt = new \DateTimeImmutable();
 
         // Collect the domain event
-        $this->eventCollector->recolectar(new MessageUpdatedEvent(
+        $this->recolectorDeEventos->recolectar(new MessageUpdatedEvent(
             eventId: new Ulid(),
             ticketId: $ticketId,
             occurredAt: $occurredAt,
@@ -215,13 +215,13 @@ class ProcesarActualizacionDeEstadoUseCase
      */
     private function persistEventsToOutbox(): void
     {
-        $events = $this->eventCollector->getEventos();
+        $events = $this->recolectorDeEventos->getEventos();
 
         if (empty($events)) {
             return;
         }
 
-        $outboxEvents = [];
+        $eventosOutbox = [];
 
         foreach ($events as $event) {
             $payload = [
@@ -240,19 +240,19 @@ class ProcesarActualizacionDeEstadoUseCase
                 $payload['phone_number_id'] = $this->currentPhoneNumberId;
             }
 
-            $outboxEvent = new EventoOutbox(
+            $eventoOutbox = new EventoOutbox(
                 aggregateType: 'ticket',
                 aggregateId: (int) $event->ticketId,
                 topic: 'tickets',
-                eventType: $event->type,
+                tipoDeEvento: $event->type,
                 payload: $payload,
                 sequence: $event->seq,
             );
 
-            $outboxEvents[] = $outboxEvent;
+            $eventosOutbox[] = $eventoOutbox;
         }
 
-        $this->outboxWriter->write(...$outboxEvents);
-        $this->eventCollector->limpiar();
+        $this->outboxWriter->write(...$eventosOutbox);
+        $this->recolectorDeEventos->limpiar();
     }
 }

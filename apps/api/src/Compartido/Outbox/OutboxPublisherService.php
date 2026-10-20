@@ -21,7 +21,7 @@ class OutboxPublisherService
     private const BATCH_SIZE = 100;
 
     public function __construct(
-        private readonly EventoOutboxRepository $outboxRepo,
+        private readonly EventoOutboxRepository $eventoOutboxRepository,
         private readonly EventoEnTiempoRealFactory $factory,
         private readonly MercureJwtService $jwtService,
         private readonly string $mercureUrl = 'http://mercure:80/.well-known/mercure'
@@ -34,17 +34,17 @@ class OutboxPublisherService
      */
     public function publishPending(): int
     {
-        $events = $this->findUnpublishedEvents();
+        $eventos = $this->findUnpublishedEvents();
 
-        if (empty($events)) {
+        if (empty($eventos)) {
             return 0;
         }
 
         $publishedCount = 0;
-        $total = count($events);
+        $total = count($eventos);
 
-        foreach ($events as $event) {
-            $this->publishEvent($event) ? $publishedCount++ : null;
+        foreach ($eventos as $evento) {
+            $this->publishEvent($evento) ? $publishedCount++ : null;
         }
 
         error_log(sprintf(
@@ -64,7 +64,7 @@ class OutboxPublisherService
      */
     private function findUnpublishedEvents(): array
     {
-        $rows = $this->outboxRepo->findLotePendiente();
+        $rows = $this->eventoOutboxRepository->findLotePendiente();
 
         error_log('OutboxPublisher: Found ' . count($rows) . ' rows from DB');
 
@@ -72,12 +72,12 @@ class OutboxPublisherService
             return [];
         }
 
-        $events = [];
+        $eventos = [];
         foreach ($rows as $row) {
-            $events[] = $this->hydrateEvent($row);
+            $eventos[] = $this->hydrateEvent($row);
         }
 
-        return $events;
+        return $eventos;
     }
 
     /**
@@ -86,40 +86,40 @@ class OutboxPublisherService
     private function hydrateEvent(array $row): EventoOutbox
     {
         // Use string ID directly - no Ulid conversion needed
-        $event = new EventoOutbox(
+        $evento = new EventoOutbox(
             aggregateType: $row['aggregate_type'],
             aggregateId: (int) $row['aggregate_id'],
             topic: $row['topic'],
-            eventType: $row['event_type'],
+            tipoDeEvento: $row['event_type'],
             payload: json_decode($row['payload'], true) ?? []
         );
 
         // Use reflection to set the ID and other fields
         $idReflection = new \ReflectionProperty(EventoOutbox::class, 'id');
         $idReflection->setAccessible(true);
-        $idReflection->setValue($event, $row['id']); // ID is already a string
+        $idReflection->setValue($evento, $row['id']); // ID is already a string
 
         // Set retry count
-        $retryReflection = new \ReflectionProperty(EventoOutbox::class, 'reintentos');
-        $retryReflection->setAccessible(true);
-        $retryReflection->setValue($event, (int) $row['retry_count']);
+        $reintentosReflection = new \ReflectionProperty(EventoOutbox::class, 'reintentos');
+        $reintentosReflection->setAccessible(true);
+        $reintentosReflection->setValue($evento, (int) $row['retry_count']);
 
         // Set created at
-        $createdAtReflection = new \ReflectionProperty(EventoOutbox::class, 'creadoAt');
-        $createdAtReflection->setAccessible(true);
-        $createdAtReflection->setValue($event, new \DateTimeImmutable($row['created_at']));
+        $creadoAtReflection = new \ReflectionProperty(EventoOutbox::class, 'creadoAt');
+        $creadoAtReflection->setAccessible(true);
+        $creadoAtReflection->setValue($evento, new \DateTimeImmutable($row['created_at']));
 
         // Set status via reflection
-        $statusReflection = new \ReflectionProperty(EventoOutbox::class, 'estado');
-        $statusReflection->setAccessible(true);
-        $statusReflection->setValue($event, $row['status'] ?? 'pending');
+        $estadoReflection = new \ReflectionProperty(EventoOutbox::class, 'estado');
+        $estadoReflection->setAccessible(true);
+        $estadoReflection->setValue($evento, $row['status'] ?? 'pending');
 
         // Set sequence via reflection
         $seqReflection = new \ReflectionProperty(EventoOutbox::class, 'sequence');
         $seqReflection->setAccessible(true);
-        $seqReflection->setValue($event, (int) ($row['sequence'] ?? 0));
+        $seqReflection->setValue($evento, (int) ($row['sequence'] ?? 0));
 
-        return $event;
+        return $evento;
     }
 
     /**
@@ -127,7 +127,7 @@ class OutboxPublisherService
      *
      * @return bool True if published successfully
      */
-    private function publishEvent(EventoOutbox $event): bool
+    private function publishEvent(EventoOutbox $evento): bool
     {
         try {
             // Generate JWT for publishing
@@ -136,19 +136,19 @@ class OutboxPublisherService
 
             error_log(sprintf(
                 'OutboxPublisher: Publishing event=%s topic=%s mercureUrl=%s jwt=%s',
-                $event->getId(),
-                $event->getTopic(),
+                $evento->getId(),
+                $evento->getTopic(),
                 $this->mercureUrl,
                 $tokenPreview
             ));
 
             // Build RealtimeEventContract v1 JSON for the wire format
-            $contractData = $this->factory->build($event);
+            $contractData = $this->factory->build($evento);
             $dataJson = json_encode($contractData);
             $postFields = http_build_query([
-                'topic' => $event->getTopic(),
+                'topic' => $evento->getTopic(),
                 'data' => $dataJson,
-                'id' => $event->getId(),
+                'id' => $evento->getId(),
                 'type' => $contractData['eventType'],
             ]);
 
@@ -174,27 +174,27 @@ class OutboxPublisherService
             if ($httpCode >= 200 && $httpCode < 400) {
                 error_log(sprintf(
                     'OutboxPublisher: SUCCESS event=%s topic=%s http=%d',
-                    $event->getId(),
-                    $event->getTopic(),
+                    $evento->getId(),
+                    $evento->getTopic(),
                     $httpCode
                 ));
-                $this->marcarPublicado($event);
+                $this->marcarPublicado($evento);
                 return true;
             } else {
                 error_log(sprintf(
                     'OutboxPublisher: FAILURE event=%s topic=%s http=%d response=%s error=%s',
-                    $event->getId(),
-                    $event->getTopic(),
+                    $evento->getId(),
+                    $evento->getTopic(),
                     $httpCode,
                     $response ?: '(empty)',
                     $error ?: '(none)'
                 ));
-                $this->handleFailure($event);
+                $this->handleFailure($evento);
                 return false;
             }
         } catch (\Throwable $e) {
-            error_log('OutboxPublisher: Exception publishing event=' . $event->getId() . ' error=' . $e->getMessage());
-            $this->handleFailure($event);
+            error_log('OutboxPublisher: Exception publishing event=' . $evento->getId() . ' error=' . $e->getMessage());
+            $this->handleFailure($evento);
 
             return false;
         }
@@ -212,31 +212,31 @@ class OutboxPublisherService
     /**
      * Mark event as published.
      */
-    private function marcarPublicado(EventoOutbox $event): void
+    private function marcarPublicado(EventoOutbox $evento): void
     {
-        $this->outboxRepo->marcarPublicado($event->getId(), new \DateTimeImmutable());
+        $this->eventoOutboxRepository->marcarPublicado($evento->getId(), new \DateTimeImmutable());
     }
 
     /**
      * Handle publishing failure - increment retry count or dead-letter if exhausted.
      */
-    private function handleFailure(EventoOutbox $event): void
+    private function handleFailure(EventoOutbox $evento): void
     {
-        $currentRetryCount = $event->getReintentos();
-        $newRetryCount = $currentRetryCount + 1;
+        $reintentosActuales = $evento->getReintentos();
+        $nuevosReintentos = $reintentosActuales + 1;
 
-        if ($newRetryCount >= self::MAX_RETRIES) {
-            $this->outboxRepo->marcarDeadLetter($event->getId(), $newRetryCount, self::DEAD_LETTER_STATUS);
+        if ($nuevosReintentos >= self::MAX_RETRIES) {
+            $this->eventoOutboxRepository->marcarDeadLetter($evento->getId(), $nuevosReintentos, self::DEAD_LETTER_STATUS);
 
             error_log(sprintf(
                 'OutboxPublisher: Event %s dead-lettered after %d retries (type=%s, aggregate_id=%d)',
-                $event->getId(),
-                $newRetryCount,
-                $event->getTipoDeEvento(),
-                $event->getAggregateId()
+                $evento->getId(),
+                $nuevosReintentos,
+                $evento->getTipoDeEvento(),
+                $evento->getAggregateId()
             ));
         } else {
-            $this->outboxRepo->incrementarReintentos($event->getId());
+            $this->eventoOutboxRepository->incrementarReintentos($evento->getId());
         }
     }
 }

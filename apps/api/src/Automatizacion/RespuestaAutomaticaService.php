@@ -44,8 +44,8 @@ final class RespuestaAutomaticaService
         private readonly AgenteRepository $agentRepo,
         private readonly DisponibilidadDeAgenteService $availabilityService,
         private readonly GraphClient $graphClient,
-        private readonly EventoProcesadoRepository $processedEventRepo,
-        private readonly RecolectorDeEventos $eventCollector,
+        private readonly EventoProcesadoRepository $eventoProcesadoRepository,
+        private readonly RecolectorDeEventos $recolectorDeEventos,
         private readonly LoggerInterface $logger,
         private readonly EntityManagerInterface $em,
         private readonly PoliticaDeVentana $windowPolicy,
@@ -169,18 +169,18 @@ final class RespuestaAutomaticaService
         }
 
         // 7. Upsert rate-limit key (update timestamp or insert new)
-        $existingEvent = $this->processedEventRepo->findByEventoId($rateLimitKey);
+        $existingEvent = $this->eventoProcesadoRepository->findByEventoId($rateLimitKey);
         if ($existingEvent !== null) {
             $existingEvent->setProcesadoAt(new \DateTimeImmutable('now'));
         } else {
-            $processedEvent = new EventoProcesado($rateLimitKey);
-            $this->em->persist($processedEvent);
+            $eventoProcesado = new EventoProcesado($rateLimitKey);
+            $this->em->persist($eventoProcesado);
         }
         $this->em->flush();
 
         // 8. Emit outbox event so the message appears in real-time via Mercure
         if ($mensajeSaliente !== null) {
-            $this->eventCollector->recolectar(new MessageCreatedEvent(
+            $this->recolectorDeEventos->recolectar(new MessageCreatedEvent(
                 eventId: new Ulid(),
                 ticketId: $ticket->getId(),
                 occurredAt: new \DateTimeImmutable(),
@@ -245,7 +245,7 @@ final class RespuestaAutomaticaService
      */
     private function hasRespuestaAutomaticaReciente(string $rateLimitKey): bool
     {
-        $existing = $this->processedEventRepo->findByEventoId($rateLimitKey);
+        $existing = $this->eventoProcesadoRepository->findByEventoId($rateLimitKey);
         if ($existing === null) {
             return false;
         }

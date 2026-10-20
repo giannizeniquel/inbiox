@@ -17,7 +17,7 @@ class LineaDeTiempoDeContactoController
 {
     public function __construct(
         private GetLineaDeTiempoDeContactoQuery $getLineaDeTiempoDeContactoQuery,
-        private AlcanceDeEspacioDeTrabajo $workspaceScope,
+        private AlcanceDeEspacioDeTrabajo $alcanceDeEspacioDeTrabajo,
     ) {}
 
     #[Route('/api/contacts/{id}/timeline', name: 'app_contacts_timeline', methods: ['GET'])]
@@ -25,7 +25,7 @@ class LineaDeTiempoDeContactoController
     {
         $before = $request->query->get('before');
         $limit = min(50, max(1, (int) $request->query->get('limit', 20)));
-        $phoneNumberId = $this->workspaceScope->getPhoneNumberIdActivo();
+        $phoneNumberId = $this->alcanceDeEspacioDeTrabajo->getPhoneNumberIdActivo();
 
         $result = $this->getLineaDeTiempoDeContactoQuery->execute(
             contactoId: $id,

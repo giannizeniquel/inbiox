@@ -21,14 +21,14 @@ final class MercureTokenController extends AbstractController
 
     // Route registered in config/routes.yaml (app_mercure_token)
     #[Route('/api/mercure/token', name: 'app_mercure_token', methods: ['GET'])]
-    public function getToken(#[CurrentUser] ?Usuario $user): JsonResponse
+    public function getToken(#[CurrentUser] ?Usuario $usuario): JsonResponse
     {
-        if (null === $user) {
+        if (null === $usuario) {
             return new JsonResponse(['error' => 'Unauthorized'], 401);
         }
 
-        $agent = $user->getAgente();
-        $token = $this->jwtService->issueParaUsuario($user, $agent);
+        $agente = $usuario->getAgente();
+        $token = $this->jwtService->issueParaUsuario($usuario, $agente);
 
         return new JsonResponse(['token' => $token->toString()]);
     }

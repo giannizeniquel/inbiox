@@ -59,30 +59,30 @@ class EventoOutboxRepository extends ServiceEntityRepository
             ->fetchAllAssociative();
     }
 
-    public function marcarPublicado(string $id, \DateTimeImmutable $publishedAt): void
+    public function marcarPublicado(string $id, \DateTimeImmutable $publicadoAt): void
     {
         $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->update('outbox_events')
             ->set('published_at', ':published_at')
             ->set('status', "'published'")
             ->where('id = :id')
-            ->setParameter('published_at', $publishedAt->format('Y-m-d H:i:s'))
+            ->setParameter('published_at', $publicadoAt->format('Y-m-d H:i:s'))
             ->setParameter('id', $id)
             ->executeStatement();
     }
 
     /**
-     * Store the final retry count and move the event to `$status` (dead letter).
+     * Store the final retry count and move the event to `$estado` (dead letter).
      */
-    public function marcarDeadLetter(string $id, int $retryCount, string $status): void
+    public function marcarDeadLetter(string $id, int $reintentos, string $estado): void
     {
         $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->update('outbox_events')
             ->set('retry_count', ':retry_count')
             ->set('status', ':status')
             ->where('id = :id')
-            ->setParameter('retry_count', $retryCount)
-            ->setParameter('status', $status)
+            ->setParameter('retry_count', $reintentos)
+            ->setParameter('status', $estado)
             ->setParameter('id', $id)
             ->executeStatement();
     }
@@ -131,17 +131,17 @@ class EventoOutboxRepository extends ServiceEntityRepository
     }
 
     /**
-     * Delete dead-lettered events created before `$cutoff` (`Y-m-d H:i:s`).
+     * Delete dead-lettered events created before `$corte` (`Y-m-d H:i:s`).
      *
      * @return int|string deleted rows
      */
-    public function purgarDeadLettersCreadosAntesDe(string $cutoff): int|string
+    public function purgarDeadLettersCreadosAntesDe(string $corte): int|string
     {
         return $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->delete('outbox_events')
             ->where("status = 'dead_letter'")
             ->andWhere('created_at < :cutoff')
-            ->setParameter('cutoff', $cutoff)
+            ->setParameter('cutoff', $corte)
             ->executeStatement();
     }
 }

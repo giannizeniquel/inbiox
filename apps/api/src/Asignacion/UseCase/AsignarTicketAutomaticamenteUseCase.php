@@ -43,7 +43,7 @@ final class AsignarTicketAutomaticamenteUseCase
         private AsignacionRepository $asignacionRepo,
         private DisponibilidadDeAgenteService $disponibilidadDeAgenteService,
         private ResponsabilidadDeTicketService $responsabilidadDeTicketService,
-        private RecolectorDeEventos $eventCollector,
+        private RecolectorDeEventos $recolectorDeEventos,
         private readonly OutboxWriter $outboxWriter,
         private AgenteRepository $agentRepo,
     ) {}
@@ -210,12 +210,12 @@ final class AsignarTicketAutomaticamenteUseCase
      */
     private function persistEventsToOutbox(): void
     {
-        $events = $this->eventCollector->getEventos();
+        $events = $this->recolectorDeEventos->getEventos();
         if (empty($events)) {
             return;
         }
 
-        $outboxEvents = [];
+        $eventosOutbox = [];
 
         foreach ($events as $event) {
             $payload = [
@@ -234,17 +234,17 @@ final class AsignarTicketAutomaticamenteUseCase
                 $payload['assignment_type'] = $this->ultimoTipoDeAsignacion;
             }
 
-            $outboxEvent = new EventoOutbox(
+            $eventoOutbox = new EventoOutbox(
                 aggregateType: 'ticket',
                 aggregateId: $event->ticketId,
                 topic: 'tickets',
-                eventType: $event->type,
+                tipoDeEvento: $event->type,
                 payload: $payload,
             );
-            $outboxEvents[] = $outboxEvent;
+            $eventosOutbox[] = $eventoOutbox;
         }
 
-        $this->outboxWriter->write(...$outboxEvents);
-        $this->eventCollector->limpiar();
+        $this->outboxWriter->write(...$eventosOutbox);
+        $this->recolectorDeEventos->limpiar();
     }
 }

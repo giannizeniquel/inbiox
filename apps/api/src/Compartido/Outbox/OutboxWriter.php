@@ -23,10 +23,10 @@ final class OutboxWriter
      * Persists the events and flushes once. It always flushes, even with no
      * events, as the writers it replaced did.
      */
-    public function write(EventoOutbox ...$events): void
+    public function write(EventoOutbox ...$eventos): void
     {
-        foreach ($events as $event) {
-            $this->entityManager->persist($event);
+        foreach ($eventos as $evento) {
+            $this->entityManager->persist($evento);
         }
 
         $this->entityManager->flush();

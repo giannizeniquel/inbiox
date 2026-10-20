@@ -23,7 +23,7 @@ use Symfony\Component\Routing\Attribute\Route;
 final class EventosDeTicketController
 {
     public function __construct(
-        private readonly ResincronizarEventosDeTicketQuery $resyncTicketEventsQuery,
+        private readonly ResincronizarEventosDeTicketQuery $resincronizarEventosDeTicketQuery,
         private readonly MercureJwtService $jwtService,
     ) {}
 
@@ -48,7 +48,7 @@ final class EventosDeTicketController
             return new JsonResponse(['error' => 'afterSequence must be >= -1'], 400);
         }
 
-        return new JsonResponse($this->resyncTicketEventsQuery->execute($id, $afterSequence));
+        return new JsonResponse($this->resincronizarEventosDeTicketQuery->execute($id, $afterSequence));
     }
 
     /**

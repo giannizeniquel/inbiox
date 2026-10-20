@@ -43,7 +43,7 @@ class DisponibilidadDeAgenteController
         private AgenteRepository $agentRepo,
         private TurnoRepository $turnoRepo,
         private TicketRepository $ticketRepo,
-        private AlcanceDeResponsabilidad $ownershipScope,
+        private AlcanceDeResponsabilidad $alcanceDeResponsabilidad,
     ) {}
 
     /**
@@ -269,7 +269,7 @@ class DisponibilidadDeAgenteController
      */
     private function isPermitidoParaAgente(int $agenteId): bool
     {
-        $scopeId = $this->ownershipScope->getAgenteId();
+        $scopeId = $this->alcanceDeResponsabilidad->getAgenteId();
 
         // null scope means SUPERVISOR/ADMIN (no scope restriction)
         if (null === $scopeId) {

@@ -29,7 +29,7 @@ class ContactoController
         private UpdateContactoUseCase $updateContactoUseCase,
         private DeleteContactoUseCase $deleteContactoUseCase,
         private ImportarContactosDesdeCsvUseCase $importarContactosDesdeCsvUseCase,
-        private AlcanceDeEspacioDeTrabajo $workspaceScope,
+        private AlcanceDeEspacioDeTrabajo $alcanceDeEspacioDeTrabajo,
     ) {}
 
     #[Route('/api/contacts', name: 'app_contacts_list', methods: ['GET'])]
@@ -44,7 +44,7 @@ class ContactoController
         $email = $request->query->get('email');
 
         // Workspace scope: AGENT sees only contacts with conversations in active workspace
-        $phoneNumberId = $this->workspaceScope->getPhoneNumberIdActivo();
+        $phoneNumberId = $this->alcanceDeEspacioDeTrabajo->getPhoneNumberIdActivo();
 
         $result = $this->listContactosQuery->execute(
             page: $page,

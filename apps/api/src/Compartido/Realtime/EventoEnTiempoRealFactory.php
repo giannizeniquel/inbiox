@@ -20,19 +20,19 @@ final readonly class EventoEnTiempoRealFactory
      *
      * @return array{eventId: string, sequence: int, timestamp: string, eventType: string, ticketId: string, payload: array}
      */
-    public function build(EventoOutbox $event): array
+    public function build(EventoOutbox $evento): array
     {
-        $stored   = $event->getPayload();
-        $phpClass = $event->getTipoDeEvento();
+        $stored   = $evento->getPayload();
+        $phpClass = $evento->getTipoDeEvento();
         $enumValue = $this->resolveEnum($phpClass, $stored);
 
         return [
-            'eventId'   => (string) ($stored['event_id'] ?? $event->getId()),
-            'sequence'  => $event->getSequence(),
-            'timestamp' => $stored['occurred_at'] ?? $event->getCreadoAt()->format(\DateTimeInterface::RFC3339),
+            'eventId'   => (string) ($stored['event_id'] ?? $evento->getId()),
+            'sequence'  => $evento->getSequence(),
+            'timestamp' => $stored['occurred_at'] ?? $evento->getCreadoAt()->format(\DateTimeInterface::RFC3339),
             'eventType' => $enumValue->value,
-            'ticketId'  => (string) $event->getAggregateId(),
-            'payload'   => $this->buildPayload($enumValue, $stored, (int) $event->getAggregateId()),
+            'ticketId'  => (string) $evento->getAggregateId(),
+            'payload'   => $this->buildPayload($enumValue, $stored, (int) $evento->getAggregateId()),
         ];
     }
 

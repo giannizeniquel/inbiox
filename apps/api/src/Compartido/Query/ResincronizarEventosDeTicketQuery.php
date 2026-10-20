@@ -15,7 +15,7 @@ final class ResincronizarEventosDeTicketQuery
     private const PAGE_SIZE = 100;
 
     public function __construct(
-        private readonly EventoOutboxRepository $outboxEventRepository,
+        private readonly EventoOutboxRepository $eventoOutboxRepository,
         private readonly EventoEnTiempoRealFactory $factory,
     ) {}
 
@@ -24,18 +24,18 @@ final class ResincronizarEventosDeTicketQuery
      */
     public function execute(int $ticketId, int $afterSequence): array
     {
-        $events = [];
+        $eventos = [];
         $highest = $afterSequence;
 
-        foreach ($this->outboxEventRepository->findFilasParaResincronizar($ticketId, $afterSequence) as $row) {
-            $events[] = $this->factory->build($this->hydrateEvent($row));
+        foreach ($this->eventoOutboxRepository->findFilasParaResincronizar($ticketId, $afterSequence) as $row) {
+            $eventos[] = $this->factory->build($this->hydrateEvent($row));
             $highest = max($highest, (int) $row['sequence']);
         }
 
         return [
-            'events' => $events,
+            'events' => $eventos,
             'lastSequence' => $highest,
-            'hasMore' => \count($events) === self::PAGE_SIZE,
+            'hasMore' => \count($eventos) === self::PAGE_SIZE,
         ];
     }
 
@@ -46,11 +46,11 @@ final class ResincronizarEventosDeTicketQuery
      */
     private function hydrateEvent(array $row): EventoOutbox
     {
-        $event = new EventoOutbox(
+        $evento = new EventoOutbox(
             aggregateType: $row['aggregate_type'],
             aggregateId: (int) $row['aggregate_id'],
             topic: $row['topic'],
-            eventType: $row['event_type'],
+            tipoDeEvento: $row['event_type'],
             payload: json_decode($row['payload'], true) ?? [],
             sequence: (int) ($row['sequence'] ?? 0)
         );
@@ -58,20 +58,20 @@ final class ResincronizarEventosDeTicketQuery
         // Use reflection to set the ID (generated in constructor, we want the persisted one)
         $idReflection = new \ReflectionProperty(EventoOutbox::class, 'id');
         $idReflection->setAccessible(true);
-        $idReflection->setValue($event, $row['id']);
+        $idReflection->setValue($evento, $row['id']);
 
         // Set created_at
-        $createdAtReflection = new \ReflectionProperty(EventoOutbox::class, 'creadoAt');
-        $createdAtReflection->setAccessible(true);
+        $creadoAtReflection = new \ReflectionProperty(EventoOutbox::class, 'creadoAt');
+        $creadoAtReflection->setAccessible(true);
         if (isset($row['created_at'])) {
-            $createdAtReflection->setValue($event, new \DateTimeImmutable($row['created_at']));
+            $creadoAtReflection->setValue($evento, new \DateTimeImmutable($row['created_at']));
         }
 
         // Set status
-        $statusReflection = new \ReflectionProperty(EventoOutbox::class, 'estado');
-        $statusReflection->setAccessible(true);
-        $statusReflection->setValue($event, $row['status'] ?? 'pending');
+        $estadoReflection = new \ReflectionProperty(EventoOutbox::class, 'estado');
+        $estadoReflection->setAccessible(true);
+        $estadoReflection->setValue($evento, $row['status'] ?? 'pending');
 
-        return $event;
+        return $evento;
     }
 }

@@ -172,7 +172,7 @@ class Sprint15ContactTimelineTest extends WebTestCase
             aggregateType: 'Ticket',
             aggregateId: $ticketId,
             topic: 'tickets',
-            eventType: \App\Ticket\TicketCreatedEvent::class,
+            tipoDeEvento: \App\Ticket\TicketCreatedEvent::class,
             payload: [
                 'contact_id' => $contactId,
                 'conversation_id' => $conversationId,
@@ -191,7 +191,7 @@ class Sprint15ContactTimelineTest extends WebTestCase
             aggregateType: 'Ticket',
             aggregateId: $ticketId,
             topic: 'tickets',
-            eventType: \App\Ticket\TicketUpdatedEvent::class,
+            tipoDeEvento: \App\Ticket\TicketUpdatedEvent::class,
             payload: [
                 'status' => 'active',
             ],

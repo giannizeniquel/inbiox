@@ -19,25 +19,25 @@ class EventoProcesadoRepository extends ServiceEntityRepository
     /**
      * Check if an event has already been processed
      */
-    public function exists(string $eventId): bool
+    public function exists(string $eventoId): bool
     {
-        return $this->findOneBy(['eventoId' => $eventId]) !== null;
+        return $this->findOneBy(['eventoId' => $eventoId]) !== null;
     }
 
     /**
      * Find processed event by event ID
      */
-    public function findByEventoId(string $eventId): ?EventoProcesado
+    public function findByEventoId(string $eventoId): ?EventoProcesado
     {
-        return $this->findOneBy(['eventoId' => $eventId]);
+        return $this->findOneBy(['eventoId' => $eventoId]);
     }
 
     /**
      * Save a processed event
      */
-    public function save(EventoProcesado $event): void
+    public function save(EventoProcesado $evento): void
     {
-        $this->getEntityManager()->persist($event);
+        $this->getEntityManager()->persist($evento);
         $this->getEntityManager()->flush();
     }
 }

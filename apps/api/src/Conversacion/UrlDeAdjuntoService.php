@@ -9,7 +9,7 @@ use App\Compartido\Storage\AdjuntoStorageService;
 class UrlDeAdjuntoService
 {
     public function __construct(
-        private readonly AdjuntoStorageService $storageService,
+        private readonly AdjuntoStorageService $adjuntoStorageService,
         private readonly int $urlTtl = 300,
     ) {}
 
@@ -21,7 +21,7 @@ class UrlDeAdjuntoService
     public function getUrlTemporal(string $key): array
     {
         $expiresAt = new \DateTimeImmutable("+{$this->urlTtl} seconds");
-        $url = $this->storageService->temporaryUrl($key, $this->urlTtl);
+        $url = $this->adjuntoStorageService->temporaryUrl($key, $this->urlTtl);
 
         return [
             'url' => $url,

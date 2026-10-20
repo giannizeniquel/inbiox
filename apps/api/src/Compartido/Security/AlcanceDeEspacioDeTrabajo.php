@@ -42,24 +42,24 @@ final class AlcanceDeEspacioDeTrabajo
      */
     public function getPhoneNumberIdActivo(): ?string
     {
-        $user = $this->security->getUser();
+        $usuario = $this->security->getUser();
 
-        if (!$user instanceof Usuario) {
+        if (!$usuario instanceof Usuario) {
             return null;
         }
 
-        $agent = $user->getAgente();
+        $agente = $usuario->getAgente();
 
-        if (null === $agent) {
+        if (null === $agente) {
             return null;
         }
 
-        $activeWorkspace = $agent->getEspacioDeTrabajoActivo();
+        $espacioDeTrabajoActivo = $agente->getEspacioDeTrabajoActivo();
 
-        if (null === $activeWorkspace) {
+        if (null === $espacioDeTrabajoActivo) {
             return null;
         }
 
-        return $activeWorkspace->getPhoneNumberId();
+        return $espacioDeTrabajoActivo->getPhoneNumberId();
     }
 }

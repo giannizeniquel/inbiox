@@ -41,9 +41,9 @@ final class AlcanceDeResponsabilidad
      */
     public function getAgenteId(): ?int
     {
-        $user = $this->security->getUser();
+        $usuario = $this->security->getUser();
 
-        if (!$user instanceof Usuario) {
+        if (!$usuario instanceof Usuario) {
             return null;
         }
 

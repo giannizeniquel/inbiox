@@ -57,7 +57,7 @@ class RealtimeEventFactoryTest extends TestCase
             aggregateType: 'ticket',
             aggregateId: 100,
             topic: 'ticket.100.assigned',
-            eventType: TicketUpdatedEvent::class,
+            tipoDeEvento: TicketUpdatedEvent::class,
             payload: $payload,
             sequence: 1,
         );
@@ -109,7 +109,7 @@ class RealtimeEventFactoryTest extends TestCase
             aggregateType: 'ticket',
             aggregateId: 101,
             topic: 'ticket.101.assigned',
-            eventType: TicketUpdatedEvent::class,
+            tipoDeEvento: TicketUpdatedEvent::class,
             payload: $payload,
         );
 
@@ -140,7 +140,7 @@ class RealtimeEventFactoryTest extends TestCase
             aggregateType: 'ticket',
             aggregateId: 102,
             topic: 'ticket.102.assigned',
-            eventType: TicketUpdatedEvent::class,
+            tipoDeEvento: TicketUpdatedEvent::class,
             payload: $payload,
         );
 
@@ -178,7 +178,7 @@ class RealtimeEventFactoryTest extends TestCase
             aggregateType: 'agent',
             aggregateId: 5,
             topic: 'agent.5.availability_changed',
-            eventType: AgentAvailabilityChangedEvent::class,
+            tipoDeEvento: AgentAvailabilityChangedEvent::class,
             payload: $payload,
         );
 
@@ -230,7 +230,7 @@ class RealtimeEventFactoryTest extends TestCase
             aggregateType: 'agent',
             aggregateId: 7,
             topic: 'agent.7.availability_changed',
-            eventType: AgentAvailabilityChangedEvent::class,
+            tipoDeEvento: AgentAvailabilityChangedEvent::class,
             payload: $payload,
         );
 
@@ -270,7 +270,7 @@ class RealtimeEventFactoryTest extends TestCase
             aggregateType: 'agent',
             aggregateId: 5,
             topic: 'agent.5.shift_changed',
-            eventType: AgentShiftChangedEvent::class,
+            tipoDeEvento: AgentShiftChangedEvent::class,
             payload: $payload,
         );
 
@@ -326,7 +326,7 @@ class RealtimeEventFactoryTest extends TestCase
             aggregateType: 'agent',
             aggregateId: 3,
             topic: 'agent.3.shift_changed',
-            eventType: AgentShiftChangedEvent::class,
+            tipoDeEvento: AgentShiftChangedEvent::class,
             payload: $payload,
         );
 

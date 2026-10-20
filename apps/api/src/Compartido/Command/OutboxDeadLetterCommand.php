@@ -17,7 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class OutboxDeadLetterCommand extends Command
 {
     public function __construct(
-        private readonly EventoOutboxRepository $outboxRepo,
+        private readonly EventoOutboxRepository $eventoOutboxRepository,
     ) {
         parent::__construct();
     }
@@ -31,14 +31,14 @@ class OutboxDeadLetterCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $action = $input->getArgument('action');
+        $accion = $input->getArgument('action');
 
-        return match ($action) {
+        return match ($accion) {
             'list' => $this->listarEventos($output),
             'retry' => $this->reintentarEvento($input, $output),
             'purge' => $this->purgarEventos($input, $output),
             default => throw new \InvalidArgumentException(sprintf(
-                'Unknown action "%s". Use: list, retry, purge', $action
+                'Unknown action "%s". Use: list, retry, purge', $accion
             )),
         };
     }
@@ -48,7 +48,7 @@ class OutboxDeadLetterCommand extends Command
      */
     private function listarEventos(OutputInterface $output): int
     {
-        $rows = $this->outboxRepo->findDeadLetters();
+        $rows = $this->eventoOutboxRepository->findDeadLetters();
 
         if (empty($rows)) {
             $output->writeln('No dead-letter events found.');
@@ -79,20 +79,20 @@ class OutboxDeadLetterCommand extends Command
      */
     private function reintentarEvento(InputInterface $input, OutputInterface $output): int
     {
-        $eventId = $input->getArgument('value');
-        if (empty($eventId)) {
+        $eventoId = $input->getArgument('value');
+        if (empty($eventoId)) {
             $output->writeln('<error>Usage: app:outbox:dead-letter retry <event-id></error>');
             return Command::FAILURE;
         }
 
-        $affected = $this->outboxRepo->devolverDeadLetterAPendiente($eventId);
+        $afectados = $this->eventoOutboxRepository->devolverDeadLetterAPendiente($eventoId);
 
-        if ($affected === 0) {
-            $output->writeln(sprintf('<error>Event %s not found or not in dead_letter status.</error>', $eventId));
+        if ($afectados === 0) {
+            $output->writeln(sprintf('<error>Event %s not found or not in dead_letter status.</error>', $eventoId));
             return Command::FAILURE;
         }
 
-        $output->writeln(sprintf('Event %s reset to pending for retry.', $eventId));
+        $output->writeln(sprintf('Event %s reset to pending for retry.', $eventoId));
         return Command::SUCCESS;
     }
 
@@ -101,17 +101,17 @@ class OutboxDeadLetterCommand extends Command
      */
     private function purgarEventos(InputInterface $input, OutputInterface $output): int
     {
-        $days = (int) ($input->getArgument('value') ?? 30);
-        if ($days < 1) {
+        $dias = (int) ($input->getArgument('value') ?? 30);
+        if ($dias < 1) {
             $output->writeln('<error>Days must be >= 1.</error>');
             return Command::FAILURE;
         }
 
-        $cutoff = (new \DateTimeImmutable("-{$days} days"))->format('Y-m-d H:i:s');
+        $corte = (new \DateTimeImmutable("-{$dias} days"))->format('Y-m-d H:i:s');
 
-        $count = $this->outboxRepo->purgarDeadLettersCreadosAntesDe($cutoff);
+        $count = $this->eventoOutboxRepository->purgarDeadLettersCreadosAntesDe($corte);
 
-        $output->writeln(sprintf('Purged %d dead-letter events older than %d days.', $count, $days));
+        $output->writeln(sprintf('Purged %d dead-letter events older than %d days.', $count, $dias));
         return Command::SUCCESS;
     }
 }

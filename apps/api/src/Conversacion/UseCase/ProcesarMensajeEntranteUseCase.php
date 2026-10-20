@@ -41,7 +41,7 @@ class ProcesarMensajeEntranteUseCase
         private EventDispatcherInterface $eventDispatcher,
         private CambiarEstadoDeTicketUseCase $cambiarEstadoDeTicketUseCase,
         private EjecutorDeReglas $ejecutorDeReglas,
-        private RecolectorDeEventos $eventCollector,
+        private RecolectorDeEventos $recolectorDeEventos,
         private readonly OutboxWriter $outboxWriter,
         private RespuestaAutomaticaService $respuestaAutomaticaService,
         private LoggerInterface $logger,
@@ -108,12 +108,12 @@ class ProcesarMensajeEntranteUseCase
      */
     private function persistEventsToOutbox(): void
     {
-        $events = $this->eventCollector->getEventos();
+        $events = $this->recolectorDeEventos->getEventos();
         if (empty($events)) {
             return;
         }
 
-        $outboxEvents = [];
+        $eventosOutbox = [];
 
 foreach ($events as $event) {
             $payload = [
@@ -142,18 +142,18 @@ foreach ($events as $event) {
                 $payload['priority'] = $event->priority;
             }
 
-            $outboxEvent = new EventoOutbox(
+            $eventoOutbox = new EventoOutbox(
                 aggregateType: 'ticket',
                 aggregateId: (int) $event->ticketId,
                 topic: 'tickets',
-                eventType: $event->type,
+                tipoDeEvento: $event->type,
                 payload: $payload
             );
-            $outboxEvents[] = $outboxEvent;
+            $eventosOutbox[] = $eventoOutbox;
         }
 
-        $this->outboxWriter->write(...$outboxEvents);
-        $this->eventCollector->limpiar();
+        $this->outboxWriter->write(...$eventosOutbox);
+        $this->recolectorDeEventos->limpiar();
     }
 
     /**
@@ -429,7 +429,7 @@ foreach ($events as $event) {
     private function registrarEventosDeEntrada(Ticket $ticket, bool $ticketNuevo, Mensaje $mensaje, string $texto, Contacto $contacto): void
     {
         if ($ticketNuevo) {
-            $this->eventCollector->recolectar(new TicketCreatedEvent(
+            $this->recolectorDeEventos->recolectar(new TicketCreatedEvent(
                 eventId: new Ulid(),
                 ticketId: $ticket->getId(),
                 occurredAt: new \DateTimeImmutable(),
@@ -440,7 +440,7 @@ foreach ($events as $event) {
             ));
         }
 
-        $this->eventCollector->recolectar(new MessageCreatedEvent(
+        $this->recolectorDeEventos->recolectar(new MessageCreatedEvent(
             eventId: new Ulid(),
             ticketId: $ticket->getId(),
             occurredAt: new \DateTimeImmutable(),

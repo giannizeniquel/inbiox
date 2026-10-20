@@ -15,7 +15,7 @@ class DescargaDeAdjuntoService
 {
     public function __construct(
         private readonly GraphClient $graphClient,
-        private readonly AdjuntoStorageService $storageService,
+        private readonly AdjuntoStorageService $adjuntoStorageService,
         private readonly ValidadorDeAdjunto $validadorDeAdjunto,
         private readonly LoggerInterface $logger,
     ) {}
@@ -75,7 +75,7 @@ class DescargaDeAdjuntoService
         $key = sprintf('%s/%d/%s.%s', $tenantId, $ticketId, $uuid, $ext);
 
         try {
-            $this->storageService->put($key, $binary, $mimeType);
+            $this->adjuntoStorageService->put($key, $binary, $mimeType);
         } catch (\Throwable $e) {
             $this->logger->error('Failed to store media in object storage', [
                 'key' => $key,

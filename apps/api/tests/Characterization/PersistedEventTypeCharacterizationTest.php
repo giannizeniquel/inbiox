@@ -92,7 +92,7 @@ final class PersistedEventTypeCharacterizationTest extends TestCase
             aggregateType: 'ticket',
             aggregateId: 100,
             topic: 'tickets',
-            eventType: $storedEventType,
+            tipoDeEvento: $storedEventType,
             payload: $stored,
             sequence: 1,
         );

@@ -52,11 +52,11 @@ class ProcesarMensajeSalienteUseCase
         private MensajeRepository $mensajeRepo,
         private TicketRepository $ticketRepo,
         private CambiarEstadoDeTicketUseCase $cambiarEstadoDeTicketUseCase,
-        private EventoProcesadoRepository $processedEventRepo,
+        private EventoProcesadoRepository $eventoProcesadoRepository,
         private EjecutorDeReglas $ejecutorDeReglas,
         private ResponsabilidadDeTicketService $responsabilidadDeTicketService,
         private AgenteRepository $agenteRepo,
-        private RecolectorDeEventos $eventCollector,
+        private RecolectorDeEventos $recolectorDeEventos,
         private readonly OutboxWriter $outboxWriter,
         private PoliticaDeVentana $politicaDeVentana,
     ) {}
@@ -88,7 +88,7 @@ class ProcesarMensajeSalienteUseCase
         $eventKey = sprintf('outbound:%d:%s', $ticketId, $contentHash);
 
         // Check idempotency: return early if already processed (no retry needed)
-        $existingEvent = $this->processedEventRepo->findByEventoId($eventKey);
+        $existingEvent = $this->eventoProcesadoRepository->findByEventoId($eventKey);
         if ($existingEvent !== null) {
             return [
                 'ticket_id' => $ticketId,
@@ -119,7 +119,7 @@ class ProcesarMensajeSalienteUseCase
                 // otherwise the retry re-collects the same events again,
                 // producing a phantom event with a duplicate seq
                 // (design.md D6).
-                $this->eventCollector->limpiar();
+                $this->recolectorDeEventos->limpiar();
 
                 $attempt++;
                 if ($attempt >= $maxRetries) {
@@ -147,7 +147,7 @@ class ProcesarMensajeSalienteUseCase
                 // there is no retry for these, but the collector must not
                 // carry stale events into some later, unrelated call
                 // (design.md D6).
-                $this->eventCollector->limpiar();
+                $this->recolectorDeEventos->limpiar();
                 throw $e;
             }
         }
@@ -226,9 +226,9 @@ class ProcesarMensajeSalienteUseCase
                 'first_response_set' => $debeRegistrarPrimeraRespuesta,
                 'transition' => $transicion ?? 'none',
             ];
-            $processedEvent = new EventoProcesado($eventKey);
-            $processedEvent->setDatosDeResultado($resultData);
-            $this->em->persist($processedEvent);
+            $eventoProcesado = new EventoProcesado($eventKey);
+            $eventoProcesado->setDatosDeResultado($resultData);
+            $this->em->persist($eventoProcesado);
 
             $this->em->flush();
 
@@ -399,7 +399,7 @@ class ProcesarMensajeSalienteUseCase
     private function registrarMessageCreatedEvent(Ticket $ticket, int $ticketId, Mensaje $mensaje, string $contenido, int $agenteId): void
     {
         $nombreDelRemitente = $agenteId > 0 ? $this->agenteRepo->findById($agenteId)?->getNombre() : null;
-        $this->eventCollector->recolectar(new MessageCreatedEvent(
+        $this->recolectorDeEventos->recolectar(new MessageCreatedEvent(
             eventId: new Ulid(),
             ticketId: $ticketId,
             occurredAt: new \DateTimeImmutable(),
@@ -419,12 +419,12 @@ class ProcesarMensajeSalienteUseCase
      */
     private function persistEventsToOutbox(): void
     {
-        $events = $this->eventCollector->getEventos();
+        $events = $this->recolectorDeEventos->getEventos();
         if (empty($events)) {
             return;
         }
 
-        $outboxEvents = [];
+        $eventosOutbox = [];
 
         foreach ($events as $event) {
             $payload = [
@@ -462,17 +462,17 @@ class ProcesarMensajeSalienteUseCase
                 }
             }
 
-            $outboxEvent = new EventoOutbox(
+            $eventoOutbox = new EventoOutbox(
                 aggregateType: 'ticket',
                 aggregateId: (int) $event->ticketId,
                 topic: 'tickets',
-                eventType: $event->type,
+                tipoDeEvento: $event->type,
                 payload: $payload
             );
-            $outboxEvents[] = $outboxEvent;
+            $eventosOutbox[] = $eventoOutbox;
         }
 
-        $this->outboxWriter->write(...$outboxEvents);
-        $this->eventCollector->limpiar();
+        $this->outboxWriter->write(...$eventosOutbox);
+        $this->recolectorDeEventos->limpiar();
     }
 }

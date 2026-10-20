@@ -39,8 +39,8 @@ class ReporteController
     public function __construct(
         private ReporteService $reporteService,
         private ListarAgentesDisponiblesQuery $listarAgentesDisponibles,
-        private AlcanceDeResponsabilidad $ownershipScope,
-        private AlcanceDeEspacioDeTrabajo $workspaceScope,
+        private AlcanceDeResponsabilidad $alcanceDeResponsabilidad,
+        private AlcanceDeEspacioDeTrabajo $alcanceDeEspacioDeTrabajo,
         private ExportarTicketsCsvQuery $exportarTicketsCsvQuery,
         private FiltrosDeTicketBuilder $filtrosDeTicketBuilder,
     ) {}
@@ -70,7 +70,7 @@ class ReporteController
      */
     private function getAgenteIdDeAlcance(): ?int
     {
-        return $this->ownershipScope->getAgenteId();
+        return $this->alcanceDeResponsabilidad->getAgenteId();
     }
 
     /**
@@ -79,7 +79,7 @@ class ReporteController
      */
     private function getPhoneNumberIdDeAlcance(): ?string
     {
-        return $this->workspaceScope->getPhoneNumberIdActivo();
+        return $this->alcanceDeEspacioDeTrabajo->getPhoneNumberIdActivo();
     }
 
     /**

@@ -35,16 +35,16 @@ final class MercureJwtService
         private readonly ParameterBagInterface $parameterBag,
     ) {}
 
-    public function generateToken(int $agentId, array $assignedTicketIds): string
+    public function generateToken(int $agenteId, array $ticketIdsAsignados): string
     {
-        if ($agentId < 0) {
+        if ($agenteId < 0) {
             throw new InvalidArgumentException('Invalid agent ID');
         }
         // Allow system publisher (agentId = 0) with wildcard topic
-        if ($agentId === 0) {
+        if ($agenteId === 0) {
             return $this->generateSystemPublisherToken();
         }
-        if (empty($assignedTicketIds)) {
+        if (empty($ticketIdsAsignados)) {
             throw new InvalidArgumentException('Agent must have at least one assigned ticket');
         }
 
@@ -56,9 +56,9 @@ final class MercureJwtService
         // Build topics array — single topic for all ticket events, per-agent inbox,
         // per-agent availability, per-agent shifts, and agents broadcast
         $topics = [self::TOPIC_TICKETS];
-        $topics[] = sprintf(self::TOPIC_BANDEJA_DE_AGENTE, $agentId);
-        $topics[] = sprintf(self::TOPIC_DISPONIBILIDAD_DE_AGENTE, $agentId);
-        $topics[] = sprintf(self::TOPIC_TURNOS_DE_AGENTE, $agentId);
+        $topics[] = sprintf(self::TOPIC_BANDEJA_DE_AGENTE, $agenteId);
+        $topics[] = sprintf(self::TOPIC_DISPONIBILIDAD_DE_AGENTE, $agenteId);
+        $topics[] = sprintf(self::TOPIC_TURNOS_DE_AGENTE, $agenteId);
         $topics[] = self::TOPIC_AGENTES;
 
         // Create JWT using Lcobucci v4+ Configuration API
@@ -68,11 +68,11 @@ final class MercureJwtService
         );
 
         $token = $config->builder()
-            ->identifiedBy((string) $agentId, true)
+            ->identifiedBy((string) $agenteId, true)
             ->issuedBy('inbiox-api')
             ->issuedAt($now)
             ->expiresAt($expiresAt)
-            ->withClaim('agent_id', $agentId)
+            ->withClaim('agent_id', $agenteId)
             ->withClaim('mercure', ['subscribe' => $topics])
             ->getToken($config->signer(), $config->signingKey());
 
@@ -156,8 +156,8 @@ final class MercureJwtService
     {
         $claims = $token->claims();
         if (!$claims->has('agent_id')) return null;
-        $agentId = $claims->get('agent_id');
-        return is_int($agentId) ? $agentId : null;
+        $agenteId = $claims->get('agent_id');
+        return is_int($agenteId) ? $agenteId : null;
     }
 
     public function extractTopics(Token $token): ?array
@@ -176,15 +176,15 @@ final class MercureJwtService
      * - ROLE_AGENT: agent-specific topics + tickets
      * - ROLE_SUPERVISOR/ROLE_ADMIN: all + wildcard
      */
-    public function issueParaUsuario(UserInterface $user, ?Agente $agent = null): Token
+    public function issueParaUsuario(UserInterface $usuario, ?Agente $agente = null): Token
     {
-        $roles = $user->getRoles();
+        $roles = $usuario->getRoles();
         $topics = [self::TOPIC_TICKETS, self::TOPIC_AGENTES];
 
-        if (null !== $agent) {
-            $topics[] = \sprintf(self::TOPIC_BANDEJA_DE_AGENTE, $agent->getId());
-            $topics[] = \sprintf(self::TOPIC_DISPONIBILIDAD_DE_AGENTE, $agent->getId());
-            $topics[] = \sprintf(self::TOPIC_TURNOS_DE_AGENTE, $agent->getId());
+        if (null !== $agente) {
+            $topics[] = \sprintf(self::TOPIC_BANDEJA_DE_AGENTE, $agente->getId());
+            $topics[] = \sprintf(self::TOPIC_DISPONIBILIDAD_DE_AGENTE, $agente->getId());
+            $topics[] = \sprintf(self::TOPIC_TURNOS_DE_AGENTE, $agente->getId());
         }
 
         // Supervisors and admins get wildcard access

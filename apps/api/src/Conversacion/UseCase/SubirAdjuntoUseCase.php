@@ -21,7 +21,7 @@ final class SubirAdjuntoUseCase
     public function __construct(
         private readonly ValidadorDeAdjunto $validadorDeAdjunto,
         private readonly GraphClient $graphClient,
-        private readonly AdjuntoStorageService $mediaStorageService,
+        private readonly AdjuntoStorageService $adjuntoStorageService,
     ) {}
 
     /**
@@ -54,7 +54,7 @@ final class SubirAdjuntoUseCase
             $ext = pathinfo($filename, PATHINFO_EXTENSION) ?: 'bin';
             $s3Key = sprintf('%s/%d/%s.%s', $tenantId, (int) ($ticketId ?: 0), Ulid::generate(), $ext);
 
-            $this->mediaStorageService->put($s3Key, file_get_contents($filePath), $mimeType);
+            $this->adjuntoStorageService->put($s3Key, file_get_contents($filePath), $mimeType);
             $key = $s3Key;
         } catch (\Throwable) {
             // Non-fatal: the caller already has the media id from WhatsApp.

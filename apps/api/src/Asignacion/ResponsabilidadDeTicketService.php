@@ -27,7 +27,7 @@ final class ResponsabilidadDeTicketService
 {
     public function __construct(
         private EntityManagerInterface $em,
-        private RecolectorDeEventos $eventCollector,
+        private RecolectorDeEventos $recolectorDeEventos,
     ) {}
 
     /**
@@ -75,7 +75,7 @@ final class ResponsabilidadDeTicketService
         // 3. Collect domain events
         $now = new \DateTimeImmutable();
 
-        $this->eventCollector->recolectar(new TicketUpdatedEvent(
+        $this->recolectorDeEventos->recolectar(new TicketUpdatedEvent(
             eventId: DomainEvent::generateEventId(),
             ticketId: $ticket->getId(),
             occurredAt: $now,
@@ -87,7 +87,7 @@ final class ResponsabilidadDeTicketService
 
         // Inbox update for previous agent (lost a ticket)
         if ($agenteAnterior !== null) {
-            $this->eventCollector->recolectar(new InboxUpdatedEvent(
+            $this->recolectorDeEventos->recolectar(new InboxUpdatedEvent(
                 eventId: DomainEvent::generateEventId(),
                 ticketId: $ticket->getId(),
                 occurredAt: $now,
@@ -98,7 +98,7 @@ final class ResponsabilidadDeTicketService
 
         // Inbox update for new agent (gained a ticket)
         if ($agente !== null) {
-            $this->eventCollector->recolectar(new InboxUpdatedEvent(
+            $this->recolectorDeEventos->recolectar(new InboxUpdatedEvent(
                 eventId: DomainEvent::generateEventId(),
                 ticketId: $ticket->getId(),
                 occurredAt: $now,

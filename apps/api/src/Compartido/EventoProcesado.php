@@ -23,9 +23,9 @@ class EventoProcesado
     #[ORM\Column(name: "result_data", type: "json", nullable: true)]
     private ?array $datosDeResultado = null;
 
-    public function __construct(string $eventId)
+    public function __construct(string $eventoId)
     {
-        $this->eventoId = $eventId;
+        $this->eventoId = $eventoId;
         $this->procesadoAt = new \DateTimeImmutable();
     }
 
@@ -44,9 +44,9 @@ class EventoProcesado
         return $this->procesadoAt;
     }
 
-    public function setProcesadoAt(\DateTimeImmutable $processedAt): self
+    public function setProcesadoAt(\DateTimeImmutable $procesadoAt): self
     {
-        $this->procesadoAt = $processedAt;
+        $this->procesadoAt = $procesadoAt;
         return $this;
     }
 
@@ -55,9 +55,9 @@ class EventoProcesado
         return $this->datosDeResultado;
     }
 
-    public function setDatosDeResultado(?array $resultData): self
+    public function setDatosDeResultado(?array $datosDeResultado): self
     {
-        $this->datosDeResultado = $resultData;
+        $this->datosDeResultado = $datosDeResultado;
         return $this;
     }
 }

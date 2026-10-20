@@ -49,7 +49,7 @@ class EventoOutbox
         string $aggregateType,
         int $aggregateId,
         string $topic,
-        string $eventType,
+        string $tipoDeEvento,
         array $payload,
         ?int $sequence = 0
     ) {
@@ -57,7 +57,7 @@ class EventoOutbox
         $this->aggregateType = $aggregateType;
         $this->aggregateId = $aggregateId;
         $this->topic = $topic;
-        $this->tipoDeEvento = $eventType;
+        $this->tipoDeEvento = $tipoDeEvento;
         $this->payload = $payload;
         $this->creadoAt = new \DateTimeImmutable();
         $this->sequence = $sequence ?? 0;
@@ -130,9 +130,9 @@ class EventoOutbox
         return $this->estado;
     }
 
-    public function setEstado(string $status): self
+    public function setEstado(string $estado): self
     {
-        $this->estado = $status;
+        $this->estado = $estado;
         return $this;
     }
 

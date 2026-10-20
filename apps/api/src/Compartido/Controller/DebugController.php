@@ -17,9 +17,9 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 class DebugController extends AbstractController
 {
     public function __construct(
-        private ProcesarMensajeEntranteUseCase $handleInbound,
-        private AsignarTicketUseCase $assignTicket,
-        private CambiarEstadoDeTicketUseCase $transitionStatus,
+        private ProcesarMensajeEntranteUseCase $procesarMensajeEntranteUseCase,
+        private AsignarTicketUseCase $asignarTicketUseCase,
+        private CambiarEstadoDeTicketUseCase $cambiarEstadoDeTicketUseCase,
         private KernelInterface $kernel,
     ) {}
 
@@ -40,7 +40,7 @@ class DebugController extends AbstractController
             return $this->notFound();
         }
 
-        $messages = [
+        $textos = [
             'Customer says: "I need help with my order"',
             'Customer says: "Where is my package?"',
             'Customer says: "Thanks for your assistance"',
@@ -51,12 +51,12 @@ class DebugController extends AbstractController
             'Customer says: " appreciated!"',
         ];
         
-        $message = $messages[array_rand($messages)];
+        $texto = $textos[array_rand($textos)];
         
         try {
-            $result = $this->handleInbound->procesarMensajeEntrante(
+            $result = $this->procesarMensajeEntranteUseCase->procesarMensajeEntrante(
                 '+54911' . str_pad($ticketId, 8, '0', STR_PAD_LEFT),
-                $message
+                $texto
             );
             
             return new JsonResponse([
@@ -88,12 +88,12 @@ class DebugController extends AbstractController
             'A manager will contact you shortly',
         ];
         
-        $message = $responses[array_rand($responses)];
+        $texto = $responses[array_rand($responses)];
         
         try {
-            $result = $this->handleInbound->procesarMensajeEntrante(
+            $result = $this->procesarMensajeEntranteUseCase->procesarMensajeEntrante(
                 '+54911' . str_pad($ticketId, 8, '0', STR_PAD_LEFT),
-                $message
+                $texto
             );
             
             return new JsonResponse([
@@ -118,11 +118,11 @@ class DebugController extends AbstractController
 
         // Valid transitions that work from any state: waiting or resolved
         // The FSM will reject invalid transitions
-        $validStatuses = ['waiting', 'resolved'];
+        $estadosValidos = ['waiting', 'resolved'];
         
         try {
-            $toStatus = $validStatuses[array_rand($validStatuses)];
-            $result = $this->transitionStatus->execute($ticketId, $toStatus, true, false);
+            $estadoDestino = $estadosValidos[array_rand($estadosValidos)];
+            $result = $this->cambiarEstadoDeTicketUseCase->execute($ticketId, $estadoDestino, true, false);
             
             return new JsonResponse([
                 'success' => true,
@@ -144,13 +144,13 @@ class DebugController extends AbstractController
             return $this->notFound();
         }
 
-        $agentIds = [1, 2, 3, 4, 5];
+        $agenteIds = [1, 2, 3, 4, 5];
 
         try {
-            $agentId = $agentIds[array_rand($agentIds)];
-            $result = $this->assignTicket->asignar(
+            $agenteId = $agenteIds[array_rand($agenteIds)];
+            $result = $this->asignarTicketUseCase->asignar(
                 $ticketId,
-                $agentId,
+                $agenteId,
                 'system',
                 'Auto-assigned for testing'
             );
@@ -158,7 +158,7 @@ class DebugController extends AbstractController
             return new JsonResponse([
                 'success' => true,
                 'ticket_id' => $ticketId,
-                'agent_id' => $agentId,
+                'agent_id' => $agenteId,
             ]);
         } catch (\Exception $e) {
             return new JsonResponse([

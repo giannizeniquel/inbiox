@@ -10,11 +10,11 @@ class RecolectorDeEventos
     /**
      * @var DomainEvent[]
      */
-    private array $events = [];
+    private array $eventos = [];
 
-    public function recolectar(DomainEvent $event): void
+    public function recolectar(DomainEvent $evento): void
     {
-        $this->events[] = $event;
+        $this->eventos[] = $evento;
     }
 
     /**
@@ -22,11 +22,11 @@ class RecolectorDeEventos
      */
     public function getEventos(): array
     {
-        return $this->events;
+        return $this->eventos;
     }
 
     public function limpiar(): void
     {
-        $this->events = [];
+        $this->eventos = [];
     }
 }

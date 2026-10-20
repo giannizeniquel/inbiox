@@ -28,8 +28,8 @@ class BandejaController
         private ListTicketsQuery $listTicketsQuery,
         private GetDetalleDeTicketQuery $getDetalleDeTicketQuery,
         private GetMensajesDeTicketQuery $getTicketMessagesQuery,
-        private AlcanceDeResponsabilidad $ownershipScope,
-        private AlcanceDeEspacioDeTrabajo $workspaceScope,
+        private AlcanceDeResponsabilidad $alcanceDeResponsabilidad,
+        private AlcanceDeEspacioDeTrabajo $alcanceDeEspacioDeTrabajo,
         private Security $security,
         private TicketRepository $ticketRepository,
         private MarcarTicketLeidoUseCase $marcarTicketLeidoUseCase,
@@ -51,10 +51,10 @@ class BandejaController
             $equipoId = null !== $equipoIdRaw ? (int) $equipoIdRaw : null;
 
             // Ownership scope: AGENT sees only own tickets; SUPERVISOR/ADMIN see all
-            $scopeAgenteId = $this->ownershipScope->getAgenteId();
+            $scopeAgenteId = $this->alcanceDeResponsabilidad->getAgenteId();
 
             // Workspace scope: AGENT sees only active workspace's tickets
-            $phoneNumberId = $this->workspaceScope->getPhoneNumberIdActivo();
+            $phoneNumberId = $this->alcanceDeEspacioDeTrabajo->getPhoneNumberIdActivo();
 
             $result = $this->listTicketsQuery->execute(
                 page: $page,

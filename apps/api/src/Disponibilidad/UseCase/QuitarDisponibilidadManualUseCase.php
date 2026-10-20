@@ -100,15 +100,15 @@ final class QuitarDisponibilidadManualUseCase
 
         $data = $this->pendingOutboxEvent;
 
-        $outboxEvent = new EventoOutbox(
+        $eventoOutbox = new EventoOutbox(
             aggregateType: 'agent',
             aggregateId: $data['aggregate_id'],
             topic: \sprintf('agent/%d/availability', $data['aggregate_id']),
-            eventType: AgentAvailabilityChangedEvent::class,
+            tipoDeEvento: AgentAvailabilityChangedEvent::class,
             payload: $data['payload'],
         );
 
-        $this->outboxWriter->write($outboxEvent);
+        $this->outboxWriter->write($eventoOutbox);
 
         $this->pendingOutboxEvent = null;
     }
