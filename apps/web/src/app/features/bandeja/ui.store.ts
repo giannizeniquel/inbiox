@@ -1,7 +1,7 @@
 import { Injectable, signal, inject, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs';
-import { EventoEnTiempoReal, TipoDeEventoEnTiempoReal, MessageAddedPayload } from '../../core/tiempo-real/evento-en-tiempo-real.model';
+import { EventoEnTiempoReal, TipoDeEventoEnTiempoReal, MensajeAgregadoPayload } from '../../core/tiempo-real/evento-en-tiempo-real.model';
 import { EventBusService } from '../../core/tiempo-real/event-bus.service';
 import { TicketStore } from '../../data-access/ticket/ticket.store';
 
@@ -30,11 +30,11 @@ export class UiStore {
 
       eventBus.events$.pipe(
         filter(e => {
-          if (e.eventType !== TipoDeEventoEnTiempoReal.MessageAdded) return false;
+          if (e.tipoDeEvento !== TipoDeEventoEnTiempoReal.MensajeAgregado) return false;
           // Only notify for messages belonging to the active conversation/ticket.
           // Prevents a message from another contact from triggering the
           // "new messages" indicator in the currently open chat.
-          const p = e.payload as MessageAddedPayload;
+          const p = e.payload as MensajeAgregadoPayload;
           const active = this.ticketStore.activeTicket();
           return !!active && String(active.ticket_id) === String(p.ticketId);
         }),

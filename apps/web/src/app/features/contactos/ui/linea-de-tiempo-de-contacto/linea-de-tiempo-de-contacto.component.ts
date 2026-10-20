@@ -88,7 +88,7 @@ export class LineaDeTiempoDeContactoComponent {
   eventLabel(event: EventoDeLineaDeTiempoDTO): string {
     switch (event.type) {
       case 'message.received':
-        return event.direction === 'inbound' ? 'Mensaje recibido' : 'Mensaje entrante';
+        return event.direction === 'entrante' ? 'Mensaje recibido' : 'Mensaje entrante';
       case 'message.sent':
         return 'Mensaje enviado';
       case 'ticket.created':

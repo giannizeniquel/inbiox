@@ -28,7 +28,7 @@ import { FiltrosDeTicketComponent } from '../../ui/filtros-de-ticket/filtros-de-
 import { FiltroDeEquipoComponent } from '../../ui/filtro-de-equipo/filtro-de-equipo.component';
 import { VirtualScrollViewportComponent } from '../../../../shared/components/virtual-scroll-viewport/virtual-scroll-viewport.component';
 import { VirtualListCoordinatorDirective } from '../../../../shared/directives/virtual-list-coordinator.directive';
-import { EventoEnTiempoReal, TipoDeEventoEnTiempoReal, TicketAssignedPayload } from '../../../../core/tiempo-real/evento-en-tiempo-real.model';
+import { EventoEnTiempoReal, TipoDeEventoEnTiempoReal, TicketAsignadoPayload } from '../../../../core/tiempo-real/evento-en-tiempo-real.model';
 import { EventBusService } from '../../../../core/tiempo-real/event-bus.service';
 
 @Component({
@@ -156,7 +156,7 @@ export class TicketListComponent implements OnInit {
    */
   private setupMercureRefresh(): void {
     this.eventBus.events$.pipe(
-      filter(e => e.eventType === TipoDeEventoEnTiempoReal.TicketAssigned),
+      filter(e => e.tipoDeEvento === TipoDeEventoEnTiempoReal.TicketAsignado),
       takeUntilDestroyed(this.destroyRef),
     ).subscribe(() => {
       this.debouncedRefrescarAgentes();
@@ -183,7 +183,7 @@ export class TicketListComponent implements OnInit {
     this.mensajeApi.getMensajes(ticket.ticket_id, 20, 0).pipe(take(1)).subscribe({
       next: (resp: GetMensajesResponse) => {
         this.conversacionStore.cargarMensajes(mapearMensajesDeApiACanonicos(resp, ticket.ticket_id));
-        this.conversacionStore.setHasMore(resp.meta.has_more);
+        this.conversacionStore.setHasMore(resp.meta.hayMas);
         this.conversacionStore.setLoading(false);
       },
       error: (err) => {

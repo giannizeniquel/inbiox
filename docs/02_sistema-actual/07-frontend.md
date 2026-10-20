@@ -64,12 +64,12 @@ Contenedor: `features/bandeja/pages/ticket-list/ticket-list.component.ts`. Store
 | Pestañas Míos / Sin asignar / Todos + contadores | `FiltrosDeTicketComponent` → `TicketStore.filter` / `filteredTickets` / `conteosDeFiltro` (`ticket.store.ts:86-107`) | — | **Navegador** (sobre los 20) |
 | Filtro por equipo | `FiltroDeEquipoComponent` → `onFiltroDeEquipoChange` | `GET /api/teams`, luego `GET /api/tickets?teamId=N` | **Servidor** |
 | Buscar | `TicketSearchComponent` → `onSearch()` hace `console.log` (`:209-213`) | — | **No implementado** |
-| Abrir ticket | `selectTicket()` (`:176-192`) | `GET /api/tickets/{id}/messages?limit=20&offset=0` | — |
-| Desplegable de asignación | `TicketCardComponent` (`ticket-card.component.ts:51-59, 138-150`), visible si `puedeAsignarTicket()` y estado `new`/`active`/`waiting` | `GET /api/workspaces/{wsId}/available-agents`; se refresca 10 s después de un `ticket.assigned` | — |
+| Abrir ticket | `selectTicket()` (`:176-192`) | `GET /api/tickets/{id}/mensajes?limit=20&offset=0` | — |
+| Desplegable de asignación | `TicketCardComponent` (`ticket-card.component.ts:51-59, 138-150`), visible si `puedeAsignarTicket()` y estado `new`/`active`/`waiting` | `GET /api/workspaces/{wsId}/available-agents`; se refresca 10 s después de un `ticket.asignado` | — |
 | Asignar | `onAsignar()` (`:244-276`): optimista → API → rollback + error 5 s | `POST /api/tickets/{id}/assign` | — |
 
 - Un usuario sin agente (admin sin vincular) ve la pestaña "Míos" vacía.
-- Un `message.added` no reordena la lista ni actualiza el último mensaje.
+- Un `mensaje.agregado` no reordena la lista ni actualiza el último mensaje.
 - El modelo `Ticket` del frontend no tiene equipo ni etiquetas; no hay UI para `PUT /api/tickets/{id}/team` ni para el filtro `tag`.
 - Filtros que el backend acepta y el frontend no usa: `page`, `limit`, `filter`, `agent_id`, `status`, `search`, `sort`, `tag`.
 
@@ -82,13 +82,13 @@ Contenedor: `features/bandeja/pages/conversacion/conversacion.component.ts` (scr
 | Cabecera (contacto, dueño, estado, `#id`) | `ConversacionHeaderComponent` | — | El link a la ficha usa `ticket.contact.id`, que en el listado es el id de la conversación ([R14](00-estado-y-pendientes.md#r14-bugs-del-frontend-con-impacto-directo)). |
 | Botón "RESOLVER" | `onResolverTicket()` (`:186-213`); deshabilitado en `resolved`/`closed` | `POST /api/tickets/{id}/resolve` | 403 → "Solo puede hacerlo un administrador, un supervisor o el agente asignado". |
 | Botón "Participación" | `ParticipacionDeTicketComponent` → `GetTicketParticipationUseCase` | `GET /api/reports/tickets/{id}/participation` | Sprint 18. |
-| Marcar como leído al abrir | `marcarLeidoEffect` → `TicketApiService.marcarLeido` (`:137-150`; `data-access/ticket/ticket-api.service.ts:44-47`) | `PUT /api/tickets/{id}/mark-read` | El badge se limpia al recibir `ticket.read`. |
-| Historial hacia arriba | `cargarMensajesAnteriores()` (`conversacion-scroll.controller.ts:180-213`) | `GET /api/tickets/{id}/messages?limit=20&offset=N` | La primera página "anterior" repite offset 0 (se deduplica). |
-| Burbujas y adjuntos | `MensajeBubbleComponent` + renderers | `GET /api/messages/{id}/media` | Heurística de "sistema" por corchetes. |
-| Enviar texto (Enter) | `ComposerComponent.send()` → `onEnviarMensaje()` → `EnvioDeMensajesService.send()` → `EnviarMensajeUseCase` → `ProveedorWhatsAppCloud.enviarMensaje()` | `POST /api/provider/send` (ruta relativa, sin `environment.apiUrl`) | Reintenta el POST 2 veces ante error. |
-| Adjuntar | `EnvioDeMensajesService.enviarConAdjunto()` valida tipo/tamaño (5/16/16/100 MB) | `POST {apiUrl}/api/provider/media/upload` → `POST /api/provider/send` | |
+| Marcar como leído al abrir | `marcarLeidoEffect` → `TicketApiService.marcarLeido` (`:137-150`; `data-access/ticket/ticket-api.service.ts:44-47`) | `PUT /api/tickets/{id}/mark-read` | El badge se limpia al recibir `ticket.leido`. |
+| Historial hacia arriba | `cargarMensajesAnteriores()` (`conversacion-scroll.controller.ts:180-213`) | `GET /api/tickets/{id}/mensajes?limit=20&offset=N` | La primera página "anterior" repite offset 0 (se deduplica). |
+| Burbujas y adjuntos | `MensajeBubbleComponent` + renderers | `GET /api/mensajes/{id}/adjunto` | Heurística de "sistema" por corchetes. |
+| Enviar texto (Enter) | `ComposerComponent.send()` → `onEnviarMensaje()` → `EnvioDeMensajesService.send()` → `EnviarMensajeUseCase` → `ProveedorWhatsAppCloud.enviarMensaje()` | `POST /api/proveedor/enviar` (ruta relativa, sin `environment.apiUrl`) | Reintenta el POST 2 veces ante error. |
+| Adjuntar | `EnvioDeMensajesService.enviarConAdjunto()` valida tipo/tamaño (5/16/16/100 MB) | `POST {apiUrl}/api/proveedor/adjunto/subir` → `POST /api/proveedor/enviar` | |
 | Bloqueo por ventana de 24 h | `composer.component.ts:70-76` | — | Reemplaza el composer por un aviso que sugiere "usá una plantilla aprobada", pero no hay forma de enviarla. |
-| Reintentar fallido | `onReintentar()` (`:172-177`) solo cambia el estado a `sending` | — | **Roto**: `EnvioDeMensajesService.retry()` no se llama nunca. |
+| Reintentar fallido | `onReintentar()` (`:172-177`) solo cambia el estado a `enviando` | — | **Roto**: `EnvioDeMensajesService.retry()` no se llama nunca. |
 | Emoji | — | — | Deshabilitado. |
 
 ## Contactos
@@ -159,17 +159,17 @@ El store (`data-access/agente/configuracion.store.ts`) hace HTTP sin esperar el 
 |---|---|
 | Tras login/refresh, guarda el token de Mercure (no se usa: el resync se eliminó en la fase 4). | `auth.store.ts:75-88, 115-124` |
 | `fetch(${mercureUrl}/.well-known/mercure?topic=tickets)` **sin token**; parseo manual de líneas `data:`. | `core/tiempo-real/mercure.service.ts:46-83` |
-| Deduplica por `eventId` (últimos 1000). | `mercure.service.ts:102-113` |
+| Deduplica por `eventoId` (últimos 1000). | `mercure.service.ts:102-113` |
 | Emite al `EventBusService`; los stores reaccionan. | `mercure.service.ts:120-121` |
 
 | Evento | `TicketStore` | `ConversacionStore` |
 |---|---|---|
-| `ticket.created` | Agrega un ticket mínimo al inicio, **sin filtrar por workspace ni equipo**. | — |
-| `ticket.status_changed` | Actualiza estado si el ticket está cargado. | — |
-| `ticket.assigned` | Actualiza dueño, **fuerza `new → active`**, pone no leídos en 0. | — |
-| `message.added` | +1 no leído si es entrante y no es el ticket abierto; marca workspace pendiente si es de otro número. | Agrega el mensaje solo si es el ticket abierto (con guarda de duplicados). |
-| `message.updated` | — | Actualiza estado de entrega (`null` → `read`). |
-| `ticket.read` | No leídos = 0. | — |
+| `ticket.creado` | Agrega un ticket mínimo al inicio, **sin filtrar por workspace ni equipo**. | — |
+| `ticket.estado_cambiado` | Actualiza estado si el ticket está cargado. | — |
+| `ticket.asignado` | Actualiza dueño, **fuerza `new → active`**, pone no leídos en 0. | — |
+| `mensaje.agregado` | +1 no leído si es entrante y no es el ticket abierto; marca workspace pendiente si es de otro número. | Agrega el mensaje solo si es el ticket abierto (con guarda de duplicados). |
+| `mensaje.actualizado` | — | Actualiza estado de entrega (`null` → `leido`). |
+| `ticket.leido` | No leídos = 0. | — |
 
 Limitaciones: no hay detección de huecos ni resync (ese código nunca se ejecutaba y se eliminó en la fase 4); si el stream se cierra limpio no reconecta (`:67-69`); tras 10 fallos (`:156-162`) deja de intentar y solo se recupera recargando. El eco por Mercure de un mensaje propio no trae `sender_type`; si el `id` confirmado llega vacío, puede quedar duplicado.
 

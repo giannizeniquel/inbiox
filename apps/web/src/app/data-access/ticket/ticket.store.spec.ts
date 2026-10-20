@@ -341,18 +341,18 @@ describe('TicketStore', () => {
   // the unread badge; only genuine inbound (contact) messages should.
 
   // Test tickets use string ids ('t1'), so the payload is cast to the wire type.
-  function armarEventoDeMensajeAgregado(direccion: 'inbound' | 'outbound', ticketId = 't1'): EventoEnTiempoReal {
+  function armarEventoDeMensajeAgregado(direccion: 'entrante' | 'saliente', ticketId = 't1'): EventoEnTiempoReal {
     return {
-      eventId: 'evt-1',
-      eventType: TipoDeEventoEnTiempoReal.MessageAdded,
+      eventoId: 'evt-1',
+      tipoDeEvento: TipoDeEventoEnTiempoReal.MensajeAgregado,
       ticketId,
       payload: {
-        messageId: 1,
+        mensajeId: 1,
         ticketId,
-        content: 'Hi',
-        direction: direccion,
-        senderName: null,
-        createdAt: '2024-01-01T00:00:00Z',
+        contenido: 'Hi',
+        direccion: direccion,
+        remitenteNombre: null,
+        creadoAt: '2024-01-01T00:00:00Z',
         externalId: null,
       },
     } as unknown as EventoEnTiempoReal;
@@ -362,7 +362,7 @@ describe('TicketStore', () => {
     store.cargarTickets([makeTicket({ ticket_id: 't1', id: 't1', metrics: { unread_count: 0 } })]);
     store.setActiveTicket(null); // no active ticket — t1 is not active
 
-    applyTicketEvent(armarEventoDeMensajeAgregado('outbound'), store, {} as EspacioDeTrabajoStore);
+    applyTicketEvent(armarEventoDeMensajeAgregado('saliente'), store, {} as EspacioDeTrabajoStore);
 
     expect(store.tickets()[0].metrics.unread_count).toBe(0);
   });
@@ -371,7 +371,7 @@ describe('TicketStore', () => {
     store.cargarTickets([makeTicket({ ticket_id: 't1', id: 't1', metrics: { unread_count: 0 } })]);
     store.setActiveTicket(null);
 
-    applyTicketEvent(armarEventoDeMensajeAgregado('inbound'), store, {} as EspacioDeTrabajoStore);
+    applyTicketEvent(armarEventoDeMensajeAgregado('entrante'), store, {} as EspacioDeTrabajoStore);
 
     expect(store.tickets()[0].metrics.unread_count).toBe(1);
   });

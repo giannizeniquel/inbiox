@@ -103,7 +103,7 @@ export class ConversacionComponent {
     let ultimoDeMensajes: string | null = null;
     const mensajes = this.mensajes();
     for (let i = mensajes.length - 1; i >= 0; i--) {
-      if (mensajes[i].direction === 'inbound') {
+      if (mensajes[i].direction === 'entrante') {
         ultimoDeMensajes = mensajes[i].createdAt;
         break;
       }
@@ -143,7 +143,7 @@ export class ConversacionComponent {
           .subscribe({
             error: () => { /* fire-and-forget */ },
           });
-        // Note: no local markAsRead — badge clears via Mercure ticket.read event
+        // Note: no local markAsRead — badge clears via Mercure ticket.leido event
         // which only fires when the assigned agent reads the conversation.
       }
     }
@@ -197,7 +197,7 @@ export class ConversacionComponent {
         next: () => {
           this.resolviendo.set(false);
           // No local store write on purpose: the backend emits
-          // `ticket.status_changed`, which TicketStore already applies via the
+          // `ticket.estado_cambiado`, which TicketStore already applies via the
           // Mercure pipeline. Patching here too would duplicate the update path
           // and break the project's event-driven realtime convention.
         },

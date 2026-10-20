@@ -11,7 +11,7 @@ import { FileTypeIconComponent } from '../../file-type-icon/file-type-icon.compo
     @if (docUrl()) {
       <a
         [href]="docUrl()!"
-        [download]="adjunto().filename"
+        [download]="adjunto().nombreDeArchivo"
         class="media-document"
         target="_blank"
         rel="noopener noreferrer"
@@ -20,7 +20,7 @@ import { FileTypeIconComponent } from '../../file-type-icon/file-type-icon.compo
           <app-file-type-icon [mimeType]="adjunto().mimeType" [size]="28" />
         </span>
         <span class="media-document__info">
-          <span class="media-document__name">{{ adjunto().filename }}</span>
+          <span class="media-document__name">{{ adjunto().nombreDeArchivo }}</span>
           <span class="media-document__size">{{ fileSizeDisplay() }}</span>
         </span>
       </a>
@@ -30,7 +30,7 @@ import { FileTypeIconComponent } from '../../file-type-icon/file-type-icon.compo
           <app-file-type-icon [mimeType]="adjunto().mimeType" [size]="28" />
         </span>
         <span class="media-document__info">
-          <span class="media-document__name">{{ adjunto().filename }}</span>
+          <span class="media-document__name">{{ adjunto().nombreDeArchivo }}</span>
           <span class="media-document__size">{{ fileSizeDisplay() }}</span>
         </span>
       </div>
@@ -124,7 +124,7 @@ export class AdjuntoDocumentoComponent {
   }
 
   fileSizeDisplay(): string {
-    const bytes = this.adjunto().size;
+    const bytes = this.adjunto().tamanio;
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;

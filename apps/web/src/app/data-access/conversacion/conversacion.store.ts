@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs';
 import { Mensaje } from './mensaje.model';
 import { EventoEnTiempoReal, TipoDeEventoEnTiempoReal,
-  MessageAddedPayload, MessageUpdatedPayload } from '../../core/tiempo-real/evento-en-tiempo-real.model';
+  MensajeAgregadoPayload, MensajeActualizadoPayload } from '../../core/tiempo-real/evento-en-tiempo-real.model';
 import { EventBusService } from '../../core/tiempo-real/event-bus.service';
 import { TicketStore } from '../ticket/ticket.store';
 
@@ -48,8 +48,8 @@ export class ConversacionStore {
 
       eventBus.events$.pipe(
         filter(e =>
-          e.eventType === TipoDeEventoEnTiempoReal.MessageAdded
-          || e.eventType === TipoDeEventoEnTiempoReal.MessageUpdated
+          e.tipoDeEvento === TipoDeEventoEnTiempoReal.MensajeAgregado
+          || e.tipoDeEvento === TipoDeEventoEnTiempoReal.MensajeActualizado
         ),
         takeUntilDestroyed(destroyRef),
       ).subscribe(e => this.onEventoEnTiempoReal(e));
@@ -63,9 +63,9 @@ export class ConversacionStore {
    * Logic mirrors MercureService.handleEvent() for conversation-related types.
    */
   private onEventoEnTiempoReal(event: EventoEnTiempoReal): void {
-    switch (event.eventType) {
-      case TipoDeEventoEnTiempoReal.MessageAdded: {
-        const p = event.payload as MessageAddedPayload;
+    switch (event.tipoDeEvento) {
+      case TipoDeEventoEnTiempoReal.MensajeAgregado: {
+        const p = event.payload as MensajeAgregadoPayload;
         // Ignore messages that don't belong to the active conversation/ticket.
         // Prevents a message from another contact's conversation from leaking
         // into the currently open chat.
@@ -77,29 +77,29 @@ export class ConversacionStore {
         // also broadcasts via Mercure, so the sender's own optimistic
         // confirmMessage() may already have this id before the echo
         // arrives (or vice versa) — never insert the same server id twice.
-        if (this.mensajes().some(m => m.id === String(p.messageId))) {
+        if (this.mensajes().some(m => m.id === String(p.mensajeId))) {
           return;
         }
         const mensaje: Mensaje = {
-          id: String(p.messageId),
+          id: String(p.mensajeId),
           ticketId: String(p.ticketId),
-          content: p.content,
-          direction: p.direction,
-          sender: p.direction === 'outbound' ? 'agent' : 'customer',
-          deliveryStatus: 'sent',
-          createdAt: p.createdAt,
+          content: p.contenido,
+          direction: p.direccion,
+          sender: p.direccion === 'saliente' ? 'agent' : 'customer',
+          deliveryStatus: 'enviado',
+          createdAt: p.creadoAt,
           externalId: p.externalId ?? undefined,
-          media: p.media ?? undefined,
+          media: p.adjunto ?? undefined,
         };
         this.agregarMensaje(mensaje);
         break;
       }
 
-      case TipoDeEventoEnTiempoReal.MessageUpdated: {
-        const p = event.payload as MessageUpdatedPayload;
+      case TipoDeEventoEnTiempoReal.MensajeActualizado: {
+        const p = event.payload as MensajeActualizadoPayload;
         this.updateEstadoDeMensaje(
-          String(p.messageId),
-          (p.status ?? 'read') as Mensaje['deliveryStatus'],
+          String(p.mensajeId),
+          (p.estadoDeEntrega ?? 'leido') as Mensaje['deliveryStatus'],
         );
         break;
       }
@@ -137,9 +137,9 @@ export class ConversacionStore {
       tempId,
       ticketId,
       content,
-      direction: 'outbound',
+      direction: 'saliente',
       sender: 'agent',
-      deliveryStatus: 'sending',
+      deliveryStatus: 'enviando',
       createdAt: new Date().toISOString(),
       media: adjunto,
     };
@@ -209,13 +209,13 @@ export class ConversacionStore {
   }
 
   /**
-   * Retry a failed message by resetting its status to 'sending'.
+   * Retry a failed message by resetting its status to 'enviando'.
    * Returns the cached payload for retry.
    */
   reintentarMensaje(tempId: string): { content: string; ticketId: string } | null {
     const cached = this.mensajeCache.get(tempId);
     if (cached) {
-      this.updateEstadoDeMensaje(tempId, 'sending');
+      this.updateEstadoDeMensaje(tempId, 'enviando');
       return cached;
     }
     return null;

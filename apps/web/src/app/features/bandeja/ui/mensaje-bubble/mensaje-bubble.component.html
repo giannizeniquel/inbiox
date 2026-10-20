@@ -17,8 +17,8 @@
       <!-- Media rendering -->
       @if (hasAdjunto()) {
         <div class="message-bubble__media">
-          @switch (mensaje().media!.kind) {
-            @case ('image') {
+          @switch (mensaje().media!.tipo) {
+            @case ('imagen') {
               <app-adjunto-imagen [adjunto]="mensaje().media!" [mensajeId]="mensaje().id" />
             }
             @case ('video') {
@@ -27,12 +27,12 @@
             @case ('audio') {
               <app-adjunto-audio [adjunto]="mensaje().media!" [mensajeId]="mensaje().id" />
             }
-            @case ('document') {
-              <app-adjunto-documento [adjunto]="mensaje().media!" [mensajeId]="mensaje().id" [pending]="mensaje().deliveryStatus === 'sending'" />
+            @case ('documento') {
+              <app-adjunto-documento [adjunto]="mensaje().media!" [mensajeId]="mensaje().id" [pending]="mensaje().deliveryStatus === 'enviando'" />
             }
           }
-          @if (mensaje().media!.caption) {
-            <p class="message-bubble__caption">{{ mensaje().media!.caption }}</p>
+          @if (mensaje().media!.leyenda) {
+            <p class="message-bubble__caption">{{ mensaje().media!.leyenda }}</p>
           }
         </div>
       }

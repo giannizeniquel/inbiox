@@ -139,7 +139,7 @@ export class AppShellComponent implements OnDestroy {
     this.mensajeApi.getMensajes(ticketId, 20, 0).pipe(take(1)).subscribe({
       next: (resp: GetMensajesResponse) => {
         this.conversacionStore.cargarMensajes(mapearMensajesDeApiACanonicos(resp, ticketId));
-        this.conversacionStore.setHasMore(resp.meta.has_more);
+        this.conversacionStore.setHasMore(resp.meta.hayMas);
         this.conversacionStore.setLoading(false);
       },
       error: () => {

@@ -4,6 +4,7 @@ import { EnviarMensajeUseCase } from './enviar-mensaje.use-case';
 import { ReintentarMensajeUseCase } from './reintentar-mensaje.use-case';
 import { ConversacionStore } from './conversacion.store';
 import { Mensaje } from './mensaje.model';
+import { Adjunto } from './adjunto.model';
 import { generateTempId } from './temp-id.util';
 import { retryWithBackoff, RetryConfig } from '../../core/http/retry.util';
 import { Mensaje as ProviderMessage } from './proveedor-whatsapp-cloud';
@@ -47,10 +48,10 @@ export class EnvioDeMensajesService {
 
   /** Client-side file size caps (bytes) */
   private readonly FILE_SIZE_CAPS: Record<string, number> = {
-    image: 5 * 1024 * 1024,
+    imagen: 5 * 1024 * 1024,
     video: 16 * 1024 * 1024,
     audio: 16 * 1024 * 1024,
-    document: 100 * 1024 * 1024,
+    documento: 100 * 1024 * 1024,
   };
 
   /**
@@ -80,7 +81,7 @@ export class EnvioDeMensajesService {
       },
       error: () => {
         // All retries exhausted — update to failed
-        this.conversacionStore.updateEstadoDeMensaje(tempId, 'failed');
+        this.conversacionStore.updateEstadoDeMensaje(tempId, 'fallido');
         this.resultadosDeEnvio.next({
           tempId,
           success: false,
@@ -94,7 +95,7 @@ export class EnvioDeMensajesService {
 
   /**
    * Send a message with a file attachment.
-   * Flow: client-side validation → POST /api/provider/media/upload → send message with mediaId
+   * Flow: client-side validation → POST /api/proveedor/adjunto/subir → send message with mediaId
    *
    * @param ticketId - The ticket/chat ID
    * @param content - Message content (caption)
@@ -112,7 +113,7 @@ export class EnvioDeMensajesService {
     const validationError = this.validateFile(file);
     if (validationError) {
       this.conversacionStore.agregarMensajeOptimista(tempId, content, ticketId, adjuntoOptimista);
-      this.conversacionStore.updateEstadoDeMensaje(tempId, 'failed');
+      this.conversacionStore.updateEstadoDeMensaje(tempId, 'fallido');
       this.resultadosDeEnvio.next({
         tempId,
         success: false,
@@ -126,11 +127,11 @@ export class EnvioDeMensajesService {
 
     // Upload file to server
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('archivo', file);
     formData.append('ticketId', ticketId);
 
     this.http.post<{ mediaId: string; key: string | null }>(
-      `${environment.apiUrl}/api/provider/media/upload`,
+      `${environment.apiUrl}/api/proveedor/adjunto/subir`,
       formData
     ).pipe(
       switchMap((resultadoDeSubida) => {
@@ -150,7 +151,7 @@ export class EnvioDeMensajesService {
       catchError((error) => {
         // Handle 413/415 as user-facing errors
         if (error.status === 413) {
-          return throwError(() => new Error(`El archivo excede el tamaño máximo: ${error.error?.maxSize ? (error.error.maxSize / 1024 / 1024).toFixed(0) : '?'}MB`));
+          return throwError(() => new Error(`El archivo excede el tamaño máximo: ${error.error?.tamanioMaximo ? (error.error.tamanioMaximo / 1024 / 1024).toFixed(0) : '?'}MB`));
         }
         if (error.status === 415) {
           return throwError(() => new Error('Tipo de archivo no permitido'));
@@ -164,7 +165,7 @@ export class EnvioDeMensajesService {
       },
       error: (err: unknown) => {
         console.error('[TipoDeRemitente] sendWithMedia failed:', err);
-        this.conversacionStore.updateEstadoDeMensaje(tempId, 'failed');
+        this.conversacionStore.updateEstadoDeMensaje(tempId, 'fallido');
         this.resultadosDeEnvio.next({
           tempId,
           success: false,
@@ -189,7 +190,7 @@ export class EnvioDeMensajesService {
       return;
     }
 
-    this.conversacionStore.updateEstadoDeMensaje(tempId, 'sending');
+    this.conversacionStore.updateEstadoDeMensaje(tempId, 'enviando');
 
     this.reintentarMensajeUseCase.execute({
       tempId,
@@ -202,7 +203,7 @@ export class EnvioDeMensajesService {
       },
       error: (err: unknown) => {
         console.error('[TipoDeRemitente] Retry failed:', err);
-        this.conversacionStore.updateEstadoDeMensaje(tempId, 'failed');
+        this.conversacionStore.updateEstadoDeMensaje(tempId, 'fallido');
         this.resultadosDeEnvio.next({
           tempId,
           success: false,
@@ -253,10 +254,10 @@ export class EnvioDeMensajesService {
   }
 
   private getFileKind(mimeType: string): string {
-    if (mimeType.startsWith('image/')) return 'image';
+    if (mimeType.startsWith('image/')) return 'imagen';
     if (mimeType.startsWith('video/')) return 'video';
     if (mimeType.startsWith('audio/')) return 'audio';
-    return 'document';
+    return 'documento';
   }
 
   /**
@@ -264,17 +265,17 @@ export class EnvioDeMensajesService {
    * Uses a local blob URL for image/video/audio so the file renders
    * before the server confirms (no pre-signed URL yet).
    */
-  private armarAdjuntoOptimista(file: File, caption: string) {
-    const kind = this.getFileKind(file.type) as 'image' | 'video' | 'audio' | 'document';
-    const localUrl = kind !== 'document' ? URL.createObjectURL(file) : undefined;
+  private armarAdjuntoOptimista(file: File, caption: string): Adjunto {
+    const tipo = this.getFileKind(file.type) as Adjunto['tipo'];
+    const localUrl = tipo !== 'documento' ? URL.createObjectURL(file) : undefined;
 
     return {
       key: '',
       mimeType: file.type,
-      filename: file.name,
-      size: file.size,
-      kind,
-      caption: caption || undefined,
+      nombreDeArchivo: file.name,
+      tamanio: file.size,
+      tipo,
+      leyenda: caption || undefined,
       localUrl,
     };
   }
@@ -294,7 +295,7 @@ function toCanonical(
     tempId,
     ticketId,
     content: pm.content || content,
-    direction: 'outbound',
+    direction: 'saliente',
     sender: pm.sender ?? 'agent',
     deliveryStatus: pm.deliveryStatus,
     createdAt: pm.createdAt || new Date().toISOString(),

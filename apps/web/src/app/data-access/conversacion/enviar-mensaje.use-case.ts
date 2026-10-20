@@ -48,7 +48,7 @@ export class EnvioDeMensajeFallido extends Error {
  * - Accepts ticketId and content
  * - Sends via ProveedorWhatsAppCloud
  * - Returns reconciled Message with tempId
- * - Throws EnvioDeMensajeFallido on provider rejection (deliveryStatus === 'failed')
+ * - Throws EnvioDeMensajeFallido on provider rejection (deliveryStatus === 'fallido')
  *
  * Architecture:
  * - Stores NEVER call APIs directly — all routing through Application Layer
@@ -70,11 +70,11 @@ export class EnviarMensajeUseCase {
    * 1. Generate or use caller-provided tempId
    * 2. Send via ProveedorWhatsAppCloud
    * 3. Map tempId to provider-assigned id on success
-   * 4. Throw EnvioDeMensajeFallido if deliveryStatus === 'failed'
+   * 4. Throw EnvioDeMensajeFallido if deliveryStatus === 'fallido'
    *
    * @param input - EnviarMensajeInput with ticketId and content
    * @returns Observable<EnviarMensajeOutput> with the sent message
-   * @throws EnvioDeMensajeFallido when provider returns deliveryStatus === 'failed'
+   * @throws EnvioDeMensajeFallido when provider returns deliveryStatus === 'fallido'
    */
   execute(input: EnviarMensajeInput): Observable<EnviarMensajeOutput> {
     const tempId = input.tempId ?? generateTempId();
@@ -111,12 +111,12 @@ export class EnviarMensajeUseCase {
         return {
           message: reconciled,
           tempId,
-          success: reconciled.deliveryStatus !== 'failed',
+          success: reconciled.deliveryStatus !== 'fallido',
         };
       }),
       map(output => {
         // Handle failure status from provider — throw so subscriber can catch
-        if (output.message.deliveryStatus === 'failed') {
+        if (output.message.deliveryStatus === 'fallido') {
           throw new EnvioDeMensajeFallido(
             output.message.failedReason || 'Message send failed',
             output

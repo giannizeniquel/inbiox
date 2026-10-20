@@ -41,18 +41,18 @@ export class MensajeBubbleComponent {
   tipoDeMensaje = computed<MessageType>(() => {
     const m = this.mensaje();
     // System messages have explicit direction or bracketed content pattern
-    if (m.direction === 'system' || m.direction === 'inbound' && m.content.startsWith('[') && m.content.endsWith(']')) {
+    if (m.direction === 'system' || m.direction === 'entrante' && m.content.startsWith('[') && m.content.endsWith(']')) {
       return 'system';
     }
-    return m.direction === 'outbound' ? 'agent' : 'client';
+    return m.direction === 'saliente' ? 'agent' : 'client';
   });
 
   bubbleClasses = computed(() => ({
     'message-bubble--agent': this.tipoDeMensaje() === 'agent',
     'message-bubble--client': this.tipoDeMensaje() === 'client',
     'message-bubble--system': this.tipoDeMensaje() === 'system',
-    'message-bubble--failed': this.mensaje().deliveryStatus === 'failed',
-    'message-bubble--sending': this.mensaje().deliveryStatus === 'sending',
+    'message-bubble--failed': this.mensaje().deliveryStatus === 'fallido',
+    'message-bubble--sending': this.mensaje().deliveryStatus === 'enviando',
   }));
 
   hasAdjunto = computed(() => {
@@ -67,7 +67,7 @@ export class MensajeBubbleComponent {
    */
   protected readonly isRetriable = computed(() => {
     const m = this.mensaje();
-    return m.deliveryStatus === 'failed' && !!m.tempId;
+    return m.deliveryStatus === 'fallido' && !!m.tempId;
   });
 
   timeDisplay(): string {
@@ -77,17 +77,17 @@ export class MensajeBubbleComponent {
 
   estadoIcon(): string {
     switch (this.mensaje().deliveryStatus) {
-      case 'sending': return '⏳';
-      case 'sent': return '✓';
-      case 'delivered': return '✓✓';
-      case 'read': return '✓✓';
-      case 'failed': return '⚠';
+      case 'enviando': return '⏳';
+      case 'enviado': return '✓';
+      case 'entregado': return '✓✓';
+      case 'leido': return '✓✓';
+      case 'fallido': return '⚠';
       default: return '';
     }
   }
 
   onFailedClick(): void {
-    if (this.mensaje().deliveryStatus === 'failed' && this.mensaje().tempId) {
+    if (this.mensaje().deliveryStatus === 'fallido' && this.mensaje().tempId) {
       this.reintentar.emit(this.mensaje().tempId!);
     }
   }

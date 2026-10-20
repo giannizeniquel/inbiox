@@ -9,7 +9,7 @@ import { createHttpErrorHandler } from '../../core/http/http-error.util';
 
 export interface GetMensajesResponse {
   data: MensajeDto[];
-  meta: { has_more: boolean; next_cursor?: string };
+  meta: { hayMas: boolean; siguienteCursor?: string };
 }
 
 @Injectable({ providedIn: 'root' })
@@ -23,7 +23,7 @@ export class MensajeApiService {
       offset: offset.toString(),
     };
     const call = this.http.get<GetMensajesResponse>(
-      `${this.baseUrl}/api/tickets/${ticketId}/messages`,
+      `${this.baseUrl}/api/tickets/${ticketId}/mensajes`,
       { params }
     );
     return retryWithBackoff(call).pipe(

@@ -10,7 +10,7 @@ export interface EventoDeLineaDeTiempoDTO {
   ticketStatus?: string;
   assignedTo?: string;
   agentId?: number;
-  direction?: 'inbound' | 'outbound';
+  direction?: 'entrante' | 'saliente';
 }
 
 export interface EventoDeLineaDeTiempoResponse {

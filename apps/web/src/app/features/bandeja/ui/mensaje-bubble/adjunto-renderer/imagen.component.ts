@@ -9,7 +9,7 @@ import { UrlDeAdjuntoService } from '../../../../../data-access/conversacion/url
     @if (imageUrl()) {
       <img
         [src]="imageUrl()!"
-        [alt]="adjunto().filename"
+        [alt]="adjunto().nombreDeArchivo"
         class="media-image"
         loading="lazy"
         (error)="onImageError()"

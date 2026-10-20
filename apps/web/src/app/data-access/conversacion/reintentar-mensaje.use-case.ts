@@ -105,8 +105,8 @@ export class ReintentarMensajeUseCase {
         return {
           message: reconciled,
           tempId,
-          success: reconciled.deliveryStatus !== 'failed',
-          error: reconciled.deliveryStatus === 'failed' ? reconciled.failedReason : undefined,
+          success: reconciled.deliveryStatus !== 'fallido',
+          error: reconciled.deliveryStatus === 'fallido' ? reconciled.failedReason : undefined,
         };
       })
     );

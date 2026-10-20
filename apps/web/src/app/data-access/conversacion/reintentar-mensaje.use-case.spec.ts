@@ -16,7 +16,7 @@ describe('ReintentarMensajeUseCase', () => {
     ticketId: 'ticket-1',
     content: 'Retried message',
     sender: 'agent',
-    deliveryStatus: 'sent',
+    deliveryStatus: 'enviado',
     createdAt: '2024-01-01T00:01:00Z',
   };
 
@@ -53,7 +53,7 @@ describe('ReintentarMensajeUseCase', () => {
           tempId: 'temp-1',
           ticketId: 'ticket-1',
           content: 'Retried message',
-          deliveryStatus: 'sent',
+          deliveryStatus: 'enviado',
         }));
         done();
       },
@@ -85,7 +85,7 @@ describe('ReintentarMensajeUseCase', () => {
   it('should set error field when deliveryStatus is failed', (done) => {
     const mensajeFallido: Mensaje = {
       ...mensajeDeProveedor,
-      deliveryStatus: 'failed',
+      deliveryStatus: 'fallido',
       failedReason: 'Channel unavailable',
     };
     proveedorSpy.enviarMensaje.and.returnValue(of(mensajeFallido));

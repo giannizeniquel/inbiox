@@ -1,10 +1,10 @@
 /**
  * ProveedorWhatsAppCloud — sends agent messages through the backend proxy
- * (/api/provider/*), so the META_ACCESS_TOKEN never reaches the browser.
+ * (/api/proveedor/*), so the META_ACCESS_TOKEN never reaches the browser.
  *
  * Pipeline:
  *   ComposerComponent → EnvioDeMensajesService → EnviarMensajeUseCase
- *     → ProveedorWhatsAppCloud.sendMessage() → HTTP POST /api/provider/send
+ *     → ProveedorWhatsAppCloud.sendMessage() → HTTP POST /api/proveedor/enviar
  *       → ProviderProxyController → GraphClient → Graph API → WhatsApp
  *
  * The optimistic → confirm lifecycle is handled by EnvioDeMensajesService:
@@ -19,7 +19,7 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 /** Message delivery status. */
-export type DeliveryStatus = 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
+export type DeliveryStatus = 'enviando' | 'enviado' | 'entregado' | 'leido' | 'fallido';
 
 /** Message sender type. */
 export type TipoDeRemitente = 'agent' | 'customer' | 'system';
@@ -37,6 +37,13 @@ export interface Mensaje {
   externalId?: string;
 }
 
+/** Response of `POST /api/proveedor/enviar` */
+interface RespuestaDeEnvio {
+  mensajeId: number | null;
+  externalId: string | null;
+  estadoDeEntrega: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ProveedorWhatsAppCloud {
   private readonly http = inject(HttpClient);
@@ -44,22 +51,22 @@ export class ProveedorWhatsAppCloud {
   /**
    * Send a message via backend proxy.
    *
-   * POST /api/provider/send { ticketId, content }
-   * Response: { messageId: number, externalId: string, status: string }
+   * POST /api/proveedor/enviar { ticketId, contenido }
+   * Response: { mensajeId: number, externalId: string, estadoDeEntrega: string }
    *
-   * `messageId` is the DB ID (used for media URL fetch); `externalId` is the WAMID.
+   * `mensajeId` is the DB ID (used for media URL fetch); `externalId` is the WAMID.
    * EnvioDeMensajesService handles optimistic→confirm reconciliation.
    */
   enviarMensaje(ticketId: string, content: string): Observable<Mensaje> {
-    return this.http.post<{ messageId: number | null; externalId: string | null; status: string }>(
-      '/api/provider/send',
-      { ticketId, content }
+    return this.http.post<RespuestaDeEnvio>(
+      '/api/proveedor/enviar',
+      { ticketId, contenido: content }
     ).pipe(
       map(response => ({
-        id: response.messageId != null ? String(response.messageId) : '',
+        id: response.mensajeId != null ? String(response.mensajeId) : '',
         ticketId,
         content,
-        deliveryStatus: 'sent' as DeliveryStatus,
+        deliveryStatus: 'enviado' as DeliveryStatus,
         createdAt: new Date().toISOString(),
         sender: 'agent' as TipoDeRemitente,
         externalId: response.externalId ?? undefined,
@@ -70,7 +77,7 @@ export class ProveedorWhatsAppCloud {
   /**
    * Send a message with a media attachment via backend proxy.
    *
-   * POST /api/provider/send { ticketId, content, mediaId, mimeType, caption, mediaKey, filename, size }
+   * POST /api/proveedor/enviar { ticketId, contenido, mediaId, mimeType, leyenda, claveDeAdjunto, nombreDeArchivo, tamanio }
    * Response: Message
    */
   enviarMensajeConAdjunto(
@@ -82,21 +89,21 @@ export class ProveedorWhatsAppCloud {
     filename?: string,
     size?: number,
   ): Observable<Mensaje> {
-    return this.http.post<{ messageId: number | null; externalId: string | null; status: string }>('/api/provider/send', {
+    return this.http.post<RespuestaDeEnvio>('/api/proveedor/enviar', {
       ticketId,
-      content: caption || '',
+      contenido: caption || '',
       mediaId: adjuntoId,
       mimeType,
-      caption,
-      mediaKey: adjuntoKey,
-      filename,
-      size,
+      leyenda: caption,
+      claveDeAdjunto: adjuntoKey,
+      nombreDeArchivo: filename,
+      tamanio: size,
     }).pipe(
       map(response => ({
-        id: response.messageId != null ? String(response.messageId) : '',
+        id: response.mensajeId != null ? String(response.mensajeId) : '',
         ticketId,
         content: caption || '',
-        deliveryStatus: 'sent' as DeliveryStatus,
+        deliveryStatus: 'enviado' as DeliveryStatus,
         createdAt: new Date().toISOString(),
         sender: 'agent' as TipoDeRemitente,
         externalId: response.externalId ?? undefined,

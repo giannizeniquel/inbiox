@@ -14,16 +14,16 @@ export interface Mensaje {
   /** Message text content */
   content: string;
   /** Message direction relative to the support team */
-  direction: 'inbound' | 'outbound' | 'system';
+  direction: 'entrante' | 'saliente' | 'system';
   /** Who sent this message */
   sender: 'agent' | 'customer' | 'system';
   /** Delivery lifecycle status */
-  deliveryStatus: 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
+  deliveryStatus: 'enviando' | 'enviado' | 'entregado' | 'leido' | 'fallido';
   /** ISO 8601 timestamp */
   createdAt: string;
   /** External provider message ID (e.g. WhatsApp message ID) */
   externalId?: string;
-  /** Reason for delivery failure (when deliveryStatus === 'failed') */
+  /** Reason for delivery failure (when deliveryStatus === 'fallido') */
   failedReason?: string;
   /** Optional media attachment */
   media?: Adjunto;
@@ -34,19 +34,19 @@ export interface Mensaje {
  * Mapped to canonical Message by message-mapper.util.
  */
 export interface MensajeDto {
-  message_id: number;
-  direction: 'inbound' | 'outbound' | 'system';
-  content: string;
-  created_at: string;
-  deliveryStatus?: string;
-  media?: {
+  mensajeId: number;
+  direccion: 'entrante' | 'saliente' | 'system';
+  contenido: string;
+  creadoAt: string;
+  estadoDeEntrega?: string;
+  adjunto?: {
     key: string;
     mimeType: string;
-    filename: string;
-    size: number;
-    kind: 'image' | 'video' | 'audio' | 'document';
+    nombreDeArchivo: string;
+    tamanio: number;
+    tipo: 'imagen' | 'video' | 'audio' | 'documento';
     providerId?: string;
-    caption?: string;
+    leyenda?: string;
   };
 }
 

@@ -5,7 +5,7 @@ import { environment } from '../../../environments/environment';
 
 export interface UrlDeAdjuntoResponse {
   url: string;
-  expiresAt: string;
+  vencimientoAt: string;
 }
 
 interface CachedUrl {
@@ -16,7 +16,7 @@ interface CachedUrl {
 /**
  * UrlDeAdjuntoService — fetches and caches pre-signed media URLs.
  *
- * Caches by messageId until expiresAt minus 30s grace period.
+ * Caches by mensajeId until vencimientoAt minus 30s grace period.
  * Re-fetches automatically on 403 (expired URL).
  */
 @Injectable({ providedIn: 'root' })
@@ -36,14 +36,14 @@ export class UrlDeAdjuntoService {
 
     // Return cached if valid (with grace period)
     if (cached && cached.expiresAt.getTime() - this.GRACE_SECONDS * 1000 > now.getTime()) {
-      return of({ url: cached.url, expiresAt: cached.expiresAt.toISOString() });
+      return of({ url: cached.url, vencimientoAt: cached.expiresAt.toISOString() });
     }
 
     return this.fetchUrl(mensajeId).pipe(
       tap((response) => {
         this.cache.set(mensajeId, {
           url: response.url,
-          expiresAt: new Date(response.expiresAt),
+          expiresAt: new Date(response.vencimientoAt),
         });
       }),
       catchError((error) => {
@@ -54,7 +54,7 @@ export class UrlDeAdjuntoService {
             tap((response) => {
               this.cache.set(mensajeId, {
                 url: response.url,
-                expiresAt: new Date(response.expiresAt),
+                expiresAt: new Date(response.vencimientoAt),
               });
             })
           );
@@ -77,7 +77,7 @@ export class UrlDeAdjuntoService {
 
   private fetchUrl(mensajeId: string): Observable<UrlDeAdjuntoResponse> {
     return this.http.get<UrlDeAdjuntoResponse>(
-      `${environment.apiUrl}/api/messages/${mensajeId}/media`
+      `${environment.apiUrl}/api/mensajes/${mensajeId}/adjunto`
     );
   }
 }

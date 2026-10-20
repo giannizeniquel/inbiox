@@ -9,17 +9,16 @@
  */
 
 // ──────────────────────────────────────────────
-// Enum — must match PHP App\Application\Realtime\TipoDeEventoEnTiempoReal exactly
+// Enum — must match PHP App\Compartido\Realtime\TipoDeEventoEnTiempoReal exactly
 // ──────────────────────────────────────────────
 
 export enum TipoDeEventoEnTiempoReal {
-  TicketCreated = 'ticket.created',
-  TicketStatusChanged = 'ticket.status_changed',
-  TicketAssigned = 'ticket.assigned',
-  MessageAdded = 'message.added',
-  MessageUpdated = 'message.updated',
-  ConversationUpdated = 'conversation.updated',
-  TicketRead = 'ticket.read',
+  TicketCreado = 'ticket.creado',
+  EstadoDeTicketCambiado = 'ticket.estado_cambiado',
+  TicketAsignado = 'ticket.asignado',
+  MensajeAgregado = 'mensaje.agregado',
+  MensajeActualizado = 'mensaje.actualizado',
+  TicketLeido = 'ticket.leido',
 }
 
 // ──────────────────────────────────────────────
@@ -27,12 +26,11 @@ export enum TipoDeEventoEnTiempoReal {
 // ──────────────────────────────────────────────
 
 export interface EventoEnTiempoReal<T = unknown> {
-  eventId: string;
+  eventoId: string;
   sequence: number;
-  timestamp: string;
-  eventType: TipoDeEventoEnTiempoReal;
+  ocurridoAt: string;
+  tipoDeEvento: TipoDeEventoEnTiempoReal;
   ticketId?: string;
-  conversationId?: string;
   payload: T;
 }
 
@@ -40,67 +38,60 @@ export interface EventoEnTiempoReal<T = unknown> {
 // Typed payload interfaces per event type
 // ──────────────────────────────────────────────
 
-/** Payload for `message.added` events */
-export interface MessageAddedPayload {
-  messageId: number;
+/** Payload for `mensaje.agregado` events */
+export interface MensajeAgregadoPayload {
+  mensajeId: number;
   ticketId: number;
-  content: string;
-  direction: 'inbound' | 'outbound';
-  senderName: string | null;
-  createdAt: string;
+  contenido: string;
+  direccion: 'entrante' | 'saliente';
+  remitenteNombre: string | null;
+  creadoAt: string;
   externalId: string | null;
   phoneNumberId?: string | null;
-  media?: {
+  adjunto?: {
     key: string;
     mimeType: string;
-    filename: string;
-    size: number;
-    kind: 'image' | 'video' | 'audio' | 'document';
+    nombreDeArchivo: string;
+    tamanio: number;
+    tipo: 'imagen' | 'video' | 'audio' | 'documento';
     providerId?: string;
-    caption?: string;
+    leyenda?: string;
   } | null;
 }
 
-/** Payload for `ticket.created` events */
-export interface TicketCreatedPayload {
+/** Payload for `ticket.creado` events */
+export interface TicketCreadoPayload {
   ticketId: number;
-  contactId: number;
-  conversationId: number;
-  status: string;
-  priority: number;
-  createdAt: string;
+  contactoId: number;
+  conversacionId: number;
+  estado: string;
+  prioridad: string;
+  creadoAt: string;
 }
 
-/** Payload for `ticket.status_changed` events */
-export interface TicketStatusChangedPayload {
+/** Payload for `ticket.estado_cambiado` events */
+export interface EstadoDeTicketCambiadoPayload {
   ticketId: number;
-  previousStatus: string | null;
-  newStatus: string;
-  changedAt: string;
+  estadoAnterior: string | null;
+  estadoNuevo: string;
+  cambiadoAt: string;
 }
 
-/** Payload for `ticket.assigned` events */
-export interface TicketAssignedPayload {
+/** Payload for `ticket.asignado` events */
+export interface TicketAsignadoPayload {
   ticketId: number;
-  assigneeId: number;
-  assigneeName?: string | null;
-  assignedAt: string;
+  responsableId: number;
+  responsableNombre?: string | null;
+  asignadoAt: string;
 }
 
-/** Payload for `message.updated` events */
-export interface MessageUpdatedPayload {
-  messageId: number;
+/** Payload for `mensaje.actualizado` events */
+export interface MensajeActualizadoPayload {
+  mensajeId: number;
   ticketId: number;
-  status: string | null;
-  failedReason: string | null;
-  updatedAt: string;
-}
-
-/** Payload for `conversation.updated` events */
-export interface ConversationUpdatedPayload {
-  conversationId: number;
-  ticketId: number;
-  lastMessageAt: string | null;
+  estadoDeEntrega: string | null;
+  motivoDeFallo: string | null;
+  actualizadoAt: string;
 }
 
 // ──────────────────────────────────────────────
@@ -113,9 +104,9 @@ export interface ConversationUpdatedPayload {
  * TypeScript produces a compile-time error.
  *
  * Usage:
- *   switch (event.eventType) {
- *     case TipoDeEventoEnTiempoReal.MessageAdded: ... break;
- *     default: assertNever(event.eventType);
+ *   switch (event.tipoDeEvento) {
+ *     case TipoDeEventoEnTiempoReal.MensajeAgregado: ... break;
+ *     default: assertNever(event.tipoDeEvento);
  *   }
  */
 export function assertNever(value: never): never {

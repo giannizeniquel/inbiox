@@ -5,7 +5,7 @@ import { ConnectionStore } from './connection.store';
 import { MetricsService } from './metrics.service';
 import { EventBusService } from './event-bus.service';
 
-/** Max eventIds remembered for deduplication. */
+/** Max eventoIds remembered for deduplication. */
 const MAX_PROCESSED_EVENT_IDS = 1000;
 
 @Injectable({ providedIn: 'root' })
@@ -99,13 +99,13 @@ export class MercureService {
 
       this.connectionStore.setLastEventTime(Date.now());
 
-      if (data.eventId && this.processedEventIds.has(data.eventId)) {
-        console.log('[Mercure] Duplicate eventId ignored:', data.eventId);
+      if (data.eventoId && this.processedEventIds.has(data.eventoId)) {
+        console.log('[Mercure] Duplicate eventoId ignored:', data.eventoId);
         return;
       }
 
-      if (data.eventId) {
-        this.processedEventIds.add(data.eventId);
+      if (data.eventoId) {
+        this.processedEventIds.add(data.eventoId);
         if (this.processedEventIds.size > MAX_PROCESSED_EVENT_IDS) {
           const first = this.processedEventIds.values().next().value;
           if (first) this.processedEventIds.delete(first);

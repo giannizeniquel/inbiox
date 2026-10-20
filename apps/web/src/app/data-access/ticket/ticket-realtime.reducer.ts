@@ -2,21 +2,21 @@ import type { TicketStore } from './ticket.store';
 import type { EspacioDeTrabajoStore } from '../administracion/espacio-de-trabajo.store';
 import { EstadoDeTicket } from './ticket.model';
 import { EventoEnTiempoReal, TipoDeEventoEnTiempoReal,
-  MessageAddedPayload, TicketCreatedPayload, TicketStatusChangedPayload,
-  TicketAssignedPayload } from '../../core/tiempo-real/evento-en-tiempo-real.model';
+  MensajeAgregadoPayload, TicketCreadoPayload, EstadoDeTicketCambiadoPayload,
+  TicketAsignadoPayload } from '../../core/tiempo-real/evento-en-tiempo-real.model';
 
 /** Apply one ticket-related realtime event (from the EventBus) to the ticket list and the workspace pending flags. */
 export function applyTicketEvent(event: EventoEnTiempoReal, store: TicketStore, espacioDeTrabajoStore: EspacioDeTrabajoStore): void {
-  switch (event.eventType) {
-    case TipoDeEventoEnTiempoReal.MessageAdded: {
-      const p = event.payload as MessageAddedPayload;
+  switch (event.tipoDeEvento) {
+    case TipoDeEventoEnTiempoReal.MensajeAgregado: {
+      const p = event.payload as MensajeAgregadoPayload;
       // Increment unread if not active ticket — inbound only (message-agent-
       // attribution, design.md D6): outbound messages now broadcast too
       // (human-agent replies), and an agent's own reply (or a colleague's)
       // must never inflate the unread badge.
       const activeTicket = store.activeTicket();
       if (
-        p.direction === 'inbound'
+        p.direccion === 'entrante'
         && (!activeTicket || String(activeTicket.ticket_id) !== String(p.ticketId))
       ) {
         const current = store.tickets().find(t => String(t.ticket_id) === String(p.ticketId));
@@ -25,7 +25,7 @@ export function applyTicketEvent(event: EventoEnTiempoReal, store: TicketStore, 
         }
       }
       // Workspace pending indicator: if inbound message from a different workspace
-      if (p.direction === 'inbound' && p.phoneNumberId) {
+      if (p.direccion === 'entrante' && p.phoneNumberId) {
         const activePhone = espacioDeTrabajoStore.activePhoneNumberId();
         if (activePhone && activePhone !== p.phoneNumberId) {
           const ws = espacioDeTrabajoStore.espaciosDeTrabajo().find(
@@ -39,47 +39,47 @@ export function applyTicketEvent(event: EventoEnTiempoReal, store: TicketStore, 
       break;
     }
 
-    case TipoDeEventoEnTiempoReal.TicketCreated: {
-      const p = event.payload as TicketCreatedPayload;
+    case TipoDeEventoEnTiempoReal.TicketCreado: {
+      const p = event.payload as TicketCreadoPayload;
       store.addOrUpdateTicket({
         ticket_id: String(p.ticketId),
         id: String(p.ticketId),
-        status: p.status as EstadoDeTicket,
-        priority: String(p.priority),
+        status: p.estado as EstadoDeTicket,
+        priority: String(p.prioridad),
         contact: null,
         last_message: null,
         owner: null,
         metrics: { unread_count: 0 },
-        timestamps: { opened_at: p.createdAt, updated_at: p.createdAt },
+        timestamps: { opened_at: p.creadoAt, updated_at: p.creadoAt },
       });
       break;
     }
 
-    case TipoDeEventoEnTiempoReal.TicketStatusChanged: {
-      const p = event.payload as TicketStatusChangedPayload;
+    case TipoDeEventoEnTiempoReal.EstadoDeTicketCambiado: {
+      const p = event.payload as EstadoDeTicketCambiadoPayload;
       const existing = store.tickets().find(t => String(t.ticket_id) === String(p.ticketId));
       if (existing) {
         store.addOrUpdateTicket({
           ...existing,
-          status: p.newStatus as EstadoDeTicket,
-          timestamps: { ...existing.timestamps, updated_at: p.changedAt },
+          status: p.estadoNuevo as EstadoDeTicket,
+          timestamps: { ...existing.timestamps, updated_at: p.cambiadoAt },
         });
       }
       break;
     }
 
-    case TipoDeEventoEnTiempoReal.TicketAssigned: {
-      const p = event.payload as TicketAssignedPayload;
+    case TipoDeEventoEnTiempoReal.TicketAsignado: {
+      const p = event.payload as TicketAsignadoPayload;
       const existing = store.tickets().find(t => String(t.ticket_id) === String(p.ticketId));
       if (existing) {
         // Only overwrite owner name when Mercure provides a real name.
         // Otherwise keep the name from optimistic update (or existing owner).
-        const nombreDeResponsable = p.assigneeName ?? existing.owner?.name ?? `Agent #${p.assigneeId}`;
+        const nombreDeResponsable = p.responsableNombre ?? existing.owner?.name ?? `Agent #${p.responsableId}`;
         // Implicit status transition: unassigned (new) → active on assignment
         const estabaSinAsignar = existing.status === EstadoDeTicket.Nuevo || existing.owner === null;
         store.addOrUpdateTicket({
           ...existing,
-          owner: { id: p.assigneeId, name: nombreDeResponsable },
+          owner: { id: p.responsableId, name: nombreDeResponsable },
           status: estabaSinAsignar ? EstadoDeTicket.Activo : existing.status,
         });
       }
@@ -88,7 +88,7 @@ export function applyTicketEvent(event: EventoEnTiempoReal, store: TicketStore, 
       break;
     }
 
-    case TipoDeEventoEnTiempoReal.TicketRead: {
+    case TipoDeEventoEnTiempoReal.TicketLeido: {
       // Another user marked this ticket as read — clear our badge
       const ticketId = event.ticketId ? String(event.ticketId) : null;
       if (ticketId) {

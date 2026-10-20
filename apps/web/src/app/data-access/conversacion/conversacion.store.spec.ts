@@ -1,6 +1,6 @@
 import { ConversacionStore } from './conversacion.store';
 import { Mensaje } from './mensaje.model';
-import { TipoDeEventoEnTiempoReal, MessageAddedPayload } from '../../core/tiempo-real/evento-en-tiempo-real.model';
+import { TipoDeEventoEnTiempoReal, MensajeAgregadoPayload } from '../../core/tiempo-real/evento-en-tiempo-real.model';
 
 describe('ConversacionStore', () => {
   let store: ConversacionStore;
@@ -10,9 +10,9 @@ describe('ConversacionStore', () => {
       id: 'msg-1',
       ticketId: 'ticket-1',
       content: 'Hello',
-      direction: 'inbound',
+      direction: 'entrante',
       sender: 'customer',
-      deliveryStatus: 'delivered',
+      deliveryStatus: 'entregado',
       createdAt: '2024-01-01T00:00:00Z',
       ...overrides,
     };
@@ -60,9 +60,9 @@ describe('ConversacionStore', () => {
     expect(optimistic.tempId).toBe('temp-1');
     expect(optimistic.ticketId).toBe('ticket-1');
     expect(optimistic.content).toBe('Hi there');
-    expect(optimistic.direction).toBe('outbound');
+    expect(optimistic.direction).toBe('saliente');
     expect(optimistic.sender).toBe('agent');
-    expect(optimistic.deliveryStatus).toBe('sending');
+    expect(optimistic.deliveryStatus).toBe('enviando');
     expect(optimistic.createdAt).toBeTruthy();
 
     // Should be in the messages list
@@ -76,19 +76,19 @@ describe('ConversacionStore', () => {
   // ── updateMessageStatus() ──
 
   it('should update deliveryStatus by id', () => {
-    store.agregarMensaje(armarMensaje({ id: 'msg-1', deliveryStatus: 'sending' }));
+    store.agregarMensaje(armarMensaje({ id: 'msg-1', deliveryStatus: 'enviando' }));
 
-    store.updateEstadoDeMensaje('msg-1', 'sent');
+    store.updateEstadoDeMensaje('msg-1', 'enviado');
 
-    expect(store.mensajes()[0].deliveryStatus).toBe('sent');
+    expect(store.mensajes()[0].deliveryStatus).toBe('enviado');
   });
 
   it('should update deliveryStatus by tempId', () => {
-    store.agregarMensaje(armarMensaje({ id: 'msg-1', tempId: 'temp-1', deliveryStatus: 'sending' }));
+    store.agregarMensaje(armarMensaje({ id: 'msg-1', tempId: 'temp-1', deliveryStatus: 'enviando' }));
 
-    store.updateEstadoDeMensaje('temp-1', 'delivered');
+    store.updateEstadoDeMensaje('temp-1', 'entregado');
 
-    expect(store.mensajes()[0].deliveryStatus).toBe('delivered');
+    expect(store.mensajes()[0].deliveryStatus).toBe('entregado');
   });
 
   // ── confirmMessage() ──
@@ -101,9 +101,9 @@ describe('ConversacionStore', () => {
       id: 'server-id-123',
       ticketId: 'ticket-1',
       content: 'Hello',
-      direction: 'outbound',
+      direction: 'saliente',
       sender: 'agent',
-      deliveryStatus: 'sent',
+      deliveryStatus: 'enviado',
       createdAt: '2024-01-01T00:01:00Z',
       externalId: 'ext-123',
     };
@@ -113,7 +113,7 @@ describe('ConversacionStore', () => {
     const msg = store.mensajes()[0];
     expect(msg.id).toBe('server-id-123');
     expect(msg.tempId).toBe('temp-1'); // tempId preserved
-    expect(msg.deliveryStatus).toBe('sent');
+    expect(msg.deliveryStatus).toBe('enviado');
     expect(msg.externalId).toBe('ext-123');
 
     // Cache should be cleared
@@ -147,13 +147,13 @@ describe('ConversacionStore', () => {
 
   it('should reset status to sending and return cached payload', () => {
     store.agregarMensajeOptimista('temp-1', 'Hello', 'ticket-1');
-    store.updateEstadoDeMensaje('temp-1', 'failed');
-    expect(store.mensajes()[0].deliveryStatus).toBe('failed');
+    store.updateEstadoDeMensaje('temp-1', 'fallido');
+    expect(store.mensajes()[0].deliveryStatus).toBe('fallido');
 
     const cached = store.reintentarMensaje('temp-1');
 
     expect(cached).toEqual({ content: 'Hello', ticketId: 'ticket-1' });
-    expect(store.mensajes()[0].deliveryStatus).toBe('sending');
+    expect(store.mensajes()[0].deliveryStatus).toBe('enviando');
   });
 
   it('should return null if no cached payload exists', () => {
@@ -293,18 +293,18 @@ describe('ConversacionStore', () => {
   // optimistic confirmMessage() may already hold this server id before the
   // echo arrives — the echo must be a no-op, never a second bubble.
 
-  function armarEventoDeMensajeAgregado(overrides: Partial<MessageAddedPayload> = {}) {
+  function armarEventoDeMensajeAgregado(overrides: Partial<MensajeAgregadoPayload> = {}) {
     return {
-      eventId: 'evt-1',
-      eventType: TipoDeEventoEnTiempoReal.MessageAdded,
+      eventoId: 'evt-1',
+      tipoDeEvento: TipoDeEventoEnTiempoReal.MensajeAgregado,
       ticketId: 'ticket-1',
       payload: {
-        messageId: 501,
+        mensajeId: 501,
         ticketId: 501,
-        content: 'Echoed reply',
-        direction: 'outbound' as const,
-        senderName: 'Agent A',
-        createdAt: '2024-01-01T00:05:00Z',
+        contenido: 'Echoed reply',
+        direccion: 'saliente' as const,
+        remitenteNombre: 'Agent A',
+        creadoAt: '2024-01-01T00:05:00Z',
         externalId: null,
         ...overrides,
       },
@@ -350,9 +350,9 @@ describe('ConversacionStore', () => {
       id: 'server-id-123',
       ticketId: 'ticket-1',
       content: 'Hello',
-      direction: 'outbound',
+      direction: 'saliente',
       sender: 'agent',
-      deliveryStatus: 'sent',
+      deliveryStatus: 'enviado',
       createdAt: '2024-01-01T00:01:00Z',
     };
 

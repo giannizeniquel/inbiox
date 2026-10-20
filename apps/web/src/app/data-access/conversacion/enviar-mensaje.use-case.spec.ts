@@ -11,7 +11,7 @@ describe('EnviarMensajeUseCase', () => {
     ticketId: 'ticket-1',
     content: 'Hello',
     sender: 'agent',
-    deliveryStatus: 'sent',
+    deliveryStatus: 'enviado',
     createdAt: '2024-01-01T00:00:00Z',
   };
 
@@ -61,7 +61,7 @@ describe('EnviarMensajeUseCase', () => {
         expect(output.message.id).toBe('provider-id-123');
         expect(output.message.ticketId).toBe('ticket-1');
         expect(output.message.content).toBe('Hello');
-        expect(output.message.deliveryStatus).toBe('sent');
+        expect(output.message.deliveryStatus).toBe('enviado');
         done();
       },
     });
@@ -79,7 +79,7 @@ describe('EnviarMensajeUseCase', () => {
   });
 
   it('should throw EnvioDeMensajeFallido when provider returns deliveryStatus=failed', (done) => {
-    const mensajeFallido: Mensaje = { ...mensajeDeProveedor, deliveryStatus: 'failed' };
+    const mensajeFallido: Mensaje = { ...mensajeDeProveedor, deliveryStatus: 'fallido' };
     proveedorSpy.enviarMensaje.and.returnValue(of(mensajeFallido));
     useCase.execute({ ticketId: 'ticket-1', content: 'Hello' }).subscribe({
       error: (err: EnvioDeMensajeFallido) => {

@@ -189,7 +189,7 @@ export class ConversacionScrollController {
       next: (resp: GetMensajesResponse) => {
         const added = mapearMensajesDeApiACanonicos(resp, ticket.ticket_id);
         this.conversacionStore.agregarMensajesAlInicio(added);
-        this.conversacionStore.setHasMore(resp.meta.has_more);
+        this.conversacionStore.setHasMore(resp.meta.hayMas);
         this.oldestLoadedOffset.set(this.oldestLoadedOffset() + resp.data.length);
 
         if (anchor) {

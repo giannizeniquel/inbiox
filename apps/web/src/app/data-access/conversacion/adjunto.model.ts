@@ -8,15 +8,15 @@ export interface Adjunto {
   /** MIME type (e.g. "application/pdf", "image/jpeg") */
   mimeType: string;
   /** Original filename from the sender */
-  filename: string;
+  nombreDeArchivo: string;
   /** File size in bytes */
-  size: number;
-  /** Media kind: image, video, audio, or document */
-  kind: 'image' | 'video' | 'audio' | 'document';
+  tamanio: number;
+  /** Media kind: imagen, video, audio, or documento */
+  tipo: 'imagen' | 'video' | 'audio' | 'documento';
   /** WhatsApp provider media ID (for re-sending) */
   providerId?: string;
   /** Optional caption text */
-  caption?: string;
+  leyenda?: string;
   /** Local blob URL for optimistic preview (not persisted, browser-only) */
   localUrl?: string;
 }

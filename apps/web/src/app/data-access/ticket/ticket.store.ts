@@ -72,11 +72,11 @@ export class TicketStore {
 
     eventBus.events$.pipe(
       filter(e =>
-        e.eventType === TipoDeEventoEnTiempoReal.TicketCreated
-        || e.eventType === TipoDeEventoEnTiempoReal.TicketStatusChanged
-        || e.eventType === TipoDeEventoEnTiempoReal.TicketAssigned
-        || e.eventType === TipoDeEventoEnTiempoReal.MessageAdded
-        || e.eventType === TipoDeEventoEnTiempoReal.TicketRead
+        e.tipoDeEvento === TipoDeEventoEnTiempoReal.TicketCreado
+        || e.tipoDeEvento === TipoDeEventoEnTiempoReal.EstadoDeTicketCambiado
+        || e.tipoDeEvento === TipoDeEventoEnTiempoReal.TicketAsignado
+        || e.tipoDeEvento === TipoDeEventoEnTiempoReal.MensajeAgregado
+        || e.tipoDeEvento === TipoDeEventoEnTiempoReal.TicketLeido
       ),
       takeUntilDestroyed(destroyRef),
     ).subscribe(e => applyTicketEvent(e, this, this.espacioDeTrabajoStore));

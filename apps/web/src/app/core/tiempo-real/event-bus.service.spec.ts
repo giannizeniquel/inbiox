@@ -12,7 +12,7 @@ describe('EventBusService', () => {
     const events: EventoEnTiempoReal[] = [];
     bus.events$.subscribe(e => events.push(e));
 
-    const event = makeEvent(TipoDeEventoEnTiempoReal.MessageAdded);
+    const event = makeEvent(TipoDeEventoEnTiempoReal.MensajeAgregado);
     bus.emit(event);
 
     expect(events.length).toBe(1);
@@ -23,15 +23,15 @@ describe('EventBusService', () => {
     const events: EventoEnTiempoReal[] = [];
     bus.events$.subscribe(e => events.push(e));
 
-    const e1 = makeEvent(TipoDeEventoEnTiempoReal.MessageAdded);
-    const e2 = makeEvent(TipoDeEventoEnTiempoReal.TicketCreated);
+    const e1 = makeEvent(TipoDeEventoEnTiempoReal.MensajeAgregado);
+    const e2 = makeEvent(TipoDeEventoEnTiempoReal.TicketCreado);
 
     bus.emit(e1);
     bus.emit(e2);
 
     expect(events.length).toBe(2);
-    expect(events[0].eventType).toBe(TipoDeEventoEnTiempoReal.MessageAdded);
-    expect(events[1].eventType).toBe(TipoDeEventoEnTiempoReal.TicketCreated);
+    expect(events[0].tipoDeEvento).toBe(TipoDeEventoEnTiempoReal.MensajeAgregado);
+    expect(events[1].tipoDeEvento).toBe(TipoDeEventoEnTiempoReal.TicketCreado);
   });
 
   it('should deliver events to multiple subscribers', () => {
@@ -41,7 +41,7 @@ describe('EventBusService', () => {
     bus.events$.subscribe(e => events1.push(e));
     bus.events$.subscribe(e => events2.push(e));
 
-    const event = makeEvent(TipoDeEventoEnTiempoReal.MessageAdded);
+    const event = makeEvent(TipoDeEventoEnTiempoReal.MensajeAgregado);
     bus.emit(event);
 
     expect(events1.length).toBe(1);
@@ -56,10 +56,10 @@ describe('EventBusService', () => {
 
   function makeEvent(eventType: TipoDeEventoEnTiempoReal, overrides: Partial<EventoEnTiempoReal> = {}): EventoEnTiempoReal {
     return {
-      eventId: 'evt-test-1',
+      eventoId: 'evt-test-1',
       sequence: 1,
-      timestamp: new Date().toISOString(),
-      eventType,
+      ocurridoAt: new Date().toISOString(),
+      tipoDeEvento: eventType,
       payload: {},
       ...overrides,
     };
