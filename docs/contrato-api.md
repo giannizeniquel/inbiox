@@ -13,7 +13,7 @@ El listado del anexo A tiene un nombre propuesto por clave, pero depende de esta
 | # | Decisión | Hoy | Recomendación |
 |---|---|---|---|
 | D1 | Estilo de las claves JSON | Mezclado: requests en camelCase (`#[MapRequestPayload]` sin `name_converter`), la mayoría de las respuestas en snake_case, Mercure en camelCase salvo los eventos `agent.*` en snake_case. Hay endpoints que mezclan dentro del mismo objeto (`GET /api/tickets`: `agent_id` y `teamId`; contactos: `owner_id` y `activeTicketId`). | **Decidido (L147): camelCase en todo el contrato** (requests, respuestas REST, Mercure). Las columnas de la base siguen en snake_case. |
-| D2 | Términos que el glosario no define (unos 70) | Ver la lista de la sección 2. | **Decidido (L148): la tabla de la sección 2 con cuatro ajustes** (`habilitada`, `texto`, `vencimientoAt`, `limit` y `offset` técnicos). |
+| D2 | Términos que el glosario no define (unos 70) | Ver la lista de la sección 2. | **Decidido (L148): la tabla de la sección 2 con cuatro ajustes** (`habilitada`, `texto`, `vencimientoAt`; `page`, `limit`, `offset` y `cursor` técnicos, L149). |
 | D3 | Valores guardados que el glosario no define | `delivery_status`, estado del outbox, `ticket_events.type`, prioridad, estado de conversación, estado y canal de contacto, estado de resultado de reglas, `aggregate_type`. | Decidir si se traducen. Mi recomendación: traducir los que viajan por la red (prioridad, estado de entrega, estado y canal de contacto, tipos de la línea de tiempo) y dejar los internos (estado del outbox, `aggregate_type`, estado de reglas) para no migrar datos sin necesidad. |
 | D4 | Prefijos booleanos en JSON | `is_active`, `is_available`, `has_pending`, `is_in_shift` (también `in_shift`). | Igual que en el código: `activo`, `disponible`, `enTurno`, `hasPendientes`. |
 | D5 | Segmentos de ruta | `/api/admin/...`, `/api/me/...`, `/api/reports/...`, `/api/provider/...`. | Kebab-case en español (`/api/reportes/mapa-de-calor`). `admin` → `administracion`, `me` → `mi`. A decidir. |
@@ -40,9 +40,9 @@ El listado del anexo A tiene un nombre propuesto por clave, pero depende de esta
 | threshold | `umbral` | reportes |
 | search / filter / sort | `busqueda` / `filtro` / `orden` | listados |
 | from / to | `desde` / `hasta` | reportes |
-| page / limit / has next | `pagina` / `limit` (técnico) / `haySiguiente` | paginación |
+| page / limit / has next | `page` / `limit` (técnicos) / `haySiguiente` | paginación, también en `meta` |
 | cursor / has more / next cursor | `cursor` (técnico) / `hayMas` / `siguienteCursor` | mensajes, línea de tiempo |
-| before / offset | `antesDe` / `offset` (técnico) | paginación |
+| before / offset | `antesDe` / `offset` (técnico) | paginación. `page`, `limit`, `offset` y `cursor` quedan técnicos para que la query no mezcle idiomas |
 | direction (paginación: backward/forward) | `sentido` (`atras` / `adelante`) | `GET /api/tickets/{id}/messages`; no confundir con `direccion` del mensaje |
 | reason | `motivo` | asignación automática, transiciones, importación, errores |
 | success / failed | `exito` / `fallido` | resultados |
@@ -194,7 +194,7 @@ Notación: `req` cuerpo, `q` query, `res` respuesta. Los nombres propuestos asum
 
 ### Compartidos
 
-- Paginación `meta`: `page`, `limit`, `total`, `has_next` → `pagina`, `limit`, `total`, `haySiguiente`.
+- Paginación `meta`: `page`, `limit`, `total`, `has_next` → `page`, `limit`, `total`, `haySiguiente`.
 - Fechas: `created_at`, `updated_at` → `creadoAt`, `actualizadoAt`.
 - `error` queda.
 
@@ -256,7 +256,7 @@ Notación: `req` cuerpo, `q` query, `res` respuesta. Los nombres propuestos asum
 ### Contacto
 
 - **`GET /api/contacts`** → `/api/contactos`
-  - q: `page`, `limit`, `search`, `status`, `channel`, `ownerId`, `email` → `pagina`, `limit`, `busqueda`, `estado`, `canal`, `responsableId`
+  - q: `page`, `limit`, `search`, `status`, `channel`, `ownerId`, `email` → `page`, `limit`, `busqueda`, `estado`, `canal`, `responsableId`
   - res: `id`, `phone`, `name`, `status`, `channel`, `owner_id`, `email`, `timestamps` {`created_at`, `updated_at`}, `activeTicketId` → `telefono`, `nombre`, `estado`, `canal`, `responsableId`, `fechas`, `ticketActivoId`
 - **`GET|POST|PUT|DELETE /api/contacts/{id}`:** las mismas claves
 - **`POST /api/contacts/import`** → `…/importar`: req multipart `file` → `archivo`; res `totalRows`, `imported`, `failed`, `errors` [{`row`, `phone`, `reason`, `message`}], `errorsTruncated` → `totalDeFilas`, `importados`, `fallidos`, `errores` [{`fila`, `telefono`, `motivo`, `mensaje`}], `erroresTruncados`
