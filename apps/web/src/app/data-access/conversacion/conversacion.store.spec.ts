@@ -34,7 +34,7 @@ describe('ConversacionStore', () => {
 
   it('should add a message', () => {
     const msg = armarMensaje();
-    store.mensaje(msg);
+    store.agregarMensaje(msg);
     expect(store.mensajes().length).toBe(1);
     expect(store.mensajes()[0]).toEqual(msg);
   });
@@ -43,7 +43,7 @@ describe('ConversacionStore', () => {
     const msgs = Array.from({ length: 210 }, (_, i) =>
       armarMensaje({ id: `msg-${i}`, createdAt: `2024-01-01T00:${String(i).padStart(2, '0')}:00Z` })
     );
-    msgs.forEach(m => store.mensaje(m));
+    msgs.forEach(m => store.agregarMensaje(m));
 
     expect(store.mensajes().length).toBe(200);
     // Should keep the newest 200 (sliced from end)
@@ -76,7 +76,7 @@ describe('ConversacionStore', () => {
   // ── updateMessageStatus() ──
 
   it('should update deliveryStatus by id', () => {
-    store.mensaje(armarMensaje({ id: 'msg-1', deliveryStatus: 'sending' }));
+    store.agregarMensaje(armarMensaje({ id: 'msg-1', deliveryStatus: 'sending' }));
 
     store.updateEstadoDeMensaje('msg-1', 'sent');
 
@@ -84,7 +84,7 @@ describe('ConversacionStore', () => {
   });
 
   it('should update deliveryStatus by tempId', () => {
-    store.mensaje(armarMensaje({ id: 'msg-1', tempId: 'temp-1', deliveryStatus: 'sending' }));
+    store.agregarMensaje(armarMensaje({ id: 'msg-1', tempId: 'temp-1', deliveryStatus: 'sending' }));
 
     store.updateEstadoDeMensaje('temp-1', 'delivered');
 
@@ -123,8 +123,8 @@ describe('ConversacionStore', () => {
   // ── removeMessage() ──
 
   it('should remove by id', () => {
-    store.mensaje(armarMensaje({ id: 'msg-1' }));
-    store.mensaje(armarMensaje({ id: 'msg-2' }));
+    store.agregarMensaje(armarMensaje({ id: 'msg-1' }));
+    store.agregarMensaje(armarMensaje({ id: 'msg-2' }));
 
     store.quitarMensaje('msg-1');
 
@@ -164,7 +164,7 @@ describe('ConversacionStore', () => {
   // ── loadMessages() ──
 
   it('should replace all messages (default)', () => {
-    store.mensaje(armarMensaje({ id: 'old-1' }));
+    store.agregarMensaje(armarMensaje({ id: 'old-1' }));
 
     const newMsgs = [
       armarMensaje({ id: 'new-1' }),
@@ -251,12 +251,12 @@ describe('ConversacionStore', () => {
   // ── findById() ──
 
   it('should find by id', () => {
-    store.mensaje(armarMensaje({ id: 'msg-1' }));
+    store.agregarMensaje(armarMensaje({ id: 'msg-1' }));
     expect(store.findById('msg-1')?.id).toBe('msg-1');
   });
 
   it('should find by tempId', () => {
-    store.mensaje(armarMensaje({ id: 'msg-1', tempId: 'temp-1' }));
+    store.agregarMensaje(armarMensaje({ id: 'msg-1', tempId: 'temp-1' }));
     expect(store.findById('temp-1')?.id).toBe('msg-1');
   });
 
@@ -315,7 +315,7 @@ describe('ConversacionStore', () => {
     (store as unknown as { ticketStore: { activeTicket(): unknown } }).ticketStore = {
       activeTicket: () => ({ ticket_id: 'ticket-1' }),
     };
-    store.mensaje(armarMensaje({ id: '501' }));
+    store.agregarMensaje(armarMensaje({ id: '501' }));
 
     (store as unknown as { onRealtimeEvent(e: unknown): void }).onRealtimeEvent(
       armarEventoDeMensajeAgregado()
@@ -341,7 +341,7 @@ describe('ConversacionStore', () => {
 
   it('should drop a duplicate entry sharing the confirmed server id from an earlier echo', () => {
     // Echo arrived first and was appended directly (no tempId).
-    store.mensaje(armarMensaje({ id: 'server-id-123', tempId: undefined }));
+    store.agregarMensaje(armarMensaje({ id: 'server-id-123', tempId: undefined }));
     // Optimistic entry for the same logical send, still pending confirmation.
     store.agregarMensajeOptimista('temp-1', 'Hello', 'ticket-1');
     expect(store.mensajes().length).toBe(2);

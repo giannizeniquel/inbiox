@@ -12,7 +12,7 @@ import {
 } from './contacto-transport.dto';
 import { EventoDeLineaDeTiempoResponse } from './linea-de-tiempo-transport.dto';
 import { ContactoUI } from './contacto-ui.model';
-import { mapearDetalleAContactoUI, mapListItemToUIContact } from './mappers';
+import { mapearDetalleAContactoUI, mapearItemDeListaAContactoUI } from './mappers';
 
 /** Input of ContactoApiService.getContacts */
 export interface GetContactosInput {
@@ -145,7 +145,7 @@ export class ContactoApiService {
         }
       })),
       map((response: ListaDeContactosResponse) => ({
-        contacts: response.data.map(mapListItemToUIContact),
+        contacts: response.data.map(mapearItemDeListaAContactoUI),
         total: response.meta.total,
         page: response.meta.page,
         hasMore: response.meta.page * response.meta.limit < response.meta.total,

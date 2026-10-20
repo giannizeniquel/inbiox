@@ -18,7 +18,7 @@ import {
 /**
  * Map ContactoDeListaDTO (API list) → ContactoUI
  */
-export function mapListItemToUIContact(dto: ContactoDeListaDTO): ContactoUI {
+export function mapearItemDeListaAContactoUI(dto: ContactoDeListaDTO): ContactoUI {
   return {
     id: dto.id,
     phone: dto.phone,
@@ -91,5 +91,5 @@ export function mapUIContactToDomain(contacto: ContactoUI): ContactoDominio {
 export function mapearListaDeContactosAUI(
   items: ContactoDeListaDTO[]
 ): ContactoUI[] {
-  return items.map(mapListItemToUIContact);
+  return items.map(mapearItemDeListaAContactoUI);
 }

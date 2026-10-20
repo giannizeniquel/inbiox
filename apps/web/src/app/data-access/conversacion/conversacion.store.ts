@@ -91,7 +91,7 @@ export class ConversacionStore {
           externalId: p.externalId ?? undefined,
           media: p.media ?? undefined,
         };
-        this.mensaje(mensaje);
+        this.agregarMensaje(mensaje);
         break;
       }
 
@@ -113,7 +113,7 @@ export class ConversacionStore {
   private mensajeCache = new Map<string, { content: string; ticketId: string }>();
 
   /** Add a message (optimistic or from server) */
-  mensaje(mensaje: Mensaje): void {
+  agregarMensaje(mensaje: Mensaje): void {
     this.mensajes.update(msgs => [...msgs, mensaje]);
   }
 
@@ -143,7 +143,7 @@ export class ConversacionStore {
       createdAt: new Date().toISOString(),
       media: adjunto,
     };
-    this.mensaje(optimistic);
+    this.agregarMensaje(optimistic);
 
     // Cache for retry
     this.mensajeCache.set(tempId, { content, ticketId });

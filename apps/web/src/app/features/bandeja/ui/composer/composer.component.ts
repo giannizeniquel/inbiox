@@ -50,7 +50,7 @@ export class ComposerComponent {
   readonly ultimoMensajeEntranteAt = input<string | null>(null);
 
   /**
-   * Local clock, ticked every 60s so `windowExpired` re-evaluates without a
+   * Local clock, ticked every 60s so `ventanaVencida` re-evaluates without a
    * manual refresh or any polling — a UI refresh timer, not a server poll
    * (design.md's Mercure Event Flow section).
    */

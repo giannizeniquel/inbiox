@@ -19,7 +19,7 @@ describe('ReporteApiService', () => {
 
   afterEach(() => httpMock.verify());
 
-  describe('getTicketParticipation', () => {
+  describe('getParticipacionDeTicket', () => {
     const mockParticipacion: ParticipacionDeTicket = {
       ticket_id: 42,
       data_available_from: '2026-01-01T00:00:00Z',
