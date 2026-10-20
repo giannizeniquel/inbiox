@@ -220,7 +220,7 @@ Notación: `req` cuerpo, `q` query, `res` respuesta. Los nombres propuestos asum
 - **`/api/admin/users[/{id}]`** → `/api/administracion/usuarios`
   - req: `email`, `password`, `roles`, `agent_id`, `is_active` → `agenteId`, `activo`
   - res: `id`, `email`, `roles`, `is_active`, `agent_id`, `agent_name`, fechas → `activo`, `agenteId`, `agenteNombre`
-- **`POST|DELETE /api/admin/agents/{id}/link-user`** → `…/agentes/{id}/vinculo-de-usuario`
+- **`POST|DELETE /api/admin/agents/{id}/link-user`** → `…/agentes/{id}/vincular-usuario`
   - req: `user_id` → `usuarioId`; res: `id`, `user_id`, `user_email` → `usuarioId`, `usuarioEmail`
 - **`/api/me/workspace`, `/api/me/workspaces`** → `/api/mi/espacio-de-trabajo`, `/api/mi/espacios-de-trabajo`
   - req `PUT`: `workspaceId` → `espacioDeTrabajoId`
@@ -247,7 +247,7 @@ Notación: `req` cuerpo, `q` query, `res` respuesta. Los nombres propuestos asum
 ### Autenticacion
 
 - **`POST /api/auth/login`, `POST /api/auth/refresh`:** `email`, `password` → igual; res `access_token`, `token_type`, `expires_in` (OAuth2, quedan). El refresh token viaja en la cookie `inbiox_refresh`.
-- **`POST /api/auth/logout`** → `/api/auth/cerrar-sesion`: res `{message}` → `{mensaje}`
+- **`POST /api/auth/logout`** (queda técnico, D5): res `{message}` → `{mensaje}`
 - **`GET /api/auth/me`:** `id`, `email`, `roles`, `is_active`, `agent_id`, `agent_name` → `activo`, `agenteId`, `agenteNombre`
 
 ### Automatizacion
