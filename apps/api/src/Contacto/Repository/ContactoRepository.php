@@ -2,6 +2,8 @@
 
 namespace App\Contacto\Repository;
 
+use App\Asignacion\TipoDeAsignacion;
+use App\Compartido\Outbox\TipoDeEventoDeOutbox;
 use App\Contacto\Contacto;
 use App\Ticket\TipoDeEventoDeTicket;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -107,8 +109,8 @@ class ContactoRepository extends ServiceEntityRepository
         FROM (
             SELECT
                 CASE
-                    WHEN oe.event_type LIKE '%TicketCreated%' THEN 'ticket.created'
-                    WHEN oe.event_type LIKE '%TicketUpdated%' THEN 'ticket.status_changed'
+                    WHEN oe.event_type IN (:tipos_ticket_creado) THEN 'ticket.created'
+                    WHEN oe.event_type IN (:tipos_ticket_actualizado) THEN 'ticket.status_changed'
                 END AS type,
                 oe.created_at AS occurred_at,
                 NULL AS content,
@@ -120,8 +122,8 @@ class ContactoRepository extends ServiceEntityRepository
             FROM outbox_events oe
             JOIN tickets t ON oe.aggregate_id = t.id
             WHERE t.contact_id = :contact_id
-              AND oe.aggregate_type = 'Ticket'
-              AND (oe.event_type LIKE '%TicketCreated%' OR oe.event_type LIKE '%TicketUpdated%')
+              AND oe.aggregate_type = 'ticket'
+              AND oe.event_type IN (:tipos_ticket_creado, :tipos_ticket_actualizado)
               AND (:before_date IS NULL OR oe.created_at < :before_date)
               AND (:phone_number_id IS NULL OR t.phone_number_id = :phone_number_id)
 
@@ -129,7 +131,7 @@ class ContactoRepository extends ServiceEntityRepository
 
             SELECT
                 CASE
-                    WHEN a.type = 'REASSIGN' THEN 'ticket.reassigned'
+                    WHEN a.type = :tipo_reasignacion THEN 'ticket.reassigned'
                     ELSE 'ticket.assigned'
                 END AS type,
                 a.assigned_at AS occurred_at,
@@ -199,7 +201,11 @@ class ContactoRepository extends ServiceEntityRepository
             'manual_closed_unowned' => TipoDeEventoDeTicket::MANUAL_CERRADO_SIN_RESPONSABLE,
         ];
 
+        // Los tipos del outbox incluyen el alias legado (nombre de clase) hasta la etapa 3 del contrato.
         $params = $typeParams + [
+            'tipos_ticket_creado' => TipoDeEventoDeOutbox::TICKET_CREADO->valoresGuardados(),
+            'tipos_ticket_actualizado' => TipoDeEventoDeOutbox::TICKET_ACTUALIZADO->valoresGuardados(),
+            'tipo_reasignacion' => TipoDeAsignacion::REASIGNACION->value,
             'contact_id' => $contactoId,
             'allowed_types' => array_values($typeParams),
             'before_date' => $before,
@@ -207,6 +213,8 @@ class ContactoRepository extends ServiceEntityRepository
             'limit' => $limit,
         ];
         $types = [
+            'tipos_ticket_creado' => ArrayParameterType::STRING,
+            'tipos_ticket_actualizado' => ArrayParameterType::STRING,
             'contact_id' => ParameterType::INTEGER,
             'allowed_types' => ArrayParameterType::STRING,
             'before_date' => ParameterType::STRING,

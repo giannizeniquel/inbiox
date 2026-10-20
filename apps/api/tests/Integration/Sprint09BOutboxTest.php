@@ -185,8 +185,8 @@ class Sprint09BOutboxTest extends KernelTestCase
 
         // Get only message.created events
         $events = $this->em->getConnection()->fetchAllAssociative(
-            'SELECT payload FROM outbox_events WHERE event_type LIKE ? ORDER BY created_at ASC',
-            ['%MessageCreated%']
+            'SELECT payload FROM outbox_events WHERE event_type = ? ORDER BY created_at ASC',
+            ['mensaje.creado']
         );
 
         $this->assertCount(2, $events, 'Should have 2 message.created events');

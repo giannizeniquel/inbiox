@@ -6,6 +6,10 @@ use Symfony\Component\Uid\Ulid;
 
 abstract readonly class DomainEvent
 {
+    /**
+     * @param string $type el nombre interno (`TipoDeEventoDeOutbox->value`) que se guarda en
+     *                     `outbox_events.event_type` y en `payload.type`
+     */
     public function __construct(
         public Ulid $eventId,
         public string $type,

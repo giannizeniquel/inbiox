@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
+use App\Compartido\Outbox\TipoDeEventoDeOutbox;
 use App\Conversacion\UseCase\ProcesarMensajeSalienteUseCase;
 use App\Agente\Agente;
 use App\Contacto\Contacto;
@@ -83,7 +84,7 @@ class MessageAgentAttributionOutboxTest extends KernelTestCase
 
         $messageCreatedEvents = \array_values(\array_filter(
             $events,
-            fn (EventoOutbox $e) => \str_contains($e->getTipoDeEvento(), 'MessageCreated')
+            fn (EventoOutbox $e) => $e->getTipoDeEvento() === TipoDeEventoDeOutbox::MENSAJE_CREADO->value
         ));
 
         self::assertCount(1, $messageCreatedEvents, 'Exactly one MessageCreatedEvent must be persisted to the outbox');

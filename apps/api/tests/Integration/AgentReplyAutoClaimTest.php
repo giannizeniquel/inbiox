@@ -211,13 +211,13 @@ class AgentReplyAutoClaimTest extends KernelTestCase
 
         $ticketUpdatedCount = (int) $conn->fetchOne(
             "SELECT COUNT(*) FROM outbox_events WHERE aggregate_id = ? AND event_type = ?",
-            [$ticketId, \App\Ticket\TicketUpdatedEvent::class],
+            [$ticketId, 'ticket.actualizado'],
         );
         self::assertSame(1, $ticketUpdatedCount, 'Exactly one TicketUpdatedEvent must reach the outbox — no phantom duplicate from the rolled-back attempt');
 
         $seqs = $conn->fetchFirstColumn(
             'SELECT payload FROM outbox_events WHERE aggregate_id = ? AND event_type = ?',
-            [$ticketId, \App\Ticket\TicketUpdatedEvent::class],
+            [$ticketId, 'ticket.actualizado'],
         );
         $decodedSeqs = array_map(static fn (string $p) => json_decode($p, true)['seq'], $seqs);
         self::assertSame(array_unique($decodedSeqs), array_values($decodedSeqs), 'No duplicate seq values from the leaked/rolled-back attempt');

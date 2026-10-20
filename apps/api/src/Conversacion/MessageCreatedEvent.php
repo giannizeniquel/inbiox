@@ -3,6 +3,7 @@
 namespace App\Conversacion;
 
 use App\Compartido\DomainEvent;
+use App\Compartido\Outbox\TipoDeEventoDeOutbox;
 
 use Symfony\Component\Uid\Ulid;
 
@@ -22,7 +23,7 @@ final readonly class MessageCreatedEvent extends DomainEvent
     ) {
         parent::__construct(
             $eventId,
-            self::class,
+            TipoDeEventoDeOutbox::MENSAJE_CREADO->value,
             $ticketId,
             $occurredAt,
             $seq,

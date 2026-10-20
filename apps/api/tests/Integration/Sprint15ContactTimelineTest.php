@@ -120,8 +120,16 @@ class Sprint15ContactTimelineTest extends WebTestCase
      * 2. ticket.created outbox event
      * 3. ticket.status_changed outbox event
      * 4. newest: message
+     *
+     * The outbox rows default to the legacy stored values (event class names
+     * and aggregate_type 'Ticket') that rows written before the outbox
+     * migration still carry.
      */
-    private function createTestFixtures(): array
+    private function createTestFixtures(
+        string $createdEventType = 'App\Ticket\TicketCreatedEvent',
+        string $updatedEventType = 'App\Ticket\TicketUpdatedEvent',
+        string $aggregateType = 'Ticket',
+    ): array
     {
         // Contact
         $contact = new Contacto();
@@ -169,10 +177,10 @@ class Sprint15ContactTimelineTest extends WebTestCase
 
         // Outbox event: ticket.created (2nd newest)
         $ticketCreatedEvent = new EventoOutbox(
-            aggregateType: 'Ticket',
+            aggregateType: $aggregateType,
             aggregateId: $ticketId,
             topic: 'tickets',
-            tipoDeEvento: \App\Ticket\TicketCreatedEvent::class,
+            tipoDeEvento: $createdEventType,
             payload: [
                 'contact_id' => $contactId,
                 'conversation_id' => $conversationId,
@@ -188,10 +196,10 @@ class Sprint15ContactTimelineTest extends WebTestCase
 
         // Outbox event: ticket.status_changed (3rd oldest)
         $statusChangedEvent = new EventoOutbox(
-            aggregateType: 'Ticket',
+            aggregateType: $aggregateType,
             aggregateId: $ticketId,
             topic: 'tickets',
-            tipoDeEvento: \App\Ticket\TicketUpdatedEvent::class,
+            tipoDeEvento: $updatedEventType,
             payload: [
                 'status' => 'active',
             ],
@@ -285,6 +293,18 @@ class Sprint15ContactTimelineTest extends WebTestCase
 
         // Cursor should be set (ISO 8601 of oldest event)
         $this->assertNotNull($data['cursor']);
+    }
+
+    public function testTimelineMatchesTheInternalOutboxNames(): void
+    {
+        $fixtures = $this->createTestFixtures('ticket.creado', 'ticket.actualizado', 'ticket');
+
+        $data = $this->getJson('/api/contacts/' . $fixtures['contactId'] . '/timeline');
+
+        $this->assertResponseStatusCodeSame(200);
+        $this->assertSame(['ticket.created', 'ticket.status_changed', 'ticket.assigned'], array_column($data['events'], 'type'));
+        $this->assertSame([$fixtures['ticketId'], $fixtures['ticketId']], array_column(array_slice($data['events'], 0, 2), 'ticketId'));
+        $this->assertSame(['active', 'active'], array_column(array_slice($data['events'], 0, 2), 'ticketStatus'));
     }
 
     public function testTimelineCursorPagination(): void

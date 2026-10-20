@@ -9,11 +9,8 @@ use App\Compartido\Graph\GraphApiException;
 use App\Compartido\Graph\GraphClient;
 use App\Compartido\Storage\AdjuntoStorageService;
 use App\Conversacion\Mensaje;
-use App\Conversacion\MessageCreatedEvent;
-use App\Conversacion\MessageUpdatedEvent;
 use App\Conversacion\TipoDeRemitente;
 use App\Ticket\Ticket;
-use App\Ticket\TicketCreatedEvent;
 use PHPUnit\Framework\MockObject\MockObject;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -22,8 +19,8 @@ use Symfony\Component\HttpFoundation\Response;
  * (phase 4b-0): what a signed Meta payload stores, which outbox rows it
  * writes, and which entries it skips or cuts. Graph and storage are stubbed.
  *
- * Both the outbox `event_type` and the payload `type` are the event class
- * name (for example App\Ticket\TicketCreatedEvent).
+ * Both the outbox `event_type` and the payload `type` are the internal
+ * event name (for example ticket.creado).
  *
  * The window-expired reopen is covered by HandleInboundMessageUseCaseWindowReopenTest.
  */
@@ -169,14 +166,14 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
         self::assertNotNull($ticket['last_inbound_message_at']);
 
         $outbox = $this->outboxRows();
-        self::assertSame([TicketCreatedEvent::class, MessageCreatedEvent::class], \array_column($outbox, 'event_type'));
+        self::assertSame(['ticket.creado', 'mensaje.creado'], \array_column($outbox, 'event_type'));
         foreach ($outbox as $row) {
             self::assertSame(['ticket', (int) $ticket['id'], 'tickets', 0], [
                 $row['aggregate_type'], (int) $row['aggregate_id'], $row['topic'], (int) $row['sequence'],
             ]);
         }
         $this->assertPayloadKeys(['event_id', 'type', 'ticket_id', 'occurred_at', 'seq', 'version', 'status', 'priority'], $outbox[0]['payload']);
-        self::assertSame([TicketCreatedEvent::class, (int) $ticket['id'], 1, 1, 'new', 1], [
+        self::assertSame(['ticket.creado', (int) $ticket['id'], 1, 1, 'new', 1], [
             $outbox[0]['payload']['type'], $outbox[0]['payload']['ticket_id'], $outbox[0]['payload']['seq'],
             $outbox[0]['payload']['version'], $outbox[0]['payload']['status'], $outbox[0]['payload']['priority'],
         ]);
@@ -207,7 +204,7 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
         self::assertSame(1, $this->countRows('conversations'));
         self::assertSame(['Uno', 'Dos'], \array_column($this->inboundMessages(), 'content'));
         $outbox = $this->outboxRows();
-        self::assertSame([MessageCreatedEvent::class], \array_column($outbox, 'event_type'));
+        self::assertSame(['mensaje.creado'], \array_column($outbox, 'event_type'));
         self::assertSame(3, $outbox[0]['payload']['seq']);
         self::assertSame(3, (int) $this->ticketRow()['last_event_seq']);
     }
@@ -248,7 +245,7 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
         self::assertSame(1, $this->countRows('tickets'));
         self::assertSame('active', $this->ticketRow()['status']);
         self::assertSame((int) $ticket->getId(), (int) $this->ticketRow()['id']);
-        self::assertSame([MessageCreatedEvent::class], \array_column($this->outboxRows(), 'event_type'));
+        self::assertSame(['mensaje.creado'], \array_column($this->outboxRows(), 'event_type'));
     }
 
     // ────────────────────────────────────────────────────────
@@ -272,7 +269,7 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
         $this->assertAcknowledged($response);
         self::assertSame(['wamid.char-in-w1'], \array_column($this->inboundMessages(), 'external_id'));
         self::assertSame('active', $this->ticketRow()['status']);
-        self::assertSame([MessageCreatedEvent::class], \array_column($this->outboxRows(), 'event_type'));
+        self::assertSame(['mensaje.creado'], \array_column($this->outboxRows(), 'event_type'));
     }
 
     public function testUnsupportedTypesAndMessagesWithoutSenderAreSkipped(): void
@@ -332,7 +329,7 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
             'caption' => 'mirá', 'filename' => 'file', 'kind' => 'image', 'mimeType' => 'image/jpeg', 'providerId' => 'media-in-1', 'size' => 8,
         ], $media);
         $outbox = $this->outboxRows();
-        self::assertSame(MessageCreatedEvent::class, $outbox[1]['event_type']);
+        self::assertSame('mensaje.creado', $outbox[1]['event_type']);
         self::assertSame('media-in-1', $outbox[1]['payload']['media']['providerId']);
     }
 
@@ -377,7 +374,7 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
 
         $message = $this->inboundMessages()[0];
         self::assertSame(['🖼 Imagen: ', null], [$message['content'], $message['media']]);
-        self::assertSame([TicketCreatedEvent::class, MessageCreatedEvent::class], \array_column($this->outboxRows(), 'event_type'));
+        self::assertSame(['ticket.creado', 'mensaje.creado'], \array_column($this->outboxRows(), 'event_type'));
     }
 
     // ────────────────────────────────────────────────────────
@@ -403,7 +400,7 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
             $auto['content'], $auto['external_id'], $auto['delivery_status'], $auto['sender_type'], (int) $auto['sender_agent_id'],
         ]);
         $outbox = $this->outboxRows();
-        self::assertSame([TicketCreatedEvent::class, MessageCreatedEvent::class, MessageCreatedEvent::class], \array_column($outbox, 'event_type'));
+        self::assertSame(['ticket.creado', 'mensaje.creado', 'mensaje.creado'], \array_column($outbox, 'event_type'));
         self::assertSame(['outbound', 'Ya te respondemos', 'Ausente', 3], [
             $outbox[2]['payload']['direction'], $outbox[2]['payload']['content'], $outbox[2]['payload']['sender_name'], $outbox[2]['payload']['seq'],
         ]);
@@ -444,7 +441,7 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
         self::assertSame(['delivery_status' => 'delivered', 'failed_reason' => null], $this->deliveryStatus('wamid.char-st-1'));
         $outbox = $this->outboxRows();
         self::assertCount(1, $outbox);
-        self::assertSame([MessageUpdatedEvent::class, 'tickets', 1], [$outbox[0]['event_type'], $outbox[0]['topic'], (int) $outbox[0]['sequence']]);
+        self::assertSame(['mensaje.actualizado', 'tickets', 1], [$outbox[0]['event_type'], $outbox[0]['topic'], (int) $outbox[0]['sequence']]);
         $this->assertPayloadKeys(
             ['event_id', 'type', 'ticket_id', 'occurred_at', 'seq', 'version', 'message_id', 'delivery_status', 'failed_reason', 'phone_number_id'],
             $outbox[0]['payload'],

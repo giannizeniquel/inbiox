@@ -22,9 +22,8 @@ final readonly class EventoEnTiempoRealFactory
      */
     public function build(EventoOutbox $evento): array
     {
-        $stored   = $evento->getPayload();
-        $phpClass = $evento->getTipoDeEvento();
-        $enumValue = $this->resolverTipoDeEvento($phpClass, $stored);
+        $stored    = $evento->getPayload();
+        $enumValue = $this->mapper->aTipoEnTiempoReal($evento->getTipoDeEvento(), $stored);
 
         return [
             'eventId'   => (string) ($stored['event_id'] ?? $evento->getId()),
@@ -34,22 +33,6 @@ final readonly class EventoEnTiempoRealFactory
             'ticketId'  => (string) $evento->getAggregateId(),
             'payload'   => $this->armarPayload($enumValue, $stored, (int) $evento->getAggregateId()),
         ];
-    }
-
-    /**
-     * Resuelve el FQCN de PHP + payload al TipoDeEventoEnTiempoReal correcto.
-     * Un TicketUpdatedEvent con assignee_id se mapea a TicketAssigned.
-     */
-    private function resolverTipoDeEvento(string $phpClass, array $stored): TipoDeEventoEnTiempoReal
-    {
-        if ($this->mapper->isTicketAsignado($phpClass, $stored)) {
-            return TipoDeEventoEnTiempoReal::TICKET_ASIGNADO;
-        }
-        // Maneja tipos de evento en formato de cable (ya son valores del enum, no FQCN)
-        if (str_starts_with($phpClass, 'ticket.') || str_starts_with($phpClass, 'message.') || str_starts_with($phpClass, 'agent.') || str_starts_with($phpClass, 'conversation.')) {
-            return TipoDeEventoEnTiempoReal::from($phpClass);
-        }
-        return TipoDeEventoEnTiempoReal::from($this->mapper->toEnum($phpClass));
     }
 
     /**

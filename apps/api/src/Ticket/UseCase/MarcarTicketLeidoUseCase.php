@@ -6,6 +6,7 @@ namespace App\Ticket\UseCase;
 
 use App\Compartido\Outbox\EventoOutbox;
 use App\Compartido\Outbox\OutboxWriter;
+use App\Compartido\Outbox\TipoDeEventoDeOutbox;
 use App\Compartido\Realtime\TipoDeEventoEnTiempoReal;
 use App\Ticket\Ticket;
 use Doctrine\ORM\EntityManagerInterface;
@@ -38,7 +39,7 @@ final class MarcarTicketLeidoUseCase
             aggregateType: 'ticket',
             aggregateId: $ticketId,
             topic: 'tickets',
-            tipoDeEvento: TipoDeEventoEnTiempoReal::TICKET_LEIDO->value,
+            tipoDeEvento: TipoDeEventoDeOutbox::TICKET_LEIDO->value,
             payload: [
                 'eventType' => TipoDeEventoEnTiempoReal::TICKET_LEIDO->value,
                 'ticketId' => $ticketId,

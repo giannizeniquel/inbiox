@@ -9,12 +9,9 @@ use App\Compartido\Graph\GraphApiException;
 use App\Compartido\Graph\GraphClient;
 use App\Compartido\Storage\AdjuntoStorageService;
 use App\Conversacion\Mensaje;
-use App\Conversacion\MessageCreatedEvent;
 use App\Conversacion\TipoDeRemitente;
-use App\Conversacion\MessageUpdatedEvent;
 use App\Conversacion\UseCase\ProcesarMensajeEntranteUseCase;
 use App\Ticket\Ticket;
-use App\Ticket\TicketCreatedEvent;
 use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use Symfony\Component\HttpKernel\Log\Logger;
@@ -245,10 +242,10 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
             $this->connection()->fetchAllAssociative('SELECT t.phone_number_id, c.name FROM tickets t JOIN contacts c ON c.id = t.contact_id ORDER BY t.id'),
         );
         self::assertSame([
-            [MessageCreatedEvent::class, 1],
-            [MessageUpdatedEvent::class, 2],
-            [TicketCreatedEvent::class, 1],
-            [MessageCreatedEvent::class, 2],
+            ['mensaje.creado', 1],
+            ['mensaje.actualizado', 2],
+            ['ticket.creado', 1],
+            ['mensaje.creado', 2],
         ], $this->outbox());
         self::assertSame([], $this->logLines('Failed to process inbound message', 'Webhook dispatch error'));
     }
@@ -366,7 +363,7 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
         $this->assertAcknowledged($response);
         self::assertSame(['wamid.probe-w1'], $this->inboundWamids());
         self::assertSame('active', $this->connection()->fetchOne('SELECT status FROM tickets'));
-        self::assertSame([[MessageCreatedEvent::class, 1]], $this->outbox());
+        self::assertSame([['mensaje.creado', 1]], $this->outbox());
         self::assertSame(
             [['error', 'Failed to process inbound message', ['error', 'from', 'wamid']]],
             $this->logLines('Failed to process inbound message', 'Webhook dispatch error'),
@@ -393,7 +390,7 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
             ['window_expired_closed', 'window_reopened'],
             $this->connection()->fetchFirstColumn("SELECT type FROM ticket_events WHERE type LIKE 'window%' ORDER BY id"),
         );
-        self::assertSame([[MessageCreatedEvent::class, 3]], $this->outbox());
+        self::assertSame([['mensaje.creado', 3]], $this->outbox());
     }
 
     public function testDuplicateWamidInOnePayloadAndFromAnotherSender(): void
@@ -413,7 +410,7 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
         self::assertSame(1, $this->countRows('contacts'));
         self::assertSame(1, $this->countRows('conversations'));
         self::assertSame(1, $this->countRows('tickets'));
-        self::assertSame([[TicketCreatedEvent::class, 1], [MessageCreatedEvent::class, 2]], $this->outbox());
+        self::assertSame([['ticket.creado', 1], ['mensaje.creado', 2]], $this->outbox());
         self::assertSame([], $this->logLines('Failed to process inbound message', 'Webhook dispatch error'));
     }
 
@@ -454,7 +451,7 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
             [['content' => '📎 Documento: a.pdf', 'media' => null]],
             $this->connection()->fetchAllAssociative("SELECT content, media FROM messages WHERE direction = 'inbound'"),
         );
-        self::assertSame([[TicketCreatedEvent::class, 1], [MessageCreatedEvent::class, 2]], $this->outbox());
+        self::assertSame([['ticket.creado', 1], ['mensaje.creado', 2]], $this->outbox());
         // DescargaDeAdjuntoService absorbs the storage failure itself.
         self::assertSame([], $this->logLines('Failed to process inbound media'));
     }
@@ -482,7 +479,7 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
         );
         self::assertNull($rows[1]['media']);
         self::assertSame([
-            [TicketCreatedEvent::class, 1], [MessageCreatedEvent::class, 2], [MessageCreatedEvent::class, 3],
+            ['ticket.creado', 1], ['mensaje.creado', 2], ['mensaje.creado', 3],
         ], $this->outbox());
     }
 
@@ -501,6 +498,6 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
         self::assertSame(['wamid.probe-q'], $this->inboundWamids());
         self::assertSame(0, $this->countRows('messages', "direction = 'outbound'"));
         self::assertSame(0, $this->countRows('processed_events', "event_id LIKE 'auto-reply:%'"));
-        self::assertSame([TicketCreatedEvent::class, MessageCreatedEvent::class], \array_column($this->outbox(), 0));
+        self::assertSame(['ticket.creado', 'mensaje.creado'], \array_column($this->outbox(), 0));
     }
 }

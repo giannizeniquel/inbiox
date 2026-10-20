@@ -239,7 +239,7 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
         $messages = $this->outboundMessages((int) $ticket->getId());
         self::assertCount(1, $messages);
         self::assertSame([null, 'sent'], [$messages[0]['external_id'], $messages[0]['delivery_status']]);
-        self::assertSame(1, $this->countRows('outbox_events', "event_type LIKE '%MessageCreatedEvent' AND aggregate_id = ?", [$ticket->getId()]));
+        self::assertSame(1, $this->countRows('outbox_events', "event_type = 'mensaje.creado' AND aggregate_id = ?", [$ticket->getId()]));
     }
 
     public function testSendWithoutWamidInTheGraphResponseLeavesTheMessageWithoutWamid(): void

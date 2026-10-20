@@ -193,7 +193,7 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
         self::assertSame('ticket', $row['aggregate_type']);
         self::assertSame($ticket->getId(), (int) $row['aggregate_id']);
         self::assertSame('tickets', $row['topic']);
-        self::assertSame('ticket.read', $row['event_type']);
+        self::assertSame('ticket.leido', $row['event_type']);
         self::assertSame('pending', $row['status']);
         self::assertSame(0, (int) $row['sequence']);
         self::assertMatchesRegularExpression('/^[0-9A-HJKMNP-TV-Z]{26}$/', $row['id']);

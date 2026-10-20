@@ -3,6 +3,7 @@
 namespace App\Ticket;
 
 use App\Compartido\DomainEvent;
+use App\Compartido\Outbox\TipoDeEventoDeOutbox;
 
 use Symfony\Component\Uid\Ulid;
 
@@ -19,7 +20,7 @@ final readonly class TicketUpdatedEvent extends DomainEvent
     ) {
         parent::__construct(
             $eventId,
-            self::class,
+            TipoDeEventoDeOutbox::TICKET_ACTUALIZADO->value,
             $ticketId,
             $occurredAt,
             $seq,

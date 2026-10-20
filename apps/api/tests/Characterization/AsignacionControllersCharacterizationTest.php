@@ -15,8 +15,8 @@ use App\Ticket\Repository\TicketRepository;
 final class AsignacionControllersCharacterizationTest extends CharacterizationTestCase
 {
     // Characterization: current behavior, not necessarily desired.
-    // This writer stores event FQCNs as event_type, while mark-read stores 'ticket.read'.
-    private const EXPECTED_AUTO_ASSIGN_EVENT_TYPES = ['App\\Ticket\\TicketUpdatedEvent', 'App\\Ticket\\InboxUpdatedEvent'];
+    // This writer stores the internal event names as event_type.
+    private const EXPECTED_AUTO_ASSIGN_EVENT_TYPES = ['ticket.actualizado', 'ticket.bandeja_actualizada'];
 
     // ── app_ticket_auto_assign ──
 

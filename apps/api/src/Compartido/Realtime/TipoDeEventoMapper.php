@@ -2,41 +2,38 @@
 
 namespace App\Compartido\Realtime;
 
+use App\Compartido\Outbox\TipoDeEventoDeOutbox;
+
 /**
- * Mapea los FQCN de los eventos de dominio de PHP a valores del enum TipoDeEventoEnTiempoReal.
- * Única fuente de verdad del mapeo de FQCN → string del enum.
+ * Única tabla que traduce el tipo guardado en el outbox (`TipoDeEventoDeOutbox`, o su alias
+ * legado) al tipo de evento de Mercure (`TipoDeEventoEnTiempoReal`).
  */
 final readonly class TipoDeEventoMapper
 {
-    private const MAP = [
-        \App\Ticket\TicketCreatedEvent::class              => TipoDeEventoEnTiempoReal::TICKET_CREADO,
-        \App\Ticket\TicketUpdatedEvent::class              => TipoDeEventoEnTiempoReal::ESTADO_DE_TICKET_CAMBIADO,
-        \App\Conversacion\MessageCreatedEvent::class             => TipoDeEventoEnTiempoReal::MENSAJE_AGREGADO,
-        \App\Conversacion\MessageUpdatedEvent::class             => TipoDeEventoEnTiempoReal::MENSAJE_ACTUALIZADO,
-        \App\Disponibilidad\AgentAvailabilityChangedEvent::class   => TipoDeEventoEnTiempoReal::DISPONIBILIDAD_DE_AGENTE_CAMBIADA,
-        \App\Disponibilidad\AgentShiftChangedEvent::class          => TipoDeEventoEnTiempoReal::TURNO_DE_AGENTE_CAMBIADO,
-    ];
-
     /**
-     * Mapea un FQCN de PHP a su valor string correspondiente de TipoDeEventoEnTiempoReal.
+     * Mapea un valor guardado de `outbox_events.event_type` al tipo de Mercure.
      *
-     * @throws \InvalidArgumentException si no existe un mapeo para el nombre de la clase
+     * Un ticket actualizado sale como ticket asignado si el payload trae responsable
+     * (`assignee_id` u `ownerAgentId`), y como cambio de estado si no.
+     *
+     * @param array<string, mixed> $payload
+     *
+     * @throws \InvalidArgumentException si el valor no tiene tipo de Mercure (desconocido, o la
+     *                                   bandeja actualizada, que nunca se publica)
      */
-    public function toEnum(string $phpClassName): string
+    public function aTipoEnTiempoReal(string $valorGuardado, array $payload): TipoDeEventoEnTiempoReal
     {
-        if (!isset(self::MAP[$phpClassName])) {
-            throw new \InvalidArgumentException("Unknown event class: $phpClassName");
-        }
-        return self::MAP[$phpClassName]->value;
-    }
-
-    /**
-     * Determina si un TicketUpdatedEvent representa un evento ticket.assigned
-     * (tiene assignee_id en el payload).
-     */
-    public function isTicketAsignado(string $phpClassName, array $payload): bool
-    {
-        return $phpClassName === \App\Ticket\TicketUpdatedEvent::class
-            && (isset($payload['assignee_id']) || isset($payload['ownerAgentId']));
+        return match (TipoDeEventoDeOutbox::desdeValorGuardado($valorGuardado)) {
+            TipoDeEventoDeOutbox::TICKET_CREADO => TipoDeEventoEnTiempoReal::TICKET_CREADO,
+            TipoDeEventoDeOutbox::TICKET_ACTUALIZADO => isset($payload['assignee_id']) || isset($payload['ownerAgentId'])
+                ? TipoDeEventoEnTiempoReal::TICKET_ASIGNADO
+                : TipoDeEventoEnTiempoReal::ESTADO_DE_TICKET_CAMBIADO,
+            TipoDeEventoDeOutbox::MENSAJE_CREADO => TipoDeEventoEnTiempoReal::MENSAJE_AGREGADO,
+            TipoDeEventoDeOutbox::MENSAJE_ACTUALIZADO => TipoDeEventoEnTiempoReal::MENSAJE_ACTUALIZADO,
+            TipoDeEventoDeOutbox::DISPONIBILIDAD_DE_AGENTE_CAMBIADA => TipoDeEventoEnTiempoReal::DISPONIBILIDAD_DE_AGENTE_CAMBIADA,
+            TipoDeEventoDeOutbox::TURNO_DE_AGENTE_CAMBIADO => TipoDeEventoEnTiempoReal::TURNO_DE_AGENTE_CAMBIADO,
+            TipoDeEventoDeOutbox::TICKET_LEIDO => TipoDeEventoEnTiempoReal::TICKET_LEIDO,
+            TipoDeEventoDeOutbox::BANDEJA_DE_TICKET_ACTUALIZADA, null => throw new \InvalidArgumentException("Unknown event class: $valorGuardado"),
+        };
     }
 }

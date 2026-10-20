@@ -75,9 +75,9 @@ trait ReadModelFixture
                 (880001, 'ASSIGN', '2026-01-01 09:01:00', 880001, NULL, 880001, 880001, NULL),
                 (880002, 'REASSIGN', '2026-01-01 12:30:00', 880001, NULL, 880001, 880002, 880001)",
             "INSERT INTO outbox_events (id, aggregate_type, aggregate_id, topic, event_type, payload, created_at, retry_count, status, sequence) VALUES
-                (880001, 'Ticket', 880001, 't', 'App\\\\Ticket\\\\Event\\\\TicketCreated', '{}', '2026-01-01 09:00:00', 0, 'published', 1),
-                (880002, 'Ticket', 880001, 't', 'App\\\\Ticket\\\\Event\\\\TicketUpdated', '{}', '2026-01-01 11:20:00', 0, 'published', 2),
-                (880003, 'Message', 880001, 't', 'App\\\\Ticket\\\\Event\\\\TicketCreated', '{}', '2026-01-01 08:00:00', 0, 'published', 3)",
+                (880001, 'Ticket', 880001, 't', 'ticket.creado', '{}', '2026-01-01 09:00:00', 0, 'published', 1),
+                (880002, 'Ticket', 880001, 't', 'ticket.actualizado', '{}', '2026-01-01 11:20:00', 0, 'published', 2),
+                (880003, 'Message', 880001, 't', 'ticket.creado', '{}', '2026-01-01 08:00:00', 0, 'published', 3)",
         ] as $sql) {
             $this->conn->executeStatement($sql);
         }
