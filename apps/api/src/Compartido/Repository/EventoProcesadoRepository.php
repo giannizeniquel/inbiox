@@ -21,15 +21,15 @@ class EventoProcesadoRepository extends ServiceEntityRepository
      */
     public function exists(string $eventId): bool
     {
-        return $this->findOneBy(['eventId' => $eventId]) !== null;
+        return $this->findOneBy(['eventoId' => $eventId]) !== null;
     }
 
     /**
      * Find processed event by event ID
      */
-    public function findByEventId(string $eventId): ?EventoProcesado
+    public function findByEventoId(string $eventId): ?EventoProcesado
     {
-        return $this->findOneBy(['eventId' => $eventId]);
+        return $this->findOneBy(['eventoId' => $eventId]);
     }
 
     /**

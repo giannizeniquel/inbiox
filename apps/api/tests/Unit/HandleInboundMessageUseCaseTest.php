@@ -207,7 +207,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
         // Stub required interactions
         $this->ruleExecutor->method('execute');
         $this->eventDispatcher->method('dispatch');
-        $this->eventCollector->method('collect');
+        $this->eventCollector->method('recolectar');
 
         $result = $this->useCase->procesarMensajeEntrante($phone, $message, null, $phoneNumberId);
 
@@ -261,7 +261,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
         $this->em->method('lock');
         $this->ruleExecutor->method('execute');
         $this->eventDispatcher->method('dispatch');
-        $this->eventCollector->method('collect');
+        $this->eventCollector->method('recolectar');
 
         $result = $this->useCase->procesarMensajeEntrante($phone, $message, null, $phoneNumberId);
 
@@ -314,7 +314,7 @@ class HandleInboundMessageUseCaseTest extends TestCase
         $this->em->method('lock');
         $this->ruleExecutor->method('execute');
         $this->eventDispatcher->method('dispatch');
-        $this->eventCollector->method('collect');
+        $this->eventCollector->method('recolectar');
 
         $result = $this->useCase->procesarMensajeEntrante($phone, $message);
 

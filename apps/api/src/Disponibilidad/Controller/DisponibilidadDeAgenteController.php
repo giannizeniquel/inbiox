@@ -269,7 +269,7 @@ class DisponibilidadDeAgenteController
      */
     private function isPermitidoParaAgente(int $agenteId): bool
     {
-        $scopeId = $this->ownershipScope->getAgentId();
+        $scopeId = $this->ownershipScope->getAgenteId();
 
         // null scope means SUPERVISOR/ADMIN (no scope restriction)
         if (null === $scopeId) {

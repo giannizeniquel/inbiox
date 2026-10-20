@@ -70,7 +70,7 @@ class ReporteController
      */
     private function getAgenteIdDeAlcance(): ?int
     {
-        return $this->ownershipScope->getAgentId();
+        return $this->ownershipScope->getAgenteId();
     }
 
     /**
@@ -79,7 +79,7 @@ class ReporteController
      */
     private function getPhoneNumberIdDeAlcance(): ?string
     {
-        return $this->workspaceScope->getActivePhoneNumberId();
+        return $this->workspaceScope->getPhoneNumberIdActivo();
     }
 
     /**

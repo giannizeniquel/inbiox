@@ -44,7 +44,7 @@ class ContactoController
         $email = $request->query->get('email');
 
         // Workspace scope: AGENT sees only contacts with conversations in active workspace
-        $phoneNumberId = $this->workspaceScope->getActivePhoneNumberId();
+        $phoneNumberId = $this->workspaceScope->getPhoneNumberIdActivo();
 
         $result = $this->listContactosQuery->execute(
             page: $page,

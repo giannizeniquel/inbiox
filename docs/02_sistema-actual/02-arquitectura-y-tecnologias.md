@@ -163,7 +163,7 @@ sequenceDiagram
 | Escritura en outbox | Un solo escritor: `Compartido/Outbox/OutboxWriter::write()` (persist + flush, siempre después del commit del negocio). Cada caso de uso sigue armando **su propio payload** en `persistEventsToOutbox()`: `ProcesarMensajeEntranteUseCase.php:109-157`, `ProcesarMensajeSalienteUseCase.php:371-428`, `AsignarTicketUseCase.php:145-184`, `AsignarTicketAutomaticamenteUseCase.php:211-249`, `ProcesarActualizacionDeEstadoUseCase.php:216-257`. Disponibilidad, turnos y `MarcarTicketLeidoUseCase` arman un `EventoOutbox` y lo pasan al mismo escritor. |
 | Publicación | `Compartido/Command/OutboxPublishCommand.php` → `Compartido/Outbox/OutboxPublisherService.php` |
 | Contrato | `Compartido/Realtime/EventoEnTiempoRealFactory.php`, `TipoDeEventoMapper.php`, `TipoDeEventoEnTiempoReal.php` (`ticket.created`, `ticket.status_changed`, `ticket.assigned`, `message.added`, `message.updated`, `conversation.updated`, `agent.availability_changed`, `agent.shift_changed`) |
-| Token de suscripción | `GET /api/mercure/token` → `MercureJwtService::issueForUser()`; en la práctica el frontend **no lo usa para suscribirse** (el hub es anónimo), solo para el resync. |
+| Token de suscripción | `GET /api/mercure/token` → `MercureJwtService::issueParaUsuario()`; en la práctica el frontend **no lo usa para suscribirse** (el hub es anónimo), solo para el resync. |
 | Frontend | `core/realtime/mercure.service.ts`, `core/realtime/event-bus.service.ts`, `core/stores/ticket.store.ts:112-208`, `core/stores/conversation.store.ts:65-107` |
 
 ### Problemas conocidos del pipeline
@@ -173,8 +173,8 @@ Deducidos de la lectura; confirmar con `SELECT event_type, status, COUNT(*) FROM
 | # | Problema | Evidencia |
 |---|---|---|
 | P-1 | `InboxUpdatedEvent` no está en `TipoDeEventoMapper` → falla 5 veces → `dead_letter`. | `TipoDeEventoMapper.php:11-19`; `OutboxPublisherService.php:206-210` |
-| P-2 | `outbox_events.sequence` queda en 0 salvo en estados de entrega → el resync por `afterSequence` no devuelve casi nada. | `ProcesarActualizacionDeEstadoUseCase.php:245`; `EventoOutboxRepository::findResyncRows` |
-| P-3 | El resync filtra por `aggregate_id` sin `aggregate_type` (mezcla eventos de agente y de ticket). Además es inalcanzable (401 del firewall). | `EventoOutboxRepository::findResyncRows` |
+| P-2 | `outbox_events.sequence` queda en 0 salvo en estados de entrega → el resync por `afterSequence` no devuelve casi nada. | `ProcesarActualizacionDeEstadoUseCase.php:245`; `EventoOutboxRepository::findFilasParaResincronizar` |
+| P-3 | El resync filtra por `aggregate_id` sin `aggregate_type` (mezcla eventos de agente y de ticket). Además es inalcanzable (401 del firewall). | `EventoOutboxRepository::findFilasParaResincronizar` |
 | P-4 | En el mensaje entrante, la auto-asignación se publica como `ticket.status_changed` vacío, no como `ticket.assigned`. | `ProcesarMensajeEntranteUseCase.php:124-142` |
 | P-5 | Resolver, cerrar, transicionar y el cierre por ventana **no escriben nada** en el outbox. | `CambiarEstadoDeTicketUseCase.php` (no tiene `RecolectorDeEventos`) |
 | P-6 | `ConversationUpdatedEvent` existía en el contrato sin que nadie lo emitiera; se borró en la fase 1 (el frontend todavía declara `conversation.updated`). (`ticket.read` sí se emite: lo inserta `BandejaController::marcarLeido` por SQL con el tipo ya en formato de contrato, que `EventoEnTiempoRealFactory::resolveEnum()` acepta.) | `BandejaController.php:189-202`; `EventoEnTiempoRealFactory.php:42-53` |

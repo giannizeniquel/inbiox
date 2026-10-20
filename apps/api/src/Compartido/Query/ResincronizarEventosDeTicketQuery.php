@@ -27,7 +27,7 @@ final class ResincronizarEventosDeTicketQuery
         $events = [];
         $highest = $afterSequence;
 
-        foreach ($this->outboxEventRepository->findResyncRows($ticketId, $afterSequence) as $row) {
+        foreach ($this->outboxEventRepository->findFilasParaResincronizar($ticketId, $afterSequence) as $row) {
             $events[] = $this->factory->build($this->hydrateEvent($row));
             $highest = max($highest, (int) $row['sequence']);
         }
@@ -61,14 +61,14 @@ final class ResincronizarEventosDeTicketQuery
         $idReflection->setValue($event, $row['id']);
 
         // Set created_at
-        $createdAtReflection = new \ReflectionProperty(EventoOutbox::class, 'createdAt');
+        $createdAtReflection = new \ReflectionProperty(EventoOutbox::class, 'creadoAt');
         $createdAtReflection->setAccessible(true);
         if (isset($row['created_at'])) {
             $createdAtReflection->setValue($event, new \DateTimeImmutable($row['created_at']));
         }
 
         // Set status
-        $statusReflection = new \ReflectionProperty(EventoOutbox::class, 'status');
+        $statusReflection = new \ReflectionProperty(EventoOutbox::class, 'estado');
         $statusReflection->setAccessible(true);
         $statusReflection->setValue($event, $row['status'] ?? 'pending');
 

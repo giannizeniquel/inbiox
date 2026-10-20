@@ -70,7 +70,7 @@ class OutboxEventRepositoryTest extends KernelTestCase
         $published = $this->createEvent('1990-01-01 00:00:00', 'pending', '1990-01-01 00:00:05');
         $deadLetter = $this->createEvent('1990-01-01 00:00:00', 'dead_letter');
 
-        $rows = $this->repo->findPendingBatch();
+        $rows = $this->repo->findLotePendiente();
         $mine = array_values(array_filter($rows, fn (array $r) => (int) $r['aggregate_id'] === self::AGGREGATE_ID));
 
         self::assertSame([$first, $second], array_column($mine, 'id'));
@@ -87,7 +87,7 @@ class OutboxEventRepositoryTest extends KernelTestCase
     {
         $id = $this->createEvent('1990-01-01 00:00:00');
 
-        $this->repo->markPublished($id, new \DateTimeImmutable('2026-05-06 07:08:09'));
+        $this->repo->marcarPublicado($id, new \DateTimeImmutable('2026-05-06 07:08:09'));
 
         $row = $this->row($id);
         self::assertSame('published', $row['status']);
@@ -98,7 +98,7 @@ class OutboxEventRepositoryTest extends KernelTestCase
     {
         $id = $this->createEvent('1990-01-01 00:00:00', 'pending', null, 4);
 
-        $this->repo->markDeadLetter($id, 5, 'dead_letter');
+        $this->repo->marcarDeadLetter($id, 5, 'dead_letter');
 
         $row = $this->row($id);
         self::assertSame('dead_letter', $row['status']);
@@ -109,7 +109,7 @@ class OutboxEventRepositoryTest extends KernelTestCase
     {
         $id = $this->createEvent('1990-01-01 00:00:00', 'pending', null, 2);
 
-        $this->repo->incrementRetryCount($id);
+        $this->repo->incrementarReintentos($id);
 
         $row = $this->row($id);
         self::assertSame(3, (int) $row['retry_count']);
@@ -136,9 +136,9 @@ class OutboxEventRepositoryTest extends KernelTestCase
         $deadLetter = $this->createEvent('1990-01-01 00:00:00', 'dead_letter', null, 5);
         $pending = $this->createEvent('1990-01-01 00:00:00', 'pending', null, 3);
 
-        self::assertSame(1, $this->repo->resetDeadLetterToPending($deadLetter));
-        self::assertSame(0, $this->repo->resetDeadLetterToPending($pending));
-        self::assertSame(0, $this->repo->resetDeadLetterToPending('missing-id'));
+        self::assertSame(1, $this->repo->devolverDeadLetterAPendiente($deadLetter));
+        self::assertSame(0, $this->repo->devolverDeadLetterAPendiente($pending));
+        self::assertSame(0, $this->repo->devolverDeadLetterAPendiente('missing-id'));
 
         $row = $this->row($deadLetter);
         self::assertSame('pending', $row['status']);
@@ -152,7 +152,7 @@ class OutboxEventRepositoryTest extends KernelTestCase
         $recent = $this->createEvent('1990-03-01 00:00:00', 'dead_letter');
         $oldPending = $this->createEvent('1990-01-01 00:00:00');
 
-        $deleted = $this->repo->purgeDeadLettersCreatedBefore('1990-02-01 00:00:00');
+        $deleted = $this->repo->purgarDeadLettersCreadosAntesDe('1990-02-01 00:00:00');
 
         self::assertGreaterThanOrEqual(1, $deleted);
         self::assertFalse($this->row($old));
@@ -174,7 +174,7 @@ class OutboxEventRepositoryTest extends KernelTestCase
         $second = $this->withSequence($this->createEvent('1990-01-01 00:00:00'), 7);
         $this->withSequence($this->createEvent('1990-01-01 00:00:00', 'dead_letter'), 8);
 
-        $rows = $this->repo->findResyncRows(self::AGGREGATE_ID, 5);
+        $rows = $this->repo->findFilasParaResincronizar(self::AGGREGATE_ID, 5);
 
         self::assertSame([$second, $third], array_column($rows, 'id'));
         self::assertSame(
@@ -189,7 +189,7 @@ class OutboxEventRepositoryTest extends KernelTestCase
             $this->withSequence($this->createEvent('1990-01-01 00:00:00'), $i);
         }
 
-        $rows = $this->repo->findResyncRows(self::AGGREGATE_ID, 0);
+        $rows = $this->repo->findFilasParaResincronizar(self::AGGREGATE_ID, 0);
 
         self::assertCount(100, $rows);
         self::assertSame(100, (int) $rows[99]['sequence']);

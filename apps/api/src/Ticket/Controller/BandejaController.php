@@ -51,10 +51,10 @@ class BandejaController
             $equipoId = null !== $equipoIdRaw ? (int) $equipoIdRaw : null;
 
             // Ownership scope: AGENT sees only own tickets; SUPERVISOR/ADMIN see all
-            $scopeAgenteId = $this->ownershipScope->getAgentId();
+            $scopeAgenteId = $this->ownershipScope->getAgenteId();
 
             // Workspace scope: AGENT sees only active workspace's tickets
-            $phoneNumberId = $this->workspaceScope->getActivePhoneNumberId();
+            $phoneNumberId = $this->workspaceScope->getPhoneNumberIdActivo();
 
             $result = $this->listTicketsQuery->execute(
                 page: $page,

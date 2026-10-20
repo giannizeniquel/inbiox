@@ -210,7 +210,7 @@ final class AsignarTicketAutomaticamenteUseCase
      */
     private function persistEventsToOutbox(): void
     {
-        $events = $this->eventCollector->getEvents();
+        $events = $this->eventCollector->getEventos();
         if (empty($events)) {
             return;
         }
@@ -245,6 +245,6 @@ final class AsignarTicketAutomaticamenteUseCase
         }
 
         $this->outboxWriter->write(...$outboxEvents);
-        $this->eventCollector->clear();
+        $this->eventCollector->limpiar();
     }
 }

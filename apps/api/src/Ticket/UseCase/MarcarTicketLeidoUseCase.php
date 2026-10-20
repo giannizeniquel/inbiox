@@ -38,9 +38,9 @@ final class MarcarTicketLeidoUseCase
             aggregateType: 'ticket',
             aggregateId: $ticketId,
             topic: 'tickets',
-            eventType: TipoDeEventoEnTiempoReal::TicketRead->value,
+            eventType: TipoDeEventoEnTiempoReal::TICKET_LEIDO->value,
             payload: [
-                'eventType' => TipoDeEventoEnTiempoReal::TicketRead->value,
+                'eventType' => TipoDeEventoEnTiempoReal::TICKET_LEIDO->value,
                 'ticketId' => $ticketId,
             ],
         ));

@@ -33,7 +33,7 @@ class OwnershipScopeTest extends TestCase
         });
 
         $scope = new AlcanceDeResponsabilidad($security);
-        self::assertNull($scope->getAgentId());
+        self::assertNull($scope->getAgenteId());
     }
 
     public function testAdminReturnsNull(): void
@@ -48,7 +48,7 @@ class OwnershipScopeTest extends TestCase
         });
 
         $scope = new AlcanceDeResponsabilidad($security);
-        self::assertNull($scope->getAgentId());
+        self::assertNull($scope->getAgenteId());
     }
 
     public function testAgentWithoutLinkedAgentReturnsNull(): void
@@ -64,7 +64,7 @@ class OwnershipScopeTest extends TestCase
         });
 
         $scope = new AlcanceDeResponsabilidad($security);
-        self::assertNull($scope->getAgentId());
+        self::assertNull($scope->getAgenteId());
     }
 
     public function testUnauthenticatedReturnsNull(): void
@@ -73,6 +73,6 @@ class OwnershipScopeTest extends TestCase
         $security->method('getUser')->willReturn(null);
 
         $scope = new AlcanceDeResponsabilidad($security);
-        self::assertNull($scope->getAgentId());
+        self::assertNull($scope->getAgenteId());
     }
 }

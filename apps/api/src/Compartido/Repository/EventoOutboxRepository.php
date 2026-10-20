@@ -24,7 +24,7 @@ class EventoOutboxRepository extends ServiceEntityRepository
      *
      * @return list<array<string, mixed>>
      */
-    public function findPendingBatch(): array
+    public function findLotePendiente(): array
     {
         return $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->select('id', 'aggregate_type', 'aggregate_id', 'topic', 'event_type', 'payload', 'created_at', 'published_at', 'retry_count', 'status', 'sequence')
@@ -44,7 +44,7 @@ class EventoOutboxRepository extends ServiceEntityRepository
      *
      * @return list<array<string, mixed>>
      */
-    public function findResyncRows(int $aggregateId, int $afterSequence): array
+    public function findFilasParaResincronizar(int $aggregateId, int $afterSequence): array
     {
         return $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->select('id', 'aggregate_type', 'aggregate_id', 'topic', 'event_type', 'payload', 'created_at', 'published_at', 'retry_count', 'status', 'sequence')
@@ -59,7 +59,7 @@ class EventoOutboxRepository extends ServiceEntityRepository
             ->fetchAllAssociative();
     }
 
-    public function markPublished(string $id, \DateTimeImmutable $publishedAt): void
+    public function marcarPublicado(string $id, \DateTimeImmutable $publishedAt): void
     {
         $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->update('outbox_events')
@@ -74,7 +74,7 @@ class EventoOutboxRepository extends ServiceEntityRepository
     /**
      * Store the final retry count and move the event to `$status` (dead letter).
      */
-    public function markDeadLetter(string $id, int $retryCount, string $status): void
+    public function marcarDeadLetter(string $id, int $retryCount, string $status): void
     {
         $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->update('outbox_events')
@@ -87,7 +87,7 @@ class EventoOutboxRepository extends ServiceEntityRepository
             ->executeStatement();
     }
 
-    public function incrementRetryCount(string $id): void
+    public function incrementarReintentos(string $id): void
     {
         $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->update('outbox_events')
@@ -118,7 +118,7 @@ class EventoOutboxRepository extends ServiceEntityRepository
      *
      * @return int|string affected rows (0 when the event is missing or not dead-lettered)
      */
-    public function resetDeadLetterToPending(string $id): int|string
+    public function devolverDeadLetterAPendiente(string $id): int|string
     {
         return $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->update('outbox_events')
@@ -135,7 +135,7 @@ class EventoOutboxRepository extends ServiceEntityRepository
      *
      * @return int|string deleted rows
      */
-    public function purgeDeadLettersCreatedBefore(string $cutoff): int|string
+    public function purgarDeadLettersCreadosAntesDe(string $cutoff): int|string
     {
         return $this->getEntityManager()->getConnection()->createQueryBuilder()
             ->delete('outbox_events')

@@ -88,7 +88,7 @@ class ProcesarMensajeSalienteUseCase
         $eventKey = sprintf('outbound:%d:%s', $ticketId, $contentHash);
 
         // Check idempotency: return early if already processed (no retry needed)
-        $existingEvent = $this->processedEventRepo->findByEventId($eventKey);
+        $existingEvent = $this->processedEventRepo->findByEventoId($eventKey);
         if ($existingEvent !== null) {
             return [
                 'ticket_id' => $ticketId,
@@ -99,7 +99,7 @@ class ProcesarMensajeSalienteUseCase
                 'transition' => 'none',
                 'status' => 'duplicate_skipped',
                 'event_key' => $eventKey,
-                'cached_result' => $existingEvent->getResultData(),
+                'cached_result' => $existingEvent->getDatosDeResultado(),
             ];
         }
 
@@ -119,7 +119,7 @@ class ProcesarMensajeSalienteUseCase
                 // otherwise the retry re-collects the same events again,
                 // producing a phantom event with a duplicate seq
                 // (design.md D6).
-                $this->eventCollector->clear();
+                $this->eventCollector->limpiar();
 
                 $attempt++;
                 if ($attempt >= $maxRetries) {
@@ -147,7 +147,7 @@ class ProcesarMensajeSalienteUseCase
                 // there is no retry for these, but the collector must not
                 // carry stale events into some later, unrelated call
                 // (design.md D6).
-                $this->eventCollector->clear();
+                $this->eventCollector->limpiar();
                 throw $e;
             }
         }
@@ -227,7 +227,7 @@ class ProcesarMensajeSalienteUseCase
                 'transition' => $transicion ?? 'none',
             ];
             $processedEvent = new EventoProcesado($eventKey);
-            $processedEvent->setResultData($resultData);
+            $processedEvent->setDatosDeResultado($resultData);
             $this->em->persist($processedEvent);
 
             $this->em->flush();
@@ -399,7 +399,7 @@ class ProcesarMensajeSalienteUseCase
     private function registrarMessageCreatedEvent(Ticket $ticket, int $ticketId, Mensaje $mensaje, string $contenido, int $agenteId): void
     {
         $nombreDelRemitente = $agenteId > 0 ? $this->agenteRepo->findById($agenteId)?->getNombre() : null;
-        $this->eventCollector->collect(new MessageCreatedEvent(
+        $this->eventCollector->recolectar(new MessageCreatedEvent(
             eventId: new Ulid(),
             ticketId: $ticketId,
             occurredAt: new \DateTimeImmutable(),
@@ -419,7 +419,7 @@ class ProcesarMensajeSalienteUseCase
      */
     private function persistEventsToOutbox(): void
     {
-        $events = $this->eventCollector->getEvents();
+        $events = $this->eventCollector->getEventos();
         if (empty($events)) {
             return;
         }
@@ -473,6 +473,6 @@ class ProcesarMensajeSalienteUseCase
         }
 
         $this->outboxWriter->write(...$outboxEvents);
-        $this->eventCollector->clear();
+        $this->eventCollector->limpiar();
     }
 }

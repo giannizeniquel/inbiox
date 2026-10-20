@@ -28,7 +28,7 @@ final class EventosDeTicketController
     ) {}
 
     #[Route('/api/tickets/{id}/events', name: 'app_ticket_events_resync', methods: ['GET'])]
-    public function listSince(int $id, Request $request): JsonResponse
+    public function listarDesde(int $id, Request $request): JsonResponse
     {
         // 1. Auth: validate JWT
         $token = $this->resolveJwt($request);

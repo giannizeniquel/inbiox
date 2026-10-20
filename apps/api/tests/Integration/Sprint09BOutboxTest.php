@@ -79,7 +79,7 @@ class Sprint09BOutboxTest extends KernelTestCase
         $event = $events[0];
         
         // Verify published_at is NULL
-        $this->assertNull($event->getPublishedAt(), 'published_at should be NULL before publishing');
+        $this->assertNull($event->getPublicadoAt(), 'published_at should be NULL before publishing');
         
         // Verify payload contains required fields
         $payload = $event->getPayload();
@@ -118,14 +118,14 @@ class Sprint09BOutboxTest extends KernelTestCase
 
         // Create publisher manually (to avoid container issues in test)
         // We can test the core logic: marking published
-        $outboxEvent->markPublished();
+        $outboxEvent->marcarPublicado();
         $this->em->flush();
 
         // Assert - verify it was marked
         $this->em->clear();
         $event = $this->em->find(EventoOutbox::class, $outboxEvent->getId());
         
-        $this->assertNotNull($event->getPublishedAt(), 'published_at should be set');
+        $this->assertNotNull($event->getPublicadoAt(), 'published_at should be set');
     }
 
     // ============================================
@@ -145,23 +145,23 @@ class Sprint09BOutboxTest extends KernelTestCase
             'message.created',
             ['event_id' => (string)(new Ulid()), 'type' => 'message.created', 'ticket_id' => 1, 'seq' => 1]
         );
-        $outboxEvent->markPublished();
+        $outboxEvent->marcarPublicado();
         
         $this->em->persist($outboxEvent);
         $this->em->flush();
 
         // Get current retry_count
-        $retryBefore = $outboxEvent->getRetryCount();
+        $retryBefore = $outboxEvent->getReintentos();
 
         // Try to "publish" again - idempotent behavior
         // Should NOT re-publish (already published)
         $this->em->flush();
 
         // Assert - should not have changed
-        $this->assertEquals($retryBefore, $outboxEvent->getRetryCount(), 'retry_count should NOT increment');
+        $this->assertEquals($retryBefore, $outboxEvent->getReintentos(), 'retry_count should NOT increment');
         
         // Check that it was only marked once
-        $this->assertNotNull($outboxEvent->getPublishedAt(), 'should remain published');
+        $this->assertNotNull($outboxEvent->getPublicadoAt(), 'should remain published');
     }
 
     // ============================================

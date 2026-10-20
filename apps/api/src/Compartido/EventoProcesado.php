@@ -15,18 +15,18 @@ class EventoProcesado
     private ?int $id = null;
 
     #[ORM\Column(name: "event_id", type: "string", length: 255, unique: true)]
-    private string $eventId;
+    private string $eventoId;
 
     #[ORM\Column(name: "processed_at", type: "datetime_immutable")]
-    private \DateTimeImmutable $processedAt;
+    private \DateTimeImmutable $procesadoAt;
 
     #[ORM\Column(name: "result_data", type: "json", nullable: true)]
-    private ?array $resultData = null;
+    private ?array $datosDeResultado = null;
 
     public function __construct(string $eventId)
     {
-        $this->eventId = $eventId;
-        $this->processedAt = new \DateTimeImmutable();
+        $this->eventoId = $eventId;
+        $this->procesadoAt = new \DateTimeImmutable();
     }
 
     public function getId(): ?int
@@ -34,30 +34,30 @@ class EventoProcesado
         return $this->id;
     }
 
-    public function getEventId(): string
+    public function getEventoId(): string
     {
-        return $this->eventId;
+        return $this->eventoId;
     }
 
-    public function getProcessedAt(): \DateTimeImmutable
+    public function getProcesadoAt(): \DateTimeImmutable
     {
-        return $this->processedAt;
+        return $this->procesadoAt;
     }
 
-    public function setProcessedAt(\DateTimeImmutable $processedAt): self
+    public function setProcesadoAt(\DateTimeImmutable $processedAt): self
     {
-        $this->processedAt = $processedAt;
+        $this->procesadoAt = $processedAt;
         return $this;
     }
 
-    public function getResultData(): ?array
+    public function getDatosDeResultado(): ?array
     {
-        return $this->resultData;
+        return $this->datosDeResultado;
     }
 
-    public function setResultData(?array $resultData): self
+    public function setDatosDeResultado(?array $resultData): self
     {
-        $this->resultData = $resultData;
+        $this->datosDeResultado = $resultData;
         return $this;
     }
 }

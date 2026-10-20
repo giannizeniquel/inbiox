@@ -12,7 +12,7 @@ use Symfony\Bundle\SecurityBundle\Security;
  *
  * INTENTIONALLY A NO-OP TODAY — not a bug:
  *
- * `getAgentId()` always returns null, for every role including AGENT.
+ * `getAgenteId()` always returns null, for every role including AGENT.
  * This is a confirmed product decision (see docs/04_sprints/sprint_16
  * (Production Readiness).md): reports/metrics are NOT restricted by
  * agent — every authenticated agent can see every other agent's metrics,
@@ -22,7 +22,7 @@ use Symfony\Bundle\SecurityBundle\Security;
  * This class (and the `agent_id` WHERE-clause plumbing that consumes it
  * in ReporteRepository/ReporteService) is kept in place so that
  * per-agent restriction can be reintroduced later without re-plumbing
- * every query — do not "fix" `getAgentId()` to return the current
+ * every query — do not "fix" `getAgenteId()` to return the current
  * agent's ID without an explicit product decision to do so.
  */
 final class AlcanceDeResponsabilidad
@@ -39,7 +39,7 @@ final class AlcanceDeResponsabilidad
      *   segregation is handled by AlcanceDeEspacioDeTrabajo.phone_number_id)
      * - No authenticated user: null
      */
-    public function getAgentId(): ?int
+    public function getAgenteId(): ?int
     {
         $user = $this->security->getUser();
 

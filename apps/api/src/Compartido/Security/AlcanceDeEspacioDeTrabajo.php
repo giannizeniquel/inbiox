@@ -40,7 +40,7 @@ final class AlcanceDeEspacioDeTrabajo
      * @see MiEspacioDeTrabajoController::setEspacioDeTrabajoActivo()
      * @see AsegurarAgenteDeUsuarioUseCase — auto-creates Agent for admin/supervisor
      */
-    public function getActivePhoneNumberId(): ?string
+    public function getPhoneNumberIdActivo(): ?string
     {
         $user = $this->security->getUser();
 

@@ -9,12 +9,12 @@ namespace App\Compartido\Realtime;
  */
 enum TipoDeEventoEnTiempoReal: string
 {
-    case TicketCreated         = 'ticket.created';
-    case TicketStatusChanged   = 'ticket.status_changed';
-    case TicketAssigned        = 'ticket.assigned';
-    case MessageAdded                = 'message.added';
-    case MessageUpdated              = 'message.updated';
-    case TicketRead                  = 'ticket.read';
-    case AGENT_AVAILABILITY_CHANGED  = 'agent.availability_changed';
-    case AGENT_SHIFT_CHANGED         = 'agent.shift_changed';
+    case TICKET_CREADO                     = 'ticket.created';
+    case ESTADO_DE_TICKET_CAMBIADO         = 'ticket.status_changed';
+    case TICKET_ASIGNADO                   = 'ticket.assigned';
+    case MENSAJE_AGREGADO                  = 'message.added';
+    case MENSAJE_ACTUALIZADO               = 'message.updated';
+    case TICKET_LEIDO                      = 'ticket.read';
+    case DISPONIBILIDAD_DE_AGENTE_CAMBIADA = 'agent.availability_changed';
+    case TURNO_DE_AGENTE_CAMBIADO          = 'agent.shift_changed';
 }

@@ -108,7 +108,7 @@ class ProcesarMensajeEntranteUseCase
      */
     private function persistEventsToOutbox(): void
     {
-        $events = $this->eventCollector->getEvents();
+        $events = $this->eventCollector->getEventos();
         if (empty($events)) {
             return;
         }
@@ -153,7 +153,7 @@ foreach ($events as $event) {
         }
 
         $this->outboxWriter->write(...$outboxEvents);
-        $this->eventCollector->clear();
+        $this->eventCollector->limpiar();
     }
 
     /**
@@ -429,7 +429,7 @@ foreach ($events as $event) {
     private function registrarEventosDeEntrada(Ticket $ticket, bool $ticketNuevo, Mensaje $mensaje, string $texto, Contacto $contacto): void
     {
         if ($ticketNuevo) {
-            $this->eventCollector->collect(new TicketCreatedEvent(
+            $this->eventCollector->recolectar(new TicketCreatedEvent(
                 eventId: new Ulid(),
                 ticketId: $ticket->getId(),
                 occurredAt: new \DateTimeImmutable(),
@@ -440,7 +440,7 @@ foreach ($events as $event) {
             ));
         }
 
-        $this->eventCollector->collect(new MessageCreatedEvent(
+        $this->eventCollector->recolectar(new MessageCreatedEvent(
             eventId: new Ulid(),
             ticketId: $ticket->getId(),
             occurredAt: new \DateTimeImmutable(),

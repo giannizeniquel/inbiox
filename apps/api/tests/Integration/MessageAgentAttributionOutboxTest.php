@@ -83,7 +83,7 @@ class MessageAgentAttributionOutboxTest extends KernelTestCase
 
         $messageCreatedEvents = \array_values(\array_filter(
             $events,
-            fn (EventoOutbox $e) => \str_contains($e->getEventType(), 'MessageCreated')
+            fn (EventoOutbox $e) => \str_contains($e->getTipoDeEvento(), 'MessageCreated')
         ));
 
         self::assertCount(1, $messageCreatedEvents, 'Exactly one MessageCreatedEvent must be persisted to the outbox');

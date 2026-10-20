@@ -25,7 +25,7 @@ class LineaDeTiempoDeContactoController
     {
         $before = $request->query->get('before');
         $limit = min(50, max(1, (int) $request->query->get('limit', 20)));
-        $phoneNumberId = $this->workspaceScope->getActivePhoneNumberId();
+        $phoneNumberId = $this->workspaceScope->getPhoneNumberIdActivo();
 
         $result = $this->getLineaDeTiempoDeContactoQuery->execute(
             contactoId: $id,

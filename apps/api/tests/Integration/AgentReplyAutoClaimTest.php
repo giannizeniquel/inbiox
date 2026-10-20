@@ -187,7 +187,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
         $eventCollector = static::getContainer()->get(\App\Compartido\RecolectorDeEventos::class);
         self::assertSame(
             [],
-            $eventCollector->getEvents(),
+            $eventCollector->getEventos(),
             'EventCollector must be cleared on the \Throwable abort path — no leaked TicketUpdatedEvent/InboxUpdatedEvent',
         );
 

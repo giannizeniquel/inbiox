@@ -23,13 +23,13 @@ final readonly class EventoEnTiempoRealFactory
     public function build(EventoOutbox $event): array
     {
         $stored   = $event->getPayload();
-        $phpClass = $event->getEventType();
+        $phpClass = $event->getTipoDeEvento();
         $enumValue = $this->resolveEnum($phpClass, $stored);
 
         return [
             'eventId'   => (string) ($stored['event_id'] ?? $event->getId()),
             'sequence'  => $event->getSequence(),
-            'timestamp' => $stored['occurred_at'] ?? $event->getCreatedAt()->format(\DateTimeInterface::RFC3339),
+            'timestamp' => $stored['occurred_at'] ?? $event->getCreadoAt()->format(\DateTimeInterface::RFC3339),
             'eventType' => $enumValue->value,
             'ticketId'  => (string) $event->getAggregateId(),
             'payload'   => $this->buildPayload($enumValue, $stored, (int) $event->getAggregateId()),
@@ -42,8 +42,8 @@ final readonly class EventoEnTiempoRealFactory
      */
     private function resolveEnum(string $phpClass, array $stored): TipoDeEventoEnTiempoReal
     {
-        if ($this->mapper->isTicketAssigned($phpClass, $stored)) {
-            return TipoDeEventoEnTiempoReal::TicketAssigned;
+        if ($this->mapper->isTicketAsignado($phpClass, $stored)) {
+            return TipoDeEventoEnTiempoReal::TICKET_ASIGNADO;
         }
         // Handle wire-format event types (already enum values, not FQCNs)
         if (str_starts_with($phpClass, 'ticket.') || str_starts_with($phpClass, 'message.') || str_starts_with($phpClass, 'agent.') || str_starts_with($phpClass, 'conversation.')) {
@@ -58,7 +58,7 @@ final readonly class EventoEnTiempoRealFactory
     private function buildPayload(TipoDeEventoEnTiempoReal $type, array $s, int $ticketId): array
     {
         return match ($type) {
-            TipoDeEventoEnTiempoReal::TicketCreated => [
+            TipoDeEventoEnTiempoReal::TICKET_CREADO => [
                 'ticketId'       => $ticketId,
                 'contactId'      => (int) ($s['contact_id'] ?? 0),
                 'conversationId' => (int) ($s['conversation_id'] ?? 0),
@@ -66,7 +66,7 @@ final readonly class EventoEnTiempoRealFactory
                 'priority'       => (int) ($s['priority'] ?? 0),
                 'createdAt'      => $s['created_at'] ?? $s['occurred_at'] ?? '',
             ],
-            TipoDeEventoEnTiempoReal::MessageAdded => [
+            TipoDeEventoEnTiempoReal::MENSAJE_AGREGADO => [
                 'messageId'  => (int) ($s['message_id'] ?? 0),
                 'ticketId'   => $ticketId,
                 'content'    => $s['content'] ?? '',
@@ -77,20 +77,20 @@ final readonly class EventoEnTiempoRealFactory
                 'phoneNumberId' => $s['phone_number_id'] ?? null,
                 'media'      => $s['media'] ?? null,
             ],
-            TipoDeEventoEnTiempoReal::TicketStatusChanged => [
+            TipoDeEventoEnTiempoReal::ESTADO_DE_TICKET_CAMBIADO => [
                 'ticketId'       => $ticketId,
                 'previousStatus' => $s['previous_status'] ?? null,
                 'newStatus'      => $s['status'] ?? '',
                 'changedAt'      => $s['changed_at'] ?? $s['occurred_at'] ?? '',
             ],
-            TipoDeEventoEnTiempoReal::TicketAssigned => [
+            TipoDeEventoEnTiempoReal::TICKET_ASIGNADO => [
                 'ticketId'        => $ticketId,
                 'assigneeId'      => (int) ($s['assignee_id'] ?? $s['ownerAgentId'] ?? 0),
                 'assigneeName'    => $s['assignee_name'] ?? null,
                 'assignmentType'  => $s['assignment_type'] ?? 'MANUAL_ASSIGN',
                 'assignedAt'      => $s['assigned_at'] ?? $s['occurred_at'] ?? '',
             ],
-            TipoDeEventoEnTiempoReal::AGENT_AVAILABILITY_CHANGED => [
+            TipoDeEventoEnTiempoReal::DISPONIBILIDAD_DE_AGENTE_CAMBIADA => [
                 'agent_id'        => (int) ($s['agent_id'] ?? 0),
                 'is_available'    => (bool) ($s['is_available'] ?? false),
                 'override_active' => (bool) ($s['override_active'] ?? false),
@@ -98,7 +98,7 @@ final readonly class EventoEnTiempoRealFactory
                 'max_capacity'    => (int) ($s['max_capacity'] ?? 0),
                 'timestamp'       => $s['timestamp'] ?? '',
             ],
-            TipoDeEventoEnTiempoReal::AGENT_SHIFT_CHANGED => [
+            TipoDeEventoEnTiempoReal::TURNO_DE_AGENTE_CAMBIADO => [
                 'agent_id'    => (int) ($s['agent_id'] ?? 0),
                 'shift_id'    => (int) ($s['shift_id'] ?? 0),
                 'action'      => $s['action'] ?? '',
@@ -107,14 +107,14 @@ final readonly class EventoEnTiempoRealFactory
                 'end_time'    => $s['end_time'] ?? '',
                 'timestamp'   => $s['timestamp'] ?? '',
             ],
-            TipoDeEventoEnTiempoReal::MessageUpdated => [
+            TipoDeEventoEnTiempoReal::MENSAJE_ACTUALIZADO => [
                 'messageId'    => (int) ($s['message_id'] ?? 0),
                 'ticketId'     => $ticketId,
                 'status'       => $s['delivery_status'] ?? null,
                 'failedReason' => $s['failed_reason'] ?? null,
                 'updatedAt'    => $s['occurred_at'] ?? '',
             ],
-            TipoDeEventoEnTiempoReal::TicketRead => [
+            TipoDeEventoEnTiempoReal::TICKET_LEIDO => [
                 'ticketId' => $ticketId,
             ],
         };

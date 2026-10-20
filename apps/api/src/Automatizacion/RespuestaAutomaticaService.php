@@ -169,9 +169,9 @@ final class RespuestaAutomaticaService
         }
 
         // 7. Upsert rate-limit key (update timestamp or insert new)
-        $existingEvent = $this->processedEventRepo->findByEventId($rateLimitKey);
+        $existingEvent = $this->processedEventRepo->findByEventoId($rateLimitKey);
         if ($existingEvent !== null) {
-            $existingEvent->setProcessedAt(new \DateTimeImmutable('now'));
+            $existingEvent->setProcesadoAt(new \DateTimeImmutable('now'));
         } else {
             $processedEvent = new EventoProcesado($rateLimitKey);
             $this->em->persist($processedEvent);
@@ -180,7 +180,7 @@ final class RespuestaAutomaticaService
 
         // 8. Emit outbox event so the message appears in real-time via Mercure
         if ($mensajeSaliente !== null) {
-            $this->eventCollector->collect(new MessageCreatedEvent(
+            $this->eventCollector->recolectar(new MessageCreatedEvent(
                 eventId: new Ulid(),
                 ticketId: $ticket->getId(),
                 occurredAt: new \DateTimeImmutable(),
@@ -245,12 +245,12 @@ final class RespuestaAutomaticaService
      */
     private function hasRespuestaAutomaticaReciente(string $rateLimitKey): bool
     {
-        $existing = $this->processedEventRepo->findByEventId($rateLimitKey);
+        $existing = $this->processedEventRepo->findByEventoId($rateLimitKey);
         if ($existing === null) {
             return false;
         }
 
-        $finDeVentana = $existing->getProcessedAt()->modify(
+        $finDeVentana = $existing->getProcesadoAt()->modify(
             \sprintf('+%d hours', self::HORAS_DE_VENTANA_DE_RESPUESTA_AUTOMATICA)
         );
 

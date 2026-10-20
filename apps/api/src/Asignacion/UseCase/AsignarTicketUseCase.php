@@ -144,7 +144,7 @@ class AsignarTicketUseCase
      */
     private function persistEventsToOutbox(): void
     {
-        $events = $this->eventCollector->getEvents();
+        $events = $this->eventCollector->getEventos();
         if (empty($events)) {
             return;
         }
@@ -180,6 +180,6 @@ class AsignarTicketUseCase
         }
 
         $this->outboxWriter->write(...$outboxEvents);
-        $this->eventCollector->clear();
+        $this->eventCollector->limpiar();
     }
 }

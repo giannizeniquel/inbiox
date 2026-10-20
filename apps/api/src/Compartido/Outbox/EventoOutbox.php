@@ -25,22 +25,22 @@ class EventoOutbox
     private string $topic;
 
     #[ORM\Column(name: 'event_type', type: 'string', length: 100)]
-    private string $eventType;
+    private string $tipoDeEvento;
 
     #[ORM\Column(name: 'payload', type: 'json')]
     private array $payload = [];
 
     #[ORM\Column(name: 'created_at', type: 'datetime_immutable')]
-    private \DateTimeImmutable $createdAt;
+    private \DateTimeImmutable $creadoAt;
 
     #[ORM\Column(name: 'published_at', type: 'datetime_immutable', nullable: true)]
-    private ?\DateTimeImmutable $publishedAt = null;
+    private ?\DateTimeImmutable $publicadoAt = null;
 
     #[ORM\Column(name: 'retry_count', type: 'integer', options: ['default' => 0])]
-    private int $retryCount = 0;
+    private int $reintentos = 0;
 
     #[ORM\Column(name: 'status', type: 'string', length: 20, options: ['default' => 'pending'])]
-    private string $status = 'pending';
+    private string $estado = 'pending';
 
     #[ORM\Column(name: 'sequence', type: 'integer', options: ['default' => 0])]
     private int $sequence = 0;
@@ -57,9 +57,9 @@ class EventoOutbox
         $this->aggregateType = $aggregateType;
         $this->aggregateId = $aggregateId;
         $this->topic = $topic;
-        $this->eventType = $eventType;
+        $this->tipoDeEvento = $eventType;
         $this->payload = $payload;
-        $this->createdAt = new \DateTimeImmutable();
+        $this->creadoAt = new \DateTimeImmutable();
         $this->sequence = $sequence ?? 0;
     }
 
@@ -83,9 +83,9 @@ class EventoOutbox
         return $this->topic;
     }
 
-    public function getEventType(): string
+    public function getTipoDeEvento(): string
     {
-        return $this->eventType;
+        return $this->tipoDeEvento;
     }
 
     public function getPayload(): array
@@ -93,52 +93,52 @@ class EventoOutbox
         return $this->payload;
     }
 
-    public function getCreatedAt(): \DateTimeImmutable
+    public function getCreadoAt(): \DateTimeImmutable
     {
-        return $this->createdAt;
+        return $this->creadoAt;
     }
 
-    public function getPublishedAt(): ?\DateTimeImmutable
+    public function getPublicadoAt(): ?\DateTimeImmutable
     {
-        return $this->publishedAt;
+        return $this->publicadoAt;
     }
 
-    public function markPublished(): self
+    public function marcarPublicado(): self
     {
-        $this->publishedAt = new \DateTimeImmutable();
+        $this->publicadoAt = new \DateTimeImmutable();
         return $this;
     }
 
-    public function getRetryCount(): int
+    public function getReintentos(): int
     {
-        return $this->retryCount;
+        return $this->reintentos;
     }
 
-    public function incrementRetryCount(): self
+    public function incrementarReintentos(): self
     {
-        $this->retryCount++;
+        $this->reintentos++;
         return $this;
     }
 
-    public function isPublished(): bool
+    public function isPublicado(): bool
     {
-        return $this->publishedAt !== null;
+        return $this->publicadoAt !== null;
     }
 
-    public function getStatus(): string
+    public function getEstado(): string
     {
-        return $this->status;
+        return $this->estado;
     }
 
-    public function setStatus(string $status): self
+    public function setEstado(string $status): self
     {
-        $this->status = $status;
+        $this->estado = $status;
         return $this;
     }
 
     public function isDeadLetter(): bool
     {
-        return $this->status === 'dead_letter';
+        return $this->estado === 'dead_letter';
     }
 
     public function getSequence(): int

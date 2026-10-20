@@ -75,7 +75,7 @@ final class ResponsabilidadDeTicketService
         // 3. Collect domain events
         $now = new \DateTimeImmutable();
 
-        $this->eventCollector->collect(new TicketUpdatedEvent(
+        $this->eventCollector->recolectar(new TicketUpdatedEvent(
             eventId: DomainEvent::generateEventId(),
             ticketId: $ticket->getId(),
             occurredAt: $now,
@@ -87,7 +87,7 @@ final class ResponsabilidadDeTicketService
 
         // Inbox update for previous agent (lost a ticket)
         if ($agenteAnterior !== null) {
-            $this->eventCollector->collect(new InboxUpdatedEvent(
+            $this->eventCollector->recolectar(new InboxUpdatedEvent(
                 eventId: DomainEvent::generateEventId(),
                 ticketId: $ticket->getId(),
                 occurredAt: $now,
@@ -98,7 +98,7 @@ final class ResponsabilidadDeTicketService
 
         // Inbox update for new agent (gained a ticket)
         if ($agente !== null) {
-            $this->eventCollector->collect(new InboxUpdatedEvent(
+            $this->eventCollector->recolectar(new InboxUpdatedEvent(
                 eventId: DomainEvent::generateEventId(),
                 ticketId: $ticket->getId(),
                 occurredAt: $now,

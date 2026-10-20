@@ -42,7 +42,7 @@ class WorkspaceScopeTest extends TestCase
         });
 
         $scope = new AlcanceDeEspacioDeTrabajo($security);
-        self::assertSame('1146240195247464', $scope->getActivePhoneNumberId());
+        self::assertSame('1146240195247464', $scope->getPhoneNumberIdActivo());
     }
 
     public function testSupervisorReturnsNull(): void
@@ -57,7 +57,7 @@ class WorkspaceScopeTest extends TestCase
         });
 
         $scope = new AlcanceDeEspacioDeTrabajo($security);
-        self::assertNull($scope->getActivePhoneNumberId());
+        self::assertNull($scope->getPhoneNumberIdActivo());
     }
 
     public function testAdminReturnsNull(): void
@@ -72,7 +72,7 @@ class WorkspaceScopeTest extends TestCase
         });
 
         $scope = new AlcanceDeEspacioDeTrabajo($security);
-        self::assertNull($scope->getActivePhoneNumberId());
+        self::assertNull($scope->getPhoneNumberIdActivo());
     }
 
     public function testAgentWithoutActiveWorkspaceReturnsNull(): void
@@ -91,7 +91,7 @@ class WorkspaceScopeTest extends TestCase
         });
 
         $scope = new AlcanceDeEspacioDeTrabajo($security);
-        self::assertNull($scope->getActivePhoneNumberId());
+        self::assertNull($scope->getPhoneNumberIdActivo());
     }
 
     public function testUnauthenticatedReturnsNull(): void
@@ -100,6 +100,6 @@ class WorkspaceScopeTest extends TestCase
         $security->method('getUser')->willReturn(null);
 
         $scope = new AlcanceDeEspacioDeTrabajo($security);
-        self::assertNull($scope->getActivePhoneNumberId());
+        self::assertNull($scope->getPhoneNumberIdActivo());
     }
 }

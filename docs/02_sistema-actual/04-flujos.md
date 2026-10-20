@@ -188,7 +188,7 @@ stateDiagram-v2
 | 4 | El controlador clasifica el cierre (`owner`/`override`/`unowned`) y guarda un `EventoDeTicket` con `source = u:{userId}`. Si falla, solo se loguea. | `Ticket/ClasificadorDeAuditoriaDeCierre.php:25-38`; `Ticket/UseCase/RegistrarAuditoriaDeCierreUseCase.php` | R-T15 |
 | 5 | **No se escribe nada en el outbox**: los demás navegadores no se enteran hasta recargar. | — | P-5 |
 
-**Quién más cambia `tickets.status`** (fuera de este flujo): `ResponsabilidadDeTicketService` (`new → active` al asignar), `ProcesarMensajeEntranteUseCase` (`waiting → active`), `ProcesarMensajeSalienteUseCase` (`new → active`, `active → waiting`), `ReglaDeReaperturaAutomatica` (`resolved → waiting`), `cerrarPorVentanaVencida` y `reabrirPorMensajeEntrante` (F8), `DebugController::status` (dev).
+**Quién más cambia `tickets.status`** (fuera de este flujo): `ResponsabilidadDeTicketService` (`new → active` al asignar), `ProcesarMensajeEntranteUseCase` (`waiting → active`), `ProcesarMensajeSalienteUseCase` (`new → active`, `active → waiting`), `ReglaDeReaperturaAutomatica` (`resolved → waiting`), `cerrarPorVentanaVencida` y `reabrirPorMensajeEntrante` (F8), `DebugController::estado` (dev).
 
 **Si falla, revisar:**
 1. 403 → voter: `TicketVoter.php` (¿el usuario tiene agente vinculado? ¿es el dueño?).

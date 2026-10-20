@@ -12,7 +12,7 @@ class RecolectorDeEventos
      */
     private array $events = [];
 
-    public function collect(DomainEvent $event): void
+    public function recolectar(DomainEvent $event): void
     {
         $this->events[] = $event;
     }
@@ -20,12 +20,12 @@ class RecolectorDeEventos
     /**
      * @return DomainEvent[]
      */
-    public function getEvents(): array
+    public function getEventos(): array
     {
         return $this->events;
     }
 
-    public function clear(): void
+    public function limpiar(): void
     {
         $this->events = [];
     }

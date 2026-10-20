@@ -64,7 +64,7 @@ class OutboxPublisherService
      */
     private function findUnpublishedEvents(): array
     {
-        $rows = $this->outboxRepo->findPendingBatch();
+        $rows = $this->outboxRepo->findLotePendiente();
 
         error_log('OutboxPublisher: Found ' . count($rows) . ' rows from DB');
 
@@ -100,17 +100,17 @@ class OutboxPublisherService
         $idReflection->setValue($event, $row['id']); // ID is already a string
 
         // Set retry count
-        $retryReflection = new \ReflectionProperty(EventoOutbox::class, 'retryCount');
+        $retryReflection = new \ReflectionProperty(EventoOutbox::class, 'reintentos');
         $retryReflection->setAccessible(true);
         $retryReflection->setValue($event, (int) $row['retry_count']);
 
         // Set created at
-        $createdAtReflection = new \ReflectionProperty(EventoOutbox::class, 'createdAt');
+        $createdAtReflection = new \ReflectionProperty(EventoOutbox::class, 'creadoAt');
         $createdAtReflection->setAccessible(true);
         $createdAtReflection->setValue($event, new \DateTimeImmutable($row['created_at']));
 
         // Set status via reflection
-        $statusReflection = new \ReflectionProperty(EventoOutbox::class, 'status');
+        $statusReflection = new \ReflectionProperty(EventoOutbox::class, 'estado');
         $statusReflection->setAccessible(true);
         $statusReflection->setValue($event, $row['status'] ?? 'pending');
 
@@ -178,7 +178,7 @@ class OutboxPublisherService
                     $event->getTopic(),
                     $httpCode
                 ));
-                $this->markPublished($event);
+                $this->marcarPublicado($event);
                 return true;
             } else {
                 error_log(sprintf(
@@ -212,9 +212,9 @@ class OutboxPublisherService
     /**
      * Mark event as published.
      */
-    private function markPublished(EventoOutbox $event): void
+    private function marcarPublicado(EventoOutbox $event): void
     {
-        $this->outboxRepo->markPublished($event->getId(), new \DateTimeImmutable());
+        $this->outboxRepo->marcarPublicado($event->getId(), new \DateTimeImmutable());
     }
 
     /**
@@ -222,21 +222,21 @@ class OutboxPublisherService
      */
     private function handleFailure(EventoOutbox $event): void
     {
-        $currentRetryCount = $event->getRetryCount();
+        $currentRetryCount = $event->getReintentos();
         $newRetryCount = $currentRetryCount + 1;
 
         if ($newRetryCount >= self::MAX_RETRIES) {
-            $this->outboxRepo->markDeadLetter($event->getId(), $newRetryCount, self::DEAD_LETTER_STATUS);
+            $this->outboxRepo->marcarDeadLetter($event->getId(), $newRetryCount, self::DEAD_LETTER_STATUS);
 
             error_log(sprintf(
                 'OutboxPublisher: Event %s dead-lettered after %d retries (type=%s, aggregate_id=%d)',
                 $event->getId(),
                 $newRetryCount,
-                $event->getEventType(),
+                $event->getTipoDeEvento(),
                 $event->getAggregateId()
             ));
         } else {
-            $this->outboxRepo->incrementRetryCount($event->getId());
+            $this->outboxRepo->incrementarReintentos($event->getId());
         }
     }
 }

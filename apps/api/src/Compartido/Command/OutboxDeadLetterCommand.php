@@ -34,9 +34,9 @@ class OutboxDeadLetterCommand extends Command
         $action = $input->getArgument('action');
 
         return match ($action) {
-            'list' => $this->listEvents($output),
-            'retry' => $this->retryEvent($input, $output),
-            'purge' => $this->purgeEvents($input, $output),
+            'list' => $this->listarEventos($output),
+            'retry' => $this->reintentarEvento($input, $output),
+            'purge' => $this->purgarEventos($input, $output),
             default => throw new \InvalidArgumentException(sprintf(
                 'Unknown action "%s". Use: list, retry, purge', $action
             )),
@@ -46,7 +46,7 @@ class OutboxDeadLetterCommand extends Command
     /**
      * List all dead-letter events.
      */
-    private function listEvents(OutputInterface $output): int
+    private function listarEventos(OutputInterface $output): int
     {
         $rows = $this->outboxRepo->findDeadLetters();
 
@@ -77,7 +77,7 @@ class OutboxDeadLetterCommand extends Command
     /**
      * Retry a dead-letter event: reset status to pending and retry_count to 0.
      */
-    private function retryEvent(InputInterface $input, OutputInterface $output): int
+    private function reintentarEvento(InputInterface $input, OutputInterface $output): int
     {
         $eventId = $input->getArgument('value');
         if (empty($eventId)) {
@@ -85,7 +85,7 @@ class OutboxDeadLetterCommand extends Command
             return Command::FAILURE;
         }
 
-        $affected = $this->outboxRepo->resetDeadLetterToPending($eventId);
+        $affected = $this->outboxRepo->devolverDeadLetterAPendiente($eventId);
 
         if ($affected === 0) {
             $output->writeln(sprintf('<error>Event %s not found or not in dead_letter status.</error>', $eventId));
@@ -99,7 +99,7 @@ class OutboxDeadLetterCommand extends Command
     /**
      * Purge dead-letter events older than N days.
      */
-    private function purgeEvents(InputInterface $input, OutputInterface $output): int
+    private function purgarEventos(InputInterface $input, OutputInterface $output): int
     {
         $days = (int) ($input->getArgument('value') ?? 30);
         if ($days < 1) {
@@ -109,7 +109,7 @@ class OutboxDeadLetterCommand extends Command
 
         $cutoff = (new \DateTimeImmutable("-{$days} days"))->format('Y-m-d H:i:s');
 
-        $count = $this->outboxRepo->purgeDeadLettersCreatedBefore($cutoff);
+        $count = $this->outboxRepo->purgarDeadLettersCreadosAntesDe($cutoff);
 
         $output->writeln(sprintf('Purged %d dead-letter events older than %d days.', $count, $days));
         return Command::SUCCESS;

@@ -193,7 +193,7 @@ class ProcesarActualizacionDeEstadoUseCase
         $occurredAt = new \DateTimeImmutable();
 
         // Collect the domain event
-        $this->eventCollector->collect(new MessageUpdatedEvent(
+        $this->eventCollector->recolectar(new MessageUpdatedEvent(
             eventId: new Ulid(),
             ticketId: $ticketId,
             occurredAt: $occurredAt,
@@ -215,7 +215,7 @@ class ProcesarActualizacionDeEstadoUseCase
      */
     private function persistEventsToOutbox(): void
     {
-        $events = $this->eventCollector->getEvents();
+        $events = $this->eventCollector->getEventos();
 
         if (empty($events)) {
             return;
@@ -253,6 +253,6 @@ class ProcesarActualizacionDeEstadoUseCase
         }
 
         $this->outboxWriter->write(...$outboxEvents);
-        $this->eventCollector->clear();
+        $this->eventCollector->limpiar();
     }
 }

@@ -228,7 +228,7 @@ class Sprint15ContactTimelineTest extends WebTestCase
      */
     private function overrideOutboxCreatedAt(EventoOutbox $event, string $modify): void
     {
-        $prop = new \ReflectionProperty(EventoOutbox::class, 'createdAt');
+        $prop = new \ReflectionProperty(EventoOutbox::class, 'creadoAt');
         $prop->setAccessible(true);
         $prop->setValue($event, (new \DateTimeImmutable())->modify($modify));
     }

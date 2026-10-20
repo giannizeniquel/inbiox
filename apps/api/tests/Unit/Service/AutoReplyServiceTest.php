@@ -283,12 +283,12 @@ class AutoReplyServiceTest extends TestCase
 
         // Simulate existing EventoProcesado (recent — within 4h window)
         $recentEvent = new EventoProcesado('auto-reply:1');
-        $recentProp = new \ReflectionProperty($recentEvent, 'processedAt');
+        $recentProp = new \ReflectionProperty($recentEvent, 'procesadoAt');
         $recentProp->setAccessible(true);
         $recentProp->setValue($recentEvent, new \DateTimeImmutable('-1 hour')); // 1 hour ago
 
         $this->processedEventRepo->expects(self::once())
-            ->method('findByEventId')
+            ->method('findByEventoId')
             ->with('auto-reply:1')
             ->willReturn($recentEvent);
 
@@ -317,7 +317,7 @@ class AutoReplyServiceTest extends TestCase
 
         // No recent processed event (called twice: rate-limit check + upsert)
         $this->processedEventRepo->expects(self::exactly(2))
-            ->method('findByEventId')
+            ->method('findByEventoId')
             ->with('auto-reply:1')
             ->willReturn(null);
 
@@ -349,7 +349,7 @@ class AutoReplyServiceTest extends TestCase
             ->willReturn($agent);
 
         $this->processedEventRepo->expects(self::once())
-            ->method('findByEventId')
+            ->method('findByEventoId')
             ->willReturn(null);
 
         // GraphClient throws
@@ -394,7 +394,7 @@ class AutoReplyServiceTest extends TestCase
             ->willReturn($agent);
 
         $this->processedEventRepo->expects(self::once())
-            ->method('findByEventId')
+            ->method('findByEventoId')
             ->willReturn(null);
 
         // Fire-and-forget: early return, not an error — no send, no persist.
@@ -427,7 +427,7 @@ class AutoReplyServiceTest extends TestCase
             ->willReturn($agent);
 
         $this->processedEventRepo->expects(self::exactly(2))
-            ->method('findByEventId')
+            ->method('findByEventoId')
             ->with('auto-reply:1')
             ->willReturn(null);
 

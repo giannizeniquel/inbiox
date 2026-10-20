@@ -9,12 +9,12 @@ namespace App\Compartido\Realtime;
 final readonly class TipoDeEventoMapper
 {
     private const MAP = [
-        \App\Ticket\TicketCreatedEvent::class              => TipoDeEventoEnTiempoReal::TicketCreated,
-        \App\Ticket\TicketUpdatedEvent::class              => TipoDeEventoEnTiempoReal::TicketStatusChanged,
-        \App\Conversacion\MessageCreatedEvent::class             => TipoDeEventoEnTiempoReal::MessageAdded,
-        \App\Conversacion\MessageUpdatedEvent::class             => TipoDeEventoEnTiempoReal::MessageUpdated,
-        \App\Disponibilidad\AgentAvailabilityChangedEvent::class   => TipoDeEventoEnTiempoReal::AGENT_AVAILABILITY_CHANGED,
-        \App\Disponibilidad\AgentShiftChangedEvent::class          => TipoDeEventoEnTiempoReal::AGENT_SHIFT_CHANGED,
+        \App\Ticket\TicketCreatedEvent::class              => TipoDeEventoEnTiempoReal::TICKET_CREADO,
+        \App\Ticket\TicketUpdatedEvent::class              => TipoDeEventoEnTiempoReal::ESTADO_DE_TICKET_CAMBIADO,
+        \App\Conversacion\MessageCreatedEvent::class             => TipoDeEventoEnTiempoReal::MENSAJE_AGREGADO,
+        \App\Conversacion\MessageUpdatedEvent::class             => TipoDeEventoEnTiempoReal::MENSAJE_ACTUALIZADO,
+        \App\Disponibilidad\AgentAvailabilityChangedEvent::class   => TipoDeEventoEnTiempoReal::DISPONIBILIDAD_DE_AGENTE_CAMBIADA,
+        \App\Disponibilidad\AgentShiftChangedEvent::class          => TipoDeEventoEnTiempoReal::TURNO_DE_AGENTE_CAMBIADO,
     ];
 
     /**
@@ -34,7 +34,7 @@ final readonly class TipoDeEventoMapper
      * Determine if a TicketUpdatedEvent represents a ticket.assigned event
      * (has assignee_id in the payload).
      */
-    public function isTicketAssigned(string $phpClassName, array $payload): bool
+    public function isTicketAsignado(string $phpClassName, array $payload): bool
     {
         return $phpClassName === \App\Ticket\TicketUpdatedEvent::class
             && (isset($payload['assignee_id']) || isset($payload['ownerAgentId']));

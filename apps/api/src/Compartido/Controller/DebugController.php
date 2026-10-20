@@ -34,7 +34,7 @@ class DebugController extends AbstractController
     }
 
     #[Route('/debug/inbound/{ticketId}', name: 'app_debug_inbound', methods: ['POST'])]
-    public function inbound(int $ticketId): JsonResponse
+    public function entrante(int $ticketId): JsonResponse
     {
         if (!$this->isDevOrTest()) {
             return $this->notFound();
@@ -73,7 +73,7 @@ class DebugController extends AbstractController
     }
 
     #[Route('/debug/outbound/{ticketId}', name: 'app_debug_outbound', methods: ['POST'])]
-    public function outbound(int $ticketId): JsonResponse
+    public function saliente(int $ticketId): JsonResponse
     {
         if (!$this->isDevOrTest()) {
             return $this->notFound();
@@ -110,7 +110,7 @@ class DebugController extends AbstractController
     }
 
     #[Route('/debug/status/{ticketId}', name: 'app_debug_status', methods: ['POST'])]
-    public function status(int $ticketId): JsonResponse
+    public function estado(int $ticketId): JsonResponse
     {
         if (!$this->isDevOrTest()) {
             return $this->notFound();
@@ -138,7 +138,7 @@ class DebugController extends AbstractController
     }
 
     #[Route('/debug/assign/{ticketId}', name: 'app_debug_assign', methods: ['POST'])]
-    public function assign(int $ticketId): JsonResponse
+    public function asignar(int $ticketId): JsonResponse
     {
         if (!$this->isDevOrTest()) {
             return $this->notFound();

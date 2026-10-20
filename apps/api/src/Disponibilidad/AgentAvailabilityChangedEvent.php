@@ -9,7 +9,7 @@ use App\Compartido\RecolectorDeEventos;
 /**
  * Marker domain event for agent availability changes.
  *
- * FQCN used by TipoDeEventoMapper to map to TipoDeEventoEnTiempoReal::AGENT_AVAILABILITY_CHANGED.
+ * FQCN used by TipoDeEventoMapper to map to TipoDeEventoEnTiempoReal::DISPONIBILIDAD_DE_AGENTE_CAMBIADA.
  * Not collected via RecolectorDeEventos — EventoOutbox is created directly.
  */
 final class AgentAvailabilityChangedEvent
