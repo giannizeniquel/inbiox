@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Conversacion\UseCase;
 
 use App\Compartido\RecolectorDeEventos;
+use App\Conversacion\EstadoDeEntrega;
 use App\Conversacion\MessageUpdatedEvent;
 use App\Compartido\Outbox\EventoOutbox;
 use App\Compartido\Outbox\OutboxWriter;
@@ -23,25 +24,28 @@ use Symfony\Component\Uid\Ulid;
  * 3. Actualiza el deliveryStatus del mensaje
  * 4. Publica un MessageUpdatedEvent vía Outbox → Mercure
  *
- * Diseño: AD-4 — FSM de estados solo hacia adelante, con read/failed terminales.
+ * Diseño: AD-4 — FSM de estados solo hacia adelante, con leido/fallido terminales.
  */
 class ProcesarActualizacionDeEstadoUseCase
 {
     private const ORDEN_DE_ESTADOS = [
-        'sending' => 0,
-        'sent' => 1,
-        'delivered' => 2,
-        'read' => 3,
-        'failed' => 99,
+        EstadoDeEntrega::ENVIADO->value => 1,
+        EstadoDeEntrega::ENTREGADO->value => 2,
+        EstadoDeEntrega::LEIDO->value => 3,
+        EstadoDeEntrega::FALLIDO->value => 99,
     ];
 
-    private const ESTADOS_FINALES = ['read', 'failed'];
+    private const ESTADOS_FINALES = [EstadoDeEntrega::LEIDO->value, EstadoDeEntrega::FALLIDO->value];
 
+    /**
+     * Estado que informa Meta => estado de entrega de Inbiox. Los valores de Meta no cambian;
+     * este es el único lugar que los traduce.
+     */
     private const META_TO_INBIOX = [
-        'sent' => 'sent',
-        'delivered' => 'delivered',
-        'read' => 'read',
-        'failed' => 'failed',
+        'sent' => EstadoDeEntrega::ENVIADO->value,
+        'delivered' => EstadoDeEntrega::ENTREGADO->value,
+        'read' => EstadoDeEntrega::LEIDO->value,
+        'failed' => EstadoDeEntrega::FALLIDO->value,
     ];
 
     /** @var string|null phoneNumberId en proceso (se asigna durante procesarActualizacionDeEstado) */
@@ -120,7 +124,7 @@ class ProcesarActualizacionDeEstadoUseCase
         // 5. Actualiza la entidad del mensaje
         $mensaje->setEstadoDeEntrega($nuevoEstado);
 
-        if ($nuevoEstado === 'failed' && !empty($errors)) {
+        if ($nuevoEstado === EstadoDeEntrega::FALLIDO->value && !empty($errors)) {
             $mensaje->setMotivoDeFallo($errors[0]['title'] ?? 'Unknown error');
         }
 
@@ -137,8 +141,8 @@ class ProcesarActualizacionDeEstadoUseCase
      * Valida que la FSM permita una transición de estado.
      *
      * Reglas (AD-4):
-     * - Los estados terminales (read, failed) NO permiten transiciones de salida
-     * - 'failed' se alcanza desde CUALQUIER estado no terminal
+     * - Los estados terminales (leido, fallido) NO permiten transiciones de salida
+     * - 'fallido' se alcanza desde CUALQUIER estado no terminal
      * - Todas las demás transiciones deben ir estrictamente hacia adelante (orden creciente)
      */
     private function isTransicionValida(string $from, string $to): bool
@@ -149,7 +153,7 @@ class ProcesarActualizacionDeEstadoUseCase
         }
 
         // Failed se alcanza desde cualquier estado no terminal
-        if ($to === 'failed') {
+        if ($to === EstadoDeEntrega::FALLIDO->value) {
             return true;
         }
 

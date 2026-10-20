@@ -86,36 +86,36 @@ final class ConversacionRelationsCharacterizationTest extends KernelTestCase
             $conn->fetchFirstColumn('SELECT status FROM conversations WHERE contact_id = ? ORDER BY status', [$contactoId]),
         );
         self::assertSame(
-            [['direction' => 'inbound', 'sender_type' => 'contact'], ['direction' => 'outbound', 'sender_type' => 'automatic']],
+            [['direction' => 'entrante', 'sender_type' => 'contacto'], ['direction' => 'saliente', 'sender_type' => 'automatico']],
             $conn->fetchAllAssociative('SELECT direction, sender_type FROM messages WHERE conversation_id = ? ORDER BY id', [$abiertaAId]),
         );
     }
 
     public function testStoredEnumValuesAndDtoKeys(): void
     {
-        self::assertSame(['agent', 'automatic', 'contact'], array_map(fn ($c) => $c->value, TipoDeRemitente::cases()));
-        self::assertSame(['inbound', 'outbound'], array_map(fn ($c) => $c->value, DireccionDeMensaje::cases()));
+        self::assertSame(['agente', 'automatico', 'contacto'], array_map(fn ($c) => $c->value, TipoDeRemitente::cases()));
+        self::assertSame(['entrante', 'saliente'], array_map(fn ($c) => $c->value, DireccionDeMensaje::cases()));
         self::assertSame(['open', 'closed'], array_map(fn ($c) => $c->value, EstadoDeConversacion::cases()));
-        self::assertSame(['image', 'video', 'audio', 'document'], array_map(fn ($c) => $c->value, TipoDeAdjunto::cases()));
+        self::assertSame(['imagen', 'video', 'audio', 'documento'], array_map(fn ($c) => $c->value, TipoDeAdjunto::cases()));
 
         $dto = new MensajeDTO(
             mensajeId: 7,
-            direccion: 'outbound',
+            direccion: 'saliente',
             contenido: 'Hola',
             creadoAt: '2026-10-01T10:00:00Z',
-            adjunto: ['kind' => 'image'],
+            adjunto: ['key' => 'k', 'mimeType' => 'image/png', 'filename' => 'a.png', 'size' => 1, 'kind' => 'imagen', 'providerId' => 'p', 'caption' => 'c'],
             agenteRemitenteId: 3,
-            tipoDeRemitente: 'agent',
+            tipoDeRemitente: 'agente',
         );
 
         self::assertSame([
-            'message_id' => 7,
-            'direction' => 'outbound',
-            'content' => 'Hola',
-            'created_at' => '2026-10-01T10:00:00Z',
-            'media' => ['kind' => 'image'],
-            'sender_agent_id' => 3,
-            'sender_type' => 'agent',
+            'mensajeId' => 7,
+            'direccion' => 'saliente',
+            'contenido' => 'Hola',
+            'creadoAt' => '2026-10-01T10:00:00Z',
+            'adjunto' => ['key' => 'k', 'mimeType' => 'image/png', 'nombreDeArchivo' => 'a.png', 'tamanio' => 1, 'tipo' => 'imagen', 'providerId' => 'p', 'leyenda' => 'c'],
+            'agenteRemitenteId' => 3,
+            'tipoDeRemitente' => 'agente',
         ], $dto->toArray());
     }
 

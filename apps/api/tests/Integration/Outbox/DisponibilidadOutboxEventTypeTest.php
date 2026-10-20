@@ -52,10 +52,10 @@ final class DisponibilidadOutboxEventTypeTest extends KernelTestCase
 
         self::assertSame(
             [
-                ['agent/' . $this->agenteId . '/availability', 'agente.disponibilidad_cambiada'],
-                ['agent/' . $this->agenteId . '/availability', 'agente.disponibilidad_cambiada'],
-                ['agent/' . $this->agenteId . '/shifts', 'agente.turno_cambiado'],
-                ['agent/' . $this->agenteId . '/shifts', 'agente.turno_cambiado'],
+                ['agentes/' . $this->agenteId . '/disponibilidad', 'agente.disponibilidad_cambiada'],
+                ['agentes/' . $this->agenteId . '/disponibilidad', 'agente.disponibilidad_cambiada'],
+                ['agentes/' . $this->agenteId . '/turnos', 'agente.turno_cambiado'],
+                ['agentes/' . $this->agenteId . '/turnos', 'agente.turno_cambiado'],
             ],
             array_map(
                 static fn (array $row): array => [$row['topic'], $row['event_type']],

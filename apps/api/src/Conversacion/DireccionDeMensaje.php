@@ -4,6 +4,6 @@ namespace App\Conversacion;
 
 enum DireccionDeMensaje: string
 {
-    case ENTRANTE = 'inbound';
-    case SALIENTE = 'outbound';
+    case ENTRANTE = 'entrante';
+    case SALIENTE = 'saliente';
 }

@@ -53,7 +53,7 @@ class Sprint09BSecurityTest extends KernelTestCase
         $this->assertContains('ticket/15', $subscribe);
         
         // Should contain inbox topic (agent ID as int)
-        $this->assertContains('agent/1/inbox', $subscribe);
+        $this->assertContains('agentes/1/bandeja', $subscribe);
     }
 
     /**
@@ -93,7 +93,7 @@ class Sprint09BSecurityTest extends KernelTestCase
         
         $subscribe = $payload['mercure']['subscribe'] ?? [];
         
-        $this->assertContains('agent/3/inbox', $subscribe);
+        $this->assertContains('agentes/3/bandeja', $subscribe);
     }
 
     /**
@@ -112,7 +112,7 @@ class Sprint09BSecurityTest extends KernelTestCase
         
         foreach ($subscribe as $topic) {
             $this->assertStringStartsNotWith('ticket/*', $topic);
-            $this->assertStringStartsNotWith('agent/*', $topic);
+            $this->assertStringStartsNotWith('agentes/*', $topic);
         }
     }
 

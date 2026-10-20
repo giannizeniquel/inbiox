@@ -88,7 +88,7 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
     private function inboundMessages(): array
     {
         return $this->connection()->fetchAllAssociative(
-            "SELECT id, conversation_id, content, external_id, sender_type, media FROM messages WHERE direction = 'inbound' ORDER BY id",
+            "SELECT id, conversation_id, content, external_id, sender_type, media FROM messages WHERE direction = 'entrante' ORDER BY id",
         );
     }
 
@@ -155,7 +155,7 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
 
         $messages = $this->inboundMessages();
         self::assertCount(1, $messages);
-        self::assertSame(['Hola', 'wamid.char-in-1', 'contact', null], [
+        self::assertSame(['Hola', 'wamid.char-in-1', 'contacto', null], [
             $messages[0]['content'], $messages[0]['external_id'], $messages[0]['sender_type'], $messages[0]['media'],
         ]);
 
@@ -181,7 +181,7 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
             ['event_id', 'type', 'ticket_id', 'occurred_at', 'seq', 'version', 'message_id', 'direction', 'content', 'sender_name', 'media', 'phone_number_id'],
             $outbox[1]['payload'],
         );
-        self::assertSame([2, (int) $messages[0]['id'], 'inbound', 'Hola', 'Ana Perez', null, self::PHONE_NUMBER_ID], [
+        self::assertSame([2, (int) $messages[0]['id'], 'entrante', 'Hola', 'Ana Perez', null, self::PHONE_NUMBER_ID], [
             $outbox[1]['payload']['seq'], $outbox[1]['payload']['message_id'], $outbox[1]['payload']['direction'],
             $outbox[1]['payload']['content'], $outbox[1]['payload']['sender_name'], $outbox[1]['payload']['media'],
             $outbox[1]['payload']['phone_number_id'],
@@ -326,7 +326,7 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
         self::assertMatchesRegularExpression('#^default/' . $message['id'] . '/[0-9A-Z]{26}\.bin$#', $media['key']);
         unset($media['key']);
         self::assertSame([
-            'caption' => 'mirá', 'filename' => 'file', 'kind' => 'image', 'mimeType' => 'image/jpeg', 'providerId' => 'media-in-1', 'size' => 8,
+            'caption' => 'mirá', 'filename' => 'file', 'kind' => 'imagen', 'mimeType' => 'image/jpeg', 'providerId' => 'media-in-1', 'size' => 8,
         ], $media);
         $outbox = $this->outboxRows();
         self::assertSame('mensaje.creado', $outbox[1]['event_type']);
@@ -395,13 +395,13 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
 
         $this->assertAcknowledged($this->postValue(['messages' => [$this->textMessage('wamid.char-in-q', 'Hola?')]]));
 
-        $auto = $this->connection()->fetchAssociative("SELECT content, external_id, delivery_status, sender_type, sender_agent_id FROM messages WHERE direction = 'outbound'");
-        self::assertSame(['Ya te respondemos', 'wamid.char-in-auto', 'sent', TipoDeRemitente::AUTOMATICO->value, (int) $agent->getId()], [
+        $auto = $this->connection()->fetchAssociative("SELECT content, external_id, delivery_status, sender_type, sender_agent_id FROM messages WHERE direction = 'saliente'");
+        self::assertSame(['Ya te respondemos', 'wamid.char-in-auto', 'enviado', TipoDeRemitente::AUTOMATICO->value, (int) $agent->getId()], [
             $auto['content'], $auto['external_id'], $auto['delivery_status'], $auto['sender_type'], (int) $auto['sender_agent_id'],
         ]);
         $outbox = $this->outboxRows();
         self::assertSame(['ticket.creado', 'mensaje.creado', 'mensaje.creado'], \array_column($outbox, 'event_type'));
-        self::assertSame(['outbound', 'Ya te respondemos', 'Ausente', 3], [
+        self::assertSame(['saliente', 'Ya te respondemos', 'Ausente', 3], [
             $outbox[2]['payload']['direction'], $outbox[2]['payload']['content'], $outbox[2]['payload']['sender_name'], $outbox[2]['payload']['seq'],
         ]);
         self::assertSame(1, $this->countRows('processed_events', "event_id LIKE 'auto-reply:%'"));
@@ -415,7 +415,7 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
     {
         $message = new Mensaje();
         $message->setConversacion($ticket->getConversacion());
-        $message->setDireccion('outbound');
+        $message->setDireccion('saliente');
         $message->setContenido('respuesta');
         $message->setExternalId($wamid);
         $message->setEstadoDeEntrega($deliveryStatus);
@@ -434,11 +434,11 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
     public function testForwardStatusUpdatesTheMessageAndWritesASequencedRow(): void
     {
         $ticket = $this->existingTicket('waiting');
-        $message = $this->outboundMessage($ticket, 'wamid.char-st-1', 'sent');
+        $message = $this->outboundMessage($ticket, 'wamid.char-st-1', 'enviado');
 
         $this->assertAcknowledged($this->postValue(['statuses' => [['id' => 'wamid.char-st-1', 'status' => 'delivered', 'timestamp' => '1700000000']]]));
 
-        self::assertSame(['delivery_status' => 'delivered', 'failed_reason' => null], $this->deliveryStatus('wamid.char-st-1'));
+        self::assertSame(['delivery_status' => 'entregado', 'failed_reason' => null], $this->deliveryStatus('wamid.char-st-1'));
         $outbox = $this->outboxRows();
         self::assertCount(1, $outbox);
         self::assertSame(['mensaje.actualizado', 'tickets', 1], [$outbox[0]['event_type'], $outbox[0]['topic'], (int) $outbox[0]['sequence']]);
@@ -446,7 +446,7 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
             ['event_id', 'type', 'ticket_id', 'occurred_at', 'seq', 'version', 'message_id', 'delivery_status', 'failed_reason', 'phone_number_id'],
             $outbox[0]['payload'],
         );
-        self::assertSame([(int) $message->getId(), 'delivered', null, self::PHONE_NUMBER_ID, 1], [
+        self::assertSame([(int) $message->getId(), 'entregado', null, self::PHONE_NUMBER_ID, 1], [
             $outbox[0]['payload']['message_id'], $outbox[0]['payload']['delivery_status'], $outbox[0]['payload']['failed_reason'],
             $outbox[0]['payload']['phone_number_id'], $outbox[0]['payload']['seq'],
         ]);
@@ -456,8 +456,8 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
     public function testBackwardTerminalAndUnknownStatusesChangeNothing(): void
     {
         $ticket = $this->existingTicket('waiting');
-        $this->outboundMessage($ticket, 'wamid.char-st-d', 'delivered');
-        $this->outboundMessage($ticket, 'wamid.char-st-r', 'read');
+        $this->outboundMessage($ticket, 'wamid.char-st-d', 'entregado');
+        $this->outboundMessage($ticket, 'wamid.char-st-r', 'leido');
 
         $this->assertAcknowledged($this->postValue(['statuses' => [
             ['id' => 'wamid.char-st-d', 'status' => 'sent'],
@@ -467,19 +467,19 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
             ['status' => 'read'],
         ]]));
 
-        self::assertSame('delivered', $this->deliveryStatus('wamid.char-st-d')['delivery_status']);
-        self::assertSame('read', $this->deliveryStatus('wamid.char-st-r')['delivery_status']);
+        self::assertSame('entregado', $this->deliveryStatus('wamid.char-st-d')['delivery_status']);
+        self::assertSame('leido', $this->deliveryStatus('wamid.char-st-r')['delivery_status']);
         self::assertSame([], $this->outboxRows());
     }
 
     public function testFailedStatusKeepsTheFirstErrorTitle(): void
     {
         $ticket = $this->existingTicket('waiting');
-        $this->outboundMessage($ticket, 'wamid.char-st-f', 'sent');
+        $this->outboundMessage($ticket, 'wamid.char-st-f', 'enviado');
 
         $this->postValue(['statuses' => [['id' => 'wamid.char-st-f', 'status' => 'failed', 'errors' => [['code' => 131047, 'title' => 'Re-engagement message'], ['title' => 'otro']]]]]);
 
-        self::assertSame(['delivery_status' => 'failed', 'failed_reason' => 'Re-engagement message'], $this->deliveryStatus('wamid.char-st-f'));
+        self::assertSame(['delivery_status' => 'fallido', 'failed_reason' => 'Re-engagement message'], $this->deliveryStatus('wamid.char-st-f'));
         self::assertSame('Re-engagement message', $this->outboxRows()[0]['payload']['failed_reason']);
     }
 
@@ -491,8 +491,8 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
     public function testAFailingStatusCutsTheRemainingEntriesButIsStillAcknowledged(): void
     {
         $ticket = $this->existingTicket('active');
-        $this->outboundMessage($ticket, 'wamid.char-st-a', 'sent');
-        $this->outboundMessage($ticket, 'wamid.char-st-c', 'sent');
+        $this->outboundMessage($ticket, 'wamid.char-st-a', 'enviado');
+        $this->outboundMessage($ticket, 'wamid.char-st-c', 'enviado');
 
         $response = $this->postValue([
             'messages' => [$this->textMessage('wamid.char-mx-1', 'uno'), $this->textMessage('wamid.char-mx-2', 'dos')],
@@ -505,8 +505,8 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
 
         $this->assertAcknowledged($response);
         self::assertSame(['wamid.char-mx-1', 'wamid.char-mx-2'], \array_column($this->inboundMessages(), 'external_id'));
-        self::assertSame('delivered', $this->deliveryStatus('wamid.char-st-a')['delivery_status']);
-        self::assertSame('sent', $this->deliveryStatus('wamid.char-st-c')['delivery_status']);
+        self::assertSame('entregado', $this->deliveryStatus('wamid.char-st-a')['delivery_status']);
+        self::assertSame('enviado', $this->deliveryStatus('wamid.char-st-c')['delivery_status']);
         self::assertSame(
             [['event_type' => 'status']],
             $this->connection()->fetchAllAssociative('SELECT event_type FROM webhook_payloads WHERE phone_number_id = ?', [self::PHONE_NUMBER_ID]),

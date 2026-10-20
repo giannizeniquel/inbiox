@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Disponibilidad\UseCase;
 
+use App\Compartido\Realtime\MercureJwtService;
 use App\Compartido\Outbox\EventoOutbox;
 use App\Compartido\Outbox\TipoDeEventoDeOutbox;
 use App\Compartido\Outbox\OutboxWriter;
@@ -17,7 +18,7 @@ use Doctrine\ORM\EntityManagerInterface;
  *
  * Bloquea la fila del agente con FOR UPDATE, define los campos del override,
  * calcula la carga actual y emite un evento de outbox
- * agent.availability_changed después del commit de la transacción.
+ * agente.disponibilidad_cambiada después del commit de la transacción.
  */
 final class SetDisponibilidadManualUseCase
 {
@@ -106,7 +107,7 @@ final class SetDisponibilidadManualUseCase
         $eventoOutbox = new EventoOutbox(
             aggregateType: 'agent',
             aggregateId: $data['aggregate_id'],
-            topic: \sprintf('agent/%d/availability', $data['aggregate_id']),
+            topic: \sprintf(MercureJwtService::TOPIC_DISPONIBILIDAD_DE_AGENTE, $data['aggregate_id']),
             tipoDeEvento: TipoDeEventoDeOutbox::DISPONIBILIDAD_DE_AGENTE_CAMBIADA->value,
             payload: $data['payload'],
         );

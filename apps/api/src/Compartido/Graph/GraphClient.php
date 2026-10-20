@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Compartido\Graph;
 
+use App\Conversacion\TipoDeAdjunto;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
@@ -24,21 +25,6 @@ class GraphClient
         private readonly string $phoneNumberId,
         private readonly HttpClientInterface $httpClient,
     ) {}
-
-    /**
-     * Infiere la categoría de tipo de media de WhatsApp a partir de un tipo MIME.
-     *
-     * @return string Uno de "image", "video", "audio", "document"
-     */
-    private function inferirTipoDeMedia(string $mimeType): string
-    {
-        return match (true) {
-            str_starts_with($mimeType, 'image/') => 'image',
-            str_starts_with($mimeType, 'video/') => 'video',
-            str_starts_with($mimeType, 'audio/') => 'audio',
-            default => 'document',
-        };
-    }
 
     /**
      * ─────────────────────────────────────────────────────────────────
@@ -302,7 +288,8 @@ class GraphClient
         $to = $this->normalizePhone($to, $phoneNumberId);
         $url = sprintf('%s/%s/messages', self::BASE_URL, $phoneNumberId);
 
-        $mediaType = $this->inferirTipoDeMedia($mimeType);
+        // Tipo de media de Meta (image/video/audio/document), según el tipo de adjunto del MIME.
+        $mediaType = TipoDeAdjunto::fromMime($mimeType)->valorDeMeta();
 
         $payload = [
             'messaging_product' => 'whatsapp',

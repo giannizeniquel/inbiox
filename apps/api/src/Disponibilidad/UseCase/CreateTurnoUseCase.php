@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Disponibilidad\UseCase;
 
+use App\Compartido\Realtime\MercureJwtService;
 use App\Disponibilidad\Turno;
 use App\Compartido\Outbox\EventoOutbox;
 use App\Compartido\Outbox\TipoDeEventoDeOutbox;
@@ -18,7 +19,7 @@ use Doctrine\ORM\EntityManagerInterface;
  *
  * Valida day_of_week (1-7), el formato de hora (HH:MM) y que start != end.
  * Crea una entidad Turno, la persiste y emite un evento de outbox
- * agent.shift_changed.
+ * agente.turno_cambiado.
  */
 final class CreateTurnoUseCase
 {
@@ -154,7 +155,7 @@ final class CreateTurnoUseCase
         $eventoOutbox = new EventoOutbox(
             aggregateType: 'agent',
             aggregateId: $data['aggregate_id'],
-            topic: \sprintf('agent/%d/shifts', $data['aggregate_id']),
+            topic: \sprintf(MercureJwtService::TOPIC_TURNOS_DE_AGENTE, $data['aggregate_id']),
             tipoDeEvento: TipoDeEventoDeOutbox::TURNO_DE_AGENTE_CAMBIADO->value,
             payload: $data['payload'],
         );

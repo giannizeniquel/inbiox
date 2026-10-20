@@ -16,8 +16,8 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
  * spec.md "Query and DTO Exposure": `GetMensajesDeTicketQuery` (both SELECT
- * variants) and `MensajeDTO::toArray()` must expose `sender_agent_id` and
- * `sender_type`, including null for legacy (pre-migration) rows.
+ * variants) and `MensajeDTO::toArray()` must expose `agenteRemitenteId` and
+ * `tipoDeRemitente`, including null for legacy (pre-migration) rows.
  */
 class GetTicketMessagesQueryAttributionTest extends KernelTestCase
 {
@@ -69,7 +69,7 @@ class GetTicketMessagesQueryAttributionTest extends KernelTestCase
         // Attributed message (post-migration write path)
         $attributed = new Mensaje();
         $attributed->setConversacion($conversation);
-        $attributed->setDireccion('outbound');
+        $attributed->setDireccion('saliente');
         $attributed->setContenido('Attributed reply');
         $attributed->setAgenteRemitenteId($agentId);
         $attributed->setTipoDeRemitente(TipoDeRemitente::AGENTE);
@@ -78,7 +78,7 @@ class GetTicketMessagesQueryAttributionTest extends KernelTestCase
         // Legacy message (simulates a pre-migration row: never touch the setters)
         $legacy = new Mensaje();
         $legacy->setConversacion($conversation);
-        $legacy->setDireccion('inbound');
+        $legacy->setDireccion('entrante');
         $legacy->setContenido('Legacy message');
         $this->em->persist($legacy);
 
@@ -102,14 +102,14 @@ class GetTicketMessagesQueryAttributionTest extends KernelTestCase
 
         // Insert order (chronological, ASC): attributed message first, then legacy.
         $attributed = $result['items'][0]->toArray();
-        self::assertSame('Attributed reply', $attributed['content']);
-        self::assertIsInt($attributed['sender_agent_id']);
-        self::assertSame('agent', $attributed['sender_type']);
+        self::assertSame('Attributed reply', $attributed['contenido']);
+        self::assertIsInt($attributed['agenteRemitenteId']);
+        self::assertSame('agente', $attributed['tipoDeRemitente']);
 
         $legacy = $result['items'][1]->toArray();
-        self::assertSame('Legacy message', $legacy['content']);
-        self::assertNull($legacy['sender_agent_id']);
-        self::assertNull($legacy['sender_type']);
+        self::assertSame('Legacy message', $legacy['contenido']);
+        self::assertNull($legacy['agenteRemitenteId']);
+        self::assertNull($legacy['tipoDeRemitente']);
     }
 
     public function testBackwardQueryExposesAttributionAndLegacyNull(): void
@@ -123,11 +123,11 @@ class GetTicketMessagesQueryAttributionTest extends KernelTestCase
 
         // Backward query result is reversed back to chronological order too.
         $attributed = $result['items'][0]->toArray();
-        self::assertIsInt($attributed['sender_agent_id']);
-        self::assertSame('agent', $attributed['sender_type']);
+        self::assertIsInt($attributed['agenteRemitenteId']);
+        self::assertSame('agente', $attributed['tipoDeRemitente']);
 
         $legacy = $result['items'][1]->toArray();
-        self::assertNull($legacy['sender_agent_id']);
-        self::assertNull($legacy['sender_type']);
+        self::assertNull($legacy['agenteRemitenteId']);
+        self::assertNull($legacy['tipoDeRemitente']);
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Automatizacion;
 
+use App\Conversacion\EstadoDeEntrega;
 use App\Disponibilidad\DisponibilidadDeAgenteService;
 use App\Compartido\Graph\GraphClient;
 
@@ -153,12 +154,12 @@ final class RespuestaAutomaticaService
         if ($conversacion !== null) {
             $mensajeSaliente = new Mensaje();
             $mensajeSaliente->setConversacion($conversacion);
-            $mensajeSaliente->setDireccion('outbound');
+            $mensajeSaliente->setDireccion(DireccionDeMensaje::SALIENTE->value);
             $mensajeSaliente->setContenido($mensajeDeRespuestaAutomatica);
             if ($wamid !== null) {
                 $mensajeSaliente->setExternalId($wamid);
             }
-            $mensajeSaliente->setEstadoDeEntrega('sent');
+            $mensajeSaliente->setEstadoDeEntrega(EstadoDeEntrega::ENVIADO->value);
             $mensajeSaliente->setAgenteRemitenteId($agente->getId());
             $mensajeSaliente->setTipoDeRemitente(TipoDeRemitente::AUTOMATICO);
             $this->em->persist($mensajeSaliente);

@@ -2,6 +2,8 @@
 
 namespace App\Conversacion\Query;
 
+use App\Conversacion\ClavesDeAdjunto;
+
 class MensajeDTO
 {
     public function __construct(
@@ -17,13 +19,13 @@ class MensajeDTO
     public function toArray(): array
     {
         return [
-            'message_id' => $this->mensajeId,
-            'direction' => $this->direccion,
-            'content' => $this->contenido,
-            'created_at' => $this->creadoAt,
-            'media' => $this->adjunto,
-            'sender_agent_id' => $this->agenteRemitenteId,
-            'sender_type' => $this->tipoDeRemitente,
+            'mensajeId' => $this->mensajeId,
+            'direccion' => $this->direccion,
+            'contenido' => $this->contenido,
+            'creadoAt' => $this->creadoAt,
+            'adjunto' => ClavesDeAdjunto::aContrato($this->adjunto),
+            'agenteRemitenteId' => $this->agenteRemitenteId,
+            'tipoDeRemitente' => $this->tipoDeRemitente,
         ];
     }
 }

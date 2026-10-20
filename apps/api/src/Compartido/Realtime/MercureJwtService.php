@@ -22,14 +22,14 @@ final class MercureJwtService
 {
     private const DEFAULT_TTL = 3600;
     private const TOPIC_TICKETS = 'tickets';
-    private const TOPIC_BANDEJA_DE_AGENTE = 'agent/%d/inbox';
+    private const TOPIC_BANDEJA_DE_AGENTE = 'agentes/%d/bandeja';
 
-    /** Cambios de disponibilidad del agente — p. ej., agent/5/availability */
-    public const TOPIC_DISPONIBILIDAD_DE_AGENTE = 'agent/%d/availability';
-    /** Alta/baja de turnos del agente — p. ej., agent/5/shifts */
-    public const TOPIC_TURNOS_DE_AGENTE = 'agent/%d/shifts';
+    /** Cambios de disponibilidad del agente — p. ej., agentes/5/disponibilidad */
+    public const TOPIC_DISPONIBILIDAD_DE_AGENTE = 'agentes/%d/disponibilidad';
+    /** Alta/baja de turnos del agente — p. ej., agentes/5/turnos */
+    public const TOPIC_TURNOS_DE_AGENTE = 'agentes/%d/turnos';
     /** Topic de difusión para la barra de capacidad (Sprint 10.5) */
-    public const TOPIC_AGENTES = 'agents';
+    public const TOPIC_AGENTES = 'agentes';
 
     public function __construct(
         private readonly ParameterBagInterface $parameterBag,

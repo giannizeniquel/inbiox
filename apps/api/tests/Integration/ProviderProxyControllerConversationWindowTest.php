@@ -14,7 +14,7 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
- * HTTP-level test for `POST /api/provider/send` on an expired WhatsApp 24h
+ * HTTP-level test for `POST /api/proveedor/enviar` on an expired WhatsApp 24h
  * conversation window.
  *
  * spec.md "Free-Text Send Blocking Outside the Window" (manual reply
@@ -119,7 +119,7 @@ class ProviderProxyControllerConversationWindowTest extends WebTestCase
 
         $this->client->request(
             'POST',
-            '/api/provider/send',
+            '/api/proveedor/enviar',
             [],
             [],
             [
@@ -127,7 +127,7 @@ class ProviderProxyControllerConversationWindowTest extends WebTestCase
                 'HTTP_ACCEPT' => 'application/json',
                 'HTTP_AUTHORIZATION' => 'Bearer ' . $this->authToken,
             ],
-            \json_encode(['ticketId' => $ticketId, 'content' => 'Sorry for the delay']),
+            \json_encode(['ticketId' => $ticketId, 'contenido' => 'Sorry for the delay']),
         );
 
         $response = $this->client->getResponse();

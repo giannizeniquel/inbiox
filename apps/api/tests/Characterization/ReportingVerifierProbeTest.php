@@ -259,7 +259,7 @@ final class ReportingVerifierProbeTest extends CharacterizationTestCase
                 [$ids[$i]],
             );
             $conversationId = (int) $this->connection()->fetchOne('SELECT conversation_id FROM tickets WHERE id = ?', [$ids[$i]]);
-            foreach ([['inbound', 'contact', null, '2025-03-01 10:00:00'], ['outbound', 'agent', $owner->getId(), '2025-03-01 10:02:00']] as [$direction, $sender, $agentId, $at]) {
+            foreach ([['entrante', 'contacto', null, '2025-03-01 10:00:00'], ['saliente', 'agente', $owner->getId(), '2025-03-01 10:02:00']] as [$direction, $sender, $agentId, $at]) {
                 $this->connection()->executeStatement(
                     "INSERT INTO messages (conversation_id, direction, content, created_at, sender_agent_id, sender_type) VALUES (?, ?, 'm', ?, ?, ?)",
                     [$conversationId, $direction, $at, $agentId, $sender],
@@ -359,12 +359,12 @@ final class ReportingVerifierProbeTest extends CharacterizationTestCase
         $second = $this->createTicket('active', $owner->getId(), $first->getContacto());
         $this->connection()->executeStatement('UPDATE tickets SET created_at = ?, conversation_id = ? WHERE id = ?', ['2025-03-01 11:00:00', $conversationId, $second->getId()]);
         foreach ([
-            ['inbound', 'contact', null, '2025-03-01 10:00:00'],
-            ['outbound', 'agent', $owner->getId(), '2025-03-01 10:03:00'],
-            ['outbound', 'agent', $helper->getId(), '2025-03-01 10:04:00'],
-            ['outbound', 'automatic', null, '2025-03-01 10:05:00'],
-            ['inbound', null, null, '2025-03-01 10:06:00'],
-            ['inbound', 'contact', null, '2025-03-01 11:30:00'],
+            ['entrante', 'contacto', null, '2025-03-01 10:00:00'],
+            ['saliente', 'agente', $owner->getId(), '2025-03-01 10:03:00'],
+            ['saliente', 'agente', $helper->getId(), '2025-03-01 10:04:00'],
+            ['saliente', 'automatico', null, '2025-03-01 10:05:00'],
+            ['entrante', null, null, '2025-03-01 10:06:00'],
+            ['entrante', 'contacto', null, '2025-03-01 11:30:00'],
         ] as [$direction, $sender, $agentId, $at]) {
             $this->connection()->executeStatement(
                 "INSERT INTO messages (conversation_id, direction, content, created_at, sender_agent_id, sender_type) VALUES (?, ?, 'm', ?, ?, ?)",

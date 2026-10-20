@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Characterization;
 
+use App\Conversacion\DireccionDeMensaje;
 use App\Conversacion\Mensaje;
 
 /**
@@ -195,7 +196,7 @@ final class MeWorkspaceControllerCharacterizationTest extends CharacterizationTe
         $readTicket->setUltimaLecturaAt(new \DateTimeImmutable('+1 hour'));
         $message = new Mensaje();
         $message->setConversacion($readTicket->getConversacion());
-        $message->setDireccion('inbound');
+        $message->setDireccion(DireccionDeMensaje::ENTRANTE->value);
         $message->setContenido('old');
         $this->em->persist($message);
         $this->em->flush();

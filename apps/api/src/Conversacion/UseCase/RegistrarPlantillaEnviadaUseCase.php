@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Conversacion\UseCase;
 
+use App\Conversacion\EstadoDeEntrega;
 use App\Conversacion\Mensaje;
 use App\Conversacion\DireccionDeMensaje;
 use App\Conversacion\TipoDeRemitente;
@@ -30,7 +31,7 @@ final class RegistrarPlantillaEnviadaUseCase
         $mensaje->setContenido($contenido);
         $mensaje->setExternalId($wamid);
         $mensaje->setDireccion(DireccionDeMensaje::SALIENTE->value);
-        $mensaje->setEstadoDeEntrega('sent');
+        $mensaje->setEstadoDeEntrega(EstadoDeEntrega::ENVIADO->value);
         $mensaje->setActualizadoAt(new \DateTimeImmutable());
         $mensaje->setAgenteRemitenteId($agenteRemitenteId);
         $mensaje->setTipoDeRemitente(TipoDeRemitente::AGENTE);

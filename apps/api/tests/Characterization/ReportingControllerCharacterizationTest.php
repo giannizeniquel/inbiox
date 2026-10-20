@@ -381,10 +381,10 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
         $this->connection()->executeStatement('UPDATE tickets SET created_at = ? WHERE id = ?', ['2025-03-01 10:00:00', $ticket->getId()]);
         $conversationId = $ticket->getConversacion()->getId();
         foreach ([
-            ['inbound', 'contact', null, '2025-03-01 10:00:00'],
-            ['inbound', 'contact', null, '2025-03-01 10:01:00'],
-            ['outbound', 'agent', $this->owner->getId(), '2025-03-01 10:06:00'],
-            ['inbound', 'contact', null, '2025-03-01 10:10:00'],
+            ['entrante', 'contacto', null, '2025-03-01 10:00:00'],
+            ['entrante', 'contacto', null, '2025-03-01 10:01:00'],
+            ['saliente', 'agente', $this->owner->getId(), '2025-03-01 10:06:00'],
+            ['entrante', 'contacto', null, '2025-03-01 10:10:00'],
         ] as [$direction, $senderType, $agentId, $at]) {
             $this->connection()->executeStatement(
                 "INSERT INTO messages (conversation_id, direction, content, created_at, sender_agent_id, sender_type) VALUES (?, ?, 'msg', ?, ?, ?)",

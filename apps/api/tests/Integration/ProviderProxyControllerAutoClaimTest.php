@@ -15,7 +15,7 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
- * HTTP-level test for `POST /api/provider/send` on a resolved/closed ticket
+ * HTTP-level test for `POST /api/proveedor/enviar` on a resolved/closed ticket
  * replied to by a non-owning, non-privileged agent.
  *
  * spec.md "Resolved/Closed Ticket Ownership Guard" — non-owning agent
@@ -122,7 +122,7 @@ class ProviderProxyControllerAutoClaimTest extends WebTestCase
 
         $this->client->request(
             'POST',
-            '/api/provider/send',
+            '/api/proveedor/enviar',
             [],
             [],
             [
@@ -130,7 +130,7 @@ class ProviderProxyControllerAutoClaimTest extends WebTestCase
                 'HTTP_ACCEPT' => 'application/json',
                 'HTTP_AUTHORIZATION' => 'Bearer ' . $authToken,
             ],
-            \json_encode(['ticketId' => $ticketId, 'content' => 'I will take this one']),
+            \json_encode(['ticketId' => $ticketId, 'contenido' => 'I will take this one']),
         );
 
         $response = $this->client->getResponse();
@@ -138,7 +138,7 @@ class ProviderProxyControllerAutoClaimTest extends WebTestCase
 
         $data = \json_decode($response->getContent(), true);
         self::assertSame('TICKET_NOT_OWNED', $data['type']);
-        self::assertArrayHasKey('message', $data);
+        self::assertArrayHasKey('mensaje', $data);
 
         // No message must have been persisted — the whole use-case
         // transaction rolled back on the ConflictoDeEstadoException.

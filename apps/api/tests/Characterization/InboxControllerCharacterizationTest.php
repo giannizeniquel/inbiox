@@ -37,8 +37,8 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
         $owner = $this->createAgent('Owner');
         $contact = $this->createContact('+5491100001111', 'Ana');
         $ticket = $this->createTicket('active', $owner->getId(), $contact);
-        $this->addMessage($ticket, 'inbound', 'hola');
-        $this->addMessage($ticket, 'outbound', 'buenas');
+        $this->addMessage($ticket, 'entrante', 'hola');
+        $this->addMessage($ticket, 'saliente', 'buenas');
         $token = $this->loginAs('inbox-owner@characterization.local', ['ROLE_AGENT'], $owner);
 
         $response = $this->request('GET', '/api/tickets/' . $ticket->getId(), $token);
@@ -105,9 +105,9 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
     public function testMessagesBackwardPaginationWithCursor(): void
     {
         $ticket = $this->createTicket('active');
-        $m1 = $this->addMessage($ticket, 'inbound', 'one');
-        $m2 = $this->addMessage($ticket, 'outbound', 'two');
-        $m3 = $this->addMessage($ticket, 'inbound', 'three');
+        $m1 = $this->addMessage($ticket, 'entrante', 'one');
+        $m2 = $this->addMessage($ticket, 'saliente', 'two');
+        $m3 = $this->addMessage($ticket, 'entrante', 'three');
         $token = $this->loginAs('inbox@characterization.local', ['ROLE_AGENT'], $this->createAgent('Me'));
 
         $response = $this->request('GET', '/api/tickets/' . $ticket->getId() . '/messages?limit=2', $token);
@@ -118,37 +118,37 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
         self::assertSame(['has_more', 'next_cursor'], \array_keys($body['meta']));
         self::assertTrue($body['meta']['has_more']);
         // Newest two, in chronological order.
-        self::assertSame([$m2->getId(), $m3->getId()], \array_column($body['data'], 'message_id'));
+        self::assertSame([$m2->getId(), $m3->getId()], \array_column($body['data'], 'mensajeId'));
         self::assertSame(
-            ['message_id', 'direction', 'content', 'created_at', 'media', 'sender_agent_id', 'sender_type'],
+            ['mensajeId', 'direccion', 'contenido', 'creadoAt', 'adjunto', 'agenteRemitenteId', 'tipoDeRemitente'],
             \array_keys($body['data'][0]),
         );
-        self::assertSame('outbound', $body['data'][0]['direction']);
-        self::assertSame('two', $body['data'][0]['content']);
-        self::assertMatchesRegularExpression(self::UTC_Z_DATETIME, $body['data'][0]['created_at']);
-        self::assertNull($body['data'][0]['media']);
-        self::assertNull($body['data'][0]['sender_agent_id']);
-        self::assertNull($body['data'][0]['sender_type']);
+        self::assertSame('saliente', $body['data'][0]['direccion']);
+        self::assertSame('two', $body['data'][0]['contenido']);
+        self::assertMatchesRegularExpression(self::UTC_Z_DATETIME, $body['data'][0]['creadoAt']);
+        self::assertNull($body['data'][0]['adjunto']);
+        self::assertNull($body['data'][0]['agenteRemitenteId']);
+        self::assertNull($body['data'][0]['tipoDeRemitente']);
 
         $cursor = \json_decode(\base64_decode($body['meta']['next_cursor'], true), true);
         self::assertSame(['created_at', 'id'], \array_keys($cursor));
         self::assertSame($m2->getId(), $cursor['id']);
 
         $next = $this->json($this->request('GET', '/api/tickets/' . $ticket->getId() . '/messages?limit=2&cursor=' . \rawurlencode($body['meta']['next_cursor']), $token));
-        self::assertSame([$m1->getId()], \array_column($next['data'], 'message_id'));
+        self::assertSame([$m1->getId()], \array_column($next['data'], 'mensajeId'));
         self::assertSame(['has_more' => false], $next['meta']);
     }
 
     public function testMessagesForwardDirection(): void
     {
         $ticket = $this->createTicket('active');
-        $m1 = $this->addMessage($ticket, 'inbound', 'one');
-        $m2 = $this->addMessage($ticket, 'inbound', 'two');
+        $m1 = $this->addMessage($ticket, 'entrante', 'one');
+        $m2 = $this->addMessage($ticket, 'entrante', 'two');
         $token = $this->loginAs('inbox@characterization.local', ['ROLE_AGENT'], $this->createAgent('Me'));
 
         $body = $this->json($this->request('GET', '/api/tickets/' . $ticket->getId() . '/messages?direction=forward', $token));
 
-        self::assertSame([$m1->getId(), $m2->getId()], \array_column($body['data'], 'message_id'));
+        self::assertSame([$m1->getId(), $m2->getId()], \array_column($body['data'], 'mensajeId'));
         self::assertSame(['has_more' => false], $body['meta']);
     }
 
@@ -200,7 +200,7 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
         // camelCase payload keys, unlike the snake_case payloads of other writers.
         $payload = \json_decode($row['payload'], true);
         \ksort($payload); // the JSON column does not keep key order
-        self::assertSame(['eventType' => 'ticket.read', 'ticketId' => $ticket->getId()], $payload);
+        self::assertSame(['eventType' => 'ticket.leido', 'ticketId' => $ticket->getId()], $payload);
     }
 
     public function testNonOwnerMarkReadIsANoOp(): void

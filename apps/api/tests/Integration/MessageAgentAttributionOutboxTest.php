@@ -92,7 +92,7 @@ class MessageAgentAttributionOutboxTest extends KernelTestCase
         $payload = $messageCreatedEvents[0]->getPayload();
         self::assertSame($result['message_id'], $payload['message_id']);
         self::assertSame('Thanks for reaching out', $payload['content']);
-        self::assertSame('outbound', $payload['direction']);
+        self::assertSame('saliente', $payload['direction']);
         self::assertArrayHasKey('sender_name', $payload);
         self::assertSame('Outbox Agent', $payload['sender_name']);
     }

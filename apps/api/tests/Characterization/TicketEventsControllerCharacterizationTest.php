@@ -71,14 +71,14 @@ final class TicketEventsControllerCharacterizationTest extends CharacterizationT
         self::assertFalse($body['hasMore']);
         self::assertCount(2, $body['events']);
         self::assertSame([
-            'eventId' => $published,
+            'eventoId' => $published,
             'sequence' => 1,
-            'timestamp' => (new \DateTimeImmutable('2026-01-01 10:00:00'))->format(\DateTimeInterface::RFC3339),
-            'eventType' => 'ticket.read',
+            'ocurridoAt' => (new \DateTimeImmutable('2026-01-01 10:00:00'))->format(\DateTimeInterface::RFC3339),
+            'tipoDeEvento' => 'ticket.leido',
             'ticketId' => (string) self::TICKET_ID,
             'payload' => ['ticketId' => self::TICKET_ID],
         ], $body['events'][0]);
-        self::assertSame($pending, $body['events'][1]['eventId']);
+        self::assertSame($pending, $body['events'][1]['eventoId']);
     }
 
     public function testResyncFromMinusOneIncludesSequenceZero(): void
@@ -139,7 +139,7 @@ final class TicketEventsControllerCharacterizationTest extends CharacterizationT
     public function testMercureTokenWithoutTicketsTopicReturns403(): void
     {
         $appToken = $this->appToken();
-        $this->setMercureCookie($this->mercureToken(['agents']));
+        $this->setMercureCookie($this->mercureToken(['agentes']));
 
         $response = $this->request('GET', '/api/tickets/' . self::TICKET_ID . '/events', $appToken);
 

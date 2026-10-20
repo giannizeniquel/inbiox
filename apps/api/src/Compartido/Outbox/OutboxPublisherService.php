@@ -149,7 +149,7 @@ class OutboxPublisherService
                 'topic' => $evento->getTopic(),
                 'data' => $dataJson,
                 'id' => $evento->getId(),
-                'type' => $contractData['eventType'],
+                'type' => $contractData['tipoDeEvento'],
             ]);
 
             error_log('OutboxPublisher: POST data (first 200 chars): ' . substr($postFields, 0, 200));

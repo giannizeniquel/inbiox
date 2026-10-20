@@ -147,17 +147,17 @@ class ReportingResponseDelayTest extends WebTestCase
 
     private function inbound(int $conversationId, string $createdAt): void
     {
-        $this->insertMessage($conversationId, 'inbound', 'contact', null, $createdAt);
+        $this->insertMessage($conversationId, 'entrante', 'contacto', null, $createdAt);
     }
 
     private function agentReply(int $conversationId, int $agentId, string $createdAt): void
     {
-        $this->insertMessage($conversationId, 'outbound', 'agent', $agentId, $createdAt);
+        $this->insertMessage($conversationId, 'saliente', 'agente', $agentId, $createdAt);
     }
 
     private function automatic(int $conversationId, string $createdAt): void
     {
-        $this->insertMessage($conversationId, 'outbound', 'automatic', null, $createdAt);
+        $this->insertMessage($conversationId, 'saliente', 'automatico', null, $createdAt);
     }
 
     private function legacy(int $conversationId, string $direction, string $createdAt): void
@@ -208,7 +208,7 @@ class ReportingResponseDelayTest extends WebTestCase
         $conversation = $this->createConversation();
         $cid = $conversation->getId();
 
-        $this->legacy($cid, 'inbound', '2026-06-01 08:00:00');
+        $this->legacy($cid, 'entrante', '2026-06-01 08:00:00');
         $this->agentReply($cid, 1, '2026-06-01 09:00:00');
         $this->automatic($cid, '2026-06-01 08:30:00');
         $this->inbound($cid, '2026-06-01 08:45:00');
@@ -347,8 +347,8 @@ class ReportingResponseDelayTest extends WebTestCase
         // Pre-cutoff legacy rows — sender_type IS NULL. An outbound legacy row
         // has is_agent=0 in naive logic and would look like an "unanswered"
         // inbound run's non-reply if not excluded from the whole stream.
-        $this->legacy($cid, 'inbound', '2026-06-01 07:00:00');
-        $this->legacy($cid, 'outbound', '2026-06-01 07:05:00');
+        $this->legacy($cid, 'entrante', '2026-06-01 07:00:00');
+        $this->legacy($cid, 'saliente', '2026-06-01 07:05:00');
 
         // First attributed message establishes the cutoff.
         $this->inbound($cid, '2026-06-01 08:00:00');
@@ -471,7 +471,7 @@ class ReportingResponseDelayTest extends WebTestCase
         $ticket = $this->createTicket($conversation, '2026-06-01 07:00:00');
 
         // Legacy row inside this ticket's own episode.
-        $this->legacy($cid, 'inbound', '2026-06-01 07:00:00');
+        $this->legacy($cid, 'entrante', '2026-06-01 07:00:00');
 
         // Attributed pair — also establishes the global cutoff.
         $this->inbound($cid, '2026-06-01 08:00:00');

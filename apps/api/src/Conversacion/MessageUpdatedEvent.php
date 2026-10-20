@@ -9,7 +9,7 @@ use App\Compartido\RecolectorDeEventos;
 use Symfony\Component\Uid\Ulid;
 
 /**
- * Evento de dominio para los cambios de estado de un mensaje (delivered, read, failed, etc.).
+ * Evento de dominio para los cambios de estado de un mensaje (entregado, leido, fallido, etc.).
  *
  * Se publica vía RecolectorDeEventos + Outbox → Mercure cuando el deliveryStatus de
  * un mensaje pasa a un nuevo estado vía ProcesarActualizacionDeEstadoUseCase.

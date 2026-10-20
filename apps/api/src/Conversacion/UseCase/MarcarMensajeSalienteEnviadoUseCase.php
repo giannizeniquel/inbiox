@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Conversacion\UseCase;
 
+use App\Conversacion\EstadoDeEntrega;
 use App\Conversacion\Repository\MensajeRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -27,7 +28,7 @@ final class MarcarMensajeSalienteEnviadoUseCase
         }
 
         $mensaje->setExternalId($wamid);
-        $mensaje->setEstadoDeEntrega('sent');
+        $mensaje->setEstadoDeEntrega(EstadoDeEntrega::ENVIADO->value);
         $this->entityManager->flush();
     }
 }

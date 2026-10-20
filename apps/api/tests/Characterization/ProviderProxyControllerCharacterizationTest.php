@@ -77,7 +77,7 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
         return $this->connection()->fetchAllAssociative(
             "SELECT m.id, m.content, m.external_id, m.delivery_status, m.sender_agent_id, m.media
              FROM messages m JOIN tickets t ON t.conversation_id = m.conversation_id
-             WHERE t.id = ? AND m.direction = 'outbound' ORDER BY m.id",
+             WHERE t.id = ? AND m.direction = 'saliente' ORDER BY m.id",
             [$ticketId],
         );
     }
@@ -107,8 +107,8 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
     private function upload(?string $token, ?string $path, string $originalName, array $parameters = []): \Symfony\Component\HttpFoundation\Response
     {
         $this->em->clear();
-        $files = null === $path ? [] : ['file' => new UploadedFile($path, $originalName, null, null, true)];
-        $this->client->request('POST', '/api/provider/media/upload', $parameters, $files, [
+        $files = null === $path ? [] : ['archivo' => new UploadedFile($path, $originalName, null, null, true)];
+        $this->client->request('POST', '/api/proveedor/adjunto/subir', $parameters, $files, [
             'HTTP_ACCEPT' => 'application/json',
             'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
         ]);
@@ -117,7 +117,7 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
     }
 
     // ────────────────────────────────────────────────────────
-    //  POST /api/provider/send
+    //  POST /api/proveedor/enviar
     // ────────────────────────────────────────────────────────
 
     public function testSendTextCallsGraphWithTheTicketNumberAndStoresTheWamid(): void
@@ -130,12 +130,12 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
             ->willReturn(['messages' => [['id' => 'wamid.char-text']]]);
         $this->graph->expects(self::never())->method('sendMediaMessage');
 
-        $response = $this->request('POST', '/api/provider/send', $token, ['ticketId' => $ticket->getId(), 'content' => 'Hola cliente']);
+        $response = $this->request('POST', '/api/proveedor/enviar', $token, ['ticketId' => $ticket->getId(), 'contenido' => 'Hola cliente']);
 
         $messages = $this->outboundMessages((int) $ticket->getId());
         self::assertCount(1, $messages);
-        $this->assertJsonResponse(200, ['messageId' => (int) $messages[0]['id'], 'externalId' => 'wamid.char-text', 'status' => 'sent'], $response);
-        self::assertSame(['Hola cliente', 'wamid.char-text', 'sent', $agentId, null], [
+        $this->assertJsonResponse(200, ['mensajeId' => (int) $messages[0]['id'], 'externalId' => 'wamid.char-text', 'estadoDeEntrega' => 'enviado'], $response);
+        self::assertSame(['Hola cliente', 'wamid.char-text', 'enviado', $agentId, null], [
             $messages[0]['content'], $messages[0]['external_id'], $messages[0]['delivery_status'], (int) $messages[0]['sender_agent_id'], $messages[0]['media'],
         ]);
         // Auto-claim moves the new ticket to active, then the reply moves it to waiting.
@@ -159,7 +159,7 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
         $ticket = $this->ticketInOpenWindow($before, $agentId);
         $this->graph->method('sendMessage')->willReturn(['messages' => [['id' => 'wamid.char-fsm']]]);
 
-        $response = $this->request('POST', '/api/provider/send', $token, ['ticketId' => $ticket->getId(), 'content' => 'Seguimos']);
+        $response = $this->request('POST', '/api/proveedor/enviar', $token, ['ticketId' => $ticket->getId(), 'contenido' => 'Seguimos']);
 
         self::assertSame(200, $response->getStatusCode(), (string) $response->getContent());
         self::assertSame($after, $this->ticketRow((int) $ticket->getId())['status']);
@@ -175,25 +175,25 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
             ->willReturn(['messages' => [['id' => 'wamid.char-media']]]);
         $this->graph->expects(self::never())->method('sendMessage');
 
-        $response = $this->request('POST', '/api/provider/send', $token, [
+        $response = $this->request('POST', '/api/proveedor/enviar', $token, [
             'ticketId' => $ticket->getId(),
-            'content' => 'Mira esto',
+            'contenido' => 'Mira esto',
             'mediaId' => 'media-1',
             'mimeType' => 'image/jpeg',
-            'mediaKey' => 'default/1/abc.jpg',
-            'filename' => 'foto.jpg',
-            'size' => 1234,
+            'claveDeAdjunto' => 'default/1/abc.jpg',
+            'nombreDeArchivo' => 'foto.jpg',
+            'tamanio' => 1234,
         ]);
 
         $messages = $this->outboundMessages((int) $ticket->getId());
-        $this->assertJsonResponse(200, ['messageId' => (int) $messages[0]['id'], 'externalId' => 'wamid.char-media', 'status' => 'sent'], $response);
+        $this->assertJsonResponse(200, ['mensajeId' => (int) $messages[0]['id'], 'externalId' => 'wamid.char-media', 'estadoDeEntrega' => 'enviado'], $response);
         $media = \json_decode($messages[0]['media'], true);
         \ksort($media);
         self::assertSame([
             'caption' => null,
             'filename' => 'foto.jpg',
             'key' => 'default/1/abc.jpg',
-            'kind' => 'image',
+            'kind' => 'imagen',
             'mimeType' => 'image/jpeg',
             'providerId' => 'media-1',
             'size' => 1234,
@@ -208,7 +208,7 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
         $this->graph->expects(self::once())->method('sendMessage')->willReturn(['messages' => [['id' => 'wamid.char-nomime']]]);
         $this->graph->expects(self::never())->method('sendMediaMessage');
 
-        $response = $this->request('POST', '/api/provider/send', $token, ['ticketId' => $ticket->getId(), 'content' => 'Texto', 'mediaId' => 'media-2']);
+        $response = $this->request('POST', '/api/proveedor/enviar', $token, ['ticketId' => $ticket->getId(), 'contenido' => 'Texto', 'mediaId' => 'media-2']);
 
         self::assertSame(200, $response->getStatusCode());
         self::assertNull($this->outboundMessages((int) $ticket->getId())[0]['media']);
@@ -233,12 +233,12 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
         [$token] = $this->agentToken();
         $this->graph->method('sendMessage')->willThrowException(new GraphApiException('Graph said no', $code));
 
-        $response = $this->request('POST', '/api/provider/send', $token, ['ticketId' => $ticket->getId(), 'content' => 'No sale']);
+        $response = $this->request('POST', '/api/proveedor/enviar', $token, ['ticketId' => $ticket->getId(), 'contenido' => 'No sale']);
 
-        $this->assertJsonResponse($status, ['type' => $type, 'code' => $code, 'message' => 'Graph said no'], $response);
+        $this->assertJsonResponse($status, ['type' => $type, 'code' => $code, 'mensaje' => 'Graph said no'], $response);
         $messages = $this->outboundMessages((int) $ticket->getId());
         self::assertCount(1, $messages);
-        self::assertSame([null, 'sent'], [$messages[0]['external_id'], $messages[0]['delivery_status']]);
+        self::assertSame([null, 'enviado'], [$messages[0]['external_id'], $messages[0]['delivery_status']]);
         self::assertSame(1, $this->countRows('outbox_events', "event_type = 'mensaje.creado' AND aggregate_id = ?", [$ticket->getId()]));
     }
 
@@ -248,10 +248,10 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
         [$token] = $this->agentToken();
         $this->graph->method('sendMessage')->willReturn([]);
 
-        $response = $this->request('POST', '/api/provider/send', $token, ['ticketId' => $ticket->getId(), 'content' => 'Sin wamid']);
+        $response = $this->request('POST', '/api/proveedor/enviar', $token, ['ticketId' => $ticket->getId(), 'contenido' => 'Sin wamid']);
 
         $messages = $this->outboundMessages((int) $ticket->getId());
-        $this->assertJsonResponse(200, ['messageId' => (int) $messages[0]['id'], 'externalId' => null, 'status' => 'sent'], $response);
+        $this->assertJsonResponse(200, ['mensajeId' => (int) $messages[0]['id'], 'externalId' => null, 'estadoDeEntrega' => 'enviado'], $response);
         self::assertNull($messages[0]['external_id']);
     }
 
@@ -262,10 +262,10 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
         $this->graph->expects(self::exactly(2))->method('sendMessage')
             ->willReturnOnConsecutiveCalls(['messages' => [['id' => 'wamid.char-1']]], ['messages' => [['id' => 'wamid.char-2']]]);
 
-        $this->request('POST', '/api/provider/send', $token, ['ticketId' => $ticket->getId(), 'content' => 'Repetido']);
-        $second = $this->request('POST', '/api/provider/send', $token, ['ticketId' => $ticket->getId(), 'content' => 'Repetido']);
+        $this->request('POST', '/api/proveedor/enviar', $token, ['ticketId' => $ticket->getId(), 'contenido' => 'Repetido']);
+        $second = $this->request('POST', '/api/proveedor/enviar', $token, ['ticketId' => $ticket->getId(), 'contenido' => 'Repetido']);
 
-        $this->assertJsonResponse(200, ['messageId' => null, 'externalId' => 'wamid.char-2', 'status' => 'sent'], $second);
+        $this->assertJsonResponse(200, ['mensajeId' => null, 'externalId' => 'wamid.char-2', 'estadoDeEntrega' => 'enviado'], $second);
         $messages = $this->outboundMessages((int) $ticket->getId());
         self::assertCount(1, $messages);
         self::assertSame('wamid.char-1', $messages[0]['external_id']);
@@ -274,7 +274,7 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
     /** @return iterable<string, array{array<string, mixed>}> */
     public static function sendBodiesMissingFields(): iterable
     {
-        yield 'no ticketId' => [['content' => 'x']];
+        yield 'no ticketId' => [['contenido' => 'x']];
         yield 'no content' => [['ticketId' => 1]];
         yield 'empty body' => [[]];
     }
@@ -285,9 +285,9 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
         [$token] = $this->agentToken();
         $this->graph->expects(self::never())->method(self::anything());
 
-        $response = $this->request('POST', '/api/provider/send', $token, $body);
+        $response = $this->request('POST', '/api/proveedor/enviar', $token, $body);
 
-        $this->assertJsonResponse(400, ['error' => 'Missing required fields: ticketId, content'], $response);
+        $this->assertJsonResponse(400, ['error' => 'Missing required fields: ticketId, contenido'], $response);
     }
 
     public function testSendToAMissingTicketIsAnInternalServerError(): void
@@ -295,7 +295,7 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
         [$token] = $this->agentToken();
         $this->graph->expects(self::never())->method(self::anything());
 
-        $response = $this->request('POST', '/api/provider/send', $token, ['ticketId' => 999999, 'content' => 'x']);
+        $response = $this->request('POST', '/api/proveedor/enviar', $token, ['ticketId' => 999999, 'contenido' => 'x']);
 
         $this->assertInternalServerErrorEnvelope($response);
     }
@@ -315,9 +315,9 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
         [$token] = $this->agentToken();
         $this->graph->expects(self::never())->method(self::anything());
 
-        $response = $this->request('POST', '/api/provider/send', $token, ['ticketId' => $ticket->getId(), 'content' => 'x']);
+        $response = $this->request('POST', '/api/proveedor/enviar', $token, ['ticketId' => $ticket->getId(), 'contenido' => 'x']);
 
-        $this->assertJsonResponse(422, ['type' => 'PHONE_NOT_FOUND', 'message' => 'Ticket has no associated contact'], $response);
+        $this->assertJsonResponse(422, ['type' => 'PHONE_NOT_FOUND', 'mensaje' => 'Ticket has no associated contact'], $response);
         self::assertCount(1, $this->outboundMessages((int) $ticket->getId()));
     }
 
@@ -329,13 +329,13 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
         [$token] = $this->agentToken();
         $this->graph->expects(self::never())->method(self::anything());
 
-        $response = $this->request('POST', '/api/provider/send', $token, ['ticketId' => $ticket->getId(), 'content' => 'x']);
+        $response = $this->request('POST', '/api/proveedor/enviar', $token, ['ticketId' => $ticket->getId(), 'contenido' => 'x']);
 
-        $this->assertJsonResponse(422, ['type' => 'PHONE_NOT_FOUND', 'message' => 'Contact has no phone number'], $response);
+        $this->assertJsonResponse(422, ['type' => 'PHONE_NOT_FOUND', 'mensaje' => 'Contact has no phone number'], $response);
     }
 
     // ────────────────────────────────────────────────────────
-    //  POST /api/provider/template/send
+    //  POST /api/proveedor/plantilla/enviar
     // ────────────────────────────────────────────────────────
 
     public function testSendTemplateCallsGraphAndAnswersWithTheWamidAsMessageId(): void
@@ -346,11 +346,11 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
             ->with(self::CONTACT_PHONE, 'hello_world', 'es_AR', ['Ana'], self::PHONE_NUMBER_ID)
             ->willReturn(['messages' => [['id' => 'wamid.char-template']]]);
 
-        $response = $this->request('POST', '/api/provider/template/send', $token, [
-            'ticketId' => $ticket->getId(), 'templateName' => 'hello_world', 'language' => 'es_AR', 'parameters' => ['Ana'],
+        $response = $this->request('POST', '/api/proveedor/plantilla/enviar', $token, [
+            'ticketId' => $ticket->getId(), 'nombreDePlantilla' => 'hello_world', 'idioma' => 'es_AR', 'parametros' => ['Ana'],
         ]);
 
-        $this->assertJsonResponse(200, ['messageId' => 'wamid.char-template', 'status' => 'sent'], $response);
+        $this->assertJsonResponse(200, ['mensajeId' => 'wamid.char-template', 'estadoDeEntrega' => 'enviado'], $response);
         $messages = $this->outboundMessages((int) $ticket->getId());
         self::assertCount(1, $messages);
         self::assertSame('wamid.char-template', $messages[0]['external_id']);
@@ -363,11 +363,11 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
         [$token] = $this->agentToken();
         $this->graph->method('sendTemplate')->willReturn([]);
 
-        $response = $this->request('POST', '/api/provider/template/send', $token, [
-            'ticketId' => $ticket->getId(), 'templateName' => 'hello_world', 'language' => 'es_AR',
+        $response = $this->request('POST', '/api/proveedor/plantilla/enviar', $token, [
+            'ticketId' => $ticket->getId(), 'nombreDePlantilla' => 'hello_world', 'idioma' => 'es_AR',
         ]);
 
-        $this->assertJsonResponse(200, ['messageId' => null, 'status' => 'sent'], $response);
+        $this->assertJsonResponse(200, ['mensajeId' => null, 'estadoDeEntrega' => 'enviado'], $response);
         self::assertSame([], $this->outboundMessages((int) $ticket->getId()));
     }
 
@@ -377,11 +377,11 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
         [$token] = $this->agentToken();
         $this->graph->method('sendTemplate')->willThrowException(new GraphApiException('Blocked', 131047));
 
-        $response = $this->request('POST', '/api/provider/template/send', $token, [
-            'ticketId' => $ticket->getId(), 'templateName' => 'hello_world', 'language' => 'es_AR',
+        $response = $this->request('POST', '/api/proveedor/plantilla/enviar', $token, [
+            'ticketId' => $ticket->getId(), 'nombreDePlantilla' => 'hello_world', 'idioma' => 'es_AR',
         ]);
 
-        $this->assertJsonResponse(422, ['type' => 'RECIPIENT_BLOCKED', 'code' => 131047, 'message' => 'Blocked'], $response);
+        $this->assertJsonResponse(422, ['type' => 'RECIPIENT_BLOCKED', 'code' => 131047, 'mensaje' => 'Blocked'], $response);
         self::assertSame([], $this->outboundMessages((int) $ticket->getId()));
     }
 
@@ -394,13 +394,13 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
             self::throwException(new GraphApiException('Blocked', 131047)),
             ['messages' => [['id' => 'wamid.char-template-agent']]],
         );
-        $body = ['ticketId' => $ticket->getId(), 'templateName' => 'hello_world', 'language' => 'es_AR'];
+        $body = ['ticketId' => $ticket->getId(), 'nombreDePlantilla' => 'hello_world', 'idioma' => 'es_AR'];
 
-        $this->request('POST', '/api/provider/template/send', $token, $body);
+        $this->request('POST', '/api/proveedor/plantilla/enviar', $token, $body);
         self::assertSame(0, $this->countRows('agents', 'name = ?', [$email]));
 
-        $response = $this->request('POST', '/api/provider/template/send', $token, $body);
-        $this->assertJsonResponse(200, ['messageId' => 'wamid.char-template-agent', 'status' => 'sent'], $response);
+        $response = $this->request('POST', '/api/proveedor/plantilla/enviar', $token, $body);
+        $this->assertJsonResponse(200, ['mensajeId' => 'wamid.char-template-agent', 'estadoDeEntrega' => 'enviado'], $response);
         self::assertSame(1, $this->countRows('agents', 'name = ?', [$email]));
     }
 
@@ -411,18 +411,18 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
 
         $this->assertJsonResponse(
             400,
-            ['error' => 'Missing required fields: ticketId, templateName, language'],
-            $this->request('POST', '/api/provider/template/send', $token, ['ticketId' => 1, 'templateName' => 'x']),
+            ['error' => 'Missing required fields: ticketId, nombreDePlantilla, idioma'],
+            $this->request('POST', '/api/proveedor/plantilla/enviar', $token, ['ticketId' => 1, 'nombreDePlantilla' => 'x']),
         );
         $this->assertJsonResponse(
             400,
-            ['error' => 'Parameters must be an array of strings'],
-            $this->request('POST', '/api/provider/template/send', $token, ['ticketId' => 1, 'templateName' => 'x', 'language' => 'es', 'parameters' => 'Ana']),
+            ['error' => 'parametros must be an array of strings'],
+            $this->request('POST', '/api/proveedor/plantilla/enviar', $token, ['ticketId' => 1, 'nombreDePlantilla' => 'x', 'idioma' => 'es', 'parametros' => 'Ana']),
         );
         $this->assertJsonResponse(
             404,
             ['error' => 'Ticket not found'],
-            $this->request('POST', '/api/provider/template/send', $token, ['ticketId' => 999999, 'templateName' => 'x', 'language' => 'es']),
+            $this->request('POST', '/api/proveedor/plantilla/enviar', $token, ['ticketId' => 999999, 'nombreDePlantilla' => 'x', 'idioma' => 'es']),
         );
     }
 
@@ -432,15 +432,15 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
         [$token] = $this->agentToken();
         $this->graph->expects(self::never())->method(self::anything());
 
-        $response = $this->request('POST', '/api/provider/template/send', $token, [
-            'ticketId' => $ticket->getId(), 'templateName' => 'x', 'language' => 'es',
+        $response = $this->request('POST', '/api/proveedor/plantilla/enviar', $token, [
+            'ticketId' => $ticket->getId(), 'nombreDePlantilla' => 'x', 'idioma' => 'es',
         ]);
 
-        $this->assertJsonResponse(422, ['type' => 'PHONE_NOT_FOUND', 'message' => 'Contact has no phone number'], $response);
+        $this->assertJsonResponse(422, ['type' => 'PHONE_NOT_FOUND', 'mensaje' => 'Contact has no phone number'], $response);
     }
 
     // ────────────────────────────────────────────────────────
-    //  POST /api/provider/media/upload
+    //  POST /api/proveedor/adjunto/subir
     // ────────────────────────────────────────────────────────
 
     public function testUploadWithoutFileIsBadRequest(): void
@@ -449,7 +449,7 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
 
         $this->assertJsonResponse(
             400,
-            ['error' => 'No valid file provided. Use multipart/form-data with a "file" field.'],
+            ['error' => 'No valid file provided. Use multipart/form-data with a "archivo" field.'],
             $this->upload($token, null, 'none'),
         );
     }
@@ -462,7 +462,7 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
         $this->assertJsonResponse(415, ['error' => 'UNSUPPORTED_TYPE', 'mimeType' => 'text/rtf'], $this->upload($token, $this->tempFile('{\\rtf1 hi}'), 'doc.rtf'));
 
         $png = $this->tempFile("\x89PNG\r\n\x1a\n\0\0\0\rIHDR\0\0\0\1\0\0\0\1\x08\x02\0\0\0", 6 * 1024 * 1024);
-        $this->assertJsonResponse(413, ['error' => 'FILE_TOO_LARGE', 'maxSize' => 5 * 1024 * 1024, 'kind' => 'image'], $this->upload($token, $png, 'big.png'));
+        $this->assertJsonResponse(413, ['error' => 'FILE_TOO_LARGE', 'tamanioMaximo' => 5 * 1024 * 1024, 'tipo' => 'imagen'], $this->upload($token, $png, 'big.png'));
     }
 
     public function testUploadGraphErrorIsBadGateway(): void
@@ -473,7 +473,7 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
 
         $this->assertJsonResponse(
             502,
-            ['type' => 'GRAPH_API_ERROR', 'code' => 131050, 'message' => 'Upload failed'],
+            ['type' => 'GRAPH_API_ERROR', 'code' => 131050, 'mensaje' => 'Upload failed'],
             $this->upload($token, $this->tempFile('hola'), 'nota.txt'),
         );
     }
@@ -516,7 +516,7 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
     }
 
     // ────────────────────────────────────────────────────────
-    //  GET /api/provider/media/{mediaId}
+    //  GET /api/proveedor/adjunto/{mediaId}
     // ────────────────────────────────────────────────────────
 
     public function testDownloadReturnsTheRawBinary(): void
@@ -524,7 +524,7 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
         [$token] = $this->agentToken();
         $this->graph->expects(self::once())->method('downloadMedia')->with('media-dl-1')->willReturn('BINARY');
 
-        $response = $this->request('GET', '/api/provider/media/media-dl-1', $token);
+        $response = $this->request('GET', '/api/proveedor/adjunto/media-dl-1', $token);
 
         self::assertSame(200, $response->getStatusCode());
         self::assertSame('BINARY', $response->getContent());
@@ -537,8 +537,8 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
 
         $this->assertJsonResponse(
             422,
-            ['type' => 'GRAPH_API_ERROR', 'code' => 131031, 'message' => 'Gone'],
-            $this->request('GET', '/api/provider/media/media-dl-2', $token),
+            ['type' => 'GRAPH_API_ERROR', 'code' => 131031, 'mensaje' => 'Gone'],
+            $this->request('GET', '/api/proveedor/adjunto/media-dl-2', $token),
         );
     }
 }

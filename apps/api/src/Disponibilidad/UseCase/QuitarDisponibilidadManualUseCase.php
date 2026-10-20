@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Disponibilidad\UseCase;
 
+use App\Compartido\Realtime\MercureJwtService;
 use App\Compartido\Outbox\EventoOutbox;
 use App\Compartido\Outbox\TipoDeEventoDeOutbox;
 use App\Compartido\Outbox\OutboxWriter;
@@ -16,7 +17,7 @@ use Doctrine\ORM\EntityManagerInterface;
  * Quita el override de disponibilidad de un agente.
  *
  * Bloquea la fila del agente con FOR UPDATE, pone ambos campos del override en NULL
- * y emite un evento de outbox agent.availability_changed.
+ * y emite un evento de outbox agente.disponibilidad_cambiada.
  * Después de quitarlo, se retoma la evaluación basada en el horario.
  */
 final class QuitarDisponibilidadManualUseCase
@@ -103,7 +104,7 @@ final class QuitarDisponibilidadManualUseCase
         $eventoOutbox = new EventoOutbox(
             aggregateType: 'agent',
             aggregateId: $data['aggregate_id'],
-            topic: \sprintf('agent/%d/availability', $data['aggregate_id']),
+            topic: \sprintf(MercureJwtService::TOPIC_DISPONIBILIDAD_DE_AGENTE, $data['aggregate_id']),
             tipoDeEvento: TipoDeEventoDeOutbox::DISPONIBILIDAD_DE_AGENTE_CAMBIADA->value,
             payload: $data['payload'],
         );

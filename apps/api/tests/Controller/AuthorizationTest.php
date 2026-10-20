@@ -178,7 +178,7 @@ class AuthorizationTest extends WebTestCase
 
         // AGENT token should have agent-specific inbox and tickets, but NOT wildcard
         self::assertContains('tickets', $topics);
-        self::assertContains('agents', $topics);
+        self::assertContains('agentes', $topics);
         self::assertNotContains('*', $topics, 'AGENT Mercure token must NOT have wildcard');
     }
 

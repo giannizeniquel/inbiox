@@ -333,7 +333,7 @@ class ProcesarMensajeSalienteUseCase
     {
         $mensaje = new Mensaje();
         $mensaje->setConversacion($conversacion);
-        $mensaje->setDireccion('outbound');
+        $mensaje->setDireccion(DireccionDeMensaje::SALIENTE->value);
         $mensaje->setContenido($contenido);
         $mensaje->setAgenteRemitenteId($agenteId > 0 ? $agenteId : null);
         $mensaje->setTipoDeRemitente(TipoDeRemitente::AGENTE);

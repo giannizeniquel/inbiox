@@ -13,7 +13,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-#[Route('/api/messages/{id}/media', name: 'app_message_media_url', methods: ['GET'], requirements: ['id' => '\d+'])]
+#[Route('/api/mensajes/{id}/adjunto', name: 'app_message_media_url', methods: ['GET'], requirements: ['id' => '\d+'])]
 class UrlDeAdjuntoController extends AbstractController
 {
     public function __construct(
@@ -22,7 +22,7 @@ class UrlDeAdjuntoController extends AbstractController
     ) {}
 
     /**
-     * GET /api/messages/{id}/media
+     * GET /api/mensajes/{id}/adjunto
      *
      * Devuelve una URL prefirmada para acceder al adjunto del mensaje.
      * Requiere autorización ACCESS sobre el mensaje (vía MensajeVoter).
@@ -45,7 +45,7 @@ class UrlDeAdjuntoController extends AbstractController
 
         return new JsonResponse([
             'url' => $urlData['url'],
-            'expiresAt' => $urlData['expiresAt']->format(\DateTimeInterface::RFC3339),
+            'vencimientoAt' => $urlData['expiresAt']->format(\DateTimeInterface::RFC3339),
         ]);
     }
 }

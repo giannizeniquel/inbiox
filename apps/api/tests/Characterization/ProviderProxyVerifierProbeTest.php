@@ -87,7 +87,7 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
     private function outboundCount(int $ticketId): int
     {
         return (int) $this->connection()->fetchOne(
-            "SELECT COUNT(*) FROM messages m JOIN tickets t ON t.conversation_id = m.conversation_id WHERE t.id = ? AND m.direction = 'outbound'",
+            "SELECT COUNT(*) FROM messages m JOIN tickets t ON t.conversation_id = m.conversation_id WHERE t.id = ? AND m.direction = 'saliente'",
             [$ticketId],
         );
     }
@@ -98,7 +98,7 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
         \file_put_contents($path, $content);
         $this->tempFiles[] = $path;
         $this->em->clear();
-        $this->client->request('POST', '/api/provider/media/upload', $parameters, ['file' => new UploadedFile($path, $originalName, null, null, true)], [
+        $this->client->request('POST', '/api/proveedor/adjunto/subir', $parameters, ['archivo' => new UploadedFile($path, $originalName, null, null, true)], [
             'HTTP_ACCEPT' => 'application/json',
             'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
         ]);
@@ -112,11 +112,11 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
         [$token] = $this->agentToken();
         $this->graph->method('sendMessage')->willReturn(['messages' => [['id' => 'wamid.probe-1']]]);
 
-        $response = $this->request('POST', '/api/provider/send', $token, ['ticketId' => $ticket->getId(), 'content' => 'Hola']);
+        $response = $this->request('POST', '/api/proveedor/enviar', $token, ['ticketId' => $ticket->getId(), 'contenido' => 'Hola']);
 
-        $messageId = (int) $this->connection()->fetchOne("SELECT MAX(id) FROM messages WHERE direction = 'outbound'");
+        $messageId = (int) $this->connection()->fetchOne("SELECT MAX(id) FROM messages WHERE direction = 'saliente'");
         self::assertSame(200, $response->getStatusCode());
-        self::assertSame('{"messageId":' . $messageId . ',"externalId":"wamid.probe-1","status":"sent"}', $response->getContent());
+        self::assertSame('{"mensajeId":' . $messageId . ',"externalId":"wamid.probe-1","estadoDeEntrega":"enviado"}', $response->getContent());
         $outbox = [];
         foreach ($this->connection()->fetchAllAssociative('SELECT aggregate_type, topic, event_type, payload, status FROM outbox_events WHERE aggregate_id = ?', [$ticket->getId()]) as $row) {
             $payload = \json_decode($row['payload'], true);
@@ -134,10 +134,10 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
         [$token] = $this->agentToken();
         $this->graph->method('sendMessage')->willThrowException(new GraphApiException('Rate', 131050));
 
-        $response = $this->request('POST', '/api/provider/send', $token, ['ticketId' => $ticket->getId(), 'content' => 'Hola']);
+        $response = $this->request('POST', '/api/proveedor/enviar', $token, ['ticketId' => $ticket->getId(), 'contenido' => 'Hola']);
 
         self::assertSame(429, $response->getStatusCode());
-        self::assertSame('{"type":"RATE_LIMIT_EXCEEDED","code":131050,"message":"Rate"}', $response->getContent());
+        self::assertSame('{"type":"RATE_LIMIT_EXCEEDED","code":131050,"mensaje":"Rate"}', $response->getContent());
         self::assertSame(1, $this->outboundCount((int) $ticket->getId()));
     }
 
@@ -150,10 +150,10 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
         $this->graph->expects(self::never())->method(self::anything());
         $before = $this->dataState();
 
-        $response = $this->request('POST', '/api/provider/send', $token, ['ticketId' => $ticket->getId(), 'content' => 'Tarde']);
+        $response = $this->request('POST', '/api/proveedor/enviar', $token, ['ticketId' => $ticket->getId(), 'contenido' => 'Tarde']);
 
         self::assertSame(422, $response->getStatusCode());
-        self::assertSame(['type', 'message'], \array_keys($this->json($response)));
+        self::assertSame(['type', 'mensaje'], \array_keys($this->json($response)));
         self::assertSame('CONVERSATION_WINDOW_EXPIRED', $this->json($response)['type']);
         self::assertSame($before, $this->dataState());
     }
@@ -166,10 +166,10 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
         $this->graph->expects(self::never())->method(self::anything());
         $before = $this->dataState();
 
-        $response = $this->request('POST', '/api/provider/send', $token, ['ticketId' => $ticket->getId(), 'content' => 'Hola']);
+        $response = $this->request('POST', '/api/proveedor/enviar', $token, ['ticketId' => $ticket->getId(), 'contenido' => 'Hola']);
 
         self::assertSame(409, $response->getStatusCode());
-        self::assertSame('{"type":"TICKET_NOT_OWNED","message":"Cannot send to ticket in \\u0022resolved\\u0022 state: sender is not the assigned owner"}', $response->getContent());
+        self::assertSame('{"type":"TICKET_NOT_OWNED","mensaje":"Cannot send to ticket in \\u0022resolved\\u0022 state: sender is not the assigned owner"}', $response->getContent());
         self::assertSame($before, $this->dataState());
     }
 
@@ -180,7 +180,7 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
         $this->graph->expects(self::never())->method(self::anything());
         $before = $this->dataState();
 
-        $response = $this->request('POST', '/api/provider/send', $token, ['ticketId' => $ticket->getId(), 'content' => 5]);
+        $response = $this->request('POST', '/api/proveedor/enviar', $token, ['ticketId' => $ticket->getId(), 'contenido' => 5]);
 
         $this->assertInternalServerErrorEnvelope($response);
         self::assertSame($before, $this->dataState());
@@ -193,7 +193,7 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
         $this->graph->expects(self::never())->method(self::anything());
         $before = $this->dataState();
 
-        $response = $this->request('POST', '/api/provider/send', $token, ['ticketId' => $ticket->getId(), 'content' => 'x', 'mediaId' => 'm-1', 'mimeType' => 7]);
+        $response = $this->request('POST', '/api/proveedor/enviar', $token, ['ticketId' => $ticket->getId(), 'contenido' => 'x', 'mediaId' => 'm-1', 'mimeType' => 7]);
 
         $this->assertInternalServerErrorEnvelope($response);
         self::assertSame($before, $this->dataState());
@@ -204,8 +204,8 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
         $ticket = $this->ticketInOpenWindow();
         [$token] = $this->agentToken();
 
-        $response = $this->request('POST', '/api/provider/send', $token, [
-            'ticketId' => $ticket->getId(), 'content' => 'x', 'mediaId' => 'm-1', 'mimeType' => 'image/jpeg', 'caption' => 12,
+        $response = $this->request('POST', '/api/proveedor/enviar', $token, [
+            'ticketId' => $ticket->getId(), 'contenido' => 'x', 'mediaId' => 'm-1', 'mimeType' => 'image/jpeg', 'leyenda' => 12,
         ]);
 
         $this->assertInternalServerErrorEnvelope($response);
@@ -225,7 +225,7 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
         $this->graph->expects(self::never())->method(self::anything());
         $before = $this->dataState();
 
-        $response = $this->request('POST', '/api/provider/send', $token, ['ticketId' => $ticket->getId(), 'content' => 'x']);
+        $response = $this->request('POST', '/api/proveedor/enviar', $token, ['ticketId' => $ticket->getId(), 'contenido' => 'x']);
 
         $this->assertInternalServerErrorEnvelope($response);
         self::assertSame($before, $this->dataState());
@@ -237,7 +237,7 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
         $this->graph->expects(self::never())->method(self::anything());
         $before = $this->dataState();
 
-        $response = $this->request('POST', '/api/provider/template/send', $token, ['ticketId' => 999999, 'templateName' => 't', 'language' => 'es']);
+        $response = $this->request('POST', '/api/proveedor/plantilla/enviar', $token, ['ticketId' => 999999, 'nombreDePlantilla' => 't', 'idioma' => 'es']);
 
         self::assertSame(404, $response->getStatusCode());
         self::assertSame('{"error":"Ticket not found"}', $response->getContent());
@@ -259,10 +259,10 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
         $this->graph->expects(self::never())->method(self::anything());
         $before = $this->dataState();
 
-        $response = $this->request('POST', '/api/provider/template/send', $token, ['ticketId' => $ticket->getId(), 'templateName' => 't', 'language' => 'es']);
+        $response = $this->request('POST', '/api/proveedor/plantilla/enviar', $token, ['ticketId' => $ticket->getId(), 'nombreDePlantilla' => 't', 'idioma' => 'es']);
 
         self::assertSame(422, $response->getStatusCode());
-        self::assertSame('{"type":"PHONE_NOT_FOUND","message":"Ticket has no associated contact"}', $response->getContent());
+        self::assertSame('{"type":"PHONE_NOT_FOUND","mensaje":"Ticket has no associated contact"}', $response->getContent());
         self::assertSame($before, $this->dataState());
     }
 
@@ -273,7 +273,7 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
         $token = $this->loginAs($email, ['ROLE_AGENT']);
         $before = $this->dataState();
 
-        $response = $this->request('POST', '/api/provider/template/send', $token, ['ticketId' => $ticket->getId(), 'templateName' => 42, 'language' => 'es']);
+        $response = $this->request('POST', '/api/proveedor/plantilla/enviar', $token, ['ticketId' => $ticket->getId(), 'nombreDePlantilla' => 42, 'idioma' => 'es']);
 
         $this->assertInternalServerErrorEnvelope($response);
         self::assertSame($before, $this->dataState());
@@ -285,11 +285,11 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
         [$token, $agentId] = $this->agentToken();
         $this->graph->method('sendTemplate')->willReturn(['messages' => [['id' => 'wamid.probe-t']]]);
 
-        $response = $this->request('POST', '/api/provider/template/send', $token, ['ticketId' => $ticket->getId(), 'templateName' => 'hi', 'language' => 'es', 'parameters' => ['A', 'B']]);
+        $response = $this->request('POST', '/api/proveedor/plantilla/enviar', $token, ['ticketId' => $ticket->getId(), 'nombreDePlantilla' => 'hi', 'idioma' => 'es', 'parametros' => ['A', 'B']]);
 
-        self::assertSame('{"messageId":"wamid.probe-t","status":"sent"}', $response->getContent());
+        self::assertSame('{"mensajeId":"wamid.probe-t","estadoDeEntrega":"enviado"}', $response->getContent());
         $row = $this->connection()->fetchAssociative("SELECT content, sender_agent_id, delivery_status FROM messages WHERE external_id = 'wamid.probe-t'");
-        self::assertSame(['Template: hi (A, B)', $agentId, 'sent'], [$row['content'], (int) $row['sender_agent_id'], $row['delivery_status']]);
+        self::assertSame(['Template: hi (A, B)', $agentId, 'enviado'], [$row['content'], (int) $row['sender_agent_id'], $row['delivery_status']]);
         self::assertSame(['active', null], [$this->connection()->fetchOne('SELECT status FROM tickets WHERE id = ?', [$ticket->getId()]), $this->connection()->fetchOne('SELECT assigned_agent_id FROM tickets WHERE id = ?', [$ticket->getId()])]);
     }
 
@@ -322,7 +322,7 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
         [$token] = $this->agentToken();
         $this->graph->method('downloadMedia')->with('m-9')->willReturn("\x89PNGdata");
 
-        $response = $this->request('GET', '/api/provider/media/m-9', $token);
+        $response = $this->request('GET', '/api/proveedor/adjunto/m-9', $token);
 
         self::assertSame(200, $response->getStatusCode());
         self::assertSame("\x89PNGdata", $response->getContent());

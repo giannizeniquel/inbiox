@@ -4,339 +4,262 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Realtime;
 
-use App\Compartido\Realtime\TipoDeEventoMapper;
-use App\Compartido\Realtime\EventoEnTiempoRealFactory;
-use App\Disponibilidad\AgentAvailabilityChangedEvent;
-use App\Disponibilidad\AgentShiftChangedEvent;
-use App\Ticket\TicketUpdatedEvent;
 use App\Compartido\Outbox\EventoOutbox;
+use App\Compartido\Outbox\TipoDeEventoDeOutbox;
+use App\Compartido\Realtime\EventoEnTiempoRealFactory;
+use App\Compartido\Realtime\TipoDeEventoMapper;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Unit tests for EventoEnTiempoRealFactory — frozen event contract verification.
+ * EventoEnTiempoRealFactory: the Mercure message for each event type, per the API
+ * contract (`docs/contrato-api.md`, section 3.2 and annex A.12).
  *
- * Each test verifies that the payload shape returned by ::build() matches
- * the RealtimeEventContract v1 specification for that event type.
- *
- * @see openspec/changes/sprint-10-agent-management/specs/auto-assignment-audit/spec.md
- * @see openspec/changes/sprint-10-agent-management/specs/agent-availability/spec.md
+ * The stored payload keeps its keys (snake_case, as written by the use cases); the
+ * factory builds the camelCase wire keys and translates the old stored values
+ * (`inbound`, `sent`, `image`, `created`…) of rows written before the contract
+ * (section 5, point 5).
  */
 class RealtimeEventFactoryTest extends TestCase
 {
     private EventoEnTiempoRealFactory $factory;
 
-    private TipoDeEventoMapper $mapper;
-
     protected function setUp(): void
     {
-        $this->mapper = new TipoDeEventoMapper();
-        $this->factory = new EventoEnTiempoRealFactory($this->mapper);
+        $this->factory = new EventoEnTiempoRealFactory(new TipoDeEventoMapper());
     }
 
-    // ────────────────────────────────────────────────────────────
-    //  ticket.assigned
-    // ────────────────────────────────────────────────────────────
-
-    /**
-     * TicketAssigned payload MUST contain: ticketId, assigneeId,
-     * assignmentType, assignedAt.
-     *
-     * Covers spec: "ticket.assigned event" from auto-assignment-audit/spec.md
-     */
-    public function testTicketAssignedPayloadShape(): void
+    public function testEnvelopeKeys(): void
     {
-        $payload = [
-            'event_id'        => 'evt-001',
-            'assignee_id'     => 5,
+        $result = $this->build('ticket', 100, TipoDeEventoDeOutbox::TICKET_LEIDO->value, [
+            'event_id' => 'evt-000',
+            'occurred_at' => '2026-06-14T15:30:00Z',
+        ], 4);
+
+        self::assertSame([
+            'eventoId' => 'evt-000',
+            'sequence' => 4,
+            'ocurridoAt' => '2026-06-14T15:30:00Z',
+            'tipoDeEvento' => 'ticket.leido',
+            'ticketId' => '100',
+            'payload' => ['ticketId' => 100],
+        ], $result);
+    }
+
+    public function testTicketCreado(): void
+    {
+        $result = $this->build('ticket', 100, TipoDeEventoDeOutbox::TICKET_CREADO->value, [
+            'contact_id' => 7,
+            'conversation_id' => 9,
+            'status' => 'new',
+            'priority' => 'medium',
+            'created_at' => '2026-06-14T15:30:00Z',
+        ]);
+
+        self::assertSame('ticket.creado', $result['tipoDeEvento']);
+        // La prioridad sale como entero (hallazgo 13 del contrato, se decide aparte) y el
+        // valor del estado cambia en la unidad del ticket.
+        self::assertSame([
+            'ticketId' => 100,
+            'contactoId' => 7,
+            'conversacionId' => 9,
+            'estado' => 'new',
+            'prioridad' => 0,
+            'creadoAt' => '2026-06-14T15:30:00Z',
+        ], $result['payload']);
+    }
+
+    public function testMensajeAgregadoWithAttachment(): void
+    {
+        $result = $this->build('ticket', 100, TipoDeEventoDeOutbox::MENSAJE_CREADO->value, [
+            'message_id' => 55,
+            'content' => 'hola',
+            'direction' => 'entrante',
+            'sender_name' => 'Ana',
+            'created_at' => '2026-06-14T15:30:00Z',
+            'external_id' => 'wamid.1',
+            'phone_number_id' => '123',
+            'media' => [
+                'key' => 'default/1/a.jpg',
+                'mimeType' => 'image/jpeg',
+                'filename' => 'a.jpg',
+                'size' => 10,
+                'kind' => 'imagen',
+                'providerId' => 'm-1',
+                'caption' => 'foto',
+            ],
+        ]);
+
+        self::assertSame('mensaje.agregado', $result['tipoDeEvento']);
+        self::assertSame([
+            'mensajeId' => 55,
+            'ticketId' => 100,
+            'contenido' => 'hola',
+            'direccion' => 'entrante',
+            'remitenteNombre' => 'Ana',
+            'creadoAt' => '2026-06-14T15:30:00Z',
+            'externalId' => 'wamid.1',
+            'phoneNumberId' => '123',
+            'adjunto' => [
+                'key' => 'default/1/a.jpg',
+                'mimeType' => 'image/jpeg',
+                'nombreDeArchivo' => 'a.jpg',
+                'tamanio' => 10,
+                'tipo' => 'imagen',
+                'providerId' => 'm-1',
+                'leyenda' => 'foto',
+            ],
+        ], $result['payload']);
+    }
+
+    public function testMensajeAgregadoTranslatesOldStoredValues(): void
+    {
+        $result = $this->build('ticket', 100, 'App\Conversacion\MessageCreatedEvent', [
+            'message_id' => 56,
+            'direction' => 'outbound',
+            'media' => ['key' => 'k', 'kind' => 'document', 'filename' => 'f.pdf'],
+        ]);
+
+        self::assertSame('saliente', $result['payload']['direccion']);
+        self::assertSame(['key' => 'k', 'tipo' => 'documento', 'nombreDeArchivo' => 'f.pdf'], $result['payload']['adjunto']);
+
+        $entrante = $this->build('ticket', 100, TipoDeEventoDeOutbox::MENSAJE_CREADO->value, ['direction' => 'inbound']);
+        self::assertSame('entrante', $entrante['payload']['direccion']);
+        self::assertNull($entrante['payload']['adjunto']);
+    }
+
+    public function testEstadoDeTicketCambiado(): void
+    {
+        $result = $this->build('ticket', 100, TipoDeEventoDeOutbox::TICKET_ACTUALIZADO->value, [
+            'previous_status' => 'new',
+            'status' => 'active',
+            'changed_at' => '2026-06-14T15:30:00Z',
+        ]);
+
+        self::assertSame('ticket.estado_cambiado', $result['tipoDeEvento']);
+        self::assertSame([
+            'ticketId' => 100,
+            'estadoAnterior' => 'new',
+            'estadoNuevo' => 'active',
+            'cambiadoAt' => '2026-06-14T15:30:00Z',
+        ], $result['payload']);
+    }
+
+    public function testTicketAsignado(): void
+    {
+        $result = $this->build('ticket', 100, TipoDeEventoDeOutbox::TICKET_ACTUALIZADO->value, [
+            'assignee_id' => 5,
+            'assignee_name' => 'Ana',
             'assignment_type' => 'AUTO_ASSIGN',
-            'assigned_at'     => '2026-06-14T15:30:00Z',
-            'occurred_at'     => '2026-06-14T15:30:00Z',
-        ];
+            'assigned_at' => '2026-06-14T15:30:00Z',
+        ]);
 
-        $event = new EventoOutbox(
-            aggregateType: 'ticket',
-            aggregateId: 100,
-            topic: 'ticket.100.assigned',
-            tipoDeEvento: TicketUpdatedEvent::class,
-            payload: $payload,
-            sequence: 1,
-        );
+        self::assertSame('ticket.asignado', $result['tipoDeEvento']);
+        self::assertSame([
+            'ticketId' => 100,
+            'responsableId' => 5,
+            'responsableNombre' => 'Ana',
+            'tipoDeAsignacion' => 'AUTO_ASSIGN',
+            'asignadoAt' => '2026-06-14T15:30:00Z',
+        ], $result['payload']);
 
-        $result = $this->factory->build($event);
-        $p = $result['payload'];
-
-        // Envelope contract
-        $this->assertArrayHasKey('eventId', $result);
-        $this->assertArrayHasKey('sequence', $result);
-        $this->assertArrayHasKey('timestamp', $result);
-        $this->assertArrayHasKey('eventType', $result);
-        $this->assertArrayHasKey('ticketId', $result);
-        $this->assertArrayHasKey('payload', $result);
-        $this->assertSame('ticket.assigned', $result['eventType']);
-
-        // Payload contract — TicketAssigned uses camelCase keys
-        $this->assertArrayHasKey('ticketId', $p);
-        $this->assertArrayHasKey('assigneeId', $p);
-        $this->assertArrayHasKey('assignmentType', $p);
-        $this->assertArrayHasKey('assignedAt', $p);
-
-        // Type checks
-        $this->assertIsInt($p['ticketId']);
-        $this->assertIsInt($p['assigneeId']);
-        $this->assertIsString($p['assignmentType']);
-        $this->assertIsString($p['assignedAt']);
-
-        // Value checks
-        $this->assertSame(100, $p['ticketId']);
-        $this->assertSame(5, $p['assigneeId']);
-        $this->assertSame('AUTO_ASSIGN', $p['assignmentType']);
+        // Sin tipo guardado, el de siempre (el valor cambia en la unidad del ticket).
+        $porDefecto = $this->build('ticket', 101, 'App\Ticket\TicketUpdatedEvent', ['ownerAgentId' => 3]);
+        self::assertSame('ticket.asignado', $porDefecto['tipoDeEvento']);
+        self::assertSame(3, $porDefecto['payload']['responsableId']);
+        self::assertSame('MANUAL_ASSIGN', $porDefecto['payload']['tipoDeAsignacion']);
     }
 
-    /**
-     * TicketAssigned with MANUAL_ASSIGN type.
-     */
-    public function testTicketAssignedManualAssign(): void
+    public function testMensajeActualizado(): void
     {
-        $payload = [
-            'event_id'        => 'evt-002',
-            'assignee_id'     => 3,
-            'assignment_type' => 'MANUAL_ASSIGN',
-            'assigned_at'     => '2026-06-14T16:00:00Z',
-            'occurred_at'     => '2026-06-14T16:00:00Z',
-        ];
+        $result = $this->build('ticket', 100, TipoDeEventoDeOutbox::MENSAJE_ACTUALIZADO->value, [
+            'message_id' => 55,
+            'delivery_status' => 'fallido',
+            'failed_reason' => 'Message undeliverable',
+            'occurred_at' => '2026-06-14T15:30:00Z',
+        ]);
 
-        $event = new EventoOutbox(
-            aggregateType: 'ticket',
-            aggregateId: 101,
-            topic: 'ticket.101.assigned',
-            tipoDeEvento: TicketUpdatedEvent::class,
-            payload: $payload,
-        );
-
-        $result = $this->factory->build($event);
-        $p = $result['payload'];
-
-        $this->assertSame('ticket.assigned', $result['eventType']);
-        $this->assertSame(101, $p['ticketId']);
-        $this->assertSame(3, $p['assigneeId']);
-        $this->assertSame('MANUAL_ASSIGN', $p['assignmentType']);
+        self::assertSame('mensaje.actualizado', $result['tipoDeEvento']);
+        self::assertSame([
+            'mensajeId' => 55,
+            'ticketId' => 100,
+            'estadoDeEntrega' => 'fallido',
+            'motivoDeFallo' => 'Message undeliverable',
+            'actualizadoAt' => '2026-06-14T15:30:00Z',
+        ], $result['payload']);
     }
 
-    /**
-     * TicketAssigned with REASSIGN type.
-     */
-    public function testTicketAssignedReassign(): void
+    public function testMensajeActualizadoTranslatesOldStoredValues(): void
     {
-        $payload = [
-            'event_id'        => 'evt-003',
-            'assignee_id'     => 8,
-            'assignment_type' => 'REASSIGN',
-            'previous_agent_id' => 5,
-            'assigned_at'     => '2026-06-14T17:00:00Z',
-            'occurred_at'     => '2026-06-14T17:00:00Z',
-        ];
-
-        $event = new EventoOutbox(
-            aggregateType: 'ticket',
-            aggregateId: 102,
-            topic: 'ticket.102.assigned',
-            tipoDeEvento: TicketUpdatedEvent::class,
-            payload: $payload,
-        );
-
-        $result = $this->factory->build($event);
-        $p = $result['payload'];
-
-        $this->assertSame('ticket.assigned', $result['eventType']);
-        $this->assertSame(8, $p['assigneeId']);
-        $this->assertSame('REASSIGN', $p['assignmentType']);
+        $esperados = ['sent' => 'enviado', 'delivered' => 'entregado', 'read' => 'leido', 'failed' => 'fallido'];
+        foreach ($esperados as $viejo => $nuevo) {
+            $result = $this->build('ticket', 100, 'App\Conversacion\MessageUpdatedEvent', ['delivery_status' => $viejo]);
+            self::assertSame($nuevo, $result['payload']['estadoDeEntrega'], $viejo);
+        }
     }
 
-    // ────────────────────────────────────────────────────────────
-    //  agent.availability_changed
-    // ────────────────────────────────────────────────────────────
-
-    /**
-     * AgentAvailabilityChanged payload MUST contain: agent_id, is_available,
-     * override_active, current_load, max_capacity, timestamp.
-     *
-     * Covers spec: "agent.availability_changed event" from agent-availability/spec.md
-     */
-    public function testAgentAvailabilityChangedPayloadShape(): void
+    public function testDisponibilidadDeAgenteCambiada(): void
     {
-        $payload = [
-            'event_id'        => 'evt-010',
-            'agent_id'        => 5,
-            'is_available'    => true,
+        $result = $this->build('agent', 5, TipoDeEventoDeOutbox::DISPONIBILIDAD_DE_AGENTE_CAMBIADA->value, [
+            'agent_id' => 5,
+            'is_available' => true,
             'override_active' => true,
-            'current_load'    => 3,
-            'max_capacity'    => 5,
-            'timestamp'       => '2026-06-15T10:00:00Z',
-        ];
+            'current_load' => 3,
+            'max_capacity' => 5,
+            'timestamp' => '2026-06-15T10:00:00Z',
+        ]);
 
-        $event = new EventoOutbox(
-            aggregateType: 'agent',
-            aggregateId: 5,
-            topic: 'agent.5.availability_changed',
-            tipoDeEvento: AgentAvailabilityChangedEvent::class,
-            payload: $payload,
-        );
-
-        $result = $this->factory->build($event);
-        $p = $result['payload'];
-
-        // Event type
-        $this->assertSame('agent.availability_changed', $result['eventType']);
-
-        // Required keys — snake_case
-        $this->assertArrayHasKey('agent_id', $p);
-        $this->assertArrayHasKey('is_available', $p);
-        $this->assertArrayHasKey('override_active', $p);
-        $this->assertArrayHasKey('current_load', $p);
-        $this->assertArrayHasKey('max_capacity', $p);
-        $this->assertArrayHasKey('timestamp', $p);
-
-        // Type checks
-        $this->assertIsInt($p['agent_id']);
-        $this->assertIsBool($p['is_available']);
-        $this->assertIsBool($p['override_active']);
-        $this->assertIsInt($p['current_load']);
-        $this->assertIsInt($p['max_capacity']);
-        $this->assertIsString($p['timestamp']);
-
-        // Value checks
-        $this->assertSame(5, $p['agent_id']);
-        $this->assertTrue($p['is_available']);
-        $this->assertTrue($p['override_active']);
-        $this->assertSame(3, $p['current_load']);
-        $this->assertSame(5, $p['max_capacity']);
+        self::assertSame('agente.disponibilidad_cambiada', $result['tipoDeEvento']);
+        self::assertSame([
+            'agenteId' => 5,
+            'disponible' => true,
+            'disponibilidadManualActiva' => true,
+            'cargaActual' => 3,
+            'capacidadMaxima' => 5,
+            'ocurridoAt' => '2026-06-15T10:00:00Z',
+        ], $result['payload']);
     }
 
-    /**
-     * AgentAvailabilityChanged with is_available=false, no override.
-     */
-    public function testAgentAvailabilityChangedUnavailable(): void
+    public function testTurnoDeAgenteCambiado(): void
     {
-        $payload = [
-            'agent_id'        => 7,
-            'is_available'    => false,
-            'override_active' => false,
-            'current_load'    => 5,
-            'max_capacity'    => 5,
-            'timestamp'       => '2026-06-15T12:00:00Z',
-        ];
-
-        $event = new EventoOutbox(
-            aggregateType: 'agent',
-            aggregateId: 7,
-            topic: 'agent.7.availability_changed',
-            tipoDeEvento: AgentAvailabilityChangedEvent::class,
-            payload: $payload,
-        );
-
-        $result = $this->factory->build($event);
-        $p = $result['payload'];
-
-        $this->assertSame('agent.availability_changed', $result['eventType']);
-        $this->assertFalse($p['is_available']);
-        $this->assertFalse($p['override_active']);
-        $this->assertSame(5, $p['current_load']);
-    }
-
-    // ────────────────────────────────────────────────────────────
-    //  agent.shift_changed
-    // ────────────────────────────────────────────────────────────
-
-    /**
-     * AgentShiftChanged payload MUST contain: agent_id, shift_id, action,
-     * day_of_week, start_time, end_time, timestamp.
-     *
-     * Covers spec: "agent.shift_changed event" from agent-availability/spec.md
-     */
-    public function testAgentShiftChangedPayloadShape(): void
-    {
-        $payload = [
-            'event_id'    => 'evt-020',
-            'agent_id'    => 5,
-            'shift_id'    => 10,
-            'action'      => 'created',
+        $result = $this->build('agent', 5, TipoDeEventoDeOutbox::TURNO_DE_AGENTE_CAMBIADO->value, [
+            'agent_id' => 5,
+            'shift_id' => 10,
+            'action' => 'created',
             'day_of_week' => 1,
-            'start_time'  => '08:00',
-            'end_time'    => '16:00',
-            'timestamp'   => '2026-06-15T08:00:00Z',
-        ];
+            'start_time' => '08:00',
+            'end_time' => '16:00',
+            'timestamp' => '2026-06-15T08:00:00Z',
+        ]);
 
-        $event = new EventoOutbox(
-            aggregateType: 'agent',
-            aggregateId: 5,
-            topic: 'agent.5.shift_changed',
-            tipoDeEvento: AgentShiftChangedEvent::class,
-            payload: $payload,
-        );
+        self::assertSame('agente.turno_cambiado', $result['tipoDeEvento']);
+        self::assertSame([
+            'agenteId' => 5,
+            'turnoId' => 10,
+            'accion' => 'creado',
+            'diaDeLaSemana' => 1,
+            'horaDeInicio' => '08:00',
+            'horaDeFin' => '16:00',
+            'ocurridoAt' => '2026-06-15T08:00:00Z',
+        ], $result['payload']);
 
-        $result = $this->factory->build($event);
-        $p = $result['payload'];
-
-        // Event type
-        $this->assertSame('agent.shift_changed', $result['eventType']);
-
-        // Required keys — snake_case
-        $this->assertArrayHasKey('agent_id', $p);
-        $this->assertArrayHasKey('shift_id', $p);
-        $this->assertArrayHasKey('action', $p);
-        $this->assertArrayHasKey('day_of_week', $p);
-        $this->assertArrayHasKey('start_time', $p);
-        $this->assertArrayHasKey('end_time', $p);
-        $this->assertArrayHasKey('timestamp', $p);
-
-        // Type checks
-        $this->assertIsInt($p['agent_id']);
-        $this->assertIsInt($p['shift_id']);
-        $this->assertIsString($p['action']);
-        $this->assertIsInt($p['day_of_week']);
-        $this->assertIsString($p['start_time']);
-        $this->assertIsString($p['end_time']);
-        $this->assertIsString($p['timestamp']);
-
-        // Value checks
-        $this->assertSame(5, $p['agent_id']);
-        $this->assertSame(10, $p['shift_id']);
-        $this->assertSame('created', $p['action']);
-        $this->assertSame(1, $p['day_of_week']);
-        $this->assertSame('08:00', $p['start_time']);
-        $this->assertSame('16:00', $p['end_time']);
+        $borrado = $this->build('agent', 5, 'App\Disponibilidad\AgentShiftChangedEvent', ['action' => 'deleted']);
+        self::assertSame('borrado', $borrado['payload']['accion']);
     }
 
     /**
-     * AgentShiftChanged with action=deleted.
+     * @param array<string, mixed> $payload
+     *
+     * @return array<string, mixed>
      */
-    public function testAgentShiftChangedDeleted(): void
+    private function build(string $aggregateType, int $aggregateId, string $tipoDeEvento, array $payload, int $sequence = 1): array
     {
-        $payload = [
-            'agent_id'    => 3,
-            'shift_id'    => 15,
-            'action'      => 'deleted',
-            'day_of_week' => 5,
-            'start_time'  => '22:00',
-            'end_time'    => '06:00',
-            'timestamp'   => '2026-06-19T22:00:00Z',
-        ];
-
-        $event = new EventoOutbox(
-            aggregateType: 'agent',
-            aggregateId: 3,
-            topic: 'agent.3.shift_changed',
-            tipoDeEvento: AgentShiftChangedEvent::class,
+        return $this->factory->build(new EventoOutbox(
+            aggregateType: $aggregateType,
+            aggregateId: $aggregateId,
+            topic: 'tickets',
+            tipoDeEvento: $tipoDeEvento,
             payload: $payload,
-        );
-
-        $result = $this->factory->build($event);
-        $p = $result['payload'];
-
-        $this->assertSame('agent.shift_changed', $result['eventType']);
-        $this->assertSame('deleted', $p['action']);
-        $this->assertSame(5, $p['day_of_week']);
-        $this->assertSame('22:00', $p['start_time']);
-        $this->assertSame('06:00', $p['end_time']);
+            sequence: $sequence,
+        ));
     }
 }

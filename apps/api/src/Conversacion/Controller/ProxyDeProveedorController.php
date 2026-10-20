@@ -15,6 +15,7 @@ use App\Conversacion\TelefonoDeDestinatarioNoEncontradoException;
 use App\Compartido\NotFoundException;
 use App\Compartido\Graph\GraphApiException;
 use App\Conversacion\AdjuntoDemasiadoGrandeException;
+use App\Conversacion\EstadoDeEntrega;
 use App\Conversacion\MimeDeAdjuntoNoPermitidoException;
 use App\Compartido\ConflictoDeEstadoException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -40,26 +41,26 @@ class ProxyDeProveedorController extends AbstractController
         private readonly SubirAdjuntoUseCase $subirAdjuntoUseCase,
     ) {}
 
-    #[Route('/api/provider/send', name: 'app_provider_send', methods: ['POST'])]
+    #[Route('/api/proveedor/enviar', name: 'app_provider_send', methods: ['POST'])]
     public function enviar(Request $request, #[CurrentUser] ?Usuario $usuario): JsonResponse
     {
         $payload = json_decode($request->getContent(), true);
 
-        if (!is_array($payload) || !isset($payload['ticketId']) || !isset($payload['content'])) {
+        if (!is_array($payload) || !isset($payload['ticketId']) || !isset($payload['contenido'])) {
             return new JsonResponse(
-                ['error' => 'Missing required fields: ticketId, content'],
+                ['error' => 'Missing required fields: ticketId, contenido'],
                 Response::HTTP_BAD_REQUEST
             );
         }
 
         $ticketId = (int) $payload['ticketId'];
-        $contenido = $payload['content'];
+        $contenido = $payload['contenido'];
         $mediaId = $payload['mediaId'] ?? null;
         $mimeType = $payload['mimeType'] ?? null;
-        $leyenda = $payload['caption'] ?? null;
-        $mediaKey = $payload['mediaKey'] ?? null;
-        $filename = $payload['filename'] ?? null;
-        $tamanio = $payload['size'] ?? null;
+        $leyenda = $payload['leyenda'] ?? null;
+        $mediaKey = $payload['claveDeAdjunto'] ?? null;
+        $filename = $payload['nombreDeArchivo'] ?? null;
+        $tamanio = $payload['tamanio'] ?? null;
 
         // Resuelve el ID del agente a partir del usuario autenticado (degrada a null, nunca
         // hace fallar el envío; design.md D4).
@@ -86,7 +87,7 @@ class ProxyDeProveedorController extends AbstractController
             return new JsonResponse(
                 [
                     'type' => 'CONVERSATION_WINDOW_EXPIRED',
-                    'message' => $e->getMessage(),
+                    'mensaje' => $e->getMessage(),
                 ],
                 Response::HTTP_UNPROCESSABLE_ENTITY
             );
@@ -94,7 +95,7 @@ class ProxyDeProveedorController extends AbstractController
             return new JsonResponse(
                 [
                     'type' => 'TICKET_NOT_OWNED',
-                    'message' => $e->getMessage(),
+                    'mensaje' => $e->getMessage(),
                 ],
                 Response::HTTP_CONFLICT
             );
@@ -105,7 +106,7 @@ class ProxyDeProveedorController extends AbstractController
             );
         } catch (TelefonoDeDestinatarioNoEncontradoException $e) {
             return new JsonResponse(
-                ['type' => 'PHONE_NOT_FOUND', 'message' => $e->getMessage()],
+                ['type' => 'PHONE_NOT_FOUND', 'mensaje' => $e->getMessage()],
                 Response::HTTP_UNPROCESSABLE_ENTITY
             );
         } catch (GraphApiException $e) {
@@ -116,7 +117,7 @@ class ProxyDeProveedorController extends AbstractController
                 [
                     'type' => $errorType,
                     'code' => $e->getGraphCode(),
-                    'message' => $e->getMessage(),
+                    'mensaje' => $e->getMessage(),
                 ],
                 $httpStatus
             );
@@ -125,10 +126,10 @@ class ProxyDeProveedorController extends AbstractController
         return new JsonResponse(
             [
                 // ID del mensaje en la BD: el frontend lo usa para pedir la URL del adjunto
-                'messageId' => $result['messageId'],
+                'mensajeId' => $result['messageId'],
                 // ID del mensaje en WhatsApp (WAMID)
                 'externalId' => $result['externalId'],
-                'status' => 'sent',
+                'estadoDeEntrega' => EstadoDeEntrega::ENVIADO->value,
             ],
             Response::HTTP_OK
         );
@@ -155,30 +156,30 @@ class ProxyDeProveedorController extends AbstractController
         }
     }
 
-    #[Route('/api/provider/template/send', name: 'app_provider_template_send', methods: ['POST'])]
+    #[Route('/api/proveedor/plantilla/enviar', name: 'app_provider_template_send', methods: ['POST'])]
     public function enviarPlantilla(Request $request, #[CurrentUser] ?Usuario $usuario): JsonResponse
     {
         $payload = json_decode($request->getContent(), true);
 
         if (!is_array($payload)
             || !isset($payload['ticketId'])
-            || !isset($payload['templateName'])
-            || !isset($payload['language'])
+            || !isset($payload['nombreDePlantilla'])
+            || !isset($payload['idioma'])
         ) {
             return new JsonResponse(
-                ['error' => 'Missing required fields: ticketId, templateName, language'],
+                ['error' => 'Missing required fields: ticketId, nombreDePlantilla, idioma'],
                 Response::HTTP_BAD_REQUEST
             );
         }
 
         $ticketId = (int) $payload['ticketId'];
-        $nombreDePlantilla = $payload['templateName'];
-        $idioma = $payload['language'];
-        $parametros = $payload['parameters'] ?? [];
+        $nombreDePlantilla = $payload['nombreDePlantilla'];
+        $idioma = $payload['idioma'];
+        $parametros = $payload['parametros'] ?? [];
 
         if (!is_array($parametros)) {
             return new JsonResponse(
-                ['error' => 'Parameters must be an array of strings'],
+                ['error' => 'parametros must be an array of strings'],
                 Response::HTTP_BAD_REQUEST
             );
         }
@@ -198,7 +199,7 @@ class ProxyDeProveedorController extends AbstractController
             );
         } catch (TelefonoDeDestinatarioNoEncontradoException $e) {
             return new JsonResponse(
-                ['type' => 'PHONE_NOT_FOUND', 'message' => $e->getMessage()],
+                ['type' => 'PHONE_NOT_FOUND', 'mensaje' => $e->getMessage()],
                 Response::HTTP_UNPROCESSABLE_ENTITY
             );
         } catch (GraphApiException $e) {
@@ -209,7 +210,7 @@ class ProxyDeProveedorController extends AbstractController
                 [
                     'type' => $errorType,
                     'code' => $e->getGraphCode(),
-                    'message' => $e->getMessage(),
+                    'mensaje' => $e->getMessage(),
                 ],
                 $httpStatus
             );
@@ -217,22 +218,23 @@ class ProxyDeProveedorController extends AbstractController
 
         return new JsonResponse(
             [
-                'messageId' => $wamid,
-                'status' => 'sent',
+                // Acá el id es el WAMID (hallazgo 20 del contrato).
+                'mensajeId' => $wamid,
+                'estadoDeEntrega' => EstadoDeEntrega::ENVIADO->value,
             ],
             Response::HTTP_OK
         );
     }
 
-    #[Route('/api/provider/media/upload', name: 'app_provider_media_upload', methods: ['POST'])]
+    #[Route('/api/proveedor/adjunto/subir', name: 'app_provider_media_upload', methods: ['POST'])]
     public function subirAdjunto(Request $request, #[CurrentUser] ?Usuario $usuario): JsonResponse
     {
         /** @var UploadedFile|null $file */
-        $file = $request->files->get('file');
+        $file = $request->files->get('archivo');
 
         if (!$file instanceof UploadedFile || !$file->isValid()) {
             return new JsonResponse(
-                ['error' => 'No valid file provided. Use multipart/form-data with a "file" field.'],
+                ['error' => 'No valid file provided. Use multipart/form-data with a "archivo" field.'],
                 Response::HTTP_BAD_REQUEST
             );
         }
@@ -249,8 +251,8 @@ class ProxyDeProveedorController extends AbstractController
             return new JsonResponse(
                 [
                     'error' => 'FILE_TOO_LARGE',
-                    'maxSize' => $e->getTamanioMaximo(),
-                    'kind' => $e->getTipo(),
+                    'tamanioMaximo' => $e->getTamanioMaximo(),
+                    'tipo' => $e->getTipo(),
                 ],
                 Response::HTTP_REQUEST_ENTITY_TOO_LARGE
             );
@@ -267,7 +269,7 @@ class ProxyDeProveedorController extends AbstractController
                 [
                     'type' => 'GRAPH_API_ERROR',
                     'code' => $e->getGraphCode(),
-                    'message' => $e->getMessage(),
+                    'mensaje' => $e->getMessage(),
                 ],
                 Response::HTTP_BAD_GATEWAY
             );
@@ -276,7 +278,7 @@ class ProxyDeProveedorController extends AbstractController
         return new JsonResponse($result, Response::HTTP_OK);
     }
 
-    #[Route('/api/provider/media/{mediaId}', name: 'app_provider_media_download', methods: ['GET'])]
+    #[Route('/api/proveedor/adjunto/{mediaId}', name: 'app_provider_media_download', methods: ['GET'])]
     public function descargarAdjunto(string $mediaId): Response
     {
         try {
@@ -288,7 +290,7 @@ class ProxyDeProveedorController extends AbstractController
                 [
                     'type' => 'GRAPH_API_ERROR',
                     'code' => $e->getGraphCode(),
-                    'message' => $e->getMessage(),
+                    'mensaje' => $e->getMessage(),
                 ],
                 $this->mapGraphErrorCode($e->getGraphCode())
             );

@@ -4,7 +4,7 @@ namespace App\Conversacion;
 
 enum TipoDeRemitente: string
 {
-    case AGENTE = 'agent';
-    case AUTOMATICO = 'automatic';
-    case CONTACTO = 'contact';
+    case AGENTE = 'agente';
+    case AUTOMATICO = 'automatico';
+    case CONTACTO = 'contacto';
 }

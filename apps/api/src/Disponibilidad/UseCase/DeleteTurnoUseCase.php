@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Disponibilidad\UseCase;
 
+use App\Compartido\Realtime\MercureJwtService;
 use App\Compartido\Outbox\EventoOutbox;
 use App\Compartido\Outbox\TipoDeEventoDeOutbox;
 use App\Compartido\Outbox\OutboxWriter;
@@ -16,7 +17,7 @@ use Doctrine\ORM\EntityManagerInterface;
  * Elimina un turno de un agente.
  *
  * Busca el turno, verifica que pertenezca al agente, lo elimina
- * y emite un evento de outbox agent.shift_changed.
+ * y emite un evento de outbox agente.turno_cambiado.
  */
 final class DeleteTurnoUseCase
 {
@@ -116,7 +117,7 @@ final class DeleteTurnoUseCase
         $eventoOutbox = new EventoOutbox(
             aggregateType: 'agent',
             aggregateId: $data['aggregate_id'],
-            topic: \sprintf('agent/%d/shifts', $data['aggregate_id']),
+            topic: \sprintf(MercureJwtService::TOPIC_TURNOS_DE_AGENTE, $data['aggregate_id']),
             tipoDeEvento: TipoDeEventoDeOutbox::TURNO_DE_AGENTE_CAMBIADO->value,
             payload: $data['payload'],
         );

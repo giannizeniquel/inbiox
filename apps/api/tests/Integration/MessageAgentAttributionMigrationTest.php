@@ -81,7 +81,7 @@ class MessageAgentAttributionMigrationTest extends KernelTestCase
         // columns and the index; re-`migrate` restored them.
         $this->conn->executeStatement(
             "INSERT INTO messages (conversation_id, direction, content, created_at, sender_agent_id, sender_type)
-             SELECT id, 'outbound', 'attribution-test', NOW(), 42, 'agent' FROM conversations LIMIT 1"
+             SELECT id, 'saliente', 'attribution-test', NOW(), 42, 'agente' FROM conversations LIMIT 1"
         );
 
         $row = $this->conn->fetchAssociative(
@@ -93,7 +93,7 @@ class MessageAgentAttributionMigrationTest extends KernelTestCase
         }
 
         self::assertSame(42, (int) $row['sender_agent_id']);
-        self::assertSame('agent', $row['sender_type']);
+        self::assertSame('agente', $row['sender_type']);
 
         $this->conn->executeStatement("DELETE FROM messages WHERE content = 'attribution-test'");
     }

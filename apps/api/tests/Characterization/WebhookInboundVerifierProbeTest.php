@@ -116,7 +116,7 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
 
     private function inboundWamids(): array
     {
-        return $this->connection()->fetchFirstColumn("SELECT external_id FROM messages WHERE direction = 'inbound' ORDER BY id");
+        return $this->connection()->fetchFirstColumn("SELECT external_id FROM messages WHERE direction = 'entrante' ORDER BY id");
     }
 
     /** @return list<array{0: string, 1: int}> event type and payload seq, in write order */
@@ -167,10 +167,10 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
     {
         $message = new Mensaje();
         $message->setConversacion($ticket->getConversacion());
-        $message->setDireccion('outbound');
+        $message->setDireccion('saliente');
         $message->setContenido('respuesta');
         $message->setExternalId($wamid);
-        $message->setEstadoDeEntrega('sent');
+        $message->setEstadoDeEntrega('enviado');
         $message->setTipoDeRemitente(TipoDeRemitente::AGENTE);
         $this->em->persist($message);
         $this->em->flush();
@@ -236,7 +236,7 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
 
         $this->assertAcknowledged($response);
         self::assertSame(['wamid.probe-m1', 'wamid.probe-m2'], $this->inboundWamids());
-        self::assertSame('delivered', $this->connection()->fetchOne("SELECT delivery_status FROM messages WHERE external_id = 'wamid.probe-out'"));
+        self::assertSame('entregado', $this->connection()->fetchOne("SELECT delivery_status FROM messages WHERE external_id = 'wamid.probe-out'"));
         self::assertSame(
             [['phone_number_id' => self::PNID, 'name' => 'Ana'], ['phone_number_id' => self::PNID_2, 'name' => 'Beto']],
             $this->connection()->fetchAllAssociative('SELECT t.phone_number_id, c.name FROM tickets t JOIN contacts c ON c.id = t.contact_id ORDER BY t.id'),
@@ -292,7 +292,7 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
 
         $this->assertAcknowledged($response);
         self::assertSame(['wamid.probe-before'], $this->inboundWamids());
-        self::assertSame('sent', $this->connection()->fetchOne("SELECT delivery_status FROM messages WHERE external_id = 'wamid.probe-out-2'"));
+        self::assertSame('enviado', $this->connection()->fetchOne("SELECT delivery_status FROM messages WHERE external_id = 'wamid.probe-out-2'"));
         self::assertSame(
             [['error', 'Webhook dispatch error', ['error', 'trace']]],
             $this->logLines('Webhook dispatch error'),
@@ -316,7 +316,7 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
         $this->assertAcknowledged($this->post($body));
 
         self::assertSame([], $this->inboundWamids());
-        self::assertSame('sent', $this->connection()->fetchOne("SELECT delivery_status FROM messages WHERE external_id = 'wamid.probe-out-3'"));
+        self::assertSame('enviado', $this->connection()->fetchOne("SELECT delivery_status FROM messages WHERE external_id = 'wamid.probe-out-3'"));
         self::assertSame([
             ['error', 'Failed to process inbound message', ['error', 'from', 'wamid']],
             ['error', 'Webhook dispatch error', ['error', 'trace']],
@@ -449,7 +449,7 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
 
         self::assertSame(
             [['content' => '📎 Documento: a.pdf', 'media' => null]],
-            $this->connection()->fetchAllAssociative("SELECT content, media FROM messages WHERE direction = 'inbound'"),
+            $this->connection()->fetchAllAssociative("SELECT content, media FROM messages WHERE direction = 'entrante'"),
         );
         self::assertSame([['ticket.creado', 1], ['mensaje.creado', 2]], $this->outbox());
         // DescargaDeAdjuntoService absorbs the storage failure itself.
@@ -468,13 +468,13 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
             ['from' => self::FROM, 'id' => 'wamid.probe-a2', 'type' => 'video', 'video' => ['id' => 'media-bad', 'caption' => 'c']],
         ]]));
 
-        $rows = $this->connection()->fetchAllAssociative("SELECT content, media FROM messages WHERE direction = 'inbound' ORDER BY id");
+        $rows = $this->connection()->fetchAllAssociative("SELECT content, media FROM messages WHERE direction = 'entrante' ORDER BY id");
         self::assertSame(['🎵 Audio: ', '🎬 Video:  — "c"'], \array_column($rows, 'content'));
         $media = \json_decode($rows[0]['media'], true);
         unset($media['key']);
         \ksort($media);
         self::assertSame(
-            ['caption' => null, 'filename' => 'file', 'kind' => 'document', 'mimeType' => 'application/octet-stream', 'providerId' => 'media-ok', 'size' => 7],
+            ['caption' => null, 'filename' => 'file', 'kind' => 'documento', 'mimeType' => 'application/octet-stream', 'providerId' => 'media-ok', 'size' => 7],
             $media,
         );
         self::assertNull($rows[1]['media']);
@@ -496,7 +496,7 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
         $this->assertAcknowledged($this->postValue(['messages' => [$this->text('wamid.probe-q', 'Hola?')]]));
 
         self::assertSame(['wamid.probe-q'], $this->inboundWamids());
-        self::assertSame(0, $this->countRows('messages', "direction = 'outbound'"));
+        self::assertSame(0, $this->countRows('messages', "direction = 'saliente'"));
         self::assertSame(0, $this->countRows('processed_events', "event_id LIKE 'auto-reply:%'"));
         self::assertSame(['ticket.creado', 'mensaje.creado'], \array_column($this->outbox(), 0));
     }

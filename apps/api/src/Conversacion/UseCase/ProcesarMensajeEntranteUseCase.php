@@ -2,6 +2,7 @@
 
 namespace App\Conversacion\UseCase;
 
+use App\Conversacion\DireccionDeMensaje;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversacion;
 use App\Conversacion\EstadoDeConversacion;
@@ -257,7 +258,7 @@ foreach ($events as $event) {
     {
         $mensaje = new Mensaje();
         $mensaje->setConversacion($conversacion);
-        $mensaje->setDireccion('inbound');
+        $mensaje->setDireccion(DireccionDeMensaje::ENTRANTE->value);
         $mensaje->setContenido($texto);
         if ($externalId) {
             $mensaje->setExternalId($externalId);

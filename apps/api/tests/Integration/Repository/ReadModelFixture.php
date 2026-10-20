@@ -54,12 +54,12 @@ trait ReadModelFixture
                 (880005, 'closed', 'urgent', 880003, '2026-01-04 08:01:00', '2026-01-04 08:30:00', '2026-01-04 09:00:00', '2026-01-04 08:00:00', '2026-01-07 00:00:00', NULL, 880003, 880005, NULL, NULL, NULL),
                 (880006, 'new', 'normal', 880001, NULL, NULL, NULL, '2025-12-31 23:00:00', '2026-01-11 00:00:00', 'repo-read-p1', 880003, 880006, NULL, NULL, 880002)",
             "INSERT INTO messages (id, direction, content, media, created_at, conversation_id, sender_agent_id, sender_type) VALUES
-                (880001, 'inbound', 'hola', NULL, '2026-01-01 09:00:00', 880001, NULL, NULL),
-                (880002, 'outbound', 'buenas', NULL, '2026-01-01 10:00:00', 880001, 880001, 'agent'),
-                (880003, 'inbound', 'tengo un problema', NULL, '2026-01-01 10:00:00', 880001, NULL, NULL),
-                (880004, 'inbound', 'sigue', NULL, '2026-01-01 10:30:00', 880001, NULL, NULL),
-                (880005, 'outbound', 'auto', NULL, '2026-01-01 11:00:00', 880001, NULL, 'automatic'),
-                (880006, 'inbound', 'otra', NULL, '2026-01-02 08:00:00', 880003, NULL, NULL)",
+                (880001, 'entrante', 'hola', NULL, '2026-01-01 09:00:00', 880001, NULL, NULL),
+                (880002, 'saliente', 'buenas', NULL, '2026-01-01 10:00:00', 880001, 880001, 'agente'),
+                (880003, 'entrante', 'tengo un problema', NULL, '2026-01-01 10:00:00', 880001, NULL, NULL),
+                (880004, 'entrante', 'sigue', NULL, '2026-01-01 10:30:00', 880001, NULL, NULL),
+                (880005, 'saliente', 'auto', NULL, '2026-01-01 11:00:00', 880001, NULL, 'automatico'),
+                (880006, 'entrante', 'otra', NULL, '2026-01-02 08:00:00', 880003, NULL, NULL)",
             "INSERT INTO tags (id, name, created_at) VALUES (880001, 'repo-read-vip', '2026-01-01 00:00:00'), (880002, 'repo-read-urgente', '2026-01-01 00:00:00'), (880003, 'repo-read-otro', '2026-01-01 00:00:00')",
             "INSERT INTO ticket_tags (id, created_at, ticket_id, tag_id) VALUES
                 (880001, '2026-01-01 00:00:00', 880001, 880001), (880002, '2026-01-01 00:00:00', 880001, 880002),

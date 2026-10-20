@@ -17,7 +17,7 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
- * HTTP-level test for `POST /api/provider/template/send` sender attribution
+ * HTTP-level test for `POST /api/proveedor/plantilla/enviar` sender attribution
  * (spec.md "Attribution at Template Send", design.md D4).
  */
 class ProviderProxyControllerTemplateAttributionTest extends WebTestCase
@@ -121,7 +121,7 @@ class ProviderProxyControllerTemplateAttributionTest extends WebTestCase
 
         $this->client->request(
             'POST',
-            '/api/provider/template/send',
+            '/api/proveedor/plantilla/enviar',
             [],
             [],
             [
@@ -131,8 +131,8 @@ class ProviderProxyControllerTemplateAttributionTest extends WebTestCase
             ],
             \json_encode([
                 'ticketId' => $ticketId,
-                'templateName' => 'hello_world',
-                'language' => 'en_US',
+                'nombreDePlantilla' => 'hello_world',
+                'idioma' => 'en_US',
             ]),
         );
 

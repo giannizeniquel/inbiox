@@ -30,8 +30,8 @@ class Mensaje
     #[ORM\Column(name: 'content', type: 'text')]
     private string $contenido;
 
-    #[ORM\Column(name: 'delivery_status', type: 'string', length: 20, options: ['default' => 'sent'])]
-    private string $estadoDeEntrega = 'sent';
+    #[ORM\Column(name: 'delivery_status', type: 'string', length: 20, options: ['default' => 'enviado'])]
+    private string $estadoDeEntrega = EstadoDeEntrega::ENVIADO->value;
 
     #[ORM\Column(name: 'failed_reason', type: 'string', length: 255, nullable: true)]
     private ?string $motivoDeFallo = null;
