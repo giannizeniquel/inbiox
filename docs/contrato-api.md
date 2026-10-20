@@ -1,6 +1,6 @@
 # Contrato conjunto de la API: propuesta
 
-> **Estado:** borrador para revisar entre el usuario, el back y el front. No se cambia código ni se corre ninguna migración hasta aprobarlo. Tarea: `odd/tasks/limpieza-backend.md`, S14 / T39.
+> **Estado:** D1–D7 cerradas (L147–L154); falta la aprobación del usuario. No se cambia código ni se corre ninguna migración hasta aprobarlo. Tarea: `odd/tasks/limpieza-backend.md`, S14 / T39.
 >
 > **Base:** back `chore/limpieza-backend-fase-5` (`28314ee`), front `chore/limpieza-frontend-fase-5` (`b0ce6db`), base de dev `inbiox` (conteos del 2026-10-20).
 
@@ -18,7 +18,7 @@ El listado del anexo A tiene un nombre propuesto por clave, pero depende de esta
 | D4 | Prefijos booleanos en JSON | `is_active`, `is_available`, `has_pending`, `is_in_shift` (también `in_shift`). | **Decidido (L151):** sin prefijo, como adjetivo o participio (`activo`, `disponible`, `enTurno`, `activoAhora`, `habilitada`); "has" pasa a `hay…` (`hayPendientes`, `haySiguiente`, `hayMas`). `is`/`has` en inglés quedan solo en métodos y señales. |
 | D5 | Segmentos de ruta | `/api/admin/...`, `/api/me/...`, `/api/reports/...`, `/api/provider/...`. | **Decidido (L152):** kebab-case en español. Recursos como sustantivo (`contactos`, `turnos`, `linea-de-tiempo`); acciones como verbo en infinitivo (`asignar`, `resolver`, `marcar-leido`, `vincular-usuario`, `subir`). `admin` → `administracion`, `me` → `mi`, `provider` → `proveedor`. **Excepciones explícitas, que no se "corrigen":** `/api/auth/{login,refresh,logout,me}` queda técnico aunque `/api/me/*` pase a `/api/mi/*`; `/admin/outbox/publish` queda con `admin` porque es operativa y el front no la llama; también quedan `mercure/token`, `/webhook` (Meta) y `/debug/*` (solo dev y test). |
 | D6 | URLs del router del front | `inbox`, `contacts`, `reports`, `settings`, `admin/*`, `agents/:agentId/*`. | **Decidido por el usuario (L153):** se renombran con la regla de D5 y el router redirige desde las URLs viejas en la etapa 2. Las redirecciones se borran recién después de un tiempo razonable, en un paso aparte (sección 6). `/login` queda técnico. |
-| D7 | Despliegue | Ver sección 6. | Tres etapas; solo la segunda exige salir juntos. |
+| D7 | Despliegue | La app no está desplegada: todo es dev, y el front es el único cliente de la API. | **Decidido (L154):** sin etapa con los dos formatos. Las etapas de la sección 6 son orden de trabajo, no ventanas de despliegue, y la migración corre solo sobre la base de dev. |
 
 ## 2. Términos que faltan en el glosario (propuesta)
 
@@ -120,7 +120,7 @@ El cambio sí tiene que ser **atómico entre datos y código**: `user.roles`, `s
 
 Verificado contra el front nuevo y el back:
 
-- **`GET /api/mercure/token`:** el front lo pide en el login, en el refresh y en el arranque, lo guarda y nunca lo manda. La suscripción funciona solo porque el hub de dev acepta suscriptores anónimos (`docker-compose.yml:47`). **No se sabe si el hub de producción también.** Propuesta: confirmar la configuración de producción antes de decidir. Si producción exige autorización, el problema es al revés: el front tiene que empezar a mandar el token. Va a la lista de contradicciones.
+- **`GET /api/mercure/token`:** el front lo pide en el login, en el refresh y en el arranque, lo guarda y nunca lo manda. La suscripción funciona solo porque el hub de dev acepta suscriptores anónimos (`docker-compose.yml:47`). **No se sabe si el hub de producción también.** La app no está desplegada, así que no hay producción que revisar. **No se borra en el contrato:** queda hasta que se defina la autenticación de suscriptores de Mercure (sección 7, punto 11).
 - **`GET /api/tickets/{id}/events`:** no tiene llamador en el front nuevo. Tiene 5 tests de caracterización, y `docs/02` 00 y 06 ya lo marcan como inalcanzable e inseguro. Propuesta: borrarlo en el contrato, con decisión explícita. Es además el único otro lector de `event_type`.
 
 ## 4. Migración de datos
@@ -178,9 +178,7 @@ Todas las columnas con valores fijos son `VARCHAR` o `JSON` (no hay `ENUM` de My
 | 3. Limpieza | quitar los alias de FQCN, borrar endpoints sin uso si se aprobó | no | |
 | 4. Retiro de redirecciones | borrar las redirecciones de las URLs viejas del router, después de un tiempo razonable | solo front | volver a agregarlas |
 
-**Por qué la etapa 2 sale junta y no con una etapa de doble formato:** hay un solo cliente, nuestro front, y se despliega con el back. Aceptar los dos formatos obliga a duplicar cada clave en las 82 rutas, a mapear valores en las dos direcciones y a sostener dos juegos de tipos en Mercure: es más código para mantener que el cambio mismo. El riesgo real son los roles, que no admiten etapa intermedia (sección 3.3). La etapa 2 necesita una ventana corta con el `publisher` detenido mientras corre la migración, y un smoke conjunto antes de abrir.
-
-Pendiente de confirmar: dónde y cómo se despliega producción, y si hay otros clientes de la API además del front (integraciones, scripts). Si los hay, la recomendación cambia a doble formato.
+**Contexto (D7):** la app no está desplegada y el front es el único cliente, así que las etapas son orden de trabajo sobre dev. No hace falta una etapa con los dos formatos: duplicar cada clave en 82 rutas costaría más que el cambio, y los roles no la admiten (sección 3.3). La migración de la etapa 2 corre sobre la base de dev con el `publisher` detenido, y antes de seguir se hace un smoke conjunto de back y front.
 
 ## 7. Hallazgos previos, para la lista de contradicciones
 
@@ -196,6 +194,7 @@ Ninguno lo causa este trabajo; los anoto para decidir aparte.
 8. Los DTOs con `#[MapRequestPayload]` leen camelCase, pero sus mensajes de validación nombran claves en snake_case (`SetDisponibilidadManualRequest.php:11-16`, `CreateTurnoRequest.php:11-31`).
 9. `ReporteService::agregarEnTurno` inserta `is_in_shift` después de la clave `'current_load'` buscándola por nombre (`ReporteService.php:144-148`): si esa clave se renombra y el string no, el campo desaparece sin error.
 10. Formas de paginación distintas: `meta{page,limit,total,has_next}` en 6 endpoints, `meta{has_more,next_cursor}` en mensajes, `cursor`/`hasMore` en la línea de tiempo y `lastSequence`/`hasMore` en eventos. Se podrían unificar en el contrato; es un cambio de forma, no solo de nombre.
+11. **Requisito previo a producción:** definir la autenticación de suscriptores de Mercure. Hoy el front se suscribe sin token (`mercure.service.ts:51`) y el hub de dev es anónimo, así que cualquiera que llegue al hub recibe los eventos de todos los espacios de trabajo. Hasta decidirlo, `GET /api/mercure/token` se mantiene.
 
 ## Anexo A. Inventario por endpoint (borrador)
 
