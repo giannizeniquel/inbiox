@@ -17,7 +17,7 @@ El listado del anexo A tiene un nombre propuesto por clave, pero depende de esta
 | D3 | Valores guardados que el glosario no define | `delivery_status`, estado del outbox, `ticket_events.type`, prioridad, estado de conversación, estado y canal de contacto, estado de resultado de reglas, `aggregate_type`. | **Decidido (L150):** se traducen los valores de negocio que viajan por la red (sección 3.1); motivos y códigos quedan en inglés como los códigos de error; los valores internos no se tocan. |
 | D4 | Prefijos booleanos en JSON | `is_active`, `is_available`, `has_pending`, `is_in_shift` (también `in_shift`). | **Decidido (L151):** sin prefijo, como adjetivo o participio (`activo`, `disponible`, `enTurno`, `activoAhora`, `habilitada`); "has" pasa a `hay…` (`hayPendientes`, `haySiguiente`, `hayMas`). `is`/`has` en inglés quedan solo en métodos y señales. |
 | D5 | Segmentos de ruta | `/api/admin/...`, `/api/me/...`, `/api/reports/...`, `/api/provider/...`. | **Decidido (L152):** kebab-case en español. Recursos como sustantivo (`contactos`, `turnos`, `linea-de-tiempo`); acciones como verbo en infinitivo (`asignar`, `resolver`, `marcar-leido`, `vincular-usuario`, `subir`). `admin` → `administracion`, `me` → `mi`, `provider` → `proveedor`. **Excepciones explícitas, que no se "corrigen":** `/api/auth/{login,refresh,logout,me}` queda técnico aunque `/api/me/*` pase a `/api/mi/*`; `/admin/outbox/publish` queda con `admin` porque es operativa y el front no la llama; también quedan `mercure/token`, `/webhook` (Meta) y `/debug/*` (solo dev y test). |
-| D6 | URLs del router del front | `inbox`, `contacts`, `reports`, `settings`, `admin/*`, `agents/:agentId/*`. | Renombrarlas con redirección permanente desde la URL vieja, para no romper favoritos. |
+| D6 | URLs del router del front | `inbox`, `contacts`, `reports`, `settings`, `admin/*`, `agents/:agentId/*`. | **Decidido por el usuario (L153):** se renombran con la regla de D5 y el router redirige desde las URLs viejas en la etapa 2. Las redirecciones se borran recién después de un tiempo razonable, en un paso aparte (sección 6). `/login` queda técnico. |
 | D7 | Despliegue | Ver sección 6. | Tres etapas; solo la segunda exige salir juntos. |
 
 ## 2. Términos que faltan en el glosario (propuesta)
@@ -114,7 +114,7 @@ El cambio sí tiene que ser **atómico entre datos y código**: `user.roles`, `s
 
 ### 3.5 URLs del router del front
 
-`login`, `inbox`, `contacts`, `contacts/:contactId`, `reports`, `agents/:agentId/availability`, `agents/:agentId/shifts`, `admin/users`, `admin/agents`, `admin/workspaces`, `admin/teams`, `settings`. Propuesta: `bandeja`, `contactos`, `contactos/:contactoId`, `reportes`, `agentes/:agenteId/disponibilidad`, `agentes/:agenteId/turnos`, `administracion/usuarios`, `administracion/agentes`, `administracion/espacios-de-trabajo`, `administracion/equipos`, `configuracion`, cada una con redirección desde la vieja (D6). `login` queda igual.
+`login`, `inbox`, `contacts`, `contacts/:contactId`, `reports`, `agents/:agentId/availability`, `agents/:agentId/shifts`, `admin/users`, `admin/agents`, `admin/workspaces`, `admin/teams`, `settings`. Propuesta: `bandeja`, `contactos`, `contactos/:contactoId`, `reportes`, `agentes/:agenteId/disponibilidad`, `agentes/:agenteId/turnos`, `administracion/usuarios`, `administracion/agentes`, `administracion/espacios-de-trabajo`, `administracion/equipos`, `configuracion`, cada una con redirección desde la vieja (D6, decidido). `login` queda igual. Las redirecciones salen en la etapa 2 y se borran en la etapa 4, no junto con los alias del outbox.
 
 ### 3.6 Endpoints a revisar antes del contrato
 
@@ -176,6 +176,7 @@ Todas las columnas con valores fijos son `VARCHAR` o `JSON` (no hay `ENUM` de My
 | 1. Back solo, sin cambio de contrato | desacople de `event_type` (sección 5), literales del SQL nativo como parámetros (sección 4), purga de dead letters si se aprueba | no | migración `down()` y alias |
 | 2. Contrato | claves JSON, valores de enums y su migración, roles, tipos y tópicos de Mercure, rutas `/api`, URLs del router con redirecciones | **sí, juntos** | `down()` de la migración y volver a las versiones anteriores de back y front |
 | 3. Limpieza | quitar los alias de FQCN, borrar endpoints sin uso si se aprobó | no | |
+| 4. Retiro de redirecciones | borrar las redirecciones de las URLs viejas del router, después de un tiempo razonable | solo front | volver a agregarlas |
 
 **Por qué la etapa 2 sale junta y no con una etapa de doble formato:** hay un solo cliente, nuestro front, y se despliega con el back. Aceptar los dos formatos obliga a duplicar cada clave en las 82 rutas, a mapear valores en las dos direcciones y a sostener dos juegos de tipos en Mercure: es más código para mantener que el cambio mismo. El riesgo real son los roles, que no admiten etapa intermedia (sección 3.3). La etapa 2 necesita una ventana corta con el `publisher` detenido mientras corre la migración, y un smoke conjunto antes de abrir.
 
@@ -315,6 +316,20 @@ Notación: `req` cuerpo, `q` query, `res` respuesta. Los nombres propuestos asum
 - **`GET /api/tickets/{id}/messages`** → `…/mensajes`: q `cursor`, `limit`, `direction` (`backward|forward`), `offset` → `sentido` (`atras|adelante`); res `message_id`, `direction`, `content`, `created_at`, `media`, `sender_agent_id`, `sender_type` → `mensajeId`, `direccion`, `contenido`, `creadoAt`, `adjunto`, `agenteRemitenteId`, `tipoDeRemitente`; `meta` {`has_more`, `next_cursor`}
 - **`PUT /api/tickets/{id}/mark-read`** → `…/marcar-leido`
 - **`POST /api/tickets/{id}/transition|resolve|close`** → `…/transicionar|resolver|cerrar`: req `status`, `set_first_response`, `set_resolved`; res `ticket_id`, `previous_status`, `new_status`, `reason` → `estadoAnterior`, `estadoNuevo`, `motivo`. 403: `{error, code: 'TICKET_CLOSURE_FORBIDDEN', reason, action, ticket_id, message}`
+
+### URLs del router del front (D6)
+
+| Vieja | Nueva |
+|---|---|
+| `/login` | `/login` (técnico) |
+| `/inbox` | `/bandeja` |
+| `/contacts`, `/contacts/:contactId` | `/contactos`, `/contactos/:contactoId` |
+| `/reports` | `/reportes` |
+| `/agents/:agentId/availability`, `/agents/:agentId/shifts` | `/agentes/:agenteId/disponibilidad`, `/agentes/:agenteId/turnos` |
+| `/admin/users`, `/admin/agents`, `/admin/workspaces`, `/admin/teams` | `/administracion/usuarios`, `/administracion/agentes`, `/administracion/espacios-de-trabajo`, `/administracion/equipos` |
+| `/settings` | `/configuracion` |
+
+Cada URL vieja redirige a la nueva desde la etapa 2 hasta la etapa 4.
 
 ## Anexo B. Valores guardados fuera del glosario (dev)
 
