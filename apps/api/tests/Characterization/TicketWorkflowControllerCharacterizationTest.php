@@ -37,7 +37,7 @@ final class TicketWorkflowControllerCharacterizationTest extends Characterizatio
         $useCase->method('execute')->willThrowException(new \RuntimeException('workflow exploded'));
         static::getContainer()->set(CambiarEstadoDeTicketUseCase::class, $useCase);
 
-        $response = $this->request('POST', '/api/tickets/' . self::MISSING_TICKET_ID . '/transition', $token, ['status' => 'active']);
+        $response = $this->request('POST', '/api/tickets/' . self::MISSING_TICKET_ID . '/transicionar', $token, ['estado' => 'activo']);
 
         $this->assertInternalErrorEnvelope($response);
     }
@@ -49,7 +49,7 @@ final class TicketWorkflowControllerCharacterizationTest extends Characterizatio
         $useCase->method('cerrar')->willThrowException(new \RuntimeException('workflow exploded'));
         static::getContainer()->set(CambiarEstadoDeTicketUseCase::class, $useCase);
 
-        $response = $this->request('POST', '/api/tickets/' . self::MISSING_TICKET_ID . '/close', $token);
+        $response = $this->request('POST', '/api/tickets/' . self::MISSING_TICKET_ID . '/cerrar', $token);
 
         $this->assertInternalErrorEnvelope($response);
     }
@@ -61,7 +61,7 @@ final class TicketWorkflowControllerCharacterizationTest extends Characterizatio
         $useCase->method('execute')->willThrowException(new \RuntimeException('workflow exploded'));
         static::getContainer()->set(ResolverTicketUseCase::class, $useCase);
 
-        $response = $this->request('POST', '/api/tickets/' . self::MISSING_TICKET_ID . '/resolve', $token);
+        $response = $this->request('POST', '/api/tickets/' . self::MISSING_TICKET_ID . '/resolver', $token);
 
         $this->assertInternalErrorEnvelope($response);
     }
@@ -76,11 +76,11 @@ final class TicketWorkflowControllerCharacterizationTest extends Characterizatio
         $resolve->method('execute')->willThrowException(new TransicionInvalidaException('Cannot go there'));
         static::getContainer()->set(ResolverTicketUseCase::class, $resolve);
 
-        $this->assertJsonResponse(422, ['error' => 'Cannot go there'], $this->request('POST', '/api/tickets/' . self::MISSING_TICKET_ID . '/transition', $token, ['status' => 'active']));
+        $this->assertJsonResponse(422, ['error' => 'Cannot go there'], $this->request('POST', '/api/tickets/' . self::MISSING_TICKET_ID . '/transicionar', $token, ['estado' => 'activo']));
 
         // Characterization: current behavior, not necessarily desired.
         // resolve() has no TransicionInvalidaException arm, so it falls into the 500.
-        $response = $this->request('POST', '/api/tickets/' . self::MISSING_TICKET_ID . '/resolve', $token);
+        $response = $this->request('POST', '/api/tickets/' . self::MISSING_TICKET_ID . '/resolver', $token);
         // Phase 3b: S2 unified into S1.
         $this->assertInternalServerErrorEnvelope($response);
     }

@@ -129,7 +129,7 @@ final class SeedReportesCommand extends Command
         // ── 55 tickets en 90 días ──
         $output->writeln('Creating 55 tickets...');
         $estados = array_map(fn (EstadoDeTicket $estado) => $estado->value, EstadoDeTicket::cases());
-        $prioridades = ['low', 'medium', 'high', 'urgent'];
+        $prioridades = ['baja', 'media', 'alta', 'urgent'];
         $baseTime = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->modify('-90 days');
 
         $tickets = [];

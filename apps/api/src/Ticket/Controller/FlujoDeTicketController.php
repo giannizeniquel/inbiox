@@ -32,15 +32,15 @@ class FlujoDeTicketController
         private RegistrarAuditoriaDeCierreUseCase $registrarAuditoriaDeCierreUseCase,
     ) {}
 
-    #[Route('/api/tickets/{id}/transition', name: 'app_ticket_transition', methods: ['POST'])]
+    #[Route('/api/tickets/{id}/transicionar', name: 'app_ticket_transition', methods: ['POST'])]
     public function transicionar(int $id, Request $request, #[CurrentUser] ?Usuario $usuario): JsonResponse
     {
         try {
             $data = json_decode($request->getContent(), true);
-            $estadoDestino = $data['status'] ?? null;
+            $estadoDestino = $data['estado'] ?? null;
 
             if (!$estadoDestino) {
-                return new JsonResponse(['error' => 'status is required'], 400);
+                return new JsonResponse(['error' => 'estado is required'], 400);
             }
 
             // Exige la responsabilidad solo cuando el estado destino es resolved/closed
@@ -58,8 +58,8 @@ class FlujoDeTicketController
             $result = $this->cambiarEstadoUseCase->execute(
                 $id,
                 $estadoDestino,
-                $data['set_first_response'] ?? false,
-                $data['set_resolved'] ?? false,
+                $data['marcarPrimeraRespuesta'] ?? false,
+                $data['marcarResuelto'] ?? false,
                 $actor
             );
 
@@ -77,7 +77,7 @@ class FlujoDeTicketController
         }
     }
 
-    #[Route('/api/tickets/{id}/resolve', name: 'app_ticket_resolve', methods: ['POST'])]
+    #[Route('/api/tickets/{id}/resolver', name: 'app_ticket_resolve', methods: ['POST'])]
     public function resolver(int $id, #[CurrentUser] ?Usuario $usuario): JsonResponse
     {
         try {
@@ -101,7 +101,7 @@ class FlujoDeTicketController
         }
     }
 
-    #[Route('/api/tickets/{id}/close', name: 'app_ticket_close', methods: ['POST'])]
+    #[Route('/api/tickets/{id}/cerrar', name: 'app_ticket_close', methods: ['POST'])]
     public function cerrar(int $id, #[CurrentUser] ?Usuario $usuario): JsonResponse
     {
         try {
@@ -144,10 +144,10 @@ class FlujoDeTicketController
             return new JsonResponse([
                 'error' => 'Forbidden',
                 'code' => 'TICKET_CLOSURE_FORBIDDEN',
-                'reason' => $this->motivoDeRechazoDeCierre($ticket, $usuario),
-                'action' => $action,
-                'ticket_id' => $ticketId,
-                'message' => 'Only the ticket\'s assigned agent, a supervisor, or an admin can resolve or close this ticket.',
+                'motivo' => $this->motivoDeRechazoDeCierre($ticket, $usuario),
+                'accion' => $action,
+                'ticketId' => $ticketId,
+                'mensaje' => 'Only the ticket\'s assigned agent, a supervisor, or an admin can resolve or close this ticket.',
             ], 403);
         }
 

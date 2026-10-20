@@ -121,15 +121,15 @@ class AsignarTicketUseCase
             $this->em->flush();
 
             return [
-                'assignment_id' => $asignacion->getId(),
-                'ticket_id' => $ticket->getId(),
-                'agent_id' => $asignacion->getAgenteId(),
-                'agent_name' => $agente->getNombre(),
-                'assigned_by' => $asignacion->getAsignadoPor(),
-                'assigned_at' => $asignacion->getAsignadoAt()->format('Y-m-d H:i:s'),
-                'ticket_status' => $ticket->getEstado(),
-                'notes' => $asignacion->getNotas(),
-                'status' => 'ok',
+                'asignacionId' => $asignacion->getId(),
+                'ticketId' => $ticket->getId(),
+                'agenteId' => $asignacion->getAgenteId(),
+                'agenteNombre' => $agente->getNombre(),
+                'asignadoPor' => $asignacion->getAsignadoPor(),
+                'asignadoAt' => $asignacion->getAsignadoAt()->format('Y-m-d H:i:s'),
+                'estadoDeTicket' => $ticket->getEstado(),
+                'notas' => $asignacion->getNotas(),
+                'resultado' => 'ok',
             ];
         });
 

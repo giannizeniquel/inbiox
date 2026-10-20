@@ -291,7 +291,7 @@ final class DisponibilidadDeAgenteService
     /**
      * Cuenta los tickets activos asignados a un agente.
      *
-     * Los tickets activos son los que tienen status IN ('new', 'active', 'waiting').
+     * Los tickets activos son los que tienen status IN ('nuevo', 'activo', 'en_espera').
      * Usa el índice idx_tickets_owner_status (assigned_agent_id, status).
      */
     private function countTicketsActivos(?int $agenteId): int

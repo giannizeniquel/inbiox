@@ -20,28 +20,28 @@ class GetDetalleDeTicketQuery
 
         $contacto = [
             'id' => (int) $row['contact_id'],
-            'phone' => $row['contact_phone'],
-            'name' => $row['contact_name'],
+            'telefono' => $row['contact_phone'],
+            'nombre' => $row['contact_name'],
         ];
 
         $responsable = null;
         if ($row['owner_id'] !== null) {
             $responsable = [
                 'id' => $row['owner_id'],
-                'name' => null, // Provisorio: necesitaría la entidad User
+                'nombre' => null, // Provisorio: necesitaría la entidad User
             ];
         }
 
         $marcasDeTiempo = [
-            'opened_at' => (new \DateTimeImmutable($row['opened_at']))->format('Y-m-d\TH:i:s\Z'),
-            'assigned_at' => $row['first_response_at'] 
+            'abiertoAt' => (new \DateTimeImmutable($row['opened_at']))->format('Y-m-d\TH:i:s\Z'),
+            'asignadoAt' => $row['first_response_at'] 
                 ? (new \DateTimeImmutable($row['first_response_at']))->format('Y-m-d\TH:i:s\Z')
                 : null,
-            'resolved_at' => $row['resolved_at']
+            'resueltoAt' => $row['resolved_at']
                 ? (new \DateTimeImmutable($row['resolved_at']))->format('Y-m-d\TH:i:s\Z')
                 : null,
-            'closed_at' => null, // Se completará cuando exista el campo closed_at
-            'last_inbound_message_at' => $row['last_inbound_message_at']
+            'cerradoAt' => null, // Se completará cuando exista el campo closed_at
+            'ultimoMensajeEntranteAt' => $row['last_inbound_message_at']
                 ? (new \DateTimeImmutable($row['last_inbound_message_at']))->format('Y-m-d\TH:i:s\Z')
                 : null,
         ];
@@ -53,7 +53,7 @@ class GetDetalleDeTicketQuery
             contacto: $contacto,
             responsable: $responsable,
             marcasDeTiempo: $marcasDeTiempo,
-            metricas: ['unread_count' => (int) ($row['unread_count'] ?? 0)],
+            metricas: ['cantidadDeNoLeidos' => (int) ($row['unread_count'] ?? 0)],
             ultimoMensaje: $row['last_message'] ?? null,
         );
     }

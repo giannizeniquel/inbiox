@@ -160,7 +160,7 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
         ]);
 
         $ticket = $this->ticketRow();
-        self::assertSame(['new', 'medium', self::PHONE_NUMBER_ID, 2], [
+        self::assertSame(['nuevo', 'media', self::PHONE_NUMBER_ID, 2], [
             $ticket['status'], $ticket['priority'], $ticket['phone_number_id'], (int) $ticket['last_event_seq'],
         ]);
         self::assertNotNull($ticket['last_inbound_message_at']);
@@ -173,7 +173,7 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
             ]);
         }
         $this->assertPayloadKeys(['event_id', 'type', 'ticket_id', 'occurred_at', 'seq', 'version', 'status', 'priority'], $outbox[0]['payload']);
-        self::assertSame(['ticket.creado', (int) $ticket['id'], 1, 1, 'new', 1], [
+        self::assertSame(['ticket.creado', (int) $ticket['id'], 1, 1, 'nuevo', 1], [
             $outbox[0]['payload']['type'], $outbox[0]['payload']['ticket_id'], $outbox[0]['payload']['seq'],
             $outbox[0]['payload']['version'], $outbox[0]['payload']['status'], $outbox[0]['payload']['priority'],
         ]);
@@ -238,12 +238,12 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
 
     public function testWaitingTicketGoesBackToActive(): void
     {
-        $ticket = $this->existingTicket('waiting');
+        $ticket = $this->existingTicket('en_espera');
 
         $this->assertAcknowledged($this->postValue(['messages' => [$this->textMessage('wamid.char-in-w', 'Volvi')]]));
 
         self::assertSame(1, $this->countRows('tickets'));
-        self::assertSame('active', $this->ticketRow()['status']);
+        self::assertSame('activo', $this->ticketRow()['status']);
         self::assertSame((int) $ticket->getId(), (int) $this->ticketRow()['id']);
         self::assertSame(['mensaje.creado'], \array_column($this->outboxRows(), 'event_type'));
     }
@@ -259,7 +259,7 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
      */
     public function testTwoMessagesInOnePayloadOnAWaitingTicketLoseTheSecond(): void
     {
-        $this->existingTicket('waiting');
+        $this->existingTicket('en_espera');
 
         $response = $this->postValue(['messages' => [
             $this->textMessage('wamid.char-in-w1', 'uno'),
@@ -268,7 +268,7 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
 
         $this->assertAcknowledged($response);
         self::assertSame(['wamid.char-in-w1'], \array_column($this->inboundMessages(), 'external_id'));
-        self::assertSame('active', $this->ticketRow()['status']);
+        self::assertSame('activo', $this->ticketRow()['status']);
         self::assertSame(['mensaje.creado'], \array_column($this->outboxRows(), 'event_type'));
     }
 
@@ -433,7 +433,7 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
 
     public function testForwardStatusUpdatesTheMessageAndWritesASequencedRow(): void
     {
-        $ticket = $this->existingTicket('waiting');
+        $ticket = $this->existingTicket('en_espera');
         $message = $this->outboundMessage($ticket, 'wamid.char-st-1', 'enviado');
 
         $this->assertAcknowledged($this->postValue(['statuses' => [['id' => 'wamid.char-st-1', 'status' => 'delivered', 'timestamp' => '1700000000']]]));
@@ -455,7 +455,7 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
 
     public function testBackwardTerminalAndUnknownStatusesChangeNothing(): void
     {
-        $ticket = $this->existingTicket('waiting');
+        $ticket = $this->existingTicket('en_espera');
         $this->outboundMessage($ticket, 'wamid.char-st-d', 'entregado');
         $this->outboundMessage($ticket, 'wamid.char-st-r', 'leido');
 
@@ -474,7 +474,7 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
 
     public function testFailedStatusKeepsTheFirstErrorTitle(): void
     {
-        $ticket = $this->existingTicket('waiting');
+        $ticket = $this->existingTicket('en_espera');
         $this->outboundMessage($ticket, 'wamid.char-st-f', 'enviado');
 
         $this->postValue(['statuses' => [['id' => 'wamid.char-st-f', 'status' => 'failed', 'errors' => [['code' => 131047, 'title' => 'Re-engagement message'], ['title' => 'otro']]]]]);
@@ -490,7 +490,7 @@ final class WebhookInboundCharacterizationTest extends CharacterizationTestCase
      */
     public function testAFailingStatusCutsTheRemainingEntriesButIsStillAcknowledged(): void
     {
-        $ticket = $this->existingTicket('active');
+        $ticket = $this->existingTicket('activo');
         $this->outboundMessage($ticket, 'wamid.char-st-a', 'enviado');
         $this->outboundMessage($ticket, 'wamid.char-st-c', 'enviado');
 

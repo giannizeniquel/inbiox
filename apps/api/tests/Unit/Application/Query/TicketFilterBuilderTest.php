@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Application\Query;
 
+use App\Ticket\FiltroDeBandeja;
 use App\Ticket\Query\FiltrosDeTicketBuilder;
 use App\Ticket\Repository\FiltrosDeTicket;
 use PHPUnit\Framework\TestCase;
@@ -37,18 +38,25 @@ class TicketFilterBuilderTest extends TestCase
     public function test_no_filters(): void
     {
         self::assertNoFilters($this->builder->build());
-        self::assertNoFilters($this->builder->build(filtro: 'all'));
+        self::assertNoFilters($this->builder->build(filtro: 'todos'));
     }
 
     public function test_unassigned_and_assigned_filters(): void
     {
-        self::assertSame('unassigned', $this->builder->build(filtro: 'unassigned')->asignacion);
-        self::assertSame('assigned', $this->builder->build(filtro: 'assigned')->asignacion);
+        self::assertSame(FiltroDeBandeja::SIN_ASIGNAR, $this->builder->build(filtro: 'sin_asignar')->asignacion);
+        self::assertSame(FiltroDeBandeja::ASIGNADOS, $this->builder->build(filtro: 'asignados')->asignacion);
+    }
+
+    public function test_the_old_english_filter_values_add_no_filter(): void
+    {
+        foreach (['all', 'mine', 'assigned', 'unassigned'] as $viejo) {
+            self::assertNoFilters($this->builder->build(filtro: $viejo, agenteId: '7'));
+        }
     }
 
     public function test_mine_filter_with_agent_id(): void
     {
-        $f = $this->builder->build(filtro: 'mine', agenteId: '7');
+        $f = $this->builder->build(filtro: 'mios', agenteId: '7');
 
         self::assertSame('7', $f->misAgenteId);
         self::assertNull($f->asignacion);
@@ -56,13 +64,13 @@ class TicketFilterBuilderTest extends TestCase
 
     public function test_mine_filter_without_a_truthy_agent_id_adds_nothing(): void
     {
-        self::assertNoFilters($this->builder->build(filtro: 'mine', agenteId: null));
-        self::assertNoFilters($this->builder->build(filtro: 'mine', agenteId: '0'));
+        self::assertNoFilters($this->builder->build(filtro: 'mios', agenteId: null));
+        self::assertNoFilters($this->builder->build(filtro: 'mios', agenteId: '0'));
     }
 
     public function test_agent_id_is_ignored_without_the_mine_filter(): void
     {
-        self::assertNoFilters($this->builder->build(filtro: 'all', agenteId: '7'));
+        self::assertNoFilters($this->builder->build(filtro: 'todos', agenteId: '7'));
     }
 
     public function test_ownership_scope_is_kept_as_a_string(): void
@@ -77,7 +85,7 @@ class TicketFilterBuilderTest extends TestCase
 
     public function test_status_whitelist_keeps_only_known_statuses_trimmed(): void
     {
-        self::assertSame(['new', 'active'], $this->builder->build(estado: 'new, bogus ,active ')->estados);
+        self::assertSame(['nuevo', 'activo'], $this->builder->build(estado: 'nuevo, bogus ,activo ')->estados);
     }
 
     public function test_status_all_unknown_or_empty_adds_nothing(): void
@@ -137,11 +145,11 @@ class TicketFilterBuilderTest extends TestCase
     public function test_all_filters_together(): void
     {
         $f = $this->builder->build(
-            filtro: 'mine',
+            filtro: 'mios',
             agenteId: '9',
             scopeAgenteId: 42,
             phoneNumberId: 'phone-1',
-            estado: 'active,waiting',
+            estado: 'activo,en_espera',
             etiqueta: 'vip,urgente',
             equipoId: 3,
         );
@@ -150,7 +158,7 @@ class TicketFilterBuilderTest extends TestCase
         self::assertSame('9', $f->misAgenteId);
         self::assertSame('42', $f->scopeAgenteId);
         self::assertSame('phone-1', $f->phoneNumberId);
-        self::assertSame(['active', 'waiting'], $f->estados);
+        self::assertSame(['activo', 'en_espera'], $f->estados);
         self::assertSame(['vip', 'urgente'], $f->etiquetas);
         self::assertSame('3', $f->equipoId);
     }

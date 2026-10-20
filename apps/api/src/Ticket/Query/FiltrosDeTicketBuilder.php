@@ -2,6 +2,7 @@
 
 namespace App\Ticket\Query;
 
+use App\Ticket\FiltroDeBandeja;
 use App\Ticket\Repository\FiltrosDeTicket;
 
 /**
@@ -13,8 +14,8 @@ use App\Ticket\Repository\FiltrosDeTicket;
 class FiltrosDeTicketBuilder
 {
     /**
-     * @param string $filtro 'all', 'unassigned', 'assigned' o 'mine'
-     * @param string|null $agenteId ID del agente para el filtro 'mine'
+     * @param string $filtro Un valor de FiltroDeBandeja; uno desconocido es `todos`
+     * @param string|null $agenteId ID del agente para el filtro `mios`
      * @param string|null $estado Filtro de estados separados por comas
      * @param int|null $scopeAgenteId Alcance de responsabilidad: fuerza WHERE assigned_agent_id = scopeAgentId
      * @param string|null $phoneNumberId Alcance del espacio de trabajo: filtra por el phone_number_id del ticket
@@ -24,7 +25,7 @@ class FiltrosDeTicketBuilder
      * @throws \InvalidArgumentException cuando se indican más de 5 etiquetas
      */
     public function build(
-        string $filtro = 'all',
+        string $filtro = FiltroDeBandeja::TODOS->value,
         ?string $agenteId = null,
         ?string $estado = null,
         ?int $scopeAgenteId = null,

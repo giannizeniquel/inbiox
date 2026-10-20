@@ -5,6 +5,7 @@ namespace App\Ticket\Query;
 use App\Disponibilidad\DisponibilidadDeAgenteService;
 use App\Agente\Agente;
 use App\Agente\Repository\AgenteRepository;
+use App\Ticket\FiltroDeBandeja;
 use App\Ticket\Repository\TicketRepository;
 
 class ListTicketsQuery
@@ -19,8 +20,8 @@ class ListTicketsQuery
     /**
      * @param int $page Número de página (empieza en 1)
      * @param int $limit Elementos por página (máximo 100)
-     * @param string $filtro 'all', 'unassigned', 'assigned' o 'mine'
-     * @param string|null $agenteId ID del agente para el filtro 'mine' (DEPRECATED: usar scopeAgentId en su lugar)
+     * @param string $filtro Un valor de FiltroDeBandeja; uno desconocido es `todos`
+     * @param string|null $agenteId ID del agente para el filtro `mios` (DEPRECATED: usar scopeAgentId en su lugar)
      * @param string|null $estado Filtro de estados separados por comas
      * @param string|null $search Query de búsqueda (no implementada)
      * @param string $sort Orden
@@ -37,7 +38,7 @@ class ListTicketsQuery
     public function execute(
         int $page = 1,
         int $limit = 20,
-        string $filtro = 'all',
+        string $filtro = FiltroDeBandeja::TODOS->value,
         ?string $agenteId = null,
         ?string $estado = null,
         ?string $search = null,
@@ -107,10 +108,10 @@ class ListTicketsQuery
                 
                 $responsable = [
                     'id' => $agenteId,
-                    'name' => $row['agent_name'],
-                    'is_in_shift' => $isEnTurno,
-                    'current_load' => $cargaActual,
-                    'max_capacity' => $capacidadMaxima,
+                    'nombre' => $row['agent_name'],
+                    'enTurno' => $isEnTurno,
+                    'cargaActual' => $cargaActual,
+                    'capacidadMaxima' => $capacidadMaxima,
                 ];
             }
             
@@ -120,16 +121,16 @@ class ListTicketsQuery
                 prioridad: $row['priority'],
                 contacto: [
                     'id' => (int) ($row['conv_id'] ?? 1),
-                    'phone' => $row['phone'] ?? '',
-                    'name' => $row['contact_name'] ?? null,
+                    'telefono' => $row['phone'] ?? '',
+                    'nombre' => $row['contact_name'] ?? null,
                 ],
                 ultimoMensaje: null,
                 responsable: $responsable,
-                metricas: ['unread_count' => $conteosNoLeidos[(int) ($row['conv_id'] ?? 0)] ?? 0],
+                metricas: ['cantidadDeNoLeidos' => $conteosNoLeidos[(int) ($row['conv_id'] ?? 0)] ?? 0],
                 marcasDeTiempo: [
-                    'opened_at' => $row['created_at'],
-                    'updated_at' => $row['updated_at'],
-                    'last_inbound_message_at' => $row['last_inbound_message_at'] ?? null,
+                    'abiertoAt' => $row['created_at'],
+                    'actualizadoAt' => $row['updated_at'],
+                    'ultimoMensajeEntranteAt' => $row['last_inbound_message_at'] ?? null,
                 ],
             );
         }, $results);

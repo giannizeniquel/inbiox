@@ -364,7 +364,7 @@ foreach ($events as $event) {
             $ticket->setContacto($contacto);
             $ticket->setConversacion($conversacion);
             $ticket->setEstado(EstadoDeTicket::NUEVO->value);
-            $ticket->setPrioridad('medium');
+            $ticket->setPrioridad('media');
             if ($phoneNumberId !== null) {
                 $ticket->setPhoneNumberId($phoneNumberId);
             }

@@ -111,12 +111,12 @@ class Sprint10AgentManagementTest extends WebTestCase
 
     private function postAssign(int $ticketId, int $agentId, string $assignedBy, string $token): void
     {
-        $this->client->request('POST', '/api/tickets/' . $ticketId . '/assign', [], [], \array_merge(
+        $this->client->request('POST', '/api/tickets/' . $ticketId . '/asignar', [], [], \array_merge(
             ['CONTENT_TYPE' => 'application/json'],
             $this->authHeaders($token),
         ), \json_encode([
-            'agentId' => $agentId,
-            'assignedBy' => $assignedBy,
+            'agenteId' => $agentId,
+            'asignadoPor' => $assignedBy,
         ]));
     }
 
@@ -164,10 +164,10 @@ class Sprint10AgentManagementTest extends WebTestCase
         $result = $useCase->execute($ticketId);
 
         // 5. Assert result
-        $this->assertTrue($result['assigned'], 'Ticket should be assigned');
-        $this->assertEquals($ticketId, $result['ticket_id']);
-        $this->assertEquals($agentId, $result['agent_id'], 'Should assign to the only available agent');
-        $this->assertEquals('success', $result['reason']);
+        $this->assertTrue($result['asignado'], 'Ticket should be assigned');
+        $this->assertEquals($ticketId, $result['ticketId']);
+        $this->assertEquals($agentId, $result['agenteId'], 'Should assign to the only available agent');
+        $this->assertEquals('success', $result['motivo']);
 
         // 6. Assert ticket.assigned_agent_id was updated
         $this->em->clear();
@@ -187,7 +187,7 @@ class Sprint10AgentManagementTest extends WebTestCase
         )->fetchAssociative();
 
         $this->assertNotEmpty($assignmentRow, 'Assignment row should exist');
-        $this->assertEquals('AUTO_ASSIGN', $assignmentRow['type']);
+        $this->assertEquals('automatica', $assignmentRow['type']);
         $this->assertEquals($agentId, (int) $assignmentRow['agent_id']);
         $this->assertEquals('system', $assignmentRow['assigned_by']);
         $this->assertNull($assignmentRow['previous_agent_id']);
@@ -244,9 +244,9 @@ class Sprint10AgentManagementTest extends WebTestCase
         $result = $useCase->execute($ticketId);
 
         // The lowest-id agent should be selected
-        $this->assertTrue($result['assigned']);
+        $this->assertTrue($result['asignado']);
         $lowestAgentId = min(array_map(fn(Agente $a) => (int) $a->getId(), $agents));
-        $this->assertEquals($lowestAgentId, $result['agent_id'], 'Lowest id agent should be selected when loads and today counts are equal');
+        $this->assertEquals($lowestAgentId, $result['agenteId'], 'Lowest id agent should be selected when loads and today counts are equal');
 
         // Now create another ticket — agent with lowest id now has load=1, others load=0
         // The second ticket should go to the NEXT lowest id
@@ -256,7 +256,7 @@ class Sprint10AgentManagementTest extends WebTestCase
         $this->em->flush();
 
         $result2 = $useCase->execute((int) $ticket2->getId());
-        $this->assertTrue($result2['assigned']);
+        $this->assertTrue($result2['asignado']);
 
         // Should be the second-lowest agent (first is now at capacity... well, not at max=10)
         // Both agent2 and agent3 have load=0, so lowest id (agent2) should win
@@ -264,7 +264,7 @@ class Sprint10AgentManagementTest extends WebTestCase
         sort($sortedIds);
         // agent[0] (lowest) has load 1, agent[1] and agent[2] have load 0
         // among agent[1] and agent[2] (both load 0), agent[1] (lower id) wins
-        $this->assertEquals($sortedIds[1], $result2['agent_id'], 'Second ticket should go to second-lowest agent');
+        $this->assertEquals($sortedIds[1], $result2['agenteId'], 'Second ticket should go to second-lowest agent');
     }
 
     /**
@@ -319,8 +319,8 @@ class Sprint10AgentManagementTest extends WebTestCase
         $result = $useCase->execute($ticketId);
 
         // Should pick agentLow (lower load)
-        $this->assertTrue($result['assigned']);
-        $this->assertEquals($agentLow->getId(), $result['agent_id'], 'Should pick agent with lower load');
+        $this->assertTrue($result['asignado']);
+        $this->assertEquals($agentLow->getId(), $result['agenteId'], 'Should pick agent with lower load');
     }
 
     /**
@@ -363,9 +363,9 @@ class Sprint10AgentManagementTest extends WebTestCase
         $useCase = static::getContainer()->get(AsignarTicketAutomaticamenteUseCase::class);
         $result = $useCase->execute($ticketId);
 
-        $this->assertFalse($result['assigned']);
-        $this->assertNull($result['agent_id']);
-        $this->assertContains($result['reason'], ['no_agents_available', 'all_agents_at_capacity']);
+        $this->assertFalse($result['asignado']);
+        $this->assertNull($result['agenteId']);
+        $this->assertContains($result['motivo'], ['no_agents_available', 'all_agents_at_capacity']);
 
         // Verify no Asignacion row created
         $count = (int) $this->em->getConnection()->executeQuery(
@@ -402,9 +402,9 @@ class Sprint10AgentManagementTest extends WebTestCase
         $useCase = static::getContainer()->get(AsignarTicketAutomaticamenteUseCase::class);
         $result = $useCase->execute($ticketId);
 
-        $this->assertFalse($result['assigned']);
-        $this->assertEquals($agent->getId(), $result['agent_id']);
-        $this->assertEquals('already_assigned', $result['reason']);
+        $this->assertFalse($result['asignado']);
+        $this->assertEquals($agent->getId(), $result['agenteId']);
+        $this->assertEquals('already_assigned', $result['motivo']);
 
         // Verify no new Asignacion row was created
         $assignmentCount = (int) $this->em->getConnection()->executeQuery(
@@ -423,9 +423,9 @@ class Sprint10AgentManagementTest extends WebTestCase
         $useCase = static::getContainer()->get(AsignarTicketAutomaticamenteUseCase::class);
         $result = $useCase->execute(99999);
 
-        $this->assertFalse($result['assigned']);
-        $this->assertNull($result['agent_id']);
-        $this->assertEquals('ticket_not_found', $result['reason']);
+        $this->assertFalse($result['asignado']);
+        $this->assertNull($result['agenteId']);
+        $this->assertEquals('ticket_not_found', $result['motivo']);
     }
 
     // ────────────────────────────────────────────────────────
@@ -530,7 +530,7 @@ class Sprint10AgentManagementTest extends WebTestCase
 
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
         $data = \json_decode($this->client->getResponse()->getContent(), true);
-        self::assertSame($activeAgent->getId(), $data['agent_id']);
+        self::assertSame($activeAgent->getId(), $data['agenteId']);
     }
 
     /** A 409 rejection must write no Asignacion row and emit no outbox event. */

@@ -73,7 +73,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
 
         $assignments = $conn->fetchAllAssociative('SELECT type, agent_id, previous_agent_id FROM assignments WHERE ticket_id = ?', [$ticketId]);
         self::assertCount(1, $assignments, 'Exactly one audit row must be created for claiming an unassigned ticket');
-        self::assertSame('AUTO_ASSIGN', $assignments[0]['type']);
+        self::assertSame('automatica', $assignments[0]['type']);
         self::assertSame($agentId, (int) $assignments[0]['agent_id']);
         self::assertNull($assignments[0]['previous_agent_id'], 'Claiming an unassigned ticket has no previous owner');
 
@@ -100,7 +100,7 @@ class AgentReplyAutoClaimTest extends KernelTestCase
 
         $assignments = $conn->fetchAllAssociative('SELECT type, agent_id, previous_agent_id FROM assignments WHERE ticket_id = ?', [$ticketId]);
         self::assertCount(1, $assignments);
-        self::assertSame('REASSIGN', $assignments[0]['type']);
+        self::assertSame('reasignacion', $assignments[0]['type']);
         self::assertSame($agentB, (int) $assignments[0]['agent_id']);
         self::assertSame($agentA, (int) $assignments[0]['previous_agent_id'], 'REASSIGN must record the previous owner');
     }

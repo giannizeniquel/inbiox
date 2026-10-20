@@ -129,7 +129,7 @@ class Sprint09BConcurrencyTest extends KernelTestCase
         // Create ticket with seq=0
         $em->getConnection()->executeStatement(
             'INSERT INTO tickets (id, contact_id, conversation_id, status, priority, created_at, updated_at, last_event_seq) VALUES (?, ?, ?, ?, ?, NOW(), NOW(), ?)',
-            [999, 1, 1, 'new', 'medium', 0]
+            [999, 1, 1, 'nuevo', 'media', 0]
         );
         
         // Verify initial seq

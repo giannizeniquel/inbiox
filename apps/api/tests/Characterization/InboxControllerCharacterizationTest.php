@@ -30,13 +30,47 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
         return $message;
     }
 
+    // ── app_inbox_tickets ──
+
+    public function testTicketListUsesTheContractKeysAndQueryNames(): void
+    {
+        $owner = $this->createAgent('Owner');
+        $assigned = $this->createTicket('activo', $owner->getId());
+        $unassigned = $this->createTicket('nuevo');
+        $this->createTicket('en_espera');
+        $token = $this->loginAs('inbox-list@characterization.local', ['ROLE_SUPERVISOR'], $this->createAgent('Sup'));
+
+        $body = $this->json($this->request('GET', '/api/tickets?filtro=sin_asignar&estado=nuevo', $token));
+
+        self::assertSame([$unassigned->getId()], \array_column($body['data'], 'ticketId'));
+        self::assertSame(
+            ['ticketId', 'estado', 'prioridad', 'contacto', 'ultimoMensaje', 'responsable', 'metricas', 'fechas'],
+            \array_keys($body['data'][0]),
+        );
+        self::assertSame('nuevo', $body['data'][0]['estado']);
+        self::assertSame('media', $body['data'][0]['prioridad']);
+        self::assertSame(['id', 'telefono', 'nombre'], \array_keys($body['data'][0]['contacto']));
+        self::assertNull($body['data'][0]['responsable']);
+        self::assertSame(['cantidadDeNoLeidos' => 0], $body['data'][0]['metricas']);
+        self::assertSame(['abiertoAt', 'actualizadoAt', 'ultimoMensajeEntranteAt'], \array_keys($body['data'][0]['fechas']));
+
+        $mios = $this->json($this->request('GET', '/api/tickets?filtro=mios&agenteId=' . $owner->getId(), $token));
+        self::assertSame([$assigned->getId()], \array_column($mios['data'], 'ticketId'));
+        self::assertSame(['id', 'nombre', 'enTurno', 'cargaActual', 'capacidadMaxima'], \array_keys($mios['data'][0]['responsable']));
+        self::assertSame($owner->getId(), $mios['data'][0]['responsable']['id']);
+
+        // Los nombres y valores viejos de la query ya no filtran.
+        $viejos = $this->json($this->request('GET', '/api/tickets?filter=unassigned&status=new', $token));
+        self::assertSame(3, $viejos['meta']['total']);
+    }
+
     // ── app_inbox_ticket_detail ──
 
     public function testTicketDetailShape(): void
     {
         $owner = $this->createAgent('Owner');
         $contact = $this->createContact('+5491100001111', 'Ana');
-        $ticket = $this->createTicket('active', $owner->getId(), $contact);
+        $ticket = $this->createTicket('activo', $owner->getId(), $contact);
         $this->addMessage($ticket, 'entrante', 'hola');
         $this->addMessage($ticket, 'saliente', 'buenas');
         $token = $this->loginAs('inbox-owner@characterization.local', ['ROLE_AGENT'], $owner);
@@ -46,30 +80,30 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
         self::assertSame(200, $response->getStatusCode(), (string) $response->getContent());
         $body = $this->json($response);
         self::assertSame(
-            ['ticket_id', 'status', 'priority', 'contact', 'owner', 'timestamps', 'metrics', 'last_message'],
+            ['ticketId', 'estado', 'prioridad', 'contacto', 'responsable', 'fechas', 'metricas', 'ultimoMensaje'],
             \array_keys($body),
         );
-        self::assertSame($ticket->getId(), $body['ticket_id']);
-        self::assertSame('active', $body['status']);
-        self::assertSame('medium', $body['priority']);
-        self::assertSame(['id' => $contact->getId(), 'phone' => '+5491100001111', 'name' => 'Ana'], $body['contact']);
-        self::assertSame(['id', 'name'], \array_keys($body['owner']));
+        self::assertSame($ticket->getId(), $body['ticketId']);
+        self::assertSame('activo', $body['estado']);
+        self::assertSame('media', $body['prioridad']);
+        self::assertSame(['id' => $contact->getId(), 'telefono' => '+5491100001111', 'nombre' => 'Ana'], $body['contacto']);
+        self::assertSame(['id', 'nombre'], \array_keys($body['responsable']));
         // Characterization: current behavior, not necessarily desired.
         // The owner name is a hardcoded null placeholder.
-        self::assertSame($owner->getId(), $body['owner']['id']);
-        self::assertNull($body['owner']['name']);
-        self::assertSame(['opened_at', 'assigned_at', 'resolved_at', 'closed_at', 'last_inbound_message_at'], \array_keys($body['timestamps']));
-        self::assertMatchesRegularExpression(self::UTC_Z_DATETIME, $body['timestamps']['opened_at']);
+        self::assertSame($owner->getId(), $body['responsable']['id']);
+        self::assertNull($body['responsable']['nombre']);
+        self::assertSame(['abiertoAt', 'asignadoAt', 'resueltoAt', 'cerradoAt', 'ultimoMensajeEntranteAt'], \array_keys($body['fechas']));
+        self::assertMatchesRegularExpression(self::UTC_Z_DATETIME, $body['fechas']['abiertoAt']);
         // Characterization: closed_at is always null (hardcoded placeholder).
-        self::assertNull($body['timestamps']['closed_at']);
-        self::assertSame(['unread_count' => 1], $body['metrics']);
-        self::assertContains($body['last_message'], ['hola', 'buenas']);
+        self::assertNull($body['fechas']['cerradoAt']);
+        self::assertSame(['cantidadDeNoLeidos' => 1], $body['metricas']);
+        self::assertContains($body['ultimoMensaje'], ['hola', 'buenas']);
     }
 
     public function testTicketDetailOfAnotherAgentsTicketIsVisible(): void
     {
         $owner = $this->createAgent('Owner');
-        $ticket = $this->createTicket('active', $owner->getId());
+        $ticket = $this->createTicket('activo', $owner->getId());
         $token = $this->loginAs('inbox-other@characterization.local', ['ROLE_AGENT'], $this->createAgent('Other'));
 
         $response = $this->request('GET', '/api/tickets/' . $ticket->getId(), $token);
@@ -77,7 +111,7 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
         // Characterization: current behavior, not necessarily desired.
         // The detail action applies no ownership or workspace scope.
         self::assertSame(200, $response->getStatusCode());
-        self::assertSame($ticket->getId(), $this->json($response)['ticket_id']);
+        self::assertSame($ticket->getId(), $this->json($response)['ticketId']);
     }
 
     public function testTicketDetailUnknownTicketReturns404(): void
@@ -104,7 +138,7 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
 
     public function testMessagesBackwardPaginationWithCursor(): void
     {
-        $ticket = $this->createTicket('active');
+        $ticket = $this->createTicket('activo');
         $m1 = $this->addMessage($ticket, 'entrante', 'one');
         $m2 = $this->addMessage($ticket, 'saliente', 'two');
         $m3 = $this->addMessage($ticket, 'entrante', 'three');
@@ -141,7 +175,7 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
 
     public function testMessagesForwardDirection(): void
     {
-        $ticket = $this->createTicket('active');
+        $ticket = $this->createTicket('activo');
         $m1 = $this->addMessage($ticket, 'entrante', 'one');
         $m2 = $this->addMessage($ticket, 'entrante', 'two');
         $token = $this->loginAs('inbox@characterization.local', ['ROLE_AGENT'], $this->createAgent('Me'));
@@ -178,10 +212,10 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
     public function testOwnerMarksReadAndAnOutboxRowIsInserted(): void
     {
         $owner = $this->createAgent('Owner');
-        $ticket = $this->createTicket('active', $owner->getId());
+        $ticket = $this->createTicket('activo', $owner->getId());
         $token = $this->loginAs('inbox-owner@characterization.local', ['ROLE_AGENT'], $owner);
 
-        $response = $this->request('PUT', '/api/tickets/' . $ticket->getId() . '/mark-read', $token);
+        $response = $this->request('PUT', '/api/tickets/' . $ticket->getId() . '/marcar-leido', $token);
 
         self::assertSame(204, $response->getStatusCode());
         self::assertSame('', $response->getContent());
@@ -206,10 +240,10 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
     public function testNonOwnerMarkReadIsANoOp(): void
     {
         $owner = $this->createAgent('Owner');
-        $ticket = $this->createTicket('active', $owner->getId());
+        $ticket = $this->createTicket('activo', $owner->getId());
         $token = $this->loginAs('inbox-other@characterization.local', ['ROLE_AGENT'], $this->createAgent('Other'));
 
-        $response = $this->request('PUT', '/api/tickets/' . $ticket->getId() . '/mark-read', $token);
+        $response = $this->request('PUT', '/api/tickets/' . $ticket->getId() . '/marcar-leido', $token);
 
         self::assertSame(204, $response->getStatusCode());
         self::assertNull($this->connection()->fetchOne('SELECT last_read_at FROM tickets WHERE id = ?', [$ticket->getId()]));
@@ -218,10 +252,10 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
 
     public function testMarkReadOfUnassignedTicketByAdminWithoutAgentIsANoOp(): void
     {
-        $ticket = $this->createTicket('new');
+        $ticket = $this->createTicket('nuevo');
         $token = $this->loginAs('inbox-admin@characterization.local', ['ROLE_ADMIN']);
 
-        $response = $this->request('PUT', '/api/tickets/' . $ticket->getId() . '/mark-read', $token);
+        $response = $this->request('PUT', '/api/tickets/' . $ticket->getId() . '/marcar-leido', $token);
 
         self::assertSame(204, $response->getStatusCode());
         self::assertSame(0, $this->countRows('outbox_events'));
@@ -231,7 +265,7 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
     {
         $token = $this->loginAs('inbox@characterization.local', ['ROLE_AGENT'], $this->createAgent('Me'));
 
-        $this->assertJsonResponse(404, ['error' => 'Ticket not found'], $this->request('PUT', '/api/tickets/999999999/mark-read', $token));
+        $this->assertJsonResponse(404, ['error' => 'Ticket not found'], $this->request('PUT', '/api/tickets/999999999/marcar-leido', $token));
         self::assertSame(0, $this->countRows('outbox_events'));
     }
 }

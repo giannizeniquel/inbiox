@@ -58,7 +58,7 @@ class ExportTicketsCsvQueryTest extends KernelTestCase
     }
 
     private function createTicket(
-        string $status = 'active',
+        string $status = 'activo',
         array $tagNames = [],
         ?int $assignedAgentId = null,
         ?\DateTimeImmutable $createdAt = null,
@@ -170,7 +170,7 @@ class ExportTicketsCsvQueryTest extends KernelTestCase
     {
         $agentId = $this->createAgent('Alice');
         $ticketId = $this->createTicket(
-            status: 'resolved',
+            status: 'resuelto',
             tagNames: ['vip', 'urgente'],
             assignedAgentId: $agentId,
             createdAt: new \DateTimeImmutable('2026-01-15 10:00:00'),
@@ -185,7 +185,7 @@ class ExportTicketsCsvQueryTest extends KernelTestCase
         self::assertSame((string) $ticketId, $row['ticket_id']);
         self::assertSame('John Client', $row['contact_name']);
         self::assertSame('Alice', $row['assigned_agent']);
-        self::assertSame('resolved', $row['status']);
+        self::assertSame('resuelto', $row['status']);
         self::assertSame('vip;urgente', $row['tags']);
         self::assertStringEndsWith('Z', $row['created_at']);
     }
@@ -202,7 +202,7 @@ class ExportTicketsCsvQueryTest extends KernelTestCase
 
     public function test_no_status_filter_includes_every_status(): void
     {
-        foreach (['new', 'active', 'waiting', 'resolved', 'closed'] as $status) {
+        foreach (['nuevo', 'activo', 'en_espera', 'resuelto', 'cerrado'] as $status) {
             $this->createTicket(status: $status, createdAt: new \DateTimeImmutable('2026-01-10'));
         }
 
@@ -213,13 +213,13 @@ class ExportTicketsCsvQueryTest extends KernelTestCase
 
     public function test_status_filter_narrows_results(): void
     {
-        $this->createTicket(status: 'new', createdAt: new \DateTimeImmutable('2026-01-10'));
-        $this->createTicket(status: 'closed', createdAt: new \DateTimeImmutable('2026-01-10'));
+        $this->createTicket(status: 'nuevo', createdAt: new \DateTimeImmutable('2026-01-10'));
+        $this->createTicket(status: 'cerrado', createdAt: new \DateTimeImmutable('2026-01-10'));
 
-        $records = $this->runExport(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-31'), status: 'closed');
+        $records = $this->runExport(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-31'), status: 'cerrado');
 
         self::assertCount(1, $records);
-        self::assertSame('closed', $records[0]['status']);
+        self::assertSame('cerrado', $records[0]['status']);
     }
 
     public function test_tag_and_semantics_and_five_tag_cap_reused_from_builder(): void

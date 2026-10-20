@@ -13,8 +13,8 @@ namespace App\Asignacion;
  */
 enum TipoDeAsignacion: string
 {
-    case AUTOMATICA = 'AUTO_ASSIGN';
-    case MANUAL = 'MANUAL_ASSIGN';
-    case REASIGNACION = 'REASSIGN';
-    case DESASIGNACION = 'UNASSIGN';
+    case AUTOMATICA = 'automatica';
+    case MANUAL = 'manual';
+    case REASIGNACION = 'reasignacion';
+    case DESASIGNACION = 'desasignacion';
 }

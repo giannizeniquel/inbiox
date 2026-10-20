@@ -56,7 +56,7 @@ class TicketQueriesLastInboundMessageAtTest extends KernelTestCase
         $ticket = new Ticket();
         $ticket->setContacto($contact);
         $ticket->setConversacion($conversation);
-        $ticket->setEstado('active');
+        $ticket->setEstado('activo');
         $ticket->setUltimoMensajeEntranteAt($lastInboundMessageAt);
         $this->em->persist($ticket);
         $this->em->flush();
@@ -76,8 +76,8 @@ class TicketQueriesLastInboundMessageAtTest extends KernelTestCase
         $dto = $query->execute($ticketId);
 
         self::assertNotNull($dto);
-        self::assertArrayHasKey('last_inbound_message_at', $dto->marcasDeTiempo);
-        self::assertSame('2026-01-01T10:00:00Z', $dto->marcasDeTiempo['last_inbound_message_at']);
+        self::assertArrayHasKey('ultimoMensajeEntranteAt', $dto->marcasDeTiempo);
+        self::assertSame('2026-01-01T10:00:00Z', $dto->marcasDeTiempo['ultimoMensajeEntranteAt']);
     }
 
     public function testGetTicketDetailQueryReturnsNullWhenLastInboundMessageAtIsUnset(): void
@@ -88,8 +88,8 @@ class TicketQueriesLastInboundMessageAtTest extends KernelTestCase
         $dto = $query->execute($ticketId);
 
         self::assertNotNull($dto);
-        self::assertArrayHasKey('last_inbound_message_at', $dto->marcasDeTiempo);
-        self::assertNull($dto->marcasDeTiempo['last_inbound_message_at']);
+        self::assertArrayHasKey('ultimoMensajeEntranteAt', $dto->marcasDeTiempo);
+        self::assertNull($dto->marcasDeTiempo['ultimoMensajeEntranteAt']);
     }
 
     public function testListTicketsQueryExposesLastInboundMessageAt(): void
@@ -101,7 +101,7 @@ class TicketQueriesLastInboundMessageAtTest extends KernelTestCase
 
         self::assertNotEmpty($result['items']);
         $item = $result['items'][0];
-        self::assertArrayHasKey('last_inbound_message_at', $item->marcasDeTiempo);
-        self::assertNotNull($item->marcasDeTiempo['last_inbound_message_at']);
+        self::assertArrayHasKey('ultimoMensajeEntranteAt', $item->marcasDeTiempo);
+        self::assertNotNull($item->marcasDeTiempo['ultimoMensajeEntranteAt']);
     }
 }

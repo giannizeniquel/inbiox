@@ -16,7 +16,7 @@ use App\Administracion\Usuario;
 final class ClasificadorDeAuditoriaDeCierre
 {
     /**
-     * @param string   $nuevoEstado       'resolved' | 'closed' (después de la transición)
+     * @param string   $nuevoEstado       'resuelto' | 'cerrado' (después de la transición)
      * @param int|null $responsableAnteriorId ticket.assigned_agent_id capturado bajo
      *                                  el propio bloqueo `FOR UPDATE` del caso de uso (D4)
      * @param int|null $agenteActuanteId   $usuario->getAgent()?->getId(), null para un

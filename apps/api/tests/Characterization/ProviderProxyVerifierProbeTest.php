@@ -47,7 +47,7 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
         parent::tearDown();
     }
 
-    private function ticketInOpenWindow(string $status = 'new', ?int $assignedAgentId = null): Ticket
+    private function ticketInOpenWindow(string $status = 'nuevo', ?int $assignedAgentId = null): Ticket
     {
         $ticket = $this->createTicket($status, $assignedAgentId, $this->createContact(self::CONTACT_PHONE, 'Probe Contact'));
         $ticket->setPhoneNumberId(self::PHONE_NUMBER_ID);
@@ -143,7 +143,7 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
 
     public function testSendOnAnExpiredWindowChangesNoData(): void
     {
-        $ticket = $this->createTicket('active', null, $this->createContact(self::CONTACT_PHONE));
+        $ticket = $this->createTicket('activo', null, $this->createContact(self::CONTACT_PHONE));
         $ticket->setUltimoMensajeEntranteAt(new \DateTimeImmutable('-30 hours'));
         $this->em->flush();
         [$token] = $this->agentToken();
@@ -161,7 +161,7 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
     public function testSendToAResolvedTicketOwnedByAnotherAgentChangesNoData(): void
     {
         $owner = $this->createAgent('Probe Owner');
-        $ticket = $this->ticketInOpenWindow('resolved', (int) $owner->getId());
+        $ticket = $this->ticketInOpenWindow('resuelto', (int) $owner->getId());
         [$token] = $this->agentToken();
         $this->graph->expects(self::never())->method(self::anything());
         $before = $this->dataState();
@@ -169,7 +169,7 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
         $response = $this->request('POST', '/api/proveedor/enviar', $token, ['ticketId' => $ticket->getId(), 'contenido' => 'Hola']);
 
         self::assertSame(409, $response->getStatusCode());
-        self::assertSame('{"type":"TICKET_NOT_OWNED","mensaje":"Cannot send to ticket in \\u0022resolved\\u0022 state: sender is not the assigned owner"}', $response->getContent());
+        self::assertSame('{"type":"TICKET_NOT_OWNED","mensaje":"Cannot send to ticket in \\u0022resuelto\\u0022 state: sender is not the assigned owner"}', $response->getContent());
         self::assertSame($before, $this->dataState());
     }
 
@@ -217,7 +217,7 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
         $contact = $this->createContact(self::CONTACT_PHONE);
         $ticket = new Ticket();
         $ticket->setContacto($contact);
-        $ticket->setEstado('new');
+        $ticket->setEstado('nuevo');
         $ticket->setUltimoMensajeEntranteAt(new \DateTimeImmutable('-1 hour'));
         $this->em->persist($ticket);
         $this->em->flush();
@@ -252,7 +252,7 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
         $this->em->persist($conversation);
         $ticket = new Ticket();
         $ticket->setConversacion($conversation);
-        $ticket->setEstado('new');
+        $ticket->setEstado('nuevo');
         $this->em->persist($ticket);
         $this->em->flush();
         [$token] = $this->agentToken();
@@ -281,7 +281,7 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
 
     public function testTemplateSuccessRawBodyAndStoredContent(): void
     {
-        $ticket = $this->ticketInOpenWindow('active');
+        $ticket = $this->ticketInOpenWindow('activo');
         [$token, $agentId] = $this->agentToken();
         $this->graph->method('sendTemplate')->willReturn(['messages' => [['id' => 'wamid.probe-t']]]);
 
@@ -290,7 +290,7 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
         self::assertSame('{"mensajeId":"wamid.probe-t","estadoDeEntrega":"enviado"}', $response->getContent());
         $row = $this->connection()->fetchAssociative("SELECT content, sender_agent_id, delivery_status FROM messages WHERE external_id = 'wamid.probe-t'");
         self::assertSame(['Template: hi (A, B)', $agentId, 'enviado'], [$row['content'], (int) $row['sender_agent_id'], $row['delivery_status']]);
-        self::assertSame(['active', null], [$this->connection()->fetchOne('SELECT status FROM tickets WHERE id = ?', [$ticket->getId()]), $this->connection()->fetchOne('SELECT assigned_agent_id FROM tickets WHERE id = ?', [$ticket->getId()])]);
+        self::assertSame(['activo', null], [$this->connection()->fetchOne('SELECT status FROM tickets WHERE id = ?', [$ticket->getId()]), $this->connection()->fetchOne('SELECT assigned_agent_id FROM tickets WHERE id = ?', [$ticket->getId()])]);
     }
 
     public function testUploadRawBodyAndNumericPrefixTicketId(): void

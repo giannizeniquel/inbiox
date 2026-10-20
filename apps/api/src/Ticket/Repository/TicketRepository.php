@@ -5,6 +5,7 @@ namespace App\Ticket\Repository;
 use App\Ticket\TipoDeEventoDeTicket;
 use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
+use App\Ticket\FiltroDeBandeja;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversacion;
 use App\Conversacion\DireccionDeMensaje;
@@ -149,7 +150,7 @@ class TicketRepository extends ServiceEntityRepository
     /**
      * Cuenta los tickets activos asignados actualmente a un agente.
      *
-     * Los tickets activos son los que tienen status IN ('new', 'active', 'waiting').
+     * Los tickets activos son los que tienen status IN ('nuevo', 'activo', 'en_espera').
      * Usa el índice idx_tickets_owner_status (assigned_agent_id, status).
      */
     public function countActivosDeAgente(int $agenteId): int
@@ -530,14 +531,14 @@ class TicketRepository extends ServiceEntityRepository
 
     /**
      * Agrega los filtros de la lista como cláusulas WHERE a una query sobre `tickets t`,
-     * en este orden: asignación o mine, alcance de responsabilidad, espacio de trabajo, estado,
+     * en este orden: asignación o mios, alcance de responsabilidad, espacio de trabajo, estado,
      * un EXISTS por etiqueta (semántica AND), equipo.
      */
     private function aplicarFiltrosDeLista(QueryBuilder $qb, FiltrosDeTicket $filtros): void
     {
-        if ($filtros->asignacion === 'unassigned') {
+        if ($filtros->asignacion === FiltroDeBandeja::SIN_ASIGNAR) {
             $qb->andWhere('t.assigned_agent_id IS NULL');
-        } elseif ($filtros->asignacion === 'assigned') {
+        } elseif ($filtros->asignacion === FiltroDeBandeja::ASIGNADOS) {
             $qb->andWhere('t.assigned_agent_id IS NOT NULL');
         } elseif ($filtros->misAgenteId !== null) {
             $qb->andWhere('t.assigned_agent_id = :mineAgentId')

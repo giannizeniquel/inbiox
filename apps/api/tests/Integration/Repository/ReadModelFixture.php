@@ -47,12 +47,12 @@ trait ReadModelFixture
                 (880005, 'open', '2026-01-01 00:00:00', '2026-01-01 00:00:00', NULL, 880003),
                 (880006, 'open', '2026-01-01 00:00:00', '2026-01-01 00:00:00', 'repo-read-p1', 880003)",
             "INSERT INTO tickets (id, status, priority, assigned_agent_id, first_response_at, resolved_at, closed_at, created_at, updated_at, phone_number_id, contact_id, conversation_id, last_read_at, last_inbound_message_at, team_id) VALUES
-                (880001, 'active', 'high', 880001, '2026-01-01 09:05:00', NULL, NULL, '2026-01-01 09:00:00', '2026-01-10 00:00:00', 'repo-read-p1', 880001, 880001, '2026-01-01 10:00:00', '2026-01-01 11:00:00', 880001),
-                (880002, 'new', 'normal', NULL, NULL, NULL, NULL, '2026-01-01 08:00:00', '2026-01-10 00:00:00', 'repo-read-p1', 880001, 880002, NULL, NULL, NULL),
-                (880003, 'waiting', 'low', 880002, NULL, NULL, NULL, '2026-01-02 08:00:00', '2026-01-09 00:00:00', 'repo-read-p2', 880002, 880003, NULL, NULL, 880002),
-                (880004, 'resolved', 'normal', 880001, '2026-01-03 08:10:00', '2026-01-03 09:00:00', NULL, '2026-01-03 08:00:00', '2026-01-08 00:00:00', 'repo-read-p2', 880002, 880004, NULL, NULL, 880001),
-                (880005, 'closed', 'urgent', 880003, '2026-01-04 08:01:00', '2026-01-04 08:30:00', '2026-01-04 09:00:00', '2026-01-04 08:00:00', '2026-01-07 00:00:00', NULL, 880003, 880005, NULL, NULL, NULL),
-                (880006, 'new', 'normal', 880001, NULL, NULL, NULL, '2025-12-31 23:00:00', '2026-01-11 00:00:00', 'repo-read-p1', 880003, 880006, NULL, NULL, 880002)",
+                (880001, 'activo', 'alta', 880001, '2026-01-01 09:05:00', NULL, NULL, '2026-01-01 09:00:00', '2026-01-10 00:00:00', 'repo-read-p1', 880001, 880001, '2026-01-01 10:00:00', '2026-01-01 11:00:00', 880001),
+                (880002, 'nuevo', 'normal', NULL, NULL, NULL, NULL, '2026-01-01 08:00:00', '2026-01-10 00:00:00', 'repo-read-p1', 880001, 880002, NULL, NULL, NULL),
+                (880003, 'en_espera', 'baja', 880002, NULL, NULL, NULL, '2026-01-02 08:00:00', '2026-01-09 00:00:00', 'repo-read-p2', 880002, 880003, NULL, NULL, 880002),
+                (880004, 'resuelto', 'normal', 880001, '2026-01-03 08:10:00', '2026-01-03 09:00:00', NULL, '2026-01-03 08:00:00', '2026-01-08 00:00:00', 'repo-read-p2', 880002, 880004, NULL, NULL, 880001),
+                (880005, 'cerrado', 'urgent', 880003, '2026-01-04 08:01:00', '2026-01-04 08:30:00', '2026-01-04 09:00:00', '2026-01-04 08:00:00', '2026-01-07 00:00:00', NULL, 880003, 880005, NULL, NULL, NULL),
+                (880006, 'nuevo', 'normal', 880001, NULL, NULL, NULL, '2025-12-31 23:00:00', '2026-01-11 00:00:00', 'repo-read-p1', 880003, 880006, NULL, NULL, 880002)",
             "INSERT INTO messages (id, direction, content, media, created_at, conversation_id, sender_agent_id, sender_type) VALUES
                 (880001, 'entrante', 'hola', NULL, '2026-01-01 09:00:00', 880001, NULL, NULL),
                 (880002, 'saliente', 'buenas', NULL, '2026-01-01 10:00:00', 880001, 880001, 'agente'),
@@ -73,7 +73,7 @@ trait ReadModelFixture
                 (880005, 880002, 'manual_closed_unowned', 'u:880003', '2026-01-01 11:40:00')",
             "INSERT INTO assignments (id, type, assigned_at, assigned_by, notes, ticket_id, agent_id, previous_agent_id) VALUES
                 (880001, 'ASSIGN', '2026-01-01 09:01:00', 880001, NULL, 880001, 880001, NULL),
-                (880002, 'REASSIGN', '2026-01-01 12:30:00', 880001, NULL, 880001, 880002, 880001)",
+                (880002, 'reasignacion', '2026-01-01 12:30:00', 880001, NULL, 880001, 880002, 880001)",
             "INSERT INTO outbox_events (id, aggregate_type, aggregate_id, topic, event_type, payload, created_at, retry_count, status, sequence) VALUES
                 (880001, 'Ticket', 880001, 't', 'ticket.creado', '{}', '2026-01-01 09:00:00', 0, 'published', 1),
                 (880002, 'Ticket', 880001, 't', 'ticket.actualizado', '{}', '2026-01-01 11:20:00', 0, 'published', 2),

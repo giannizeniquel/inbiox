@@ -41,22 +41,22 @@ class ClosureAuditClassifierTest extends TestCase
     {
         return [
             // resolved — unowned: (null, any) → UNOWNED
-            'resolved unowned, acting agent set'    => ['resolved', null, 5, TipoDeEventoDeTicket::MANUAL_RESUELTO_SIN_RESPONSABLE],
-            'resolved unowned, no acting agent'     => ['resolved', null, null, TipoDeEventoDeTicket::MANUAL_RESUELTO_SIN_RESPONSABLE],
+            'resolved unowned, acting agent set'    => ['resuelto', null, 5, TipoDeEventoDeTicket::MANUAL_RESUELTO_SIN_RESPONSABLE],
+            'resolved unowned, no acting agent'     => ['resuelto', null, null, TipoDeEventoDeTicket::MANUAL_RESUELTO_SIN_RESPONSABLE],
             // resolved — owner: (7, 7) → OWNER
-            'resolved owner'                        => ['resolved', 7, 7, TipoDeEventoDeTicket::MANUAL_RESUELTO_RESPONSABLE],
+            'resolved owner'                        => ['resuelto', 7, 7, TipoDeEventoDeTicket::MANUAL_RESUELTO_RESPONSABLE],
             // resolved — override: (7, 3|null) → OVERRIDE
-            'resolved override, different agent'    => ['resolved', 7, 3, TipoDeEventoDeTicket::MANUAL_RESUELTO_FORZADO],
-            'resolved override, no acting agent'    => ['resolved', 7, null, TipoDeEventoDeTicket::MANUAL_RESUELTO_FORZADO],
+            'resolved override, different agent'    => ['resuelto', 7, 3, TipoDeEventoDeTicket::MANUAL_RESUELTO_FORZADO],
+            'resolved override, no acting agent'    => ['resuelto', 7, null, TipoDeEventoDeTicket::MANUAL_RESUELTO_FORZADO],
 
             // closed — unowned: (null, any) → UNOWNED
-            'closed unowned, acting agent set'      => ['closed', null, 5, TipoDeEventoDeTicket::MANUAL_CERRADO_SIN_RESPONSABLE],
-            'closed unowned, no acting agent'       => ['closed', null, null, TipoDeEventoDeTicket::MANUAL_CERRADO_SIN_RESPONSABLE],
+            'closed unowned, acting agent set'      => ['cerrado', null, 5, TipoDeEventoDeTicket::MANUAL_CERRADO_SIN_RESPONSABLE],
+            'closed unowned, no acting agent'       => ['cerrado', null, null, TipoDeEventoDeTicket::MANUAL_CERRADO_SIN_RESPONSABLE],
             // closed — owner: (7, 7) → OWNER
-            'closed owner'                          => ['closed', 7, 7, TipoDeEventoDeTicket::MANUAL_CERRADO_RESPONSABLE],
+            'closed owner'                          => ['cerrado', 7, 7, TipoDeEventoDeTicket::MANUAL_CERRADO_RESPONSABLE],
             // closed — override: (7, 3|null) → OVERRIDE
-            'closed override, different agent'      => ['closed', 7, 3, TipoDeEventoDeTicket::MANUAL_CERRADO_FORZADO],
-            'closed override, no acting agent'      => ['closed', 7, null, TipoDeEventoDeTicket::MANUAL_CERRADO_FORZADO],
+            'closed override, different agent'      => ['cerrado', 7, 3, TipoDeEventoDeTicket::MANUAL_CERRADO_FORZADO],
+            'closed override, no acting agent'      => ['cerrado', 7, null, TipoDeEventoDeTicket::MANUAL_CERRADO_FORZADO],
         ];
     }
 

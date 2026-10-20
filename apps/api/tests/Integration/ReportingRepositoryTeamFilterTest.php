@@ -69,7 +69,7 @@ class ReportingRepositoryTeamFilterTest extends KernelTestCase
         ?\DateTimeImmutable $firstResponseAt = null,
         ?\DateTimeImmutable $resolvedAt = null,
         ?int $teamId = null,
-        string $status = 'active',
+        string $status = 'activo',
     ): int {
         $this->phoneSeq++;
 
@@ -156,26 +156,26 @@ class ReportingRepositoryTeamFilterTest extends KernelTestCase
 
     public function test_counts_by_status_team_id_null_is_identical_to_no_scope(): void
     {
-        $this->createTicket(new \DateTimeImmutable('2026-01-01'), status: 'new');
-        $this->createTicket(new \DateTimeImmutable('2026-01-01'), status: 'active');
+        $this->createTicket(new \DateTimeImmutable('2026-01-01'), status: 'nuevo');
+        $this->createTicket(new \DateTimeImmutable('2026-01-01'), status: 'activo');
 
         $unscoped = $this->repo->getConteosPorEstado(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'));
         $withNullTeam = $this->repo->getConteosPorEstado(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'), null, null, null);
 
         self::assertSame($unscoped, $withNullTeam);
-        self::assertSame(1, $withNullTeam['new']);
-        self::assertSame(1, $withNullTeam['active']);
+        self::assertSame(1, $withNullTeam['nuevo']);
+        self::assertSame(1, $withNullTeam['activo']);
     }
 
     public function test_counts_by_status_team_id_narrows_to_matching_team(): void
     {
         $team = $this->createTeam();
-        $this->createTicket(new \DateTimeImmutable('2026-01-01'), status: 'new', teamId: $team->getId());
-        $this->createTicket(new \DateTimeImmutable('2026-01-01'), status: 'new');
+        $this->createTicket(new \DateTimeImmutable('2026-01-01'), status: 'nuevo', teamId: $team->getId());
+        $this->createTicket(new \DateTimeImmutable('2026-01-01'), status: 'nuevo');
 
         $result = $this->repo->getConteosPorEstado(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'), null, null, $team->getId());
 
-        self::assertSame(1, $result['new']);
+        self::assertSame(1, $result['nuevo']);
     }
 
     // --- getVolumenEnElTiempo ---

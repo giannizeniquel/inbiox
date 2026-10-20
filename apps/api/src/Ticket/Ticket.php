@@ -36,7 +36,7 @@ class Ticket
     private string $estado = EstadoDeTicket::NUEVO->value;
 
     #[ORM\Column(name: "priority", type: "string", length: 20)]
-    private string $prioridad = "medium";
+    private string $prioridad = "media";
 
     #[ORM\Column(name: "assigned_agent_id", type: "bigint", nullable: true)]
     private ?int $agenteAsignadoId = null;

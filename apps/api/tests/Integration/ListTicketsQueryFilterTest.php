@@ -115,18 +115,18 @@ class ListTicketsQueryFilterTest extends KernelTestCase
         }
 
         $query = static::getContainer()->get(ListTicketsQuery::class);
-        $result = $query->execute(page: 1, limit: 20, estado: 'waiting');
+        $result = $query->execute(page: 1, limit: 20, estado: 'en_espera');
 
         self::assertCount(1, $result['items']);
-        self::assertSame('waiting', $result['items'][0]->estado);
+        self::assertSame('en_espera', $result['items'][0]->estado);
     }
 
     // --- Phase 3/4: tag filter ---
 
     public function test_single_tag_returns_only_tagged_tickets(): void
     {
-        $tagged = $this->createTicket('active', ['vip']);
-        $this->createTicket('active');
+        $tagged = $this->createTicket('activo', ['vip']);
+        $this->createTicket('activo');
 
         $query = static::getContainer()->get(ListTicketsQuery::class);
         $result = $query->execute(page: 1, limit: 20, etiqueta: 'vip');
@@ -137,8 +137,8 @@ class ListTicketsQueryFilterTest extends KernelTestCase
 
     public function test_multi_tag_and_excludes_partial_match(): void
     {
-        $both = $this->createTicket('active', ['vip', 'urgente']);
-        $this->createTicket('active', ['vip']);
+        $both = $this->createTicket('activo', ['vip', 'urgente']);
+        $this->createTicket('activo', ['vip']);
 
         $query = static::getContainer()->get(ListTicketsQuery::class);
         $result = $query->execute(page: 1, limit: 20, etiqueta: 'vip,urgente');
@@ -150,9 +150,9 @@ class ListTicketsQueryFilterTest extends KernelTestCase
     public function test_pagination_total_correct_under_multi_tag(): void
     {
         for ($i = 0; $i < 3; $i++) {
-            $this->createTicket('active', ['vip', 'urgente']);
+            $this->createTicket('activo', ['vip', 'urgente']);
         }
-        $this->createTicket('active', ['vip']);
+        $this->createTicket('activo', ['vip']);
 
         $query = static::getContainer()->get(ListTicketsQuery::class);
         $result = $query->execute(page: 1, limit: 2, etiqueta: 'vip,urgente');
@@ -163,7 +163,7 @@ class ListTicketsQueryFilterTest extends KernelTestCase
 
     public function test_unknown_tag_returns_empty_no_exception(): void
     {
-        $this->createTicket('active', ['vip']);
+        $this->createTicket('activo', ['vip']);
 
         $query = static::getContainer()->get(ListTicketsQuery::class);
         $result = $query->execute(page: 1, limit: 20, etiqueta: 'doesnotexist');
@@ -174,8 +174,8 @@ class ListTicketsQueryFilterTest extends KernelTestCase
 
     public function test_blank_segments_discarded(): void
     {
-        $both = $this->createTicket('active', ['vip', 'urgente']);
-        $this->createTicket('active', ['vip']);
+        $both = $this->createTicket('activo', ['vip', 'urgente']);
+        $this->createTicket('activo', ['vip']);
 
         $query = static::getContainer()->get(ListTicketsQuery::class);
         $result = $query->execute(page: 1, limit: 20, etiqueta: 'vip,,urgente');
@@ -186,8 +186,8 @@ class ListTicketsQueryFilterTest extends KernelTestCase
 
     public function test_empty_or_absent_tag_applies_no_filter(): void
     {
-        $this->createTicket('active', ['vip']);
-        $this->createTicket('active');
+        $this->createTicket('activo', ['vip']);
+        $this->createTicket('activo');
 
         $query = static::getContainer()->get(ListTicketsQuery::class);
         $resultEmpty = $query->execute(page: 1, limit: 20, etiqueta: '');
@@ -216,8 +216,8 @@ class ListTicketsQueryFilterTest extends KernelTestCase
 
     public function test_tag_filter_composes_with_ownership_scope(): void
     {
-        $ownTagged = $this->createTicket('active', ['vip'], 42);
-        $this->createTicket('active', ['vip'], 99);
+        $ownTagged = $this->createTicket('activo', ['vip'], 42);
+        $this->createTicket('activo', ['vip'], 99);
 
         $query = static::getContainer()->get(ListTicketsQuery::class);
         $result = $query->execute(page: 1, limit: 20, etiqueta: 'vip', scopeAgenteId: 42);
@@ -231,8 +231,8 @@ class ListTicketsQueryFilterTest extends KernelTestCase
     public function test_team_id_returns_only_matching_team_tickets(): void
     {
         $team = $this->createTeam();
-        $inTeam = $this->createTicket('active', [], null, $team->getId());
-        $this->createTicket('active');
+        $inTeam = $this->createTicket('activo', [], null, $team->getId());
+        $this->createTicket('activo');
 
         $query = static::getContainer()->get(ListTicketsQuery::class);
         $result = $query->execute(page: 1, limit: 20, equipoId: $team->getId());
@@ -244,7 +244,7 @@ class ListTicketsQueryFilterTest extends KernelTestCase
     public function test_team_id_with_zero_matching_tickets_returns_empty_no_error(): void
     {
         $team = $this->createTeam();
-        $this->createTicket('active');
+        $this->createTicket('activo');
 
         $query = static::getContainer()->get(ListTicketsQuery::class);
         $result = $query->execute(page: 1, limit: 20, equipoId: $team->getId());
@@ -255,8 +255,8 @@ class ListTicketsQueryFilterTest extends KernelTestCase
 
     public function test_team_id_omitted_is_byte_identical_to_pre_change_behavior(): void
     {
-        $this->createTicket('active', ['vip']);
-        $this->createTicket('waiting');
+        $this->createTicket('activo', ['vip']);
+        $this->createTicket('en_espera');
 
         $query = static::getContainer()->get(ListTicketsQuery::class);
         $result = $query->execute(page: 1, limit: 20);
@@ -267,9 +267,9 @@ class ListTicketsQueryFilterTest extends KernelTestCase
     public function test_team_id_composes_with_multi_tag_and_filter(): void
     {
         $team = $this->createTeam();
-        $matchesBoth = $this->createTicket('active', ['vip', 'urgente'], null, $team->getId());
-        $this->createTicket('active', ['vip', 'urgente']); // right tags, wrong team
-        $this->createTicket('active', ['vip'], null, $team->getId()); // right team, missing a tag
+        $matchesBoth = $this->createTicket('activo', ['vip', 'urgente'], null, $team->getId());
+        $this->createTicket('activo', ['vip', 'urgente']); // right tags, wrong team
+        $this->createTicket('activo', ['vip'], null, $team->getId()); // right team, missing a tag
 
         $query = static::getContainer()->get(ListTicketsQuery::class);
         $result = $query->execute(page: 1, limit: 20, etiqueta: 'vip,urgente', equipoId: $team->getId());

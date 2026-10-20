@@ -50,22 +50,28 @@ class RealtimeEventFactoryTest extends TestCase
         $result = $this->build('ticket', 100, TipoDeEventoDeOutbox::TICKET_CREADO->value, [
             'contact_id' => 7,
             'conversation_id' => 9,
-            'status' => 'new',
-            'priority' => 'medium',
+            'status' => 'nuevo',
+            'priority' => 'media',
             'created_at' => '2026-06-14T15:30:00Z',
         ]);
 
         self::assertSame('ticket.creado', $result['tipoDeEvento']);
-        // La prioridad sale como entero (hallazgo 13 del contrato, se decide aparte) y el
-        // valor del estado cambia en la unidad del ticket.
+        // La prioridad sale como entero (hallazgo 13 del contrato, se decide aparte).
         self::assertSame([
             'ticketId' => 100,
             'contactoId' => 7,
             'conversacionId' => 9,
-            'estado' => 'new',
+            'estado' => 'nuevo',
             'prioridad' => 0,
             'creadoAt' => '2026-06-14T15:30:00Z',
         ], $result['payload']);
+    }
+
+    public function testTicketCreadoTranslatesOldStoredStatus(): void
+    {
+        $result = $this->build('ticket', 100, 'App\Ticket\TicketCreatedEvent', ['status' => 'new']);
+
+        self::assertSame('nuevo', $result['payload']['estado']);
     }
 
     public function testMensajeAgregadoWithAttachment(): void
@@ -130,18 +136,31 @@ class RealtimeEventFactoryTest extends TestCase
     public function testEstadoDeTicketCambiado(): void
     {
         $result = $this->build('ticket', 100, TipoDeEventoDeOutbox::TICKET_ACTUALIZADO->value, [
-            'previous_status' => 'new',
-            'status' => 'active',
+            'previous_status' => 'nuevo',
+            'status' => 'activo',
             'changed_at' => '2026-06-14T15:30:00Z',
         ]);
 
         self::assertSame('ticket.estado_cambiado', $result['tipoDeEvento']);
         self::assertSame([
             'ticketId' => 100,
-            'estadoAnterior' => 'new',
-            'estadoNuevo' => 'active',
+            'estadoAnterior' => 'nuevo',
+            'estadoNuevo' => 'activo',
             'cambiadoAt' => '2026-06-14T15:30:00Z',
         ], $result['payload']);
+    }
+
+    public function testEstadoDeTicketCambiadoTranslatesOldStoredValues(): void
+    {
+        $esperados = ['new' => 'nuevo', 'active' => 'activo', 'waiting' => 'en_espera', 'resolved' => 'resuelto', 'closed' => 'cerrado'];
+        foreach ($esperados as $viejo => $nuevo) {
+            $result = $this->build('ticket', 100, 'App\Ticket\TicketUpdatedEvent', ['previous_status' => $viejo, 'status' => $viejo]);
+            self::assertSame($nuevo, $result['payload']['estadoAnterior'], $viejo);
+            self::assertSame($nuevo, $result['payload']['estadoNuevo'], $viejo);
+        }
+
+        $sinAnterior = $this->build('ticket', 100, TipoDeEventoDeOutbox::TICKET_ACTUALIZADO->value, ['status' => 'resuelto']);
+        self::assertNull($sinAnterior['payload']['estadoAnterior']);
     }
 
     public function testTicketAsignado(): void
@@ -149,7 +168,7 @@ class RealtimeEventFactoryTest extends TestCase
         $result = $this->build('ticket', 100, TipoDeEventoDeOutbox::TICKET_ACTUALIZADO->value, [
             'assignee_id' => 5,
             'assignee_name' => 'Ana',
-            'assignment_type' => 'AUTO_ASSIGN',
+            'assignment_type' => 'automatica',
             'assigned_at' => '2026-06-14T15:30:00Z',
         ]);
 
@@ -158,15 +177,24 @@ class RealtimeEventFactoryTest extends TestCase
             'ticketId' => 100,
             'responsableId' => 5,
             'responsableNombre' => 'Ana',
-            'tipoDeAsignacion' => 'AUTO_ASSIGN',
+            'tipoDeAsignacion' => 'automatica',
             'asignadoAt' => '2026-06-14T15:30:00Z',
         ], $result['payload']);
 
-        // Sin tipo guardado, el de siempre (el valor cambia en la unidad del ticket).
+        // Sin tipo guardado, el de siempre.
         $porDefecto = $this->build('ticket', 101, 'App\Ticket\TicketUpdatedEvent', ['ownerAgentId' => 3]);
         self::assertSame('ticket.asignado', $porDefecto['tipoDeEvento']);
         self::assertSame(3, $porDefecto['payload']['responsableId']);
-        self::assertSame('MANUAL_ASSIGN', $porDefecto['payload']['tipoDeAsignacion']);
+        self::assertSame('manual', $porDefecto['payload']['tipoDeAsignacion']);
+    }
+
+    public function testTicketAsignadoTranslatesOldStoredType(): void
+    {
+        $esperados = ['AUTO_ASSIGN' => 'automatica', 'MANUAL_ASSIGN' => 'manual', 'REASSIGN' => 'reasignacion', 'UNASSIGN' => 'desasignacion'];
+        foreach ($esperados as $viejo => $nuevo) {
+            $result = $this->build('ticket', 100, 'App\Ticket\TicketUpdatedEvent', ['ownerAgentId' => 3, 'assignment_type' => $viejo]);
+            self::assertSame($nuevo, $result['payload']['tipoDeAsignacion'], $viejo);
+        }
     }
 
     public function testMensajeActualizado(): void

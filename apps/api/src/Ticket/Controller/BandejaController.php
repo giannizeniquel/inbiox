@@ -10,6 +10,7 @@ use App\Conversacion\Query\GetMensajesDeTicketQuery;
 use App\Ticket\Query\ListTicketsQuery;
 use App\Compartido\Security\AlcanceDeResponsabilidad;
 use App\Compartido\Security\AlcanceDeEspacioDeTrabajo;
+use App\Ticket\FiltroDeBandeja;
 use App\Ticket\Repository\TicketRepository;
 use App\Ticket\UseCase\MarcarTicketLeidoUseCase;
 use App\Administracion\Usuario;
@@ -41,13 +42,13 @@ class BandejaController
         try {
             $page = max(1, (int) $request->query->get('page', 1));
             $limit = min(100, max(1, (int) $request->query->get('limit', 20)));
-            $filtro = $request->query->get('filter', 'all');
-            $agenteId = $request->query->get('agent_id');
-            $estado = $request->query->get('status');
-            $search = $request->query->get('search');
-            $sort = $request->query->get('sort', 'last_message_desc');
-            $etiqueta = $request->query->get('tag');
-            $equipoIdRaw = $request->query->get('teamId');
+            $filtro = $request->query->get('filtro', FiltroDeBandeja::TODOS->value);
+            $agenteId = $request->query->get('agenteId');
+            $estado = $request->query->get('estado');
+            $search = $request->query->get('busqueda');
+            $sort = $request->query->get('orden', 'last_message_desc');
+            $etiqueta = $request->query->get('etiqueta');
+            $equipoIdRaw = $request->query->get('equipoId');
             $equipoId = null !== $equipoIdRaw ? (int) $equipoIdRaw : null;
 
             // Alcance de responsabilidad: AGENT ve solo sus propios tickets; SUPERVISOR/ADMIN ven todos
@@ -136,7 +137,7 @@ class BandejaController
         }
     }
 
-    #[Route('/api/tickets/{id}/mark-read', name: 'app_ticket_mark_read', methods: ['PUT'])]
+    #[Route('/api/tickets/{id}/marcar-leido', name: 'app_ticket_mark_read', methods: ['PUT'])]
     public function marcarLeido(int $id): JsonResponse
     {
         $ticket = $this->ticketRepository->find($id);

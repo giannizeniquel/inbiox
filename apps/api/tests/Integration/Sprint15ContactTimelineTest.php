@@ -214,7 +214,7 @@ class Sprint15ContactTimelineTest extends WebTestCase
             ticket: $ticket,
             agente: null,
             asignadoPor: 'system',
-            tipo: 'AUTO_ASSIGN',
+            tipo: 'automatica',
         );
         // Override assigned_at to be the oldest
         $oldDate = (new \DateTimeImmutable())->modify('-4 hours');
@@ -304,7 +304,7 @@ class Sprint15ContactTimelineTest extends WebTestCase
         $this->assertResponseStatusCodeSame(200);
         $this->assertSame(['ticket.created', 'ticket.status_changed', 'ticket.assigned'], array_column($data['events'], 'type'));
         $this->assertSame([$fixtures['ticketId'], $fixtures['ticketId']], array_column(array_slice($data['events'], 0, 2), 'ticketId'));
-        $this->assertSame(['active', 'active'], array_column(array_slice($data['events'], 0, 2), 'ticketStatus'));
+        $this->assertSame(['activo', 'activo'], array_column(array_slice($data['events'], 0, 2), 'ticketStatus'));
     }
 
     public function testTimelineCursorPagination(): void

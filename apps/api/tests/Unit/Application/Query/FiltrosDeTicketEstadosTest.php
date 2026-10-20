@@ -30,12 +30,12 @@ final class FiltrosDeTicketEstadosTest extends TestCase
     {
         yield 'null' => [null, []];
         yield 'vacio' => ['', []];
-        yield 'uno' => ['new', ['new']];
-        yield 'todos' => ['new,active,waiting,resolved,closed', ['new', 'active', 'waiting', 'resolved', 'closed']];
+        yield 'uno' => ['nuevo', ['nuevo']];
+        yield 'todos' => ['nuevo,activo,en_espera,resuelto,cerrado', ['nuevo', 'activo', 'en_espera', 'resuelto', 'cerrado']];
         yield 'mayusculas' => ['NEW', []];
         yield 'capitalizado' => ['Active', []];
-        yield 'con espacios' => [' resolved , closed ', ['resolved', 'closed']];
-        yield 'mezcla con desconocido' => ['new,bogus', ['new']];
+        yield 'con espacios' => [' resuelto , cerrado ', ['resuelto', 'cerrado']];
+        yield 'mezcla con desconocido' => ['nuevo,bogus', ['nuevo']];
         yield 'cero' => ['0', []];
         yield 'solo coma' => [',', []];
     }

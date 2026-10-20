@@ -39,7 +39,7 @@ class TicketRepositoryReadTest extends KernelTestCase
         return array_map(fn (array $row) => (int) $row['id'], $this->repo->findPaginaDeLista($filters, $limit, $offset));
     }
 
-    private function inWorkspaces(string $filter = 'all', ?string $agentId = null, ?string $status = null, ?int $scopeAgentId = null, ?string $tag = null, ?int $teamId = null): array
+    private function inWorkspaces(string $filter = 'todos', ?string $agentId = null, ?string $status = null, ?int $scopeAgentId = null, ?string $tag = null, ?int $teamId = null): array
     {
         // Two workspaces cover every fixture ticket except 880005 (no workspace).
         return array_merge(
@@ -59,8 +59,8 @@ class TicketRepositoryReadTest extends KernelTestCase
         $row = $rows[2];
 
         self::assertSame(880001, (int) $row['id']);
-        self::assertSame('active', $row['status']);
-        self::assertSame('high', $row['priority']);
+        self::assertSame('activo', $row['status']);
+        self::assertSame('alta', $row['priority']);
         self::assertSame(880001, (int) $row['assigned_agent_id']);
         self::assertSame('2026-01-01 09:00:00', $row['created_at']);
         self::assertSame('2026-01-10 00:00:00', $row['updated_at']);
@@ -87,21 +87,21 @@ class TicketRepositoryReadTest extends KernelTestCase
 
     public function testAssignmentFilters(): void
     {
-        self::assertSame([880002], $this->inWorkspaces('unassigned'));
-        self::assertSame([880006, 880001, 880003, 880004], $this->inWorkspaces('assigned'));
-        self::assertSame([880006, 880001, 880004], $this->inWorkspaces('mine', '880001'));
-        self::assertSame([880006, 880002, 880001, 880003, 880004], $this->inWorkspaces('mine', null), "'mine' without an agent adds no filter");
+        self::assertSame([880002], $this->inWorkspaces('sin_asignar'));
+        self::assertSame([880006, 880001, 880003, 880004], $this->inWorkspaces('asignados'));
+        self::assertSame([880006, 880001, 880004], $this->inWorkspaces('mios', '880001'));
+        self::assertSame([880006, 880002, 880001, 880003, 880004], $this->inWorkspaces('mios', null), "'mios' without an agent adds no filter");
     }
 
     public function testOwnershipScopeAppliesOnTopOfTheFilter(): void
     {
         self::assertSame([880003], $this->inWorkspaces(scopeAgentId: 880002));
-        self::assertSame([], $this->inWorkspaces('mine', '880001', scopeAgentId: 880002));
+        self::assertSame([], $this->inWorkspaces('mios', '880001', scopeAgentId: 880002));
     }
 
     public function testStatusFilterIgnoresUnknownValues(): void
     {
-        self::assertSame([880006, 880002, 880003], $this->inWorkspaces(status: 'new, waiting,bogus'));
+        self::assertSame([880006, 880002, 880003], $this->inWorkspaces(status: 'nuevo, en_espera,bogus'));
         self::assertSame([880006, 880002, 880001, 880003, 880004], $this->inWorkspaces(status: 'bogus'));
     }
 
@@ -121,7 +121,7 @@ class TicketRepositoryReadTest extends KernelTestCase
     {
         self::assertSame(
             [880001],
-            $this->listIds(new FiltrosDeTicket('mine', '880001', 'new,active', 880001, 'repo-read-p1', 'repo-read-vip', 880001)),
+            $this->listIds(new FiltrosDeTicket('mios', '880001', 'nuevo,activo', 880001, 'repo-read-p1', 'repo-read-vip', 880001)),
         );
     }
 
@@ -129,7 +129,7 @@ class TicketRepositoryReadTest extends KernelTestCase
     {
         self::assertSame(3, $this->repo->countLista(new FiltrosDeTicket(phoneNumberId: 'repo-read-p1')));
         self::assertSame(1, $this->repo->countLista(new FiltrosDeTicket(phoneNumberId: 'repo-read-p2', etiqueta: 'repo-read-vip')));
-        self::assertSame(0, $this->repo->countLista(new FiltrosDeTicket(phoneNumberId: 'repo-read-p2', estado: 'new')));
+        self::assertSame(0, $this->repo->countLista(new FiltrosDeTicket(phoneNumberId: 'repo-read-p2', estado: 'nuevo')));
     }
 
     public function testCountUnreadInboundByConversation(): void
@@ -150,7 +150,7 @@ class TicketRepositoryReadTest extends KernelTestCase
         $row = $this->repo->findFilaDeDetalle(880001);
 
         self::assertSame(880001, (int) $row['ticket_id']);
-        self::assertSame('active', $row['status']);
+        self::assertSame('activo', $row['status']);
         self::assertSame(880001, (int) $row['owner_id']);
         self::assertSame('2026-01-01 09:00:00', $row['opened_at']);
         self::assertSame('2026-01-01 09:05:00', $row['first_response_at']);
@@ -214,14 +214,14 @@ class TicketRepositoryReadTest extends KernelTestCase
     public function testHasPendingWhenAnInboundMessageIsNewerThanLastRead(): void
     {
         // Leave only 880001 (read at 10:00, inbound at 10:30) open for agent 880001 in p1.
-        $this->conn->executeStatement("UPDATE tickets SET status = 'resolved' WHERE id = 880006");
+        $this->conn->executeStatement("UPDATE tickets SET status = 'resuelto' WHERE id = 880006");
 
         self::assertTrue($this->repo->hasPendientesDeAgente('repo-read-p1', 880001));
     }
 
     public function testNoPendingWhenEveryInboundMessageWasRead(): void
     {
-        $this->conn->executeStatement("UPDATE tickets SET status = 'resolved' WHERE id = 880006");
+        $this->conn->executeStatement("UPDATE tickets SET status = 'resuelto' WHERE id = 880006");
         $this->conn->executeStatement("UPDATE tickets SET last_read_at = '2026-01-02 00:00:00' WHERE id = 880001");
 
         self::assertFalse($this->repo->hasPendientesDeAgente('repo-read-p1', 880001));

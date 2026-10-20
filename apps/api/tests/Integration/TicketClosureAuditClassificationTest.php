@@ -182,7 +182,7 @@ class TicketClosureAuditClassificationTest extends WebTestCase
         ['token' => $token, 'user_id' => $userId] = $this->createAuthenticatedUser('owner-closer@inbiox.local', ['ROLE_AGENT'], $agent);
         $ticketId = $this->createTicket(EstadoDeTicket::ACTIVO->value, $agent->getId());
 
-        $response = $this->request('POST', '/api/tickets/' . $ticketId . '/transition', $token, ['status' => 'closed']);
+        $response = $this->request('POST', '/api/tickets/' . $ticketId . '/transicionar', $token, ['estado' => 'cerrado']);
         self::assertSame(200, $response->getStatusCode());
 
         $event = $this->theOnlyTicketEvent($ticketId);
@@ -198,7 +198,7 @@ class TicketClosureAuditClassificationTest extends WebTestCase
         ['token' => $token, 'user_id' => $userId] = $this->createAuthenticatedUser('override-supervisor@inbiox.local', ['ROLE_SUPERVISOR']);
         $ticketId = $this->createTicket(EstadoDeTicket::ACTIVO->value, $ownerAgent->getId());
 
-        $response = $this->request('POST', '/api/tickets/' . $ticketId . '/transition', $token, ['status' => 'closed']);
+        $response = $this->request('POST', '/api/tickets/' . $ticketId . '/transicionar', $token, ['estado' => 'cerrado']);
         self::assertSame(200, $response->getStatusCode());
 
         $event = $this->theOnlyTicketEvent($ticketId);
@@ -212,7 +212,7 @@ class TicketClosureAuditClassificationTest extends WebTestCase
         ['token' => $token, 'user_id' => $userId] = $this->createAuthenticatedUser('unowned-close-supervisor@inbiox.local', ['ROLE_SUPERVISOR']);
         $ticketId = $this->createTicket(EstadoDeTicket::RESUELTO->value, null);
 
-        $response = $this->request('POST', '/api/tickets/' . $ticketId . '/close', $token);
+        $response = $this->request('POST', '/api/tickets/' . $ticketId . '/cerrar', $token);
         self::assertSame(200, $response->getStatusCode());
 
         $event = $this->theOnlyTicketEvent($ticketId);
@@ -227,7 +227,7 @@ class TicketClosureAuditClassificationTest extends WebTestCase
         ['token' => $token, 'user_id' => $userId] = $this->createAuthenticatedUser('owner-resolver@inbiox.local', ['ROLE_AGENT'], $agent);
         $ticketId = $this->createTicket(EstadoDeTicket::ACTIVO->value, $agent->getId());
 
-        $response = $this->request('POST', '/api/tickets/' . $ticketId . '/resolve', $token);
+        $response = $this->request('POST', '/api/tickets/' . $ticketId . '/resolver', $token);
         self::assertSame(200, $response->getStatusCode());
 
         $event = $this->theOnlyTicketEvent($ticketId);
@@ -241,7 +241,7 @@ class TicketClosureAuditClassificationTest extends WebTestCase
         ['token' => $token, 'user_id' => $userId] = $this->createAuthenticatedUser('resolve-override-supervisor@inbiox.local', ['ROLE_SUPERVISOR']);
         $ticketId = $this->createTicket(EstadoDeTicket::ACTIVO->value, $ownerAgent->getId());
 
-        $response = $this->request('POST', '/api/tickets/' . $ticketId . '/resolve', $token);
+        $response = $this->request('POST', '/api/tickets/' . $ticketId . '/resolver', $token);
         self::assertSame(200, $response->getStatusCode());
 
         $event = $this->theOnlyTicketEvent($ticketId);
@@ -268,7 +268,7 @@ class TicketClosureAuditClassificationTest extends WebTestCase
 
         ['token' => $token, 'user_id' => $userId] = $this->createAuthenticatedUser('reopen-resolve-supervisor@inbiox.local', ['ROLE_SUPERVISOR']);
 
-        $response = $this->request('POST', '/api/tickets/' . $ticketId . '/resolve', $token);
+        $response = $this->request('POST', '/api/tickets/' . $ticketId . '/resolver', $token);
         self::assertSame(200, $response->getStatusCode());
 
         $event = $this->theOnlyTicketEvent($ticketId);

@@ -144,9 +144,9 @@ class TicketControllerSetTeamTest extends WebTestCase
     {
         $ticket = $this->createTicket();
 
-        $this->client->request('PUT', "/api/tickets/{$ticket->getId()}/team", [], [], [
+        $this->client->request('PUT', "/api/tickets/{$ticket->getId()}/equipo", [], [], [
             'CONTENT_TYPE' => 'application/json',
-        ], \json_encode(['teamId' => null]));
+        ], \json_encode(['equipoId' => null]));
 
         self::assertSame(401, $this->client->getResponse()->getStatusCode());
     }
@@ -158,15 +158,15 @@ class TicketControllerSetTeamTest extends WebTestCase
         $team = $this->createTeam($workspace, 'Support');
         $ticket = $this->createTicket('+1000000000');
 
-        $this->client->request('PUT', "/api/tickets/{$ticket->getId()}/team", [], [], $this->authHeaders($token) + [
+        $this->client->request('PUT', "/api/tickets/{$ticket->getId()}/equipo", [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
-        ], \json_encode(['teamId' => $team->getId()]));
+        ], \json_encode(['equipoId' => $team->getId()]));
 
         $response = $this->client->getResponse();
         self::assertSame(200, $response->getStatusCode());
 
         $data = \json_decode($response->getContent(), true);
-        self::assertSame($team->getId(), $data['team_id']);
+        self::assertSame($team->getId(), $data['equipoId']);
 
         $this->em->clear();
         $reloaded = $this->em->getRepository(Ticket::class)->find($ticket->getId());
@@ -181,9 +181,9 @@ class TicketControllerSetTeamTest extends WebTestCase
         $team = $this->createTeam($workspaceB, 'Support');
         $ticket = $this->createTicket('+1000000000'); // ticket belongs to workspace A
 
-        $this->client->request('PUT', "/api/tickets/{$ticket->getId()}/team", [], [], $this->authHeaders($token) + [
+        $this->client->request('PUT', "/api/tickets/{$ticket->getId()}/equipo", [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
-        ], \json_encode(['teamId' => $team->getId()]));
+        ], \json_encode(['equipoId' => $team->getId()]));
 
         self::assertSame(400, $this->client->getResponse()->getStatusCode());
 
@@ -201,15 +201,15 @@ class TicketControllerSetTeamTest extends WebTestCase
         $ticket->setEquipo($team);
         $this->em->flush();
 
-        $this->client->request('PUT', "/api/tickets/{$ticket->getId()}/team", [], [], $this->authHeaders($token) + [
+        $this->client->request('PUT', "/api/tickets/{$ticket->getId()}/equipo", [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
-        ], \json_encode(['teamId' => null]));
+        ], \json_encode(['equipoId' => null]));
 
         $response = $this->client->getResponse();
         self::assertSame(200, $response->getStatusCode());
 
         $data = \json_decode($response->getContent(), true);
-        self::assertNull($data['team_id']);
+        self::assertNull($data['equipoId']);
 
         $this->em->clear();
         $reloaded = $this->em->getRepository(Ticket::class)->find($ticket->getId());
@@ -220,11 +220,24 @@ class TicketControllerSetTeamTest extends WebTestCase
     {
         $token = $this->createAgentUser('agent4@test.local');
 
-        $this->client->request('PUT', '/api/tickets/99999/team', [], [], $this->authHeaders($token) + [
+        $this->client->request('PUT', '/api/tickets/99999/equipo', [], [], $this->authHeaders($token) + [
+            'CONTENT_TYPE' => 'application/json',
+        ], \json_encode(['equipoId' => null]));
+
+        self::assertSame(404, $this->client->getResponse()->getStatusCode());
+    }
+
+    public function testSetTeamWithTheOldTeamIdKeyReturns400(): void
+    {
+        $ticket = $this->createTicket('ws-phone-a');
+        $token = $this->createAgentUser('agent6@test.local');
+
+        $this->client->request('PUT', "/api/tickets/{$ticket->getId()}/equipo", [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
         ], \json_encode(['teamId' => null]));
 
-        self::assertSame(404, $this->client->getResponse()->getStatusCode());
+        self::assertSame(400, $this->client->getResponse()->getStatusCode());
+        self::assertSame(['error' => 'equipoId is required (integer or null)'], \json_decode((string) $this->client->getResponse()->getContent(), true));
     }
 
     public function testSetTeamUnknownTeamIdReturns400(): void
@@ -232,9 +245,9 @@ class TicketControllerSetTeamTest extends WebTestCase
         $token = $this->createAgentUser('agent5@test.local');
         $ticket = $this->createTicket('+1000000000');
 
-        $this->client->request('PUT', "/api/tickets/{$ticket->getId()}/team", [], [], $this->authHeaders($token) + [
+        $this->client->request('PUT', "/api/tickets/{$ticket->getId()}/equipo", [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
-        ], \json_encode(['teamId' => 999999]));
+        ], \json_encode(['equipoId' => 999999]));
 
         self::assertSame(400, $this->client->getResponse()->getStatusCode());
     }

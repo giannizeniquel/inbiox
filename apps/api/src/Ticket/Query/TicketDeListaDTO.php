@@ -18,14 +18,14 @@ class TicketDeListaDTO
     public function toArray(): array
     {
         return [
-            'ticket_id' => $this->ticketId,
-            'status' => $this->estado,
-            'priority' => $this->prioridad,
-            'contact' => $this->contacto,
-            'last_message' => $this->ultimoMensaje,
-            'owner' => $this->responsable,
-            'metrics' => $this->metricas,
-            'timestamps' => $this->marcasDeTiempo,
+            'ticketId' => $this->ticketId,
+            'estado' => $this->estado,
+            'prioridad' => $this->prioridad,
+            'contacto' => $this->contacto,
+            'ultimoMensaje' => $this->ultimoMensaje,
+            'responsable' => $this->responsable,
+            'metricas' => $this->metricas,
+            'fechas' => $this->marcasDeTiempo,
         ];
     }
 }

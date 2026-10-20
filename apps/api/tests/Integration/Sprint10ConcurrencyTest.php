@@ -70,13 +70,13 @@ class Sprint10ConcurrencyTest extends KernelTestCase
 
         // Get all unassigned ticket IDs
         $ticketIds = $this->em->getConnection()->executeQuery(
-            "SELECT id FROM tickets WHERE assigned_agent_id IS NULL AND status = 'new' ORDER BY id ASC",
+            "SELECT id FROM tickets WHERE assigned_agent_id IS NULL AND status = 'nuevo' ORDER BY id ASC",
         )->fetchAllAssociative();
 
         $assigned = 0;
         foreach ($ticketIds as $row) {
             $result = $useCase->execute((int) $row['id']);
-            if ($result['assigned']) {
+            if ($result['asignado']) {
                 ++$assigned;
             }
         }
@@ -89,7 +89,7 @@ class Sprint10ConcurrencyTest extends KernelTestCase
             "SELECT assigned_agent_id, COUNT(*) as cnt
              FROM tickets
              WHERE assigned_agent_id IS NOT NULL
-               AND status IN ('new', 'active', 'waiting')
+               AND status IN ('nuevo', 'activo', 'en_espera')
              GROUP BY assigned_agent_id",
         )->fetchAllAssociative();
 
@@ -127,7 +127,7 @@ class Sprint10ConcurrencyTest extends KernelTestCase
 
         // Get ticket IDs to assign
         $ticketIds = $this->em->getConnection()->executeQuery(
-            "SELECT id FROM tickets WHERE assigned_agent_id IS NULL AND status = 'new' ORDER BY id ASC",
+            "SELECT id FROM tickets WHERE assigned_agent_id IS NULL AND status = 'nuevo' ORDER BY id ASC",
         )->fetchAllAssociative();
 
         $ticketIdList = array_map(fn($r) => (int) $r['id'], $ticketIds);
@@ -204,7 +204,7 @@ class Sprint10ConcurrencyTest extends KernelTestCase
 
                             // Count active tickets
                             $countStmt = $pdo->prepare(
-                                "SELECT COUNT(*) FROM tickets WHERE assigned_agent_id = ? AND status IN ('new', 'active', 'waiting')"
+                                "SELECT COUNT(*) FROM tickets WHERE assigned_agent_id = ? AND status IN ('nuevo', 'activo', 'en_espera')"
                             );
                             $countStmt->execute([$agentId]);
                             $activeCount = (int) $countStmt->fetchColumn();
@@ -232,13 +232,13 @@ class Sprint10ConcurrencyTest extends KernelTestCase
 
                         // Update ticket
                         $updateStmt = $pdo->prepare(
-                            "UPDATE tickets SET assigned_agent_id = ?, status = 'active', updated_at = NOW() WHERE id = ?"
+                            "UPDATE tickets SET assigned_agent_id = ?, status = 'activo', updated_at = NOW() WHERE id = ?"
                         );
                         $updateStmt->execute([$selectedAgent['id'], $ticketId]);
 
                         // Insert Asignacion row
                         $insertStmt = $pdo->prepare(
-                            "INSERT INTO assignments (ticket_id, agent_id, type, assigned_by, assigned_at) VALUES (?, ?, 'AUTO_ASSIGN', 'system', NOW())"
+                            "INSERT INTO assignments (ticket_id, agent_id, type, assigned_by, assigned_at) VALUES (?, ?, 'automatica', 'system', NOW())"
                         );
                         $insertStmt->execute([$ticketId, $selectedAgent['id']]);
 
@@ -291,7 +291,7 @@ class Sprint10ConcurrencyTest extends KernelTestCase
             "SELECT assigned_agent_id, COUNT(*) as cnt
              FROM tickets
              WHERE assigned_agent_id IS NOT NULL
-               AND status IN ('new', 'active', 'waiting')
+               AND status IN ('nuevo', 'activo', 'en_espera')
              GROUP BY assigned_agent_id",
         )->fetchAllAssociative();
 
@@ -335,8 +335,8 @@ class Sprint10ConcurrencyTest extends KernelTestCase
         $useCase = static::getContainer()->get(AsignarTicketAutomaticamenteUseCase::class);
         $result = $useCase->execute($ticketId);
 
-        $this->assertFalse($result['assigned']);
-        $this->assertEquals('no_agents_available', $result['reason']);
+        $this->assertFalse($result['asignado']);
+        $this->assertEquals('no_agents_available', $result['motivo']);
     }
 
     // ============================================
@@ -377,7 +377,7 @@ class Sprint10ConcurrencyTest extends KernelTestCase
 
         for ($i = 1; $i <= $count; $i++) {
             $conn->executeStatement(
-                "INSERT INTO tickets (status, priority, created_at, updated_at) VALUES ('new', 'medium', NOW(), NOW())",
+                "INSERT INTO tickets (status, priority, created_at, updated_at) VALUES ('nuevo', 'media', NOW(), NOW())",
             );
         }
     }

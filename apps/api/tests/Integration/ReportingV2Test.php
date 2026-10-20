@@ -444,8 +444,8 @@ class ReportingV2Test extends WebTestCase
 
             $ticket = new Ticket();
             $ticket->setContacto($contacts[array_rand($contacts)]);
-            $ticket->setEstado(['new', 'active', 'waiting', 'resolved', 'closed'][array_rand(['new', 'active', 'waiting', 'resolved', 'closed'])]);
-            $ticket->setPrioridad(['low', 'medium', 'high'][array_rand(['low', 'medium', 'high'])]);
+            $ticket->setEstado(['nuevo', 'activo', 'en_espera', 'resuelto', 'cerrado'][array_rand(['nuevo', 'activo', 'en_espera', 'resuelto', 'cerrado'])]);
+            $ticket->setPrioridad(['baja', 'media', 'alta'][array_rand(['baja', 'media', 'alta'])]);
             $ticket->setCreadoAt($createdAt);
             $ticket->setActualizadoAt($createdAt);
             $ticket->setPhoneNumberId($ws1->getPhoneNumberId());

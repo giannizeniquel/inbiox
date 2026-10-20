@@ -28,7 +28,7 @@ class AsignacionDeTicketController
         private SetEquipoDeTicketUseCase $setEquipoDeTicketUseCase,
     ) {}
 
-    #[Route('/api/tickets/{id}/assign', name: 'app_ticket_assign', methods: ['POST'])]
+    #[Route('/api/tickets/{id}/asignar', name: 'app_ticket_assign', methods: ['POST'])]
     public function asignar(
         int $id,
         #[MapRequestPayload] AsignarTicketRequest $request
@@ -47,9 +47,9 @@ class AsignacionDeTicketController
 
             $result = $this->asignarTicketUseCase->asignar(
                 $id,
-                $request->agentId,
-                $request->assignedBy,
-                $request->notes
+                $request->agenteId,
+                $request->asignadoPor,
+                $request->notas
             );
             return new JsonResponse($result);
         } catch (AgenteInactivoException $e) {
@@ -67,12 +67,12 @@ class AsignacionDeTicketController
      * Asigna o quita el equipo de un ticket (Tier 2 #7 — Team/Area Entity, Slice 1).
      *
      * Cualquier agente autenticado puede llamarlo — sin restricción de Supervisor/Admin y sin voter de responsable
-     * (design.md D5). `teamId: null` quita la asignación. Aplica la
+     * (design.md D5). `equipoId: null` quita la asignación. Aplica la
      * invariante entre espacios de trabajo: el phone_number_id del espacio de trabajo del equipo debe
      * coincidir con el phone_number_id del ticket; si no, responde 400 y team_id queda
      * sin cambios.
      */
-    #[Route('/api/tickets/{id}/team', name: 'app_ticket_set_team', methods: ['PUT'])]
+    #[Route('/api/tickets/{id}/equipo', name: 'app_ticket_set_team', methods: ['PUT'])]
     public function setEquipo(int $id, Request $request): JsonResponse
     {
         try {
@@ -82,20 +82,20 @@ class AsignacionDeTicketController
             }
 
             $data = json_decode($request->getContent(), true);
-            if (json_last_error() !== JSON_ERROR_NONE || !\is_array($data) || !\array_key_exists('teamId', $data)) {
-                return new JsonResponse(['error' => 'teamId is required (integer or null)'], 400);
+            if (json_last_error() !== JSON_ERROR_NONE || !\is_array($data) || !\array_key_exists('equipoId', $data)) {
+                return new JsonResponse(['error' => 'equipoId is required (integer or null)'], 400);
             }
 
-            $equipoId = $data['teamId'];
+            $equipoId = $data['equipoId'];
             $this->setEquipoDeTicketUseCase->execute($ticket, $equipoId);
 
-            return new JsonResponse(['ticket_id' => $ticket->getId(), 'team_id' => $equipoId]);
+            return new JsonResponse(['ticketId' => $ticket->getId(), 'equipoId' => $equipoId]);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }
     }
 
-    #[Route('/api/tickets/{id}/assignment', name: 'app_ticket_assignment', methods: ['GET'])]
+    #[Route('/api/tickets/{id}/asignacion', name: 'app_ticket_assignment', methods: ['GET'])]
     public function getAsignacion(int $id): JsonResponse
     {
         // Primero busca el ticket
@@ -108,26 +108,26 @@ class AsignacionDeTicketController
         $asignaciones = $this->asignacionRepo->findByTicket($ticket);
 
         $data = [
-            'ticket_id' => $ticket->getId(),
-            'assignments' => array_map(function ($asignacion) {
+            'ticketId' => $ticket->getId(),
+            'asignaciones' => array_map(function ($asignacion) {
                 return [
                     'id' => $asignacion->getId(),
-                    'agent_id' => $asignacion->getAgenteId(),
-                    'assigned_by' => $asignacion->getAsignadoPor(),
-                    'assigned_at' => $asignacion->getAsignadoAt()->format('Y-m-d H:i:s'),
-                    'notes' => $asignacion->getNotas(),
+                    'agenteId' => $asignacion->getAgenteId(),
+                    'asignadoPor' => $asignacion->getAsignadoPor(),
+                    'asignadoAt' => $asignacion->getAsignadoAt()->format('Y-m-d H:i:s'),
+                    'notas' => $asignacion->getNotas(),
                 ];
             }, $asignaciones),
-            'current_assignment' => null,
+            'asignacionActual' => null,
         ];
 
         // Toma la asignación más reciente como la actual
         if (!empty($asignaciones)) {
             $actual = $asignaciones[0]; // Ya viene ordenado DESC
-            $data['current_assignment'] = [
-                'agent_id' => $actual->getAgenteId(),
-                'assigned_by' => $actual->getAsignadoPor(),
-                'assigned_at' => $actual->getAsignadoAt()->format('Y-m-d H:i:s'),
+            $data['asignacionActual'] = [
+                'agenteId' => $actual->getAgenteId(),
+                'asignadoPor' => $actual->getAsignadoPor(),
+                'asignadoAt' => $actual->getAsignadoAt()->format('Y-m-d H:i:s'),
             ];
         }
 

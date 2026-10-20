@@ -4,6 +4,7 @@ namespace App\Ticket\Repository;
 
 use App\Ticket\EstadoDeTicket;
 use App\Ticket\Etiqueta;
+use App\Ticket\FiltroDeBandeja;
 
 /**
  * Los filtros de la lista de tickets compartidos por la lista de la bandeja y la exportación CSV,
@@ -11,7 +12,7 @@ use App\Ticket\Etiqueta;
  * cláusulas WHERE; esta clase no contiene SQL.
  *
  * Normalización (sin cambios respecto del antiguo `FiltrosDeTicketBuilder`):
- * - `mine` necesita un id de agente con valor verdadero; si no, no agrega nada;
+ * - `mios` necesita un id de agente con valor verdadero; si no, no agrega nada;
  * - los estados desconocidos se descartan, y una lista con todos desconocidos no agrega nada;
  * - las etiquetas pasan por `Etiqueta::normalizar()`, se descartan las vacías y las duplicadas,
  *   y más de 5 etiquetas lanzan `\InvalidArgumentException`.
@@ -20,8 +21,8 @@ final class FiltrosDeTicket
 {
     private const MAX_TAGS = 5;
 
-    /** 'unassigned', 'assigned' o null si no hay filtro de asignación. */
-    public readonly ?string $asignacion;
+    /** SIN_ASIGNAR, ASIGNADOS o null si no hay filtro de asignación. */
+    public readonly ?FiltroDeBandeja $asignacion;
     public readonly ?string $misAgenteId;
     public readonly ?string $scopeAgenteId;
     public readonly ?string $phoneNumberId;
@@ -32,8 +33,8 @@ final class FiltrosDeTicket
     public readonly ?string $equipoId;
 
     /**
-     * @param string $filtro 'all', 'unassigned', 'assigned' o 'mine'
-     * @param string|null $agenteId ID del agente para el filtro 'mine'
+     * @param string $filtro Un valor de FiltroDeBandeja; uno desconocido es `todos`
+     * @param string|null $agenteId ID del agente para el filtro `mios`
      * @param string|null $estado Filtro de estados separados por comas
      * @param int|null $scopeAgenteId Alcance de responsabilidad: solo los tickets asignados a este agente
      * @param string|null $phoneNumberId Alcance del espacio de trabajo
@@ -41,7 +42,7 @@ final class FiltrosDeTicket
      * @param int|null $equipoId Filtro de equipo de selección única
      */
     public function __construct(
-        string $filtro = 'all',
+        string $filtro = FiltroDeBandeja::TODOS->value,
         ?string $agenteId = null,
         ?string $estado = null,
         ?int $scopeAgenteId = null,
@@ -49,8 +50,9 @@ final class FiltrosDeTicket
         ?string $etiqueta = null,
         ?int $equipoId = null,
     ) {
-        $this->asignacion = in_array($filtro, ['unassigned', 'assigned'], true) ? $filtro : null;
-        $this->misAgenteId = ($filtro === 'mine' && $agenteId) ? $agenteId : null;
+        $filtroDeBandeja = FiltroDeBandeja::tryFrom($filtro);
+        $this->asignacion = in_array($filtroDeBandeja, [FiltroDeBandeja::SIN_ASIGNAR, FiltroDeBandeja::ASIGNADOS], true) ? $filtroDeBandeja : null;
+        $this->misAgenteId = ($filtroDeBandeja === FiltroDeBandeja::MIOS && $agenteId) ? $agenteId : null;
         $this->scopeAgenteId = $scopeAgenteId !== null ? (string) $scopeAgenteId : null;
         $this->phoneNumberId = $phoneNumberId;
 

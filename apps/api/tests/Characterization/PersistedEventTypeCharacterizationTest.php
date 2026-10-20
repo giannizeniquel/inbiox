@@ -70,25 +70,25 @@ final class PersistedEventTypeCharacterizationTest extends TestCase
             'ticket.creado',
             'App\Ticket\TicketCreatedEvent',
             ['event_id' => 'evt-1', 'occurred_at' => '2026-10-01T10:00:00+00:00', 'contact_id' => 7, 'conversation_id' => 8, 'status' => 'new', 'priority' => 2, 'created_at' => '2026-10-01T10:00:00+00:00'],
-            ['tipoDeEvento' => 'ticket.creado', 'payload' => ['ticketId' => 100, 'contactoId' => 7, 'conversacionId' => 8, 'estado' => 'new', 'prioridad' => 2, 'creadoAt' => '2026-10-01T10:00:00+00:00']],
+            ['tipoDeEvento' => 'ticket.creado', 'payload' => ['ticketId' => 100, 'contactoId' => 7, 'conversacionId' => 8, 'estado' => 'nuevo', 'prioridad' => 2, 'creadoAt' => '2026-10-01T10:00:00+00:00']],
         ];
         yield 'ticket status changed' => [
             'ticket.actualizado',
             'App\Ticket\TicketUpdatedEvent',
             ['event_id' => 'evt-2', 'occurred_at' => '2026-10-01T10:00:00+00:00', 'previous_status' => 'new', 'status' => 'active', 'changed_at' => '2026-10-01T10:00:00+00:00'],
-            ['tipoDeEvento' => 'ticket.estado_cambiado', 'payload' => ['ticketId' => 100, 'estadoAnterior' => 'new', 'estadoNuevo' => 'active', 'cambiadoAt' => '2026-10-01T10:00:00+00:00']],
+            ['tipoDeEvento' => 'ticket.estado_cambiado', 'payload' => ['ticketId' => 100, 'estadoAnterior' => 'nuevo', 'estadoNuevo' => 'activo', 'cambiadoAt' => '2026-10-01T10:00:00+00:00']],
         ];
         yield 'ticket assigned' => [
             'ticket.actualizado',
             'App\Ticket\TicketUpdatedEvent',
-            ['event_id' => 'evt-3', 'occurred_at' => '2026-10-01T10:00:00+00:00', 'ownerAgentId' => 5, 'assignee_name' => 'Ana', 'assignment_type' => 'AUTO_ASSIGN', 'assigned_at' => '2026-10-01T10:00:00+00:00'],
-            ['tipoDeEvento' => 'ticket.asignado', 'payload' => ['ticketId' => 100, 'responsableId' => 5, 'responsableNombre' => 'Ana', 'tipoDeAsignacion' => 'AUTO_ASSIGN', 'asignadoAt' => '2026-10-01T10:00:00+00:00']],
+            ['event_id' => 'evt-3', 'occurred_at' => '2026-10-01T10:00:00+00:00', 'ownerAgentId' => 5, 'assignee_name' => 'Ana', 'assignment_type' => 'automatica', 'assigned_at' => '2026-10-01T10:00:00+00:00'],
+            ['tipoDeEvento' => 'ticket.asignado', 'payload' => ['ticketId' => 100, 'responsableId' => 5, 'responsableNombre' => 'Ana', 'tipoDeAsignacion' => 'automatica', 'asignadoAt' => '2026-10-01T10:00:00+00:00']],
         ];
         yield 'ticket assigned by assignee_id' => [
             'ticket.actualizado',
             'App\Ticket\TicketUpdatedEvent',
             ['event_id' => 'evt-3b', 'occurred_at' => '2026-10-01T10:00:00+00:00', 'assignee_id' => 6],
-            ['tipoDeEvento' => 'ticket.asignado', 'payload' => ['ticketId' => 100, 'responsableId' => 6, 'responsableNombre' => null, 'tipoDeAsignacion' => 'MANUAL_ASSIGN', 'asignadoAt' => '2026-10-01T10:00:00+00:00']],
+            ['tipoDeEvento' => 'ticket.asignado', 'payload' => ['ticketId' => 100, 'responsableId' => 6, 'responsableNombre' => null, 'tipoDeAsignacion' => 'manual', 'asignadoAt' => '2026-10-01T10:00:00+00:00']],
         ];
         yield 'message added' => [
             'mensaje.creado',

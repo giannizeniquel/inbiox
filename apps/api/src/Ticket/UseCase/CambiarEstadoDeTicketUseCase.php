@@ -119,12 +119,12 @@ class CambiarEstadoDeTicketUseCase
             );
 
             return [
-                'ticket_id' => $ticketId,
-                'previous_status' => $estadoActual,
-                'new_status' => $nuevoEstado,
+                'ticketId' => $ticketId,
+                'estadoAnterior' => $estadoActual,
+                'estadoNuevo' => $nuevoEstado,
                 'previous_assigned_agent_id' => isset($ticket['assigned_agent_id'])
                     ? (int) $ticket['assigned_agent_id'] : null,
-                'reason' => 'success',
+                'motivo' => 'success',
             ];
         });
     }
@@ -168,10 +168,10 @@ class CambiarEstadoDeTicketUseCase
             $this->em->flush();
 
             return [
-                'ticket_id' => $ticketId,
-                'previous_status' => $estadoActual,
-                'new_status' => $nuevoEstado,
-                'reason' => 'window_expired',
+                'ticketId' => $ticketId,
+                'estadoAnterior' => $estadoActual,
+                'estadoNuevo' => $nuevoEstado,
+                'motivo' => 'window_expired',
             ];
         });
     }
@@ -225,10 +225,10 @@ class CambiarEstadoDeTicketUseCase
             $this->em->flush();
 
             return [
-                'ticket_id' => $ticketId,
-                'previous_status' => $ticket['status'],
-                'new_status' => $nuevoEstado,
-                'reason' => 'window_reopened',
+                'ticketId' => $ticketId,
+                'estadoAnterior' => $ticket['status'],
+                'estadoNuevo' => $nuevoEstado,
+                'motivo' => 'window_reopened',
             ];
         });
     }
@@ -266,12 +266,12 @@ class CambiarEstadoDeTicketUseCase
             $this->ticketRepo->marcarCerrado($ticketId, EstadoDeTicket::CERRADO->value);
 
             return [
-                'ticket_id' => $ticketId,
-                'previous_status' => $ticket['status'],
-                'new_status' => EstadoDeTicket::CERRADO->value,
+                'ticketId' => $ticketId,
+                'estadoAnterior' => $ticket['status'],
+                'estadoNuevo' => EstadoDeTicket::CERRADO->value,
                 'previous_assigned_agent_id' => isset($ticket['assigned_agent_id'])
                     ? (int) $ticket['assigned_agent_id'] : null,
-                'reason' => 'success',
+                'motivo' => 'success',
             ];
         });
     }

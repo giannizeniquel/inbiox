@@ -88,20 +88,20 @@ final class AsignarTicketAutomaticamenteUseCase
 
         if (!$filaDeTicket) {
             return [
-                'ticket_id' => $ticketId,
-                'assigned' => false,
-                'agent_id' => null,
-                'reason' => 'ticket_not_found',
+                'ticketId' => $ticketId,
+                'asignado' => false,
+                'agenteId' => null,
+                'motivo' => 'ticket_not_found',
             ];
         }
 
         // 2. Si ya está asignado, devuelve de forma idempotente (sin nueva fila de Asignacion)
         if ($filaDeTicket['assigned_agent_id'] !== null) {
             return [
-                'ticket_id' => $ticketId,
-                'assigned' => false,
-                'agent_id' => (int) $filaDeTicket['assigned_agent_id'],
-                'reason' => 'already_assigned',
+                'ticketId' => $ticketId,
+                'asignado' => false,
+                'agenteId' => (int) $filaDeTicket['assigned_agent_id'],
+                'motivo' => 'already_assigned',
             ];
         }
 
@@ -112,10 +112,10 @@ final class AsignarTicketAutomaticamenteUseCase
 
         if (empty($agentesDisponibles)) {
             return [
-                'ticket_id' => $ticketId,
-                'assigned' => false,
-                'agent_id' => null,
-                'reason' => 'no_agents_available',
+                'ticketId' => $ticketId,
+                'asignado' => false,
+                'agenteId' => null,
+                'motivo' => 'no_agents_available',
             ];
         }
 
@@ -147,10 +147,10 @@ final class AsignarTicketAutomaticamenteUseCase
 
         if (empty($elegibles)) {
             return [
-                'ticket_id' => $ticketId,
-                'assigned' => false,
-                'agent_id' => null,
-                'reason' => 'all_agents_at_capacity',
+                'ticketId' => $ticketId,
+                'asignado' => false,
+                'agenteId' => null,
+                'motivo' => 'all_agents_at_capacity',
             ];
         }
 
@@ -175,10 +175,10 @@ final class AsignarTicketAutomaticamenteUseCase
         if ($ticket === null) {
             // No debería ocurrir — ya bloqueamos la fila arriba
             return [
-                'ticket_id' => $ticketId,
-                'assigned' => false,
-                'agent_id' => null,
-                'reason' => 'ticket_not_found',
+                'ticketId' => $ticketId,
+                'asignado' => false,
+                'agenteId' => null,
+                'motivo' => 'ticket_not_found',
             ];
         }
 
@@ -198,10 +198,10 @@ final class AsignarTicketAutomaticamenteUseCase
         $this->em->flush();
 
         return [
-            'ticket_id' => $ticketId,
-            'assigned' => true,
-            'agent_id' => $agenteSeleccionado->getId(),
-            'reason' => 'success',
+            'ticketId' => $ticketId,
+            'asignado' => true,
+            'agenteId' => $agenteSeleccionado->getId(),
+            'motivo' => 'success',
         ];
     }
 

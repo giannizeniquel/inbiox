@@ -93,7 +93,7 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
         $useCase = static::getContainer()->get(CambiarEstadoDeTicketUseCase::class);
         $result = $useCase->cerrarPorVentanaVencida($ticketId);
 
-        self::assertSame(EstadoDeTicket::CERRADO->value, $result['new_status']);
+        self::assertSame(EstadoDeTicket::CERRADO->value, $result['estadoNuevo']);
 
         $status = $this->em->getConnection()->fetchOne('SELECT status FROM tickets WHERE id = ?', [$ticketId]);
         self::assertSame(EstadoDeTicket::CERRADO->value, $status);
@@ -140,7 +140,7 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
         $useCase = static::getContainer()->get(CambiarEstadoDeTicketUseCase::class);
         $result = $useCase->cerrar($ticketId);
 
-        self::assertSame(EstadoDeTicket::CERRADO->value, $result['new_status']);
+        self::assertSame(EstadoDeTicket::CERRADO->value, $result['estadoNuevo']);
     }
 
     // ── 3.3 / 3.4: reopenDueToInboundMessage() ──
@@ -161,8 +161,8 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
         $useCase = static::getContainer()->get(CambiarEstadoDeTicketUseCase::class);
         $result = $useCase->reabrirPorMensajeEntrante($ticketId);
 
-        self::assertSame(EstadoDeTicket::CERRADO->value, $result['previous_status']);
-        self::assertSame(EstadoDeTicket::ACTIVO->value, $result['new_status']);
+        self::assertSame(EstadoDeTicket::CERRADO->value, $result['estadoAnterior']);
+        self::assertSame(EstadoDeTicket::ACTIVO->value, $result['estadoNuevo']);
 
         $row = $this->em->getConnection()->fetchAssociative(
             'SELECT status, closed_at FROM tickets WHERE id = ?',
@@ -191,7 +191,7 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
         $useCase = static::getContainer()->get(CambiarEstadoDeTicketUseCase::class);
         $result = $useCase->reabrirPorMensajeEntrante($ticketId);
 
-        self::assertSame(EstadoDeTicket::ACTIVO->value, $result['new_status']);
+        self::assertSame(EstadoDeTicket::ACTIVO->value, $result['estadoNuevo']);
     }
 
     public function testReopenDueToInboundMessageRejectsANonClosedTicket(): void
@@ -397,6 +397,6 @@ class TransitionTicketStatusUseCaseTest extends KernelTestCase
         // Mirrors ReglaDeReaperturaAutomatica::execute()'s exact 4-positional-arg call site.
         $result = $useCase->execute($ticketId, EstadoDeTicket::EN_ESPERA->value, false, false);
 
-        self::assertSame(EstadoDeTicket::EN_ESPERA->value, $result['new_status']);
+        self::assertSame(EstadoDeTicket::EN_ESPERA->value, $result['estadoNuevo']);
     }
 }

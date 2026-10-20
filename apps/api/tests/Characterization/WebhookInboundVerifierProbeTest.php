@@ -182,7 +182,7 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
 
     public function testBadOrMissingSignatureIsRejectedAndChangesNothing(): void
     {
-        $this->existingTicket('active');
+        $this->existingTicket('activo');
         $before = $this->snapshot();
         $body = \json_encode(['entry' => [['changes' => [$this->change(['messages' => [$this->text('wamid.probe-sig', 'x')]])]]]]);
 
@@ -199,7 +199,7 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
 
     public function testMalformedOrScalarJsonIsRejectedAndChangesNothing(): void
     {
-        $this->existingTicket('active');
+        $this->existingTicket('activo');
         $before = $this->snapshot();
 
         foreach (['{"entry": [', '"abc"', '123', ''] as $body) {
@@ -216,7 +216,7 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
 
     public function testMultiEntryMultiChangePayloadIsRoutedInOrder(): void
     {
-        $ticket = $this->existingTicket('active');
+        $ticket = $this->existingTicket('activo');
         $this->outboundMessage($ticket, 'wamid.probe-out');
 
         $response = $this->postEntries([
@@ -279,7 +279,7 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
 
     public function testAnArraySenderStopsTheWholePayloadButIsAcknowledged(): void
     {
-        $ticket = $this->existingTicket('active');
+        $ticket = $this->existingTicket('activo');
         $this->outboundMessage($ticket, 'wamid.probe-out-2');
 
         $response = $this->postEntries([
@@ -301,7 +301,7 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
 
     public function testANonStringPhoneNumberIdFailsMessagesAndCutsStatuses(): void
     {
-        $ticket = $this->existingTicket('active');
+        $ticket = $this->existingTicket('activo');
         $this->outboundMessage($ticket, 'wamid.probe-out-3');
         $body = \json_encode(['entry' => [
             ['changes' => [['value' => [
@@ -353,7 +353,7 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
 
     public function testWaitingTicketStillLosesTheSecondMessageAcrossTwoChanges(): void
     {
-        $this->existingTicket('waiting');
+        $this->existingTicket('en_espera');
 
         $response = $this->postEntries([[
             $this->change(['messages' => [$this->text('wamid.probe-w1', 'uno')]]),
@@ -362,7 +362,7 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
 
         $this->assertAcknowledged($response);
         self::assertSame(['wamid.probe-w1'], $this->inboundWamids());
-        self::assertSame('active', $this->connection()->fetchOne('SELECT status FROM tickets'));
+        self::assertSame('activo', $this->connection()->fetchOne('SELECT status FROM tickets'));
         self::assertSame([['mensaje.creado', 1]], $this->outbox());
         self::assertSame(
             [['error', 'Failed to process inbound message', ['error', 'from', 'wamid']]],
@@ -379,7 +379,7 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
 
         $this->assertAcknowledged($this->postValue(['messages' => [$this->text('wamid.probe-r2', 'dos')]]));
 
-        self::assertSame([['id' => $ticketId, 'status' => 'active', 'last_event_seq' => 3]], \array_map(
+        self::assertSame([['id' => $ticketId, 'status' => 'activo', 'last_event_seq' => 3]], \array_map(
             static fn (array $r): array => ['id' => (int) $r['id'], 'status' => $r['status'], 'last_event_seq' => (int) $r['last_event_seq']],
             $this->connection()->fetchAllAssociative('SELECT id, status, last_event_seq, closed_at FROM tickets'),
         ));
@@ -422,7 +422,7 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
         $again = $useCase->procesarMensajeEntrante(self::FROM, 'directo', 'wamid.probe-direct', self::PNID);
 
         self::assertSame(['contact_id', 'conversation_id', 'message_id', 'ticket_id', 'ticket_status', 'transition', 'status'], \array_keys($first));
-        self::assertSame(['new', null, 'ok'], [$first['ticket_status'], $first['transition'], $first['status']]);
+        self::assertSame(['nuevo', null, 'ok'], [$first['ticket_status'], $first['transition'], $first['status']]);
         self::assertSame(['contact_id', 'conversation_id', 'message_id', 'ticket_id', 'status'], \array_keys($again));
         self::assertSame(
             [$first['contact_id'], $first['conversation_id'], $first['message_id'], $first['ticket_id'], 'ok'],

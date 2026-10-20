@@ -79,12 +79,12 @@ final class ReportingVerifierProbeTest extends CharacterizationTestCase
 
         $rows = [
             // name, agent, status, phone, team, created, first response, resolved
-            ['t1', $alpha, 'resolved', 'probe-ws', 7, '2025-03-01 10:00:00', '2025-03-01 10:10:00', '2025-03-01 10:50:00'],
-            ['t2', $alpha, 'active', 'probe-ws', 8, '2025-03-01 12:00:00', '2025-03-01 12:20:00', null],
-            ['t3', $beta, 'resolved', 'probe-ws', 7, '2025-03-02 09:00:00', '2025-03-02 09:30:00', '2025-03-02 10:10:00'],
-            ['t4', $alpha, 'waiting', 'other-ws', 7, '2025-03-02 10:00:00', '2025-03-02 10:40:00', null],
-            ['t5', $beta, 'new', null, null, '2025-03-02 11:00:00', null, null],
-            ['t6', null, 'new', 'probe-ws', 7, '2025-03-02 13:00:00', null, null],
+            ['t1', $alpha, 'resuelto', 'probe-ws', 7, '2025-03-01 10:00:00', '2025-03-01 10:10:00', '2025-03-01 10:50:00'],
+            ['t2', $alpha, 'activo', 'probe-ws', 8, '2025-03-01 12:00:00', '2025-03-01 12:20:00', null],
+            ['t3', $beta, 'resuelto', 'probe-ws', 7, '2025-03-02 09:00:00', '2025-03-02 09:30:00', '2025-03-02 10:10:00'],
+            ['t4', $alpha, 'en_espera', 'other-ws', 7, '2025-03-02 10:00:00', '2025-03-02 10:40:00', null],
+            ['t5', $beta, 'nuevo', null, null, '2025-03-02 11:00:00', null, null],
+            ['t6', null, 'nuevo', 'probe-ws', 7, '2025-03-02 13:00:00', null, null],
         ];
         foreach ($rows as [$name, $agent, $status, $phone, $team, $created, $frt, $resolved]) {
             $ticket = $this->createTicket($status, $agent?->getId(), $this->createContact('+54911000' . \random_int(10000, 99999), 'C-' . $name));
@@ -149,7 +149,7 @@ final class ReportingVerifierProbeTest extends CharacterizationTestCase
             'avg_rt_seconds' => 3600, 'min_rt_seconds' => 3000, 'max_rt_seconds' => 4200,
             'avg_rt_minutes' => 60, 'min_rt_minutes' => 50, 'max_rt_minutes' => 70,
         ], $this->request('GET', '/api/reports/rt?' . self::WINDOW . '&teamId=' . $this->team7, $token));
-        $this->assertBody(200, ['new' => 1, 'active' => 0, 'waiting' => 1, 'resolved' => 2, 'closed' => 0], $this->request('GET', '/api/reports/counts?' . self::WINDOW . '&teamId=' . $this->team7, $token));
+        $this->assertBody(200, ['nuevo' => 1, 'activo' => 0, 'en_espera' => 1, 'resuelto' => 2, 'cerrado' => 0], $this->request('GET', '/api/reports/counts?' . self::WINDOW . '&teamId=' . $this->team7, $token));
         $this->assertBody(200, [
             ['date' => '2025-03-01', 'tickets_created' => 1, 'tickets_resolved' => 1],
             ['date' => '2025-03-02', 'tickets_created' => 3, 'tickets_resolved' => 1],
@@ -197,7 +197,7 @@ final class ReportingVerifierProbeTest extends CharacterizationTestCase
             'avg_rt_seconds' => 3600, 'min_rt_seconds' => 3000, 'max_rt_seconds' => 4200,
             'avg_rt_minutes' => 60, 'min_rt_minutes' => 50, 'max_rt_minutes' => 70,
         ], $this->request('GET', '/api/reports/rt?' . self::WINDOW, $token));
-        $this->assertBody(200, ['new' => 1, 'active' => 1, 'waiting' => 0, 'resolved' => 2, 'closed' => 0], $this->request('GET', '/api/reports/counts?' . self::WINDOW, $token));
+        $this->assertBody(200, ['nuevo' => 1, 'activo' => 1, 'en_espera' => 0, 'resuelto' => 2, 'cerrado' => 0], $this->request('GET', '/api/reports/counts?' . self::WINDOW, $token));
         $this->assertBody(200, [
             ['date' => '2025-03-01', 'tickets_created' => 2, 'tickets_resolved' => 1],
             ['date' => '2025-03-02', 'tickets_created' => 2, 'tickets_resolved' => 1],
@@ -218,7 +218,7 @@ final class ReportingVerifierProbeTest extends CharacterizationTestCase
         $this->assertBody(200, [
             ['agent_id' => 'alpha', 'agent_name' => 'Alpha', 'active_tickets' => 1, 'max_capacity' => 10, 'load_percent' => 10],
         ], $this->request('GET', '/api/reports/agent-load?agent_id=' . $alphaId, $token));
-        $unassignedRow = ['id' => 't6', 'contact_name' => 'C-t6', 'created_at' => '2025-03-02 13:00:00', 'priority' => 'medium'];
+        $unassignedRow = ['id' => 't6', 'contact_name' => 'C-t6', 'created_at' => '2025-03-02 13:00:00', 'priority' => 'media'];
         $this->assertBody(200, ['count' => 0, 'tickets' => [$unassignedRow]], $this->request('GET', '/api/reports/unassigned', $token));
         $this->assertBody(200, ['count' => 0, 'tickets' => [$unassignedRow]], $this->request('GET', '/api/reports/unassigned?' . self::WINDOW, $token));
         $this->assertBody(200, ['count' => 0, 'tickets' => []], $this->request('GET', '/api/reports/unassigned?from=2025-03-02T14:00:00Z', $token));
@@ -245,7 +245,7 @@ final class ReportingVerifierProbeTest extends CharacterizationTestCase
         $recent = (new \DateTimeImmutable('today'))->modify('-1 day')->format('Y-m-d H:i:s');
         $ids = [];
         foreach (['probe-ws', 'probe-ws', 'other-ws', 'other-ws'] as $i => $phone) {
-            $ticket = $this->createTicket('resolved', $owner->getId(), $repeat);
+            $ticket = $this->createTicket('resuelto', $owner->getId(), $repeat);
             $ids[$i] = $ticket->getId();
             $this->token($ticket->getId(), 'r' . $i);
             $this->connection()->executeStatement(
@@ -288,7 +288,7 @@ final class ReportingVerifierProbeTest extends CharacterizationTestCase
         $this->assertBody(200, [], $this->request('GET', '/api/reports/recurring-customers', $supToken));
 
         $reopened = static fn (string $t): array => [
-            'ticket_id' => $t, 'contact_name' => 'Repeat', 'resolved_at' => '2025-03-01 12:00:00', 'reopened_at' => '2025-03-02 11:00:00', 'current_status' => 'resolved',
+            'ticket_id' => $t, 'contact_name' => 'Repeat', 'resolved_at' => '2025-03-01 12:00:00', 'reopened_at' => '2025-03-02 11:00:00', 'current_status' => 'resuelto',
         ];
         $this->assertBody(200, [$reopened('r0')], $this->request('GET', '/api/reports/reopened?' . self::WINDOW, $agentToken));
         $supReopened = $this->tokenize($this->json($this->request('GET', '/api/reports/reopened?' . self::WINDOW, $supToken)));
@@ -308,11 +308,11 @@ final class ReportingVerifierProbeTest extends CharacterizationTestCase
     {
         $expected = [];
         for ($i = 0; $i < 55; ++$i) {
-            $ticket = $this->createTicket('new', null, $this->createContact('+549110009' . \sprintf('%04d', $i)));
+            $ticket = $this->createTicket('nuevo', null, $this->createContact('+549110009' . \sprintf('%04d', $i)));
             $this->token($ticket->getId(), 'u' . $i);
             $createdAt = (new \DateTimeImmutable('2025-03-01 00:00:00'))->modify("+{$i} minutes")->format('Y-m-d H:i:s');
             $this->connection()->executeStatement('UPDATE tickets SET created_at = ? WHERE id = ?', [$createdAt, $ticket->getId()]);
-            $expected[] = ['id' => 'u' . $i, 'contact_name' => null, 'created_at' => $createdAt, 'priority' => 'medium'];
+            $expected[] = ['id' => 'u' . $i, 'contact_name' => null, 'created_at' => $createdAt, 'priority' => 'media'];
         }
         $token = $this->loginAs('probe-cap@characterization.local', ['ROLE_SUPERVISOR']);
 
@@ -321,7 +321,7 @@ final class ReportingVerifierProbeTest extends CharacterizationTestCase
 
     public function testReopenedIsCappedAtOneHundredNewestFirst(): void
     {
-        $ticket = $this->createTicket('resolved');
+        $ticket = $this->createTicket('resuelto');
         $this->token($ticket->getId(), 'r');
         $this->connection()->executeStatement('UPDATE tickets SET created_at = ?, resolved_at = ? WHERE id = ?', ['2025-02-01 10:00:00', '2025-02-01 12:00:00', $ticket->getId()]);
         $expected = [];
@@ -331,7 +331,7 @@ final class ReportingVerifierProbeTest extends CharacterizationTestCase
                 "INSERT INTO ticket_events (ticket_id, type, source, created_at) VALUES (?, 'auto_reopened', 'system', ?)",
                 [$ticket->getId(), $at],
             );
-            $expected[] = ['ticket_id' => 'r', 'contact_name' => null, 'resolved_at' => '2025-02-01 12:00:00', 'reopened_at' => $at, 'current_status' => 'resolved'];
+            $expected[] = ['ticket_id' => 'r', 'contact_name' => null, 'resolved_at' => '2025-02-01 12:00:00', 'reopened_at' => $at, 'current_status' => 'resuelto'];
         }
         $token = $this->loginAs('probe-reopen@characterization.local', ['ROLE_SUPERVISOR']);
 
@@ -351,12 +351,12 @@ final class ReportingVerifierProbeTest extends CharacterizationTestCase
         $helper = $this->createAgent('Helper');
         $this->token($owner->getId(), 'owner');
         $this->token($helper->getId(), 'helper');
-        $first = $this->createTicket('resolved', $owner->getId());
+        $first = $this->createTicket('resuelto', $owner->getId());
         $this->token($first->getId(), 'first');
         $conversationId = $first->getConversacion()->getId();
         $this->connection()->executeStatement('UPDATE tickets SET created_at = ? WHERE id = ?', ['2025-03-01 10:00:00', $first->getId()]);
         // A later ticket on the same conversation closes the first episode.
-        $second = $this->createTicket('active', $owner->getId(), $first->getContacto());
+        $second = $this->createTicket('activo', $owner->getId(), $first->getContacto());
         $this->connection()->executeStatement('UPDATE tickets SET created_at = ?, conversation_id = ? WHERE id = ?', ['2025-03-01 11:00:00', $conversationId, $second->getId()]);
         foreach ([
             ['entrante', 'contacto', null, '2025-03-01 10:00:00'],

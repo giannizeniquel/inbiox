@@ -83,14 +83,14 @@ class ContactRepositoryReadTest extends KernelTestCase
         $rows = $this->repo->findFilasDeLineaDeTiempo(880001, null, 50, null);
 
         self::assertSame([
-            ['ticket.manual_resolved_owner', '2026-01-01 15:00:00', 880001, 'active', 'Sup Agente Uno', 880001],
-            ['ticket.window_expired_closed', '2026-01-01 13:00:00', 880001, 'active', null, null],
+            ['ticket.manual_resolved_owner', '2026-01-01 15:00:00', 880001, 'activo', 'Sup Agente Uno', 880001],
+            ['ticket.window_expired_closed', '2026-01-01 13:00:00', 880001, 'activo', null, null],
             ['ticket.reassigned', '2026-01-01 12:30:00', 880001, null, 'Agente Dos', 880002],
-            ['ticket.manual_closed_unowned', '2026-01-01 11:40:00', 880002, 'new', 'Agente repo-read-agent@x.test', null],
-            ['ticket.manual_closed_override', '2026-01-01 11:30:00', 880002, 'new', 'Admin Agente Tres', 880003],
-            ['ticket.status_changed', '2026-01-01 11:20:00', 880001, 'active', null, null],
+            ['ticket.manual_closed_unowned', '2026-01-01 11:40:00', 880002, 'nuevo', 'Agente repo-read-agent@x.test', null],
+            ['ticket.manual_closed_override', '2026-01-01 11:30:00', 880002, 'nuevo', 'Admin Agente Tres', 880003],
+            ['ticket.status_changed', '2026-01-01 11:20:00', 880001, 'activo', null, null],
             ['ticket.assigned', '2026-01-01 09:01:00', 880001, null, 'Agente Uno', 880001],
-            ['ticket.created', '2026-01-01 09:00:00', 880001, 'active', null, null],
+            ['ticket.created', '2026-01-01 09:00:00', 880001, 'activo', null, null],
         ], array_map(fn (array $r) => [
             $r['type'],
             $r['occurred_at'],

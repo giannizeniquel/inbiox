@@ -90,7 +90,7 @@ class ProviderProxyControllerTemplateAttributionTest extends WebTestCase
         $ticket = new Ticket();
         $ticket->setContacto($contact);
         $ticket->setConversacion($conversation);
-        $ticket->setEstado('new');
+        $ticket->setEstado('nuevo');
         $this->em->persist($ticket);
         $this->em->flush();
 

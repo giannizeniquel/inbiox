@@ -25,24 +25,24 @@ final class AsignacionControllersCharacterizationTest extends CharacterizationTe
         $available = $this->createAgent('Available');
         $available->setDisponibilidadManual(true);
         $this->em->flush();
-        $ticket = $this->createTicket('new');
+        $ticket = $this->createTicket('nuevo');
         // Any ROLE_AGENT may trigger auto-assignment of any ticket.
         $token = $this->loginAs('auto-caller@characterization.local', ['ROLE_AGENT']);
 
-        $response = $this->request('POST', '/api/tickets/' . $ticket->getId() . '/auto-assign', $token);
+        $response = $this->request('POST', '/api/tickets/' . $ticket->getId() . '/asignar-automaticamente', $token);
 
         $this->assertJsonResponse(200, [
-            'ticket_id' => $ticket->getId(),
-            'assigned' => true,
-            'agent_id' => $available->getId(),
-            'reason' => 'success',
+            'ticketId' => $ticket->getId(),
+            'asignado' => true,
+            'agenteId' => $available->getId(),
+            'motivo' => 'success',
         ], $response);
 
         self::assertSame($available->getId(), (int) $this->connection()->fetchOne('SELECT assigned_agent_id FROM tickets WHERE id = ?', [$ticket->getId()]));
         $assignment = $this->connection()->fetchAssociative('SELECT agent_id, assigned_by, type FROM assignments WHERE ticket_id = ?', [$ticket->getId()]);
         self::assertSame($available->getId(), (int) $assignment['agent_id']);
         self::assertSame('system', $assignment['assigned_by']);
-        self::assertSame('AUTO_ASSIGN', $assignment['type']);
+        self::assertSame('automatica', $assignment['type']);
 
         $rows = $this->connection()->fetchAllAssociative('SELECT aggregate_type, aggregate_id, topic, event_type, payload, status, sequence FROM outbox_events ORDER BY sequence');
         self::assertNotEmpty($rows);
@@ -62,22 +62,22 @@ final class AsignacionControllersCharacterizationTest extends CharacterizationTe
         );
         self::assertSame($available->getId(), $ticketUpdated['assignee_id']);
         self::assertSame($available->getId(), $ticketUpdated['ownerAgentId']);
-        self::assertSame('AUTO_ASSIGN', $ticketUpdated['assignment_type']);
+        self::assertSame('automatica', $ticketUpdated['assignment_type']);
         self::assertSame($ticket->getId(), $ticketUpdated['ticketId']);
     }
 
     public function testAutoAssignWithoutAvailableAgents(): void
     {
-        $ticket = $this->createTicket('new');
+        $ticket = $this->createTicket('nuevo');
         $token = $this->loginAs('auto-caller@characterization.local', ['ROLE_AGENT']);
 
-        $response = $this->request('POST', '/api/tickets/' . $ticket->getId() . '/auto-assign', $token);
+        $response = $this->request('POST', '/api/tickets/' . $ticket->getId() . '/asignar-automaticamente', $token);
 
         $this->assertJsonResponse(200, [
-            'ticket_id' => $ticket->getId(),
-            'assigned' => false,
-            'agent_id' => null,
-            'reason' => 'no_agents_available',
+            'ticketId' => $ticket->getId(),
+            'asignado' => false,
+            'agenteId' => null,
+            'motivo' => 'no_agents_available',
         ], $response);
         self::assertSame(0, $this->countRows('assignments'));
         self::assertSame(0, $this->countRows('outbox_events'));
@@ -86,16 +86,16 @@ final class AsignacionControllersCharacterizationTest extends CharacterizationTe
     public function testAutoAssignOfAnAlreadyAssignedTicketIsIdempotent(): void
     {
         $owner = $this->createAgent('Owner');
-        $ticket = $this->createTicket('active', $owner->getId());
+        $ticket = $this->createTicket('activo', $owner->getId());
         $token = $this->loginAs('auto-caller@characterization.local', ['ROLE_AGENT']);
 
-        $response = $this->request('POST', '/api/tickets/' . $ticket->getId() . '/auto-assign', $token);
+        $response = $this->request('POST', '/api/tickets/' . $ticket->getId() . '/asignar-automaticamente', $token);
 
         $this->assertJsonResponse(200, [
-            'ticket_id' => $ticket->getId(),
-            'assigned' => false,
-            'agent_id' => $owner->getId(),
-            'reason' => 'already_assigned',
+            'ticketId' => $ticket->getId(),
+            'asignado' => false,
+            'agenteId' => $owner->getId(),
+            'motivo' => 'already_assigned',
         ], $response);
         self::assertSame(0, $this->countRows('assignments'));
     }
@@ -104,15 +104,15 @@ final class AsignacionControllersCharacterizationTest extends CharacterizationTe
     {
         $token = $this->loginAs('auto-caller@characterization.local', ['ROLE_AGENT']);
 
-        $response = $this->request('POST', '/api/tickets/999999999/auto-assign', $token);
+        $response = $this->request('POST', '/api/tickets/999999999/asignar-automaticamente', $token);
 
         // Characterization: current behavior, not necessarily desired.
         // An unknown ticket is a 200 with a reason, not a 404.
         $this->assertJsonResponse(200, [
-            'ticket_id' => 999999999,
-            'assigned' => false,
-            'agent_id' => null,
-            'reason' => 'ticket_not_found',
+            'ticketId' => 999999999,
+            'asignado' => false,
+            'agenteId' => null,
+            'motivo' => 'ticket_not_found',
         ], $response);
     }
 
@@ -120,7 +120,7 @@ final class AsignacionControllersCharacterizationTest extends CharacterizationTe
     {
         $token = $this->loginAs('auto-caller@characterization.local', ['ROLE_AGENT']);
 
-        $this->assertJsonResponse(400, ['error' => 'Invalid ticket ID'], $this->request('POST', '/api/tickets/0/auto-assign', $token));
+        $this->assertJsonResponse(400, ['error' => 'Invalid ticket ID'], $this->request('POST', '/api/tickets/0/asignar-automaticamente', $token));
     }
 
     public function testAutoAssignInvalidArgumentBecomesGeneric500(): void
@@ -128,7 +128,7 @@ final class AsignacionControllersCharacterizationTest extends CharacterizationTe
         $available = $this->createAgent('Available');
         $available->setDisponibilidadManual(true);
         $this->em->flush();
-        $ticket = $this->createTicket('new');
+        $ticket = $this->createTicket('nuevo');
         $token = $this->loginAs('auto-caller@characterization.local', ['ROLE_AGENT']);
         // AsignarTicketAutomaticamenteUseCase is final, so a collaborator it calls after
         // finding an available agent is replaced instead.
@@ -139,7 +139,7 @@ final class AsignacionControllersCharacterizationTest extends CharacterizationTe
         $ticketRepo->method('findFilaByIdForUpdate')->willReturnCallback(fn (int $id) => $realRepo->findFilaByIdForUpdate($id));
         static::getContainer()->set(TicketRepository::class, $ticketRepo);
 
-        $response = $this->request('POST', '/api/tickets/' . $ticket->getId() . '/auto-assign', $token);
+        $response = $this->request('POST', '/api/tickets/' . $ticket->getId() . '/asignar-automaticamente', $token);
 
         // Characterization: current behavior, not necessarily desired.
         // This controller has no InvalidArgumentException arm, so it is a 500.
@@ -154,9 +154,9 @@ final class AsignacionControllersCharacterizationTest extends CharacterizationTe
     {
         $first = $this->createAgent('First');
         $second = $this->createAgent('Second');
-        $ticket = $this->createTicket('active', $second->getId());
-        $older = new Asignacion($ticket, $first, 'system', null, 'AUTO_ASSIGN');
-        $newer = new Asignacion($ticket, $second, 'supervisor@x', 'handover', 'MANUAL_ASSIGN', $first);
+        $ticket = $this->createTicket('activo', $second->getId());
+        $older = new Asignacion($ticket, $first, 'system', null, 'automatica');
+        $newer = new Asignacion($ticket, $second, 'supervisor@x', 'handover', 'manual', $first);
         $this->em->persist($older);
         $this->em->persist($newer);
         $this->em->flush();
@@ -164,32 +164,32 @@ final class AsignacionControllersCharacterizationTest extends CharacterizationTe
         $this->connection()->executeStatement("UPDATE assignments SET assigned_at = '2026-01-02 11:30:00' WHERE id = ?", [$newer->getId()]);
         $token = $this->loginAs('assignment@characterization.local', ['ROLE_AGENT'], $this->createAgent('Viewer'));
 
-        $response = $this->request('GET', '/api/tickets/' . $ticket->getId() . '/assignment', $token);
+        $response = $this->request('GET', '/api/tickets/' . $ticket->getId() . '/asignacion', $token);
 
         $this->assertJsonResponse(200, [
-            'ticket_id' => $ticket->getId(),
-            'assignments' => [
-                ['id' => $newer->getId(), 'agent_id' => $second->getId(), 'assigned_by' => 'supervisor@x', 'assigned_at' => '2026-01-02 11:30:00', 'notes' => 'handover'],
-                ['id' => $older->getId(), 'agent_id' => $first->getId(), 'assigned_by' => 'system', 'assigned_at' => '2026-01-01 10:00:00', 'notes' => null],
+            'ticketId' => $ticket->getId(),
+            'asignaciones' => [
+                ['id' => $newer->getId(), 'agenteId' => $second->getId(), 'asignadoPor' => 'supervisor@x', 'asignadoAt' => '2026-01-02 11:30:00', 'notas' => 'handover'],
+                ['id' => $older->getId(), 'agenteId' => $first->getId(), 'asignadoPor' => 'system', 'asignadoAt' => '2026-01-01 10:00:00', 'notas' => null],
             ],
-            'current_assignment' => ['agent_id' => $second->getId(), 'assigned_by' => 'supervisor@x', 'assigned_at' => '2026-01-02 11:30:00'],
+            'asignacionActual' => ['agenteId' => $second->getId(), 'asignadoPor' => 'supervisor@x', 'asignadoAt' => '2026-01-02 11:30:00'],
         ], $response);
     }
 
     public function testAssignmentOfTicketWithoutHistory(): void
     {
-        $ticket = $this->createTicket('new');
+        $ticket = $this->createTicket('nuevo');
         $token = $this->loginAs('assignment@characterization.local', ['ROLE_AGENT'], $this->createAgent('Viewer'));
 
-        $response = $this->request('GET', '/api/tickets/' . $ticket->getId() . '/assignment', $token);
+        $response = $this->request('GET', '/api/tickets/' . $ticket->getId() . '/asignacion', $token);
 
-        $this->assertJsonResponse(200, ['ticket_id' => $ticket->getId(), 'assignments' => [], 'current_assignment' => null], $response);
+        $this->assertJsonResponse(200, ['ticketId' => $ticket->getId(), 'asignaciones' => [], 'asignacionActual' => null], $response);
     }
 
     public function testAssignmentUnknownTicketReturns404(): void
     {
         $token = $this->loginAs('assignment@characterization.local', ['ROLE_AGENT'], $this->createAgent('Viewer'));
 
-        $this->assertJsonResponse(404, ['error' => 'Ticket not found'], $this->request('GET', '/api/tickets/999999999/assignment', $token));
+        $this->assertJsonResponse(404, ['error' => 'Ticket not found'], $this->request('GET', '/api/tickets/999999999/asignacion', $token));
     }
 }

@@ -6,6 +6,7 @@ namespace App\Reporte\Query;
 
 use App\Ticket\Query\ListTicketsQuery;
 use App\Ticket\Query\FiltrosDeTicketBuilder;
+use App\Ticket\FiltroDeBandeja;
 
 use App\Ticket\Repository\EtiquetaRepository;
 use App\Ticket\Repository\TicketRepository;
@@ -54,7 +55,7 @@ class ExportarTicketsCsvQuery
     ) {}
 
     /**
-     * @param string|null $agenteId Filtro de id de agente al estilo 'mine' (no se usa directamente; se mantiene por paridad con el par $filter/$agenteId de ListTicketsQuery)
+     * @param string|null $agenteId Filtro de id de agente al estilo 'mios' (no se usa directamente; se mantiene por paridad con el par $filter/$agenteId de ListTicketsQuery)
      * @param string|null $estado Filtro de estado separado por comas
      * @param string|null $etiqueta Nombres de etiquetas separados por comas (semántica AND, máximo 5)
      * @param string|null $phoneNumberId Alcance de espacio de trabajo
@@ -77,7 +78,7 @@ class ExportarTicketsCsvQuery
         $escapeFormula = new EscapeFormula();
 
         $filters = $this->filtrosDeTicketBuilder->build(
-            filtro: $agenteId ? 'mine' : 'all',
+            filtro: ($agenteId ? FiltroDeBandeja::MIOS : FiltroDeBandeja::TODOS)->value,
             agenteId: $agenteId,
             estado: $estado,
             phoneNumberId: $phoneNumberId,

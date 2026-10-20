@@ -95,7 +95,7 @@ class ReportsCsvExportTest extends WebTestCase
     }
 
     private function createTicket(
-        string $status = 'active',
+        string $status = 'activo',
         array $tagNames = [],
         ?int $assignedAgentId = null,
         ?\DateTimeImmutable $createdAt = null,
@@ -249,7 +249,7 @@ class ReportsCsvExportTest extends WebTestCase
 
     public function test_no_status_param_includes_every_status(): void
     {
-        foreach (['new', 'active', 'waiting', 'resolved', 'closed'] as $status) {
+        foreach (['nuevo', 'activo', 'en_espera', 'resuelto', 'cerrado'] as $status) {
             $this->createTicket(status: $status, createdAt: new \DateTimeImmutable('2026-01-10'));
         }
 
@@ -265,18 +265,18 @@ class ReportsCsvExportTest extends WebTestCase
 
     public function test_status_param_narrows_results(): void
     {
-        $this->createTicket(status: 'new', createdAt: new \DateTimeImmutable('2026-01-10'));
-        $this->createTicket(status: 'closed', createdAt: new \DateTimeImmutable('2026-01-10'));
+        $this->createTicket(status: 'nuevo', createdAt: new \DateTimeImmutable('2026-01-10'));
+        $this->createTicket(status: 'cerrado', createdAt: new \DateTimeImmutable('2026-01-10'));
 
         $token = $this->authAs(['ROLE_SUPERVISOR']);
-        $body = $this->requestExport($token, 'from=2026-01-01T00:00:00Z&to=2026-01-31T00:00:00Z&status=closed');
+        $body = $this->requestExport($token, 'from=2026-01-01T00:00:00Z&to=2026-01-31T00:00:00Z&status=cerrado');
 
         $reader = Reader::createFromString(substr($body, 3));
         $reader->setHeaderOffset(0);
         $records = [...$reader->getRecords()];
 
         self::assertCount(1, $records);
-        self::assertSame('closed', $records[0]['status']);
+        self::assertSame('cerrado', $records[0]['status']);
     }
 
     public function test_agent_id_param_narrows_results(): void

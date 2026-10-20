@@ -11,21 +11,21 @@ class DetalleDeTicketDTO
         public array $contacto,
         public ?array $responsable,
         public array $marcasDeTiempo,
-        public array $metricas = ['unread_count' => 0],
+        public array $metricas = ['cantidadDeNoLeidos' => 0],
         public ?string $ultimoMensaje = null,
     ) {}
 
     public function toArray(): array
     {
         return [
-            'ticket_id' => $this->ticketId,
-            'status' => $this->estado,
-            'priority' => $this->prioridad,
-            'contact' => $this->contacto,
-            'owner' => $this->responsable,
-            'timestamps' => $this->marcasDeTiempo,
-            'metrics' => $this->metricas,
-            'last_message' => $this->ultimoMensaje,
+            'ticketId' => $this->ticketId,
+            'estado' => $this->estado,
+            'prioridad' => $this->prioridad,
+            'contacto' => $this->contacto,
+            'responsable' => $this->responsable,
+            'fechas' => $this->marcasDeTiempo,
+            'metricas' => $this->metricas,
+            'ultimoMensaje' => $this->ultimoMensaje,
         ];
     }
 }

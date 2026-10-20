@@ -374,7 +374,7 @@ class TeamControllerTest extends WebTestCase
 
         $conn = $this->em->getConnection();
         $conn->executeStatement(
-            "INSERT INTO tickets (status, priority, created_at, updated_at, version, last_event_seq, team_id) VALUES ('new', 'medium', NOW(), NOW(), 0, 0, :teamId)",
+            "INSERT INTO tickets (status, priority, created_at, updated_at, version, last_event_seq, team_id) VALUES ('nuevo', 'media', NOW(), NOW(), 0, 0, :teamId)",
             ['teamId' => $team->getId()]
         );
         $ticketId = (int) $conn->lastInsertId();

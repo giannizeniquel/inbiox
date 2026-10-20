@@ -4,6 +4,7 @@ namespace App\Compartido\Controller;
 
 use App\Conversacion\UseCase\ProcesarMensajeEntranteUseCase;
 use App\Asignacion\UseCase\AsignarTicketUseCase;
+use App\Ticket\EstadoDeTicket;
 use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpKernel\KernelInterface;
@@ -116,9 +117,9 @@ class DebugController extends AbstractController
             return $this->noEncontrado();
         }
 
-        // Transiciones válidas que funcionan desde cualquier estado: waiting o resolved
+        // Transiciones válidas que funcionan desde cualquier estado: en espera o resuelto
         // La FSM rechaza las transiciones inválidas
-        $estadosValidos = ['waiting', 'resolved'];
+        $estadosValidos = [EstadoDeTicket::EN_ESPERA->value, EstadoDeTicket::RESUELTO->value];
         
         try {
             $estadoDestino = $estadosValidos[array_rand($estadosValidos)];
@@ -127,7 +128,7 @@ class DebugController extends AbstractController
             return new JsonResponse([
                 'success' => true,
                 'ticket_id' => $ticketId,
-                'new_status' => $result['new_status'],
+                'new_status' => $result['estadoNuevo'],
             ]);
         } catch (\Exception $e) {
             return new JsonResponse([

@@ -27,7 +27,7 @@ final class MessageMediaUrlControllerCharacterizationTest extends Characterizati
     public function testAssignedAgentGetsTheSignedUrl(): void
     {
         $agent = $this->createAgent('Media Owner');
-        $ticket = $this->createTicket('active', (int) $agent->getId());
+        $ticket = $this->createTicket('activo', (int) $agent->getId());
         $messageId = $this->message($ticket, ['key' => 'media/char-1.jpg', 'kind' => 'imagen']);
         $token = $this->loginAs('char-media-owner@inbiox.local', ['ROLE_AGENT'], $agent);
 
@@ -42,7 +42,7 @@ final class MessageMediaUrlControllerCharacterizationTest extends Characterizati
 
     public function testMessageWithoutMediaIsNotFound(): void
     {
-        $ticket = $this->createTicket('active');
+        $ticket = $this->createTicket('activo');
         $messageId = $this->message($ticket, null);
         $token = $this->loginAs('char-media-supervisor@inbiox.local', ['ROLE_SUPERVISOR']);
 
@@ -52,7 +52,7 @@ final class MessageMediaUrlControllerCharacterizationTest extends Characterizati
     public function testAgentNotAssignedIsForbidden(): void
     {
         $owner = $this->createAgent('Media Owner');
-        $ticket = $this->createTicket('active', (int) $owner->getId());
+        $ticket = $this->createTicket('activo', (int) $owner->getId());
         $messageId = $this->message($ticket, ['key' => 'media/char-2.pdf', 'kind' => 'documento']);
         $token = $this->loginAs('char-media-other@inbiox.local', ['ROLE_AGENT'], $this->createAgent('Other Agent'));
 

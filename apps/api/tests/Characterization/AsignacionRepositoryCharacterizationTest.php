@@ -76,14 +76,14 @@ final class AsignacionRepositoryCharacterizationTest extends KernelTestCase
     public function testStoredTypeValuesStayInEnglish(): void
     {
         self::assertSame(
-            ['AUTO_ASSIGN', 'MANUAL_ASSIGN', 'REASSIGN', 'UNASSIGN'],
+            ['automatica', 'manual', 'reasignacion', 'desasignacion'],
             array_map(fn (TipoDeAsignacion $tipo) => $tipo->value, TipoDeAsignacion::cases()),
         );
 
         $this->asignar($this->primero, TipoDeAsignacion::REASIGNACION, '2026-10-01 10:00:00');
 
         self::assertSame(
-            ['REASSIGN'],
+            ['reasignacion'],
             $this->em->getConnection()->fetchFirstColumn('SELECT type FROM assignments'),
         );
     }

@@ -29,8 +29,8 @@ class Asignacion
     #[ORM\JoinColumn(name: "agent_id", referencedColumnName: "id", nullable: true)]
     private ?Agente $agente = null;
 
-    #[ORM\Column(name: "type", type: Types::STRING, length: 20, options: ['default' => 'MANUAL_ASSIGN'])]
-    private string $tipo = 'MANUAL_ASSIGN';
+    #[ORM\Column(name: "type", type: Types::STRING, length: 20, options: ['default' => 'manual'])]
+    private string $tipo = 'manual';
 
     #[ORM\ManyToOne(targetEntity: Agente::class)]
     #[ORM\JoinColumn(name: "previous_agent_id", referencedColumnName: "id", nullable: true)]
@@ -50,7 +50,7 @@ class Asignacion
         ?Agente $agente = null,
         string $asignadoPor = '',
         ?string $notas = null,
-        string $tipo = 'MANUAL_ASSIGN',
+        string $tipo = 'manual',
         ?Agente $agenteAnterior = null
     ) {
         $this->ticket = $ticket;

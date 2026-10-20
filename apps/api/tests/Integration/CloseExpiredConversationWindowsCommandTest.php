@@ -106,7 +106,7 @@ class CloseExpiredConversationWindowsCommandTest extends KernelTestCase
         self::assertStringContainsString('1', $tester->getDisplay());
 
         $stillActiveCount = (int) $this->em->getConnection()->fetchOne(
-            "SELECT COUNT(*) FROM tickets WHERE status = 'active'"
+            "SELECT COUNT(*) FROM tickets WHERE status = 'activo'"
         );
         self::assertSame(2, $stillActiveCount);
     }

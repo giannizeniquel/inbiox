@@ -53,7 +53,7 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
         parent::tearDown();
     }
 
-    private function ticketInOpenWindow(string $status = 'new', ?int $assignedAgentId = null): Ticket
+    private function ticketInOpenWindow(string $status = 'nuevo', ?int $assignedAgentId = null): Ticket
     {
         $ticket = $this->createTicket($status, $assignedAgentId, $this->createContact(self::CONTACT_PHONE, 'Char Contact'));
         $ticket->setPhoneNumberId(self::PHONE_NUMBER_ID);
@@ -139,7 +139,7 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
             $messages[0]['content'], $messages[0]['external_id'], $messages[0]['delivery_status'], (int) $messages[0]['sender_agent_id'], $messages[0]['media'],
         ]);
         // Auto-claim moves the new ticket to active, then the reply moves it to waiting.
-        self::assertSame(['status' => 'waiting', 'assigned_agent_id' => $agentId], [
+        self::assertSame(['status' => 'en_espera', 'assigned_agent_id' => $agentId], [
             'status' => $this->ticketRow((int) $ticket->getId())['status'],
             'assigned_agent_id' => (int) $this->ticketRow((int) $ticket->getId())['assigned_agent_id'],
         ]);
@@ -148,8 +148,8 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
     /** @return iterable<string, array{string, string}> */
     public static function statusTransitions(): iterable
     {
-        yield 'active becomes waiting' => ['active', 'waiting'];
-        yield 'waiting stays waiting' => ['waiting', 'waiting'];
+        yield 'active becomes waiting' => ['activo', 'en_espera'];
+        yield 'waiting stays waiting' => ['en_espera', 'en_espera'];
     }
 
     #[DataProvider('statusTransitions')]
@@ -308,7 +308,7 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
         $this->em->persist($conversation);
         $ticket = new Ticket();
         $ticket->setConversacion($conversation);
-        $ticket->setEstado('new');
+        $ticket->setEstado('nuevo');
         $ticket->setUltimoMensajeEntranteAt(new \DateTimeImmutable('-1 hour'));
         $this->em->persist($ticket);
         $this->em->flush();
@@ -323,7 +323,7 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
 
     public function testSendToAContactWithoutPhoneIsPhoneNotFound(): void
     {
-        $ticket = $this->createTicket('new', null, $this->createContact(''));
+        $ticket = $this->createTicket('nuevo', null, $this->createContact(''));
         $ticket->setUltimoMensajeEntranteAt(new \DateTimeImmutable('-1 hour'));
         $this->em->flush();
         [$token] = $this->agentToken();
@@ -354,7 +354,7 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
         $messages = $this->outboundMessages((int) $ticket->getId());
         self::assertCount(1, $messages);
         self::assertSame('wamid.char-template', $messages[0]['external_id']);
-        self::assertSame('new', $this->ticketRow((int) $ticket->getId())['status']);
+        self::assertSame('nuevo', $this->ticketRow((int) $ticket->getId())['status']);
     }
 
     public function testSendTemplateWithoutWamidStoresNothing(): void
@@ -428,7 +428,7 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
 
     public function testSendTemplateToAContactWithoutPhoneIsPhoneNotFound(): void
     {
-        $ticket = $this->createTicket('new', null, $this->createContact(''));
+        $ticket = $this->createTicket('nuevo', null, $this->createContact(''));
         [$token] = $this->agentToken();
         $this->graph->expects(self::never())->method(self::anything());
 

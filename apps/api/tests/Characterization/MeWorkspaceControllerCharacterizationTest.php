@@ -188,10 +188,10 @@ final class MeWorkspaceControllerCharacterizationTest extends CharacterizationTe
         $this->em->flush();
 
         // An assigned, never-read ticket in the "pending" workspace.
-        $ticket = $this->createTicket('active', $agent->getId());
+        $ticket = $this->createTicket('activo', $agent->getId());
         $ticket->setPhoneNumberId('char-me-pend');
         // A read ticket with no newer inbound message in the "quiet" workspace.
-        $readTicket = $this->createTicket('active', $agent->getId());
+        $readTicket = $this->createTicket('activo', $agent->getId());
         $readTicket->setPhoneNumberId('char-me-quiet');
         $readTicket->setUltimaLecturaAt(new \DateTimeImmutable('+1 hour'));
         $message = new Mensaje();

@@ -289,22 +289,22 @@ class Sprint09AReportingTest extends KernelTestCase
         $from = new \DateTimeImmutable('2026-01-01 00:00:00');
         $to = new \DateTimeImmutable('2026-01-31 23:59:59');
 
-        $this->createTestTicketWithStatus('new');
-        $this->createTestTicketWithStatus('new');
-        $this->createTestTicketWithStatus('active');
-        $this->createTestTicketWithStatus('waiting');
-        $this->createTestTicketWithStatus('resolved');
-        $this->createTestTicketWithStatus('closed');
+        $this->createTestTicketWithStatus('nuevo');
+        $this->createTestTicketWithStatus('nuevo');
+        $this->createTestTicketWithStatus('activo');
+        $this->createTestTicketWithStatus('en_espera');
+        $this->createTestTicketWithStatus('resuelto');
+        $this->createTestTicketWithStatus('cerrado');
 
         // Act
         $result = $this->reportingRepo->getConteosPorEstado($from, $to);
 
         // Assert
-        $this->assertEquals(2, $result['new']);
-        $this->assertEquals(1, $result['active']);
-        $this->assertEquals(1, $result['waiting']);
-        $this->assertEquals(1, $result['resolved']);
-        $this->assertEquals(1, $result['closed']);
+        $this->assertEquals(2, $result['nuevo']);
+        $this->assertEquals(1, $result['activo']);
+        $this->assertEquals(1, $result['en_espera']);
+        $this->assertEquals(1, $result['resuelto']);
+        $this->assertEquals(1, $result['cerrado']);
     }
 
     // ============================================
@@ -659,7 +659,7 @@ class Sprint09AReportingTest extends KernelTestCase
         $ticket = new Ticket();
         $ticket->setContacto($contact);
         $ticket->setConversacion($conversation);
-        $ticket->setEstado('active');
+        $ticket->setEstado('activo');
         $ticket->setCreadoAt(new \DateTimeImmutable($createdAt));
         $ticket->setActualizadoAt(new \DateTimeImmutable($createdAt));
         $ticket->setAgenteAsignadoId($assignedAgentId);

@@ -126,7 +126,7 @@ class TicketWorkflowControllerWindowIsolationTest extends WebTestCase
 
         $this->client->request(
             'POST',
-            '/api/tickets/' . $ticketId . '/transition',
+            '/api/tickets/' . $ticketId . '/transicionar',
             [],
             [],
             [
@@ -134,7 +134,7 @@ class TicketWorkflowControllerWindowIsolationTest extends WebTestCase
                 'HTTP_ACCEPT' => 'application/json',
                 'HTTP_AUTHORIZATION' => 'Bearer ' . $this->authToken,
             ],
-            \json_encode(['status' => $targetStatus]),
+            \json_encode(['estado' => $targetStatus]),
         );
 
         $response = $this->client->getResponse();

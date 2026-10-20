@@ -7,6 +7,8 @@ use App\Conversacion\ClavesDeAdjunto;
 use App\Conversacion\DireccionDeMensaje;
 use App\Conversacion\EstadoDeEntrega;
 use App\Conversacion\TipoDeAdjunto;
+use App\Asignacion\TipoDeAsignacion;
+use App\Ticket\EstadoDeTicket;
 
 /**
  * Arma el mensaje de Mercure (contrato de la API, `docs/contrato-api.md`, sección 3.2 y
@@ -17,7 +19,7 @@ use App\Conversacion\TipoDeAdjunto;
  * la salida de build() se publica en Mercure.
  *
  * Las filas escritas antes del contrato traen valores viejos (`inbound`, `sent`, `image`,
- * `created`…): se traducen al leerlas (sección 5, punto 5).
+ * `created`, `new`, `AUTO_ASSIGN`…): se traducen al leerlas (sección 5, punto 5).
  */
 final readonly class EventoEnTiempoRealFactory
 {
@@ -32,6 +34,19 @@ final readonly class EventoEnTiempoRealFactory
             'delivered' => EstadoDeEntrega::ENTREGADO->value,
             'read' => EstadoDeEntrega::LEIDO->value,
             'failed' => EstadoDeEntrega::FALLIDO->value,
+        ],
+        'estadoDeTicket' => [
+            'new' => EstadoDeTicket::NUEVO->value,
+            'active' => EstadoDeTicket::ACTIVO->value,
+            'waiting' => EstadoDeTicket::EN_ESPERA->value,
+            'resolved' => EstadoDeTicket::RESUELTO->value,
+            'closed' => EstadoDeTicket::CERRADO->value,
+        ],
+        'tipoDeAsignacion' => [
+            'AUTO_ASSIGN' => TipoDeAsignacion::AUTOMATICA->value,
+            'MANUAL_ASSIGN' => TipoDeAsignacion::MANUAL->value,
+            'REASSIGN' => TipoDeAsignacion::REASIGNACION->value,
+            'UNASSIGN' => TipoDeAsignacion::DESASIGNACION->value,
         ],
         'tipoDeAdjunto' => [
             'image' => TipoDeAdjunto::IMAGEN->value,
@@ -80,7 +95,7 @@ final readonly class EventoEnTiempoRealFactory
                 'ticketId'       => $ticketId,
                 'contactoId'     => (int) ($s['contact_id'] ?? 0),
                 'conversacionId' => (int) ($s['conversation_id'] ?? 0),
-                'estado'         => $s['status'] ?? '',
+                'estado'         => self::valorActual('estadoDeTicket', $s['status'] ?? ''),
                 'prioridad'      => (int) ($s['priority'] ?? 0),
                 'creadoAt'       => $s['created_at'] ?? $s['occurred_at'] ?? '',
             ],
@@ -97,15 +112,15 @@ final readonly class EventoEnTiempoRealFactory
             ],
             TipoDeEventoEnTiempoReal::ESTADO_DE_TICKET_CAMBIADO => [
                 'ticketId'       => $ticketId,
-                'estadoAnterior' => $s['previous_status'] ?? null,
-                'estadoNuevo'    => $s['status'] ?? '',
+                'estadoAnterior' => self::valorActual('estadoDeTicket', $s['previous_status'] ?? null),
+                'estadoNuevo'    => self::valorActual('estadoDeTicket', $s['status'] ?? ''),
                 'cambiadoAt'     => $s['changed_at'] ?? $s['occurred_at'] ?? '',
             ],
             TipoDeEventoEnTiempoReal::TICKET_ASIGNADO => [
                 'ticketId'          => $ticketId,
                 'responsableId'     => (int) ($s['assignee_id'] ?? $s['ownerAgentId'] ?? 0),
                 'responsableNombre' => $s['assignee_name'] ?? null,
-                'tipoDeAsignacion'  => $s['assignment_type'] ?? 'MANUAL_ASSIGN',
+                'tipoDeAsignacion'  => self::valorActual('tipoDeAsignacion', $s['assignment_type'] ?? TipoDeAsignacion::MANUAL->value),
                 'asignadoAt'        => $s['assigned_at'] ?? $s['occurred_at'] ?? '',
             ],
             TipoDeEventoEnTiempoReal::DISPONIBILIDAD_DE_AGENTE_CAMBIADA => [

@@ -35,7 +35,7 @@ final class SetEquipoDeTicketUseCase
         }
 
         if (!\is_int($equipoId)) {
-            throw new \InvalidArgumentException('teamId must be an integer or null');
+            throw new \InvalidArgumentException('equipoId must be an integer or null');
         }
 
         $equipo = $this->teamRepository->find($equipoId);

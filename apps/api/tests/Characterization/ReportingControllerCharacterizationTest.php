@@ -28,10 +28,10 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
         $this->owner = $this->createAgent('Report Owner');
         $ownerId = $this->owner->getId();
 
-        $resolved = $this->createTicket('resolved', $ownerId);
-        $closed = $this->createTicket('closed', $ownerId);
-        $active = $this->createTicket('active', $ownerId);
-        $outside = $this->createTicket('new');
+        $resolved = $this->createTicket('resuelto', $ownerId);
+        $closed = $this->createTicket('cerrado', $ownerId);
+        $active = $this->createTicket('activo', $ownerId);
+        $outside = $this->createTicket('nuevo');
 
         $set = function (int $id, string $createdAt, ?string $resolvedAt, ?string $firstResponseAt): void {
             $this->connection()->executeStatement(
@@ -93,7 +93,7 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
 
         $response = $this->request('GET', '/api/reports/counts?' . self::WINDOW, $token);
 
-        $this->assertJsonResponse(200, ['new' => 0, 'active' => 1, 'waiting' => 0, 'resolved' => 1, 'closed' => 1], $response);
+        $this->assertJsonResponse(200, ['nuevo' => 0, 'activo' => 1, 'en_espera' => 0, 'resuelto' => 1, 'cerrado' => 1], $response);
     }
 
     public function testCountsAreScopedToTheAgentsActiveWorkspace(): void
@@ -101,7 +101,7 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
         $this->seedTickets();
         $workspace = $this->createWorkspace('char-rep-ws', 'Reports');
         $this->connection()->executeStatement(
-            "UPDATE tickets SET phone_number_id = 'char-rep-ws' WHERE status = 'active'",
+            "UPDATE tickets SET phone_number_id = 'char-rep-ws' WHERE status = 'activo'",
         );
         $agent = $this->createAgent('Scoped');
         $agent->setEspacioDeTrabajoActivo($workspace);
@@ -109,7 +109,7 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
 
         $response = $this->request('GET', '/api/reports/counts?' . self::WINDOW, $token);
 
-        $this->assertJsonResponse(200, ['new' => 0, 'active' => 1, 'waiting' => 0, 'resolved' => 0, 'closed' => 0], $response);
+        $this->assertJsonResponse(200, ['nuevo' => 0, 'activo' => 1, 'en_espera' => 0, 'resuelto' => 0, 'cerrado' => 0], $response);
     }
 
     // ── app_report_volume ──
@@ -218,7 +218,7 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
     {
         // The count is always 0 today (group F / R8); pinned as current behavior.
         $this->seedTickets();
-        $outside = $this->connection()->fetchOne("SELECT id FROM tickets WHERE status = 'new'");
+        $outside = $this->connection()->fetchOne("SELECT id FROM tickets WHERE status = 'nuevo'");
         $token = $this->supervisorToken();
 
         $this->assertJsonResponse(200, [
@@ -227,7 +227,7 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
                 'id' => (int) $outside,
                 'contact_name' => null,
                 'created_at' => '2025-04-01 10:00:00',
-                'priority' => 'medium',
+                'priority' => 'media',
             ]],
         ], $this->request('GET', '/api/reports/unassigned', $token));
         $this->assertJsonResponse(200, ['count' => 0, 'tickets' => []], $this->request('GET', '/api/reports/unassigned?' . self::WINDOW, $token));
@@ -317,7 +317,7 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
         $old = $this->createContact('+5491100000703', 'Old');
         $lastAt = [];
         foreach ([[$frequent, 1], [$frequent, 2], [$frequent, 3], [$twice, 4], [$twice, 5], [$old, 100], [$old, 101], [$old, 102]] as [$contact, $daysAgo]) {
-            $ticket = $this->createTicket('new', null, $contact);
+            $ticket = $this->createTicket('nuevo', null, $contact);
             $createdAt = (new \DateTimeImmutable('today'))->modify("-{$daysAgo} days")->format('Y-m-d H:i:s');
             $this->connection()->executeStatement('UPDATE tickets SET created_at = ? WHERE id = ?', [$createdAt, $ticket->getId()]);
             $lastAt[$contact->getNombre()] ??= $createdAt;
@@ -350,7 +350,7 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
     public function testReopenedTickets(): void
     {
         $this->seedTickets();
-        $resolvedId = (int) $this->connection()->fetchOne("SELECT id FROM tickets WHERE status = 'resolved'");
+        $resolvedId = (int) $this->connection()->fetchOne("SELECT id FROM tickets WHERE status = 'resuelto'");
         foreach ([['auto_reopened', '2025-03-02 11:00:00'], ['auto_reopened', '2025-03-05 11:00:00'], ['status_changed', '2025-03-02 12:00:00']] as [$type, $at]) {
             $this->connection()->executeStatement(
                 "INSERT INTO ticket_events (ticket_id, type, source, created_at) VALUES (?, ?, 'system', ?)",
@@ -364,7 +364,7 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
             'contact_name' => null,
             'resolved_at' => '2025-03-01 12:00:00',
             'reopened_at' => '2025-03-02 11:00:00',
-            'current_status' => 'resolved',
+            'current_status' => 'resuelto',
         ]], $this->request('GET', '/api/reports/reopened?' . self::WINDOW, $token));
     }
 
@@ -377,7 +377,7 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
     private function seedConversation(): int
     {
         $this->owner = $this->createAgent('Report Owner');
-        $ticket = $this->createTicket('active', $this->owner->getId());
+        $ticket = $this->createTicket('activo', $this->owner->getId());
         $this->connection()->executeStatement('UPDATE tickets SET created_at = ? WHERE id = ?', ['2025-03-01 10:00:00', $ticket->getId()]);
         $conversationId = $ticket->getConversacion()->getId();
         foreach ([

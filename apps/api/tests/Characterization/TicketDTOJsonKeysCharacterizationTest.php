@@ -9,58 +9,71 @@ use App\Ticket\Query\TicketDeListaDTO;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Pins the JSON keys and key order of the ticket DTOs. The keys are part of
- * the API contract and stay in English while the property names are Spanish.
+ * Pins the JSON keys and key order of the ticket DTOs (contract annex A.11).
  */
 final class TicketDTOJsonKeysCharacterizationTest extends TestCase
 {
-    public function testTicketDetailKeepsItsJsonKeys(): void
+    public function testTicketDetailUsesTheContractKeys(): void
     {
         $dto = new DetalleDeTicketDTO(
             ticketId: 7,
-            estado: 'active',
-            prioridad: 'medium',
-            contacto: ['id' => 3, 'phone' => '+5491100000000', 'name' => 'Ana'],
-            responsable: ['id' => 5, 'name' => 'Agent'],
-            marcasDeTiempo: ['created_at' => '2026-10-01T10:00:00Z'],
-            metricas: ['unread_count' => 2],
+            estado: 'activo',
+            prioridad: 'media',
+            contacto: ['id' => 3, 'telefono' => '+5491100000000', 'nombre' => 'Ana'],
+            responsable: ['id' => 5, 'nombre' => 'Agent'],
+            marcasDeTiempo: ['abiertoAt' => '2026-10-01T10:00:00Z'],
+            metricas: ['cantidadDeNoLeidos' => 2],
             ultimoMensaje: 'hola',
         );
 
         self::assertSame([
-            'ticket_id' => 7,
-            'status' => 'active',
-            'priority' => 'medium',
-            'contact' => ['id' => 3, 'phone' => '+5491100000000', 'name' => 'Ana'],
-            'owner' => ['id' => 5, 'name' => 'Agent'],
-            'timestamps' => ['created_at' => '2026-10-01T10:00:00Z'],
-            'metrics' => ['unread_count' => 2],
-            'last_message' => 'hola',
+            'ticketId' => 7,
+            'estado' => 'activo',
+            'prioridad' => 'media',
+            'contacto' => ['id' => 3, 'telefono' => '+5491100000000', 'nombre' => 'Ana'],
+            'responsable' => ['id' => 5, 'nombre' => 'Agent'],
+            'fechas' => ['abiertoAt' => '2026-10-01T10:00:00Z'],
+            'metricas' => ['cantidadDeNoLeidos' => 2],
+            'ultimoMensaje' => 'hola',
         ], $dto->toArray());
     }
 
-    public function testTicketListItemKeepsItsJsonKeys(): void
+    public function testTicketDetailDefaultsItsUnreadCountToZero(): void
+    {
+        $dto = new DetalleDeTicketDTO(
+            ticketId: 7,
+            estado: 'nuevo',
+            prioridad: 'media',
+            contacto: [],
+            responsable: null,
+            marcasDeTiempo: [],
+        );
+
+        self::assertSame(['cantidadDeNoLeidos' => 0], $dto->toArray()['metricas']);
+    }
+
+    public function testTicketListItemUsesTheContractKeys(): void
     {
         $dto = new TicketDeListaDTO(
             ticketId: 7,
-            estado: 'waiting',
-            prioridad: 'medium',
-            contacto: ['id' => 3, 'phone' => '+5491100000000', 'name' => null],
+            estado: 'en_espera',
+            prioridad: 'media',
+            contacto: ['id' => 3, 'telefono' => '+5491100000000', 'nombre' => null],
             ultimoMensaje: null,
             responsable: null,
-            metricas: ['unread_count' => 0],
-            marcasDeTiempo: ['updated_at' => '2026-10-01T10:00:00Z'],
+            metricas: ['cantidadDeNoLeidos' => 0],
+            marcasDeTiempo: ['actualizadoAt' => '2026-10-01T10:00:00Z'],
         );
 
         self::assertSame([
-            'ticket_id' => 7,
-            'status' => 'waiting',
-            'priority' => 'medium',
-            'contact' => ['id' => 3, 'phone' => '+5491100000000', 'name' => null],
-            'last_message' => null,
-            'owner' => null,
-            'metrics' => ['unread_count' => 0],
-            'timestamps' => ['updated_at' => '2026-10-01T10:00:00Z'],
+            'ticketId' => 7,
+            'estado' => 'en_espera',
+            'prioridad' => 'media',
+            'contacto' => ['id' => 3, 'telefono' => '+5491100000000', 'nombre' => null],
+            'ultimoMensaje' => null,
+            'responsable' => null,
+            'metricas' => ['cantidadDeNoLeidos' => 0],
+            'fechas' => ['actualizadoAt' => '2026-10-01T10:00:00Z'],
         ], $dto->toArray());
     }
 }

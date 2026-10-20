@@ -8,11 +8,11 @@ class AsignarTicketRequest
 {
     #[Assert\NotBlank(message: 'Agent ID is required')]
     #[Assert\Positive]
-    public int $agentId;
+    public int $agenteId;
 
     #[Assert\NotBlank(message: 'Assigned by is required')]
     #[Assert\Length(max: 100)]
-    public string $assignedBy;
+    public string $asignadoPor;
 
-    public ?string $notes = null;
+    public ?string $notas = null;
 }

@@ -97,7 +97,7 @@ class TicketRepositorySqlTest extends KernelTestCase
 
         self::assertIsArray($row);
         self::assertSame($id, (int) $row['id']);
-        self::assertSame('active', $row['status']);
+        self::assertSame('activo', $row['status']);
         self::assertSame('PN-1', $row['phone_number_id']);
         self::assertArrayHasKey('assigned_agent_id', $row);
     }
@@ -137,7 +137,7 @@ class TicketRepositorySqlTest extends KernelTestCase
         $this->repo->updateEstadoTrasTransicion($id, EstadoDeTicket::ACTIVO->value, true, false, false);
 
         $row = $this->row($id);
-        self::assertSame('active', $row['status']);
+        self::assertSame('activo', $row['status']);
         self::assertNotNull($row['first_response_at']);
         self::assertNull($row['resolved_at']);
         self::assertNull($row['closed_at']);
@@ -153,13 +153,13 @@ class TicketRepositorySqlTest extends KernelTestCase
         $this->repo->updateEstadoTrasTransicion($closedId, EstadoDeTicket::CERRADO->value, false, false, true);
 
         $resolved = $this->row($resolvedId);
-        self::assertSame('resolved', $resolved['status']);
+        self::assertSame('resuelto', $resolved['status']);
         self::assertNull($resolved['first_response_at']);
         self::assertNotNull($resolved['resolved_at']);
         self::assertNull($resolved['closed_at']);
 
         $closed = $this->row($closedId);
-        self::assertSame('closed', $closed['status']);
+        self::assertSame('cerrado', $closed['status']);
         self::assertNull($closed['resolved_at']);
         self::assertNotNull($closed['closed_at']);
     }
@@ -172,7 +172,7 @@ class TicketRepositorySqlTest extends KernelTestCase
         $this->repo->updateEstadoTrasTransicion($id, EstadoDeTicket::ACTIVO->value, true, true, true);
 
         $other = $this->row($otherId);
-        self::assertSame('new', $other['status']);
+        self::assertSame('nuevo', $other['status']);
         self::assertNull($other['first_response_at']);
     }
 
@@ -183,7 +183,7 @@ class TicketRepositorySqlTest extends KernelTestCase
         $this->repo->marcarCerrado($id, EstadoDeTicket::CERRADO->value);
 
         $row = $this->row($id);
-        self::assertSame('closed', $row['status']);
+        self::assertSame('cerrado', $row['status']);
         self::assertNotNull($row['closed_at']);
     }
 
@@ -195,7 +195,7 @@ class TicketRepositorySqlTest extends KernelTestCase
         $this->repo->marcarReabierto($id, EstadoDeTicket::ACTIVO->value);
 
         $row = $this->row($id);
-        self::assertSame('active', $row['status']);
+        self::assertSame('activo', $row['status']);
         self::assertNull($row['closed_at']);
     }
 
@@ -206,7 +206,7 @@ class TicketRepositorySqlTest extends KernelTestCase
         $this->repo->marcarPrimeraRespuesta($id);
 
         $row = $this->row($id);
-        self::assertSame('waiting', $row['status']);
+        self::assertSame('en_espera', $row['status']);
         self::assertNotNull($row['first_response_at']);
     }
 
@@ -247,7 +247,7 @@ class TicketRepositorySqlTest extends KernelTestCase
         $recent = $this->createTicket(EstadoDeTicket::ACTIVO->value, null, '1990-01-03 00:00:00');
         $noInbound = $this->createTicket(EstadoDeTicket::ACTIVO->value);
 
-        $statuses = ['new', 'active', 'waiting', 'resolved'];
+        $statuses = ['nuevo', 'activo', 'en_espera', 'resuelto'];
         $ids = array_map('intval', $this->repo->findIdsConVentanaVencida($statuses, '1990-01-02 00:00:00', 100));
         $mine = array_values(array_intersect($ids, [$older, $old, $closed, $recent, $noInbound]));
 
