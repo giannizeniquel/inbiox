@@ -64,8 +64,9 @@ Un módulo solo crea las carpetas que usa. Si hace falta, también puede tener `
 2. **Los identificadores no llevan tildes ni ñ:** `Conversacion`, `Asignacion`.
 3. **Se respeta la convención de cada lenguaje.** En PHP: PascalCase para clases y carpetas, camelCase para métodos, snake_case para columnas. En Angular: kebab-case para archivos y carpetas.
 4. **Formato de los nombres de clase:**
-   - Casos de uso: verbo en infinitivo (`ResolverTicket`, `AsignarTicket`).
-   - Consultas: `Listar…` u `Obtener…` (`ListarTickets`).
+   - Casos de uso CRUD: prefijo técnico en inglés, como en los métodos (`CreateContactoUseCase`, `UpdateEquipoUseCase`, `DeleteTurnoUseCase`, `SetEquipoDeTicketUseCase`).
+   - Casos de uso que son acciones de negocio: verbo en infinitivo en español (`ResolverTicketUseCase`, `AsignarTicketUseCase`, `DesactivarAgenteUseCase`).
+   - Consultas: `List…` o `Get…` (`ListTicketsQuery`, `GetDetalleDeTicketQuery`).
    - Controladores y repositorios: nombre de negocio con sufijo técnico (`TicketController`, `AgenteRepository`).
 
 ### Frontend (`apps/web`)
