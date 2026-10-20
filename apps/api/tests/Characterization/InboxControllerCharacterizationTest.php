@@ -110,13 +110,13 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
         $m3 = $this->addMessage($ticket, 'entrante', 'three');
         $token = $this->loginAs('inbox@characterization.local', ['ROLE_AGENT'], $this->createAgent('Me'));
 
-        $response = $this->request('GET', '/api/tickets/' . $ticket->getId() . '/messages?limit=2', $token);
+        $response = $this->request('GET', '/api/tickets/' . $ticket->getId() . '/mensajes?limit=2', $token);
 
         self::assertSame(200, $response->getStatusCode());
         $body = $this->json($response);
         self::assertSame(['data', 'meta'], \array_keys($body));
-        self::assertSame(['has_more', 'next_cursor'], \array_keys($body['meta']));
-        self::assertTrue($body['meta']['has_more']);
+        self::assertSame(['hayMas', 'siguienteCursor'], \array_keys($body['meta']));
+        self::assertTrue($body['meta']['hayMas']);
         // Newest two, in chronological order.
         self::assertSame([$m2->getId(), $m3->getId()], \array_column($body['data'], 'mensajeId'));
         self::assertSame(
@@ -130,13 +130,13 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
         self::assertNull($body['data'][0]['agenteRemitenteId']);
         self::assertNull($body['data'][0]['tipoDeRemitente']);
 
-        $cursor = \json_decode(\base64_decode($body['meta']['next_cursor'], true), true);
+        $cursor = \json_decode(\base64_decode($body['meta']['siguienteCursor'], true), true);
         self::assertSame(['created_at', 'id'], \array_keys($cursor));
         self::assertSame($m2->getId(), $cursor['id']);
 
-        $next = $this->json($this->request('GET', '/api/tickets/' . $ticket->getId() . '/messages?limit=2&cursor=' . \rawurlencode($body['meta']['next_cursor']), $token));
+        $next = $this->json($this->request('GET', '/api/tickets/' . $ticket->getId() . '/mensajes?limit=2&cursor=' . \rawurlencode($body['meta']['siguienteCursor']), $token));
         self::assertSame([$m1->getId()], \array_column($next['data'], 'mensajeId'));
-        self::assertSame(['has_more' => false], $next['meta']);
+        self::assertSame(['hayMas' => false], $next['meta']);
     }
 
     public function testMessagesForwardDirection(): void
@@ -146,21 +146,21 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
         $m2 = $this->addMessage($ticket, 'entrante', 'two');
         $token = $this->loginAs('inbox@characterization.local', ['ROLE_AGENT'], $this->createAgent('Me'));
 
-        $body = $this->json($this->request('GET', '/api/tickets/' . $ticket->getId() . '/messages?direction=forward', $token));
+        $body = $this->json($this->request('GET', '/api/tickets/' . $ticket->getId() . '/mensajes?sentido=adelante', $token));
 
         self::assertSame([$m1->getId(), $m2->getId()], \array_column($body['data'], 'mensajeId'));
-        self::assertSame(['has_more' => false], $body['meta']);
+        self::assertSame(['hayMas' => false], $body['meta']);
     }
 
     public function testMessagesOfUnknownTicketReturnEmptyListNot404(): void
     {
         $token = $this->loginAs('inbox@characterization.local', ['ROLE_AGENT'], $this->createAgent('Me'));
 
-        $response = $this->request('GET', '/api/tickets/999999999/messages', $token);
+        $response = $this->request('GET', '/api/tickets/999999999/mensajes', $token);
 
         // Characterization: current behavior, not necessarily desired.
         // An unknown ticket gives 200 with an empty page, not 404.
-        $this->assertJsonResponse(200, ['data' => [], 'meta' => ['has_more' => false]], $response);
+        $this->assertJsonResponse(200, ['data' => [], 'meta' => ['hayMas' => false]], $response);
     }
 
     public function testMessagesInvalidArgumentFromQueryReturns400(): void
@@ -170,7 +170,7 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
         $query->method('execute')->willThrowException(new \InvalidArgumentException('bad cursor'));
         static::getContainer()->set(GetMensajesDeTicketQuery::class, $query);
 
-        $this->assertJsonResponse(400, ['error' => 'bad cursor'], $this->request('GET', '/api/tickets/1/messages', $token));
+        $this->assertJsonResponse(400, ['error' => 'bad cursor'], $this->request('GET', '/api/tickets/1/mensajes', $token));
     }
 
     // ── app_ticket_mark_read ──

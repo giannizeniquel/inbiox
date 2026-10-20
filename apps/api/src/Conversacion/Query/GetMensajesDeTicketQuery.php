@@ -16,7 +16,7 @@ class GetMensajesDeTicketQuery
         int $ticketId,
         ?string $cursor = null,
         int $limit = 20,
-        string $direccion = 'forward',
+        string $sentido = 'adelante',
         int $offset = 0,
     ): array {
         $limit = min(200, max(1, $limit));
@@ -37,7 +37,7 @@ class GetMensajesDeTicketQuery
             }
         }
         
-        if ($direccion === 'backward') {
+        if ($sentido === 'atras') {
             return $this->getMensajesHaciaAtras($conversacionId, $cursorData, $limit, $offset);
         }
         

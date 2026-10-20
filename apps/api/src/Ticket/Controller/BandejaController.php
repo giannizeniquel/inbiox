@@ -100,20 +100,20 @@ class BandejaController
         return new JsonResponse($dto->toArray());
     }
 
-    #[Route('/api/tickets/{id}/messages', name: 'app_inbox_ticket_messages', methods: ['GET'])]
+    #[Route('/api/tickets/{id}/mensajes', name: 'app_inbox_ticket_messages', methods: ['GET'])]
     public function getMensajes(int $id, Request $request): JsonResponse
     {
         try {
             $cursor = $request->query->get('cursor');
             $limit = min(200, max(1, (int) $request->query->get('limit', 20)));
-            $direccion = $request->query->get('direction', 'backward');
+            $sentido = $request->query->get('sentido', 'atras');
             $offset = max(0, (int) $request->query->get('offset', 0));
 
             $result = $this->getTicketMessagesQuery->execute(
                 ticketId: $id,
                 cursor: $cursor,
                 limit: $limit,
-                direccion: $direccion,
+                sentido: $sentido,
                 offset: $offset,
             );
 
@@ -122,12 +122,12 @@ class BandejaController
             $response = [
                 'data' => $items,
                 'meta' => [
-                    'has_more' => $result['has_more'],
+                    'hayMas' => $result['has_more'],
                 ],
             ];
 
             if ($result['next_cursor'] !== null) {
-                $response['meta']['next_cursor'] = $result['next_cursor'];
+                $response['meta']['siguienteCursor'] = $result['next_cursor'];
             }
 
             return new JsonResponse($response);
