@@ -36,9 +36,9 @@ export class LineaDeTiempoDeContactoStore {
 
     this.api.getLineaDeTiempo(contactoId, undefined, 20).subscribe({
       next: (response) => {
-        this.events.set(response.events);
+        this.events.set(response.eventos);
         this.cursor.set(response.cursor);
-        this.hasMore.set(response.hasMore);
+        this.hasMore.set(response.hayMas);
         this.loading.set(false);
       },
       error: (err) => {
@@ -60,9 +60,9 @@ export class LineaDeTiempoDeContactoStore {
 
     this.api.getLineaDeTiempo(contactoId, currentCursor, 20).subscribe({
       next: (response) => {
-        this.events.update((existing) => [...existing, ...response.events]);
+        this.events.update((existing) => [...existing, ...response.eventos]);
         this.cursor.set(response.cursor);
-        this.hasMore.set(response.hasMore);
+        this.hasMore.set(response.hayMas);
         this.loading.set(false);
       },
       error: (err) => {

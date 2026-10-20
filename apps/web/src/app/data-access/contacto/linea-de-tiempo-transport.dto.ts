@@ -3,18 +3,18 @@
  */
 
 export interface EventoDeLineaDeTiempoDTO {
-  type: 'message.received' | 'message.sent' | 'ticket.created' | 'ticket.status_changed' | 'ticket.assigned' | 'ticket.reassigned';
-  occurredAt: string;
-  content?: string;
+  tipo: 'ticket.creado' | 'ticket.estado_cambiado' | 'ticket.asignado' | 'ticket.reasignado';
+  ocurridoAt: string;
+  contenido?: string;
   ticketId?: number;
-  ticketStatus?: string;
-  assignedTo?: string;
-  agentId?: number;
-  direction?: 'entrante' | 'saliente';
+  estadoDeTicket?: string;
+  asignadoA?: string;
+  agenteId?: number;
+  direccion?: 'entrante' | 'saliente';
 }
 
 export interface EventoDeLineaDeTiempoResponse {
-  events: EventoDeLineaDeTiempoDTO[];
+  eventos: EventoDeLineaDeTiempoDTO[];
   cursor: string | null;
-  hasMore: boolean;
+  hayMas: boolean;
 }

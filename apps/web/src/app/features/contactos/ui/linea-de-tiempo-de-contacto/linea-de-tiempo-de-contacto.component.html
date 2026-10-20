@@ -37,19 +37,19 @@
         <button
           class="timeline__event"
           [class.timeline__event--clickable]="event.ticketId != null"
-          [attr.data-type]="event.type"
+          [attr.data-type]="event.tipo"
           (click)="onEventClick(event)"
           type="button"
         >
-          <span class="timeline__event-icon" [attr.data-type]="event.type">
-            {{ eventIcon(event.type) }}
+          <span class="timeline__event-icon" [attr.data-type]="event.tipo">
+            {{ eventIcon(event.tipo) }}
           </span>
           <div class="timeline__event-body">
             <span class="timeline__event-label">{{ eventLabel(event) }}</span>
-            @if (event.content) {
-              <span class="timeline__event-content">{{ event.content }}</span>
+            @if (event.contenido) {
+              <span class="timeline__event-content">{{ event.contenido }}</span>
             }
-            <span class="timeline__event-time">{{ event.occurredAt | date:'short' }}</span>
+            <span class="timeline__event-time">{{ event.ocurridoAt | date:'short' }}</span>
           </div>
         </button>
       }

@@ -71,7 +71,7 @@ export class DetalleDeContactoComponent {
 
   /** Status label */
   estadoLabel(): string {
-    return this.contacto()?.status === 'active' ? 'Activo' : 'Inactivo';
+    return this.contacto()?.status === 'activo' ? 'Activo' : 'Inactivo';
   }
 
   onAbrirConversacion(): void {

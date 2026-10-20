@@ -43,32 +43,32 @@ export interface UpdateContactoInput {
   tags?: string[];
 }
 
-/** Per-row import failure, as returned by POST /api/contacts/import */
+/** Per-row import failure, as returned by POST /api/contactos/importar */
 export interface ErrorDeImportacionDeContactos {
-  row: number;
-  phone: string;
-  reason: string;
-  message: string;
+  fila: number;
+  telefono: string;
+  motivo: string;
+  mensaje: string;
 }
 
 /** Partial-success result of a CSV contact import */
 export interface ResultadoDeImportacionDeContactos {
-  totalRows: number;
-  imported: number;
-  failed: number;
-  errors: ErrorDeImportacionDeContactos[];
-  errorsTruncated: boolean;
+  totalDeFilas: number;
+  importados: number;
+  fallidos: number;
+  errores: ErrorDeImportacionDeContactos[];
+  erroresTruncados: boolean;
 }
 
 /**
  * ContactoApiService — HTTP client for contacts endpoints.
  *
  * Calls Symfony backend at:
- * - GET /api/contacts (paginated list with filters)
- * - GET /api/contacts/{id} (contact detail)
- * - POST /api/contacts (create contact)
- * - PUT /api/contacts/{id} (update contact)
- * - DELETE /api/contacts/{id} (soft delete)
+ * - GET /api/contactos (paginated list with filters)
+ * - GET /api/contactos/{id} (contact detail)
+ * - POST /api/contactos (create contact)
+ * - PUT /api/contactos/{id} (update contact)
+ * - DELETE /api/contactos/{id} (soft delete)
  */
 @Injectable({ providedIn: 'root' })
 export class ContactoApiService {
@@ -88,16 +88,16 @@ export class ContactoApiService {
       .set('limit', limit.toString());
 
     if (search) {
-      params = params.set('search', search);
+      params = params.set('busqueda', search);
     }
     if (filtros?.status) {
-      params = params.set('status', filtros.status);
+      params = params.set('estado', filtros.status);
     }
     if (filtros?.channel) {
-      params = params.set('channel', filtros.channel);
+      params = params.set('canal', filtros.channel);
     }
     if (filtros?.ownerId !== undefined && filtros?.ownerId !== null) {
-      params = params.set('ownerId', filtros.ownerId.toString());
+      params = params.set('responsableId', filtros.ownerId.toString());
     }
 
     return params;
@@ -109,30 +109,30 @@ export class ContactoApiService {
   private mapearAContactoDeLista(item: any): ContactoDeListaDTO {
     return {
       id: String(item.id),
-      phone: item.phone || '',
-      name: item.name || null,
-      lastInteraction: item.timestamps?.updated_at || null,
+      phone: item.telefono || '',
+      name: item.nombre || null,
+      lastInteraction: item.fechas?.actualizadoAt || null,
       unreadCount: 0, // Not available in backend yet
-      activeTicketId: item.activeTicketId ? String(item.activeTicketId) : null,
+      activeTicketId: item.ticketActivoId ? String(item.ticketActivoId) : null,
       tags: item.tags || [], // Not available in backend yet
-      ownerId: item.owner_id,
+      ownerId: item.responsableId,
       email: item.email || null,
       ownerName: item.owner?.name || null,
-      status: item.status === 'active' ? 'active' : 'inactive',
-      channel: item.channel === 'whatsapp' ? 'whatsapp' : 'other',
-      updatedAt: item.timestamps?.updated_at || new Date().toISOString(),
+      status: item.estado === 'activo' ? 'activo' : 'inactivo',
+      channel: item.canal === 'whatsapp' ? 'whatsapp' : 'otro',
+      updatedAt: item.fechas?.actualizadoAt || new Date().toISOString(),
     };
   }
 
   /**
-   * GET /api/contacts - Paginated list, mapped to ContactoUI.
+   * GET /api/contactos - Paginated list, mapped to ContactoUI.
    * Errors keep the original message when it is an Error; otherwise a generic one.
    */
   getContactos(input: GetContactosInput = {}): Observable<GetContactosOutput> {
     const page = input.page ?? 1;
     const limit = input.limit ?? 20;
 
-    return this.http.get<any>(`${this.baseUrl}/api/contacts`, {
+    return this.http.get<any>(`${this.baseUrl}/api/contactos`, {
       params: this.buildListParams(page, limit)
     }).pipe(
       // Map response to frontend format
@@ -160,13 +160,13 @@ export class ContactoApiService {
   }
 
   /**
-   * GET /api/contacts/{id} - Contact detail
+   * GET /api/contactos/{id} - Contact detail
    */
   getContacto(id: string): Observable<DetalleDeContactoDTO> {
-    return this.http.get<any>(`${this.baseUrl}/api/contacts/${id}`).pipe(
+    return this.http.get<any>(`${this.baseUrl}/api/contactos/${id}`).pipe(
       map((response: any) => ({
         ...this.mapearAContactoDeLista(response),
-        createdAt: response.timestamps?.created_at || new Date().toISOString(),
+        createdAt: response.fechas?.creadoAt || new Date().toISOString(),
         recentTickets: [], // Not available in backend yet
         email: response.email || null,
       }))
@@ -174,7 +174,7 @@ export class ContactoApiService {
   }
 
   /**
-   * POST /api/contacts - Create contact (phone required; fields trimmed), mapped to ContactoUI.
+   * POST /api/contactos - Create contact (phone required; fields trimmed), mapped to ContactoUI.
    */
   createContacto(input: CreateContactoInput): Observable<ContactoUI> {
     if (!input.phone || input.phone.trim().length === 0) {
@@ -182,15 +182,15 @@ export class ContactoApiService {
     }
 
     const request: CreateContactoRequest = {
-      phone: input.phone.trim(),
-      name: input.name?.trim(),
+      telefono: input.phone.trim(),
+      nombre: input.name?.trim(),
       email: input.email?.trim(),
     };
 
-    return this.http.post<any>(`${this.baseUrl}/api/contacts`, request).pipe(
+    return this.http.post<any>(`${this.baseUrl}/api/contactos`, request).pipe(
       map((response: any): DetalleDeContactoDTO => ({
         ...this.mapearAContactoDeLista(response),
-        createdAt: response.timestamps?.created_at || new Date().toISOString(),
+        createdAt: response.fechas?.creadoAt || new Date().toISOString(),
         recentTickets: [],
         email: response.email || null,
       })),
@@ -205,17 +205,17 @@ export class ContactoApiService {
   }
 
   /**
-   * POST /api/contacts/import - Bulk CSV contact import (ROLE_SUPERVISOR only).
+   * POST /api/contactos/importar - Bulk CSV contact import (ROLE_SUPERVISOR only).
    * Do not set Content-Type manually — the browser must add the multipart boundary.
    */
   importarContactos(file: File): Observable<ResultadoDeImportacionDeContactos> {
     const form = new FormData();
-    form.append('file', file);
-    return this.http.post<ResultadoDeImportacionDeContactos>(`${this.baseUrl}/api/contacts/import`, form);
+    form.append('archivo', file);
+    return this.http.post<ResultadoDeImportacionDeContactos>(`${this.baseUrl}/api/contactos/importar`, form);
   }
 
   /**
-   * PUT /api/contacts/{id} - Update contact (id required; fields trimmed), mapped to ContactoUI.
+   * PUT /api/contactos/{id} - Update contact (id required; fields trimmed), mapped to ContactoUI.
    */
   updateContacto(input: UpdateContactoInput): Observable<ContactoUI> {
     if (!input.id) {
@@ -223,15 +223,15 @@ export class ContactoApiService {
     }
 
     const request: UpdateContactoRequest = {
-      name: input.name?.trim(),
+      nombre: input.name?.trim(),
       email: input.email?.trim(),
       tags: input.tags,
     };
 
-    return this.http.put<any>(`${this.baseUrl}/api/contacts/${input.id}`, request).pipe(
+    return this.http.put<any>(`${this.baseUrl}/api/contactos/${input.id}`, request).pipe(
       map((response: any): DetalleDeContactoDTO => ({
         ...this.mapearAContactoDeLista(response),
-        createdAt: response.timestamps?.created_at || new Date().toISOString(),
+        createdAt: response.fechas?.creadoAt || new Date().toISOString(),
         recentTickets: [],
         email: response.email || null,
       })),
@@ -246,7 +246,7 @@ export class ContactoApiService {
   }
 
   /**
-   * GET /api/contacts/{id}/timeline - Contact timeline events
+   * GET /api/contactos/{id}/linea-de-tiempo - Contact timeline events
    */
   getLineaDeTiempo(contactoId: number, before?: string, limit = 20): Observable<EventoDeLineaDeTiempoResponse> {
     let params = new HttpParams().set('limit', limit.toString());
@@ -254,7 +254,7 @@ export class ContactoApiService {
       params = params.set('before', before);
     }
     return this.http.get<EventoDeLineaDeTiempoResponse>(
-      `${this.baseUrl}/api/contacts/${contactoId}/timeline`,
+      `${this.baseUrl}/api/contactos/${contactoId}/linea-de-tiempo`,
       { params }
     );
   }

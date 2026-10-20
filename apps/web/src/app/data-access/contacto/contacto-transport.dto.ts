@@ -14,8 +14,8 @@ export interface ContactoDeListaDTO {
   ownerId: number | null;
   ownerName: string | null;
   email: string | null;
-  status: 'active' | 'inactive';
-  channel: 'whatsapp' | 'other';
+  status: 'activo' | 'inactivo';
+  channel: 'whatsapp' | 'otro';
   updatedAt: string;
 }
 
@@ -42,14 +42,14 @@ export interface ListaDeContactosResponse {
 
 /** Create contact request */
 export interface CreateContactoRequest {
-  phone: string;
-  name?: string;
+  telefono: string;
+  nombre?: string;
   email?: string;
 }
 
 /** Update contact request */
 export interface UpdateContactoRequest {
-  name?: string;
+  nombre?: string;
   email?: string;
   tags?: string[];
 }

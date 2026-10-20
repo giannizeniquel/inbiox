@@ -74,44 +74,38 @@ export class LineaDeTiempoDeContactoComponent {
   /** Get the icon for an event type */
   eventIcon(type: string): string {
     switch (type) {
-      case 'message.received': return '←';
-      case 'message.sent': return '→';
-      case 'ticket.created': return '+';
-      case 'ticket.status_changed': return '●';
-      case 'ticket.assigned': return '◎';
-      case 'ticket.reassigned': return '◎';
+      case 'ticket.creado': return '+';
+      case 'ticket.estado_cambiado': return '●';
+      case 'ticket.asignado': return '◎';
+      case 'ticket.reasignado': return '◎';
       default: return '•';
     }
   }
 
   /** Get the human-readable label for an event type */
   eventLabel(event: EventoDeLineaDeTiempoDTO): string {
-    switch (event.type) {
-      case 'message.received':
-        return event.direction === 'entrante' ? 'Mensaje recibido' : 'Mensaje entrante';
-      case 'message.sent':
-        return 'Mensaje enviado';
-      case 'ticket.created':
+    switch (event.tipo) {
+      case 'ticket.creado':
         return event.ticketId ? `Ticket #${event.ticketId} creado` : 'Ticket creado';
-      case 'ticket.status_changed':
+      case 'ticket.estado_cambiado':
         if (event.ticketId) {
-          return event.ticketStatus === 'closed'
+          return event.estadoDeTicket === 'cerrado'
             ? `Ticket #${event.ticketId} cerrado`
-            : `Ticket #${event.ticketId} cambiado a ${event.ticketStatus}`;
+            : `Ticket #${event.ticketId} cambiado a ${event.estadoDeTicket}`;
         }
-        return event.ticketStatus
-          ? `Estado cambiado a ${event.ticketStatus}`
+        return event.estadoDeTicket
+          ? `Estado cambiado a ${event.estadoDeTicket}`
           : 'Estado cambiado';
-      case 'ticket.assigned':
-        return event.assignedTo
-          ? `Asignado a ${event.assignedTo}${event.agentId ? ` (ID: ${event.agentId})` : ''}`
+      case 'ticket.asignado':
+        return event.asignadoA
+          ? `Asignado a ${event.asignadoA}${event.agenteId ? ` (ID: ${event.agenteId})` : ''}`
           : 'Ticket asignado';
-      case 'ticket.reassigned':
-        return event.assignedTo
-          ? `Reasignado a ${event.assignedTo}${event.agentId ? ` (ID: ${event.agentId})` : ''}`
+      case 'ticket.reasignado':
+        return event.asignadoA
+          ? `Reasignado a ${event.asignadoA}${event.agenteId ? ` (ID: ${event.agenteId})` : ''}`
           : 'Ticket reasignado';
       default:
-        return event.type;
+        return event.tipo;
     }
   }
 }

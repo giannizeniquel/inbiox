@@ -17,6 +17,13 @@ import { ImportacionDeContactosDialogComponent } from '../../ui/importacion-de-c
 /** Guard flag to prevent URL sync feedback loops */
 let updatingFromUrl = false;
 
+/** Old bookmarks carry the English values under the old query names. Stage 4: drop together with those names. */
+const VALORES_VIEJOS: Record<string, string> = { active: 'activo', inactive: 'inactivo', other: 'otro' };
+
+function deValorViejo(valor: string | undefined): string | undefined {
+  return valor === undefined ? undefined : (VALORES_VIEJOS[valor] ?? valor);
+}
+
 /**
  * ContactosPageComponent — smart container for the contacts feature.
  *
@@ -107,13 +114,13 @@ export class ContactosPageComponent implements OnInit, OnDestroy {
 
     // Sync from URL on first load (initial navigation only)
     const q = this.route.snapshot.queryParams['q'];
-    const estado = this.route.snapshot.queryParams['estado'] ?? this.route.snapshot.queryParams['status'];
-    const channel = this.route.snapshot.queryParams['canal'] ?? this.route.snapshot.queryParams['channel'];
+    const estado = this.route.snapshot.queryParams['estado'] ?? deValorViejo(this.route.snapshot.queryParams['status']);
+    const channel = this.route.snapshot.queryParams['canal'] ?? deValorViejo(this.route.snapshot.queryParams['channel']);
     if (q !== undefined || estado !== undefined || channel !== undefined) {
       if (q !== undefined) this.screen.setSearchTerm(q);
       const filtros: FiltrosDeContacto = {};
-      if (estado !== undefined) filtros.status = estado as 'active' | 'inactive' | 'all';
-      if (channel !== undefined) filtros.channel = channel as 'whatsapp' | 'other' | 'all';
+      if (estado !== undefined) filtros.status = estado as 'activo' | 'inactivo' | 'all';
+      if (channel !== undefined) filtros.channel = channel as 'whatsapp' | 'otro' | 'all';
       if (Object.keys(filtros).length > 0) this.screen.setFiltros(filtros);
     }
 
@@ -121,12 +128,12 @@ export class ContactosPageComponent implements OnInit, OnDestroy {
     this.route.queryParams.subscribe(params => {
       updatingFromUrl = true;
       const q = params['q'];
-      const estado = params['estado'] ?? params['status'];
-      const channel = params['canal'] ?? params['channel'];
+      const estado = params['estado'] ?? deValorViejo(params['status']);
+      const channel = params['canal'] ?? deValorViejo(params['channel']);
       if (q !== undefined) this.screen.setSearchTerm(q);
       const filtros: FiltrosDeContacto = {};
-      if (estado !== undefined) filtros.status = estado as 'active' | 'inactive' | 'all';
-      if (channel !== undefined) filtros.channel = channel as 'whatsapp' | 'other' | 'all';
+      if (estado !== undefined) filtros.status = estado as 'activo' | 'inactivo' | 'all';
+      if (channel !== undefined) filtros.channel = channel as 'whatsapp' | 'otro' | 'all';
       if (Object.keys(filtros).length > 0) this.screen.setFiltros(filtros);
       updatingFromUrl = false;
     });
@@ -254,7 +261,7 @@ export class ContactosPageComponent implements OnInit, OnDestroy {
   /** Handle import dialog close — reload the list when at least one row was imported */
   onCerrarImportacionDialog(result: ResultadoDeImportacionDeContactos | null): void {
     this.mostrarImportacionDialog = false;
-    if (result && result.imported > 0) {
+    if (result && result.importados > 0) {
       this.cargarContactos();
     }
   }

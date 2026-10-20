@@ -10,7 +10,7 @@ const FILE_REJECTION_REASONS: Record<string, string> = {
   file_missing: 'No se seleccionó ningún archivo.',
   file_too_large: 'El archivo supera el tamaño máximo permitido (2 MB).',
   invalid_file_type: 'Solo se aceptan archivos CSV.',
-  missing_phone_column: 'El archivo no tiene una columna "phone".',
+  missing_phone_column: 'El archivo no tiene una columna "Teléfono".',
   empty_file: 'El archivo no contiene filas de datos.',
   too_many_rows: 'El archivo supera el máximo de 1000 filas.',
 };
@@ -29,7 +29,7 @@ const ROW_ERROR_REASONS: Record<string, string> = {
  *
  * Per spec (contact-import):
  * - Native file picker (no drag-and-drop, no client-side CSV preview)
- * - Submits to POST /api/contacts/import via ContactoApiService.importContacts()
+ * - Submits to POST /api/contactos/importar via ContactoApiService.importContacts()
  * - Displays imported/skipped counts + per-row error list with localized reasons
  * - Standalone, signals-based, OnPush
  */
@@ -78,11 +78,11 @@ export class ImportacionDeContactosDialogComponent {
         this.loading.set(false);
         this.result.set(result);
       },
-      error: (err: { error?: { error?: string; message?: string } }) => {
+      error: (err: { error?: { error?: string; mensaje?: string } }) => {
         this.loading.set(false);
         const reason = err.error?.error;
         this.errorMessage.set(
-          (reason && FILE_REJECTION_REASONS[reason]) || err.error?.message || 'Error al importar el archivo',
+          (reason && FILE_REJECTION_REASONS[reason]) || err.error?.mensaje || 'Error al importar el archivo',
         );
       },
     });

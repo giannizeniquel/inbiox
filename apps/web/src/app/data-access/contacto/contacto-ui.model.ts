@@ -19,8 +19,8 @@ export interface ContactoUI {
   /** Tags — UI placeholder. No backend persistence yet. */
   tags: string[];
   owner: { id: number; name: string } | null;
-  status: 'active' | 'inactive';
-  channel: 'whatsapp' | 'other';
+  status: 'activo' | 'inactivo';
+  channel: 'whatsapp' | 'otro';
 }
 
 /**

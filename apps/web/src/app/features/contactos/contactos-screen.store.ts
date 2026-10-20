@@ -7,11 +7,11 @@ import { ContactoUI } from '../../data-access/contacto/contacto-ui.model';
  * Tags: optional, not implemented yet (UI placeholder only).
  */
 export interface FiltrosDeContacto {
-  status?: 'active' | 'inactive' | 'all';
+  status?: 'activo' | 'inactivo' | 'all';
   ownerId?: number | null;
   /** Reserved for future tag filtering. Not implemented. */
   tags?: string[];
-  channel?: 'whatsapp' | 'other' | 'all';
+  channel?: 'whatsapp' | 'otro' | 'all';
 }
 
 /**

@@ -97,13 +97,13 @@ Contenedor: `features/bandeja/pages/conversacion/conversacion.component.ts` (scr
 
 | Acción | Código | Endpoint | Servidor / navegador | Rol |
 |---|---|---|---|---|
-| Listar (20 por página, "cargar más") | `GetContactsUseCase` (`contactos-page.component.ts:171-195`) | `GET /api/contacts?page&limit` | Servidor | Todos |
+| Listar (20 por página, "cargar más") | `GetContactsUseCase` (`contactos-page.component.ts:171-195`) | `GET /api/contactos?page&limit` | Servidor | Todos |
 | Buscar, filtrar por estado/canal | `ContactosScreenStore.contactosFiltrados` (`features/contactos/contactos-screen.store.ts:40-74`) | — | **Navegador** (solo lo cargado) | Todos |
-| Detalle | `DetalleDeContactoComponent`; si no está en caché, API directa | `GET /api/contacts/{id}` | — | Todos |
-| Línea de tiempo | `LineaDeTiempoDeContactoComponent` → `LineaDeTiempoDeContactoStore` (hace HTTP) | `GET /api/contacts/{id}/timeline?before&limit=20` | Servidor | Todos |
+| Detalle | `DetalleDeContactoComponent`; si no está en caché, API directa | `GET /api/contactos/{id}` | — | Todos |
+| Línea de tiempo | `LineaDeTiempoDeContactoComponent` → `LineaDeTiempoDeContactoStore` (hace HTTP) | `GET /api/contactos/{id}/linea-de-tiempo?before&limit=20` | Servidor | Todos |
 | Abrir ticket desde el contacto | navega a `/bandeja?ticketId=…`; sin ticket activo, solo a `/bandeja` (`TODO`) | — | — | Todos |
-| Crear / editar | diálogos → `CreateContactUseCase` / `UpdateContactUseCase` | `POST` / `PUT /api/contacts` | — | Todos |
-| Importar CSV | `ImportacionDeContactosDialogComponent` → API directa | `POST /api/contacts/import` | — | Admin, supervisor |
+| Crear / editar | diálogos → `CreateContactUseCase` / `UpdateContactUseCase` | `POST` / `PUT /api/contactos` | — | Todos |
+| Importar CSV | `ImportacionDeContactosDialogComponent` → API directa | `POST /api/contactos/importar` | — | Admin, supervisor |
 | Borrar | **sin UI** | — | — | — |
 
 ## Informes

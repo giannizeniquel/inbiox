@@ -50,23 +50,15 @@
   font-weight: 700;
   color: white;
 
-  &[data-type="message.received"] {
-    background-color: #4caf50;
-  }
-
-  &[data-type="message.sent"] {
-    background-color: #2196f3;
-  }
-
-  &[data-type="ticket.created"] {
+  &[data-type="ticket.creado"] {
     background-color: #ff9800;
   }
 
-  &[data-type="ticket.status_changed"] {
+  &[data-type="ticket.estado_cambiado"] {
     background-color: #9c27b0;
   }
 
-  &[data-type="ticket.assigned"] {
+  &[data-type="ticket.asignado"] {
     background-color: #607d8b;
   }
 }

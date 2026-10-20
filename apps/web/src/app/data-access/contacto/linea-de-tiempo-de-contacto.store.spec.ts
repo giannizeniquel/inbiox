@@ -9,13 +9,13 @@ describe('LineaDeTiempoDeContactoStore', () => {
   let apiSpy: jasmine.SpyObj<ContactoApiService>;
 
   const mockEvent = (overrides: Partial<EventoDeLineaDeTiempoDTO> = {}): EventoDeLineaDeTiempoDTO => ({
-    type: 'ticket.created',
-    occurredAt: '2026-01-01T00:00:00Z',
+    tipo: 'ticket.creado',
+    ocurridoAt: '2026-01-01T00:00:00Z',
     ...overrides,
   });
 
   function mockResponse(events: EventoDeLineaDeTiempoDTO[], hasMore = false, cursor: string | null = null): EventoDeLineaDeTiempoResponse {
-    return { events, hasMore, cursor };
+    return { eventos: events, hayMas: hasMore, cursor };
   }
 
   beforeEach(() => {
@@ -44,13 +44,13 @@ describe('LineaDeTiempoDeContactoStore', () => {
   // ── loadTimeline() ──
 
   it('should load timeline and replace events', () => {
-    const events = [mockEvent({ type: 'message.received' }), mockEvent({ type: 'ticket.created' })];
+    const events = [mockEvent({ tipo: 'ticket.asignado' }), mockEvent({ tipo: 'ticket.creado' })];
     apiSpy.getLineaDeTiempo.and.returnValue(of(mockResponse(events, true, '2026-01-01T00:00:00Z')));
 
     store.cargarLineaDeTiempo(1);
 
     expect(store.events().length).toBe(2);
-    expect(store.events()[0].type).toBe('message.received');
+    expect(store.events()[0].tipo).toBe('ticket.asignado');
     expect(store.hasMore()).toBeTrue();
     expect(store.cursor()).toBe('2026-01-01T00:00:00Z');
     expect(store.loading()).toBeFalse();
@@ -70,10 +70,10 @@ describe('LineaDeTiempoDeContactoStore', () => {
   // ── loadOlder() ──
 
   it('should append events when loading older', () => {
-    const initialEvents = [mockEvent({ type: 'message.received', occurredAt: '2026-01-02T00:00:00Z' })];
+    const initialEvents = [mockEvent({ tipo: 'ticket.asignado', ocurridoAt: '2026-01-02T00:00:00Z' })];
     apiSpy.getLineaDeTiempo.and.returnValues(
       of(mockResponse(initialEvents, true, '2026-01-02T00:00:00Z')),
-      of(mockResponse([mockEvent({ type: 'ticket.created', occurredAt: '2026-01-01T00:00:00Z' })], false, null)),
+      of(mockResponse([mockEvent({ tipo: 'ticket.creado', ocurridoAt: '2026-01-01T00:00:00Z' })], false, null)),
     );
 
     store.cargarLineaDeTiempo(1);
@@ -82,8 +82,8 @@ describe('LineaDeTiempoDeContactoStore', () => {
     store.cargarAnteriores(1);
 
     expect(store.events().length).toBe(2);
-    expect(store.events()[0].type).toBe('message.received');
-    expect(store.events()[1].type).toBe('ticket.created');
+    expect(store.events()[0].tipo).toBe('ticket.asignado');
+    expect(store.events()[1].tipo).toBe('ticket.creado');
     expect(store.hasMore()).toBeFalse();
     expect(store.cursor()).toBeNull();
   });

@@ -8,7 +8,7 @@ import { FiltrosDeContacto } from '../../contactos-screen.store';
  * - Standalone component, NO store injection
  * - Input: currentFilters (FiltrosDeContacto interface)
  * - Output: filterChange — emits partial FiltrosDeContacto on change
- * - Chips for: status (active/inactive/all), channel (whatsapp/other/all)
+ * - Chips for: status (activo/inactivo/all), channel (whatsapp/otro/all)
  * - Visual active state with CSS classes
  */
 @Component({
@@ -28,34 +28,34 @@ export class FiltrosDeContactoComponent {
   /** Status filter options */
   readonly estadoOptions = [
     { value: 'all' as const, label: 'Todos' },
-    { value: 'active' as const, label: 'Activos' },
-    { value: 'inactive' as const, label: 'Inactivos' },
+    { value: 'activo' as const, label: 'Activos' },
+    { value: 'inactivo' as const, label: 'Inactivos' },
   ];
 
   /** Channel filter options */
   readonly channelOptions = [
     { value: 'all' as const, label: 'Todos' },
     { value: 'whatsapp' as const, label: 'WhatsApp' },
-    { value: 'other' as const, label: 'Otros' },
+    { value: 'otro' as const, label: 'Otros' },
   ];
 
   /** Get current status value or default 'all' */
-  estadoActual(): 'active' | 'inactive' | 'all' {
+  estadoActual(): 'activo' | 'inactivo' | 'all' {
     return this.filtros().status ?? 'all';
   }
 
   /** Get current channel value or default 'all' */
-  currentChannel(): 'whatsapp' | 'other' | 'all' {
+  currentChannel(): 'whatsapp' | 'otro' | 'all' {
     return this.filtros().channel ?? 'all';
   }
 
   /** Handle status chip click */
-  onEstadoChange(estado: 'active' | 'inactive' | 'all'): void {
+  onEstadoChange(estado: 'activo' | 'inactivo' | 'all'): void {
     this.filtroChange.emit({ status: estado });
   }
 
   /** Handle channel chip click */
-  onChannelChange(channel: 'whatsapp' | 'other' | 'all'): void {
+  onChannelChange(channel: 'whatsapp' | 'otro' | 'all'): void {
     this.filtroChange.emit({ channel });
   }
 }
