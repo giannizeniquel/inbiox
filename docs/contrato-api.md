@@ -1,6 +1,6 @@
 # Contrato conjunto de la API: propuesta
 
-> **Estado:** D1–D7 cerradas (L147–L154); falta la aprobación del usuario. No se cambia código ni se corre ninguna migración hasta aprobarlo. Tarea: `odd/tasks/limpieza-backend.md`, S14 / T39.
+> **Estado:** aprobado por el usuario (L155), con D1–D7 cerradas (L147–L154) y estos puntos: `GET /api/tickets/{id}/events` se borra en la etapa 3 con sus tests; tablas y columnas quedan en inglés (regla corregida en `docs/arquitectura.md`); los encabezados del CSV van en español legible. Tarea: `odd/tasks/limpieza-backend.md`, S14 / T39.
 >
 > **Base:** back `chore/limpieza-backend-fase-5` (`28314ee`), front `chore/limpieza-frontend-fase-5` (`b0ce6db`), base de dev `inbiox` (conteos del 2026-10-20).
 
@@ -121,7 +121,7 @@ El cambio sí tiene que ser **atómico entre datos y código**: `user.roles`, `s
 Verificado contra el front nuevo y el back:
 
 - **`GET /api/mercure/token`:** el front lo pide en el login, en el refresh y en el arranque, lo guarda y nunca lo manda. La suscripción funciona solo porque el hub de dev acepta suscriptores anónimos (`docker-compose.yml:47`). **No se sabe si el hub de producción también.** La app no está desplegada, así que no hay producción que revisar. **No se borra en el contrato:** queda hasta que se defina la autenticación de suscriptores de Mercure (sección 7, punto 11).
-- **`GET /api/tickets/{id}/events`:** no tiene llamador en el front nuevo. Tiene 5 tests de caracterización, y `docs/02` 00 y 06 ya lo marcan como inalcanzable e inseguro. Propuesta: borrarlo en el contrato, con decisión explícita. Es además el único otro lector de `event_type`.
+- **`GET /api/tickets/{id}/events`:** no tiene llamador en el front nuevo. Tiene 5 tests de caracterización, y `docs/02` 00 y 06 ya lo marcan como inalcanzable e inseguro. **Decidido (L155):** se borra en la etapa 3, con sus tests. Es además el único otro lector de `event_type`.
 
 ## 4. Migración de datos
 
@@ -147,7 +147,7 @@ Todas las columnas con valores fijos son `VARCHAR` o `JSON` (no hay `ENUM` de My
 
 **Datos de dev:** se migran con la misma migración; no se borra nada. La base de test se arma desde el mapeo de Doctrine, así que los tests ven el estado nuevo directamente; agrego un test que corre la migración `up` y `down` sobre filas de ejemplo.
 
-**Nombres de tablas y columnas:** las 20 tablas y sus columnas están en inglés. Las claves JSON no salen de los nombres de columna (se arman a mano en PHP), así que **renombrar tablas y columnas no es necesario para el contrato.** Propuesta: dejarlas en inglés como formato persistido, igual que hoy, y no sumar ese riesgo. A confirmar.
+**Nombres de tablas y columnas:** las 20 tablas y sus columnas están en inglés. Las claves JSON no salen de los nombres de columna (se arman a mano en PHP), así que **renombrar tablas y columnas no es necesario para el contrato.** **Decidido (L155):** quedan en inglés como formato persistido.
 
 **Strings literales en SQL nativo:** los valores viejos aparecen como literales en unas 40 líneas, sobre todo en `ReporteRepository` (`235-239`, `356`, `427`, `712`, `758-868`, `1039-1109`), `TicketRepository` (`336`, `381`, `427`, `508`) y `ContactoRepository` (`132`, `168`). Un cambio parcial deja reportes devolviendo ceros sin error. Propuesta: reemplazar esos literales por parámetros con el `->value` del enum, en un paso previo sin cambio de comportamiento y con los tests de reportes como red.
 
@@ -302,7 +302,7 @@ Notación: `req` cuerpo, `q` query, `res` respuesta. Los nombres propuestos asum
 - **`heatmap`** → `mapa-de-calor`: `day_of_week`, `hour`, `count`
 - **`recurring-customers`** → `contactos-recurrentes`: q `threshold` → `umbral`; res `contact_id`, `contact_name`, `email`, `ticket_count`, `last_ticket_at` → `contactoId`, `contactoNombre`, `cantidadDeTickets`, `ultimoTicketAt`
 - **`reopened`** → `reabiertos`: `ticket_id`, `contact_name`, `resolved_at`, `reopened_at`, `current_status` → `resueltoAt`, `reabiertoAt`, `estadoActual`
-- **`export`** → `exportar`: q `status`, `tag`; columnas del CSV `ticket_id`, `contact_name`, `contact_phone`, `assigned_agent`, `status`, `priority`, `created_at`, `first_response_at`, `resolved_at`, `closed_at`, `first_response_seconds`, `resolution_seconds`, `tags`, `phone_number_id`. Los encabezados del CSV son contrato con quien abre el archivo: a decidir si se traducen.
+- **`export`** → `exportar`: q `status`, `tag`; columnas del CSV `ticket_id`, `contact_name`, `contact_phone`, `assigned_agent`, `status`, `priority`, `created_at`, `first_response_at`, `resolved_at`, `closed_at`, `first_response_seconds`, `resolution_seconds`, `tags`, `phone_number_id`. **Decidido (L155):** los encabezados del CSV van en español legible (por ejemplo "Fecha de creación"), porque son texto de UI; el export ya escribe el BOM para Excel.
 - **`response-delay`** → `demora-de-respuesta`: `data_available_from`, `partial_data`, `aggregate` {`avg_delay_seconds`, `sample_count`, `unanswered_inbound_count`}, `per_agent` [...]
 - **`tickets/{id}/participation`** → `tickets/{id}/participacion`: `ticket_id`, `data_available_from`, `partial_data`, `participants` [...], `automatic_message_count`, `unanswered_inbound_count`, `pairs` [{`run_start_at`, `reply_at`, `agent_id`, `delay_seconds`}]
 

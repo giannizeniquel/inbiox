@@ -58,7 +58,8 @@ Un módulo solo crea las carpetas que usa. Si hace falta, también puede tener `
 ### Nombres
 
 1. **Lo del negocio, en español; lo técnico, en inglés.**
-   - Las entidades, los métodos, las variables, los casos de uso, los comentarios, las tablas, las columnas y los valores de los enums van en español.
+   - Las entidades, los métodos, las variables, los casos de uso, los comentarios y los valores de los enums van en español.
+   - **Excepción: los nombres de tablas y columnas quedan en inglés** (decidido con el contrato de la API, `docs/contrato-api.md`). Son formato persistido, las claves JSON se arman a mano en PHP y renombrarlos solo agrega riesgo. No se migra el esquema para traducirlos.
    - Las carpetas de capa (`Controller`, `UseCase`, `Query`, `Repository`), los sufijos técnicos y la jerga técnica van en inglés.
    - Los contratos del framework no se traducen.
 2. **Los identificadores no llevan tildes ni ñ:** `Conversacion`, `Asignacion`.
@@ -167,6 +168,11 @@ Se guardan en la base y viajan en la API.
 | Tipo de asignación | `AUTO_ASSIGN`→`automatica`, `MANUAL_ASSIGN`→`manual`, `REASSIGN`→`reasignacion`, `UNASSIGN`→`desasignacion` |
 | Tipo de adjunto | `image`→`imagen`, `video`, `audio`, `document`→`documento` |
 | Rol | `ROLE_ADMIN`→`ROLE_ADMINISTRADOR`, `ROLE_SUPERVISOR`, `ROLE_AGENT`→`ROLE_AGENTE` (el prefijo `ROLE_` es un contrato de Symfony) |
+| Prioridad | `low`→`baja`, `medium`→`media`, `high`→`alta` |
+| Estado de entrega | `sent`→`enviado`, `delivered`→`entregado`, `read`→`leido`, `failed`→`fallido` (lo que llega de Meta se mapea al guardar) |
+| Estado y canal de contacto | `active`→`activo`, `inactive`→`inactivo`; `whatsapp`, `other`→`otro` |
+| Motivos y códigos (`success`, `window_expired`, `AGENT_NOT_ACTIVE`…) | quedan en inglés: son constantes técnicas que el front compara |
+| Valores internos (estado del outbox, `aggregate_type`, resultado de reglas, estado de conversación, `ticket_events.source`) | quedan como están: no viajan por la red |
 
 ### Conceptos
 
@@ -219,6 +225,29 @@ Se guardan en la base y viajan en la API.
 | agent performance / leaderboard | `rendimientoDeAgentes` |
 | attribution cutoff | `corteDeAtribucion` |
 | FRT / RT (first response time / resolution time) | siglas, quedan como están: `getFrt`, `tendenciaDeFrt` |
+| name / display name | `nombre` / `nombreVisible` |
+| signature / sound / desktop | `firma` / `sonido` / `escritorio` |
+| enabled | `habilitada` (no `activa`: `activo` ya es estado y adjetivo) |
+| message (texto de la respuesta automática) / message (de error) | `texto` / `mensaje` (`Mensaje` es la entidad del chat) |
+| timezone / notes / assigned by | `zonaHoraria` / `notas` / `asignadoPor` |
+| content / caption / filename / size | `contenido` / `leyenda` / `nombreDeArchivo` / `tamanio` |
+| language / parameters | `idioma` / `parametros` |
+| channel / business hours | `canal` / `horarioDeAtencion` |
+| day of week / start / end | `diaDeLaSemana` / `inicio` / `fin` |
+| threshold / search / filter / sort | `umbral` / `busqueda` / `filtro` / `orden` |
+| from / to | `desde` / `hasta` |
+| page / limit / offset / before / cursor | quedan técnicos, para que la query no mezcle idiomas |
+| has next / has more / next cursor | `haySiguiente` / `hayMas` / `siguienteCursor` |
+| direction de paginación (backward / forward) | `sentido` (`atras` / `adelante`), para no chocar con `direccion` del mensaje |
+| reason / success / failed | `motivo` / `exito` / `fallido` |
+| count / total rows / imported / errors | `cantidad` / `totalDeFilas` / `importados` / `errores` |
+| metrics / timestamps | `metricas` / `fechas` |
+| avg / min / max / seconds / minutes | `promedio` / `minimo` / `maximo` / `segundos` / `minutos` |
+| date / hour | `fecha` / `hora` |
+| sample / pairs / run start / unanswered | `muestra` / `pares` / `inicioDeRacha` / `sinResponder` |
+| partial data / data available from | `datosParciales` / `datosDisponiblesDesde` |
+| expires at / ttl minutes | `vencimientoAt` (excepción al participio: fecha futura) / `ttlMinutos` |
+| action (created / deleted) | `accion` (`creado` / `borrado`) |
 
 **Jerga técnica que queda en inglés:** webhook, outbox, token, payload, refresh token, query builder, sequence (del outbox), phone number id (identificador de la API de Meta).
 
@@ -261,6 +290,8 @@ Los verbos de negocio están en la tabla de conceptos (`asignar`, `resolver`, `d
 **Adjetivos comunes:** selected → `seleccionado`, current → `actual`, active → `activo`, new → `nuevo`, last → `ultimo`, pending → `pendiente`, available → `disponible`, older → `anterior`, editing → `enEdicion`.
 
 **Palabras de tipo de componente (frontend):** quedan en inglés, como `Component`, `Store` o `DTO`, porque nombran un patrón de UI y no un concepto de negocio: `Card`, `Dialog`, `Modal`, `Empty`, `Header`, `Loading`, `Bubble`, `Indicator`, `Form`, `Search`, `Skeleton`, `Page`. El nombre se arma con el término de negocio en español y el tipo en inglés: `ContactoCardComponent`, `MensajeBubbleComponent` (`app-mensaje-bubble`), `ConversacionHeaderComponent`, `TendenciaDeFrtCardComponent`. Los sufijos técnicos de tipos (`Response`, `Payload`, `Params`, `Entry`) siguen la misma regla.
+
+**Contrato de la API** (detalle en `docs/contrato-api.md`): claves JSON en camelCase; booleanos sin prefijo (`activo`, `enTurno`) y "has" como `hay…` (`hayPendientes`), mientras `is`/`has` en inglés quedan para métodos y señales; rutas en kebab-case en español, recursos como sustantivo y acciones como verbo (`/api/contactos/{id}/linea-de-tiempo`, `/api/tickets/{id}/asignar`), con las excepciones técnicas del contrato (`/api/auth/*`, `/webhook`); encabezados del CSV en español legible ("Fecha de creación"), porque son texto de UI.
 
 **Fechas:** participio en español con el sufijo `At`: `creadoAt`, `actualizadoAt`, `asignadoAt`, `resueltoAt`, `cerradoAt`, `procesadoAt`, `publicadoAt`, `recibidoAt`, `ejecutadoAt`, `primeraRespuestaAt`, `ultimoMensajeAt`, `ultimaLecturaAt`. Las columnas guardadas no cambian (`created_at`).
 
