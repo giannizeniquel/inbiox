@@ -56,32 +56,32 @@ El listado del anexo A tiene un nombre propuesto por clave, pero depende de esta
 | partial data / data available from | `datosParciales` / `datosDisponiblesDesde` | reportes |
 | expires at / ttl minutes | `vencimientoAt` / `ttlMinutos` | disponibilidad manual, URL de adjunto. Excepción a la regla del participio: la fecha es futura, y expiry → `vencimiento` ya está en el glosario |
 | action (created / deleted) | `accion` (`creado` / `borrado`) | evento `agent.shift_changed` |
-| `<entidad>` name (agent name, contact name, sender name, assignee name) | `<entidad>Nombre`: `agenteNombre`, `contactoNombre`, `remitenteNombre`, `responsableNombre` (nuevo, a confirmar) | mismo patrón que `<entidad>Id`; usuarios, asignación, reportes, Mercure |
-| assignee | `responsable` (`assigneeId` → `responsableId`) (nuevo, a confirmar) | `ticket.assigned`; mismo concepto que owner |
-| file (campo multipart) / max size | `archivo` / `tamanioMaximo` (nuevo, a confirmar) | subida de adjunto e importación; 413 de la subida |
-| kind (de adjunto) | `tipo` (nuevo, a confirmar) | `adjunto.tipo`; los valores ya están en el glosario |
-| sender type / assignment type / event type | `tipoDeRemitente` / `tipoDeAsignacion` / `tipoDeEvento` (nuevo, a confirmar) | mensajes, `ticket.assigned`, envoltorio de Mercure |
-| event id / occurred at, timestamp (de un evento) / changed at | `eventoId` / `ocurridoAt` / `cambiadoAt` (nuevo, a confirmar) | envoltorio de Mercure, eventos `agent.*`, `ticket.status_changed` |
-| previous status / new status / current status | `estadoAnterior` / `estadoNuevo` / `estadoActual` (nuevo, a confirmar) | transiciones, Mercure, reabiertos |
-| delivery status / failed reason | `estadoDeEntrega` / `motivoDeFallo` (nuevo, a confirmar) | respuesta de envío, `message.updated` |
-| result (`status: 'ok'`) | `resultado` (nuevo, a confirmar) | respuesta de `POST …/asignar` |
-| set first response / set resolved | `marcarPrimeraRespuesta` / `marcarResuelto` (nuevo, a confirmar) | request de `POST …/transicionar`; son órdenes, no estados, por eso verbo y no participio |
-| override active | `disponibilidadManualActiva` (nuevo, a confirmar) | `POST …/disponibilidad`, `agent.availability_changed` |
-| in shift / active now / pending (has pending) | `enTurno` / `activoAhora` / `hayPendientes` (nuevo, a confirmar) | disponibilidad, espacios de trabajo |
-| current assignment / current load / max capacity | `asignacionActual` / `cargaActual` / `capacidadMaxima` (nuevo, a confirmar) | asignación, disponibilidad, tickets, reportes |
-| opened at / reopened at / reply at / run start at / last ticket at / last inbound message at | `abiertoAt` / `reabiertoAt` / `respuestaAt` / `inicioDeRachaAt` / `ultimoTicketAt` / `ultimoMensajeEntranteAt` (nuevo, a confirmar) | tickets, reportes |
-| unread count / ticket count / agent count / message count / sample count | `cantidadNoLeidos` / `cantidadDeTickets` / `cantidadDeAgentes` / `cantidadDeMensajes` / `cantidadDeMuestras` (nuevo, a confirmar) | tickets, reportes, administración |
-| automatic message count / unanswered inbound count | `cantidadDeMensajesAutomaticos` / `cantidadDeEntrantesSinResponder` (nuevo, a confirmar) | demora de respuesta, participación |
-| tickets created / assigned / resolved / active / current active | `ticketsCreados` / `ticketsAsignados` / `ticketsResueltos` / `ticketsActivos` / `ticketsActivosActuales` (nuevo, a confirmar) | reportes |
-| active ticket count / max active tickets / load percent | `cantidadDeTicketsActivos` / `maxTicketsActivos` / `porcentajeDeCarga` (nuevo, a confirmar) | disponibilidad, reportes |
-| delay / avg delay seconds | `demora` (`demoraSegundos`, `demoraPromedioSegundos`) (nuevo, a confirmar) | demora de respuesta, participación |
-| aggregate / per agent / participants | `global` / `porAgente` / `participantes` (nuevo, a confirmar) | demora de respuesta, participación; `global` en lugar de `agregado` para no chocar con `mensaje.agregado` |
-| FRT / RT con avg, min, max | `frtPromedioSegundos`, `frtMinimoSegundos`, `frtMaximoMinutos`… (nuevo, a confirmar) | reportes; sigla primero, como `tendenciaDeFrt` |
-| media key (request de envío) | `claveDeAdjunto` (nuevo, a confirmar) | `POST …/enviar`; la clave guardada del adjunto (`key`) queda técnica |
-| tags (de contacto) / owner name | `etiquetas` / `responsable.nombre` (nuevo, a confirmar) | no existen en el back; se anotan por si se agregan (sección 7, punto 17) |
-| override reason | `motivo` (nuevo, a confirmar) | no existe en el back (sección 7, punto 18) |
+| `<entidad>` name (agent name, contact name, sender name, assignee name) | `<entidad>Nombre`: `agenteNombre`, `contactoNombre`, `remitenteNombre`, `responsableNombre` (nuevo, confirmado L161) | mismo patrón que `<entidad>Id`; usuarios, asignación, reportes, Mercure |
+| assignee | `responsable` (`assigneeId` → `responsableId`) (nuevo, confirmado L161) | `ticket.assigned`; mismo concepto que owner |
+| file (campo multipart) / max size | `archivo` / `tamanioMaximo` (nuevo, confirmado L161) | subida de adjunto e importación; 413 de la subida |
+| kind (de adjunto) | `tipo` (nuevo, confirmado L161) | `adjunto.tipo`; los valores ya están en el glosario |
+| sender type / assignment type / event type | `tipoDeRemitente` / `tipoDeAsignacion` / `tipoDeEvento` (nuevo, confirmado L161) | mensajes, `ticket.assigned`, envoltorio de Mercure |
+| event id / occurred at, timestamp (de un evento) / changed at | `eventoId` / `ocurridoAt` / `cambiadoAt` (nuevo, confirmado L161) | envoltorio de Mercure, eventos `agent.*`, `ticket.status_changed` |
+| previous status / new status / current status | `estadoAnterior` / `estadoNuevo` / `estadoActual` (nuevo, confirmado L161) | transiciones, Mercure, reabiertos |
+| delivery status / failed reason | `estadoDeEntrega` / `motivoDeFallo` (nuevo, confirmado L161) | respuesta de envío, `message.updated` |
+| result (`status: 'ok'`) | `resultado` (nuevo, confirmado L161) | respuesta de `POST …/asignar` |
+| set first response / set resolved | `marcarPrimeraRespuesta` / `marcarResuelto` (nuevo, confirmado L161) | request de `POST …/transicionar`; son órdenes, no estados, por eso verbo y no participio |
+| override active | `disponibilidadManualActiva` (nuevo, confirmado L161) | `POST …/disponibilidad`, `agent.availability_changed` |
+| in shift / active now / pending (has pending) | `enTurno` / `activoAhora` / `hayPendientes` (nuevo, confirmado L161) | disponibilidad, espacios de trabajo |
+| current assignment / current load / max capacity | `asignacionActual` / `cargaActual` / `capacidadMaxima` (nuevo, confirmado L161) | asignación, disponibilidad, tickets, reportes |
+| opened at / reopened at / reply at / run start at / last ticket at / last inbound message at | `abiertoAt` / `reabiertoAt` / `respuestaAt` / `inicioDeRachaAt` / `ultimoTicketAt` / `ultimoMensajeEntranteAt` (nuevo, confirmado L161) | tickets, reportes |
+| unread count / ticket count / agent count / message count / sample count | `cantidadDeNoLeidos` / `cantidadDeTickets` / `cantidadDeAgentes` / `cantidadDeMensajes` / `cantidadDeMuestras` (nuevo, confirmado L161) | tickets, reportes, administración |
+| automatic message count / unanswered inbound count | `cantidadDeMensajesAutomaticos` / `cantidadDeEntrantesSinResponder` (nuevo, confirmado L161) | demora de respuesta, participación |
+| tickets created / assigned / resolved / active / current active | `ticketsCreados` / `ticketsAsignados` / `ticketsResueltos` / `ticketsActivos` / `ticketsActivosActuales` (nuevo, confirmado L161) | reportes |
+| active ticket count / max active tickets / load percent | `cantidadDeTicketsActivos` / `maximoDeTicketsActivos` / `porcentajeDeCarga` (nuevo, confirmado L161) | disponibilidad, reportes |
+| delay / avg delay seconds | `demora` (`demoraSegundos`, `demoraPromedioSegundos`) (nuevo, confirmado L161) | demora de respuesta, participación |
+| aggregate / per agent / participants | `global` / `porAgente` / `participantes` (nuevo, confirmado L161) | demora de respuesta, participación; `global` en lugar de `agregado` para no chocar con `mensaje.agregado` |
+| FRT / RT con avg, min, max | `frtPromedioSegundos`, `frtMinimoSegundos`, `frtMaximoMinutos`… (nuevo, confirmado L161) | reportes; sigla primero, como `tendenciaDeFrt` |
+| media key (request de envío) | `claveDeAdjunto` (nuevo, confirmado L161) | `POST …/enviar`; la clave guardada del adjunto (`key`) queda técnica |
+| tags (de contacto) / owner name | `etiquetas` / `responsable.nombre` (nuevo, confirmado L161) | no existen en el back; se anotan por si se agregan (sección 7, punto 17) |
+| override reason | `motivo` (nuevo, confirmado L161) | no existe en el back (sección 7, punto 18) |
 
-Quedan en inglés por técnicos: `id`, `token`, `payload`, `sequence`, `phoneNumberId`, `mimeType`, `key`, `url`, `email`, `password`, `roles`, `error`, `access_token` / `token_type` / `expires_in` (OAuth2) y los parámetros `hub_*` del webhook de Meta. **Se suman (nuevo, a confirmar):** el envoltorio `data` / `meta` / `total`; las claves de código de los errores `type`, `code` y `reference`, porque son el discriminador que compara el front, como `error`; y los identificadores de Meta `mediaId`, `externalId` (WAMID) y `providerId`, por la misma razón que `phoneNumberId` (A.0, regla 5).
+Quedan en inglés por técnicos: `id`, `token`, `payload`, `sequence`, `phoneNumberId`, `mimeType`, `key`, `url`, `email`, `password`, `roles`, `error`, `access_token` / `token_type` / `expires_in` (OAuth2) y los parámetros `hub_*` del webhook de Meta. **Se suman (nuevo, confirmado L161):** el envoltorio `data` / `meta` / `total`; las claves de código de los errores `type`, `code` y `reference`, porque son el discriminador que compara el front, como `error`; y los identificadores de Meta `mediaId`, `externalId` (WAMID) y `providerId`, por la misma razón que `phoneNumberId` (A.0, regla 5).
 
 **Códigos de error** (`AGENT_NOT_ACTIVE`, `CONVERSATION_WINDOW_EXPIRED`, `TICKET_CLOSURE_FORBIDDEN`, `FILE_TOO_LARGE`…): propongo dejarlos en inglés, como constantes técnicas que el front compara. Traducirlos no aporta y agrega riesgo.
 
@@ -461,7 +461,7 @@ Notación: `req` cuerpo JSON, `mp` campo multipart, `q` query, `res` respuesta, 
 
 ### A.9 Disponibilidad
 
-- **`GET /api/espacios-de-trabajo/{id}/agentes-disponibles`** (ruta 61): `[…]` de `id`, `name` → `nombre`, `is_active_now` → `activoAhora`, `active_ticket_count` → `cantidadDeTicketsActivos`, `max_active_tickets` → `maxTicketsActivos` (`Disponibilidad/Query/DisponibilidadDeAgenteDTO.php:39-43`); 400 (espacio inactivo), 404.
+- **`GET /api/espacios-de-trabajo/{id}/agentes-disponibles`** (ruta 61): `[…]` de `id`, `name` → `nombre`, `is_active_now` → `activoAhora`, `active_ticket_count` → `cantidadDeTicketsActivos`, `max_active_tickets` → `maximoDeTicketsActivos` (`Disponibilidad/Query/DisponibilidadDeAgenteDTO.php:39-43`); 400 (espacio inactivo), 404.
 - **`GET /api/agentes/{id}/disponibilidad`** (ruta 64): `agent_id` → `agenteId`, `is_available` → `disponible`, `is_in_shift` → `enTurno`, `timezone` → `zonaHoraria`, `current_load` → `cargaActual`, `max_capacity` → `capacidadMaxima`, `override` → `disponibilidadManual` {`active` → `activa`, `is_available` → `disponible`, `expires_at` → `vencimientoAt`} (`DisponibilidadDeAgenteController.php:162-174`). No hay `reason` (hallazgo 18). 403, 404.
 - **`POST /api/agentes/{id}/disponibilidad`** (ruta 62): req `isAvailable` → `disponible`, `ttlMinutes` → `ttlMinutos` (`SetDisponibilidadManualRequest.php:13-16`); res `agent_id` → `agenteId`, `is_available` → `disponible`, `override_active` → `disponibilidadManualActiva`, `current_load` → `cargaActual`, `max_capacity` → `capacidadMaxima` (`SetDisponibilidadManualUseCase.php:81-87`); 403, 404, 409, 422.
 - **`DELETE /api/agentes/{id}/disponibilidad`** (ruta 63): 204; 403, 404, 409, 422.
@@ -481,7 +481,7 @@ Notación: `req` cuerpo JSON, `mp` campo multipart, `q` query, `res` respuesta, 
 - **`rt`** (ruta 70): las mismas seis con `rt` (`rtPromedioSegundos`… `rtMaximoMinutos`) (`ReporteRepository.php:199-204`).
 - **`conteos`** (ruta 71): un objeto cuyas claves son los estados del ticket, `new` → `nuevo`, `active` → `activo`, `waiting` → `en_espera`, `resolved` → `resuelto`, `closed` → `cerrado`, en el orden del enum (`ReporteRepository.php:222-243`).
 - **`volumen`** (ruta 72): `[…]` de `date` → `fecha`, `tickets_created` → `ticketsCreados`, `tickets_resolved` → `ticketsResueltos` (`ReporteRepository.php:303-324`). Sin envoltorio.
-- **`rendimiento-de-agentes`** (ruta 73): `[…]` de `agent_id` → `agenteId`, `agent_name` → `agenteNombre`, `tickets_assigned` → `ticketsAsignados`, `tickets_resolved` → `ticketsResueltos`, `current_active_tickets` → `ticketsActivosActuales`, `max_active_tickets` → `maxTicketsActivos`, `current_load` → `cargaActual` (aquí es una proporción, no un conteo: hallazgo 22), `is_in_shift` → `enTurno`, `avg_frt_seconds` → `frtPromedioSegundos`, `avg_frt_minutes` → `frtPromedioMinutos`, `avg_rt_seconds` → `rtPromedioSegundos`, `avg_rt_minutes` → `rtPromedioMinutos` (`ReporteRepository.php:393-403`, `ReporteService.php:137-157`). Sin envoltorio. `enTurno` se inserta buscando la clave `current_load` por nombre (sección 7, punto 9).
+- **`rendimiento-de-agentes`** (ruta 73): `[…]` de `agent_id` → `agenteId`, `agent_name` → `agenteNombre`, `tickets_assigned` → `ticketsAsignados`, `tickets_resolved` → `ticketsResueltos`, `current_active_tickets` → `ticketsActivosActuales`, `max_active_tickets` → `maximoDeTicketsActivos`, `current_load` → `cargaActual` (aquí es una proporción, no un conteo: hallazgo 22), `is_in_shift` → `enTurno`, `avg_frt_seconds` → `frtPromedioSegundos`, `avg_frt_minutes` → `frtPromedioMinutos`, `avg_rt_seconds` → `rtPromedioSegundos`, `avg_rt_minutes` → `rtPromedioMinutos` (`ReporteRepository.php:393-403`, `ReporteService.php:137-157`). Sin envoltorio. `enTurno` se inserta buscando la clave `current_load` por nombre (sección 7, punto 9).
 - **`carga-de-agentes`** (ruta 74): `[…]` de `agent_id` → `agenteId`, `agent_name` → `agenteNombre`, `active_tickets` → `ticketsActivos`, `max_capacity` → `capacidadMaxima`, `load_percent` → `porcentajeDeCarga` (`ReporteRepository.php:452-456`).
 - **`sin-asignar`** (ruta 75): `count` → `cantidad`, `tickets` [{`id`, `contact_name` → `contactoNombre`, `created_at` → `creadoAt`, `priority` → `prioridad`}] (`ReporteRepository.php:519-528`).
 - **`agentes-disponibles`** (ruta 76): `[…]` de `agent_id` → `agenteId`, `agent_name` → `agenteNombre`, `in_shift` → `enTurno`, `active_tickets` → `ticketsActivos` (`Reporte/Query/ListAgentesDisponiblesQuery.php:49-52`).
@@ -525,10 +525,10 @@ Notación: `req` cuerpo JSON, `mp` campo multipart, `q` query, `res` respuesta, 
   - `contact` → `contacto` {`id` (hoy es el id de la conversación: sección 7, punto 5), `phone` → `telefono`, `name` → `nombre`}
   - `last_message` → `ultimoMensaje` (siempre null en la lista)
   - `owner` → `responsable` {`id`, `name` → `nombre`, `is_in_shift` → `enTurno`, `current_load` → `cargaActual`, `max_capacity` → `capacidadMaxima`}, o null
-  - `metrics` → `metricas` {`unread_count` → `cantidadNoLeidos`}
+  - `metrics` → `metricas` {`unread_count` → `cantidadDeNoLeidos`}
   - `timestamps` → `fechas` {`opened_at` → `abiertoAt`, `updated_at` → `actualizadoAt`, `last_inbound_message_at` → `ultimoMensajeEntranteAt`}
 - **`GET /api/tickets`** (ruta 84): q `page`, `limit`, `filter` → `filtro` (`all`/`mine`/`assigned`/`unassigned` → `todos`/`mios`/`asignados`/`sin_asignar`), `agent_id` → `agenteId`, `status` → `estado` (estados separados por coma, valores de 3.1), `search` → `busqueda`, `sort` → `orden` (se lee y se ignora: sección 7, punto 7), `tag` → `etiqueta`, `teamId` → `equipoId` (`BandejaController.php:42-50`); res paginada (A.2); 400 `{error}`.
-- **`GET /api/tickets/{id}`** (ruta 85, `DetalleDeTicketDTO.php:21-28`, `GetDetalleDeTicketQuery.php:21-56`): `ticketId`, `estado`, `prioridad` como en la lista; `contacto` {`id` (id del contacto), `telefono`, `nombre`}; `responsable` {`id`, `name` → `nombre` (siempre null: hallazgo 21)} o null; `timestamps` → `fechas` {`opened_at` → `abiertoAt`, `assigned_at` → `asignadoAt`, `resolved_at` → `resueltoAt`, `closed_at` → `cerradoAt`, `last_inbound_message_at` → `ultimoMensajeEntranteAt`} (sin `actualizadoAt`; sección 7, punto 6); `metricas` {`cantidadNoLeidos`}; `last_message` → `ultimoMensaje` (texto del último mensaje). 404.
+- **`GET /api/tickets/{id}`** (ruta 85, `DetalleDeTicketDTO.php:21-28`, `GetDetalleDeTicketQuery.php:21-56`): `ticketId`, `estado`, `prioridad` como en la lista; `contacto` {`id` (id del contacto), `telefono`, `nombre`}; `responsable` {`id`, `name` → `nombre` (siempre null: hallazgo 21)} o null; `timestamps` → `fechas` {`opened_at` → `abiertoAt`, `assigned_at` → `asignadoAt`, `resolved_at` → `resueltoAt`, `closed_at` → `cerradoAt`, `last_inbound_message_at` → `ultimoMensajeEntranteAt`} (sin `actualizadoAt`; sección 7, punto 6); `metricas` {`cantidadDeNoLeidos`}; `last_message` → `ultimoMensaje` (texto del último mensaje). 404.
 - **`GET /api/tickets/{id}/mensajes`** (ruta 86, `BandejaController.php:107-133`, `Conversacion/Query/MensajeDTO.php:20-26`):
   - q: `cursor`, `limit`, `offset`, `direction` → `sentido` (`backward`/`forward` → `atras`/`adelante`)
   - res `data` [{`message_id` → `mensajeId`, `direction` → `direccion`, `content` → `contenido`, `created_at` → `creadoAt`, `media` → `adjunto` (A.2), `sender_agent_id` → `agenteRemitenteId`, `sender_type` → `tipoDeRemitente` (valores de 3.1, o null)}]
