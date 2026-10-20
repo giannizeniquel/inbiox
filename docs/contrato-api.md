@@ -2,7 +2,7 @@
 
 > **Estado:** aprobado por el usuario (L155), con D1–D7 cerradas (L147–L154) y estos puntos: `GET /api/tickets/{id}/events` se borra en la etapa 3 con sus tests; tablas y columnas quedan en inglés (regla corregida en `docs/arquitectura.md`); los encabezados del CSV van en español legible. Tarea: `odd/tasks/limpieza-backend.md`, S14 / T39.
 >
-> **Base:** back `chore/limpieza-backend-fase-5` (`28314ee`), front `chore/limpieza-frontend-fase-5` (`b0ce6db`), base de dev `inbiox` (conteos del 2026-10-20).
+> **Base:** back `chore/limpieza-backend-fase-5` (`28314ee`), front `chore/limpieza-frontend-fase-5` (`b0ce6db`), base de dev `inbiox` (conteos del 2026-10-20). El anexo A se rehízo completo contra el back en `be4ef2f` y el mapa del front en `ffbea3f` (L159); las respuestas al mapa están en la sección 8, y D8 y D9 quedan pendientes.
 
 El contrato es todo lo que viaja entre el back, el front y la base: claves JSON, valores de enums, tipos de evento de Mercure, roles, rutas `/api` y URLs del router. Los renombres internos ya terminaron en los dos lados; este documento cubre lo que falta.
 
@@ -19,6 +19,8 @@ El listado del anexo A tiene un nombre propuesto por clave, pero depende de esta
 | D5 | Segmentos de ruta | `/api/admin/...`, `/api/me/...`, `/api/reports/...`, `/api/provider/...`. | **Decidido (L152):** kebab-case en español. Recursos como sustantivo (`contactos`, `turnos`, `linea-de-tiempo`); acciones como verbo en infinitivo (`asignar`, `resolver`, `marcar-leido`, `vincular-usuario`, `subir`). `admin` → `administracion`, `me` → `mi`, `provider` → `proveedor`. **Excepciones explícitas, que no se "corrigen":** `/api/auth/{login,refresh,logout,me}` queda técnico aunque `/api/me/*` pase a `/api/mi/*`; `/admin/outbox/publish` queda con `admin` porque es operativa y el front no la llama; también quedan `mercure/token`, `/webhook` (Meta) y `/debug/*` (solo dev y test). |
 | D6 | URLs del router del front | `inbox`, `contacts`, `reports`, `settings`, `admin/*`, `agents/:agentId/*`. | **Decidido por el usuario (L153):** se renombran con la regla de D5 y el router redirige desde las URLs viejas en la etapa 2. Las redirecciones se borran recién después de un tiempo razonable, en un paso aparte (sección 6). `/login` queda técnico. |
 | D7 | Despliegue | La app no está desplegada: todo es dev, y el front es el único cliente de la API. | **Decidido (L154):** sin etapa con los dos formatos. Las etapas de la sección 6 son orden de trabajo, no ventanas de despliegue, y la migración corre solo sobre la base de dev. |
+| D8 | Claves del JSON de adjunto guardado (`messages.media`) | Claves en inglés (`key`, `mimeType`, `filename`, `size`, `kind`, `providerId`, `caption`), escritas en `Conversacion/UseCase/EnviarMensajeSalienteUseCase.php:58-64` y `ProcesarMensajeEntranteUseCase.php:304-310`. El historial las devuelve tal cual (`GetMensajesDeTicketQuery.php:76,117`) y `message.added` también (`EventoEnTiempoRealFactory.php:61`), que lee la copia guardada en `outbox_events.payload`. 33 filas en dev. | **Pendiente.** (a) Migrar las claves con `JSON_SET`/`JSON_REMOVE` en la migración de la etapa 2: un solo formato y ningún mapeo en el historial, pero la copia del outbox queda vieja y hay que mapearla igual o migrarla también. (b) Dejar las claves guardadas en inglés y mapearlas al leer, en un solo lugar que usen el historial y el factory: no migra claves y sigue la regla de L155 (lo persistido queda en inglés), a cambio de un mapeo con su test. En los dos casos se migran los valores de `kind` (sección 4). **Recomiendo (b):** es la misma regla que tablas y columnas, y el outbox ya se mapea al leer (sección 5). |
+| D9 | Columnas del CSV de importación de contactos | `phone` obligatoria; `name`, `email`, `status`, `channel`, `owner_id` opcionales (`Contacto/UseCase/ImportarContactosDesdeCsvUseCase.php:30,57`). Los encabezados se comparan en minúsculas y pasan tal cual como claves a `CreateContactoUseCase` (`:52-55,202-213`); los valores son los de `status` y `channel` (`active`, `other`…). Es un archivo que arma el usuario. | **Pendiente.** (a) Las mismas claves que el request (`telefono`, `nombre`, `email`, `estado`, `canal`, `responsableId`): mecánico, pero `responsableId` no sobrevive al `strtolower` actual y el archivo queda atado a las claves JSON. (b) Encabezados en español legible, como el export (L155: "Teléfono", "Nombre", "Email", "Estado", "Canal", "Responsable"), con un mapa explícito de encabezado a clave en el caso de uso. (c) Dejarlos en inglés como formato de archivo: no cambia nada, pero mezcla idiomas frente al export. **Recomiendo (b):** desacopla el archivo del JSON y es simétrico con el export. En los tres casos los valores siguen D3 (`activo`, `otro`) y los códigos de error (`missing_phone_column`) quedan. |
 
 ## 2. Términos que faltan en el glosario (propuesta)
 
@@ -54,8 +56,32 @@ El listado del anexo A tiene un nombre propuesto por clave, pero depende de esta
 | partial data / data available from | `datosParciales` / `datosDisponiblesDesde` | reportes |
 | expires at / ttl minutes | `vencimientoAt` / `ttlMinutos` | disponibilidad manual, URL de adjunto. Excepción a la regla del participio: la fecha es futura, y expiry → `vencimiento` ya está en el glosario |
 | action (created / deleted) | `accion` (`creado` / `borrado`) | evento `agent.shift_changed` |
+| `<entidad>` name (agent name, contact name, sender name, assignee name) | `<entidad>Nombre`: `agenteNombre`, `contactoNombre`, `remitenteNombre`, `responsableNombre` (nuevo, a confirmar) | mismo patrón que `<entidad>Id`; usuarios, asignación, reportes, Mercure |
+| assignee | `responsable` (`assigneeId` → `responsableId`) (nuevo, a confirmar) | `ticket.assigned`; mismo concepto que owner |
+| file (campo multipart) / max size | `archivo` / `tamanioMaximo` (nuevo, a confirmar) | subida de adjunto e importación; 413 de la subida |
+| kind (de adjunto) | `tipo` (nuevo, a confirmar) | `adjunto.tipo`; los valores ya están en el glosario |
+| sender type / assignment type / event type | `tipoDeRemitente` / `tipoDeAsignacion` / `tipoDeEvento` (nuevo, a confirmar) | mensajes, `ticket.assigned`, envoltorio de Mercure |
+| event id / occurred at, timestamp (de un evento) / changed at | `eventoId` / `ocurridoAt` / `cambiadoAt` (nuevo, a confirmar) | envoltorio de Mercure, eventos `agent.*`, `ticket.status_changed` |
+| previous status / new status / current status | `estadoAnterior` / `estadoNuevo` / `estadoActual` (nuevo, a confirmar) | transiciones, Mercure, reabiertos |
+| delivery status / failed reason | `estadoDeEntrega` / `motivoDeFallo` (nuevo, a confirmar) | respuesta de envío, `message.updated` |
+| result (`status: 'ok'`) | `resultado` (nuevo, a confirmar) | respuesta de `POST …/asignar` |
+| set first response / set resolved | `marcarPrimeraRespuesta` / `marcarResuelto` (nuevo, a confirmar) | request de `POST …/transicionar`; son órdenes, no estados, por eso verbo y no participio |
+| override active | `disponibilidadManualActiva` (nuevo, a confirmar) | `POST …/disponibilidad`, `agent.availability_changed` |
+| in shift / active now / pending (has pending) | `enTurno` / `activoAhora` / `hayPendientes` (nuevo, a confirmar) | disponibilidad, espacios de trabajo |
+| current assignment / current load / max capacity | `asignacionActual` / `cargaActual` / `capacidadMaxima` (nuevo, a confirmar) | asignación, disponibilidad, tickets, reportes |
+| opened at / reopened at / reply at / run start at / last ticket at / last inbound message at | `abiertoAt` / `reabiertoAt` / `respuestaAt` / `inicioDeRachaAt` / `ultimoTicketAt` / `ultimoMensajeEntranteAt` (nuevo, a confirmar) | tickets, reportes |
+| unread count / ticket count / agent count / message count / sample count | `cantidadNoLeidos` / `cantidadDeTickets` / `cantidadDeAgentes` / `cantidadDeMensajes` / `cantidadDeMuestras` (nuevo, a confirmar) | tickets, reportes, administración |
+| automatic message count / unanswered inbound count | `cantidadDeMensajesAutomaticos` / `cantidadDeEntrantesSinResponder` (nuevo, a confirmar) | demora de respuesta, participación |
+| tickets created / assigned / resolved / active / current active | `ticketsCreados` / `ticketsAsignados` / `ticketsResueltos` / `ticketsActivos` / `ticketsActivosActuales` (nuevo, a confirmar) | reportes |
+| active ticket count / max active tickets / load percent | `cantidadDeTicketsActivos` / `maxTicketsActivos` / `porcentajeDeCarga` (nuevo, a confirmar) | disponibilidad, reportes |
+| delay / avg delay seconds | `demora` (`demoraSegundos`, `demoraPromedioSegundos`) (nuevo, a confirmar) | demora de respuesta, participación |
+| aggregate / per agent / participants | `global` / `porAgente` / `participantes` (nuevo, a confirmar) | demora de respuesta, participación; `global` en lugar de `agregado` para no chocar con `mensaje.agregado` |
+| FRT / RT con avg, min, max | `frtPromedioSegundos`, `frtMinimoSegundos`, `frtMaximoMinutos`… (nuevo, a confirmar) | reportes; sigla primero, como `tendenciaDeFrt` |
+| media key (request de envío) | `claveDeAdjunto` (nuevo, a confirmar) | `POST …/enviar`; la clave guardada del adjunto (`key`) queda técnica |
+| tags (de contacto) / owner name | `etiquetas` / `responsable.nombre` (nuevo, a confirmar) | no existen en el back; se anotan por si se agregan (sección 7, punto 17) |
+| override reason | `motivo` (nuevo, a confirmar) | no existe en el back (sección 7, punto 18) |
 
-Quedan en inglés por técnicos: `id`, `token`, `payload`, `sequence`, `phoneNumberId`, `mimeType`, `key`, `url`, `email`, `password`, `roles`, `error`, `access_token` / `token_type` / `expires_in` (OAuth2) y los parámetros `hub_*` del webhook de Meta.
+Quedan en inglés por técnicos: `id`, `token`, `payload`, `sequence`, `phoneNumberId`, `mimeType`, `key`, `url`, `email`, `password`, `roles`, `error`, `access_token` / `token_type` / `expires_in` (OAuth2) y los parámetros `hub_*` del webhook de Meta. **Se suman (nuevo, a confirmar):** el envoltorio `data` / `meta` / `total`; las claves de código de los errores `type`, `code` y `reference`, porque son el discriminador que compara el front, como `error`; y los identificadores de Meta `mediaId`, `externalId` (WAMID) y `providerId`, por la misma razón que `phoneNumberId` (A.0, regla 5).
 
 **Códigos de error** (`AGENT_NOT_ACTIVE`, `CONVERSATION_WINDOW_EXPIRED`, `TICKET_CLOSURE_FORBIDDEN`, `FILE_TOO_LARGE`…): propongo dejarlos en inglés, como constantes técnicas que el front compara. Traducirlos no aporta y agrega riesgo.
 
@@ -71,12 +97,15 @@ Del glosario, más los de D3 si se aprueban.
 | dirección del mensaje | `inbound/outbound` → `entrante/saliente` | mensajes, línea de tiempo, `message.added` |
 | remitente | `agent/automatic/contact` → `agente/automatico/contacto` | mensajes; `automatic_message_count` en participación |
 | tipo de asignación | `AUTO_ASSIGN/MANUAL_ASSIGN/REASSIGN/UNASSIGN` → `automatica/manual/reasignacion/desasignacion` | `ticket.assigned`; historial de asignación |
-| tipo de adjunto | `image/video/audio/document` → `imagen/video/audio/documento` | `media.kind` en mensajes y `message.added` |
+| tipo de adjunto | `image/video/audio/document` → `imagen/video/audio/documento` | `media.kind` → `adjunto.tipo` en mensajes y `message.added`; `kind` del 413 de la subida |
+| filtro de la bandeja | `all/mine/assigned/unassigned` → `todos/mios/asignados/sin_asignar` | q `filter` → `filtro` de `GET /api/tickets` |
+| sentido de paginación | `backward/forward` → `atras/adelante` | q `direction` → `sentido` de `GET …/mensajes` |
+| acción de turno | `created/deleted` → `creado/borrado` | `agent.shift_changed` |
 | rol | `ROLE_ADMIN/ROLE_AGENT` → `ROLE_ADMINISTRADOR/ROLE_AGENTE` | `/api/auth/me`, usuarios |
 | prioridad | `low/medium/high` → `baja/media/alta` | tickets, reportes, `ticket.created` |
-| estado de entrega | `sent/delivered/read/failed` → `enviado/entregado/leido/fallido` | mensajes, `message.updated`; lo que llega de Meta sigue igual y se mapea en `ProcesarActualizacionDeEstadoUseCase` |
+| estado de entrega | `sent/delivered/read/failed` → `enviado/entregado/leido/fallido` | `message.updated`; `status: 'sent'` de las respuestas de envío (`estadoDeEntrega`); el historial de mensajes no lo manda (sección 7, punto 12); lo que llega de Meta sigue igual y se mapea en `ProcesarActualizacionDeEstadoUseCase` |
 | estado y canal de contacto | `active/inactive` → `activo/inactivo`; `whatsapp/other` → `whatsapp/otro` | contactos |
-| tipos de la línea de tiempo | `ticket.created/status_changed/assigned/reassigned` → nombres de Mercure (`ticket.creado`…); `window_expired_closed`, `window_reopened`, `manual_resolved_*`, `manual_closed_*`, `auto_reopened`, `tag_added` → en español (`ventana_vencida_cerrado`, `ventana_reabierta`, `resuelto_manual_por_responsable`…; nombres finales en el mapa) | `GET /api/contactos/{id}/linea-de-tiempo` |
+| tipos de la línea de tiempo | `ticket.created` → `ticket.creado`, `ticket.status_changed` → `ticket.estado_cambiado`, `ticket.assigned` → `ticket.asignado`, `ticket.reassigned` → `ticket.reasignado`; los de `ticket_events` viajan con prefijo `ticket.` (`ContactoRepository.php:153-163`): `ticket.window_expired_closed` → `ticket.ventana_vencida_cerrado`, `ticket.window_reopened` → `ticket.ventana_reabierta`, `ticket.manual_resolved_owner` → `ticket.resuelto_manual_por_responsable`, `ticket.manual_resolved_override` → `ticket.resuelto_manual_forzado`, `ticket.manual_resolved_unowned` → `ticket.resuelto_manual_sin_responsable`, `ticket.manual_closed_owner` → `ticket.cerrado_manual_por_responsable`, `ticket.manual_closed_override` → `ticket.cerrado_manual_forzado`, `ticket.manual_closed_unowned` → `ticket.cerrado_manual_sin_responsable` | `GET /api/contactos/{id}/linea-de-tiempo`. El valor guardado en `ticket_events.type` es el mismo sin el prefijo (`ventana_vencida_cerrado`…), y también `auto_reopened` → `reapertura_automatica` y `tag_added` → `etiqueta_agregada`, que no viajan. Los nombres siguen las constantes de `TipoDeEventoDeTicket` (`MANUAL_RESUELTO_FORZADO`…) |
 | motivos y códigos (`success`, `window_expired`, `no_agents_available`, `unowned_ticket`, motivos de importación) | quedan en inglés, como los códigos de error | |
 
 `media.kind` usa los mismos strings que la API de Meta (`GraphClient.php:36-39,319-324`, `ProcesarPayloadWebhookUseCase.php:77`). Lo que se traduce es solo el valor guardado y expuesto; lo que se manda a Meta y lo que llega de Meta sigue igual, con un mapeo en un solo lugar.
@@ -98,7 +127,7 @@ Los nombres siguen los casos del enum `TipoDeEventoEnTiempoReal`, que ya están 
 
 **Tópicos:** `tickets`, `agent/{id}/inbox`, `agent/{id}/availability`, `agent/{id}/shifts`, `agents`. Hoy el front solo se suscribe a `tickets`. Propongo `tickets`, `agentes/{id}/bandeja`, `agentes/{id}/disponibilidad`, `agentes/{id}/turnos`, `agentes`.
 
-**Payloads:** pasan a camelCase (D1) con los nombres del anexo A. Los eventos `agent.*` hoy van en snake_case.
+**Payloads:** pasan a camelCase (D1) con los nombres del anexo A.12, que lista el envoltorio y las claves de cada tipo. Los eventos `agent.*` hoy van en snake_case.
 
 ### 3.3 Roles
 
@@ -110,7 +139,7 @@ El cambio sí tiene que ser **atómico entre datos y código**: `user.roles`, `s
 
 ### 3.4 Rutas `/api`
 
-82 rutas bajo `/api`, más 4 de `/debug` (solo dev y test), `/admin/outbox/publish` y `/webhook`. **`/webhook` es contrato de Meta y no se toca.** Los segmentos propuestos están en el anexo A, según D5. Los placeholders (`{id}`, `{shiftId}`) se enlazan por nombre con los argumentos del controlador, así que `{shiftId}` → `{turnoId}` cambia ruta y argumento juntos.
+84 rutas bajo `/api` (el borrador decía 82; el conteo sale de `debug:router` en `be4ef2f`), más 4 de `/debug` (solo dev y test), `/admin/outbox/publish` y `/webhook`: 90 en total, listadas en A.1. **`/webhook` es contrato de Meta y no se toca.** Los segmentos propuestos están en el anexo A, según D5. Los placeholders (`{id}`, `{shiftId}`) se enlazan por nombre con los argumentos del controlador, así que `{shiftId}` → `{turnoId}` cambia ruta y argumento juntos.
 
 ### 3.5 URLs del router del front
 
@@ -134,7 +163,7 @@ Todas las columnas con valores fijos son `VARCHAR` o `JSON` (no hay `ENUM` de My
 | `messages.sender_type` | remitente | 126 (172 en NULL quedan NULL) | |
 | `assignments.type` | tipo de asignación | 133 | también el `DEFAULT 'MANUAL_ASSIGN'` y `Asignacion.php:32-33`, o `schema:validate` deriva |
 | `messages.media` (`$.kind`) | tipo de adjunto | 31 (2 sin `kind` quedan igual) | con `JSON_SET` |
-| `messages.media` (claves) | `mimeType` queda; `filename`, `size`, `caption`, `providerId` según D2 | 33 | el JSON se devuelve tal cual (`GetMensajesDeTicketQuery.php:76`); o se migra o se mapea al leer |
+| `messages.media` (claves) | `key`, `mimeType` y `providerId` quedan; `filename`, `size`, `caption`, `kind` → `nombreDeArchivo`, `tamanio`, `leyenda`, `tipo` en el contrato | 33 | el JSON se devuelve tal cual (`GetMensajesDeTicketQuery.php:76`); migrar o mapear al leer es la D8 (pendiente) |
 | `user.roles` | roles | 16 (+1 `ROLE_BOGUS`) | reemplazar el token **con comillas** (`"ROLE_ADMIN"`): `ROLE_ADMIN` es prefijo de `ROLE_ADMINISTRADOR` y un reemplazo sin comillas se aplica dos veces |
 | `tickets.priority` | prioridad | 400 (110 / 194 / 96) | |
 | `messages.delivery_status` | estado de entrega | 298 | también el `DEFAULT 'sent'` y la entidad `Mensaje` |
@@ -178,7 +207,7 @@ Todas las columnas con valores fijos son `VARCHAR` o `JSON` (no hay `ENUM` de My
 | 3. Limpieza | quitar los alias de FQCN, borrar endpoints sin uso si se aprobó | no | |
 | 4. Retiro de redirecciones | borrar las redirecciones de las URLs viejas del router, después de un tiempo razonable | solo front | volver a agregarlas |
 
-**Contexto (D7):** la app no está desplegada y el front es el único cliente, así que las etapas son orden de trabajo sobre dev. No hace falta una etapa con los dos formatos: duplicar cada clave en 82 rutas costaría más que el cambio, y los roles no la admiten (sección 3.3). La migración de la etapa 2 corre sobre la base de dev con el `publisher` detenido, y antes de seguir se hace un smoke conjunto de back y front.
+**Contexto (D7):** la app no está desplegada y el front es el único cliente, así que las etapas son orden de trabajo sobre dev. No hace falta una etapa con los dos formatos: duplicar cada clave en 84 rutas costaría más que el cambio, y los roles no la admiten (sección 3.3). La migración de la etapa 2 corre sobre la base de dev con el `publisher` detenido, y antes de seguir se hace un smoke conjunto de back y front.
 
 ## 7. Hallazgos previos, para la lista de contradicciones
 
@@ -196,127 +225,345 @@ Ninguno lo causa este trabajo; los anoto para decidir aparte.
 10. Formas de paginación distintas: `meta{page,limit,total,has_next}` en 6 endpoints, `meta{has_more,next_cursor}` en mensajes, `cursor`/`hasMore` en la línea de tiempo y `lastSequence`/`hasMore` en eventos. Se podrían unificar en el contrato; es un cambio de forma, no solo de nombre.
 11. **Requisito previo a producción:** definir la autenticación de suscriptores de Mercure. Hoy el front se suscribe sin token (`mercure.service.ts:51`) y el hub de dev es anónimo, así que cualquiera que llegue al hub recibe los eventos de todos los espacios de trabajo. Hasta decidirlo, `GET /api/mercure/token` se mantiene.
 
-## Anexo A. Inventario por endpoint (borrador)
+Del mapa del front (L159, sección 8). Para el contrato, cada uno queda neutro: el anexo A describe lo que el back hace hoy, y corregirlo se decide aparte.
 
-Notación: `req` cuerpo, `q` query, `res` respuesta. Los nombres propuestos asumen D1 (camelCase), el glosario y la sección 2; se ajustan cuando se cierren las decisiones.
+12. `GET /api/tickets/{id}/messages` no manda estado de entrega (`Conversacion/Query/MensajeDTO.php:20-26`), así que el historial del front siempre muestra "enviado". La clave no existe y el contrato no la agrega; si se agrega, se llama `estadoDeEntrega`.
+13. En `ticket.created`, `priority` se castea a entero (`Compartido/Realtime/EventoEnTiempoRealFactory.php:49`) y la prioridad guardada es un string, así que siempre llega 0. El contrato define `prioridad` como string con los valores de 3.1.
+14. **Front:** la línea de tiempo maneja `message.received` y `message.sent`, que el back nunca emite (`Contacto/Repository/ContactoRepository.php:107-170` solo arma tipos `ticket.*`).
+15. **Front:** manda `phone_number_id` en la query de `unassigned` y `recurring-customers` (`reporte-api.service.ts:203,233` del front); el back no la lee y toma el espacio de trabajo activo del usuario (`Reporte/Controller/ReporteController.php:80-83`).
+16. **Front:** lee `volume.data` y `agents.agents` (`get-reports-dashboard.use-case.ts:104-108,152,156` del front), pero el back responde arrays sin envoltorio (`Reporte/Repository/ReporteRepository.php:324`, `Reporte/Query/ReporteService.php:108-160`), así que esas tarjetas siempre quedan vacías.
+17. **Front:** manda `tags` en el `PUT` de contacto y lee `tags` y `owner.name`; el back ignora `tags` y no manda ninguno de los dos (`Contacto/UseCase/UpdateContactoUseCase.php:25-67`, `Contacto/Query/ContactoDeListaDTO.php:23-31`).
+18. **Front:** lee `override.reason` en la disponibilidad; el back no lo manda (`Disponibilidad/Controller/DisponibilidadDeAgenteController.php:162-174`).
+19. El envoltorio de Mercure pone en `ticketId` el `aggregate_id` del outbox (`EventoEnTiempoRealFactory.php:33`), así que en `agent.*` lleva el id del agente.
+20. `POST /api/provider/template/send` devuelve el WAMID en `messageId` (`Conversacion/Controller/ProxyDeProveedorController.php:220`), mientras que `POST /api/provider/send` devuelve el id de la base en `messageId` y el WAMID en `externalId` (`:128-130`).
+21. En el detalle del ticket, `owner.name` es siempre null (`Ticket/Query/GetDetalleDeTicketQuery.php:31`), mientras la lista sí trae el nombre (`ListTicketsQuery.php:110`).
+22. `current_load` es un conteo de tickets en la disponibilidad y en la lista de tickets, y una proporción (activos / máximo) en `GET /api/reports/agents` (`ReporteRepository.php:399`). Con el contrato las dos pasan a `cargaActual`; distinguirlas es un cambio de forma.
 
-### Compartidos
+## 8. Respuestas al mapa del front (L159)
 
-- Paginación `meta`: `page`, `limit`, `total`, `has_next` → `page`, `limit`, `total`, `haySiguiente`.
-- Fechas: `created_at`, `updated_at` → `creadoAt`, `actualizadoAt`.
-- `error` queda.
+Respuesta a los 14 puntos del mapa del front (`odd/tasks/limpieza-frontend-fase-5/contrato-map.md`, sección F, en `ffbea3f`). Las rutas de archivo del back son relativas a `apps/api/src/`.
 
-### Administracion
+1. **Mercure:** listado completo en A.12: envoltorio `eventId` → `eventoId`, `sequence` =, `timestamp` → `ocurridoAt`, `eventType` → `tipoDeEvento`, `ticketId` =, `payload` =, y todas las claves de los 8 tipos (`EventoEnTiempoRealFactory.php:28-35,44-102`).
+2. **D4:** corregido: `has_pending` → `hayPendientes` (`EspacioDeTrabajoDTO.php:51`, `MiEspacioDeTrabajoController.php:116`). `hasPendientes` era un error del borrador.
+3. **Configuración y espacios de trabajo:** `workspace` → `espacioDeTrabajo` {`id`, `displayName` → `nombreVisible`, `phoneNumberId`} (`MiConfiguracionController.php:68-75`). Las respuestas de la lista de administración, de `PUT …/agentes` y de `/api/mi/espacio(s)-de-trabajo` tienen flechas en A.3.
+4. **Adjuntos:** `kind` → `tipo`; `providerId` queda, porque es el id de Meta, como `mediaId` (A.0, regla 5). Migrar el JSON guardado o mapearlo al leer queda como **D8, pendiente**.
+5. **Historial de mensajes:** confirmado, `MensajeDTO.php:20-26` no manda estado de entrega (hallazgo 12, sección 7). Para el contrato: la clave no existe hoy y el contrato no la agrega. Si se decide agregarla, se llama `estadoDeEntrega` (`Mensaje::getEstadoDeEntrega`, `Mensaje.php:108`).
+6. **Línea de tiempo:** nombres finales en 3.1 y A.7: `ticket.reassigned` → `ticket.reasignado` y los 8 `ticket.window_*`/`ticket.manual_*` en español. `message.received` y `message.sent` no los emite el back (`Contacto/Repository/ContactoRepository.php:107-170` solo arma tipos `ticket.*`): hallazgo 14, se resuelve en el front.
+7. **Contactos:** el back no manda `tags` ni `owner`, y no lee `tags` en el `PUT` (`ContactoDeListaDTO.php:23-31`, `UpdateContactoUseCase.php:25-67`). El contrato no los agrega (hallazgo 17). `email` sigue en la query de la lista (`ContactoController.php:44`); el borrador lo había perdido.
+8. **Reportes:** todas las claves en A.10. `volume` y `agents` responden un array sin envoltorio (`ReporteRepository.php:324`, `ReporteService.php:91-160`), así que no hay `data`, `total`, `trend` ni `agents` que renombrar: el front lee claves que no existen (hallazgo 16). `phone_number_id`: el back no lo lee; el alcance sale del espacio de trabajo activo (`ReporteController.php:80-83`). El contrato no la agrega (hallazgo 15).
+9. **Transiciones y turnos:** `status` → `estado`, `set_first_response` → `marcarPrimeraRespuesta`, `set_resolved` → `marcarResuelto` (`FlujoDeTicketController.php:40,61-62`). El `POST` de turno tiene request y respuesta por separado en A.9 (`CreateTurnoRequest.php:17-31`, `CreateTurnoUseCase.php:92-97`). `override.reason` no existe (`DisponibilidadDeAgenteController.php:162-174`); el contrato no lo agrega (hallazgo 18).
+10. **Proveedor y errores:** `status` de la respuesta de envío → `estadoDeEntrega`, con el valor `sent` → `enviado` (`ProxyDeProveedorController.php:131,221`). Multipart: `file` → `archivo` en la subida y en la importación, para que sean consistentes (`ProxyDeProveedorController.php:231`, `ContactoController.php:135`). 413: `maxSize` → `tamanioMaximo`, `kind` → `tipo` (`ProxyDeProveedorController.php:251-253`).
+11. **Importación:** confirmado: el error es `{error, message}` → `{error, mensaje}` (`ContactoController.php:138-141,152`); `error` lleva el código (`missing_phone_column`…) y queda en inglés. Las columnas del CSV, `phone` incluida, quedan como **D9, pendiente**.
+12. **Ticket:** claves internas en A.11: `contacto` {`id`, `telefono`, `nombre`}; `responsable` {`id`, `nombre`, `enTurno`, `cargaActual`, `capacidadMaxima`} en la lista y {`id`, `nombre`} en el detalle; `fechas` del detalle {`abiertoAt`, `asignadoAt`, `resueltoAt`, `cerradoAt`, `ultimoMensajeEntranteAt`} (`ListTicketsQuery.php:107-133`, `GetDetalleDeTicketQuery.php:21-47`).
+13. **Turnos:** `/api/mi/turnos` responde un array sin envoltorio, en el `GET` y en el `PUT` (`MisTurnosController.php:54,74`). Solo el cuerpo del `PUT` va envuelto: `{shifts}` → `{turnos}`.
+14. **Prioridad en Mercure:** confirmado (`EventoEnTiempoRealFactory.php:49`): hallazgo 13. El contrato define `prioridad` como string con los valores de 3.1; corregir el cast se decide aparte.
 
-- **`/api/admin/agents[/{id}]`** → `/api/administracion/agentes[/{id}]`
-  - req: `name`, `timezone`, `active` → `nombre`, `zonaHoraria`, `activo`
-  - res: `id`, `name`, `active`, `timezone`, `is_available`, `user_id`, `user_email`, `created_at`, `updated_at` → `id`, `nombre`, `activo`, `zonaHoraria`, `disponible`, `usuarioId`, `usuarioEmail`, `creadoAt`, `actualizadoAt`
-- **`/api/admin/teams[/{id}]`, `PUT /{id}/agents`** → `/api/administracion/equipos…/agentes`
-  - req: `workspaceId`, `name`, `isActive`, `agentIds` → `espacioDeTrabajoId`, `nombre`, `activo`, `agenteIds`
-  - res: `id`, `workspace_id`, `name`, `is_active`, `agent_count`, `agent_ids`, fechas → `id`, `espacioDeTrabajoId`, `nombre`, `activo`, `cantidadDeAgentes`, `agenteIds`; `PUT /agentes` devuelve `equipoId`, `agenteIds`
-- **`/api/admin/workspaces[/{id}]`, `PUT /{id}/agents`** → `/api/administracion/espacios-de-trabajo…/agentes`
-  - req: `phoneNumberId`, `displayName`, `isActive`, `agentIds` → `phoneNumberId`, `nombreVisible`, `activo`, `agenteIds`
-  - res: `id`, `phone_number_id`, `display_name`, `is_active`, `agent_count`, `agent_ids`, fechas
-- **`/api/admin/users[/{id}]`** → `/api/administracion/usuarios`
-  - req: `email`, `password`, `roles`, `agent_id`, `is_active` → `agenteId`, `activo`
-  - res: `id`, `email`, `roles`, `is_active`, `agent_id`, `agent_name`, fechas → `activo`, `agenteId`, `agenteNombre`
-- **`POST|DELETE /api/admin/agents/{id}/link-user`** → `…/agentes/{id}/vincular-usuario`
-  - req: `user_id` → `usuarioId`; res: `id`, `user_id`, `user_email` → `usuarioId`, `usuarioEmail`
-- **`/api/me/workspace`, `/api/me/workspaces`** → `/api/mi/espacio-de-trabajo`, `/api/mi/espacios-de-trabajo`
-  - req `PUT`: `workspaceId` → `espacioDeTrabajoId`
-  - res: `workspace_id`, `phone_number_id`, `display_name`; la lista suma `is_active`, fechas, `agent_count`, `has_pending` → `hasPendientes`
+**Nota del front sobre `/contactos`** (sin impacto en el back): `q` queda técnico y `status`/`channel` pasan a `estado`/`canal`, leyendo también los nombres viejos hasta que se retiren las redirecciones. Anotado en A.14.
 
-### Agente
+## Anexo A. Inventario por endpoint
 
-- **`GET /api/teams`** → `/api/equipos`: `id`, `workspace_id`, `name`, `is_active`
-- **`GET /api/me/settings`** → `/api/mi/configuracion`: `profile` {`name`, `email`, `signature`} → `perfil` {`nombre`, `email`, `firma`}; `notifications` {`sound`, `desktop`} → `notificaciones` {`sonido`, `escritorio`}; `autoReply` {`enabled`, `message`} → `respuestaAutomatica` {`habilitada`, `texto`}; `workspace` {`id`, `displayName`, `phoneNumberId`}; `businessHours` [{`dayOfWeek`, `start`, `end`}] → `horarioDeAtencion` [{`diaDeLaSemana`, `inicio`, `fin`}]
-- **`PUT /api/me/profile`** → `/api/mi/perfil`: `signature` → `firma`
-- **`PUT /api/me/notifications`** → `/api/mi/notificaciones`: `sound`, `desktop`
+Verificado contra el código del back en `be4ef2f` y contra el mapa del front en `ffbea3f` (L159). Las rutas de archivo son relativas a `apps/api/src/`.
 
-### Asignacion
+Notación: `req` cuerpo JSON, `mp` campo multipart, `q` query, `res` respuesta, `[…]` array sin envoltorio, `=` sin cambio. Cada clave va `vieja → nueva`; una clave sin flecha no cambia. Los errores van con su código HTTP.
 
-- **`POST /api/tickets/{id}/auto-assign`** → `…/asignar-automaticamente`
-  - res: `ticket_id`, `assigned`, `agent_id`, `reason` (`success`, `ticket_not_found`, `already_assigned`, `no_agents_available`, `all_agents_at_capacity`) → `ticketId`, `asignado`, `agenteId`, `motivo` (valores en D2)
-- **`POST /api/tickets/{id}/assign`** → `…/asignar`
-  - req: `agentId`, `assignedBy`, `notes` → `agenteId`, `asignadoPor`, `notas`
-  - res: `assignment_id`, `ticket_id`, `agent_id`, `agent_name`, `assigned_by`, `assigned_at`, `ticket_status`, `notes`, `status: 'ok'` → `asignacionId`, `ticketId`, `agenteId`, `agenteNombre`, `asignadoPor`, `asignadoAt`, `estadoDeTicket`, `notas`
-  - 409: `{type: 'AGENT_NOT_ACTIVE', error}`
-- **`PUT /api/tickets/{id}/team`** → `…/equipo`: req `teamId` → `equipoId`; res `ticket_id`, `team_id`
-- **`GET /api/tickets/{id}/assignment`** → `…/asignacion`: `assignments` [{`id`, `agent_id`, `assigned_by`, `assigned_at`, `notes`}], `current_assignment` → `asignaciones`, `asignacionActual`. `assigned_at` sale como `Y-m-d H:i:s`, no ISO.
+### A.0 Reglas aplicadas
 
-### Autenticacion
+1. **camelCase en todo** (D1): requests, respuestas, multipart, query y Mercure.
+2. **Términos:** glosario y sección 2. Ids como `<entidad>Id` (`agenteId`, `espacioDeTrabajoId`, `turnoId`) y nombres de otra entidad como `<entidad>Nombre` (`agenteNombre`, `contactoNombre`), con el mismo orden.
+3. **Booleanos** sin prefijo, como adjetivo o participio; "has" pasa a `hay…` (D4): `hayPendientes`, `haySiguiente`, `hayMas`.
+4. **Fechas:** participio con `At` (`creadoAt`, `asignadoAt`); `vencimientoAt` es la excepción ya decidida.
+5. **Quedan en inglés por técnicos:** `id`, `page`, `limit`, `offset`, `before`, `cursor`, `token`, `payload`, `sequence`, `key`, `url`, `email`, `password`, `roles`, `mimeType`, las claves OAuth2 (`access_token`, `token_type`, `expires_in`), los `hub_*` del webhook y el envoltorio `data`/`meta`/`total`. Los errores conservan `error`, `type`, `code` y `reference` (sección 2). **Identificadores de Meta:** `phoneNumberId`, `mediaId`, `externalId` (WAMID) y `providerId` quedan: el glosario ya trata el phone number id como jerga de la API de Meta, y `proveedorId` se leería como "id del proveedor", no como "id en el proveedor".
+6. **Valores:** los de negocio que viajan se traducen (3.1, D3); los motivos y códigos (`success`, `window_expired`, `AGENT_NOT_ACTIVE`, `file_missing`…) quedan en inglés.
+7. **Rutas:** D5, con sus excepciones. Placeholders: `{id}` queda; `{shiftId}` → `{turnoId}` (cambia con el argumento del controlador); `{mediaId}` (id de Meta) y `{ticketId}` de `/debug` quedan.
+8. **Textos de error:** siguen en inglés, pero los que nombran una clave se actualizan al nombre nuevo en el mismo cambio (`is_available is required`, `teamId is required (integer or null)`, `status is required`, `start_time and end_time must differ`, `Missing required fields: ticketId, content`, `Use multipart/form-data with a "file" field`, los de los DTOs con `#[MapRequestPayload]`; sección 7, punto 8).
+9. **Cuerpos del framework** (no se traducen: son contratos del framework): el 401 de Lexik `{code, message}` (token inválido o vencido, login fallido), el 422 de `#[MapRequestPayload]`, el 403 de `#[IsGranted]` y `access_control`, y el 429 del limitador de login.
+10. **Lo persistido no cambia de nombre** (L155): columnas, claves de los payloads guardados en `outbox_events.payload` (el factory las mapea, A.12) y, según D8, las claves del JSON de adjunto.
 
-- **`POST /api/auth/login`, `POST /api/auth/refresh`:** `email`, `password` → igual; res `access_token`, `token_type`, `expires_in` (OAuth2, quedan). El refresh token viaja en la cookie `inbiox_refresh`.
-- **`POST /api/auth/logout`** (queda técnico, D5): res `{message}` → `{mensaje}`
-- **`GET /api/auth/me`:** `id`, `email`, `roles`, `is_active`, `agent_id`, `agent_name` → `activo`, `agenteId`, `agenteNombre`
+### A.1 Rutas (90)
 
-### Automatizacion
+84 bajo `/api`, 4 de `/debug`, `/admin/outbox/publish` y `/webhook` (`GET|POST`, una sola ruta). Fuente: `php bin/console debug:router --format=json`, sin `_preview_error`.
 
-- **`PUT /api/me/auto-reply`** → `/api/mi/respuesta-automatica`: `enabled`, `message` → `habilitada`, `texto`
+| # | Módulo | Método | Ruta actual | Ruta nueva |
+|---|---|---|---|---|
+| 1 | Administracion | GET | `/api/admin/agents` | `/api/administracion/agentes` |
+| 2 | Administracion | POST | `/api/admin/agents` | `/api/administracion/agentes` |
+| 3 | Administracion | GET | `/api/admin/agents/{id}` | `/api/administracion/agentes/{id}` |
+| 4 | Administracion | PUT | `/api/admin/agents/{id}` | `/api/administracion/agentes/{id}` |
+| 5 | Administracion | DELETE | `/api/admin/agents/{id}` | `/api/administracion/agentes/{id}` |
+| 6 | Administracion | GET | `/api/admin/teams` | `/api/administracion/equipos` |
+| 7 | Administracion | POST | `/api/admin/teams` | `/api/administracion/equipos` |
+| 8 | Administracion | GET | `/api/admin/teams/{id}` | `/api/administracion/equipos/{id}` |
+| 9 | Administracion | PUT | `/api/admin/teams/{id}` | `/api/administracion/equipos/{id}` |
+| 10 | Administracion | DELETE | `/api/admin/teams/{id}` | `/api/administracion/equipos/{id}` |
+| 11 | Administracion | PUT | `/api/admin/teams/{id}/agents` | `/api/administracion/equipos/{id}/agentes` |
+| 12 | Administracion | GET | `/api/admin/workspaces` | `/api/administracion/espacios-de-trabajo` |
+| 13 | Administracion | POST | `/api/admin/workspaces` | `/api/administracion/espacios-de-trabajo` |
+| 14 | Administracion | GET | `/api/admin/workspaces/{id}` | `/api/administracion/espacios-de-trabajo/{id}` |
+| 15 | Administracion | PUT | `/api/admin/workspaces/{id}` | `/api/administracion/espacios-de-trabajo/{id}` |
+| 16 | Administracion | DELETE | `/api/admin/workspaces/{id}` | `/api/administracion/espacios-de-trabajo/{id}` |
+| 17 | Administracion | PUT | `/api/admin/workspaces/{id}/agents` | `/api/administracion/espacios-de-trabajo/{id}/agentes` |
+| 18 | Administracion | GET | `/api/admin/users` | `/api/administracion/usuarios` |
+| 19 | Administracion | POST | `/api/admin/users` | `/api/administracion/usuarios` |
+| 20 | Administracion | GET | `/api/admin/users/{id}` | `/api/administracion/usuarios/{id}` |
+| 21 | Administracion | PUT | `/api/admin/users/{id}` | `/api/administracion/usuarios/{id}` |
+| 22 | Administracion | DELETE | `/api/admin/users/{id}` | `/api/administracion/usuarios/{id}` |
+| 23 | Administracion | GET | `/api/me/workspace` | `/api/mi/espacio-de-trabajo` |
+| 24 | Administracion | PUT | `/api/me/workspace` | `/api/mi/espacio-de-trabajo` |
+| 25 | Administracion | GET | `/api/me/workspaces` | `/api/mi/espacios-de-trabajo` |
+| 26 | Administracion | POST | `/api/admin/agents/{id}/link-user` | `/api/administracion/agentes/{id}/vincular-usuario` |
+| 27 | Administracion | DELETE | `/api/admin/agents/{id}/link-user` | `/api/administracion/agentes/{id}/vincular-usuario` |
+| 28 | Agente | GET | `/api/teams` | `/api/equipos` |
+| 29 | Agente | GET | `/api/me/settings` | `/api/mi/configuracion` |
+| 30 | Agente | PUT | `/api/me/profile` | `/api/mi/perfil` |
+| 31 | Agente | PUT | `/api/me/notifications` | `/api/mi/notificaciones` |
+| 32 | Asignacion | POST | `/api/tickets/{id}/auto-assign` | `/api/tickets/{id}/asignar-automaticamente` |
+| 33 | Asignacion | POST | `/api/tickets/{id}/assign` | `/api/tickets/{id}/asignar` |
+| 34 | Asignacion | PUT | `/api/tickets/{id}/team` | `/api/tickets/{id}/equipo` |
+| 35 | Asignacion | GET | `/api/tickets/{id}/assignment` | `/api/tickets/{id}/asignacion` |
+| 36 | Autenticacion | POST | `/api/auth/login` | = (excepción D5) |
+| 37 | Autenticacion | POST | `/api/auth/refresh` | = (excepción D5) |
+| 38 | Autenticacion | POST | `/api/auth/logout` | = (excepción D5) |
+| 39 | Autenticacion | GET | `/api/auth/me` | = (excepción D5) |
+| 40 | Automatizacion | PUT | `/api/me/auto-reply` | `/api/mi/respuesta-automatica` |
+| 41 | Compartido | POST | `/debug/inbound/{ticketId}` | = (excepción D5) |
+| 42 | Compartido | POST | `/debug/outbound/{ticketId}` | = (excepción D5) |
+| 43 | Compartido | POST | `/debug/status/{ticketId}` | = (excepción D5) |
+| 44 | Compartido | POST | `/debug/assign/{ticketId}` | = (excepción D5) |
+| 45 | Compartido | GET | `/api/tickets/{id}/events` | = hasta borrarla en la etapa 3 (L155) |
+| 46 | Compartido | GET | `/api/mercure/token` | = (excepción D5) |
+| 47 | Compartido | POST | `/admin/outbox/publish` | = (excepción D5) |
+| 48 | Contacto | GET | `/api/contacts` | `/api/contactos` |
+| 49 | Contacto | GET | `/api/contacts/{id}` | `/api/contactos/{id}` |
+| 50 | Contacto | POST | `/api/contacts` | `/api/contactos` |
+| 51 | Contacto | PUT | `/api/contacts/{id}` | `/api/contactos/{id}` |
+| 52 | Contacto | POST | `/api/contacts/import` | `/api/contactos/importar` |
+| 53 | Contacto | DELETE | `/api/contacts/{id}` | `/api/contactos/{id}` |
+| 54 | Contacto | GET | `/api/contacts/{id}/timeline` | `/api/contactos/{id}/linea-de-tiempo` |
+| 55 | Conversacion | POST | `/api/provider/send` | `/api/proveedor/enviar` |
+| 56 | Conversacion | POST | `/api/provider/template/send` | `/api/proveedor/plantilla/enviar` |
+| 57 | Conversacion | POST | `/api/provider/media/upload` | `/api/proveedor/adjunto/subir` |
+| 58 | Conversacion | GET | `/api/provider/media/{mediaId}` | `/api/proveedor/adjunto/{mediaId}` |
+| 59 | Conversacion | GET | `/api/messages/{id}/media` | `/api/mensajes/{id}/adjunto` |
+| 60 | Conversacion | GET/POST | `/webhook` | = (excepción D5) |
+| 61 | Disponibilidad | GET | `/api/workspaces/{id}/available-agents` | `/api/espacios-de-trabajo/{id}/agentes-disponibles` |
+| 62 | Disponibilidad | POST | `/api/agents/{id}/availability` | `/api/agentes/{id}/disponibilidad` |
+| 63 | Disponibilidad | DELETE | `/api/agents/{id}/availability` | `/api/agentes/{id}/disponibilidad` |
+| 64 | Disponibilidad | GET | `/api/agents/{id}/availability` | `/api/agentes/{id}/disponibilidad` |
+| 65 | Disponibilidad | POST | `/api/agents/{id}/shifts` | `/api/agentes/{id}/turnos` |
+| 66 | Disponibilidad | DELETE | `/api/agents/{id}/shifts/{shiftId}` | `/api/agentes/{id}/turnos/{turnoId}` |
+| 67 | Disponibilidad | GET | `/api/me/shifts` | `/api/mi/turnos` |
+| 68 | Disponibilidad | PUT | `/api/me/shifts` | `/api/mi/turnos` |
+| 69 | Reporte | GET | `/api/reports/frt` | `/api/reportes/frt` |
+| 70 | Reporte | GET | `/api/reports/rt` | `/api/reportes/rt` |
+| 71 | Reporte | GET | `/api/reports/counts` | `/api/reportes/conteos` |
+| 72 | Reporte | GET | `/api/reports/volume` | `/api/reportes/volumen` |
+| 73 | Reporte | GET | `/api/reports/agents` | `/api/reportes/rendimiento-de-agentes` |
+| 74 | Reporte | GET | `/api/reports/agent-load` | `/api/reportes/carga-de-agentes` |
+| 75 | Reporte | GET | `/api/reports/unassigned` | `/api/reportes/sin-asignar` |
+| 76 | Reporte | GET | `/api/reports/available-agents` | `/api/reportes/agentes-disponibles` |
+| 77 | Reporte | GET | `/api/reports/frt-trend` | `/api/reportes/tendencia-de-frt` |
+| 78 | Reporte | GET | `/api/reports/heatmap` | `/api/reportes/mapa-de-calor` |
+| 79 | Reporte | GET | `/api/reports/recurring-customers` | `/api/reportes/contactos-recurrentes` |
+| 80 | Reporte | GET | `/api/reports/reopened` | `/api/reportes/reabiertos` |
+| 81 | Reporte | GET | `/api/reports/export` | `/api/reportes/exportar` |
+| 82 | Reporte | GET | `/api/reports/response-delay` | `/api/reportes/demora-de-respuesta` |
+| 83 | Reporte | GET | `/api/reports/tickets/{id}/participation` | `/api/reportes/tickets/{id}/participacion` |
+| 84 | Ticket | GET | `/api/tickets` | = |
+| 85 | Ticket | GET | `/api/tickets/{id}` | = |
+| 86 | Ticket | GET | `/api/tickets/{id}/messages` | `/api/tickets/{id}/mensajes` |
+| 87 | Ticket | PUT | `/api/tickets/{id}/mark-read` | `/api/tickets/{id}/marcar-leido` |
+| 88 | Ticket | POST | `/api/tickets/{id}/transition` | `/api/tickets/{id}/transicionar` |
+| 89 | Ticket | POST | `/api/tickets/{id}/resolve` | `/api/tickets/{id}/resolver` |
+| 90 | Ticket | POST | `/api/tickets/{id}/close` | `/api/tickets/{id}/cerrar` |
 
-### Compartido
+### A.2 Formas compartidas
 
-- **`/debug/inbound|outbound|status|assign/{ticketId}`** (solo dev y test): `success`, `ticket_id`, `message`, `new_status`, `agent_id`, `error`
-- **`GET /api/tickets/{id}/events`:** ver 3.6 (propuesta: borrar)
-- **`GET /api/mercure/token`:** `{token}`; ver 3.6
-- **`POST /admin/outbox/publish`:** `{published}` → `{publicados}`
+- **Lista paginada** (6 endpoints: agentes, equipos, espacios de trabajo y usuarios de administración, contactos, tickets): `{data, meta}`; `meta` {`page`, `limit`, `total`, `has_next` → `haySiguiente`} (`Compartido/MetadatosDePaginacionDTO.php:18-21`; los 4 de administración la arman a mano, por ejemplo `GestionDeAgentesController.php:46-51`). q `page`, `limit`.
+- **Fechas en objetos:** `created_at` → `creadoAt`, `updated_at` → `actualizadoAt`. El formato no cambia (ISO 8601 en la mayoría; `Y-m-d H:i:s` en asignaciones y en `datosDisponiblesDesde`).
+- **Error simple:** `{error}`. Es el cuerpo de casi todos los 400, 401, 403, 404, 409 y 422 de los controladores. Sin cambio de clave.
+- **Error 500** de `/api/*`: `{error, reference}` (`Compartido/EventListener/InternalServerErrorListener.php:54`). Sin cambio.
+- **Adjunto** (`media` → `adjunto`, en el historial y en `message.added`): `key`, `mimeType`, `filename` → `nombreDeArchivo`, `size` → `tamanio`, `kind` → `tipo` (valores de 3.1), `providerId`, `caption` → `leyenda`. Lo escriben `Conversacion/UseCase/EnviarMensajeSalienteUseCase.php:58-64` y `Conversacion/UseCase/ProcesarMensajeEntranteUseCase.php:304-310`. El nombre guardado de las claves depende de D8.
+- **Error de Graph** (envío, plantilla, subida y descarga): `{type, code, message}` → `{type, code, mensaje}`; `type` es un código en inglés (`GRAPH_API_ERROR`, `RATE_LIMIT_EXCEEDED`, `RECIPIENT_BLOCKED`…) y el código HTTP sale del código de Graph (`ProxyDeProveedorController.php:111-122,301-323`).
 
-### Contacto
+### A.3 Administracion
 
-- **`GET /api/contacts`** → `/api/contactos`
-  - q: `page`, `limit`, `search`, `status`, `channel`, `ownerId`, `email` → `page`, `limit`, `busqueda`, `estado`, `canal`, `responsableId`
-  - res: `id`, `phone`, `name`, `status`, `channel`, `owner_id`, `email`, `timestamps` {`created_at`, `updated_at`}, `activeTicketId` → `telefono`, `nombre`, `estado`, `canal`, `responsableId`, `fechas`, `ticketActivoId`
-- **`GET|POST|PUT|DELETE /api/contacts/{id}`:** las mismas claves
-- **`POST /api/contacts/import`** → `…/importar`: req multipart `file` → `archivo`; res `totalRows`, `imported`, `failed`, `errors` [{`row`, `phone`, `reason`, `message`}], `errorsTruncated` → `totalDeFilas`, `importados`, `fallidos`, `errores` [{`fila`, `telefono`, `motivo`, `mensaje`}], `erroresTruncados`
-- **`GET /api/contacts/{id}/timeline`** → `…/linea-de-tiempo`: q `before`, `limit` (técnicos); res `events` [{`type`, `occurredAt`, `content`, `ticketId`, `ticketStatus`, `assignedTo`, `agentId`, `direction`}], `cursor`, `hasMore` → `eventos` [{`tipo`, `ocurridoAt`, `contenido`, `ticketId`, `estadoDeTicket`, `asignadoA`, `agenteId`, `direccion`}]. Los valores de `type` son literales del SQL (`ticket.created`, `ticket.status_changed`, `ticket.assigned`, `ticket.reassigned`, `window_expired_closed`, `window_reopened`, `manual_resolved_*`, `manual_closed_*`).
+- **Agente de administración** (`GestionDeAgentesController.php:132-140`): `id`, `name` → `nombre`, `active` → `activo`, `timezone` → `zonaHoraria`, `is_available` → `disponible`, `user_id` → `usuarioId`, `user_email` → `usuarioEmail`, `created_at` → `creadoAt`, `updated_at` → `actualizadoAt`.
+  - Rutas 1–5. `GET` lista: paginada (A.2). `POST`: req `name` → `nombre`, `timezone` → `zonaHoraria` (`CreateAgenteUseCase.php:23,29`); 201 con el agente; 400. `GET {id}`: el agente; 404. `PUT {id}`: req `name` → `nombre`, `active` → `activo`, `timezone` → `zonaHoraria` (`UpdateAgenteUseCase.php:26-45`); 200 con el agente; 400, 404. `DELETE {id}`: 204; 404.
+- **Vínculo con usuario** (rutas 26–27, `VinculoDeAgenteController.php`): `POST` req `user_id` → `usuarioId` (`VincularUsuarioConAgenteUseCase.php:32`); res `id`, `user_id` → `usuarioId`, `user_email` → `usuarioEmail` (`:68-70`); 400, 404, 409. `DELETE`: 204; 400, 404.
+- **Equipo** (`GestionDeEquiposController.php:187-194`): `id`, `workspace_id` → `espacioDeTrabajoId`, `name` → `nombre`, `is_active` → `activo`, `agent_count` → `cantidadDeAgentes`, `agent_ids` → `agenteIds`, `created_at` → `creadoAt`, `updated_at` → `actualizadoAt`.
+  - Rutas 6–11. `POST`: req `workspaceId` → `espacioDeTrabajoId`, `name` → `nombre`, `isActive` → `activo` (`CreateEquipoUseCase.php:29-54`); 201; 400, 409. `PUT {id}`: req `name` → `nombre`, `isActive` → `activo` (`UpdateEquipoUseCase.php:30-44`); 400, 404, 409. `DELETE {id}`: 204; 404. `PUT {id}/agentes`: req `agentIds` → `agenteIds` (`AsignarAgentesAEquipoUseCase.php:29`); res `team_id` → `equipoId`, `agent_ids` → `agenteIds` (`GestionDeEquiposController.php:171-172`); 400, 404.
+- **Espacio de trabajo de administración** (`GestionDeEspaciosDeTrabajoController.php:173-180`): `id`, `phone_number_id` → `phoneNumberId`, `display_name` → `nombreVisible`, `is_active` → `activo`, `agent_count` → `cantidadDeAgentes`, `agent_ids` → `agenteIds`, `created_at` → `creadoAt`, `updated_at` → `actualizadoAt`.
+  - Rutas 12–17. `POST`: req `phoneNumberId`, `displayName` → `nombreVisible`, `isActive` → `activo` (`CreateEspacioDeTrabajoUseCase.php:27-45`); 201; 400, 409. `PUT {id}`: las mismas claves (`UpdateEspacioDeTrabajoUseCase.php:26-41`); 400, 404. `DELETE {id}`: 204; 404. `PUT {id}/agentes`: req `agentIds` → `agenteIds`; res `workspace_id` → `espacioDeTrabajoId`, `agent_ids` → `agenteIds` (`:157-158`); 400, 404.
+- **Usuario** (`GestionDeUsuariosController.php:140-147`): `id`, `email`, `roles` (valores de 3.3), `is_active` → `activo`, `agent_id` → `agenteId`, `agent_name` → `agenteNombre`, `created_at` → `creadoAt`, `updated_at` → `actualizadoAt` (puede ser null).
+  - Rutas 18–22. `POST`: req `email`, `password`, `roles` (por defecto `['ROLE_AGENT']` → `['ROLE_AGENTE']`), `agent_id` → `agenteId` (`CreateUsuarioUseCase.php:33-55`); 201; 400, 404, 409. `PUT {id}`: req `email`, `password`, `roles`, `is_active` → `activo` (`UpdateUsuarioUseCase.php:32-57`); 400, 404, 409. `DELETE {id}`: 204; 404.
+- **`GET|PUT /api/mi/espacio-de-trabajo`** (rutas 23–24): res `workspace_id` → `espacioDeTrabajoId`, `phone_number_id` → `phoneNumberId`, `display_name` → `nombreVisible` (`EspacioDeTrabajoActivoDTO.php:35-37`). Sin espacio activo, el `GET` responde 404 con las mismas tres claves en null (`MiEspacioDeTrabajoController.php:50-53`); sin agente, 404 `{error}`. `PUT`: req `workspaceId` → `espacioDeTrabajoId` (`SetEspacioDeTrabajoActivoUseCase.php:38`); res igual al `GET`; 400, 401, 403, 404.
+- **`GET /api/mi/espacios-de-trabajo`** (ruta 25): `[…]` de `id`, `phone_number_id` → `phoneNumberId`, `display_name` → `nombreVisible`, `is_active` → `activo`, `created_at` → `creadoAt`, `updated_at` → `actualizadoAt`, `agent_count` → `cantidadDeAgentes`, `has_pending` → `hayPendientes` (`EspacioDeTrabajoDTO.php:44-51`, `MiEspacioDeTrabajoController.php:116`). No trae `agenteIds`. 401.
 
-### Conversacion
+### A.4 Agente y Automatizacion
 
-- **`POST /api/provider/send`** → `/api/proveedor/enviar`: req `ticketId`, `content`, `mediaId`, `mimeType`, `caption`, `mediaKey`, `filename`, `size` → `contenido`, `leyenda`, `claveDeAdjunto`, `nombreDeArchivo`, `tamanio` (`mediaId` es el id de Meta, queda); res `messageId`, `externalId`, `status` → `mensajeId`
-- **`POST /api/provider/template/send`** → `/api/proveedor/plantilla/enviar`: `templateName`, `language`, `parameters` → `nombreDePlantilla`, `idioma`, `parametros`
-- **`POST /api/provider/media/upload`** → `/api/proveedor/adjunto/subir`: multipart `file`, `ticketId`; res `mediaId`, `key`
-- **`GET /api/provider/media/{mediaId}`:** binario; `{mediaId}` es de Meta
-- **`GET /api/messages/{id}/media`** → `/api/mensajes/{id}/adjunto`: `url`, `expiresAt` → `vencimientoAt`
-- **`/webhook`:** contrato de Meta, no cambia
+- **`GET /api/equipos`** (ruta 28): `[…]` de `id`, `workspace_id` → `espacioDeTrabajoId`, `name` → `nombre`, `is_active` → `activo` (`EquipoController.php:58-61`); 401.
+- **`GET /api/mi/configuracion`** (ruta 29, `MiConfiguracionController.php:48-99`):
+  - `profile` → `perfil` {`name` → `nombre`, `email`, `signature` → `firma`}
+  - `notifications` → `notificaciones` {`sound` → `sonido`, `desktop` → `escritorio`}
+  - `autoReply` → `respuestaAutomatica` {`enabled` → `habilitada`, `message` → `texto`}
+  - `workspace` → `espacioDeTrabajo` {`id`, `displayName` → `nombreVisible`, `phoneNumberId`}, o null sin espacio activo
+  - `businessHours` → `horarioDeAtencion` [{`dayOfWeek` → `diaDeLaSemana`, `start` → `inicio`, `end` → `fin`}]
+  - 404 sin agente.
+- **`PUT /api/mi/perfil`** (ruta 30): req `signature` → `firma` (`UpdatePerfilRequest.php:12`); res `name` → `nombre`, `email`, `signature` → `firma` (`MiConfiguracionController.php:113-117`); 404, 422.
+- **`PUT /api/mi/notificaciones`** (ruta 31): req y res `sound` → `sonido`, `desktop` → `escritorio` (`UpdateNotificacionesRequest.php:12-15`, `MiConfiguracionController.php:131-134`); 404, 422.
+- **`PUT /api/mi/respuesta-automatica`** (ruta 40): req y res `enabled` → `habilitada`, `message` → `texto` (`UpdateRespuestaAutomaticaRequest.php:12-15`, `MiRespuestaAutomaticaController.php:41-44`); 404, 422.
 
-### Disponibilidad
+### A.5 Asignacion
 
-- **`GET /api/workspaces/{id}/available-agents`** → `/api/espacios-de-trabajo/{id}/agentes-disponibles`: `id`, `name`, `is_active_now`, `active_ticket_count`, `max_active_tickets` → `nombre`, `activoAhora`, `cantidadDeTicketsActivos`, `maxTicketsActivos`
-- **`/api/agents/{id}/availability`** → `/api/agentes/{id}/disponibilidad`
-  - `POST` req: `isAvailable`, `ttlMinutes` → `disponible`, `ttlMinutos`
-  - res: `agent_id`, `is_available`, `is_in_shift`, `timezone`, `current_load`, `max_capacity`, `override` {`active`, `is_available`, `expires_at`} → `agenteId`, `disponible`, `enTurno`, `zonaHoraria`, `cargaActual`, `capacidadMaxima`, `disponibilidadManual` {`activa`, `disponible`, `vencimientoAt`}
-- **`POST /api/agents/{id}/shifts`, `DELETE …/{shiftId}`** → `/api/agentes/{id}/turnos[/{turnoId}]`: req `dayOfWeek`, `startTime`, `endTime`; res `shift_id`, `agent_id`, `day_of_week`, `start_time`, `end_time` → `turnoId`, `agenteId`, `diaDeLaSemana`, `horaDeInicio`, `horaDeFin`
-- **`GET|PUT /api/me/shifts`** → `/api/mi/turnos`: `shifts` [{`dayOfWeek`, `start`, `end`}] → `turnos` [{`diaDeLaSemana`, `inicio`, `fin`}]
+- **`POST …/asignar-automaticamente`** (ruta 32): sin cuerpo. res `ticket_id` → `ticketId`, `assigned` → `asignado`, `agent_id` → `agenteId`, `reason` → `motivo`; los valores de `motivo` quedan en inglés: `success`, `ticket_not_found`, `already_assigned`, `no_agents_available`, `all_agents_at_capacity` (`AsignarTicketAutomaticamenteUseCase.php:90-205`). 400 `{error}` con id inválido.
+- **`POST …/asignar`** (ruta 33):
+  - req: `agentId` → `agenteId`, `assignedBy` → `asignadoPor`, `notes` → `notas` (`AsignarTicketRequest.php:11-17`)
+  - res: `assignment_id` → `asignacionId`, `ticket_id` → `ticketId`, `agent_id` → `agenteId`, `agent_name` → `agenteNombre`, `assigned_by` → `asignadoPor`, `assigned_at` → `asignadoAt` (`Y-m-d H:i:s`), `ticket_status` → `estadoDeTicket`, `notes` → `notas`, `status` → `resultado` (valor `ok`, queda) (`AsignarTicketUseCase.php:124-132`)
+  - errores: 400, 403, 404 `{error}`; 409 `{type: 'AGENT_NOT_ACTIVE', error}` (sin cambio) y 409 `{error}` (`AsignacionDeTicketController.php:40-62`); 422 del framework.
+- **`PUT …/equipo`** (ruta 34): req `teamId` → `equipoId` (entero o null); res `ticket_id` → `ticketId`, `team_id` → `equipoId` (`AsignacionDeTicketController.php:85-92`); 400, 404.
+- **`GET …/asignacion`** (ruta 35, `AsignacionDeTicketController.php:110-131`): `ticket_id` → `ticketId`; `assignments` → `asignaciones` [{`id`, `agent_id` → `agenteId`, `assigned_by` → `asignadoPor`, `assigned_at` → `asignadoAt`, `notes` → `notas`}]; `current_assignment` → `asignacionActual` {`agent_id` → `agenteId`, `assigned_by` → `asignadoPor`, `assigned_at` → `asignadoAt`} o null. Fechas en `Y-m-d H:i:s`. 404.
 
-### Reporte (`/api/reports` → `/api/reportes`)
+### A.6 Autenticacion
 
-- q compartidos: `from`, `to`, `agent_id`, `teamId` → `desde`, `hasta`, `agenteId`, `equipoId`
-- **`frt`, `rt`:** `avg/min/max_frt_seconds`, `…_minutes` → `frtPromedioSegundos`… (FRT y RT quedan como siglas)
-- **`counts`** → `conteos`: las claves son los estados del ticket (3.1)
-- **`volume`** → `volumen`: `date`, `tickets_created`, `tickets_resolved` → `fecha`, `ticketsCreados`, `ticketsResueltos`
-- **`agents`** → `rendimiento-de-agentes`: `agent_id`, `agent_name`, `tickets_assigned`, `tickets_resolved`, `current_active_tickets`, `max_active_tickets`, `current_load`, `is_in_shift`, `avg_frt_*`, `avg_rt_*`
-- **`agent-load`** → `carga-de-agentes`: `agent_id`, `agent_name`, `active_tickets`, `max_capacity`, `load_percent` → `porcentajeDeCarga`
-- **`unassigned`** → `sin-asignar`: `count`, `tickets` [{`id`, `contact_name`, `created_at`, `priority`}]
-- **`available-agents`** → `agentes-disponibles`: `agent_id`, `agent_name`, `in_shift`, `active_tickets` (aquí `in_shift`, en otros `is_in_shift`: se unifica en `enTurno`)
-- **`frt-trend`** → `tendencia-de-frt`: `date`, `avg_frt_seconds`, `ticket_count`
-- **`heatmap`** → `mapa-de-calor`: `day_of_week`, `hour`, `count`
-- **`recurring-customers`** → `contactos-recurrentes`: q `threshold` → `umbral`; res `contact_id`, `contact_name`, `email`, `ticket_count`, `last_ticket_at` → `contactoId`, `contactoNombre`, `cantidadDeTickets`, `ultimoTicketAt`
-- **`reopened`** → `reabiertos`: `ticket_id`, `contact_name`, `resolved_at`, `reopened_at`, `current_status` → `resueltoAt`, `reabiertoAt`, `estadoActual`
-- **`export`** → `exportar`: q `status`, `tag`; columnas del CSV `ticket_id`, `contact_name`, `contact_phone`, `assigned_agent`, `status`, `priority`, `created_at`, `first_response_at`, `resolved_at`, `closed_at`, `first_response_seconds`, `resolution_seconds`, `tags`, `phone_number_id`. **Decidido (L155):** los encabezados del CSV van en español legible (por ejemplo "Fecha de creación"), porque son texto de UI; el export ya escribe el BOM para Excel.
-- **`response-delay`** → `demora-de-respuesta`: `data_available_from`, `partial_data`, `aggregate` {`avg_delay_seconds`, `sample_count`, `unanswered_inbound_count`}, `per_agent` [...]
-- **`tickets/{id}/participation`** → `tickets/{id}/participacion`: `ticket_id`, `data_available_from`, `partial_data`, `participants` [...], `automatic_message_count`, `unanswered_inbound_count`, `pairs` [{`run_start_at`, `reply_at`, `agent_id`, `delay_seconds`}]
+- **`POST /api/auth/login`** (ruta 36): req `email`, `password` (`json_login` en `config/packages/security.yaml:24-27`); res `access_token`, `token_type`, `expires_in` (OAuth2, `Autenticacion/EventListener/RespuestaDeAutenticacionListener.php:31-38`). El refresh token viaja en la cookie `inbiox_refresh`. 401 de Lexik y 429 del limitador (A.0, regla 9).
+- **`POST /api/auth/refresh`** (ruta 37): sin cuerpo (cookie); res igual al login.
+- **`POST /api/auth/logout`** (ruta 38): res `message` → `mensaje` (`AutenticacionController.php:79`).
+- **`GET /api/auth/me`** (ruta 39): `id`, `email`, `roles`, `is_active` → `activo`, `agent_id` → `agenteId`, `agent_name` → `agenteNombre` (`AutenticacionController.php:108-113`); 401 `{error}`.
 
-### Ticket
+### A.7 Contacto
 
-- **`GET /api/tickets`**
-  - q: `page`, `limit`, `filter` (`all|mine|assigned|unassigned`), `agent_id`, `status`, `search`, `sort` (se ignora), `tag`, `teamId` → `filtro` (`todos|mios|asignados|sin_asignar`), `agenteId`, `estado`, `busqueda`, `etiqueta`, `equipoId`
-  - res: `ticket_id`, `status`, `priority`, `contact` {`id`, `phone`, `name`}, `last_message`, `owner` {`id`, `name`, `is_in_shift`, `current_load`, `max_capacity`}, `metrics` {`unread_count`}, `timestamps` {`opened_at`, `updated_at`, `last_inbound_message_at`} → `ticketId`, `estado`, `prioridad`, `contacto`, `ultimoMensaje`, `responsable`, `metricas` {`cantidadNoLeidos`}, `fechas` {`abiertoAt`, `actualizadoAt`, `ultimoMensajeEntranteAt`}
-- **`GET /api/tickets/{id}`:** las mismas claves; `timestamps` suma `assigned_at`, `resolved_at`, `closed_at`
-- **`GET /api/tickets/{id}/messages`** → `…/mensajes`: q `cursor`, `limit`, `direction` (`backward|forward`), `offset` → `sentido` (`atras|adelante`); res `message_id`, `direction`, `content`, `created_at`, `media`, `sender_agent_id`, `sender_type` → `mensajeId`, `direccion`, `contenido`, `creadoAt`, `adjunto`, `agenteRemitenteId`, `tipoDeRemitente`; `meta` {`has_more`, `next_cursor`}
-- **`PUT /api/tickets/{id}/mark-read`** → `…/marcar-leido`
-- **`POST /api/tickets/{id}/transition|resolve|close`** → `…/transicionar|resolver|cerrar`: req `status`, `set_first_response`, `set_resolved`; res `ticket_id`, `previous_status`, `new_status`, `reason` → `estadoAnterior`, `estadoNuevo`, `motivo`. 403: `{error, code: 'TICKET_CLOSURE_FORBIDDEN', reason, action, ticket_id, message}`
+- **Contacto** (lista: `Contacto/Query/ContactoDeListaDTO.php:23-31`; detalle: `DetalleDeContactoDTO.php:21-28`): `id`, `phone` → `telefono`, `name` → `nombre`, `status` → `estado` (valores de 3.1), `channel` → `canal` (valores de 3.1), `owner_id` → `responsableId`, `email`, `timestamps` → `fechas` {`created_at` → `creadoAt`, `updated_at` → `actualizadoAt`}; solo la lista suma `activeTicketId` → `ticketActivoId`. No hay `tags` ni `owner`.
+- **`GET /api/contactos`** (ruta 48): q `page`, `limit`, `search` → `busqueda`, `status` → `estado`, `channel` → `canal`, `ownerId` → `responsableId`, `email` (`ContactoController.php:38-44`); res paginada (A.2).
+- **`GET /api/contactos/{id}`** (ruta 49): el detalle; 404.
+- **`POST /api/contactos`** (ruta 50): req `phone` → `telefono` (obligatorio), `name` → `nombre`, `status` → `estado`, `channel` → `canal`, `owner_id` → `responsableId`, `email` (`CreateContactoUseCase.php:21-52`); 201 con el detalle; 400.
+- **`PUT /api/contactos/{id}`** (ruta 51): las mismas claves (`UpdateContactoUseCase.php:25-67`); `tags` no existe y hoy se ignora; 200 con el detalle; 400 (también si el contacto no existe: `UpdateContactoUseCase.php:21-22`).
+- **`DELETE /api/contactos/{id}`** (ruta 53): 204; 404.
+- **`POST /api/contactos/importar`** (ruta 52):
+  - mp: `file` → `archivo` (`ContactoController.php:135`)
+  - res: `totalRows` → `totalDeFilas`, `imported` → `importados`, `failed` → `fallidos`, `errors` → `errores` [{`row` → `fila`, `phone` → `telefono`, `reason` → `motivo`, `message` → `mensaje`}], `errorsTruncated` → `erroresTruncados` (`ResultadoDeImportacionDeContactosDTO.php:28-32`, `ImportarContactosDesdeCsvUseCase.php:230`). Los valores de `motivo` quedan: `phone_missing`, `invalid_phone`, `duplicate_in_file`, `duplicate_phone`, `unknown_error`.
+  - 400: `{error, message}` → `{error, mensaje}`; `error` es el código: `file_missing`, `missing_phone_column`, `empty_file`, `file_too_large`, `invalid_file_type`, `too_many_rows` (`ContactoController.php:138-152`, `ImportarContactosDesdeCsvUseCase.php:58-124`).
+  - Columnas del CSV: D9 (pendiente).
+- **`GET /api/contactos/{id}/linea-de-tiempo`** (ruta 54): q `before`, `limit`; res `events` → `eventos` [{`type` → `tipo`, `occurredAt` → `ocurridoAt`, `content` → `contenido`, `ticketId`, `ticketStatus` → `estadoDeTicket`, `assignedTo` → `asignadoA`, `agentId` → `agenteId`, `direction` → `direccion`}], `cursor`, `hasMore` → `hayMas` (`EventoDeLineaDeTiempoDTO.php:21-28`, `LineaDeTiempoDeContactoController.php:43-45`).
+  - Valores de `tipo` (`Contacto/Repository/ContactoRepository.php:110-163`): ver la tabla de 3.1.
+  - `asignadoA` de los eventos de cierre manual es texto armado en SQL (`Admin`, `Sup` o `Agente` más el nombre, `ContactoRepository.php:168-175`); es texto de UI y no cambia en el contrato, pero el `JSON_CONTAINS` con `"ROLE_ADMIN"` cambia con los roles (3.3).
 
-### URLs del router del front (D6)
+### A.8 Conversacion
+
+- **`POST /api/proveedor/enviar`** (ruta 55, `ProxyDeProveedorController.php:43-134`):
+  - req: `ticketId`, `content` → `contenido`, `mediaId`, `mimeType`, `caption` → `leyenda`, `mediaKey` → `claveDeAdjunto`, `filename` → `nombreDeArchivo`, `size` → `tamanio`
+  - res: `messageId` → `mensajeId` (id en la base), `externalId` (WAMID), `status` → `estadoDeEntrega` con `sent` → `enviado`
+  - errores: 400 `{error}`; 404 `{error}`; 409 `{type: 'TICKET_NOT_OWNED', message}` → `{type, mensaje}`; 422 `{type: 'CONVERSATION_WINDOW_EXPIRED', message}` y `{type: 'PHONE_NOT_FOUND', message}` → `{type, mensaje}`; error de Graph (A.2).
+- **`POST /api/proveedor/plantilla/enviar`** (ruta 56): req `ticketId`, `templateName` → `nombreDePlantilla`, `language` → `idioma`, `parameters` → `parametros` (`:164-177`); res `messageId` → `mensajeId`, `status` → `estadoDeEntrega` con `sent` → `enviado` (`:219-222`; aquí `messageId` lleva el WAMID, hallazgo 20); 400 `{error}`, 404 `{error}`, 422 `{type: 'PHONE_NOT_FOUND', message}` → `{type, mensaje}`, error de Graph.
+- **`POST /api/proveedor/adjunto/subir`** (ruta 57): mp `file` → `archivo`, `ticketId` (`:231,246`); res `mediaId`, `key` (`SubirAdjuntoUseCase.php:64-65`); 400 `{error}`; 413 `{error: 'FILE_TOO_LARGE', maxSize, kind}` → `{error, tamanioMaximo, tipo}`; 415 `{error: 'UNSUPPORTED_TYPE', mimeType}`; 502 `{type: 'GRAPH_API_ERROR', code, message}` → `{type, code, mensaje}` (`ProxyDeProveedorController.php:233-274`).
+- **`GET /api/proveedor/adjunto/{mediaId}`** (ruta 58): binario; error de Graph (A.2).
+- **`GET /api/mensajes/{id}/adjunto`** (ruta 59): res `url`, `expiresAt` → `vencimientoAt` (`UrlDeAdjuntoController.php:46-49`); 404 `{error}`; 403 del voter.
+- **`/webhook`** (ruta 60): contrato de Meta, no cambia (`hub_mode`, `hub_verify_token`, `hub_challenge` y el payload de Meta).
+
+### A.9 Disponibilidad
+
+- **`GET /api/espacios-de-trabajo/{id}/agentes-disponibles`** (ruta 61): `[…]` de `id`, `name` → `nombre`, `is_active_now` → `activoAhora`, `active_ticket_count` → `cantidadDeTicketsActivos`, `max_active_tickets` → `maxTicketsActivos` (`Disponibilidad/Query/DisponibilidadDeAgenteDTO.php:39-43`); 400 (espacio inactivo), 404.
+- **`GET /api/agentes/{id}/disponibilidad`** (ruta 64): `agent_id` → `agenteId`, `is_available` → `disponible`, `is_in_shift` → `enTurno`, `timezone` → `zonaHoraria`, `current_load` → `cargaActual`, `max_capacity` → `capacidadMaxima`, `override` → `disponibilidadManual` {`active` → `activa`, `is_available` → `disponible`, `expires_at` → `vencimientoAt`} (`DisponibilidadDeAgenteController.php:162-174`). No hay `reason` (hallazgo 18). 403, 404.
+- **`POST /api/agentes/{id}/disponibilidad`** (ruta 62): req `isAvailable` → `disponible`, `ttlMinutes` → `ttlMinutos` (`SetDisponibilidadManualRequest.php:13-16`); res `agent_id` → `agenteId`, `is_available` → `disponible`, `override_active` → `disponibilidadManualActiva`, `current_load` → `cargaActual`, `max_capacity` → `capacidadMaxima` (`SetDisponibilidadManualUseCase.php:81-87`); 403, 404, 409, 422.
+- **`DELETE /api/agentes/{id}/disponibilidad`** (ruta 63): 204; 403, 404, 409, 422.
+- **`POST /api/agentes/{id}/turnos`** (ruta 65):
+  - req: `dayOfWeek` → `diaDeLaSemana`, `startTime` → `horaDeInicio`, `endTime` → `horaDeFin` (`CreateTurnoRequest.php:17-31`)
+  - res 201: `shift_id` → `turnoId`, `agent_id` → `agenteId`, `day_of_week` → `diaDeLaSemana`, `start_time` → `horaDeInicio`, `end_time` → `horaDeFin` (`CreateTurnoUseCase.php:92-97`)
+  - errores: 403, 404, 409 (bloqueo o turno duplicado), 422 `{error}` (`DisponibilidadDeAgenteController.php:189-220`).
+- **`DELETE /api/agentes/{id}/turnos/{turnoId}`** (ruta 66): 204; 403, 404, 409, 422.
+- **`GET /api/mi/turnos`** (ruta 67): `[…]` de `dayOfWeek` → `diaDeLaSemana`, `start` → `inicio`, `end` → `fin` (`MisTurnosController.php:41-54`); 404.
+- **`PUT /api/mi/turnos`** (ruta 68): req `{shifts: [{dayOfWeek, start, end}]}` → `{turnos: [{diaDeLaSemana, inicio, fin}]}` (`ReemplazarTurnosRequest.php:17`, `Disponibilidad/UseCase/DatosDeTurnoDTO.php:17-31`); res `[…]` igual al `GET` (`MisTurnosController.php:74`); 400, 404, 422.
+- Los dos formatos de turno (`horaDeInicio`/`horaDeFin` en turnos de agente, `inicio`/`fin` en `mi/turnos` y en el horario de atención) vienen de claves distintas hoy (`startTime` y `start`); se traducen cada una por su lado, sin unificar la forma (sección 7, punto 10).
+
+### A.10 Reporte
+
+- **q compartidos:** `from` → `desde`, `to` → `hasta` (obligatorios salvo en `sin-asignar`, donde son opcionales); `agent_id` → `agenteId` (solo `frt`, `rendimiento-de-agentes`, `carga-de-agentes` y `exportar`); `teamId` → `equipoId` (`frt`, `rt`, `conteos`, `volumen`, `rendimiento-de-agentes`, `exportar`) (`ReporteController.php:88-416`). No hay `phone_number_id`: el alcance por espacio de trabajo sale del usuario (`:80-83`). Errores: 400 `{error}` (fechas faltantes o inválidas, rango inválido).
+- **`frt`** (ruta 69): `avg_frt_seconds` → `frtPromedioSegundos`, `min_frt_seconds` → `frtMinimoSegundos`, `max_frt_seconds` → `frtMaximoSegundos`, `avg_frt_minutes` → `frtPromedioMinutos`, `min_frt_minutes` → `frtMinimoMinutos`, `max_frt_minutes` → `frtMaximoMinutos` (`Reporte/Repository/ReporteRepository.php:148-153`).
+- **`rt`** (ruta 70): las mismas seis con `rt` (`rtPromedioSegundos`… `rtMaximoMinutos`) (`ReporteRepository.php:199-204`).
+- **`conteos`** (ruta 71): un objeto cuyas claves son los estados del ticket, `new` → `nuevo`, `active` → `activo`, `waiting` → `en_espera`, `resolved` → `resuelto`, `closed` → `cerrado`, en el orden del enum (`ReporteRepository.php:222-243`).
+- **`volumen`** (ruta 72): `[…]` de `date` → `fecha`, `tickets_created` → `ticketsCreados`, `tickets_resolved` → `ticketsResueltos` (`ReporteRepository.php:303-324`). Sin envoltorio.
+- **`rendimiento-de-agentes`** (ruta 73): `[…]` de `agent_id` → `agenteId`, `agent_name` → `agenteNombre`, `tickets_assigned` → `ticketsAsignados`, `tickets_resolved` → `ticketsResueltos`, `current_active_tickets` → `ticketsActivosActuales`, `max_active_tickets` → `maxTicketsActivos`, `current_load` → `cargaActual` (aquí es una proporción, no un conteo: hallazgo 22), `is_in_shift` → `enTurno`, `avg_frt_seconds` → `frtPromedioSegundos`, `avg_frt_minutes` → `frtPromedioMinutos`, `avg_rt_seconds` → `rtPromedioSegundos`, `avg_rt_minutes` → `rtPromedioMinutos` (`ReporteRepository.php:393-403`, `ReporteService.php:137-157`). Sin envoltorio. `enTurno` se inserta buscando la clave `current_load` por nombre (sección 7, punto 9).
+- **`carga-de-agentes`** (ruta 74): `[…]` de `agent_id` → `agenteId`, `agent_name` → `agenteNombre`, `active_tickets` → `ticketsActivos`, `max_capacity` → `capacidadMaxima`, `load_percent` → `porcentajeDeCarga` (`ReporteRepository.php:452-456`).
+- **`sin-asignar`** (ruta 75): `count` → `cantidad`, `tickets` [{`id`, `contact_name` → `contactoNombre`, `created_at` → `creadoAt`, `priority` → `prioridad`}] (`ReporteRepository.php:519-528`).
+- **`agentes-disponibles`** (ruta 76): `[…]` de `agent_id` → `agenteId`, `agent_name` → `agenteNombre`, `in_shift` → `enTurno`, `active_tickets` → `ticketsActivos` (`Reporte/Query/ListAgentesDisponiblesQuery.php:49-52`).
+- **`tendencia-de-frt`** (ruta 77): `[…]` de `date` → `fecha`, `avg_frt_seconds` → `frtPromedioSegundos`, `ticket_count` → `cantidadDeTickets` (`ReporteRepository.php:572-574`).
+- **`mapa-de-calor`** (ruta 78): `[…]` de `day_of_week` → `diaDeLaSemana`, `hour` → `hora`, `count` → `cantidad` (`ReporteRepository.php:635-637`).
+- **`contactos-recurrentes`** (ruta 79): q `threshold` → `umbral` (sin `desde`/`hasta`); `[…]` de `contact_id` → `contactoId`, `contact_name` → `contactoNombre`, `email`, `ticket_count` → `cantidadDeTickets`, `last_ticket_at` → `ultimoTicketAt` (`ReporteRepository.php:688-692`).
+- **`reabiertos`** (ruta 80): `[…]` de `ticket_id` → `ticketId`, `contact_name` → `contactoNombre`, `resolved_at` → `resueltoAt`, `reopened_at` → `reabiertoAt`, `current_status` → `estadoActual` (`ReporteRepository.php:744-748`).
+- **`exportar`** (ruta 81): q `from`, `to`, `agent_id`, `status`, `tag`, `teamId` → `desde`, `hasta`, `agenteId`, `estado`, `etiqueta`, `equipoId` (`ReporteController.php:370-380`); responde un CSV con BOM, o 400 `{error}`. Encabezados en español legible (L155); texto propuesto, a confirmar en la etapa 2 (`Reporte/Query/ExportarTicketsCsvQuery.php:30-45`):
+
+  | Columna vieja | Encabezado nuevo |
+  |---|---|
+  | `ticket_id` | Ticket |
+  | `contact_name` | Contacto |
+  | `contact_phone` | Teléfono del contacto |
+  | `assigned_agent` | Agente asignado |
+  | `status` | Estado |
+  | `priority` | Prioridad |
+  | `created_at` | Fecha de creación |
+  | `first_response_at` | Fecha de primera respuesta |
+  | `resolved_at` | Fecha de resolución |
+  | `closed_at` | Fecha de cierre |
+  | `first_response_seconds` | Segundos hasta la primera respuesta |
+  | `resolution_seconds` | Segundos hasta la resolución |
+  | `tags` | Etiquetas |
+  | `phone_number_id` | Número de WhatsApp (phone number id) |
+
+  Los valores de estado y prioridad salen de la base y cambian con la migración (3.1).
+- **`demora-de-respuesta`** (ruta 82, `ReporteService.php:249-263`, `ReporteRepository.php:931-945`):
+  - `data_available_from` → `datosDisponiblesDesde` (`Y-m-d H:i:s` o null), `partial_data` → `datosParciales`
+  - `aggregate` → `global` {`avg_delay_seconds` → `demoraPromedioSegundos`, `sample_count` → `cantidadDeMuestras`, `unanswered_inbound_count` → `cantidadDeEntrantesSinResponder`}
+  - `per_agent` → `porAgente` [{`agent_id` → `agenteId`, `agent_name` → `agenteNombre`, `avg_delay_seconds` → `demoraPromedioSegundos`, `sample_count` → `cantidadDeMuestras`}]
+- **`tickets/{id}/participacion`** (ruta 83, `ReporteRepository.php:977-983,1156-1159,1215-1219`; 404 `{error}`):
+  - `ticket_id` → `ticketId`, `data_available_from` → `datosDisponiblesDesde`, `partial_data` → `datosParciales`, `automatic_message_count` → `cantidadDeMensajesAutomaticos`, `unanswered_inbound_count` → `cantidadDeEntrantesSinResponder`
+  - `participants` → `participantes` [{`agent_id` → `agenteId`, `agent_name` → `agenteNombre`, `message_count` → `cantidadDeMensajes`, `sample_count` → `cantidadDeMuestras`, `avg_delay_seconds` → `demoraPromedioSegundos`}]
+  - `pairs` → `pares` [{`run_start_at` → `inicioDeRachaAt`, `reply_at` → `respuestaAt`, `agent_id` → `agenteId`, `delay_seconds` → `demoraSegundos`}]
+
+### A.11 Ticket
+
+- **Ticket de lista** (`Ticket/Query/TicketDeListaDTO.php:21-28`, `ListTicketsQuery.php:107-133`):
+  - `ticket_id` → `ticketId`, `status` → `estado`, `priority` → `prioridad`
+  - `contact` → `contacto` {`id` (hoy es el id de la conversación: sección 7, punto 5), `phone` → `telefono`, `name` → `nombre`}
+  - `last_message` → `ultimoMensaje` (siempre null en la lista)
+  - `owner` → `responsable` {`id`, `name` → `nombre`, `is_in_shift` → `enTurno`, `current_load` → `cargaActual`, `max_capacity` → `capacidadMaxima`}, o null
+  - `metrics` → `metricas` {`unread_count` → `cantidadNoLeidos`}
+  - `timestamps` → `fechas` {`opened_at` → `abiertoAt`, `updated_at` → `actualizadoAt`, `last_inbound_message_at` → `ultimoMensajeEntranteAt`}
+- **`GET /api/tickets`** (ruta 84): q `page`, `limit`, `filter` → `filtro` (`all`/`mine`/`assigned`/`unassigned` → `todos`/`mios`/`asignados`/`sin_asignar`), `agent_id` → `agenteId`, `status` → `estado` (estados separados por coma, valores de 3.1), `search` → `busqueda`, `sort` → `orden` (se lee y se ignora: sección 7, punto 7), `tag` → `etiqueta`, `teamId` → `equipoId` (`BandejaController.php:42-50`); res paginada (A.2); 400 `{error}`.
+- **`GET /api/tickets/{id}`** (ruta 85, `DetalleDeTicketDTO.php:21-28`, `GetDetalleDeTicketQuery.php:21-56`): `ticketId`, `estado`, `prioridad` como en la lista; `contacto` {`id` (id del contacto), `telefono`, `nombre`}; `responsable` {`id`, `name` → `nombre` (siempre null: hallazgo 21)} o null; `timestamps` → `fechas` {`opened_at` → `abiertoAt`, `assigned_at` → `asignadoAt`, `resolved_at` → `resueltoAt`, `closed_at` → `cerradoAt`, `last_inbound_message_at` → `ultimoMensajeEntranteAt`} (sin `actualizadoAt`; sección 7, punto 6); `metricas` {`cantidadNoLeidos`}; `last_message` → `ultimoMensaje` (texto del último mensaje). 404.
+- **`GET /api/tickets/{id}/mensajes`** (ruta 86, `BandejaController.php:107-133`, `Conversacion/Query/MensajeDTO.php:20-26`):
+  - q: `cursor`, `limit`, `offset`, `direction` → `sentido` (`backward`/`forward` → `atras`/`adelante`)
+  - res `data` [{`message_id` → `mensajeId`, `direction` → `direccion`, `content` → `contenido`, `created_at` → `creadoAt`, `media` → `adjunto` (A.2), `sender_agent_id` → `agenteRemitenteId`, `sender_type` → `tipoDeRemitente` (valores de 3.1, o null)}]
+  - `meta` {`has_more` → `hayMas`, `next_cursor` → `siguienteCursor` (solo si no es null)}
+  - No hay estado de entrega (hallazgo 12). 400 `{error}`.
+- **`PUT …/marcar-leido`** (ruta 87): 204; 404 `{error}` (`BandejaController.php:139-152`).
+- **`POST …/transicionar`** (ruta 88): req `status` → `estado`, `set_first_response` → `marcarPrimeraRespuesta`, `set_resolved` → `marcarResuelto` (`FlujoDeTicketController.php:40,61-62`).
+- **Respuesta de `transicionar`, `resolver` y `cerrar`** (rutas 88–90; `resolver` y `cerrar` sin cuerpo): `ticket_id` → `ticketId`, `previous_status` → `estadoAnterior`, `new_status` → `estadoNuevo`, `reason` → `motivo` (valores `success`, `window_expired`, `window_reopened`, quedan) (`CambiarEstadoDeTicketUseCase.php:121-128,268-275`). Errores: 400 `{error}`; 422 `{error}` con transición inválida (solo `transicionar`); 403 `{error: 'Forbidden', code: 'TICKET_CLOSURE_FORBIDDEN', reason, action, ticket_id, message}` → `{error, code, motivo, accion, ticketId, mensaje}`, con `motivo` en `no_linked_agent`/`unowned_ticket`/`not_ticket_owner` y `accion` en `transition`/`resolve`/`close`, valores que quedan (`FlujoDeTicketController.php:144-170`).
+
+### A.12 Mercure
+
+- **Tópicos:** `tickets` =; `agent/{id}/inbox` → `agentes/{id}/bandeja`; `agent/{id}/availability` → `agentes/{id}/disponibilidad`; `agent/{id}/shifts` → `agentes/{id}/turnos`; `agents` → `agentes` (`Compartido/Realtime/MercureJwtService.php:24-32`; los casos de uso de `Disponibilidad` arman los suyos con `sprintf`, por ejemplo `SetDisponibilidadManualUseCase.php:109`). Hoy el front solo se suscribe a `tickets`.
+- **Tipos de evento:** sección 3.2.
+- **Envoltorio** (`EventoEnTiempoRealFactory.php:28-35`): `eventId` → `eventoId` (string), `sequence` =, `timestamp` → `ocurridoAt`, `eventType` → `tipoDeEvento`, `ticketId` = (string; en los eventos `agente.*` lleva el id del agente: hallazgo 19), `payload` =. `conversationId` no existe en el back; el front lo borra de su tipo.
+- **Payload por tipo** (`EventoEnTiempoRealFactory.php:44-102`). Las claves guardadas en `outbox_events.payload` no cambian (A.0, regla 10); el factory las lee y arma estas:
+
+  | Tipo (3.2) | Claves vieja → nueva |
+  |---|---|
+  | `ticket.creado` | `ticketId`, `contactId` → `contactoId`, `conversationId` → `conversacionId`, `status` → `estado`, `priority` → `prioridad` (string con los valores de 3.1; hoy sale como entero: hallazgo 13), `createdAt` → `creadoAt` |
+  | `mensaje.agregado` | `messageId` → `mensajeId`, `ticketId`, `content` → `contenido`, `direction` → `direccion`, `senderName` → `remitenteNombre`, `createdAt` → `creadoAt`, `externalId`, `phoneNumberId`, `media` → `adjunto` (claves de A.2) |
+  | `ticket.estado_cambiado` | `ticketId`, `previousStatus` → `estadoAnterior`, `newStatus` → `estadoNuevo`, `changedAt` → `cambiadoAt` |
+  | `ticket.asignado` | `ticketId`, `assigneeId` → `responsableId`, `assigneeName` → `responsableNombre`, `assignmentType` → `tipoDeAsignacion` (valores de 3.1; por defecto `MANUAL_ASSIGN` → `manual`), `assignedAt` → `asignadoAt` |
+  | `mensaje.actualizado` | `messageId` → `mensajeId`, `ticketId`, `status` → `estadoDeEntrega` (valores de 3.1), `failedReason` → `motivoDeFallo` (texto de Meta, queda), `updatedAt` → `actualizadoAt` |
+  | `ticket.leido` | `ticketId` |
+  | `agente.disponibilidad_cambiada` | `agent_id` → `agenteId`, `is_available` → `disponible`, `override_active` → `disponibilidadManualActiva`, `current_load` → `cargaActual`, `max_capacity` → `capacidadMaxima`, `timestamp` → `ocurridoAt` |
+  | `agente.turno_cambiado` | `agent_id` → `agenteId`, `shift_id` → `turnoId`, `action` → `accion` (`created`/`deleted` → `creado`/`borrado`), `day_of_week` → `diaDeLaSemana`, `start_time` → `horaDeInicio`, `end_time` → `horaDeFin`, `timestamp` → `ocurridoAt` |
+
+### A.13 Compartido, depuración y operación
+
+- **`GET /api/tickets/{id}/events`** (ruta 45): q `afterSequence`; res `events`, `lastSequence`, `hasMore` (`Compartido/Query/ResincronizarEventosDeTicketQuery.php:36-38`). No se renombra: no tiene llamador y se borra en la etapa 3 (L155).
+- **`GET /api/mercure/token`** (ruta 46): `{token}` =; 401 `{error}`. Ver 3.6.
+- **`POST /admin/outbox/publish`** (ruta 47): `{published}` → `{publicados}` (`OutboxController.php:26`).
+- **`/debug/*/{ticketId}`** (rutas 41–44, solo dev y test, sin cuerpo): res `success` → `exito`, `ticket_id` → `ticketId`, `message` → `mensaje`, `new_status` → `estadoNuevo` (solo `status`), `agent_id` → `agenteId` (solo `assign`); 500 `{success: false, error}` → `{exito: false, error}`; 404 `{error}` fuera de dev y test (`DebugController.php:33-167`).
+
+### A.14 URLs del router del front (D6)
 
 | Vieja | Nueva |
 |---|---|
@@ -328,7 +575,7 @@ Notación: `req` cuerpo, `q` query, `res` respuesta. Los nombres propuestos asum
 | `/admin/users`, `/admin/agents`, `/admin/workspaces`, `/admin/teams` | `/administracion/usuarios`, `/administracion/agentes`, `/administracion/espacios-de-trabajo`, `/administracion/equipos` |
 | `/settings` | `/configuracion` |
 
-Cada URL vieja redirige a la nueva desde la etapa 2 hasta la etapa 4.
+Cada URL vieja redirige a la nueva desde la etapa 2 hasta la etapa 4. **Query de `/contactos`** (decisión del front, L159): `q` queda técnico; `status` y `channel` pasan a `estado` y `canal`, y el front lee también los nombres viejos hasta que se retiren las redirecciones.
 
 ## Anexo B. Valores guardados fuera del glosario (dev)
 
