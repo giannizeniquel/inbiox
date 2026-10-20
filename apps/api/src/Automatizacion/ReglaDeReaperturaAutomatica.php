@@ -41,7 +41,7 @@ class ReglaDeReaperturaAutomatica implements ReglaInterface
             false  // no fija resolved
         );
 
-        // Emite el evento auto_reopened
+        // Emite el evento reapertura_automatica
         $event = new EventoDeTicket($contexto->getTicketId(), TipoDeEventoDeTicket::REAPERTURA_AUTOMATICA, 'system');
         $this->em->persist($event);
         $this->em->flush();

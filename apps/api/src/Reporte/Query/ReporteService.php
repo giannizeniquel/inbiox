@@ -223,7 +223,7 @@ class ReporteService
     }
 
     /**
-     * Obtiene los tickets que salieron del estado resuelto (eventos auto_reopened).
+     * Obtiene los tickets que salieron del estado resuelto (eventos reapertura_automatica).
      *
      * @param \DateTimeImmutable $from Inicio del rango de fechas (UTC)
      * @param \DateTimeImmutable $to Fin del rango de fechas (UTC)
