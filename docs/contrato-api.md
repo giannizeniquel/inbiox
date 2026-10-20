@@ -142,7 +142,6 @@ Todas las columnas con valores fijos son `VARCHAR` o `JSON` (no hay `ENUM` de My
 | `ticket_events.type` | tipos de la línea de tiempo | 85 | |
 | `outbox_events.event_type` y `payload.type` | sección 5 | 531 | |
 | `outbox_events.payload` | valores viejos de estado, dirección, tipo de asignación y adjunto | unas 880 | ver sección 5: se mapean al leer, no se migran |
-| columnas de D3 | si se aprueban | ver anexo B | |
 
 **Reversión:** `down()` aplica el `CASE` inverso. Cada `CASE` termina en `ELSE <valor actual>`, así que lo que no está en el mapa (NULL, `ROLE_BOGUS`, filas sin `kind`) pasa igual en las dos direcciones. Con la migración revertida, el código viejo vuelve a funcionar.
 
