@@ -140,6 +140,18 @@ final class PersistedEventTypeCharacterizationTest extends TestCase
     }
 
     /**
+     * A stored value that is already a Mercure type (other than the legacy
+     * `ticket.read`) is not an outbox name: it fails and dead-letters, so no
+     * writer can start relying on the removed prefix shortcut before stage 3.
+     */
+    public function testStoredMercureTypeIsNotAnOutboxName(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        $this->build('ticket.created', ['event_id' => 'evt-10']);
+    }
+
+    /**
      * InboxUpdatedEvent has no Mercure type: building it fails, so the
      * publisher retries the row until it ends in dead letter.
      */
