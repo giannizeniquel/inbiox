@@ -133,7 +133,7 @@ Branch: one branch per phase (phase 0: `chore/limpieza-backend-fase-0`, from `te
 | T34 | S11 | inline | done | 4c-6 why-comments, bound `LIMIT`, service docblocks (`216be83`, L68) |
 | T35 | S12 | inline | done | 5-0 pin persisted names, fix drift, event-name characterization test (`8115742`, L76) |
 | T36 | S12 | inline + verifier | done | 5-1 fresh migration baseline (`4f6d95e`, verifier PASS L78) |
-| T37 | S12 | inline | pending | 5-2..5-n renames per module (one sub-task and commit per module, added when each starts) |
+| T37 | S12 | inline + verifier per module | done | 5-2..5-14 renames per module, from `Ticket` to `Compartido`, each verified with a characterization test (L80–L133, last `61ffd70`) |
 
 ### Baseline of failing tests (phase 0, after `1afba20`)
 
