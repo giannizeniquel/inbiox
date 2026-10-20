@@ -14,7 +14,7 @@ El listado del anexo A tiene un nombre propuesto por clave, pero depende de esta
 |---|---|---|---|
 | D1 | Estilo de las claves JSON | Mezclado: requests en camelCase (`#[MapRequestPayload]` sin `name_converter`), la mayoría de las respuestas en snake_case, Mercure en camelCase salvo los eventos `agent.*` en snake_case. Hay endpoints que mezclan dentro del mismo objeto (`GET /api/tickets`: `agent_id` y `teamId`; contactos: `owner_id` y `activeTicketId`). | **Decidido (L147): camelCase en todo el contrato** (requests, respuestas REST, Mercure). Las columnas de la base siguen en snake_case. |
 | D2 | Términos que el glosario no define (unos 70) | Ver la lista de la sección 2. | **Decidido (L148): la tabla de la sección 2 con cuatro ajustes** (`habilitada`, `texto`, `vencimientoAt`; `page`, `limit`, `offset` y `cursor` técnicos, L149). |
-| D3 | Valores guardados que el glosario no define | `delivery_status`, estado del outbox, `ticket_events.type`, prioridad, estado de conversación, estado y canal de contacto, estado de resultado de reglas, `aggregate_type`. | Decidir si se traducen. Mi recomendación: traducir los que viajan por la red (prioridad, estado de entrega, estado y canal de contacto, tipos de la línea de tiempo) y dejar los internos (estado del outbox, `aggregate_type`, estado de reglas) para no migrar datos sin necesidad. |
+| D3 | Valores guardados que el glosario no define | `delivery_status`, estado del outbox, `ticket_events.type`, prioridad, estado de conversación, estado y canal de contacto, estado de resultado de reglas, `aggregate_type`. | **Decidido (L150):** se traducen los valores de negocio que viajan por la red (sección 3.1); motivos y códigos quedan en inglés como los códigos de error; los valores internos no se tocan. |
 | D4 | Prefijos booleanos en JSON | `is_active`, `is_available`, `has_pending`, `is_in_shift` (también `in_shift`). | Igual que en el código: `activo`, `disponible`, `enTurno`, `hasPendientes`. |
 | D5 | Segmentos de ruta | `/api/admin/...`, `/api/me/...`, `/api/reports/...`, `/api/provider/...`. | Kebab-case en español (`/api/reportes/mapa-de-calor`). `admin` → `administracion`, `me` → `mi`. A decidir. |
 | D6 | URLs del router del front | `inbox`, `contacts`, `reports`, `settings`, `admin/*`, `agents/:agentId/*`. | Renombrarlas con redirección permanente desde la URL vieja, para no romper favoritos. |
@@ -42,7 +42,7 @@ El listado del anexo A tiene un nombre propuesto por clave, pero depende de esta
 | from / to | `desde` / `hasta` | reportes |
 | page / limit / has next | `page` / `limit` (técnicos) / `haySiguiente` | paginación, también en `meta` |
 | cursor / has more / next cursor | `cursor` (técnico) / `hayMas` / `siguienteCursor` | mensajes, línea de tiempo |
-| before / offset | `antesDe` / `offset` (técnico) | paginación. `page`, `limit`, `offset` y `cursor` quedan técnicos para que la query no mezcle idiomas |
+| before / offset | `before` / `offset` (técnicos) | paginación. `page`, `limit`, `offset`, `before` y `cursor` quedan técnicos para que la query no mezcle idiomas |
 | direction (paginación: backward/forward) | `sentido` (`atras` / `adelante`) | `GET /api/tickets/{id}/messages`; no confundir con `direccion` del mensaje |
 | reason | `motivo` | asignación automática, transiciones, importación, errores |
 | success / failed | `exito` / `fallido` | resultados |
@@ -73,6 +73,11 @@ Del glosario, más los de D3 si se aprueban.
 | tipo de asignación | `AUTO_ASSIGN/MANUAL_ASSIGN/REASSIGN/UNASSIGN` → `automatica/manual/reasignacion/desasignacion` | `ticket.assigned`; historial de asignación |
 | tipo de adjunto | `image/video/audio/document` → `imagen/video/audio/documento` | `media.kind` en mensajes y `message.added` |
 | rol | `ROLE_ADMIN/ROLE_AGENT` → `ROLE_ADMINISTRADOR/ROLE_AGENTE` | `/api/auth/me`, usuarios |
+| prioridad | `low/medium/high` → `baja/media/alta` | tickets, reportes, `ticket.created` |
+| estado de entrega | `sent/delivered/read/failed` → `enviado/entregado/leido/fallido` | mensajes, `message.updated`; lo que llega de Meta sigue igual y se mapea en `ProcesarActualizacionDeEstadoUseCase` |
+| estado y canal de contacto | `active/inactive` → `activo/inactivo`; `whatsapp/other` → `whatsapp/otro` | contactos |
+| tipos de la línea de tiempo | `ticket.created/status_changed/assigned/reassigned` → nombres de Mercure (`ticket.creado`…); `window_expired_closed`, `window_reopened`, `manual_resolved_*`, `manual_closed_*`, `auto_reopened`, `tag_added` → en español (`ventana_vencida_cerrado`, `ventana_reabierta`, `resuelto_manual_por_responsable`…; nombres finales en el mapa) | `GET /api/contactos/{id}/linea-de-tiempo` |
+| motivos y códigos (`success`, `window_expired`, `no_agents_available`, `unowned_ticket`, motivos de importación) | quedan en inglés, como los códigos de error | |
 
 `media.kind` usa los mismos strings que la API de Meta (`GraphClient.php:36-39,319-324`, `ProcesarPayloadWebhookUseCase.php:77`). Lo que se traduce es solo el valor guardado y expuesto; lo que se manda a Meta y lo que llega de Meta sigue igual, con un mapeo en un solo lugar.
 
@@ -131,6 +136,10 @@ Todas las columnas con valores fijos son `VARCHAR` o `JSON` (no hay `ENUM` de My
 | `messages.media` (`$.kind`) | tipo de adjunto | 31 (2 sin `kind` quedan igual) | con `JSON_SET` |
 | `messages.media` (claves) | `mimeType` queda; `filename`, `size`, `caption`, `providerId` según D2 | 33 | el JSON se devuelve tal cual (`GetMensajesDeTicketQuery.php:76`); o se migra o se mapea al leer |
 | `user.roles` | roles | 16 (+1 `ROLE_BOGUS`) | reemplazar el token **con comillas** (`"ROLE_ADMIN"`): `ROLE_ADMIN` es prefijo de `ROLE_ADMINISTRADOR` y un reemplazo sin comillas se aplica dos veces |
+| `tickets.priority` | prioridad | 400 (110 / 194 / 96) | |
+| `messages.delivery_status` | estado de entrega | 298 | también el `DEFAULT 'sent'` y la entidad `Mensaje` |
+| `contacts.status`, `contacts.channel` | estado y canal | 62 cada una (35 NULL quedan NULL) | |
+| `ticket_events.type` | tipos de la línea de tiempo | 85 | |
 | `outbox_events.event_type` y `payload.type` | sección 5 | 531 | |
 | `outbox_events.payload` | valores viejos de estado, dirección, tipo de asignación y adjunto | unas 880 | ver sección 5: se mapean al leer, no se migran |
 | columnas de D3 | si se aprueban | ver anexo B | |
@@ -260,7 +269,7 @@ Notación: `req` cuerpo, `q` query, `res` respuesta. Los nombres propuestos asum
   - res: `id`, `phone`, `name`, `status`, `channel`, `owner_id`, `email`, `timestamps` {`created_at`, `updated_at`}, `activeTicketId` → `telefono`, `nombre`, `estado`, `canal`, `responsableId`, `fechas`, `ticketActivoId`
 - **`GET|POST|PUT|DELETE /api/contacts/{id}`:** las mismas claves
 - **`POST /api/contacts/import`** → `…/importar`: req multipart `file` → `archivo`; res `totalRows`, `imported`, `failed`, `errors` [{`row`, `phone`, `reason`, `message`}], `errorsTruncated` → `totalDeFilas`, `importados`, `fallidos`, `errores` [{`fila`, `telefono`, `motivo`, `mensaje`}], `erroresTruncados`
-- **`GET /api/contacts/{id}/timeline`** → `…/linea-de-tiempo`: q `before`, `limit`; res `events` [{`type`, `occurredAt`, `content`, `ticketId`, `ticketStatus`, `assignedTo`, `agentId`, `direction`}], `cursor`, `hasMore` → `eventos` [{`tipo`, `ocurridoAt`, `contenido`, `ticketId`, `estadoDeTicket`, `asignadoA`, `agenteId`, `direccion`}]. Los valores de `type` son literales del SQL (`ticket.created`, `ticket.status_changed`, `ticket.assigned`, `ticket.reassigned`, `window_expired_closed`, `window_reopened`, `manual_resolved_*`, `manual_closed_*`).
+- **`GET /api/contacts/{id}/timeline`** → `…/linea-de-tiempo`: q `before`, `limit` (técnicos); res `events` [{`type`, `occurredAt`, `content`, `ticketId`, `ticketStatus`, `assignedTo`, `agentId`, `direction`}], `cursor`, `hasMore` → `eventos` [{`tipo`, `ocurridoAt`, `contenido`, `ticketId`, `estadoDeTicket`, `asignadoA`, `agenteId`, `direccion`}]. Los valores de `type` son literales del SQL (`ticket.created`, `ticket.status_changed`, `ticket.assigned`, `ticket.reassigned`, `window_expired_closed`, `window_reopened`, `manual_resolved_*`, `manual_closed_*`).
 
 ### Conversacion
 
