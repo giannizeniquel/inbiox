@@ -53,8 +53,8 @@ final class UpdateUsuarioUseCase
             $usuario->setRoles($data['roles']);
         }
 
-        if (isset($data['is_active'])) {
-            $usuario->setActivo((bool) $data['is_active']);
+        if (isset($data['activo'])) {
+            $usuario->setActivo((bool) $data['activo']);
         }
 
         $this->entityManager->flush();

@@ -20,9 +20,9 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 /**
  * Administración de usuarios.
  *
- * Todos los endpoints requieren ROLE_ADMIN.
+ * Todos los endpoints requieren ROLE_ADMINISTRADOR.
  */
-#[IsGranted('ROLE_ADMIN')]
+#[IsGranted('ROLE_ADMINISTRADOR')]
 final class GestionDeUsuariosController
 {
     public function __construct(
@@ -32,7 +32,7 @@ final class GestionDeUsuariosController
         private readonly DesactivarUsuarioUseCase $desactivarUsuarioUseCase,
     ) {}
 
-    #[Route('/api/admin/users', name: 'admin_users_list', methods: ['GET'])]
+    #[Route('/api/administracion/usuarios', name: 'admin_users_list', methods: ['GET'])]
     public function listar(Request $request): JsonResponse
     {
         $pagina = max(1, (int) $request->query->get('page', 1));
@@ -50,12 +50,12 @@ final class GestionDeUsuariosController
                 'page' => $pagina,
                 'limit' => $limit,
                 'total' => $total,
-                'has_next' => ($pagina * $limit) < $total,
+                'haySiguiente' => ($pagina * $limit) < $total,
             ],
         ]);
     }
 
-    #[Route('/api/admin/users', name: 'admin_users_create', methods: ['POST'])]
+    #[Route('/api/administracion/usuarios', name: 'admin_users_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -77,7 +77,7 @@ final class GestionDeUsuariosController
         return new JsonResponse($this->serializeUsuario($usuario), Response::HTTP_CREATED);
     }
 
-    #[Route('/api/admin/users/{id}', name: 'admin_users_get', methods: ['GET'])]
+    #[Route('/api/administracion/usuarios/{id}', name: 'admin_users_get', methods: ['GET'])]
     public function get(int $id): JsonResponse
     {
         $usuario = $this->usuarioRepository->find($id);
@@ -89,7 +89,7 @@ final class GestionDeUsuariosController
         return new JsonResponse($this->serializeUsuario($usuario));
     }
 
-    #[Route('/api/admin/users/{id}', name: 'admin_users_update', methods: ['PUT'])]
+    #[Route('/api/administracion/usuarios/{id}', name: 'admin_users_update', methods: ['PUT'])]
     public function update(int $id, Request $request): JsonResponse
     {
         $usuario = $this->usuarioRepository->find($id);
@@ -115,7 +115,7 @@ final class GestionDeUsuariosController
         return new JsonResponse($this->serializeUsuario($usuario));
     }
 
-    #[Route('/api/admin/users/{id}', name: 'admin_users_delete', methods: ['DELETE'])]
+    #[Route('/api/administracion/usuarios/{id}', name: 'admin_users_delete', methods: ['DELETE'])]
     public function delete(int $id): JsonResponse
     {
         $usuario = $this->usuarioRepository->find($id);
@@ -140,11 +140,11 @@ final class GestionDeUsuariosController
             'id' => (int) $usuario->getId(),
             'email' => $usuario->getEmail(),
             'roles' => $usuario->getRoles(),
-            'is_active' => $usuario->isActivo(),
-            'agent_id' => null !== $agente ? (int) $agente->getId() : null,
-            'agent_name' => null !== $agente ? $agente->getNombre() : null,
-            'created_at' => $usuario->getCreadoAt()->format('Y-m-d\TH:i:sP'),
-            'updated_at' => $usuario->getActualizadoAt()?->format('Y-m-d\TH:i:sP'),
+            'activo' => $usuario->isActivo(),
+            'agenteId' => null !== $agente ? (int) $agente->getId() : null,
+            'agenteNombre' => null !== $agente ? $agente->getNombre() : null,
+            'creadoAt' => $usuario->getCreadoAt()->format('Y-m-d\TH:i:sP'),
+            'actualizadoAt' => $usuario->getActualizadoAt()?->format('Y-m-d\TH:i:sP'),
         ];
     }
 }

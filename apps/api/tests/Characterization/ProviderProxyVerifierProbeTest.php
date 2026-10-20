@@ -61,7 +61,7 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
     {
         $agent = $this->createAgent('Probe Sender');
 
-        return [$this->loginAs($email, ['ROLE_AGENT'], $agent), (int) $agent->getId()];
+        return [$this->loginAs($email, ['ROLE_AGENTE'], $agent), (int) $agent->getId()];
     }
 
     /** A fingerprint of every table an outbound command can write. */
@@ -270,7 +270,7 @@ final class ProviderProxyVerifierProbeTest extends CharacterizationTestCase
     {
         $ticket = $this->ticketInOpenWindow();
         $email = 'probe-pp-no-agent@inbiox.local';
-        $token = $this->loginAs($email, ['ROLE_AGENT']);
+        $token = $this->loginAs($email, ['ROLE_AGENTE']);
         $before = $this->dataState();
 
         $response = $this->request('POST', '/api/proveedor/plantilla/enviar', $token, ['ticketId' => $ticket->getId(), 'nombreDePlantilla' => 42, 'idioma' => 'es']);

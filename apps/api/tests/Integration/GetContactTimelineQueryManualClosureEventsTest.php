@@ -130,7 +130,7 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
 
     public function testAllSixManualTypesAppearWithAgentRoleLabel(): void
     {
-        [$userId, $agentId] = $this->createUserWithAgent('agent-actor@inbiox.local', ['ROLE_AGENT'], 'Agent Actor');
+        [$userId, $agentId] = $this->createUserWithAgent('agent-actor@inbiox.local', ['ROLE_AGENTE'], 'Agent Actor');
         $source = 'u:' . $userId;
 
         $this->addTicketEvent(TipoDeEventoDeTicket::MANUAL_RESUELTO_RESPONSABLE, $source);
@@ -158,7 +158,7 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
 
     public function testAdminWithAlsoSupervisorRoleIsLabeledAdminNotSupervisor(): void
     {
-        $userId = $this->createUser('admin-and-supervisor@inbiox.local', ['ROLE_ADMIN', 'ROLE_SUPERVISOR']);
+        $userId = $this->createUser('admin-and-supervisor@inbiox.local', ['ROLE_ADMINISTRADOR', 'ROLE_SUPERVISOR']);
         $this->addTicketEvent(TipoDeEventoDeTicket::MANUAL_CERRADO_RESPONSABLE, 'u:' . $userId);
 
         $events = $this->fetchEventsByType();
@@ -178,7 +178,7 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
 
     public function testActorWithNoLinkedAgentFallsBackToEmailAndNullAgentId(): void
     {
-        $userId = $this->createUser('admin-no-agent@inbiox.local', ['ROLE_ADMIN']);
+        $userId = $this->createUser('admin-no-agent@inbiox.local', ['ROLE_ADMINISTRADOR']);
         $this->addTicketEvent(TipoDeEventoDeTicket::MANUAL_CERRADO_SIN_RESPONSABLE, 'u:' . $userId);
 
         $events = $this->fetchEventsByType();
@@ -189,7 +189,7 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
 
     public function testDeletedAgentRowStillReturnsTheEventWithNullAgentId(): void
     {
-        [$userId, ] = $this->createUserWithAgent('deleted-agent-actor@inbiox.local', ['ROLE_AGENT'], 'Soon Deleted');
+        [$userId, ] = $this->createUserWithAgent('deleted-agent-actor@inbiox.local', ['ROLE_AGENTE'], 'Soon Deleted');
         $this->addTicketEvent(TipoDeEventoDeTicket::MANUAL_RESUELTO_RESPONSABLE, 'u:' . $userId);
 
         $this->em->getConnection()->executeStatement('DELETE FROM agents WHERE user_id = ?', [$userId]);

@@ -160,7 +160,7 @@ class ContactoRepository extends ServiceEntityRepository
                 t.status AS ticket_status,
                 CASE WHEN u.id IS NULL THEN NULL ELSE CONCAT(
                     CASE
-                        WHEN JSON_CONTAINS(u.roles, '"ROLE_ADMIN"') THEN 'Admin'
+                        WHEN JSON_CONTAINS(u.roles, '"ROLE_ADMINISTRADOR"') THEN 'Admin'
                         WHEN JSON_CONTAINS(u.roles, '"ROLE_SUPERVISOR"') THEN 'Sup'
                         ELSE 'Agente'
                     END,

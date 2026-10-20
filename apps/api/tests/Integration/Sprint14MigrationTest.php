@@ -15,7 +15,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
  *
  * Covers:
  *   1. Migration up creates user, refresh_tokens tables, alters agents
- *   2. Admin seed creates admin@inbiox.local with ROLE_ADMIN
+ *   2. Admin seed creates admin@inbiox.local with ROLE_ADMINISTRADOR
  *   3. Migration idempotency (no duplicate admin on re-run)
  *   4. Migration down reverses cleanly
  *   5. Agent FK constraint (can't set user_id to non-existent user)
@@ -134,7 +134,7 @@ class Sprint14MigrationTest extends KernelTestCase
         $userEmail = 'unique-test-' . \uniqid() . '@example.com';
         $this->conn->executeStatement(
             'INSERT INTO `user` (email, password_hash, roles, is_active, created_at) VALUES (?, ?, ?, 1, NOW())',
-            [$userEmail, \password_hash('test', PASSWORD_BCRYPT), '["ROLE_AGENT"]']
+            [$userEmail, \password_hash('test', PASSWORD_BCRYPT), '["ROLE_AGENTE"]']
         );
         $userId = (int) $this->conn->lastInsertId();
 

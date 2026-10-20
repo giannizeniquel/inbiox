@@ -55,7 +55,7 @@ class WorkspaceAgentControllerTest extends WebTestCase
 
     private function createUser(
         string $email,
-        array $roles = ['ROLE_AGENT'],
+        array $roles = ['ROLE_AGENTE'],
         ?Agente $agent = null,
     ): Usuario {
         $user = new Usuario();
@@ -149,7 +149,7 @@ class WorkspaceAgentControllerTest extends WebTestCase
     public function testUnknownWorkspaceReturns404(): void
     {
         $agent = $this->createAgent('Agent A');
-        $this->createUser('agent@test.local', ['ROLE_AGENT'], $agent);
+        $this->createUser('agent@test.local', ['ROLE_AGENTE'], $agent);
         $token = $this->login('agent@test.local');
 
         $this->client->request('GET', '/api/workspaces/99999/available-agents', [], [], $this->authHeaders($token));
@@ -161,7 +161,7 @@ class WorkspaceAgentControllerTest extends WebTestCase
         $workspace = $this->createWorkspace(active: false);
 
         $agent = $this->createAgent('Agent A');
-        $this->createUser('agent@test.local', ['ROLE_AGENT'], $agent);
+        $this->createUser('agent@test.local', ['ROLE_AGENTE'], $agent);
         $token = $this->login('agent@test.local');
 
         $this->client->request('GET', '/api/workspaces/' . $workspace->getId() . '/available-agents', [], [], $this->authHeaders($token));
@@ -173,7 +173,7 @@ class WorkspaceAgentControllerTest extends WebTestCase
         $workspace = $this->createWorkspace();
 
         $agent = $this->createAgent('Agent A');
-        $this->createUser('agent@test.local', ['ROLE_AGENT'], $agent);
+        $this->createUser('agent@test.local', ['ROLE_AGENTE'], $agent);
         $token = $this->login('agent@test.local');
 
         $this->client->request('GET', '/api/workspaces/' . $workspace->getId() . '/available-agents', [], [], $this->authHeaders($token));
@@ -192,7 +192,7 @@ class WorkspaceAgentControllerTest extends WebTestCase
         $agent->addEspacioDeTrabajo($workspace);
         $this->createShift($agent, 1, '08:00', '16:00'); // Monday
 
-        $this->createUser('agent@test.local', ['ROLE_AGENT'], $agent);
+        $this->createUser('agent@test.local', ['ROLE_AGENTE'], $agent);
         $token = $this->login('agent@test.local');
 
         // Request on Monday 12:00 UTC (in shift)
@@ -223,7 +223,7 @@ class WorkspaceAgentControllerTest extends WebTestCase
         $agent->setDisponibilidadManual(false);
         $this->em->flush();
 
-        $this->createUser('agent@test.local', ['ROLE_AGENT'], $agent);
+        $this->createUser('agent@test.local', ['ROLE_AGENTE'], $agent);
         $token = $this->login('agent@test.local');
 
         $this->client->request('GET', '/api/workspaces/' . $workspace->getId() . '/available-agents', [], [], $this->authHeaders($token));
@@ -246,7 +246,7 @@ class WorkspaceAgentControllerTest extends WebTestCase
         $this->em->flush();
 
         $requester = $this->createAgent('Requester');
-        $this->createUser('agent@test.local', ['ROLE_AGENT'], $requester);
+        $this->createUser('agent@test.local', ['ROLE_AGENTE'], $requester);
         $token = $this->login('agent@test.local');
 
         $this->client->request('GET', '/api/workspaces/' . $workspace->getId() . '/available-agents', [], [], $this->authHeaders($token));

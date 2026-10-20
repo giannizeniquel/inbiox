@@ -175,7 +175,7 @@ class ReportingResponseDelayTest extends WebTestCase
         $user = new Usuario();
         $user->setEmail('rd-agent@test.local');
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
-        $user->setRoles(['ROLE_AGENT']);
+        $user->setRoles(['ROLE_AGENTE']);
         $user->setActivo(true);
         $agent->setUsuario($user);
         $this->em->persist($agent);

@@ -12,7 +12,7 @@ use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use App\Administracion\Usuario;
 
-#[IsGranted('ROLE_AGENT')]
+#[IsGranted('ROLE_AGENTE')]
 final class MercureTokenController extends AbstractController
 {
     public function __construct(

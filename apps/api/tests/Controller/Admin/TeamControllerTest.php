@@ -59,7 +59,7 @@ class TeamControllerTest extends WebTestCase
 
     private function createUser(
         string $email,
-        array $roles = ['ROLE_AGENT'],
+        array $roles = ['ROLE_AGENTE'],
         ?Agente $agent = null,
     ): Usuario {
         $user = new Usuario();
@@ -133,17 +133,17 @@ class TeamControllerTest extends WebTestCase
 
     public function testListTeamsRequiresAuth(): void
     {
-        $this->client->request('GET', '/api/admin/teams');
+        $this->client->request('GET', '/api/administracion/equipos');
         self::assertSame(401, $this->client->getResponse()->getStatusCode());
     }
 
     public function testListTeamsDeniedForPlainAgent(): void
     {
         $agent = $this->createAgent('Agent');
-        $this->createUser('agent@test.local', ['ROLE_AGENT'], $agent);
+        $this->createUser('agent@test.local', ['ROLE_AGENTE'], $agent);
         $token = $this->login('agent@test.local');
 
-        $this->client->request('GET', '/api/admin/teams', [], [], $this->authHeaders($token));
+        $this->client->request('GET', '/api/administracion/equipos', [], [], $this->authHeaders($token));
         self::assertSame(403, $this->client->getResponse()->getStatusCode());
     }
 
@@ -152,16 +152,16 @@ class TeamControllerTest extends WebTestCase
         $this->createUser('supervisor@test.local', ['ROLE_SUPERVISOR']);
         $token = $this->login('supervisor@test.local');
 
-        $this->client->request('GET', '/api/admin/teams', [], [], $this->authHeaders($token));
+        $this->client->request('GET', '/api/administracion/equipos', [], [], $this->authHeaders($token));
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
     }
 
     public function testListTeamsAllowedForAdmin(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
-        $this->client->request('GET', '/api/admin/teams', [], [], $this->authHeaders($token));
+        $this->client->request('GET', '/api/administracion/equipos', [], [], $this->authHeaders($token));
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
     }
 
@@ -171,7 +171,7 @@ class TeamControllerTest extends WebTestCase
 
     public function testListTeamsReturnsPaginatedResults(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
         $workspace = $this->createWorkspace();
@@ -179,7 +179,7 @@ class TeamControllerTest extends WebTestCase
             $this->createTeam($workspace, "Team {$i}");
         }
 
-        $this->client->request('GET', '/api/admin/teams?page=1&limit=2', [], [], $this->authHeaders($token));
+        $this->client->request('GET', '/api/administracion/equipos?page=1&limit=2', [], [], $this->authHeaders($token));
         $response = $this->client->getResponse();
         self::assertSame(200, $response->getStatusCode());
 
@@ -187,7 +187,7 @@ class TeamControllerTest extends WebTestCase
         self::assertArrayHasKey('data', $data);
         self::assertArrayHasKey('meta', $data);
         self::assertCount(2, $data['data']);
-        self::assertTrue($data['meta']['has_next']);
+        self::assertTrue($data['meta']['haySiguiente']);
         self::assertSame(3, $data['meta']['total']);
     }
 
@@ -197,38 +197,38 @@ class TeamControllerTest extends WebTestCase
 
     public function testCreateTeam(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
         $workspace = $this->createWorkspace();
 
-        $this->client->request('POST', '/api/admin/teams', [], [], $this->authHeaders($token) + [
+        $this->client->request('POST', '/api/administracion/equipos', [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
         ], \json_encode([
-            'workspaceId' => $workspace->getId(),
-            'name' => 'Support',
+            'espacioDeTrabajoId' => $workspace->getId(),
+            'nombre' => 'Support',
         ]));
 
         $response = $this->client->getResponse();
         self::assertSame(201, $response->getStatusCode());
 
         $data = \json_decode($response->getContent(), true);
-        self::assertSame('Support', $data['name']);
-        self::assertTrue($data['is_active']);
-        self::assertSame($workspace->getId(), $data['workspace_id']);
+        self::assertSame('Support', $data['nombre']);
+        self::assertTrue($data['activo']);
+        self::assertSame($workspace->getId(), $data['espacioDeTrabajoId']);
     }
 
     public function testCreateTeamDuplicateNameSameWorkspaceReturns409(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
         $workspace = $this->createWorkspace();
         $this->createTeam($workspace, 'Support');
 
-        $this->client->request('POST', '/api/admin/teams', [], [], $this->authHeaders($token) + [
+        $this->client->request('POST', '/api/administracion/equipos', [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
         ], \json_encode([
-            'workspaceId' => $workspace->getId(),
-            'name' => 'Support',
+            'espacioDeTrabajoId' => $workspace->getId(),
+            'nombre' => 'Support',
         ]));
 
         self::assertSame(409, $this->client->getResponse()->getStatusCode());
@@ -236,17 +236,17 @@ class TeamControllerTest extends WebTestCase
 
     public function testCreateTeamSameNameDifferentWorkspaceSucceeds(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
         $workspaceA = $this->createWorkspace('+1000000000', 'Workspace A');
         $workspaceB = $this->createWorkspace('+2000000000', 'Workspace B');
         $this->createTeam($workspaceA, 'Support');
 
-        $this->client->request('POST', '/api/admin/teams', [], [], $this->authHeaders($token) + [
+        $this->client->request('POST', '/api/administracion/equipos', [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
         ], \json_encode([
-            'workspaceId' => $workspaceB->getId(),
-            'name' => 'Support',
+            'espacioDeTrabajoId' => $workspaceB->getId(),
+            'nombre' => 'Support',
         ]));
 
         self::assertSame(201, $this->client->getResponse()->getStatusCode());
@@ -254,24 +254,24 @@ class TeamControllerTest extends WebTestCase
 
     public function testCreateTeamRequiresWorkspaceId(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
-        $this->client->request('POST', '/api/admin/teams', [], [], $this->authHeaders($token) + [
+        $this->client->request('POST', '/api/administracion/equipos', [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
-        ], \json_encode(['name' => 'Support']));
+        ], \json_encode(['nombre' => 'Support']));
 
         self::assertSame(400, $this->client->getResponse()->getStatusCode());
     }
 
     public function testCreateTeamUnknownWorkspaceReturns400(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
-        $this->client->request('POST', '/api/admin/teams', [], [], $this->authHeaders($token) + [
+        $this->client->request('POST', '/api/administracion/equipos', [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
-        ], \json_encode(['workspaceId' => 999999, 'name' => 'Support']));
+        ], \json_encode(['espacioDeTrabajoId' => 999999, 'nombre' => 'Support']));
 
         self::assertSame(400, $this->client->getResponse()->getStatusCode());
     }
@@ -282,25 +282,25 @@ class TeamControllerTest extends WebTestCase
 
     public function testGetTeam(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
         $workspace = $this->createWorkspace();
         $team = $this->createTeam($workspace, 'Support');
 
-        $this->client->request('GET', "/api/admin/teams/{$team->getId()}", [], [], $this->authHeaders($token));
+        $this->client->request('GET', "/api/administracion/equipos/{$team->getId()}", [], [], $this->authHeaders($token));
         $response = $this->client->getResponse();
         self::assertSame(200, $response->getStatusCode());
 
         $data = \json_decode($response->getContent(), true);
-        self::assertSame('Support', $data['name']);
+        self::assertSame('Support', $data['nombre']);
     }
 
     public function testGetTeamReturns404ForNonExistent(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
-        $this->client->request('GET', '/api/admin/teams/99999', [], [], $this->authHeaders($token));
+        $this->client->request('GET', '/api/administracion/equipos/99999', [], [], $this->authHeaders($token));
         self::assertSame(404, $this->client->getResponse()->getStatusCode());
     }
 
@@ -310,38 +310,38 @@ class TeamControllerTest extends WebTestCase
 
     public function testUpdateTeamName(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
         $workspace = $this->createWorkspace();
         $team = $this->createTeam($workspace, 'Old Name');
 
-        $this->client->request('PUT', "/api/admin/teams/{$team->getId()}", [], [], $this->authHeaders($token) + [
+        $this->client->request('PUT', "/api/administracion/equipos/{$team->getId()}", [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
-        ], \json_encode(['name' => 'New Name']));
+        ], \json_encode(['nombre' => 'New Name']));
 
         $response = $this->client->getResponse();
         self::assertSame(200, $response->getStatusCode());
 
         $data = \json_decode($response->getContent(), true);
-        self::assertSame('New Name', $data['name']);
+        self::assertSame('New Name', $data['nombre']);
     }
 
     public function testUpdateTeamActiveStatus(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
         $workspace = $this->createWorkspace();
         $team = $this->createTeam($workspace, 'Support');
 
-        $this->client->request('PUT', "/api/admin/teams/{$team->getId()}", [], [], $this->authHeaders($token) + [
+        $this->client->request('PUT', "/api/administracion/equipos/{$team->getId()}", [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
-        ], \json_encode(['isActive' => false]));
+        ], \json_encode(['activo' => false]));
 
         $response = $this->client->getResponse();
         self::assertSame(200, $response->getStatusCode());
 
         $data = \json_decode($response->getContent(), true);
-        self::assertFalse($data['is_active']);
+        self::assertFalse($data['activo']);
     }
 
     // ────────────────────────────────────────────────────────
@@ -350,12 +350,12 @@ class TeamControllerTest extends WebTestCase
 
     public function testDeactivateTeamIsSoftDelete(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
         $workspace = $this->createWorkspace();
         $team = $this->createTeam($workspace, 'Support');
 
-        $this->client->request('DELETE', "/api/admin/teams/{$team->getId()}", [], [], $this->authHeaders($token));
+        $this->client->request('DELETE', "/api/administracion/equipos/{$team->getId()}", [], [], $this->authHeaders($token));
         $response = $this->client->getResponse();
         self::assertSame(204, $response->getStatusCode());
 
@@ -367,7 +367,7 @@ class TeamControllerTest extends WebTestCase
 
     public function testDeactivateTeamRetainsTicketAttribution(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
         $workspace = $this->createWorkspace();
         $team = $this->createTeam($workspace, 'Support');
@@ -379,7 +379,7 @@ class TeamControllerTest extends WebTestCase
         );
         $ticketId = (int) $conn->lastInsertId();
 
-        $this->client->request('DELETE', "/api/admin/teams/{$team->getId()}", [], [], $this->authHeaders($token));
+        $this->client->request('DELETE', "/api/administracion/equipos/{$team->getId()}", [], [], $this->authHeaders($token));
         self::assertSame(204, $this->client->getResponse()->getStatusCode());
 
         $ticketTeamId = $conn->executeQuery('SELECT team_id FROM tickets WHERE id = :id', ['id' => $ticketId])->fetchOne();
@@ -388,10 +388,10 @@ class TeamControllerTest extends WebTestCase
 
     public function testDeleteNonExistentTeamReturns404(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
-        $this->client->request('DELETE', '/api/admin/teams/99999', [], [], $this->authHeaders($token));
+        $this->client->request('DELETE', '/api/administracion/equipos/99999', [], [], $this->authHeaders($token));
         self::assertSame(404, $this->client->getResponse()->getStatusCode());
     }
 
@@ -401,7 +401,7 @@ class TeamControllerTest extends WebTestCase
 
     public function testAssignAgentsReplacesRoster(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
         $workspace = $this->createWorkspace();
         $team = $this->createTeam($workspace, 'Support');
@@ -412,22 +412,22 @@ class TeamControllerTest extends WebTestCase
         $agentB->addEspacioDeTrabajo($workspace);
         $this->em->flush();
 
-        $this->client->request('PUT', "/api/admin/teams/{$team->getId()}/agents", [], [], $this->authHeaders($token) + [
+        $this->client->request('PUT', "/api/administracion/equipos/{$team->getId()}/agentes", [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
-        ], \json_encode(['agentIds' => [$agentA->getId(), $agentB->getId()]]));
+        ], \json_encode(['agenteIds' => [$agentA->getId(), $agentB->getId()]]));
 
         $response = $this->client->getResponse();
         self::assertSame(200, $response->getStatusCode());
 
         $data = \json_decode($response->getContent(), true);
-        self::assertCount(2, $data['agent_ids']);
-        self::assertContains($agentA->getId(), $data['agent_ids']);
-        self::assertContains($agentB->getId(), $data['agent_ids']);
+        self::assertCount(2, $data['agenteIds']);
+        self::assertContains($agentA->getId(), $data['agenteIds']);
+        self::assertContains($agentB->getId(), $data['agenteIds']);
     }
 
     public function testAssignAgentsWithOneOutsideWorkspaceReturns400AndWritesNothing(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
         $workspaceA = $this->createWorkspace('+1000000000', 'Workspace A');
         $workspaceB = $this->createWorkspace('+2000000000', 'Workspace B');
@@ -439,9 +439,9 @@ class TeamControllerTest extends WebTestCase
         $agentOutsideWorkspace->addEspacioDeTrabajo($workspaceB);
         $this->em->flush();
 
-        $this->client->request('PUT', "/api/admin/teams/{$team->getId()}/agents", [], [], $this->authHeaders($token) + [
+        $this->client->request('PUT', "/api/administracion/equipos/{$team->getId()}/agentes", [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
-        ], \json_encode(['agentIds' => [$agentInWorkspace->getId(), $agentOutsideWorkspace->getId()]]));
+        ], \json_encode(['agenteIds' => [$agentInWorkspace->getId(), $agentOutsideWorkspace->getId()]]));
 
         self::assertSame(400, $this->client->getResponse()->getStatusCode());
 

@@ -25,14 +25,14 @@ final class CreateEspacioDeTrabajoUseCase
     public function execute(array $data): EspacioDeTrabajo
     {
         $phoneNumberId = $data['phoneNumberId'] ?? null;
-        $nombreVisible = $data['displayName'] ?? null;
+        $nombreVisible = $data['nombreVisible'] ?? null;
 
         if (empty($phoneNumberId) || !\is_string($phoneNumberId)) {
             throw new \InvalidArgumentException('phoneNumberId is required and must be a string');
         }
 
         if (empty($nombreVisible) || !\is_string($nombreVisible)) {
-            throw new \InvalidArgumentException('displayName is required and must be a string');
+            throw new \InvalidArgumentException('nombreVisible is required and must be a string');
         }
 
         if (null !== $this->espacioDeTrabajoRepository->findOneBy(['phoneNumberId' => $phoneNumberId])) {
@@ -41,8 +41,8 @@ final class CreateEspacioDeTrabajoUseCase
 
         $espacioDeTrabajo = new EspacioDeTrabajo($phoneNumberId, $nombreVisible);
 
-        if (isset($data['isActive'])) {
-            $espacioDeTrabajo->setActivo((bool) $data['isActive']);
+        if (isset($data['activo'])) {
+            $espacioDeTrabajo->setActivo((bool) $data['activo']);
         }
 
         $this->entityManager->persist($espacioDeTrabajo);

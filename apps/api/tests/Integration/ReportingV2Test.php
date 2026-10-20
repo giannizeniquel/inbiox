@@ -355,7 +355,7 @@ class ReportingV2Test extends WebTestCase
         if (null === $user) {
             $user = new Usuario();
             $user->setEmail(self::ADMIN_EMAIL);
-            $user->setRoles(['ROLE_ADMIN']);
+            $user->setRoles(['ROLE_ADMINISTRADOR']);
         }
         $user->setPassword(\password_hash(self::ADMIN_PASSWORD, \PASSWORD_BCRYPT));
         $this->em->persist($user);

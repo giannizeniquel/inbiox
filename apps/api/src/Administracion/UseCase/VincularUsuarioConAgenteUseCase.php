@@ -22,17 +22,17 @@ final class VincularUsuarioConAgenteUseCase
     /**
      * @param array<mixed> $data cuerpo de la request decodificado
      *
-     * @throws \InvalidArgumentException cuando user_id es inválido, el usuario está
+     * @throws \InvalidArgumentException cuando usuarioId es inválido, el usuario está
      *                                   desactivado o alguna de las partes ya está vinculada
      * @throws NotFoundException         cuando el usuario no existe
      * @throws ConflictoDeEstadoException    cuando la base de datos rechaza el vínculo por duplicado
      */
     public function execute(Agente $agente, array $data): Usuario
     {
-        $usuarioId = $data['user_id'] ?? null;
+        $usuarioId = $data['usuarioId'] ?? null;
 
         if (null === $usuarioId || !\is_int($usuarioId)) {
-            throw new \InvalidArgumentException('user_id is required and must be an integer');
+            throw new \InvalidArgumentException('usuarioId is required and must be an integer');
         }
 
         $usuario = $this->usuarioRepository->find($usuarioId);

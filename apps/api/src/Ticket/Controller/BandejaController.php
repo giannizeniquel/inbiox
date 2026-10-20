@@ -22,7 +22,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Uid\Ulid;
 
-#[IsGranted('ROLE_AGENT')]
+#[IsGranted('ROLE_AGENTE')]
 class BandejaController
 {
     public function __construct(

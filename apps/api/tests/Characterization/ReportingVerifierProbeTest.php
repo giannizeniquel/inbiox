@@ -102,7 +102,7 @@ final class ReportingVerifierProbeTest extends CharacterizationTestCase
         $viewer->setEspacioDeTrabajoActivo($workspace);
         $this->em->flush();
 
-        return $this->loginAs('probe-agent@characterization.local', ['ROLE_AGENT'], $viewer);
+        return $this->loginAs('probe-agent@characterization.local', ['ROLE_AGENTE'], $viewer);
     }
 
     private function agentRow(string $agent, string $name, int $assigned, int $resolved, int $active, float|int $load, mixed $frt, mixed $rt): array
@@ -275,7 +275,7 @@ final class ReportingVerifierProbeTest extends CharacterizationTestCase
         $viewer->addEspacioDeTrabajo($workspace);
         $viewer->setEspacioDeTrabajoActivo($workspace);
         $this->em->flush();
-        $agentToken = $this->loginAs('probe-agent2@characterization.local', ['ROLE_AGENT'], $viewer);
+        $agentToken = $this->loginAs('probe-agent2@characterization.local', ['ROLE_AGENTE'], $viewer);
         $supToken = $this->loginAs('probe-sup2@characterization.local', ['ROLE_SUPERVISOR']);
 
         $this->assertBody(200, [], $this->request('GET', '/api/reports/recurring-customers', $agentToken));

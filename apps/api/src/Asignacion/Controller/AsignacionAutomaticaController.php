@@ -9,7 +9,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-#[IsGranted('ROLE_AGENT')]
+#[IsGranted('ROLE_AGENTE')]
 class AsignacionAutomaticaController
 {
     public function __construct(

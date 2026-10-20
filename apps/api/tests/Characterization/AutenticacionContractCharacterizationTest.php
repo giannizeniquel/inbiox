@@ -35,7 +35,7 @@ final class AutenticacionContractCharacterizationTest extends WebTestCase
         $usuario = new Usuario();
         $usuario->setEmail('contract-auth@inbiox.local');
         $usuario->setPassword(\password_hash(self::PASSWORD, \PASSWORD_BCRYPT));
-        $usuario->setRoles(['ROLE_AGENT']);
+        $usuario->setRoles(['ROLE_AGENTE']);
         $em->persist($usuario);
         $em->flush();
     }

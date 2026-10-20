@@ -20,7 +20,7 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
  *
  * The single most load-bearing assertion in this whole change:
  * `POST /tickets/{id}/close` is structurally always an *unowned* close
- * (resolving unassigns), so it returns 403 for EVERY ROLE_AGENT — including
+ * (resolving unassigns), so it returns 403 for EVERY ROLE_AGENTE — including
  * the ticket's own resolver — and 200 only for supervisor/admin.
  */
 class TicketClosureAuthorizationTest extends WebTestCase
@@ -176,7 +176,7 @@ class TicketClosureAuthorizationTest extends WebTestCase
     public function testOwningAgentCanCloseOrResolveOwnTicket(string $method, string $uri, ?array $body, string $fromStatus): void
     {
         $agent = $this->createAgent('Owning Agent');
-        $token = $this->createAuthenticatedUser('owning-agent@inbiox.local', ['ROLE_AGENT'], $agent);
+        $token = $this->createAuthenticatedUser('owning-agent@inbiox.local', ['ROLE_AGENTE'], $agent);
         $ticketId = $this->createTicket($fromStatus, $agent->getId());
 
         $response = $this->request($method, \str_replace('{id}', (string) $ticketId, $uri), $token, $body);
@@ -201,7 +201,7 @@ class TicketClosureAuthorizationTest extends WebTestCase
     public function testAgentCanNeverCloseAResolvedTicketEvenTheOneTheyJustResolvedThemselves(): void
     {
         $agent = $this->createAgent('Self Resolver');
-        $token = $this->createAuthenticatedUser('self-resolver@inbiox.local', ['ROLE_AGENT'], $agent);
+        $token = $this->createAuthenticatedUser('self-resolver@inbiox.local', ['ROLE_AGENTE'], $agent);
         $ticketId = $this->createTicket(EstadoDeTicket::ACTIVO->value, $agent->getId());
 
         $resolveResponse = $this->request('POST', '/api/tickets/' . $ticketId . '/resolver', $token);
@@ -226,7 +226,7 @@ class TicketClosureAuthorizationTest extends WebTestCase
     {
         $ownerAgent = $this->createAgent('Owner Agent');
         $otherAgent = $this->createAgent('Other Agent');
-        $token = $this->createAuthenticatedUser('other-agent@inbiox.local', ['ROLE_AGENT'], $otherAgent);
+        $token = $this->createAuthenticatedUser('other-agent@inbiox.local', ['ROLE_AGENTE'], $otherAgent);
         $ticketId = $this->createTicket($fromStatus, $ownerAgent->getId());
 
         $response = $this->request($method, \str_replace('{id}', (string) $ticketId, $uri), $token, $body);
@@ -246,7 +246,7 @@ class TicketClosureAuthorizationTest extends WebTestCase
     public function testAgentWithNoLinkedAgentIsDenied(string $method, string $uri, ?array $body, string $fromStatus): void
     {
         $ownerAgent = $this->createAgent('Owner Agent 2');
-        $token = $this->createAuthenticatedUser('no-linked-agent@inbiox.local', ['ROLE_AGENT']);
+        $token = $this->createAuthenticatedUser('no-linked-agent@inbiox.local', ['ROLE_AGENTE']);
         $ticketId = $this->createTicket($fromStatus, $ownerAgent->getId());
 
         $response = $this->request($method, \str_replace('{id}', (string) $ticketId, $uri), $token, $body);
@@ -265,7 +265,7 @@ class TicketClosureAuthorizationTest extends WebTestCase
     public function testAnyAgentOnUnownedTicketIsDenied(string $method, string $uri, ?array $body, string $fromStatus): void
     {
         $agent = $this->createAgent('Any Agent');
-        $token = $this->createAuthenticatedUser('any-agent@inbiox.local', ['ROLE_AGENT'], $agent);
+        $token = $this->createAuthenticatedUser('any-agent@inbiox.local', ['ROLE_AGENTE'], $agent);
         $ticketId = $this->createTicket($fromStatus, null);
 
         $response = $this->request($method, \str_replace('{id}', (string) $ticketId, $uri), $token, $body);
@@ -309,7 +309,7 @@ class TicketClosureAuthorizationTest extends WebTestCase
     {
         return [
             'supervisor' => ['ROLE_SUPERVISOR'],
-            'admin'      => ['ROLE_ADMIN'],
+            'admin'      => ['ROLE_ADMINISTRADOR'],
         ];
     }
 
@@ -322,7 +322,7 @@ class TicketClosureAuthorizationTest extends WebTestCase
     {
         $ownerAgent = $this->createAgent('Owner For Non Closing');
         $otherAgent = $this->createAgent('Other For Non Closing');
-        $token = $this->createAuthenticatedUser('other-non-closing@inbiox.local', ['ROLE_AGENT'], $otherAgent);
+        $token = $this->createAuthenticatedUser('other-non-closing@inbiox.local', ['ROLE_AGENTE'], $otherAgent);
         $ticketId = $this->createTicket($fromStatus, $ownerAgent->getId());
 
         $response = $this->request('POST', '/api/tickets/' . $ticketId . '/transicionar', $token, ['estado' => $targetStatus]);
@@ -342,7 +342,7 @@ class TicketClosureAuthorizationTest extends WebTestCase
 
     public function testTransitionWithNoStatusStillReturns400Unchanged(): void
     {
-        $token = $this->createAuthenticatedUser('no-status@inbiox.local', ['ROLE_AGENT']);
+        $token = $this->createAuthenticatedUser('no-status@inbiox.local', ['ROLE_AGENTE']);
         $ticketId = $this->createTicket(EstadoDeTicket::ACTIVO->value, null);
 
         $response = $this->request('POST', '/api/tickets/' . $ticketId . '/transicionar', $token, []);
@@ -358,7 +358,7 @@ class TicketClosureAuthorizationTest extends WebTestCase
     public function testWrongCaseStatusStillReturns422FromTheFsm(): void
     {
         $agent = $this->createAgent('Wrong Case Owner');
-        $token = $this->createAuthenticatedUser('wrong-case@inbiox.local', ['ROLE_AGENT'], $agent);
+        $token = $this->createAuthenticatedUser('wrong-case@inbiox.local', ['ROLE_AGENTE'], $agent);
         $ticketId = $this->createTicket(EstadoDeTicket::ACTIVO->value, $agent->getId());
 
         $response = $this->request('POST', '/api/tickets/' . $ticketId . '/transicionar', $token, ['estado' => 'CERRADO']);
@@ -371,7 +371,7 @@ class TicketClosureAuthorizationTest extends WebTestCase
      */
     public function testNonexistentTicketStillReturns400NotFourOhFour(string $method, string $uri, ?array $body): void
     {
-        $token = $this->createAuthenticatedUser('nonexistent-ticket@inbiox.local', ['ROLE_AGENT']);
+        $token = $this->createAuthenticatedUser('nonexistent-ticket@inbiox.local', ['ROLE_AGENTE']);
 
         $response = $this->request($method, \str_replace('{id}', '999999', $uri), $token, $body);
 

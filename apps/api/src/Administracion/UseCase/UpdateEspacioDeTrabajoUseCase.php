@@ -30,15 +30,15 @@ final class UpdateEspacioDeTrabajoUseCase
             $espacioDeTrabajo->setPhoneNumberId($data['phoneNumberId']);
         }
 
-        if (isset($data['displayName'])) {
-            if (!\is_string($data['displayName']) || empty($data['displayName'])) {
-                throw new \InvalidArgumentException('displayName must be a non-empty string');
+        if (isset($data['nombreVisible'])) {
+            if (!\is_string($data['nombreVisible']) || empty($data['nombreVisible'])) {
+                throw new \InvalidArgumentException('nombreVisible must be a non-empty string');
             }
-            $espacioDeTrabajo->setNombreVisible($data['displayName']);
+            $espacioDeTrabajo->setNombreVisible($data['nombreVisible']);
         }
 
-        if (isset($data['isActive'])) {
-            $espacioDeTrabajo->setActivo((bool) $data['isActive']);
+        if (isset($data['activo'])) {
+            $espacioDeTrabajo->setActivo((bool) $data['activo']);
         }
 
         $this->entityManager->flush();

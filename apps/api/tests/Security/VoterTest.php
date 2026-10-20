@@ -25,7 +25,7 @@ class VoterTest extends TestCase
     // ────────────────────────────────────────────────────────
 
     /**
-     * @param string $role ROLE_ADMIN, ROLE_SUPERVISOR, or ROLE_AGENT
+     * @param string $role ROLE_ADMINISTRADOR, ROLE_SUPERVISOR, or ROLE_AGENTE
      * @param int|null $ticketAgentId The assigned agent of the ticket (null = unassigned)
      * @param int|null $userAgentId The agent linked to the user (null = no agent)
      * @param string $attribute The voter attribute (ASSIGN, CLOSE)
@@ -41,14 +41,14 @@ class VoterTest extends TestCase
     ): void {
         $security = $this->createMock(Security::class);
         $security->method('isGranted')->willReturnCallback(function (string $roleName) use ($role): bool {
-            if ('ROLE_ADMIN' === $roleName) {
-                return 'ROLE_ADMIN' === $role;
+            if ('ROLE_ADMINISTRADOR' === $roleName) {
+                return 'ROLE_ADMINISTRADOR' === $role;
             }
             if ('ROLE_SUPERVISOR' === $roleName) {
-                return \in_array($role, ['ROLE_ADMIN', 'ROLE_SUPERVISOR'], true);
+                return \in_array($role, ['ROLE_ADMINISTRADOR', 'ROLE_SUPERVISOR'], true);
             }
-            if ('ROLE_AGENT' === $roleName) {
-                return true; // All roles have ROLE_AGENT via hierarchy
+            if ('ROLE_AGENTE' === $roleName) {
+                return true; // All roles have ROLE_AGENTE via hierarchy
             }
             return false;
         });
@@ -90,35 +90,35 @@ class VoterTest extends TestCase
 
         return [
             // ADMIN — all permissions on any ticket
-            'ADMIN ASSIGN other ticket'    => ['ROLE_ADMIN', 2, 1, TicketVoter::ASSIGN, $g],
-            'ADMIN CLOSE other ticket'     => ['ROLE_ADMIN', 2, 1, TicketVoter::CLOSE, $g],
+            'ADMIN ASSIGN other ticket'    => ['ROLE_ADMINISTRADOR', 2, 1, TicketVoter::ASSIGN, $g],
+            'ADMIN CLOSE other ticket'     => ['ROLE_ADMINISTRADOR', 2, 1, TicketVoter::CLOSE, $g],
 
             // SUPERVISOR — all permissions on any ticket
             'SUPERVISOR ASSIGN other ticket'    => ['ROLE_SUPERVISOR', 2, 1, TicketVoter::ASSIGN, $g],
             'SUPERVISOR CLOSE other ticket'     => ['ROLE_SUPERVISOR', 2, 1, TicketVoter::CLOSE, $g],
 
             // AGENT — own assigned ticket
-            'AGENT ASSIGN own ticket'           => ['ROLE_AGENT', 1, 1, TicketVoter::ASSIGN, $g],
-            'AGENT CLOSE own ticket'            => ['ROLE_AGENT', 1, 1, TicketVoter::CLOSE, $g],
+            'AGENT ASSIGN own ticket'           => ['ROLE_AGENTE', 1, 1, TicketVoter::ASSIGN, $g],
+            'AGENT CLOSE own ticket'            => ['ROLE_AGENTE', 1, 1, TicketVoter::CLOSE, $g],
 
             // AGENT — other agent's ticket (denied)
-            'AGENT ASSIGN other ticket'         => ['ROLE_AGENT', 2, 1, TicketVoter::ASSIGN, $d],
-            'AGENT CLOSE other ticket'          => ['ROLE_AGENT', 2, 1, TicketVoter::CLOSE, $d],
+            'AGENT ASSIGN other ticket'         => ['ROLE_AGENTE', 2, 1, TicketVoter::ASSIGN, $d],
+            'AGENT CLOSE other ticket'          => ['ROLE_AGENTE', 2, 1, TicketVoter::CLOSE, $d],
 
             // AGENT — unassigned ticket (denied — R2)
-            'AGENT ASSIGN unassigned ticket'    => ['ROLE_AGENT', null, 1, TicketVoter::ASSIGN, $d],
+            'AGENT ASSIGN unassigned ticket'    => ['ROLE_AGENTE', null, 1, TicketVoter::ASSIGN, $d],
 
             // AGENT — no linked agent (denied — R1)
-            'AGENT no agent ASSIGN'             => ['ROLE_AGENT', 1, null, TicketVoter::ASSIGN, $d],
+            'AGENT no agent ASSIGN'             => ['ROLE_AGENTE', 1, null, TicketVoter::ASSIGN, $d],
 
             // AGENT — CLOSE on an unassigned ticket (denied — R2). This is
             // the design.md D3 case: every ticket reachable via POST
             // /tickets/{id}/close is structurally unowned, so this must
             // deny even the agent who resolved it seconds earlier.
-            'AGENT CLOSE unassigned ticket'     => ['ROLE_AGENT', null, 1, TicketVoter::CLOSE, $d],
+            'AGENT CLOSE unassigned ticket'     => ['ROLE_AGENTE', null, 1, TicketVoter::CLOSE, $d],
 
             // AGENT — no linked Agent, CLOSE own ticket (denied — R1)
-            'AGENT no agent CLOSE own ticket'   => ['ROLE_AGENT', 1, null, TicketVoter::CLOSE, $d],
+            'AGENT no agent CLOSE own ticket'   => ['ROLE_AGENTE', 1, null, TicketVoter::CLOSE, $d],
         ];
     }
 
@@ -133,7 +133,7 @@ class VoterTest extends TestCase
     {
         $security = $this->createMock(Security::class);
         $security->method('isGranted')->willReturnCallback(
-            fn (string $roleName): bool => \in_array($roleName, ['ROLE_SUPERVISOR', 'ROLE_AGENT'], true)
+            fn (string $roleName): bool => \in_array($roleName, ['ROLE_SUPERVISOR', 'ROLE_AGENTE'], true)
         );
 
         $user = new Usuario();

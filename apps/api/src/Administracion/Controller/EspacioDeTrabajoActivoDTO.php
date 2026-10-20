@@ -32,9 +32,9 @@ class EspacioDeTrabajoActivoDTO
     public function toArray(): array
     {
         return [
-            'workspace_id' => $this->espacioDeTrabajoId,
-            'phone_number_id' => $this->phoneNumberId,
-            'display_name' => $this->nombreVisible,
+            'espacioDeTrabajoId' => $this->espacioDeTrabajoId,
+            'phoneNumberId' => $this->phoneNumberId,
+            'nombreVisible' => $this->nombreVisible,
         ];
     }
 }

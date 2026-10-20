@@ -55,7 +55,7 @@ class AuthorizationTest extends WebTestCase
 
     private function createUser(
         string $email,
-        array $roles = ['ROLE_AGENT'],
+        array $roles = ['ROLE_AGENTE'],
         ?Agente $agent = null,
         bool $isActive = true,
     ): Usuario {
@@ -131,7 +131,7 @@ class AuthorizationTest extends WebTestCase
     public function testAgentCanAccessTickets(): void
     {
         $agent = $this->createAgent('Agent A');
-        $this->createUser('agent@test.local', ['ROLE_AGENT'], $agent);
+        $this->createUser('agent@test.local', ['ROLE_AGENTE'], $agent);
         $token = $this->login('agent@test.local');
 
         $this->client->request('GET', '/api/tickets', [], [], $this->authHeaders($token));
@@ -140,7 +140,7 @@ class AuthorizationTest extends WebTestCase
 
     public function testAdminCanAccessTickets(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
         $this->client->request('GET', '/api/tickets', [], [], $this->authHeaders($token));
@@ -150,7 +150,7 @@ class AuthorizationTest extends WebTestCase
     public function testAgentCanAccessContacts(): void
     {
         $agent = $this->createAgent('Agent B');
-        $this->createUser('agent2@test.local', ['ROLE_AGENT'], $agent);
+        $this->createUser('agent2@test.local', ['ROLE_AGENTE'], $agent);
         $token = $this->login('agent2@test.local');
 
         $this->client->request('GET', '/api/contactos', [], [], $this->authHeaders($token));
@@ -163,7 +163,7 @@ class AuthorizationTest extends WebTestCase
     public function testAgentCanAccessMercureToken(): void
     {
         $agent = $this->createAgent('Agent C');
-        $this->createUser('agent3@test.local', ['ROLE_AGENT'], $agent);
+        $this->createUser('agent3@test.local', ['ROLE_AGENTE'], $agent);
         $token = $this->login('agent3@test.local');
 
         $this->client->request('GET', '/api/mercure/token', [], [], $this->authHeaders($token));
@@ -203,7 +203,7 @@ class AuthorizationTest extends WebTestCase
 
     public function testAdminMercureTokenHasWildcard(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
         $this->client->request('GET', '/api/mercure/token', [], [], $this->authHeaders($token));
@@ -229,7 +229,7 @@ class AuthorizationTest extends WebTestCase
     public function testOutboxPublishRequiresAdmin(): void
     {
         $agent = $this->createAgent('Agent D');
-        $this->createUser('agent@test.local', ['ROLE_AGENT'], $agent);
+        $this->createUser('agent@test.local', ['ROLE_AGENTE'], $agent);
         $token = $this->login('agent@test.local');
 
         $this->client->request('POST', '/admin/outbox/publish', [], [], $this->authHeaders($token));
@@ -238,7 +238,7 @@ class AuthorizationTest extends WebTestCase
 
     public function testOutboxPublishAllowedForAdmin(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
         $this->client->request('POST', '/admin/outbox/publish', [], [], $this->authHeaders($token));
@@ -252,11 +252,11 @@ class AuthorizationTest extends WebTestCase
 
     public function testAgentWithoutLinkedAgentGets403OnTicketEndpoint(): void
     {
-        // Create user with ROLE_AGENT but no linked Agent
+        // Create user with ROLE_AGENTE but no linked Agent
         $user = new Usuario();
         $user->setEmail('agentless@test.local');
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
-        $user->setRoles(['ROLE_AGENT']);
+        $user->setRoles(['ROLE_AGENTE']);
         $this->em->persist($user);
         $this->em->flush();
 
@@ -276,7 +276,7 @@ class AuthorizationTest extends WebTestCase
 
     public function testDeletedDebugJwtReturns404(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
         $this->client->request('GET', '/debug/jwt/1', [], [], $this->authHeaders($token));
@@ -285,7 +285,7 @@ class AuthorizationTest extends WebTestCase
 
     public function testDeletedMessageInboundReturns404(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
         $this->client->request('POST', '/messages/inbound', [], [], $this->authHeaders($token));

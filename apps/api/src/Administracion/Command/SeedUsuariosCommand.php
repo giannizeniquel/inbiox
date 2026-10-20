@@ -53,7 +53,7 @@ final class SeedUsuariosCommand extends Command
             $usuario = new Usuario();
             $usuario->setEmail($a['email']);
             $usuario->setPassword($this->hasher->hashPassword($usuario, $password));
-            $usuario->setRoles(['ROLE_ADMIN']);
+            $usuario->setRoles(['ROLE_ADMINISTRADOR']);
 
             // El admin recibe un Agente para que funcione el selector de espacio de trabajo
             $agente = new Agente($a['email']);
@@ -105,7 +105,7 @@ final class SeedUsuariosCommand extends Command
             $usuario = new Usuario();
             $usuario->setEmail($a['email']);
             $usuario->setPassword($this->hasher->hashPassword($usuario, $password));
-            $usuario->setRoles(['ROLE_AGENT']);
+            $usuario->setRoles(['ROLE_AGENTE']);
 
             $agente = new Agente($a['name']);
             $agente->setUsuario($usuario);

@@ -18,11 +18,11 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 /**
  * Página de configuración y preferencias del agente actual.
  *
- * GET  /api/me/settings        — devuelve todas las secciones de configuración
- * PUT  /api/me/profile         — actualiza la firma
- * PUT  /api/me/notifications   — actualiza las preferencias de notificación
+ * GET  /api/mi/configuracion    — devuelve todas las secciones de configuración
+ * PUT  /api/mi/perfil           — actualiza la firma
+ * PUT  /api/mi/notificaciones   — actualiza las preferencias de notificación
  *
- * Los demás endpoints de /api/me viven en sus módulos: la respuesta automática en
+ * Los demás endpoints de /api/mi viven en sus módulos: la respuesta automática en
  * Automatizacion, los turnos en Disponibilidad y los espacios de trabajo en Administracion.
  */
 #[IsGranted('IS_AUTHENTICATED_FULLY')]
@@ -34,8 +34,8 @@ final class MiConfiguracionController
         private readonly UpdatePreferenciasDeNotificacionUseCase $updatePreferenciasDeNotificacionUseCase,
     ) {}
 
-    #[IsGranted('ROLE_AGENT')]
-    #[Route('/api/me/settings', name: 'app_me_settings', methods: ['GET'])]
+    #[IsGranted('ROLE_AGENTE')]
+    #[Route('/api/mi/configuracion', name: 'app_me_settings', methods: ['GET'])]
     public function getConfiguracion(): JsonResponse
     {
         $agente = $this->getAgente();
@@ -47,21 +47,21 @@ final class MiConfiguracionController
 
         // Perfil
         $perfil = [
-            'name' => $agente->getNombre(),
+            'nombre' => $agente->getNombre(),
             'email' => $usuario?->getEmail() ?? '',
-            'signature' => $agente->getFirma(),
+            'firma' => $agente->getFirma(),
         ];
 
         // Notificaciones
         $notificaciones = [
-            'sound' => $agente->hasSonidoDeNotificacion(),
-            'desktop' => $agente->hasNotificacionesDeEscritorio(),
+            'sonido' => $agente->hasSonidoDeNotificacion(),
+            'escritorio' => $agente->hasNotificacionesDeEscritorio(),
         ];
 
         // Respuesta automática
         $respuestaAutomatica = [
-            'enabled' => $agente->isRespuestaAutomaticaActiva(),
-            'message' => $agente->getMensajeDeRespuestaAutomatica(),
+            'habilitada' => $agente->isRespuestaAutomaticaActiva(),
+            'texto' => $agente->getMensajeDeRespuestaAutomatica(),
         ];
 
         // Espacio de trabajo
@@ -70,7 +70,7 @@ final class MiConfiguracionController
         if ($espacioDeTrabajoActivo !== null) {
             $datosDelEspacioDeTrabajo = [
                 'id' => (int) $espacioDeTrabajoActivo->getId(),
-                'displayName' => $espacioDeTrabajoActivo->getNombreVisible(),
+                'nombreVisible' => $espacioDeTrabajoActivo->getNombreVisible(),
                 'phoneNumberId' => $espacioDeTrabajoActivo->getPhoneNumberId(),
             ];
         }
@@ -79,28 +79,28 @@ final class MiConfiguracionController
         $horarioDeAtencion = [];
         foreach ($agente->getTurnos() as $turno) {
             $horarioDeAtencion[] = [
-                'dayOfWeek' => $turno->getDiaDeLaSemana(),
-                'start' => $turno->getHoraDeInicio()->format('H:i'),
-                'end' => $turno->getHoraDeFin()->format('H:i'),
+                'diaDeLaSemana' => $turno->getDiaDeLaSemana(),
+                'inicio' => $turno->getHoraDeInicio()->format('H:i'),
+                'fin' => $turno->getHoraDeFin()->format('H:i'),
             ];
         }
 
-        // Ordenar los turnos por dayOfWeek y luego por start
+        // Ordenar los turnos por diaDeLaSemana y luego por inicio
         \usort($horarioDeAtencion, function (array $a, array $b) {
-            return [$a['dayOfWeek'], $a['start']] <=> [$b['dayOfWeek'], $b['start']];
+            return [$a['diaDeLaSemana'], $a['inicio']] <=> [$b['diaDeLaSemana'], $b['inicio']];
         });
 
         return new JsonResponse([
-            'profile' => $perfil,
-            'notifications' => $notificaciones,
-            'autoReply' => $respuestaAutomatica,
-            'workspace' => $datosDelEspacioDeTrabajo,
-            'businessHours' => $horarioDeAtencion,
+            'perfil' => $perfil,
+            'notificaciones' => $notificaciones,
+            'respuestaAutomatica' => $respuestaAutomatica,
+            'espacioDeTrabajo' => $datosDelEspacioDeTrabajo,
+            'horarioDeAtencion' => $horarioDeAtencion,
         ]);
     }
 
-    #[IsGranted('ROLE_AGENT')]
-    #[Route('/api/me/profile', name: 'app_me_profile', methods: ['PUT'])]
+    #[IsGranted('ROLE_AGENTE')]
+    #[Route('/api/mi/perfil', name: 'app_me_profile', methods: ['PUT'])]
     public function updatePerfil(#[MapRequestPayload] UpdatePerfilRequest $request): JsonResponse
     {
         $agente = $this->getAgente();
@@ -108,17 +108,17 @@ final class MiConfiguracionController
             return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
         }
 
-        $this->updatePerfilDeAgenteUseCase->execute($agente, $request->signature);
+        $this->updatePerfilDeAgenteUseCase->execute($agente, $request->firma);
 
         return new JsonResponse([
-            'name' => $agente->getNombre(),
+            'nombre' => $agente->getNombre(),
             'email' => $agente->getUsuario()?->getEmail() ?? '',
-            'signature' => $agente->getFirma(),
+            'firma' => $agente->getFirma(),
         ]);
     }
 
-    #[IsGranted('ROLE_AGENT')]
-    #[Route('/api/me/notifications', name: 'app_me_notifications', methods: ['PUT'])]
+    #[IsGranted('ROLE_AGENTE')]
+    #[Route('/api/mi/notificaciones', name: 'app_me_notifications', methods: ['PUT'])]
     public function updateNotificaciones(#[MapRequestPayload] UpdateNotificacionesRequest $request): JsonResponse
     {
         $agente = $this->getAgente();
@@ -126,11 +126,11 @@ final class MiConfiguracionController
             return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
         }
 
-        $this->updatePreferenciasDeNotificacionUseCase->execute($agente, $request->sound, $request->desktop);
+        $this->updatePreferenciasDeNotificacionUseCase->execute($agente, $request->sonido, $request->escritorio);
 
         return new JsonResponse([
-            'sound' => $agente->hasSonidoDeNotificacion(),
-            'desktop' => $agente->hasNotificacionesDeEscritorio(),
+            'sonido' => $agente->hasSonidoDeNotificacion(),
+            'escritorio' => $agente->hasNotificacionesDeEscritorio(),
         ]);
     }
 

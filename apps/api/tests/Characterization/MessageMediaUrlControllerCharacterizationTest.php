@@ -29,7 +29,7 @@ final class MessageMediaUrlControllerCharacterizationTest extends Characterizati
         $agent = $this->createAgent('Media Owner');
         $ticket = $this->createTicket('activo', (int) $agent->getId());
         $messageId = $this->message($ticket, ['key' => 'media/char-1.jpg', 'kind' => 'imagen']);
-        $token = $this->loginAs('char-media-owner@inbiox.local', ['ROLE_AGENT'], $agent);
+        $token = $this->loginAs('char-media-owner@inbiox.local', ['ROLE_AGENTE'], $agent);
 
         $response = $this->request('GET', "/api/mensajes/{$messageId}/adjunto", $token);
 
@@ -54,7 +54,7 @@ final class MessageMediaUrlControllerCharacterizationTest extends Characterizati
         $owner = $this->createAgent('Media Owner');
         $ticket = $this->createTicket('activo', (int) $owner->getId());
         $messageId = $this->message($ticket, ['key' => 'media/char-2.pdf', 'kind' => 'documento']);
-        $token = $this->loginAs('char-media-other@inbiox.local', ['ROLE_AGENT'], $this->createAgent('Other Agent'));
+        $token = $this->loginAs('char-media-other@inbiox.local', ['ROLE_AGENTE'], $this->createAgent('Other Agent'));
 
         $this->assertSecurityForbidden($this->request('GET', "/api/mensajes/{$messageId}/adjunto", $token));
     }

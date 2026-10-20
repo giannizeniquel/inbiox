@@ -31,7 +31,7 @@ final class AdministracionContractCharacterizationTest extends KernelTestCase
         $usuario = new Usuario();
         $usuario->setEmail('contract@inbiox.local');
         $usuario->setPassword($hasher->hash('secret-123'));
-        $usuario->setRoles(['ROLE_AGENT']);
+        $usuario->setRoles(['ROLE_AGENTE']);
         $em->persist($usuario);
         $em->flush();
         $em->clear();
@@ -40,7 +40,7 @@ final class AdministracionContractCharacterizationTest extends KernelTestCase
 
         self::assertInstanceOf(Usuario::class, $cargado);
         self::assertSame('contract@inbiox.local', $cargado->getUserIdentifier());
-        self::assertSame(['ROLE_AGENT', 'ROLE_USER'], $cargado->getRoles());
+        self::assertSame(['ROLE_AGENTE', 'ROLE_USER'], $cargado->getRoles());
         self::assertTrue($hasher->verify((string) $cargado->getPassword(), 'secret-123'));
         self::assertTrue(static::getContainer()->get(UserProviderInterface::class)->supportsClass(Usuario::class));
     }
@@ -51,7 +51,7 @@ final class AdministracionContractCharacterizationTest extends KernelTestCase
         (new \ReflectionProperty(EspacioDeTrabajo::class, 'id'))->setValue($espacio, 4);
 
         self::assertSame(
-            ['workspace_id' => 4, 'phone_number_id' => 'pn-contract', 'display_name' => 'Main line'],
+            ['espacioDeTrabajoId' => 4, 'phoneNumberId' => 'pn-contract', 'nombreVisible' => 'Main line'],
             EspacioDeTrabajoActivoDTO::fromEntity($espacio)->toArray(),
         );
 
@@ -68,13 +68,13 @@ final class AdministracionContractCharacterizationTest extends KernelTestCase
 
         self::assertSame([
             'id' => 4,
-            'phone_number_id' => 'pn-contract',
-            'display_name' => 'Main line',
-            'is_active' => true,
-            'created_at' => '2026-10-01T10:00:00+00:00',
-            'updated_at' => '2026-10-02T10:00:00+00:00',
-            'agent_count' => 3,
-            'has_pending' => true,
+            'phoneNumberId' => 'pn-contract',
+            'nombreVisible' => 'Main line',
+            'activo' => true,
+            'creadoAt' => '2026-10-01T10:00:00+00:00',
+            'actualizadoAt' => '2026-10-02T10:00:00+00:00',
+            'cantidadDeAgentes' => 3,
+            'hayPendientes' => true,
         ], $dto->toArray());
     }
 }

@@ -26,15 +26,15 @@ final class CreateEquipoUseCase
      */
     public function execute(array $data): Equipo
     {
-        $espacioDeTrabajoId = $data['workspaceId'] ?? null;
-        $nombre = $data['name'] ?? null;
+        $espacioDeTrabajoId = $data['espacioDeTrabajoId'] ?? null;
+        $nombre = $data['nombre'] ?? null;
 
         if (empty($espacioDeTrabajoId) || !\is_int($espacioDeTrabajoId)) {
-            throw new \InvalidArgumentException('workspaceId is required and must be an integer');
+            throw new \InvalidArgumentException('espacioDeTrabajoId is required and must be an integer');
         }
 
         if (empty($nombre) || !\is_string($nombre)) {
-            throw new \InvalidArgumentException('name is required and must be a string');
+            throw new \InvalidArgumentException('nombre is required and must be a string');
         }
 
         $espacioDeTrabajo = $this->espacioDeTrabajoRepository->find($espacioDeTrabajoId);
@@ -50,8 +50,8 @@ final class CreateEquipoUseCase
 
         $equipo = new Equipo($espacioDeTrabajo, $nombre);
 
-        if (isset($data['isActive'])) {
-            $equipo->setActivo((bool) $data['isActive']);
+        if (isset($data['activo'])) {
+            $equipo->setActivo((bool) $data['activo']);
         }
 
         $this->entityManager->persist($equipo);

@@ -54,7 +54,7 @@ final class MensajeVoter extends Voter
         }
 
         // AGENT puede acceder a los mensajes de los tickets que tiene asignados
-        if ($this->security->isGranted('ROLE_AGENT')) {
+        if ($this->security->isGranted('ROLE_AGENTE')) {
             $agente = $usuario->getAgente();
 
             if ($agente === null) {

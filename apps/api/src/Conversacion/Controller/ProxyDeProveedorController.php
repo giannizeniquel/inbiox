@@ -27,7 +27,7 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-#[IsGranted('ROLE_AGENT')]
+#[IsGranted('ROLE_AGENTE')]
 class ProxyDeProveedorController extends AbstractController
 {
     private const GRAPH_AUTH_ERROR = 401;   // Errores de auth/oauth de Meta
@@ -67,7 +67,7 @@ class ProxyDeProveedorController extends AbstractController
         $agenteId = $this->getAgenteQueActuaId($usuario) ?? 0;
 
         // Guarda de responsable en tickets resueltos/cerrados (design.md D3): role_hierarchy hace que
-        // ROLE_ADMIN herede ROLE_SUPERVISOR, así que esta única verificación cubre ambos.
+        // ROLE_ADMINISTRADOR herede ROLE_SUPERVISOR, así que esta única verificación cubre ambos.
         $remitenteEsPrivilegiado = $this->isGranted('ROLE_SUPERVISOR');
 
         try {

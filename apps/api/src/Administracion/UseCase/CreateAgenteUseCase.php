@@ -20,16 +20,16 @@ final class CreateAgenteUseCase
      */
     public function execute(array $data): Agente
     {
-        $nombre = $data['name'] ?? null;
+        $nombre = $data['nombre'] ?? null;
 
         if (empty($nombre) || !\is_string($nombre)) {
-            throw new \InvalidArgumentException('name is required and must be a string');
+            throw new \InvalidArgumentException('nombre is required and must be a string');
         }
 
-        $zonaHoraria = $data['timezone'] ?? 'UTC';
+        $zonaHoraria = $data['zonaHoraria'] ?? 'UTC';
 
         if (!\is_string($zonaHoraria)) {
-            throw new \InvalidArgumentException('timezone must be a string');
+            throw new \InvalidArgumentException('zonaHoraria must be a string');
         }
 
         $agente = new Agente($nombre);

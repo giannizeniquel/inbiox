@@ -26,13 +26,13 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * dentro de una transacción. Todos los endpoints requieren ROLE_SUPERVISOR o superior (replica el acceso
  * del CRUD de Agent según la spec — dominio de administración, "Team CRUD (Admin/Supervisor)").
  *
- * NOTA: a diferencia de Admin/GestionDeAgentesController.php (que declara `#[IsGranted('ROLE_ADMIN')]`
+ * NOTA: a diferencia de Admin/GestionDeAgentesController.php (que declara `#[IsGranted('ROLE_ADMINISTRADOR')]`
  * en la clase aunque su docblock/access_control apunta a ROLE_SUPERVISOR —
  * una inconsistencia preexistente confirmada por el test de baseline que falla
  * `AgentControllerTest::testListAgentsAllowedForSupervisor`),
  * este controlador declara `#[IsGranted('ROLE_SUPERVISOR')]` directamente para que el
- * atributo a nivel de clase coincida con la entrada de access_control `^/api/admin/teams`
- * y realmente otorgue acceso tanto a ROLE_ADMIN (vía role_hierarchy) como a
+ * atributo a nivel de clase coincida con la entrada de access_control `^/api/administracion/equipos`
+ * y realmente otorgue acceso tanto a ROLE_ADMINISTRADOR (vía role_hierarchy) como a
  * ROLE_SUPERVISOR, según la spec.
  */
 #[IsGranted('ROLE_SUPERVISOR')]
@@ -46,7 +46,7 @@ final class GestionDeEquiposController
         private readonly AsignarAgentesAEquipoUseCase $asignarAgentesAEquipoUseCase,
     ) {}
 
-    #[Route('/api/admin/teams', name: 'app_admin_teams_list', methods: ['GET'])]
+    #[Route('/api/administracion/equipos', name: 'app_admin_teams_list', methods: ['GET'])]
     public function listar(Request $request): JsonResponse
     {
         $pagina = max(1, (int) $request->query->get('page', 1));
@@ -64,12 +64,12 @@ final class GestionDeEquiposController
                 'page' => $pagina,
                 'limit' => $limit,
                 'total' => $total,
-                'has_next' => ($pagina * $limit) < $total,
+                'haySiguiente' => ($pagina * $limit) < $total,
             ],
         ]);
     }
 
-    #[Route('/api/admin/teams', name: 'app_admin_teams_create', methods: ['POST'])]
+    #[Route('/api/administracion/equipos', name: 'app_admin_teams_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -89,7 +89,7 @@ final class GestionDeEquiposController
         return new JsonResponse($this->serializeEquipo($equipo), Response::HTTP_CREATED);
     }
 
-    #[Route('/api/admin/teams/{id}', name: 'app_admin_teams_get', methods: ['GET'])]
+    #[Route('/api/administracion/equipos/{id}', name: 'app_admin_teams_get', methods: ['GET'])]
     public function get(int $id): JsonResponse
     {
         $equipo = $this->equipoRepository->find($id);
@@ -101,7 +101,7 @@ final class GestionDeEquiposController
         return new JsonResponse($this->serializeEquipo($equipo));
     }
 
-    #[Route('/api/admin/teams/{id}', name: 'app_admin_teams_update', methods: ['PUT'])]
+    #[Route('/api/administracion/equipos/{id}', name: 'app_admin_teams_update', methods: ['PUT'])]
     public function update(int $id, Request $request): JsonResponse
     {
         $equipo = $this->equipoRepository->find($id);
@@ -127,7 +127,7 @@ final class GestionDeEquiposController
         return new JsonResponse($this->serializeEquipo($equipo));
     }
 
-    #[Route('/api/admin/teams/{id}', name: 'app_admin_teams_delete', methods: ['DELETE'])]
+    #[Route('/api/administracion/equipos/{id}', name: 'app_admin_teams_delete', methods: ['DELETE'])]
     public function delete(int $id): JsonResponse
     {
         $equipo = $this->equipoRepository->find($id);
@@ -141,7 +141,7 @@ final class GestionDeEquiposController
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
 
-    #[Route('/api/admin/teams/{id}/agents', name: 'app_admin_teams_assign_agents', methods: ['PUT'])]
+    #[Route('/api/administracion/equipos/{id}/agentes', name: 'app_admin_teams_assign_agents', methods: ['PUT'])]
     public function asignarAgentes(int $id, Request $request): JsonResponse
     {
         $equipo = $this->equipoRepository->find($id);
@@ -168,8 +168,8 @@ final class GestionDeEquiposController
         );
 
         return new JsonResponse([
-            'team_id' => (int) $equipo->getId(),
-            'agent_ids' => array_values($idsAsignados),
+            'equipoId' => (int) $equipo->getId(),
+            'agenteIds' => array_values($idsAsignados),
         ]);
     }
 
@@ -185,13 +185,13 @@ final class GestionDeEquiposController
 
         return [
             'id' => (int) $equipo->getId(),
-            'workspace_id' => (int) $equipo->getEspacioDeTrabajo()->getId(),
-            'name' => $equipo->getNombre(),
-            'is_active' => $equipo->isActivo(),
-            'agent_count' => count($agenteIds),
-            'agent_ids' => $agenteIds,
-            'created_at' => $equipo->getCreadoAt()->format('Y-m-d\TH:i:sP'),
-            'updated_at' => $equipo->getActualizadoAt()->format('Y-m-d\TH:i:sP'),
+            'espacioDeTrabajoId' => (int) $equipo->getEspacioDeTrabajo()->getId(),
+            'nombre' => $equipo->getNombre(),
+            'activo' => $equipo->isActivo(),
+            'cantidadDeAgentes' => count($agenteIds),
+            'agenteIds' => $agenteIds,
+            'creadoAt' => $equipo->getCreadoAt()->format('Y-m-d\TH:i:sP'),
+            'actualizadoAt' => $equipo->getActualizadoAt()->format('Y-m-d\TH:i:sP'),
         ];
     }
 }

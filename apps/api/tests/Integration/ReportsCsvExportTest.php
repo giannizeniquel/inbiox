@@ -182,7 +182,7 @@ class ReportsCsvExportTest extends WebTestCase
 
     public function test_admin_inherits_export_access(): void
     {
-        $token = $this->authAs(['ROLE_ADMIN']);
+        $token = $this->authAs(['ROLE_ADMINISTRADOR']);
 
         $this->requestExport($token);
 
@@ -191,7 +191,7 @@ class ReportsCsvExportTest extends WebTestCase
 
     public function test_agent_is_denied(): void
     {
-        $token = $this->authAs(['ROLE_AGENT']);
+        $token = $this->authAs(['ROLE_AGENTE']);
 
         $this->requestExport($token);
 

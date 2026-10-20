@@ -13,7 +13,7 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
- * Integration tests for `GET /api/teams` (Tier 2 #7 — Team/Area Entity,
+ * Integration tests for `GET /api/equipos` (Tier 2 #7 — Team/Area Entity,
  * Slice 1). Non-admin, workspace-scoped listing for any authenticated
  * agent — built now as part of Slice 1's API surface for the future inbox
  * filter dropdown (Slice 3).
@@ -53,7 +53,7 @@ class TeamControllerTest extends WebTestCase
     //  Helpers
     // ────────────────────────────────────────────────────────
 
-    private function createUser(string $email, array $roles = ['ROLE_AGENT'], ?Agente $agent = null): Usuario
+    private function createUser(string $email, array $roles = ['ROLE_AGENTE'], ?Agente $agent = null): Usuario
     {
         $user = new Usuario();
         $user->setEmail($email);
@@ -127,7 +127,7 @@ class TeamControllerTest extends WebTestCase
 
     public function testUnauthenticatedRequestReturns401(): void
     {
-        $this->client->request('GET', '/api/teams');
+        $this->client->request('GET', '/api/equipos');
         self::assertSame(401, $this->client->getResponse()->getStatusCode());
     }
 
@@ -141,17 +141,17 @@ class TeamControllerTest extends WebTestCase
 
         $agent = $this->createAgent('Agent A');
         $agent->addEspacioDeTrabajo($workspaceA);
-        $this->createUser('agent@test.local', ['ROLE_AGENT'], $agent);
+        $this->createUser('agent@test.local', ['ROLE_AGENTE'], $agent);
         $token = $this->login('agent@test.local');
 
-        $this->client->request('GET', '/api/teams', [], [], $this->authHeaders($token));
+        $this->client->request('GET', '/api/equipos', [], [], $this->authHeaders($token));
         $response = $this->client->getResponse();
         self::assertSame(200, $response->getStatusCode());
 
         $data = \json_decode($response->getContent(), true);
         self::assertCount(1, $data);
         self::assertSame($teamA->getId(), $data[0]['id']);
-        self::assertSame('Support A', $data[0]['name']);
+        self::assertSame('Support A', $data[0]['nombre']);
     }
 
     public function testAgentWithoutWorkspaceGetsEmptyArray(): void
@@ -160,10 +160,10 @@ class TeamControllerTest extends WebTestCase
         $this->createTeam($workspace, 'Support');
 
         $agent = $this->createAgent('Unassigned Agent');
-        $this->createUser('unassigned@test.local', ['ROLE_AGENT'], $agent);
+        $this->createUser('unassigned@test.local', ['ROLE_AGENTE'], $agent);
         $token = $this->login('unassigned@test.local');
 
-        $this->client->request('GET', '/api/teams', [], [], $this->authHeaders($token));
+        $this->client->request('GET', '/api/equipos', [], [], $this->authHeaders($token));
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
 
         $data = \json_decode($this->client->getResponse()->getContent(), true);
@@ -177,14 +177,14 @@ class TeamControllerTest extends WebTestCase
 
         $agent = $this->createAgent('Agent A');
         $agent->addEspacioDeTrabajo($workspace);
-        $this->createUser('agent2@test.local', ['ROLE_AGENT'], $agent);
+        $this->createUser('agent2@test.local', ['ROLE_AGENTE'], $agent);
         $token = $this->login('agent2@test.local');
 
-        $this->client->request('GET', '/api/teams', [], [], $this->authHeaders($token));
+        $this->client->request('GET', '/api/equipos', [], [], $this->authHeaders($token));
         $data = \json_decode($this->client->getResponse()->getContent(), true);
 
         self::assertCount(1, $data);
         self::assertSame($team->getId(), $data[0]['id']);
-        self::assertFalse($data[0]['is_active']);
+        self::assertFalse($data[0]['activo']);
     }
 }

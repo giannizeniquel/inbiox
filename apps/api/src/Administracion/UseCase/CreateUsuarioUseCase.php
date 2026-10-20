@@ -26,13 +26,13 @@ final class CreateUsuarioUseCase
      *
      * @throws \InvalidArgumentException cuando falta un campo o es inválido
      * @throws ConflictoDeEstadoException    cuando el email o el agente ya están en uso
-     * @throws NotFoundException         cuando agent_id no existe
+     * @throws NotFoundException         cuando agenteId no existe
      */
     public function execute(array $data): Usuario
     {
         $email = $data['email'] ?? null;
         $password = $data['password'] ?? null;
-        $roles = $data['roles'] ?? ['ROLE_AGENT'];
+        $roles = $data['roles'] ?? ['ROLE_AGENTE'];
 
         if (empty($email) || empty($password)) {
             throw new \InvalidArgumentException('email and password are required');
@@ -52,8 +52,8 @@ final class CreateUsuarioUseCase
         $usuario->setRoles($roles);
 
         // Vínculo opcional con un agente
-        if (isset($data['agent_id']) && null !== $data['agent_id']) {
-            $agente = $this->agenteRepository->find($data['agent_id']);
+        if (isset($data['agenteId']) && null !== $data['agenteId']) {
+            $agente = $this->agenteRepository->find($data['agenteId']);
             if (null === $agente) {
                 throw new NotFoundException('Agent not found');
             }

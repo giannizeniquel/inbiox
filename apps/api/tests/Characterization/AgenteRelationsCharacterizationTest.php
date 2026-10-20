@@ -46,7 +46,7 @@ final class AgenteRelationsCharacterizationTest extends KernelTestCase
         $usuario = new Usuario();
         $usuario->setEmail('relations@inbiox.local');
         $usuario->setPassword('unused-hash');
-        $usuario->setRoles(['ROLE_AGENT']);
+        $usuario->setRoles(['ROLE_AGENTE']);
         $this->em->persist($usuario);
 
         $primero = new EspacioDeTrabajo('pn-relations-1', 'First');

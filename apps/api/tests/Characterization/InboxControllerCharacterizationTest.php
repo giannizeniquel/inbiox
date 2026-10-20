@@ -74,7 +74,7 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
         $ticket = $this->createTicket('activo', $owner->getId(), $contact);
         $this->addMessage($ticket, 'entrante', 'hola');
         $this->addMessage($ticket, 'saliente', 'buenas');
-        $token = $this->loginAs('inbox-owner@characterization.local', ['ROLE_AGENT'], $owner);
+        $token = $this->loginAs('inbox-owner@characterization.local', ['ROLE_AGENTE'], $owner);
 
         $response = $this->request('GET', '/api/tickets/' . $ticket->getId(), $token);
 
@@ -105,7 +105,7 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
     {
         $owner = $this->createAgent('Owner');
         $ticket = $this->createTicket('activo', $owner->getId());
-        $token = $this->loginAs('inbox-other@characterization.local', ['ROLE_AGENT'], $this->createAgent('Other'));
+        $token = $this->loginAs('inbox-other@characterization.local', ['ROLE_AGENTE'], $this->createAgent('Other'));
 
         $response = $this->request('GET', '/api/tickets/' . $ticket->getId(), $token);
 
@@ -117,14 +117,14 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
 
     public function testTicketDetailUnknownTicketReturns404(): void
     {
-        $token = $this->loginAs('inbox@characterization.local', ['ROLE_AGENT'], $this->createAgent('Me'));
+        $token = $this->loginAs('inbox@characterization.local', ['ROLE_AGENTE'], $this->createAgent('Me'));
 
         $this->assertJsonResponse(404, ['error' => 'Ticket not found'], $this->request('GET', '/api/tickets/999999999', $token));
     }
 
     public function testTicketDetailUnexpectedFailureReturnsGenericEnvelope(): void
     {
-        $token = $this->loginAs('inbox@characterization.local', ['ROLE_AGENT'], $this->createAgent('Me'));
+        $token = $this->loginAs('inbox@characterization.local', ['ROLE_AGENTE'], $this->createAgent('Me'));
         $query = $this->createMock(GetDetalleDeTicketQuery::class);
         $query->method('execute')->willThrowException(new \RuntimeException('database exploded'));
         static::getContainer()->set(GetDetalleDeTicketQuery::class, $query);
@@ -143,7 +143,7 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
         $m1 = $this->addMessage($ticket, 'entrante', 'one');
         $m2 = $this->addMessage($ticket, 'saliente', 'two');
         $m3 = $this->addMessage($ticket, 'entrante', 'three');
-        $token = $this->loginAs('inbox@characterization.local', ['ROLE_AGENT'], $this->createAgent('Me'));
+        $token = $this->loginAs('inbox@characterization.local', ['ROLE_AGENTE'], $this->createAgent('Me'));
 
         $response = $this->request('GET', '/api/tickets/' . $ticket->getId() . '/mensajes?limit=2', $token);
 
@@ -179,7 +179,7 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
         $ticket = $this->createTicket('activo');
         $m1 = $this->addMessage($ticket, 'entrante', 'one');
         $m2 = $this->addMessage($ticket, 'entrante', 'two');
-        $token = $this->loginAs('inbox@characterization.local', ['ROLE_AGENT'], $this->createAgent('Me'));
+        $token = $this->loginAs('inbox@characterization.local', ['ROLE_AGENTE'], $this->createAgent('Me'));
 
         $body = $this->json($this->request('GET', '/api/tickets/' . $ticket->getId() . '/mensajes?sentido=adelante', $token));
 
@@ -189,7 +189,7 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
 
     public function testMessagesOfUnknownTicketReturnEmptyListNot404(): void
     {
-        $token = $this->loginAs('inbox@characterization.local', ['ROLE_AGENT'], $this->createAgent('Me'));
+        $token = $this->loginAs('inbox@characterization.local', ['ROLE_AGENTE'], $this->createAgent('Me'));
 
         $response = $this->request('GET', '/api/tickets/999999999/mensajes', $token);
 
@@ -200,7 +200,7 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
 
     public function testMessagesInvalidArgumentFromQueryReturns400(): void
     {
-        $token = $this->loginAs('inbox@characterization.local', ['ROLE_AGENT'], $this->createAgent('Me'));
+        $token = $this->loginAs('inbox@characterization.local', ['ROLE_AGENTE'], $this->createAgent('Me'));
         $query = $this->createMock(GetMensajesDeTicketQuery::class);
         $query->method('execute')->willThrowException(new \InvalidArgumentException('bad cursor'));
         static::getContainer()->set(GetMensajesDeTicketQuery::class, $query);
@@ -214,7 +214,7 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
     {
         $owner = $this->createAgent('Owner');
         $ticket = $this->createTicket('activo', $owner->getId());
-        $token = $this->loginAs('inbox-owner@characterization.local', ['ROLE_AGENT'], $owner);
+        $token = $this->loginAs('inbox-owner@characterization.local', ['ROLE_AGENTE'], $owner);
 
         $response = $this->request('PUT', '/api/tickets/' . $ticket->getId() . '/marcar-leido', $token);
 
@@ -242,7 +242,7 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
     {
         $owner = $this->createAgent('Owner');
         $ticket = $this->createTicket('activo', $owner->getId());
-        $token = $this->loginAs('inbox-other@characterization.local', ['ROLE_AGENT'], $this->createAgent('Other'));
+        $token = $this->loginAs('inbox-other@characterization.local', ['ROLE_AGENTE'], $this->createAgent('Other'));
 
         $response = $this->request('PUT', '/api/tickets/' . $ticket->getId() . '/marcar-leido', $token);
 
@@ -254,7 +254,7 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
     public function testMarkReadOfUnassignedTicketByAdminWithoutAgentIsANoOp(): void
     {
         $ticket = $this->createTicket('nuevo');
-        $token = $this->loginAs('inbox-admin@characterization.local', ['ROLE_ADMIN']);
+        $token = $this->loginAs('inbox-admin@characterization.local', ['ROLE_ADMINISTRADOR']);
 
         $response = $this->request('PUT', '/api/tickets/' . $ticket->getId() . '/marcar-leido', $token);
 
@@ -264,7 +264,7 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
 
     public function testMarkReadUnknownTicketReturns404(): void
     {
-        $token = $this->loginAs('inbox@characterization.local', ['ROLE_AGENT'], $this->createAgent('Me'));
+        $token = $this->loginAs('inbox@characterization.local', ['ROLE_AGENTE'], $this->createAgent('Me'));
 
         $this->assertJsonResponse(404, ['error' => 'Ticket not found'], $this->request('PUT', '/api/tickets/999999999/marcar-leido', $token));
         self::assertSame(0, $this->countRows('outbox_events'));

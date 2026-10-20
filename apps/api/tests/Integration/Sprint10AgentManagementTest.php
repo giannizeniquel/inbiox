@@ -68,7 +68,7 @@ class Sprint10AgentManagementTest extends WebTestCase
 
     private function createUser(
         string $email,
-        array $roles = ['ROLE_AGENT'],
+        array $roles = ['ROLE_AGENTE'],
         ?Agente $agent = null,
     ): Usuario {
         $user = new Usuario();
@@ -435,14 +435,14 @@ class Sprint10AgentManagementTest extends WebTestCase
     //  deterministic Activo/Inactivo state (not weekday-dependent).
     // ────────────────────────────────────────────────────────
 
-    /** ROLE_AGENT: blocked from assigning to an Inactivo agent, even on own ticket. */
+    /** ROLE_AGENTE: blocked from assigning to an Inactivo agent, even on own ticket. */
     public function testAssignRejectsInactiveAgentForRoleAgent(): void
     {
         $ownerAgent = new Agente('Owner Agent');
         $ownerAgent->setMaxTicketsActivos(5);
         $this->em->persist($ownerAgent);
         $this->em->flush();
-        $this->createUser('owner@test.local', ['ROLE_AGENT'], $ownerAgent);
+        $this->createUser('owner@test.local', ['ROLE_AGENTE'], $ownerAgent);
         $token = $this->login('owner@test.local');
 
         $inactiveAgent = new Agente('Inactivo Agent');
@@ -487,10 +487,10 @@ class Sprint10AgentManagementTest extends WebTestCase
         self::assertSame('AGENT_NOT_ACTIVE', $data['type']);
     }
 
-    /** ROLE_ADMIN: blocked from assigning to an Inactivo agent — no role bypass. */
+    /** ROLE_ADMINISTRADOR: blocked from assigning to an Inactivo agent — no role bypass. */
     public function testAssignRejectsInactiveAgentForRoleAdmin(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
         $inactiveAgent = new Agente('Inactivo Agent');
@@ -536,7 +536,7 @@ class Sprint10AgentManagementTest extends WebTestCase
     /** A 409 rejection must write no Asignacion row and emit no outbox event. */
     public function testAssignRejectionWritesNoAssignmentRowOrOutboxEvent(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
         $inactiveAgent = new Agente('Inactivo Agent');

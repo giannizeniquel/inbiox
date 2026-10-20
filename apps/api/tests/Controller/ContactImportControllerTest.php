@@ -139,7 +139,7 @@ class ContactImportControllerTest extends WebTestCase
     public function testAgentGets403OnImportButStillCreatesContact(): void
     {
         $agent = $this->createAgent('Agent A');
-        $this->createUser('agent@test.local', ['ROLE_AGENT'], $agent);
+        $this->createUser('agent@test.local', ['ROLE_AGENTE'], $agent);
         $token = $this->login('agent@test.local');
 
         $file = $this->csvUploadedFile("Teléfono,Nombre\n+5491100002222,Beto\n");

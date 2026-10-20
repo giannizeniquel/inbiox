@@ -27,21 +27,21 @@ final class UpdateEquipoUseCase
      */
     public function execute(Equipo $equipo, array $data): void
     {
-        if (isset($data['name'])) {
-            if (!\is_string($data['name']) || empty($data['name'])) {
-                throw new \InvalidArgumentException('name must be a non-empty string');
+        if (isset($data['nombre'])) {
+            if (!\is_string($data['nombre']) || empty($data['nombre'])) {
+                throw new \InvalidArgumentException('nombre must be a non-empty string');
             }
 
-            $duplicado = $this->equipoRepository->findOneBy(['espacioDeTrabajo' => $equipo->getEspacioDeTrabajo(), 'nombre' => $data['name']]);
+            $duplicado = $this->equipoRepository->findOneBy(['espacioDeTrabajo' => $equipo->getEspacioDeTrabajo(), 'nombre' => $data['nombre']]);
             if (null !== $duplicado && $duplicado->getId() !== $equipo->getId()) {
                 throw new ConflictoDeEstadoException('A team with this name already exists in this workspace');
             }
 
-            $equipo->setNombre($data['name']);
+            $equipo->setNombre($data['nombre']);
         }
 
-        if (isset($data['isActive'])) {
-            $equipo->setActivo((bool) $data['isActive']);
+        if (isset($data['activo'])) {
+            $equipo->setActivo((bool) $data['activo']);
         }
 
         $this->entityManager->flush();

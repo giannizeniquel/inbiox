@@ -12,7 +12,7 @@ use Symfony\Component\Uid\Ulid;
  * Characterization of App\Compartido\Controller\EventosDeTicketController
  * (app_ticket_events_resync, GET /api/tickets/{id}/events).
  *
- * The request needs BOTH the app JWT (firewall, ROLE_AGENT via access_control)
+ * The request needs BOTH the app JWT (firewall, ROLE_AGENTE via access_control)
  * and a Mercure subscriber JWT in the mercureAuthorization cookie.
  */
 final class TicketEventsControllerCharacterizationTest extends CharacterizationTestCase
@@ -21,7 +21,7 @@ final class TicketEventsControllerCharacterizationTest extends CharacterizationT
 
     private function appToken(): string
     {
-        return $this->loginAs('events@characterization.local', ['ROLE_AGENT'], $this->createAgent('Me'));
+        return $this->loginAs('events@characterization.local', ['ROLE_AGENTE'], $this->createAgent('Me'));
     }
 
     private function mercureToken(array $topics): string

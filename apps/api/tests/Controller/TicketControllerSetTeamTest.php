@@ -71,7 +71,7 @@ class TicketControllerSetTeamTest extends WebTestCase
         $user = new Usuario();
         $user->setEmail($email);
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
-        $user->setRoles(['ROLE_AGENT']);
+        $user->setRoles(['ROLE_AGENTE']);
         $this->em->persist($user);
 
         $agent = new Agente('Agent for ' . $email);

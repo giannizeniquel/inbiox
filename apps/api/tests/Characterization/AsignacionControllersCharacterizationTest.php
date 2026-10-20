@@ -26,8 +26,8 @@ final class AsignacionControllersCharacterizationTest extends CharacterizationTe
         $available->setDisponibilidadManual(true);
         $this->em->flush();
         $ticket = $this->createTicket('nuevo');
-        // Any ROLE_AGENT may trigger auto-assignment of any ticket.
-        $token = $this->loginAs('auto-caller@characterization.local', ['ROLE_AGENT']);
+        // Any ROLE_AGENTE may trigger auto-assignment of any ticket.
+        $token = $this->loginAs('auto-caller@characterization.local', ['ROLE_AGENTE']);
 
         $response = $this->request('POST', '/api/tickets/' . $ticket->getId() . '/asignar-automaticamente', $token);
 
@@ -69,7 +69,7 @@ final class AsignacionControllersCharacterizationTest extends CharacterizationTe
     public function testAutoAssignWithoutAvailableAgents(): void
     {
         $ticket = $this->createTicket('nuevo');
-        $token = $this->loginAs('auto-caller@characterization.local', ['ROLE_AGENT']);
+        $token = $this->loginAs('auto-caller@characterization.local', ['ROLE_AGENTE']);
 
         $response = $this->request('POST', '/api/tickets/' . $ticket->getId() . '/asignar-automaticamente', $token);
 
@@ -87,7 +87,7 @@ final class AsignacionControllersCharacterizationTest extends CharacterizationTe
     {
         $owner = $this->createAgent('Owner');
         $ticket = $this->createTicket('activo', $owner->getId());
-        $token = $this->loginAs('auto-caller@characterization.local', ['ROLE_AGENT']);
+        $token = $this->loginAs('auto-caller@characterization.local', ['ROLE_AGENTE']);
 
         $response = $this->request('POST', '/api/tickets/' . $ticket->getId() . '/asignar-automaticamente', $token);
 
@@ -102,7 +102,7 @@ final class AsignacionControllersCharacterizationTest extends CharacterizationTe
 
     public function testAutoAssignUnknownTicketReturns200NotFoundReason(): void
     {
-        $token = $this->loginAs('auto-caller@characterization.local', ['ROLE_AGENT']);
+        $token = $this->loginAs('auto-caller@characterization.local', ['ROLE_AGENTE']);
 
         $response = $this->request('POST', '/api/tickets/999999999/asignar-automaticamente', $token);
 
@@ -118,7 +118,7 @@ final class AsignacionControllersCharacterizationTest extends CharacterizationTe
 
     public function testAutoAssignNonPositiveIdReturns400(): void
     {
-        $token = $this->loginAs('auto-caller@characterization.local', ['ROLE_AGENT']);
+        $token = $this->loginAs('auto-caller@characterization.local', ['ROLE_AGENTE']);
 
         $this->assertJsonResponse(400, ['error' => 'Invalid ticket ID'], $this->request('POST', '/api/tickets/0/asignar-automaticamente', $token));
     }
@@ -129,7 +129,7 @@ final class AsignacionControllersCharacterizationTest extends CharacterizationTe
         $available->setDisponibilidadManual(true);
         $this->em->flush();
         $ticket = $this->createTicket('nuevo');
-        $token = $this->loginAs('auto-caller@characterization.local', ['ROLE_AGENT']);
+        $token = $this->loginAs('auto-caller@characterization.local', ['ROLE_AGENTE']);
         // AsignarTicketAutomaticamenteUseCase is final, so a collaborator it calls after
         // finding an available agent is replaced instead.
         $ticketRepo = $this->createMock(TicketRepository::class);
@@ -162,7 +162,7 @@ final class AsignacionControllersCharacterizationTest extends CharacterizationTe
         $this->em->flush();
         $this->connection()->executeStatement("UPDATE assignments SET assigned_at = '2026-01-01 10:00:00' WHERE id = ?", [$older->getId()]);
         $this->connection()->executeStatement("UPDATE assignments SET assigned_at = '2026-01-02 11:30:00' WHERE id = ?", [$newer->getId()]);
-        $token = $this->loginAs('assignment@characterization.local', ['ROLE_AGENT'], $this->createAgent('Viewer'));
+        $token = $this->loginAs('assignment@characterization.local', ['ROLE_AGENTE'], $this->createAgent('Viewer'));
 
         $response = $this->request('GET', '/api/tickets/' . $ticket->getId() . '/asignacion', $token);
 
@@ -179,7 +179,7 @@ final class AsignacionControllersCharacterizationTest extends CharacterizationTe
     public function testAssignmentOfTicketWithoutHistory(): void
     {
         $ticket = $this->createTicket('nuevo');
-        $token = $this->loginAs('assignment@characterization.local', ['ROLE_AGENT'], $this->createAgent('Viewer'));
+        $token = $this->loginAs('assignment@characterization.local', ['ROLE_AGENTE'], $this->createAgent('Viewer'));
 
         $response = $this->request('GET', '/api/tickets/' . $ticket->getId() . '/asignacion', $token);
 
@@ -188,7 +188,7 @@ final class AsignacionControllersCharacterizationTest extends CharacterizationTe
 
     public function testAssignmentUnknownTicketReturns404(): void
     {
-        $token = $this->loginAs('assignment@characterization.local', ['ROLE_AGENT'], $this->createAgent('Viewer'));
+        $token = $this->loginAs('assignment@characterization.local', ['ROLE_AGENTE'], $this->createAgent('Viewer'));
 
         $this->assertJsonResponse(404, ['error' => 'Ticket not found'], $this->request('GET', '/api/tickets/999999999/asignacion', $token));
     }

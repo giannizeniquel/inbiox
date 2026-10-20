@@ -179,7 +179,7 @@ class TicketClosureAuditClassificationTest extends WebTestCase
     public function testOwnerClosesOwnTicketViaTransitionProducesManualClosedOwner(): void
     {
         $agent = $this->createAgent('Owner Closer');
-        ['token' => $token, 'user_id' => $userId] = $this->createAuthenticatedUser('owner-closer@inbiox.local', ['ROLE_AGENT'], $agent);
+        ['token' => $token, 'user_id' => $userId] = $this->createAuthenticatedUser('owner-closer@inbiox.local', ['ROLE_AGENTE'], $agent);
         $ticketId = $this->createTicket(EstadoDeTicket::ACTIVO->value, $agent->getId());
 
         $response = $this->request('POST', '/api/tickets/' . $ticketId . '/transicionar', $token, ['estado' => 'cerrado']);
@@ -224,7 +224,7 @@ class TicketClosureAuditClassificationTest extends WebTestCase
     public function testOwnerResolvesOwnTicketProducesManualResolvedOwner(): void
     {
         $agent = $this->createAgent('Owner Resolver');
-        ['token' => $token, 'user_id' => $userId] = $this->createAuthenticatedUser('owner-resolver@inbiox.local', ['ROLE_AGENT'], $agent);
+        ['token' => $token, 'user_id' => $userId] = $this->createAuthenticatedUser('owner-resolver@inbiox.local', ['ROLE_AGENTE'], $agent);
         $ticketId = $this->createTicket(EstadoDeTicket::ACTIVO->value, $agent->getId());
 
         $response = $this->request('POST', '/api/tickets/' . $ticketId . '/resolver', $token);

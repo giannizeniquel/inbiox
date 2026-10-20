@@ -10,7 +10,7 @@ use Symfony\Bundle\SecurityBundle\Security;
 /**
  * Determina el alcance de espacio de trabajo del usuario autenticado actual.
  *
- * Devuelve el phoneNumberId del espacio de trabajo activo para usuarios ROLE_AGENT
+ * Devuelve el phoneNumberId del espacio de trabajo activo para usuarios ROLE_AGENTE
  * con un Agent vinculado que tenga un espacio de trabajo activo.
  * Devuelve null para SUPERVISOR, ADMIN o AGENT sin espacio de trabajo activo.
  *
@@ -34,7 +34,7 @@ final class AlcanceDeEspacioDeTrabajo
      * - Sin usuario autenticado: null
      *
      * El selector de espacio de trabajo se encarga de fijar el espacio de trabajo activo
-     * mediante PUT /api/me/workspace. Admin/Supervisor pueden cambiar a cualquier espacio de trabajo;
+     * mediante PUT /api/mi/espacio-de-trabajo. Admin/Supervisor pueden cambiar a cualquier espacio de trabajo;
      * Agent solo puede cambiar a los espacios de trabajo asignados.
      *
      * @see MiEspacioDeTrabajoController::setEspacioDeTrabajoActivo()

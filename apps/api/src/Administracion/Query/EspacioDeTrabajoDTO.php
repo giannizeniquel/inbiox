@@ -42,13 +42,13 @@ class EspacioDeTrabajoDTO
     {
         return [
             'id' => $this->id,
-            'phone_number_id' => $this->phoneNumberId,
-            'display_name' => $this->nombreVisible,
-            'is_active' => $this->activo,
-            'created_at' => $this->creadoAt,
-            'updated_at' => $this->actualizadoAt,
-            'agent_count' => $this->cantidadDeAgentes,
-            'has_pending' => $this->hasPendientes,
+            'phoneNumberId' => $this->phoneNumberId,
+            'nombreVisible' => $this->nombreVisible,
+            'activo' => $this->activo,
+            'creadoAt' => $this->creadoAt,
+            'actualizadoAt' => $this->actualizadoAt,
+            'cantidadDeAgentes' => $this->cantidadDeAgentes,
+            'hayPendientes' => $this->hasPendientes,
         ];
     }
 }

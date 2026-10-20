@@ -20,7 +20,7 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
  * - 400 "Usuario already linked" if user has agent
  * - 400 "Cannot link deactivated user" (Q3)
  * - 409 on UNIQUE constraint conflict
- * - Access control (ROLE_ADMIN required)
+ * - Access control (ROLE_ADMINISTRADOR required)
  */
 class AgentLinkControllerTest extends WebTestCase
 {
@@ -54,7 +54,7 @@ class AgentLinkControllerTest extends WebTestCase
 
     private function createUser(
         string $email,
-        array $roles = ['ROLE_AGENT'],
+        array $roles = ['ROLE_AGENTE'],
         bool $isActive = true,
         ?Agente $agent = null,
     ): Usuario {
@@ -115,9 +115,9 @@ class AgentLinkControllerTest extends WebTestCase
         $this->createUser('supervisor@test.local', ['ROLE_SUPERVISOR'], true, $agent);
         $token = $this->login('supervisor@test.local');
 
-        $this->client->request('POST', '/api/admin/agents/1/link-user', [], [], $this->authHeaders($token) + [
+        $this->client->request('POST', '/api/administracion/agentes/1/vincular-usuario', [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
-        ], \json_encode(['user_id' => 1]));
+        ], \json_encode(['usuarioId' => 1]));
 
         self::assertSame(403, $this->client->getResponse()->getStatusCode());
     }
@@ -128,28 +128,28 @@ class AgentLinkControllerTest extends WebTestCase
 
     public function testLinkUserToAgent(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
         $agent = $this->createAgent('Support Agent');
         $user = $this->createUser('agent-user@test.local');
 
-        $this->client->request('POST', "/api/admin/agents/{$agent->getId()}/link-user", [], [], $this->authHeaders($token) + [
+        $this->client->request('POST', "/api/administracion/agentes/{$agent->getId()}/vincular-usuario", [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
-        ], \json_encode(['user_id' => $user->getId()]));
+        ], \json_encode(['usuarioId' => $user->getId()]));
 
         $response = $this->client->getResponse();
         self::assertSame(200, $response->getStatusCode());
 
         $data = \json_decode($response->getContent(), true);
         self::assertSame($agent->getId(), $data['id']);
-        self::assertSame($user->getId(), $data['user_id']);
-        self::assertSame('agent-user@test.local', $data['user_email']);
+        self::assertSame($user->getId(), $data['usuarioId']);
+        self::assertSame('agent-user@test.local', $data['usuarioEmail']);
     }
 
     public function testLinkUserReturns400IfAgentAlreadyLinked(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
         $agent = $this->createAgent('Linked Agent');
@@ -159,9 +159,9 @@ class AgentLinkControllerTest extends WebTestCase
 
         $newUser = $this->createUser('new@test.local');
 
-        $this->client->request('POST', "/api/admin/agents/{$agent->getId()}/link-user", [], [], $this->authHeaders($token) + [
+        $this->client->request('POST', "/api/administracion/agentes/{$agent->getId()}/vincular-usuario", [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
-        ], \json_encode(['user_id' => $newUser->getId()]));
+        ], \json_encode(['usuarioId' => $newUser->getId()]));
 
         $response = $this->client->getResponse();
         self::assertSame(400, $response->getStatusCode());
@@ -172,7 +172,7 @@ class AgentLinkControllerTest extends WebTestCase
 
     public function testLinkUserReturns400IfUserAlreadyLinked(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
         $agent1 = $this->createAgent('Agent 1');
@@ -181,9 +181,9 @@ class AgentLinkControllerTest extends WebTestCase
         $agent1->setUsuario($user);
         $this->em->flush();
 
-        $this->client->request('POST', "/api/admin/agents/{$agent2->getId()}/link-user", [], [], $this->authHeaders($token) + [
+        $this->client->request('POST', "/api/administracion/agentes/{$agent2->getId()}/vincular-usuario", [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
-        ], \json_encode(['user_id' => $user->getId()]));
+        ], \json_encode(['usuarioId' => $user->getId()]));
 
         $response = $this->client->getResponse();
         self::assertSame(400, $response->getStatusCode());
@@ -197,15 +197,15 @@ class AgentLinkControllerTest extends WebTestCase
      */
     public function testLinkDeactivatedUserReturns400(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
         $agent = $this->createAgent('Agent');
-        $inactiveUser = $this->createUser('inactive@test.local', ['ROLE_AGENT'], false);
+        $inactiveUser = $this->createUser('inactive@test.local', ['ROLE_AGENTE'], false);
 
-        $this->client->request('POST', "/api/admin/agents/{$agent->getId()}/link-user", [], [], $this->authHeaders($token) + [
+        $this->client->request('POST', "/api/administracion/agentes/{$agent->getId()}/vincular-usuario", [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
-        ], \json_encode(['user_id' => $inactiveUser->getId()]));
+        ], \json_encode(['usuarioId' => $inactiveUser->getId()]));
 
         $response = $this->client->getResponse();
         self::assertSame(400, $response->getStatusCode());
@@ -216,26 +216,26 @@ class AgentLinkControllerTest extends WebTestCase
 
     public function testLinkUserReturns404ForNonExistentAgent(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
-        $this->client->request('POST', '/api/admin/agents/99999/link-user', [], [], $this->authHeaders($token) + [
+        $this->client->request('POST', '/api/administracion/agentes/99999/vincular-usuario', [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
-        ], \json_encode(['user_id' => 1]));
+        ], \json_encode(['usuarioId' => 1]));
 
         self::assertSame(404, $this->client->getResponse()->getStatusCode());
     }
 
     public function testLinkUserReturns404ForNonExistentUser(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
         $agent = $this->createAgent('Agent');
 
-        $this->client->request('POST', "/api/admin/agents/{$agent->getId()}/link-user", [], [], $this->authHeaders($token) + [
+        $this->client->request('POST', "/api/administracion/agentes/{$agent->getId()}/vincular-usuario", [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
-        ], \json_encode(['user_id' => 99999]));
+        ], \json_encode(['usuarioId' => 99999]));
 
         self::assertSame(404, $this->client->getResponse()->getStatusCode());
     }
@@ -246,7 +246,7 @@ class AgentLinkControllerTest extends WebTestCase
 
     public function testUnlinkUserFromAgent(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
         $agent = $this->createAgent('Agent');
@@ -254,7 +254,7 @@ class AgentLinkControllerTest extends WebTestCase
         $agent->setUsuario($user);
         $this->em->flush();
 
-        $this->client->request('DELETE', "/api/admin/agents/{$agent->getId()}/link-user", [], [], $this->authHeaders($token));
+        $this->client->request('DELETE', "/api/administracion/agentes/{$agent->getId()}/vincular-usuario", [], [], $this->authHeaders($token));
         $response = $this->client->getResponse();
         self::assertSame(204, $response->getStatusCode());
 
@@ -266,21 +266,21 @@ class AgentLinkControllerTest extends WebTestCase
 
     public function testUnlinkUserReturns400IfNoLink(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
         $agent = $this->createAgent('Unlinked Agent');
 
-        $this->client->request('DELETE', "/api/admin/agents/{$agent->getId()}/link-user", [], [], $this->authHeaders($token));
+        $this->client->request('DELETE', "/api/administracion/agentes/{$agent->getId()}/vincular-usuario", [], [], $this->authHeaders($token));
         self::assertSame(400, $this->client->getResponse()->getStatusCode());
     }
 
     public function testUnlinkUserReturns404ForNonExistentAgent(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
-        $this->client->request('DELETE', '/api/admin/agents/99999/link-user', [], [], $this->authHeaders($token));
+        $this->client->request('DELETE', '/api/administracion/agentes/99999/vincular-usuario', [], [], $this->authHeaders($token));
         self::assertSame(404, $this->client->getResponse()->getStatusCode());
     }
 }

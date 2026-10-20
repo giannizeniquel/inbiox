@@ -15,10 +15,10 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
  * HTTP-level integration tests for the Settings Page endpoints.
  *
  * Covers MiConfiguracionController settings endpoints:
- *   GET  /api/me/settings
- *   PUT  /api/me/profile
- *   PUT  /api/me/notifications
- *   PUT  /api/me/auto-reply
+ *   GET  /api/mi/configuracion
+ *   PUT  /api/mi/perfil
+ *   PUT  /api/mi/notificaciones
+ *   PUT  /api/mi/respuesta-automatica
  *   GET  /api/me/shifts
  *   PUT  /api/me/shifts
  */
@@ -70,7 +70,7 @@ class SettingsPageTest extends WebTestCase
         $user = new Usuario();
         $user->setEmail('settings-agent@inbiox.local');
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
-        $user->setRoles(['ROLE_AGENT']);
+        $user->setRoles(['ROLE_AGENTE']);
         $this->em->persist($user);
         $this->em->flush();
 
@@ -129,140 +129,140 @@ class SettingsPageTest extends WebTestCase
     }
 
     // ────────────────────────────────────────────────────────
-    //  GET /api/me/settings
+    //  GET /api/mi/configuracion
     // ────────────────────────────────────────────────────────
 
     public function testGetSettingsReturnsAllSections(): void
     {
-        $data = $this->getJson('/api/me/settings');
+        $data = $this->getJson('/api/mi/configuracion');
 
         $this->assertResponseStatusCodeSame(200);
 
         // Profile section
-        $this->assertArrayHasKey('profile', $data);
-        $this->assertArrayHasKey('name', $data['profile']);
-        $this->assertArrayHasKey('email', $data['profile']);
-        $this->assertArrayHasKey('signature', $data['profile']);
-        $this->assertSame('Settings Agent', $data['profile']['name']);
+        $this->assertArrayHasKey('perfil', $data);
+        $this->assertArrayHasKey('nombre', $data['perfil']);
+        $this->assertArrayHasKey('email', $data['perfil']);
+        $this->assertArrayHasKey('firma', $data['perfil']);
+        $this->assertSame('Settings Agent', $data['perfil']['nombre']);
 
         // Notifications section
-        $this->assertArrayHasKey('notifications', $data);
-        $this->assertArrayHasKey('sound', $data['notifications']);
-        $this->assertArrayHasKey('desktop', $data['notifications']);
-        $this->assertTrue($data['notifications']['sound']);
-        $this->assertTrue($data['notifications']['desktop']);
+        $this->assertArrayHasKey('notificaciones', $data);
+        $this->assertArrayHasKey('sonido', $data['notificaciones']);
+        $this->assertArrayHasKey('escritorio', $data['notificaciones']);
+        $this->assertTrue($data['notificaciones']['sonido']);
+        $this->assertTrue($data['notificaciones']['escritorio']);
 
         // AutoReply section
-        $this->assertArrayHasKey('autoReply', $data);
-        $this->assertArrayHasKey('enabled', $data['autoReply']);
-        $this->assertArrayHasKey('message', $data['autoReply']);
-        $this->assertFalse($data['autoReply']['enabled']);
-        $this->assertNull($data['autoReply']['message']);
+        $this->assertArrayHasKey('respuestaAutomatica', $data);
+        $this->assertArrayHasKey('habilitada', $data['respuestaAutomatica']);
+        $this->assertArrayHasKey('texto', $data['respuestaAutomatica']);
+        $this->assertFalse($data['respuestaAutomatica']['habilitada']);
+        $this->assertNull($data['respuestaAutomatica']['texto']);
 
         // Workspace section
-        $this->assertArrayHasKey('workspace', $data);
-        $this->assertNull($data['workspace']);
+        $this->assertArrayHasKey('espacioDeTrabajo', $data);
+        $this->assertNull($data['espacioDeTrabajo']);
 
         // Business hours section
-        $this->assertArrayHasKey('businessHours', $data);
-        $this->assertIsArray($data['businessHours']);
-        $this->assertEmpty($data['businessHours']);
+        $this->assertArrayHasKey('horarioDeAtencion', $data);
+        $this->assertIsArray($data['horarioDeAtencion']);
+        $this->assertEmpty($data['horarioDeAtencion']);
     }
 
     // ────────────────────────────────────────────────────────
-    //  PUT /api/me/profile
+    //  PUT /api/mi/perfil
     // ────────────────────────────────────────────────────────
 
     public function testUpdateProfileSignature(): void
     {
-        $data = $this->putJson('/api/me/profile', [
-            'signature' => 'Equipo de soporte',
+        $data = $this->putJson('/api/mi/perfil', [
+            'firma' => 'Equipo de soporte',
         ]);
 
         $this->assertResponseStatusCodeSame(200);
-        $this->assertArrayHasKey('signature', $data);
-        $this->assertSame('Equipo de soporte', $data['signature']);
+        $this->assertArrayHasKey('firma', $data);
+        $this->assertSame('Equipo de soporte', $data['firma']);
 
         // Verify persistence
-        $settings = $this->getJson('/api/me/settings');
-        $this->assertSame('Equipo de soporte', $settings['profile']['signature']);
+        $settings = $this->getJson('/api/mi/configuracion');
+        $this->assertSame('Equipo de soporte', $settings['perfil']['firma']);
     }
 
     public function testUpdateProfileNullSignature(): void
     {
         // First set a signature
-        $this->putJson('/api/me/profile', ['signature' => 'Test']);
+        $this->putJson('/api/mi/perfil', ['firma' => 'Test']);
         $this->assertResponseStatusCodeSame(200);
 
         // Then clear it
-        $data = $this->putJson('/api/me/profile', ['signature' => null]);
+        $data = $this->putJson('/api/mi/perfil', ['firma' => null]);
         $this->assertResponseStatusCodeSame(200);
-        $this->assertNull($data['signature']);
+        $this->assertNull($data['firma']);
     }
 
     // ────────────────────────────────────────────────────────
-    //  PUT /api/me/notifications
+    //  PUT /api/mi/notificaciones
     // ────────────────────────────────────────────────────────
 
     public function testUpdateNotificationsPartial(): void
     {
         // Toggle sound off — desktop should remain true
-        $data = $this->putJson('/api/me/notifications', [
-            'sound' => false,
+        $data = $this->putJson('/api/mi/notificaciones', [
+            'sonido' => false,
         ]);
 
         $this->assertResponseStatusCodeSame(200);
-        $this->assertFalse($data['sound']);
-        $this->assertTrue($data['desktop']); // unchanged
+        $this->assertFalse($data['sonido']);
+        $this->assertTrue($data['escritorio']); // unchanged
     }
 
     public function testUpdateNotificationsBoth(): void
     {
-        $data = $this->putJson('/api/me/notifications', [
-            'sound' => false,
-            'desktop' => false,
+        $data = $this->putJson('/api/mi/notificaciones', [
+            'sonido' => false,
+            'escritorio' => false,
         ]);
 
         $this->assertResponseStatusCodeSame(200);
-        $this->assertFalse($data['sound']);
-        $this->assertFalse($data['desktop']);
+        $this->assertFalse($data['sonido']);
+        $this->assertFalse($data['escritorio']);
     }
 
     // ────────────────────────────────────────────────────────
-    //  PUT /api/me/auto-reply
+    //  PUT /api/mi/respuesta-automatica
     // ────────────────────────────────────────────────────────
 
     public function testUpdateAutoReplyToggle(): void
     {
-        $data = $this->putJson('/api/me/auto-reply', [
-            'enabled' => true,
-            'message' => 'Estamos fuera de horario, escribinos en nuestro horario laboral.',
+        $data = $this->putJson('/api/mi/respuesta-automatica', [
+            'habilitada' => true,
+            'texto' => 'Estamos fuera de horario, escribinos en nuestro horario laboral.',
         ]);
 
         $this->assertResponseStatusCodeSame(200);
-        $this->assertTrue($data['enabled']);
-        $this->assertSame('Estamos fuera de horario, escribinos en nuestro horario laboral.', $data['message']);
+        $this->assertTrue($data['habilitada']);
+        $this->assertSame('Estamos fuera de horario, escribinos en nuestro horario laboral.', $data['texto']);
 
         // Verify persistence
-        $settings = $this->getJson('/api/me/settings');
-        $this->assertTrue($settings['autoReply']['enabled']);
-        $this->assertSame('Estamos fuera de horario, escribinos en nuestro horario laboral.', $settings['autoReply']['message']);
+        $settings = $this->getJson('/api/mi/configuracion');
+        $this->assertTrue($settings['respuestaAutomatica']['habilitada']);
+        $this->assertSame('Estamos fuera de horario, escribinos en nuestro horario laboral.', $settings['respuestaAutomatica']['texto']);
     }
 
     public function testUpdateAutoReplyDisable(): void
     {
         // First enable
-        $this->putJson('/api/me/auto-reply', ['enabled' => true, 'message' => 'Test']);
+        $this->putJson('/api/mi/respuesta-automatica', ['habilitada' => true, 'texto' => 'Test']);
         $this->assertResponseStatusCodeSame(200);
 
         // Then disable
-        $data = $this->putJson('/api/me/auto-reply', [
-            'enabled' => false,
+        $data = $this->putJson('/api/mi/respuesta-automatica', [
+            'habilitada' => false,
         ]);
 
         $this->assertResponseStatusCodeSame(200);
-        $this->assertFalse($data['enabled']);
-        $this->assertNull($data['message']);
+        $this->assertFalse($data['habilitada']);
+        $this->assertNull($data['texto']);
     }
 
     // ────────────────────────────────────────────────────────
@@ -340,7 +340,7 @@ class SettingsPageTest extends WebTestCase
 
     public function testUnauthenticatedReturns401(): void
     {
-        $this->client->request('GET', '/api/me/settings', [], [], [
+        $this->client->request('GET', '/api/mi/configuracion', [], [], [
             'HTTP_ACCEPT' => 'application/json',
         ]);
 

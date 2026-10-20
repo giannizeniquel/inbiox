@@ -17,7 +17,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * Slice 1). Se construye ahora como parte de la superficie de API del Slice 1 para el futuro
  * desplegable de filtro de la bandeja de entrada (Slice 3).
  *
- * Accesible para CUALQUIER agente autenticado (incluido ROLE_AGENT), no
+ * Accesible para CUALQUIER agente autenticado (incluido ROLE_AGENTE), no
  * solo para admin, a diferencia de Controller/Admin/TeamController. Los resultados se acotan
  * al espacio o los espacios de trabajo del solicitante mediante su entidad Agente vinculada.
  *
@@ -26,7 +26,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * Attribution"), un equipo desactivado debe seguir siendo seleccionable en los filtros
  * de bandeja de entrada y de reportes aunque esté oculto en los selectores de NUEVA asignación.
  */
-#[IsGranted('ROLE_AGENT')]
+#[IsGranted('ROLE_AGENTE')]
 final class EquipoController
 {
     public function __construct(
@@ -34,7 +34,7 @@ final class EquipoController
         private readonly Security $security,
     ) {}
 
-    #[Route('/api/teams', name: 'app_teams_list', methods: ['GET'])]
+    #[Route('/api/equipos', name: 'app_teams_list', methods: ['GET'])]
     public function listar(): JsonResponse
     {
         $usuario = $this->security->getUser();
@@ -56,9 +56,9 @@ final class EquipoController
 
         $items = array_map(fn(Equipo $t) => [
             'id' => (int) $t->getId(),
-            'workspace_id' => (int) $t->getEspacioDeTrabajo()->getId(),
-            'name' => $t->getNombre(),
-            'is_active' => $t->isActivo(),
+            'espacioDeTrabajoId' => (int) $t->getEspacioDeTrabajo()->getId(),
+            'nombre' => $t->getNombre(),
+            'activo' => $t->isActivo(),
         ], $equipos);
 
         return new JsonResponse($items);

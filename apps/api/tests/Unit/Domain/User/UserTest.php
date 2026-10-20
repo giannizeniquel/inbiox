@@ -24,7 +24,7 @@ class UserTest extends TestCase
         $user = new Usuario();
         $user->setEmail('admin@inbiox.local');
         $user->setPassword('hashed_password_here');
-        $user->setRoles(['ROLE_ADMIN']);
+        $user->setRoles(['ROLE_ADMINISTRADOR']);
 
         self::assertSame('admin@inbiox.local', $user->getEmail());
         self::assertSame('admin@inbiox.local', $user->getUserIdentifier());
@@ -54,14 +54,14 @@ class UserTest extends TestCase
     public function testGetRolesMergesWithRoleUser(): void
     {
         $user = new Usuario();
-        $user->setRoles(['ROLE_ADMIN', 'ROLE_AGENT']);
+        $user->setRoles(['ROLE_ADMINISTRADOR', 'ROLE_AGENTE']);
 
         $roles = $user->getRoles();
 
-        self::assertContains('ROLE_ADMIN', $roles);
-        self::assertContains('ROLE_AGENT', $roles);
+        self::assertContains('ROLE_ADMINISTRADOR', $roles);
+        self::assertContains('ROLE_AGENTE', $roles);
         self::assertContains('ROLE_USER', $roles);
-        self::assertCount(3, $roles, 'Must have exactly ROLE_ADMIN, ROLE_AGENT, ROLE_USER');
+        self::assertCount(3, $roles, 'Must have exactly ROLE_ADMINISTRADOR, ROLE_AGENTE, ROLE_USER');
     }
 
     public function testGetRolesIsUnique(): void
@@ -101,10 +101,10 @@ class UserTest extends TestCase
     public function testSetRolesUpdatesRawRoles(): void
     {
         $user = new Usuario();
-        $user->setRoles(['ROLE_ADMIN']);
+        $user->setRoles(['ROLE_ADMINISTRADOR']);
 
         $raw = $user->getRolesGuardados();
-        self::assertSame(['ROLE_ADMIN'], $raw);
+        self::assertSame(['ROLE_ADMINISTRADOR'], $raw);
     }
 
     public function testUserWithoutAgent(): void

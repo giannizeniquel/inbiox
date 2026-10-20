@@ -17,7 +17,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 /**
  * La configuración de respuesta automática del agente actual.
  *
- * PUT /api/me/auto-reply — actualiza la configuración de respuesta automática
+ * PUT /api/mi/respuesta-automatica — actualiza la configuración de respuesta automática
  */
 #[IsGranted('IS_AUTHENTICATED_FULLY')]
 final class MiRespuestaAutomaticaController
@@ -27,8 +27,8 @@ final class MiRespuestaAutomaticaController
         private readonly UpdateConfiguracionDeRespuestaAutomaticaUseCase $updateConfiguracionDeRespuestaAutomaticaUseCase,
     ) {}
 
-    #[IsGranted('ROLE_AGENT')]
-    #[Route('/api/me/auto-reply', name: 'app_me_auto_reply', methods: ['PUT'])]
+    #[IsGranted('ROLE_AGENTE')]
+    #[Route('/api/mi/respuesta-automatica', name: 'app_me_auto_reply', methods: ['PUT'])]
     public function updateRespuestaAutomatica(#[MapRequestPayload] UpdateRespuestaAutomaticaRequest $request): JsonResponse
     {
         $agente = $this->getAgente();
@@ -36,11 +36,11 @@ final class MiRespuestaAutomaticaController
             return new JsonResponse(['error' => 'Agent not found'], Response::HTTP_NOT_FOUND);
         }
 
-        $this->updateConfiguracionDeRespuestaAutomaticaUseCase->execute($agente, $request->enabled, $request->message);
+        $this->updateConfiguracionDeRespuestaAutomaticaUseCase->execute($agente, $request->habilitada, $request->texto);
 
         return new JsonResponse([
-            'enabled' => $agente->isRespuestaAutomaticaActiva(),
-            'message' => $agente->getMensajeDeRespuestaAutomatica(),
+            'habilitada' => $agente->isRespuestaAutomaticaActiva(),
+            'texto' => $agente->getMensajeDeRespuestaAutomatica(),
         ]);
     }
 

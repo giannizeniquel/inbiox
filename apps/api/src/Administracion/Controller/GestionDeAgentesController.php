@@ -30,7 +30,7 @@ final class GestionDeAgentesController
         private readonly DesactivarAgenteUseCase $desactivarAgenteUseCase,
     ) {}
 
-    #[Route('/api/admin/agents', name: 'admin_agents_list', methods: ['GET'])]
+    #[Route('/api/administracion/agentes', name: 'admin_agents_list', methods: ['GET'])]
     public function listar(Request $request): JsonResponse
     {
         $pagina = max(1, (int) $request->query->get('page', 1));
@@ -48,12 +48,12 @@ final class GestionDeAgentesController
                 'page' => $pagina,
                 'limit' => $limit,
                 'total' => $total,
-                'has_next' => ($pagina * $limit) < $total,
+                'haySiguiente' => ($pagina * $limit) < $total,
             ],
         ]);
     }
 
-    #[Route('/api/admin/agents', name: 'admin_agents_create', methods: ['POST'])]
+    #[Route('/api/administracion/agentes', name: 'admin_agents_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -71,7 +71,7 @@ final class GestionDeAgentesController
         return new JsonResponse($this->serializeAgente($agente), Response::HTTP_CREATED);
     }
 
-    #[Route('/api/admin/agents/{id}', name: 'admin_agents_get', methods: ['GET'])]
+    #[Route('/api/administracion/agentes/{id}', name: 'admin_agents_get', methods: ['GET'])]
     public function get(int $id): JsonResponse
     {
         $agente = $this->agenteRepository->find($id);
@@ -83,7 +83,7 @@ final class GestionDeAgentesController
         return new JsonResponse($this->serializeAgente($agente));
     }
 
-    #[Route('/api/admin/agents/{id}', name: 'admin_agents_update', methods: ['PUT'])]
+    #[Route('/api/administracion/agentes/{id}', name: 'admin_agents_update', methods: ['PUT'])]
     public function update(int $id, Request $request): JsonResponse
     {
         $agente = $this->agenteRepository->find($id);
@@ -107,7 +107,7 @@ final class GestionDeAgentesController
         return new JsonResponse($this->serializeAgente($agente));
     }
 
-    #[Route('/api/admin/agents/{id}', name: 'admin_agents_delete', methods: ['DELETE'])]
+    #[Route('/api/administracion/agentes/{id}', name: 'admin_agents_delete', methods: ['DELETE'])]
     public function delete(int $id): JsonResponse
     {
         $agente = $this->agenteRepository->find($id);
@@ -130,14 +130,14 @@ final class GestionDeAgentesController
 
         return [
             'id' => (int) $agente->getId(),
-            'name' => $agente->getNombre(),
-            'active' => $agente->isActivo(),
-            'timezone' => $agente->getZonaHoraria(),
-            'is_available' => $agente->isDisponible(),
-            'user_id' => null !== $usuario ? (int) $usuario->getId() : null,
-            'user_email' => null !== $usuario ? $usuario->getEmail() : null,
-            'created_at' => $agente->getCreadoAt()->format('Y-m-d\TH:i:sP'),
-            'updated_at' => $agente->getActualizadoAt()->format('Y-m-d\TH:i:sP'),
+            'nombre' => $agente->getNombre(),
+            'activo' => $agente->isActivo(),
+            'zonaHoraria' => $agente->getZonaHoraria(),
+            'disponible' => $agente->isDisponible(),
+            'usuarioId' => null !== $usuario ? (int) $usuario->getId() : null,
+            'usuarioEmail' => null !== $usuario ? $usuario->getEmail() : null,
+            'creadoAt' => $agente->getCreadoAt()->format('Y-m-d\TH:i:sP'),
+            'actualizadoAt' => $agente->getActualizadoAt()->format('Y-m-d\TH:i:sP'),
         ];
     }
 }

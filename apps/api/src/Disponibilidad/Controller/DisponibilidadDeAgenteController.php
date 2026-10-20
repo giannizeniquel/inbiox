@@ -27,11 +27,11 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * Sin entityManager->persist() directo ni publicación directa en Mercure.
  *
  * Autorización:
- * - Todos los métodos requieren ROLE_AGENT
+ * - Todos los métodos requieren ROLE_AGENTE
  * - Un agente solo puede ver/gestionar su propia disponibilidad
  * - Admin/Supervisor pueden ver/gestionar cualquier agente
  */
-#[IsGranted('ROLE_AGENT')]
+#[IsGranted('ROLE_AGENTE')]
 class DisponibilidadDeAgenteController
 {
     public function __construct(

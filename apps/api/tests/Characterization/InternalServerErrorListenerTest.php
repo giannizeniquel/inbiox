@@ -20,7 +20,7 @@ final class InternalServerErrorListenerTest extends CharacterizationTestCase
 
     private function agentToken(): string
     {
-        return $this->loginAs('listener@characterization.local', ['ROLE_AGENT'], $this->createAgent('Agent'));
+        return $this->loginAs('listener@characterization.local', ['ROLE_AGENTE'], $this->createAgent('Agent'));
     }
 
     /**
@@ -81,7 +81,7 @@ final class InternalServerErrorListenerTest extends CharacterizationTestCase
 
     public function testUnauthenticatedApiCallKeepsTheFirewall401(): void
     {
-        $response = $this->request('GET', '/api/teams', null);
+        $response = $this->request('GET', '/api/equipos', null);
 
         $this->assertJsonResponse(401, ['code' => 401, 'message' => 'JWT Token not found'], $response);
     }
@@ -90,7 +90,7 @@ final class InternalServerErrorListenerTest extends CharacterizationTestCase
     {
         $token = $this->agentToken();
 
-        // app_report_export is gated by #[IsGranted('ROLE_SUPERVISOR')]; access_control only asks for ROLE_AGENT.
+        // app_report_export is gated by #[IsGranted('ROLE_SUPERVISOR')]; access_control only asks for ROLE_AGENTE.
         $response = $this->request('GET', '/api/reports/export', $token);
 
         self::assertSame(403, $response->getStatusCode(), (string) $response->getContent());

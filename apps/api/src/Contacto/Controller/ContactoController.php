@@ -19,7 +19,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-#[IsGranted('ROLE_AGENT')]
+#[IsGranted('ROLE_AGENTE')]
 class ContactoController
 {
     public function __construct(
@@ -123,7 +123,7 @@ class ContactoController
     /**
      * POST /api/contactos/importar — importación masiva de contactos por CSV.
      *
-     * El ROLE_SUPERVISOR a nivel de método prevalece sobre el ROLE_AGENT a nivel de clase: la creación
+     * El ROLE_SUPERVISOR a nivel de método prevalece sobre el ROLE_AGENTE a nivel de clase: la creación
      * de un solo contacto sigue disponible para los agentes, pero una petición que puede crear hasta 1000
      * contactos compartidos globalmente de una sola vez queda restringida a los supervisores.
      */

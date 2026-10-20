@@ -22,9 +22,9 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 /**
  * Los espacios de trabajo del usuario actual.
  *
- * GET  /api/me/workspace   — devuelve el espacio de trabajo activo, o 404 si no hay ninguno definido
- * PUT  /api/me/workspace   — define el espacio de trabajo activo
- * GET  /api/me/workspaces  — devuelve los espacios de trabajo del usuario
+ * GET  /api/mi/espacio-de-trabajo    — devuelve el espacio de trabajo activo, o 404 si no hay ninguno definido
+ * PUT  /api/mi/espacio-de-trabajo    — define el espacio de trabajo activo
+ * GET  /api/mi/espacios-de-trabajo   — devuelve los espacios de trabajo del usuario
  */
 #[IsGranted('IS_AUTHENTICATED_FULLY')]
 final class MiEspacioDeTrabajoController
@@ -36,7 +36,7 @@ final class MiEspacioDeTrabajoController
         private readonly SetEspacioDeTrabajoActivoUseCase $setEspacioDeTrabajoActivoUseCase,
     ) {}
 
-    #[Route('/api/me/workspace', name: 'app_me_workspace', methods: ['GET'])]
+    #[Route('/api/mi/espacio-de-trabajo', name: 'app_me_workspace', methods: ['GET'])]
     public function getEspacioDeTrabajoActivo(): JsonResponse
     {
         $usuario = $this->security->getUser();
@@ -48,7 +48,7 @@ final class MiEspacioDeTrabajoController
         $espacioDeTrabajoActivo = $agente->getEspacioDeTrabajoActivo();
         if (null === $espacioDeTrabajoActivo) {
             return new JsonResponse(
-                ['workspace_id' => null, 'phone_number_id' => null, 'display_name' => null],
+                ['espacioDeTrabajoId' => null, 'phoneNumberId' => null, 'nombreVisible' => null],
                 Response::HTTP_NOT_FOUND,
             );
         }
@@ -56,7 +56,7 @@ final class MiEspacioDeTrabajoController
         return new JsonResponse(EspacioDeTrabajoActivoDTO::fromEntity($espacioDeTrabajoActivo)->toArray());
     }
 
-    #[Route('/api/me/workspace', name: 'app_me_workspace_set', methods: ['PUT'])]
+    #[Route('/api/mi/espacio-de-trabajo', name: 'app_me_workspace_set', methods: ['PUT'])]
     public function setEspacioDeTrabajoActivo(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -74,7 +74,7 @@ final class MiEspacioDeTrabajoController
         try {
             $espacioDeTrabajo = $this->setEspacioDeTrabajoActivoUseCase->execute(
                 $usuario,
-                $this->security->isGranted('ROLE_ADMIN') || $this->security->isGranted('ROLE_SUPERVISOR'),
+                $this->security->isGranted('ROLE_ADMINISTRADOR') || $this->security->isGranted('ROLE_SUPERVISOR'),
                 \is_array($data) ? $data : [],
             );
         } catch (NotFoundException $e) {
@@ -88,7 +88,7 @@ final class MiEspacioDeTrabajoController
         return new JsonResponse(EspacioDeTrabajoActivoDTO::fromEntity($espacioDeTrabajo)->toArray());
     }
 
-    #[Route('/api/me/workspaces', name: 'app_me_workspaces', methods: ['GET'])]
+    #[Route('/api/mi/espacios-de-trabajo', name: 'app_me_workspaces', methods: ['GET'])]
     public function listarMisEspaciosDeTrabajo(): JsonResponse
     {
         $usuario = $this->security->getUser();
@@ -97,7 +97,7 @@ final class MiEspacioDeTrabajoController
         }
 
         // Admin/Supervisor: ven TODOS los espacios de trabajo
-        if ($this->security->isGranted('ROLE_ADMIN') || $this->security->isGranted('ROLE_SUPERVISOR')) {
+        if ($this->security->isGranted('ROLE_ADMINISTRADOR') || $this->security->isGranted('ROLE_SUPERVISOR')) {
             $espaciosDeTrabajo = $this->espacioDeTrabajoRepository->findBy(['activo' => true]);
             $items = array_map(fn(EspacioDeTrabajo $w) => EspacioDeTrabajoDTO::fromEntity($w)->toArray(), $espaciosDeTrabajo);
             return new JsonResponse($items);
@@ -113,7 +113,7 @@ final class MiEspacioDeTrabajoController
         $items = [];
         foreach ($agente->getEspaciosDeTrabajo()->toArray() as $w) {
             $hasPendientes = $this->ticketRepository->hasPendientesDeAgente($w->getPhoneNumberId(), $agenteId);
-            $items[] = array_merge(EspacioDeTrabajoDTO::fromEntity($w)->toArray(), ['has_pending' => $hasPendientes]);
+            $items[] = array_merge(EspacioDeTrabajoDTO::fromEntity($w)->toArray(), ['hayPendientes' => $hasPendientes]);
         }
 
         return new JsonResponse($items);

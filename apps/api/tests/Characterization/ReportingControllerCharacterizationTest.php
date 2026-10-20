@@ -105,7 +105,7 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
         );
         $agent = $this->createAgent('Scoped');
         $agent->setEspacioDeTrabajoActivo($workspace);
-        $token = $this->loginAs('reports-agent@characterization.local', ['ROLE_AGENT'], $agent);
+        $token = $this->loginAs('reports-agent@characterization.local', ['ROLE_AGENTE'], $agent);
 
         $response = $this->request('GET', '/api/reports/counts?' . self::WINDOW, $token);
 
@@ -270,7 +270,7 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
         $viewer->addEspacioDeTrabajo($workspace);
         $viewer->setEspacioDeTrabajoActivo($workspace);
         $this->em->flush();
-        $token = $this->loginAs('reports-avail@characterization.local', ['ROLE_AGENT'], $viewer);
+        $token = $this->loginAs('reports-avail@characterization.local', ['ROLE_AGENTE'], $viewer);
 
         $this->assertJsonResponse(200, [[
             'agent_id' => $member->getId(),

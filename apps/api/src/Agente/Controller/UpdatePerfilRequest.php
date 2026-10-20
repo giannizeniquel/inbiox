@@ -8,6 +8,6 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 class UpdatePerfilRequest
 {
-    #[Assert\Length(max: 4096, maxMessage: 'signature must not exceed {{ limit }} characters')]
-    public ?string $signature = null;
+    #[Assert\Length(max: 4096, maxMessage: 'firma must not exceed {{ limit }} characters')]
+    public ?string $firma = null;
 }

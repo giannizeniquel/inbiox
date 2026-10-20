@@ -51,7 +51,7 @@ class AuthControllerTest extends WebTestCase
     private function createUser(
         string $email = 'active@inbiox.local',
         string $password = self::TEST_PASSWORD,
-        array $roles = ['ROLE_AGENT'],
+        array $roles = ['ROLE_AGENTE'],
         bool $isActive = true,
     ): Usuario {
         // Use bcrypt directly — Symfony's auto hasher resolves to NativePasswordHasher
@@ -166,7 +166,7 @@ class AuthControllerTest extends WebTestCase
 
     public function testLoginWithInactiveUserReturns401(): void
     {
-        $this->createUser('inactive@inbiox.local', self::TEST_PASSWORD, ['ROLE_AGENT'], false);
+        $this->createUser('inactive@inbiox.local', self::TEST_PASSWORD, ['ROLE_AGENTE'], false);
         $this->client->request('POST', '/api/auth/login', [], [], [
             'CONTENT_TYPE' => 'application/json',
         ], \json_encode([
@@ -320,7 +320,7 @@ class AuthControllerTest extends WebTestCase
         self::assertSame(200, $response->getStatusCode());
 
         $data = \json_decode($response->getContent(), true);
-        self::assertSame('Logged out successfully', $data['message']);
+        self::assertSame(['mensaje' => 'Logged out successfully'], $data);
 
         // Verify cookie is cleared
         $cookies = $response->headers->getCookies();
@@ -410,7 +410,7 @@ class AuthControllerTest extends WebTestCase
 
     public function testMeReturnsUserProfile(): void
     {
-        $this->createUser('me-test@inbiox.local', self::TEST_PASSWORD, ['ROLE_ADMIN']);
+        $this->createUser('me-test@inbiox.local', self::TEST_PASSWORD, ['ROLE_ADMINISTRADOR']);
         $token = $this->login('me-test@inbiox.local');
 
         $this->client->request('GET', '/api/auth/me', [], [], [
@@ -423,8 +423,9 @@ class AuthControllerTest extends WebTestCase
         $data = \json_decode($response->getContent(), true);
         self::assertArrayHasKey('id', $data);
         self::assertSame('me-test@inbiox.local', $data['email']);
-        self::assertContains('ROLE_ADMIN', $data['roles']);
-        self::assertTrue($data['is_active']);
+        self::assertContains('ROLE_ADMINISTRADOR', $data['roles']);
+        self::assertTrue($data['activo']);
+        self::assertSame(['id', 'email', 'roles', 'activo', 'agenteId', 'agenteNombre'], \array_keys($data));
     }
 
     public function testMeWithoutTokenReturns401(): void
@@ -447,7 +448,7 @@ class AuthControllerTest extends WebTestCase
 
     public function testMeReturnsAgentIdNullForAdmin(): void
     {
-        $this->createUser('admin-no-agent@inbiox.local', self::TEST_PASSWORD, ['ROLE_ADMIN']);
+        $this->createUser('admin-no-agent@inbiox.local', self::TEST_PASSWORD, ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin-no-agent@inbiox.local');
 
         $this->client->request('GET', '/api/auth/me', [], [], [
@@ -458,7 +459,7 @@ class AuthControllerTest extends WebTestCase
         self::assertSame(200, $response->getStatusCode());
 
         $data = \json_decode($response->getContent(), true);
-        self::assertNull($data['agent_id'], 'Admin without agent must have null agent_id');
+        self::assertNull($data['agenteId'], 'Admin without agent must have null agenteId');
     }
 
     // ────────────────────────────────────────────────────────
@@ -494,7 +495,7 @@ class AuthControllerTest extends WebTestCase
 
     public function testJwtHasCorrectStructure(): void
     {
-        $this->createUser('jwt-struct@inbiox.local', self::TEST_PASSWORD, ['ROLE_AGENT']);
+        $this->createUser('jwt-struct@inbiox.local', self::TEST_PASSWORD, ['ROLE_AGENTE']);
         $token = $this->login('jwt-struct@inbiox.local');
 
         $payload = $this->decodeJwt($token);
@@ -508,7 +509,7 @@ class AuthControllerTest extends WebTestCase
             'sub claim must match user email (user identifier)');
 
         // ROLE_USER is always added by User::getRoles()
-        self::assertContains('ROLE_AGENT', $payload['roles']);
+        self::assertContains('ROLE_AGENTE', $payload['roles']);
         self::assertContains('ROLE_USER', $payload['roles']);
 
         // TTL is 900 seconds

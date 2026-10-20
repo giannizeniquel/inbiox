@@ -17,7 +17,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  *
  * GET /api/workspaces/{id}/available-agents — devuelve los agentes disponibles para asignación
  */
-#[IsGranted('ROLE_AGENT')]
+#[IsGranted('ROLE_AGENTE')]
 final class AgentesDisponiblesController
 {
     public function __construct(

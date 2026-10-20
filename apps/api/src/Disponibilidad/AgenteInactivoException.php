@@ -10,7 +10,7 @@ use App\Compartido\ConflictoDeEstadoException;
  * Excepción lanzada cuando una asignación de ticket apunta a un agente que no está
  * Activo en este momento (según DisponibilidadDeAgenteService::isActiveNow()).
  *
- * BLOQUEO ESTRICTO para todos los roles (ROLE_AGENT, ROLE_SUPERVISOR, ROLE_ADMIN), sin
+ * BLOQUEO ESTRICTO para todos los roles (ROLE_AGENTE, ROLE_SUPERVISOR, ROLE_ADMINISTRADOR), sin
  * excepciones. Se lanza dentro de la transacción de AsignarTicketUseCase, después del
  * lock pesimista y antes de registrarCambioDeResponsable(): un rechazo no escribe
  * ninguna fila de asignación ni emite eventos; la transacción hace rollback.

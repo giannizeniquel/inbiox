@@ -19,9 +19,9 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * Administración del vínculo Agente-Usuario.
  *
  * Vincula y desvincula un Usuario de un Agente.
- * Todos los endpoints requieren ROLE_ADMIN.
+ * Todos los endpoints requieren ROLE_ADMINISTRADOR.
  */
-#[IsGranted('ROLE_ADMIN')]
+#[IsGranted('ROLE_ADMINISTRADOR')]
 final class VinculoDeAgenteController
 {
     public function __construct(
@@ -31,7 +31,7 @@ final class VinculoDeAgenteController
     ) {}
 
     /**
-     * POST /api/admin/agents/{id}/link-user
+     * POST /api/administracion/agentes/{id}/vincular-usuario
      *
      * Vincula un Usuario con un Agente.
      * - 400 si el agente ya tiene un usuario vinculado
@@ -39,7 +39,7 @@ final class VinculoDeAgenteController
      * - 400 si el usuario está desactivado (Q3 del diseño)
      * - 409 ante una violación de la restricción UNIQUE
      */
-    #[Route('/api/admin/agents/{id}/link-user', name: 'admin_agents_link_user', methods: ['POST'])]
+    #[Route('/api/administracion/agentes/{id}/vincular-usuario', name: 'admin_agents_link_user', methods: ['POST'])]
     public function vincularUsuario(int $id, Request $request): JsonResponse
     {
         $agente = $this->agenteRepository->find($id);
@@ -66,17 +66,17 @@ final class VinculoDeAgenteController
 
         return new JsonResponse([
             'id' => (int) $agente->getId(),
-            'user_id' => (int) $usuario->getId(),
-            'user_email' => $usuario->getEmail(),
+            'usuarioId' => (int) $usuario->getId(),
+            'usuarioEmail' => $usuario->getEmail(),
         ]);
     }
 
     /**
-     * DELETE /api/admin/agents/{id}/link-user
+     * DELETE /api/administracion/agentes/{id}/vincular-usuario
      *
      * Desvincula el Usuario de un Agente.
      */
-    #[Route('/api/admin/agents/{id}/link-user', name: 'admin_agents_unlink_user', methods: ['DELETE'])]
+    #[Route('/api/administracion/agentes/{id}/vincular-usuario', name: 'admin_agents_unlink_user', methods: ['DELETE'])]
     public function desvincularUsuario(int $id): JsonResponse
     {
         $agente = $this->agenteRepository->find($id);

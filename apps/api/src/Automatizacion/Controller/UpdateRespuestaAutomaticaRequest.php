@@ -8,9 +8,9 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 class UpdateRespuestaAutomaticaRequest
 {
-    #[Assert\Type(type: 'bool', message: 'enabled must be a boolean')]
-    public ?bool $enabled = null;
+    #[Assert\Type(type: 'bool', message: 'habilitada must be a boolean')]
+    public ?bool $habilitada = null;
 
-    #[Assert\Length(max: 4096, maxMessage: 'message must not exceed {{ limit }} characters')]
-    public ?string $message = null;
+    #[Assert\Length(max: 4096, maxMessage: 'texto must not exceed {{ limit }} characters')]
+    public ?string $texto = null;
 }

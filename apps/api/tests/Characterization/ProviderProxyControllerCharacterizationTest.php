@@ -66,7 +66,7 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
     private function agentToken(): array
     {
         $agent = $this->createAgent('Char Sender');
-        $token = $this->loginAs('char-pp-agent@inbiox.local', ['ROLE_AGENT'], $agent);
+        $token = $this->loginAs('char-pp-agent@inbiox.local', ['ROLE_AGENTE'], $agent);
 
         return [$token, (int) $agent->getId()];
     }
@@ -389,7 +389,7 @@ final class ProviderProxyControllerCharacterizationTest extends Characterization
     {
         $ticket = $this->ticketInOpenWindow();
         $email = 'char-pp-no-agent@inbiox.local';
-        $token = $this->loginAs($email, ['ROLE_AGENT']);
+        $token = $this->loginAs($email, ['ROLE_AGENTE']);
         $this->graph->method('sendTemplate')->willReturnOnConsecutiveCalls(
             self::throwException(new GraphApiException('Blocked', 131047)),
             ['messages' => [['id' => 'wamid.char-template-agent']]],

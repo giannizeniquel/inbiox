@@ -46,7 +46,7 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
  *         tickets sin asignar y tickets asignados a otro agente.
  *         Nota (D3): todo ticket que llega a `POST /tickets/{id}/close`
  *         está estructuralmente sin asignar para ese momento (resolver
- *         desasigna), así que CLOSE deniega a todo ROLE_AGENT en ese endpoint —
+ *         desasigna), así que CLOSE deniega a todo ROLE_AGENTE en ese endpoint —
  *         solo supervisores/admins pueden usarlo. El cierre de un ticket propio
  *         por parte de un agente pasa por `POST /transition {"status":"closed"}`,
  *         mientras el ticket todavía tiene responsable.
@@ -93,7 +93,7 @@ final class TicketVoter extends Voter
         }
 
         // AGENT solo puede actuar sobre sus propios tickets
-        if ($this->security->isGranted('ROLE_AGENT')) {
+        if ($this->security->isGranted('ROLE_AGENTE')) {
             $agente = $usuario->getAgente();
 
             if (null === $agente) {

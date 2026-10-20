@@ -76,7 +76,7 @@ final class AutenticacionController extends AbstractController
         );
 
         // Arma la respuesta con la cookie limpia
-        $response = new JsonResponse(['message' => 'Logged out successfully']);
+        $response = new JsonResponse(['mensaje' => 'Logged out successfully']);
         $response->headers->clearCookie(
             self::REFRESH_COOKIE_NAME,
             '/',                        // path
@@ -108,9 +108,9 @@ final class AutenticacionController extends AbstractController
             'id' => $usuario->getId(),
             'email' => $usuario->getEmail(),
             'roles' => $usuario->getRoles(),
-            'is_active' => $usuario->isActivo(),
-            'agent_id' => $usuario->getAgente()?->getId(),
-            'agent_name' => $usuario->getAgente()?->getNombre(),
+            'activo' => $usuario->isActivo(),
+            'agenteId' => $usuario->getAgente()?->getId(),
+            'agenteNombre' => $usuario->getAgente()?->getNombre(),
         ]);
     }
 }

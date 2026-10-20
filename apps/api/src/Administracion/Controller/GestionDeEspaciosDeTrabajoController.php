@@ -21,9 +21,9 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 /**
  * Administración de espacios de trabajo.
  *
- * Todos los endpoints requieren ROLE_ADMIN.
+ * Todos los endpoints requieren ROLE_ADMINISTRADOR.
  */
-#[IsGranted('ROLE_ADMIN')]
+#[IsGranted('ROLE_ADMINISTRADOR')]
 final class GestionDeEspaciosDeTrabajoController
 {
     public function __construct(
@@ -34,7 +34,7 @@ final class GestionDeEspaciosDeTrabajoController
         private readonly AsignarAgentesAEspacioDeTrabajoUseCase $asignarAgentesAEspacioDeTrabajoUseCase,
     ) {}
 
-    #[Route('/api/admin/workspaces', name: 'app_admin_workspaces_list', methods: ['GET'])]
+    #[Route('/api/administracion/espacios-de-trabajo', name: 'app_admin_workspaces_list', methods: ['GET'])]
     public function listar(Request $request): JsonResponse
     {
         $pagina = max(1, (int) $request->query->get('page', 1));
@@ -52,12 +52,12 @@ final class GestionDeEspaciosDeTrabajoController
                 'page' => $pagina,
                 'limit' => $limit,
                 'total' => $total,
-                'has_next' => ($pagina * $limit) < $total,
+                'haySiguiente' => ($pagina * $limit) < $total,
             ],
         ]);
     }
 
-    #[Route('/api/admin/workspaces', name: 'app_admin_workspaces_create', methods: ['POST'])]
+    #[Route('/api/administracion/espacios-de-trabajo', name: 'app_admin_workspaces_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -77,7 +77,7 @@ final class GestionDeEspaciosDeTrabajoController
         return new JsonResponse($this->serializeEspacioDeTrabajo($espacioDeTrabajo), Response::HTTP_CREATED);
     }
 
-    #[Route('/api/admin/workspaces/{id}', name: 'app_admin_workspaces_get', methods: ['GET'])]
+    #[Route('/api/administracion/espacios-de-trabajo/{id}', name: 'app_admin_workspaces_get', methods: ['GET'])]
     public function get(int $id): JsonResponse
     {
         $espacioDeTrabajo = $this->espacioDeTrabajoRepository->find($id);
@@ -89,7 +89,7 @@ final class GestionDeEspaciosDeTrabajoController
         return new JsonResponse($this->serializeEspacioDeTrabajo($espacioDeTrabajo));
     }
 
-    #[Route('/api/admin/workspaces/{id}', name: 'app_admin_workspaces_update', methods: ['PUT'])]
+    #[Route('/api/administracion/espacios-de-trabajo/{id}', name: 'app_admin_workspaces_update', methods: ['PUT'])]
     public function update(int $id, Request $request): JsonResponse
     {
         $espacioDeTrabajo = $this->espacioDeTrabajoRepository->find($id);
@@ -113,7 +113,7 @@ final class GestionDeEspaciosDeTrabajoController
         return new JsonResponse($this->serializeEspacioDeTrabajo($espacioDeTrabajo));
     }
 
-    #[Route('/api/admin/workspaces/{id}', name: 'app_admin_workspaces_delete', methods: ['DELETE'])]
+    #[Route('/api/administracion/espacios-de-trabajo/{id}', name: 'app_admin_workspaces_delete', methods: ['DELETE'])]
     public function delete(int $id): JsonResponse
     {
         $espacioDeTrabajo = $this->espacioDeTrabajoRepository->find($id);
@@ -127,7 +127,7 @@ final class GestionDeEspaciosDeTrabajoController
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
 
-    #[Route('/api/admin/workspaces/{id}/agents', name: 'app_admin_workspaces_assign_agents', methods: ['PUT'])]
+    #[Route('/api/administracion/espacios-de-trabajo/{id}/agentes', name: 'app_admin_workspaces_assign_agents', methods: ['PUT'])]
     public function asignarAgentes(int $id, Request $request): JsonResponse
     {
         $espacioDeTrabajo = $this->espacioDeTrabajoRepository->find($id);
@@ -154,8 +154,8 @@ final class GestionDeEspaciosDeTrabajoController
         );
 
         return new JsonResponse([
-            'workspace_id' => (int) $espacioDeTrabajo->getId(),
-            'agent_ids' => array_values($idsAsignados),
+            'espacioDeTrabajoId' => (int) $espacioDeTrabajo->getId(),
+            'agenteIds' => array_values($idsAsignados),
         ]);
     }
 
@@ -171,13 +171,13 @@ final class GestionDeEspaciosDeTrabajoController
 
         return [
             'id' => (int) $espacioDeTrabajo->getId(),
-            'phone_number_id' => $espacioDeTrabajo->getPhoneNumberId(),
-            'display_name' => $espacioDeTrabajo->getNombreVisible(),
-            'is_active' => $espacioDeTrabajo->isActivo(),
-            'agent_count' => count($agenteIds),
-            'agent_ids' => $agenteIds,
-            'created_at' => $espacioDeTrabajo->getCreadoAt()->format('Y-m-d\TH:i:sP'),
-            'updated_at' => $espacioDeTrabajo->getActualizadoAt()->format('Y-m-d\TH:i:sP'),
+            'phoneNumberId' => $espacioDeTrabajo->getPhoneNumberId(),
+            'nombreVisible' => $espacioDeTrabajo->getNombreVisible(),
+            'activo' => $espacioDeTrabajo->isActivo(),
+            'cantidadDeAgentes' => count($agenteIds),
+            'agenteIds' => $agenteIds,
+            'creadoAt' => $espacioDeTrabajo->getCreadoAt()->format('Y-m-d\TH:i:sP'),
+            'actualizadoAt' => $espacioDeTrabajo->getActualizadoAt()->format('Y-m-d\TH:i:sP'),
         ];
     }
 }

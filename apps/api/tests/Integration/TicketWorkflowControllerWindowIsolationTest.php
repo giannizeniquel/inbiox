@@ -67,7 +67,7 @@ class TicketWorkflowControllerWindowIsolationTest extends WebTestCase
         $user = new Usuario();
         $user->setEmail('isolation-test-agent@inbiox.local');
         $user->setPassword(\password_hash(self::TEST_PASSWORD, \PASSWORD_BCRYPT));
-        $user->setRoles(['ROLE_AGENT']);
+        $user->setRoles(['ROLE_AGENTE']);
         $this->em->persist($user);
 
         $agent = new Agente('Isolation Test Agent');

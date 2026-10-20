@@ -14,7 +14,7 @@ final class ContactControllerCharacterizationTest extends CharacterizationTestCa
 
     private function agentToken(): string
     {
-        return $this->loginAs('contacts@characterization.local', ['ROLE_AGENT'], $this->createAgent('Me'));
+        return $this->loginAs('contacts@characterization.local', ['ROLE_AGENTE'], $this->createAgent('Me'));
     }
 
     // ── app_contacts_detail ──

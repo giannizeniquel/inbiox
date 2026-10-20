@@ -29,16 +29,16 @@ final class SetEspacioDeTrabajoActivoUseCase
      *
      * @param array<mixed> $data cuerpo de la request decodificado
      *
-     * @throws \InvalidArgumentException     cuando workspaceId es inválido o el espacio de trabajo está inactivo
+     * @throws \InvalidArgumentException     cuando espacioDeTrabajoId es inválido o el espacio de trabajo está inactivo
      * @throws NotFoundException             cuando no existe el espacio de trabajo, o el agente de un usuario con rol de agente
      * @throws EspacioDeTrabajoNoAsignadoException cuando un agente no está asignado al espacio de trabajo
      */
     public function execute(Usuario $usuario, bool $puedeUsarCualquierEspacioDeTrabajo, array $data): EspacioDeTrabajo
     {
-        $espacioDeTrabajoId = $data['workspaceId'] ?? null;
+        $espacioDeTrabajoId = $data['espacioDeTrabajoId'] ?? null;
 
         if (null === $espacioDeTrabajoId || !\is_int($espacioDeTrabajoId)) {
-            throw new \InvalidArgumentException('workspaceId is required and must be an integer');
+            throw new \InvalidArgumentException('espacioDeTrabajoId is required and must be an integer');
         }
 
         $espacioDeTrabajo = $this->espacioDeTrabajoRepository->find($espacioDeTrabajoId);

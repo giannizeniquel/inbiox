@@ -15,7 +15,7 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
  *
  * Covers:
  * - CRUD operations for users
- * - Role-based access control (ROLE_ADMIN required)
+ * - Role-based access control (ROLE_ADMINISTRADOR required)
  * - Soft delete (is_active = false)
  * - Email uniqueness
  * - Optional agent link on creation
@@ -52,7 +52,7 @@ class UserControllerTest extends WebTestCase
 
     private function createUser(
         string $email,
-        array $roles = ['ROLE_AGENT'],
+        array $roles = ['ROLE_AGENTE'],
         bool $isActive = true,
     ): Usuario {
         $user = new Usuario();
@@ -104,20 +104,20 @@ class UserControllerTest extends WebTestCase
     public function testListUsersRequiresAdmin(): void
     {
         $agent = $this->createAgent('Agent');
-        $this->createUser('agent@test.local', ['ROLE_AGENT']);
+        $this->createUser('agent@test.local', ['ROLE_AGENTE']);
         $user = $this->em->getRepository(Usuario::class)->findOneBy(['email' => 'agent@test.local']);
         $agent->setUsuario($user);
         $this->em->flush();
 
         $token = $this->login('agent@test.local');
 
-        $this->client->request('GET', '/api/admin/users', [], [], $this->authHeaders($token));
+        $this->client->request('GET', '/api/administracion/usuarios', [], [], $this->authHeaders($token));
         self::assertSame(403, $this->client->getResponse()->getStatusCode());
     }
 
     public function testListUsersRequiresAuth(): void
     {
-        $this->client->request('GET', '/api/admin/users');
+        $this->client->request('GET', '/api/administracion/usuarios');
         self::assertSame(401, $this->client->getResponse()->getStatusCode());
     }
 
@@ -127,7 +127,7 @@ class UserControllerTest extends WebTestCase
 
     public function testListUsersReturnsPaginatedResults(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
         // Create some users
@@ -135,7 +135,7 @@ class UserControllerTest extends WebTestCase
             $this->createUser("user{$i}@test.local");
         }
 
-        $this->client->request('GET', '/api/admin/users?page=1&limit=3', [], [], $this->authHeaders($token));
+        $this->client->request('GET', '/api/administracion/usuarios?page=1&limit=3', [], [], $this->authHeaders($token));
         $response = $this->client->getResponse();
         self::assertSame(200, $response->getStatusCode());
 
@@ -143,29 +143,29 @@ class UserControllerTest extends WebTestCase
         self::assertArrayHasKey('data', $data);
         self::assertArrayHasKey('meta', $data);
         self::assertCount(3, $data['data']);
-        self::assertTrue($data['meta']['has_next']);
+        self::assertTrue($data['meta']['haySiguiente']);
         self::assertSame(6, $data['meta']['total']); // 5 users + admin
     }
 
     public function testListUsersReturnsSerializedData(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
-        $this->createUser('jane@test.local', ['ROLE_AGENT']);
+        $this->createUser('jane@test.local', ['ROLE_AGENTE']);
 
-        $this->client->request('GET', '/api/admin/users', [], [], $this->authHeaders($token));
+        $this->client->request('GET', '/api/administracion/usuarios', [], [], $this->authHeaders($token));
         $data = \json_decode($this->client->getResponse()->getContent(), true);
 
         $user = $data['data'][0]; // Most recent first
         self::assertArrayHasKey('id', $user);
         self::assertArrayHasKey('email', $user);
         self::assertArrayHasKey('roles', $user);
-        self::assertArrayHasKey('is_active', $user);
-        self::assertArrayHasKey('agent_id', $user);
-        self::assertArrayHasKey('agent_name', $user);
-        self::assertArrayHasKey('created_at', $user);
-        self::assertArrayHasKey('updated_at', $user);
+        self::assertArrayHasKey('activo', $user);
+        self::assertArrayHasKey('agenteId', $user);
+        self::assertArrayHasKey('agenteNombre', $user);
+        self::assertArrayHasKey('creadoAt', $user);
+        self::assertArrayHasKey('actualizadoAt', $user);
         self::assertIsInt($user['id']);
     }
 
@@ -175,12 +175,12 @@ class UserControllerTest extends WebTestCase
 
     public function testGetUserReturnsUser(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
-        $user = $this->createUser('target@test.local', ['ROLE_AGENT']);
+        $user = $this->createUser('target@test.local', ['ROLE_AGENTE']);
 
-        $this->client->request('GET', "/api/admin/users/{$user->getId()}", [], [], $this->authHeaders($token));
+        $this->client->request('GET', "/api/administracion/usuarios/{$user->getId()}", [], [], $this->authHeaders($token));
         $response = $this->client->getResponse();
         self::assertSame(200, $response->getStatusCode());
 
@@ -190,10 +190,10 @@ class UserControllerTest extends WebTestCase
 
     public function testGetUserReturns404ForNonExistent(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
-        $this->client->request('GET', '/api/admin/users/99999', [], [], $this->authHeaders($token));
+        $this->client->request('GET', '/api/administracion/usuarios/99999', [], [], $this->authHeaders($token));
         self::assertSame(404, $this->client->getResponse()->getStatusCode());
     }
 
@@ -203,15 +203,15 @@ class UserControllerTest extends WebTestCase
 
     public function testCreateUser(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
-        $this->client->request('POST', '/api/admin/users', [], [], $this->authHeaders($token) + [
+        $this->client->request('POST', '/api/administracion/usuarios', [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
         ], \json_encode([
             'email' => 'newuser@test.local',
             'password' => 'secure-pass',
-            'roles' => ['ROLE_AGENT'],
+            'roles' => ['ROLE_AGENTE'],
         ]));
 
         $response = $this->client->getResponse();
@@ -219,24 +219,24 @@ class UserControllerTest extends WebTestCase
 
         $data = \json_decode($response->getContent(), true);
         self::assertSame('newuser@test.local', $data['email']);
-        self::assertContains('ROLE_AGENT', $data['roles']);
-        self::assertTrue($data['is_active']);
+        self::assertContains('ROLE_AGENTE', $data['roles']);
+        self::assertTrue($data['activo']);
     }
 
     public function testCreateUserWithOptionalAgentLink(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
         $agent = $this->createAgent('Support Agent');
 
-        $this->client->request('POST', '/api/admin/users', [], [], $this->authHeaders($token) + [
+        $this->client->request('POST', '/api/administracion/usuarios', [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
         ], \json_encode([
             'email' => 'linked@test.local',
             'password' => 'secure-pass',
-            'roles' => ['ROLE_AGENT'],
-            'agent_id' => $agent->getId(),
+            'roles' => ['ROLE_AGENTE'],
+            'agenteId' => $agent->getId(),
         ]));
 
         $response = $this->client->getResponse();
@@ -244,18 +244,18 @@ class UserControllerTest extends WebTestCase
 
         $data = \json_decode($response->getContent(), true);
         self::assertSame('linked@test.local', $data['email']);
-        self::assertSame($agent->getId(), $data['agent_id']);
-        self::assertSame('Support Agent', $data['agent_name']);
+        self::assertSame($agent->getId(), $data['agenteId']);
+        self::assertSame('Support Agent', $data['agenteNombre']);
     }
 
     public function testCreateUserReturns409OnDuplicateEmail(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
         $this->createUser('existing@test.local');
 
-        $this->client->request('POST', '/api/admin/users', [], [], $this->authHeaders($token) + [
+        $this->client->request('POST', '/api/administracion/usuarios', [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
         ], \json_encode([
             'email' => 'existing@test.local',
@@ -267,13 +267,13 @@ class UserControllerTest extends WebTestCase
 
     public function testCreateUserRequiresEmailAndPassword(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
-        $this->client->request('POST', '/api/admin/users', [], [], $this->authHeaders($token) + [
+        $this->client->request('POST', '/api/administracion/usuarios', [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
         ], \json_encode([
-            'roles' => ['ROLE_AGENT'],
+            'roles' => ['ROLE_AGENTE'],
         ]));
 
         $response = $this->client->getResponse();
@@ -286,12 +286,12 @@ class UserControllerTest extends WebTestCase
 
     public function testUpdateUserEmail(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
         $user = $this->createUser('old@test.local');
 
-        $this->client->request('PUT', "/api/admin/users/{$user->getId()}", [], [], $this->authHeaders($token) + [
+        $this->client->request('PUT', "/api/administracion/usuarios/{$user->getId()}", [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
         ], \json_encode([
             'email' => 'new@test.local',
@@ -306,42 +306,42 @@ class UserControllerTest extends WebTestCase
 
     public function testUpdateUserRoles(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
-        $user = $this->createUser('roles@test.local', ['ROLE_AGENT']);
+        $user = $this->createUser('roles@test.local', ['ROLE_AGENTE']);
 
-        $this->client->request('PUT', "/api/admin/users/{$user->getId()}", [], [], $this->authHeaders($token) + [
+        $this->client->request('PUT', "/api/administracion/usuarios/{$user->getId()}", [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
         ], \json_encode([
-            'roles' => ['ROLE_ADMIN', 'ROLE_SUPERVISOR'],
+            'roles' => ['ROLE_ADMINISTRADOR', 'ROLE_SUPERVISOR'],
         ]));
 
         $response = $this->client->getResponse();
         self::assertSame(200, $response->getStatusCode());
 
         $data = \json_decode($response->getContent(), true);
-        self::assertContains('ROLE_ADMIN', $data['roles']);
+        self::assertContains('ROLE_ADMINISTRADOR', $data['roles']);
     }
 
     public function testUpdateUserActiveStatus(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
         $user = $this->createUser('active@test.local');
 
-        $this->client->request('PUT', "/api/admin/users/{$user->getId()}", [], [], $this->authHeaders($token) + [
+        $this->client->request('PUT', "/api/administracion/usuarios/{$user->getId()}", [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
         ], \json_encode([
-            'is_active' => false,
+            'activo' => false,
         ]));
 
         $response = $this->client->getResponse();
         self::assertSame(200, $response->getStatusCode());
 
         $data = \json_decode($response->getContent(), true);
-        self::assertFalse($data['is_active']);
+        self::assertFalse($data['activo']);
     }
 
     // ────────────────────────────────────────────────────────
@@ -350,12 +350,12 @@ class UserControllerTest extends WebTestCase
 
     public function testDeleteUserIsSoftDelete(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
         $user = $this->createUser('delete@test.local');
 
-        $this->client->request('DELETE', "/api/admin/users/{$user->getId()}", [], [], $this->authHeaders($token));
+        $this->client->request('DELETE', "/api/administracion/usuarios/{$user->getId()}", [], [], $this->authHeaders($token));
         $response = $this->client->getResponse();
         self::assertSame(204, $response->getStatusCode());
 
@@ -368,10 +368,10 @@ class UserControllerTest extends WebTestCase
 
     public function testDeleteNonExistentUserReturns404(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
-        $this->client->request('DELETE', '/api/admin/users/99999', [], [], $this->authHeaders($token));
+        $this->client->request('DELETE', '/api/administracion/usuarios/99999', [], [], $this->authHeaders($token));
         self::assertSame(404, $this->client->getResponse()->getStatusCode());
     }
 }

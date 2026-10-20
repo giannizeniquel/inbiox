@@ -24,14 +24,14 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  *
  * Todos los endpoints requieren los parámetros de query `from` y `to` en UTC.
  *
- * Autorización: cualquier agente autenticado (ROLE_AGENT o superior) puede acceder
+ * Autorización: cualquier agente autenticado (ROLE_AGENTE o superior) puede acceder
  * a todos los endpoints de aquí. Los reportes y métricas NO se restringen por agente: esta
  * es una decisión de producto intencional (ver docs/04_sprints/sprint_16
  * (Production Readiness).md), no un bug. `getAgenteIdDeAlcance()`, más abajo, siempre
  * devuelve null (ver AlcanceDeResponsabilidad), así que no se aplica filtrado por agente
  * a ninguna query.
  */
-#[IsGranted('ROLE_AGENT')]
+#[IsGranted('ROLE_AGENTE')]
 class ReporteController
 {
     private const DATETIME_FORMAT = 'Y-m-d\TH:i:sZ';
@@ -358,7 +358,7 @@ class ReporteController
      * GET /reports/export?from=...&to=...[&agent_id=1][&status=...][&tag=...]
      *
      * Restringido a supervisores (exportación masiva de PII): `#[IsGranted('ROLE_SUPERVISOR')]`.
-     * `ROLE_ADMIN` lo hereda mediante el `role_hierarchy` de `security.yaml`. La semántica
+     * `ROLE_ADMINISTRADOR` lo hereda mediante el `role_hierarchy` de `security.yaml`. La semántica
      * de los filtros (lista blanca de estados, semántica AND de etiquetas, máximo 5 etiquetas) coincide
      * exactamente con `ListTicketsQuery` mediante el `FiltrosDeTicketBuilder` compartido.
      */

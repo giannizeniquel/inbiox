@@ -51,7 +51,7 @@ class AgentControllerTest extends WebTestCase
 
     private function createUser(
         string $email,
-        array $roles = ['ROLE_AGENT'],
+        array $roles = ['ROLE_AGENTE'],
         bool $isActive = true,
         ?Agente $agent = null,
     ): Usuario {
@@ -109,10 +109,10 @@ class AgentControllerTest extends WebTestCase
     public function testListAgentsRequiresSupervisor(): void
     {
         $agent = $this->createAgent('Agent');
-        $this->createUser('agent@test.local', ['ROLE_AGENT'], true, $agent);
+        $this->createUser('agent@test.local', ['ROLE_AGENTE'], true, $agent);
         $token = $this->login('agent@test.local');
 
-        $this->client->request('GET', '/api/admin/agents', [], [], $this->authHeaders($token));
+        $this->client->request('GET', '/api/administracion/agentes', [], [], $this->authHeaders($token));
         self::assertSame(403, $this->client->getResponse()->getStatusCode());
     }
 
@@ -121,22 +121,22 @@ class AgentControllerTest extends WebTestCase
         $this->createUser('supervisor@test.local', ['ROLE_SUPERVISOR']);
         $token = $this->login('supervisor@test.local');
 
-        $this->client->request('GET', '/api/admin/agents', [], [], $this->authHeaders($token));
+        $this->client->request('GET', '/api/administracion/agentes', [], [], $this->authHeaders($token));
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
     }
 
     public function testListAgentsAllowedForAdmin(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
-        $this->client->request('GET', '/api/admin/agents', [], [], $this->authHeaders($token));
+        $this->client->request('GET', '/api/administracion/agentes', [], [], $this->authHeaders($token));
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
     }
 
     public function testListAgentsRequiresAuth(): void
     {
-        $this->client->request('GET', '/api/admin/agents');
+        $this->client->request('GET', '/api/administracion/agentes');
         self::assertSame(401, $this->client->getResponse()->getStatusCode());
     }
 
@@ -153,7 +153,7 @@ class AgentControllerTest extends WebTestCase
             $this->createAgent("Agent {$i}");
         }
 
-        $this->client->request('GET', '/api/admin/agents?page=1&limit=3', [], [], $this->authHeaders($token));
+        $this->client->request('GET', '/api/administracion/agentes?page=1&limit=3', [], [], $this->authHeaders($token));
         $response = $this->client->getResponse();
         self::assertSame(200, $response->getStatusCode());
 
@@ -161,7 +161,7 @@ class AgentControllerTest extends WebTestCase
         self::assertArrayHasKey('data', $data);
         self::assertArrayHasKey('meta', $data);
         self::assertCount(3, $data['data']);
-        self::assertTrue($data['meta']['has_next']);
+        self::assertTrue($data['meta']['haySiguiente']);
         self::assertSame(5, $data['meta']['total']);
     }
 
@@ -171,15 +171,15 @@ class AgentControllerTest extends WebTestCase
         $token = $this->login('supervisor@test.local');
 
         $agent = $this->createAgent('Linked Agent');
-        $this->createUser('linked@test.local', ['ROLE_AGENT'], true, $agent);
+        $this->createUser('linked@test.local', ['ROLE_AGENTE'], true, $agent);
 
-        $this->client->request('GET', '/api/admin/agents', [], [], $this->authHeaders($token));
+        $this->client->request('GET', '/api/administracion/agentes', [], [], $this->authHeaders($token));
         $data = \json_decode($this->client->getResponse()->getContent(), true);
 
         $agentData = $data['data'][0];
-        self::assertArrayHasKey('user_id', $agentData);
-        self::assertArrayHasKey('user_email', $agentData);
-        self::assertSame('linked@test.local', $agentData['user_email']);
+        self::assertArrayHasKey('usuarioId', $agentData);
+        self::assertArrayHasKey('usuarioEmail', $agentData);
+        self::assertSame('linked@test.local', $agentData['usuarioEmail']);
     }
 
     // ────────────────────────────────────────────────────────
@@ -193,12 +193,12 @@ class AgentControllerTest extends WebTestCase
 
         $agent = $this->createAgent('Target Agent');
 
-        $this->client->request('GET', "/api/admin/agents/{$agent->getId()}", [], [], $this->authHeaders($token));
+        $this->client->request('GET', "/api/administracion/agentes/{$agent->getId()}", [], [], $this->authHeaders($token));
         $response = $this->client->getResponse();
         self::assertSame(200, $response->getStatusCode());
 
         $data = \json_decode($response->getContent(), true);
-        self::assertSame('Target Agent', $data['name']);
+        self::assertSame('Target Agent', $data['nombre']);
     }
 
     public function testGetAgentReturns404ForNonExistent(): void
@@ -206,18 +206,18 @@ class AgentControllerTest extends WebTestCase
         $this->createUser('supervisor@test.local', ['ROLE_SUPERVISOR']);
         $token = $this->login('supervisor@test.local');
 
-        $this->client->request('GET', '/api/admin/agents/99999', [], [], $this->authHeaders($token));
+        $this->client->request('GET', '/api/administracion/agentes/99999', [], [], $this->authHeaders($token));
         self::assertSame(404, $this->client->getResponse()->getStatusCode());
     }
 
     public function testGetAgentAllowedForAdmin(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
         $agent = $this->createAgent('Target Agent');
 
-        $this->client->request('GET', "/api/admin/agents/{$agent->getId()}", [], [], $this->authHeaders($token));
+        $this->client->request('GET', "/api/administracion/agentes/{$agent->getId()}", [], [], $this->authHeaders($token));
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
     }
 
@@ -230,18 +230,18 @@ class AgentControllerTest extends WebTestCase
         $this->createUser('supervisor@test.local', ['ROLE_SUPERVISOR']);
         $token = $this->login('supervisor@test.local');
 
-        $this->client->request('POST', '/api/admin/agents', [], [], $this->authHeaders($token) + [
+        $this->client->request('POST', '/api/administracion/agentes', [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
         ], \json_encode([
-            'name' => 'New Agent',
+            'nombre' => 'New Agent',
         ]));
 
         $response = $this->client->getResponse();
         self::assertSame(201, $response->getStatusCode());
 
         $data = \json_decode($response->getContent(), true);
-        self::assertSame('New Agent', $data['name']);
-        self::assertTrue($data['active']);
+        self::assertSame('New Agent', $data['nombre']);
+        self::assertTrue($data['activo']);
     }
 
     public function testCreateAgentRequiresName(): void
@@ -249,7 +249,7 @@ class AgentControllerTest extends WebTestCase
         $this->createUser('supervisor@test.local', ['ROLE_SUPERVISOR']);
         $token = $this->login('supervisor@test.local');
 
-        $this->client->request('POST', '/api/admin/agents', [], [], $this->authHeaders($token) + [
+        $this->client->request('POST', '/api/administracion/agentes', [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
         ], \json_encode([]));
 
@@ -261,17 +261,17 @@ class AgentControllerTest extends WebTestCase
         $this->createUser('supervisor@test.local', ['ROLE_SUPERVISOR']);
         $token = $this->login('supervisor@test.local');
 
-        $this->client->request('POST', '/api/admin/agents', [], [], $this->authHeaders($token) + [
+        $this->client->request('POST', '/api/administracion/agentes', [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
         ], \json_encode([
-            'name' => 'New Agent',
+            'nombre' => 'New Agent',
         ]));
 
         $response = $this->client->getResponse();
         self::assertSame(201, $response->getStatusCode());
 
         $data = \json_decode($response->getContent(), true);
-        self::assertSame('UTC', $data['timezone']);
+        self::assertSame('UTC', $data['zonaHoraria']);
     }
 
     public function testCreateAgentWithExplicitValidTimezone(): void
@@ -279,18 +279,18 @@ class AgentControllerTest extends WebTestCase
         $this->createUser('supervisor@test.local', ['ROLE_SUPERVISOR']);
         $token = $this->login('supervisor@test.local');
 
-        $this->client->request('POST', '/api/admin/agents', [], [], $this->authHeaders($token) + [
+        $this->client->request('POST', '/api/administracion/agentes', [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
         ], \json_encode([
-            'name' => 'New Agent',
-            'timezone' => 'America/Sao_Paulo',
+            'nombre' => 'New Agent',
+            'zonaHoraria' => 'America/Sao_Paulo',
         ]));
 
         $response = $this->client->getResponse();
         self::assertSame(201, $response->getStatusCode());
 
         $data = \json_decode($response->getContent(), true);
-        self::assertSame('America/Sao_Paulo', $data['timezone']);
+        self::assertSame('America/Sao_Paulo', $data['zonaHoraria']);
     }
 
     public function testCreateAgentWithInvalidTimezoneReturns400(): void
@@ -298,11 +298,11 @@ class AgentControllerTest extends WebTestCase
         $this->createUser('supervisor@test.local', ['ROLE_SUPERVISOR']);
         $token = $this->login('supervisor@test.local');
 
-        $this->client->request('POST', '/api/admin/agents', [], [], $this->authHeaders($token) + [
+        $this->client->request('POST', '/api/administracion/agentes', [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
         ], \json_encode([
-            'name' => 'New Agent',
-            'timezone' => 'Not/A_Zone',
+            'nombre' => 'New Agent',
+            'zonaHoraria' => 'Not/A_Zone',
         ]));
 
         self::assertSame(400, $this->client->getResponse()->getStatusCode());
@@ -313,11 +313,11 @@ class AgentControllerTest extends WebTestCase
         $this->createUser('supervisor@test.local', ['ROLE_SUPERVISOR']);
         $token = $this->login('supervisor@test.local');
 
-        $this->client->request('POST', '/api/admin/agents', [], [], $this->authHeaders($token) + [
+        $this->client->request('POST', '/api/administracion/agentes', [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
         ], \json_encode([
-            'name' => 'New Agent',
-            'timezone' => 123,
+            'nombre' => 'New Agent',
+            'zonaHoraria' => 123,
         ]));
 
         self::assertSame(400, $this->client->getResponse()->getStatusCode());
@@ -325,13 +325,13 @@ class AgentControllerTest extends WebTestCase
 
     public function testCreateAgentAllowedForAdmin(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
-        $this->client->request('POST', '/api/admin/agents', [], [], $this->authHeaders($token) + [
+        $this->client->request('POST', '/api/administracion/agentes', [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
         ], \json_encode([
-            'name' => 'Admin Created Agent',
+            'nombre' => 'Admin Created Agent',
         ]));
 
         self::assertSame(201, $this->client->getResponse()->getStatusCode());
@@ -348,17 +348,17 @@ class AgentControllerTest extends WebTestCase
 
         $agent = $this->createAgent('Old Name');
 
-        $this->client->request('PUT', "/api/admin/agents/{$agent->getId()}", [], [], $this->authHeaders($token) + [
+        $this->client->request('PUT', "/api/administracion/agentes/{$agent->getId()}", [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
         ], \json_encode([
-            'name' => 'Updated Name',
+            'nombre' => 'Updated Name',
         ]));
 
         $response = $this->client->getResponse();
         self::assertSame(200, $response->getStatusCode());
 
         $data = \json_decode($response->getContent(), true);
-        self::assertSame('Updated Name', $data['name']);
+        self::assertSame('Updated Name', $data['nombre']);
     }
 
     public function testUpdateAgentActiveStatus(): void
@@ -368,17 +368,17 @@ class AgentControllerTest extends WebTestCase
 
         $agent = $this->createAgent('Toggle Agent');
 
-        $this->client->request('PUT', "/api/admin/agents/{$agent->getId()}", [], [], $this->authHeaders($token) + [
+        $this->client->request('PUT', "/api/administracion/agentes/{$agent->getId()}", [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
         ], \json_encode([
-            'active' => false,
+            'activo' => false,
         ]));
 
         $response = $this->client->getResponse();
         self::assertSame(200, $response->getStatusCode());
 
         $data = \json_decode($response->getContent(), true);
-        self::assertFalse($data['active']);
+        self::assertFalse($data['activo']);
     }
 
     public function testUpdateAgentTimezone(): void
@@ -388,17 +388,17 @@ class AgentControllerTest extends WebTestCase
 
         $agent = $this->createAgent('Timezone Agent');
 
-        $this->client->request('PUT', "/api/admin/agents/{$agent->getId()}", [], [], $this->authHeaders($token) + [
+        $this->client->request('PUT', "/api/administracion/agentes/{$agent->getId()}", [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
         ], \json_encode([
-            'timezone' => 'Europe/Lisbon',
+            'zonaHoraria' => 'Europe/Lisbon',
         ]));
 
         $response = $this->client->getResponse();
         self::assertSame(200, $response->getStatusCode());
 
         $data = \json_decode($response->getContent(), true);
-        self::assertSame('Europe/Lisbon', $data['timezone']);
+        self::assertSame('Europe/Lisbon', $data['zonaHoraria']);
 
         $this->em->clear();
         $updatedAgent = $this->em->getRepository(Agente::class)->find($agent->getId());
@@ -414,17 +414,17 @@ class AgentControllerTest extends WebTestCase
         $agent->setZonaHoraria('Europe/Lisbon');
         $this->em->flush();
 
-        $this->client->request('PUT', "/api/admin/agents/{$agent->getId()}", [], [], $this->authHeaders($token) + [
+        $this->client->request('PUT', "/api/administracion/agentes/{$agent->getId()}", [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
         ], \json_encode([
-            'name' => 'Timezone Agent Renamed',
+            'nombre' => 'Timezone Agent Renamed',
         ]));
 
         $response = $this->client->getResponse();
         self::assertSame(200, $response->getStatusCode());
 
         $data = \json_decode($response->getContent(), true);
-        self::assertSame('Europe/Lisbon', $data['timezone']);
+        self::assertSame('Europe/Lisbon', $data['zonaHoraria']);
     }
 
     public function testUpdateAgentWithInvalidTimezoneReturns400(): void
@@ -434,10 +434,10 @@ class AgentControllerTest extends WebTestCase
 
         $agent = $this->createAgent('Timezone Agent');
 
-        $this->client->request('PUT', "/api/admin/agents/{$agent->getId()}", [], [], $this->authHeaders($token) + [
+        $this->client->request('PUT', "/api/administracion/agentes/{$agent->getId()}", [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
         ], \json_encode([
-            'timezone' => 'Not/A_Zone',
+            'zonaHoraria' => 'Not/A_Zone',
         ]));
 
         self::assertSame(400, $this->client->getResponse()->getStatusCode());
@@ -454,10 +454,10 @@ class AgentControllerTest extends WebTestCase
 
         $agent = $this->createAgent('Timezone Agent');
 
-        $this->client->request('PUT', "/api/admin/agents/{$agent->getId()}", [], [], $this->authHeaders($token) + [
+        $this->client->request('PUT', "/api/administracion/agentes/{$agent->getId()}", [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
         ], \json_encode([
-            'timezone' => 123,
+            'zonaHoraria' => 123,
         ]));
 
         self::assertSame(400, $this->client->getResponse()->getStatusCode());
@@ -465,15 +465,15 @@ class AgentControllerTest extends WebTestCase
 
     public function testUpdateAgentAllowedForAdmin(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
         $agent = $this->createAgent('Old Name');
 
-        $this->client->request('PUT', "/api/admin/agents/{$agent->getId()}", [], [], $this->authHeaders($token) + [
+        $this->client->request('PUT', "/api/administracion/agentes/{$agent->getId()}", [], [], $this->authHeaders($token) + [
             'CONTENT_TYPE' => 'application/json',
         ], \json_encode([
-            'name' => 'Updated By Admin',
+            'nombre' => 'Updated By Admin',
         ]));
 
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
@@ -490,7 +490,7 @@ class AgentControllerTest extends WebTestCase
 
         $agent = $this->createAgent('Delete Agent');
 
-        $this->client->request('DELETE', "/api/admin/agents/{$agent->getId()}", [], [], $this->authHeaders($token));
+        $this->client->request('DELETE', "/api/administracion/agentes/{$agent->getId()}", [], [], $this->authHeaders($token));
         $response = $this->client->getResponse();
         self::assertSame(204, $response->getStatusCode());
 
@@ -506,18 +506,18 @@ class AgentControllerTest extends WebTestCase
         $this->createUser('supervisor@test.local', ['ROLE_SUPERVISOR']);
         $token = $this->login('supervisor@test.local');
 
-        $this->client->request('DELETE', '/api/admin/agents/99999', [], [], $this->authHeaders($token));
+        $this->client->request('DELETE', '/api/administracion/agentes/99999', [], [], $this->authHeaders($token));
         self::assertSame(404, $this->client->getResponse()->getStatusCode());
     }
 
     public function testDeleteAgentAllowedForAdmin(): void
     {
-        $this->createUser('admin@test.local', ['ROLE_ADMIN']);
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
         $token = $this->login('admin@test.local');
 
         $agent = $this->createAgent('Delete Agent');
 
-        $this->client->request('DELETE', "/api/admin/agents/{$agent->getId()}", [], [], $this->authHeaders($token));
+        $this->client->request('DELETE', "/api/administracion/agentes/{$agent->getId()}", [], [], $this->authHeaders($token));
         self::assertSame(204, $this->client->getResponse()->getStatusCode());
     }
 }

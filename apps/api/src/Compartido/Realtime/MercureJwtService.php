@@ -173,8 +173,8 @@ final class MercureJwtService
      * Emite un JWT de Mercure para un usuario concreto (base para la autorización de PR3).
      *
      * Los topics se acotarán por rol:
-     * - ROLE_AGENT: topics propios del agente + tickets
-     * - ROLE_SUPERVISOR/ROLE_ADMIN: todos + comodín
+     * - ROLE_AGENTE: topics propios del agente + tickets
+     * - ROLE_SUPERVISOR/ROLE_ADMINISTRADOR: todos + comodín
      */
     public function issueParaUsuario(UserInterface $usuario, ?Agente $agente = null): Token
     {
@@ -188,7 +188,7 @@ final class MercureJwtService
         }
 
         // Supervisores y administradores obtienen acceso comodín
-        if (\in_array('ROLE_SUPERVISOR', $roles, true) || \in_array('ROLE_ADMIN', $roles, true)) {
+        if (\in_array('ROLE_SUPERVISOR', $roles, true) || \in_array('ROLE_ADMINISTRADOR', $roles, true)) {
             $topics[] = '*';
         }
 

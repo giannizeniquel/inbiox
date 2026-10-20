@@ -14,8 +14,8 @@ use Symfony\Bundle\SecurityBundle\Security;
  *
  * Covers:
  * - ROLE_SUPERVISOR → null (no scope)
- * - ROLE_ADMIN → null (no scope)
- * - ROLE_AGENT without linked Agent → null (R1)
+ * - ROLE_ADMINISTRADOR → null (no scope)
+ * - ROLE_AGENTE without linked Agent → null (R1)
  * - No authenticated user → null
  */
 class OwnershipScopeTest extends TestCase
@@ -29,7 +29,7 @@ class OwnershipScopeTest extends TestCase
         $security->method('getUser')->willReturn($user);
         $security->method('isGranted')->willReturnCallback(function (string $role): bool {
             // ROLE_SUPERVISOR is granted to ROLE_SUPERVISOR itself
-            return 'ROLE_SUPERVISOR' === $role || 'ROLE_AGENT' === $role;
+            return 'ROLE_SUPERVISOR' === $role || 'ROLE_AGENTE' === $role;
         });
 
         $scope = new AlcanceDeResponsabilidad($security);
@@ -39,12 +39,12 @@ class OwnershipScopeTest extends TestCase
     public function testAdminReturnsNull(): void
     {
         $user = new Usuario();
-        $user->setRoles(['ROLE_ADMIN']);
+        $user->setRoles(['ROLE_ADMINISTRADOR']);
 
         $security = $this->createMock(Security::class);
         $security->method('getUser')->willReturn($user);
         $security->method('isGranted')->willReturnCallback(function (string $role): bool {
-            return \in_array($role, ['ROLE_ADMIN', 'ROLE_SUPERVISOR', 'ROLE_AGENT'], true);
+            return \in_array($role, ['ROLE_ADMINISTRADOR', 'ROLE_SUPERVISOR', 'ROLE_AGENTE'], true);
         });
 
         $scope = new AlcanceDeResponsabilidad($security);
@@ -54,13 +54,13 @@ class OwnershipScopeTest extends TestCase
     public function testAgentWithoutLinkedAgentReturnsNull(): void
     {
         $user = new Usuario();
-        $user->setRoles(['ROLE_AGENT']);
+        $user->setRoles(['ROLE_AGENTE']);
         // No agent set (null)
 
         $security = $this->createMock(Security::class);
         $security->method('getUser')->willReturn($user);
         $security->method('isGranted')->willReturnCallback(function (string $role): bool {
-            return \in_array($role, ['ROLE_AGENT'], true);
+            return \in_array($role, ['ROLE_AGENTE'], true);
         });
 
         $scope = new AlcanceDeResponsabilidad($security);

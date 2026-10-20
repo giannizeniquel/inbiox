@@ -34,8 +34,8 @@ final class AlcanceDeResponsabilidad
     /**
      * Obtiene el ID de agente que acota al usuario actual.
      *
-     * - ROLE_ADMIN / ROLE_SUPERVISOR: null (sin alcance — ven todo)
-     * - ROLE_AGENT: null (los agentes ven todos los tickets de su espacio de trabajo;
+     * - ROLE_ADMINISTRADOR / ROLE_SUPERVISOR: null (sin alcance — ven todo)
+     * - ROLE_AGENTE: null (los agentes ven todos los tickets de su espacio de trabajo;
      *   la segregación la resuelve AlcanceDeEspacioDeTrabajo.phone_number_id)
      * - Sin usuario autenticado: null
      */

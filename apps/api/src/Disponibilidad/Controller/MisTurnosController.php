@@ -28,7 +28,7 @@ final class MisTurnosController
         private readonly ReemplazarTurnosUseCase $reemplazarTurnosUseCase,
     ) {}
 
-    #[IsGranted('ROLE_AGENT')]
+    #[IsGranted('ROLE_AGENTE')]
     #[Route('/api/me/shifts', name: 'app_me_shifts_list', methods: ['GET'])]
     public function getTurnos(): JsonResponse
     {
@@ -54,7 +54,7 @@ final class MisTurnosController
         return new JsonResponse($turnos);
     }
 
-    #[IsGranted('ROLE_AGENT')]
+    #[IsGranted('ROLE_AGENTE')]
     #[Route('/api/me/shifts', name: 'app_me_shifts_replace', methods: ['PUT'])]
     public function reemplazarTurnos(#[MapRequestPayload] ReemplazarTurnosRequest $request): JsonResponse
     {

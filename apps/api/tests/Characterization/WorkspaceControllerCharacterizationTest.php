@@ -13,38 +13,38 @@ final class WorkspaceControllerCharacterizationTest extends CharacterizationTest
     private const ISO_DATETIME = '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/';
 
     private const WORKSPACE_KEYS = [
-        'id', 'phone_number_id', 'display_name', 'is_active',
-        'agent_count', 'agent_ids', 'created_at', 'updated_at',
+        'id', 'phoneNumberId', 'nombreVisible', 'activo',
+        'cantidadDeAgentes', 'agenteIds', 'creadoAt', 'actualizadoAt',
     ];
 
     private function adminToken(): string
     {
-        return $this->loginAs('ws-admin@characterization.local', ['ROLE_ADMIN']);
+        return $this->loginAs('ws-admin@characterization.local', ['ROLE_ADMINISTRADOR']);
     }
 
     private function assertWorkspaceBody(array $body, int $id, string $phone, string $name, bool $active, array $agentIds): void
     {
         self::assertSame(self::WORKSPACE_KEYS, \array_keys($body));
         self::assertSame($id, $body['id']);
-        self::assertSame($phone, $body['phone_number_id']);
-        self::assertSame($name, $body['display_name']);
-        self::assertSame($active, $body['is_active']);
-        self::assertSame(\count($agentIds), $body['agent_count']);
-        self::assertSame($agentIds, $body['agent_ids']);
-        self::assertMatchesRegularExpression(self::ISO_DATETIME, $body['created_at']);
-        self::assertMatchesRegularExpression(self::ISO_DATETIME, $body['updated_at']);
+        self::assertSame($phone, $body['phoneNumberId']);
+        self::assertSame($name, $body['nombreVisible']);
+        self::assertSame($active, $body['activo']);
+        self::assertSame(\count($agentIds), $body['cantidadDeAgentes']);
+        self::assertSame($agentIds, $body['agenteIds']);
+        self::assertMatchesRegularExpression(self::ISO_DATETIME, $body['creadoAt']);
+        self::assertMatchesRegularExpression(self::ISO_DATETIME, $body['actualizadoAt']);
     }
 
     // ── Access ──
 
     public function testAgentAndSupervisorAreForbidden(): void
     {
-        $agentToken = $this->loginAs('ws-agent@characterization.local', ['ROLE_AGENT'], $this->createAgent('A'));
-        $this->assertSecurityForbidden($this->request('GET', '/api/admin/workspaces', $agentToken));
+        $agentToken = $this->loginAs('ws-agent@characterization.local', ['ROLE_AGENTE'], $this->createAgent('A'));
+        $this->assertSecurityForbidden($this->request('GET', '/api/administracion/espacios-de-trabajo', $agentToken));
 
         $supervisorToken = $this->loginAs('ws-sup@characterization.local', ['ROLE_SUPERVISOR']);
-        $this->assertSecurityForbidden($this->request('GET', '/api/admin/workspaces', $supervisorToken));
-        $this->assertSecurityForbidden($this->request('POST', '/api/admin/workspaces', $supervisorToken, ['phoneNumberId' => 'x', 'displayName' => 'y']));
+        $this->assertSecurityForbidden($this->request('GET', '/api/administracion/espacios-de-trabajo', $supervisorToken));
+        $this->assertSecurityForbidden($this->request('POST', '/api/administracion/espacios-de-trabajo', $supervisorToken, ['phoneNumberId' => 'x', 'nombreVisible' => 'y']));
         self::assertSame(0, $this->countRows('workspaces'));
     }
 
@@ -59,12 +59,12 @@ final class WorkspaceControllerCharacterizationTest extends CharacterizationTest
         $this->em->flush();
         $token = $this->adminToken();
 
-        $response = $this->request('GET', '/api/admin/workspaces', $token);
+        $response = $this->request('GET', '/api/administracion/espacios-de-trabajo', $token);
 
         self::assertSame(200, $response->getStatusCode());
         $body = $this->json($response);
         self::assertSame(['data', 'meta'], \array_keys($body));
-        self::assertSame(['page' => 1, 'limit' => 20, 'total' => 2, 'has_next' => false], $body['meta']);
+        self::assertSame(['page' => 1, 'limit' => 20, 'total' => 2, 'haySiguiente' => false], $body['meta']);
         self::assertCount(2, $body['data']);
         $this->assertWorkspaceBody($body['data'][0], $second->getId(), 'char-ws-2', 'Second', true, [$agent->getId()]);
         $this->assertWorkspaceBody($body['data'][1], $first->getId(), 'char-ws-1', 'First', true, []);
@@ -76,12 +76,12 @@ final class WorkspaceControllerCharacterizationTest extends CharacterizationTest
         $second = $this->createWorkspace('char-ws-2', 'Second');
         $token = $this->adminToken();
 
-        $body = $this->json($this->request('GET', '/api/admin/workspaces?page=1&limit=1', $token));
-        self::assertSame(['page' => 1, 'limit' => 1, 'total' => 2, 'has_next' => true], $body['meta']);
+        $body = $this->json($this->request('GET', '/api/administracion/espacios-de-trabajo?page=1&limit=1', $token));
+        self::assertSame(['page' => 1, 'limit' => 1, 'total' => 2, 'haySiguiente' => true], $body['meta']);
         self::assertSame([$second->getId()], \array_column($body['data'], 'id'));
 
-        $body = $this->json($this->request('GET', '/api/admin/workspaces?page=0&limit=500', $token));
-        self::assertSame(['page' => 1, 'limit' => 100, 'total' => 2, 'has_next' => false], $body['meta']);
+        $body = $this->json($this->request('GET', '/api/administracion/espacios-de-trabajo?page=0&limit=500', $token));
+        self::assertSame(['page' => 1, 'limit' => 100, 'total' => 2, 'haySiguiente' => false], $body['meta']);
     }
 
     // ── app_admin_workspaces_create ──
@@ -90,10 +90,10 @@ final class WorkspaceControllerCharacterizationTest extends CharacterizationTest
     {
         $token = $this->adminToken();
 
-        $response = $this->request('POST', '/api/admin/workspaces', $token, [
+        $response = $this->request('POST', '/api/administracion/espacios-de-trabajo', $token, [
             'phoneNumberId' => 'char-new',
-            'displayName' => 'New WS',
-            'isActive' => false,
+            'nombreVisible' => 'New WS',
+            'activo' => false,
         ]);
 
         self::assertSame(201, $response->getStatusCode());
@@ -110,19 +110,19 @@ final class WorkspaceControllerCharacterizationTest extends CharacterizationTest
     {
         $token = $this->adminToken();
 
-        $body = $this->json($this->request('POST', '/api/admin/workspaces', $token, ['phoneNumberId' => 'char-new', 'displayName' => 'New WS']));
+        $body = $this->json($this->request('POST', '/api/administracion/espacios-de-trabajo', $token, ['phoneNumberId' => 'char-new', 'nombreVisible' => 'New WS']));
 
-        self::assertTrue($body['is_active']);
+        self::assertTrue($body['activo']);
     }
 
     public function testCreateValidationErrors(): void
     {
         $token = $this->adminToken();
 
-        $this->assertJsonResponse(400, ['error' => 'Invalid JSON body'], $this->request('POST', '/api/admin/workspaces', $token, '{not json'));
-        $this->assertJsonResponse(400, ['error' => 'phoneNumberId is required and must be a string'], $this->request('POST', '/api/admin/workspaces', $token, ['displayName' => 'X']));
-        $this->assertJsonResponse(400, ['error' => 'phoneNumberId is required and must be a string'], $this->request('POST', '/api/admin/workspaces', $token, ['phoneNumberId' => 123, 'displayName' => 'X']));
-        $this->assertJsonResponse(400, ['error' => 'displayName is required and must be a string'], $this->request('POST', '/api/admin/workspaces', $token, ['phoneNumberId' => 'char-x']));
+        $this->assertJsonResponse(400, ['error' => 'Invalid JSON body'], $this->request('POST', '/api/administracion/espacios-de-trabajo', $token, '{not json'));
+        $this->assertJsonResponse(400, ['error' => 'phoneNumberId is required and must be a string'], $this->request('POST', '/api/administracion/espacios-de-trabajo', $token, ['nombreVisible' => 'X']));
+        $this->assertJsonResponse(400, ['error' => 'phoneNumberId is required and must be a string'], $this->request('POST', '/api/administracion/espacios-de-trabajo', $token, ['phoneNumberId' => 123, 'nombreVisible' => 'X']));
+        $this->assertJsonResponse(400, ['error' => 'nombreVisible is required and must be a string'], $this->request('POST', '/api/administracion/espacios-de-trabajo', $token, ['phoneNumberId' => 'char-x']));
         self::assertSame(0, $this->countRows('workspaces'));
     }
 
@@ -131,7 +131,7 @@ final class WorkspaceControllerCharacterizationTest extends CharacterizationTest
         $this->createWorkspace('char-dup', 'Existing');
         $token = $this->adminToken();
 
-        $response = $this->request('POST', '/api/admin/workspaces', $token, ['phoneNumberId' => 'char-dup', 'displayName' => 'Other']);
+        $response = $this->request('POST', '/api/administracion/espacios-de-trabajo', $token, ['phoneNumberId' => 'char-dup', 'nombreVisible' => 'Other']);
 
         $this->assertJsonResponse(409, ['error' => 'A workspace with this phone number ID already exists'], $response);
         self::assertSame(1, $this->countRows('workspaces'));
@@ -144,7 +144,7 @@ final class WorkspaceControllerCharacterizationTest extends CharacterizationTest
         $workspace = $this->createWorkspace('char-get', 'Get Me');
         $token = $this->adminToken();
 
-        $response = $this->request('GET', '/api/admin/workspaces/' . $workspace->getId(), $token);
+        $response = $this->request('GET', '/api/administracion/espacios-de-trabajo/' . $workspace->getId(), $token);
 
         self::assertSame(200, $response->getStatusCode());
         $this->assertWorkspaceBody($this->json($response), $workspace->getId(), 'char-get', 'Get Me', true, []);
@@ -154,7 +154,7 @@ final class WorkspaceControllerCharacterizationTest extends CharacterizationTest
     {
         $token = $this->adminToken();
 
-        $this->assertJsonResponse(404, ['error' => 'Workspace not found'], $this->request('GET', '/api/admin/workspaces/999999999', $token));
+        $this->assertJsonResponse(404, ['error' => 'Workspace not found'], $this->request('GET', '/api/administracion/espacios-de-trabajo/999999999', $token));
     }
 
     // ── app_admin_workspaces_update ──
@@ -164,19 +164,19 @@ final class WorkspaceControllerCharacterizationTest extends CharacterizationTest
         $workspace = $this->createWorkspace('char-upd', 'Before');
         $token = $this->adminToken();
 
-        $response = $this->request('PUT', '/api/admin/workspaces/' . $workspace->getId(), $token, [
+        $response = $this->request('PUT', '/api/administracion/espacios-de-trabajo/' . $workspace->getId(), $token, [
             'phoneNumberId' => 'char-upd-2',
-            'displayName' => 'After',
-            'isActive' => false,
+            'nombreVisible' => 'After',
+            'activo' => false,
         ]);
 
         self::assertSame(200, $response->getStatusCode());
         $this->assertWorkspaceBody($this->json($response), $workspace->getId(), 'char-upd-2', 'After', false, []);
         $row = $this->connection()->fetchAssociative('SELECT phone_number_id, display_name, is_active FROM workspaces WHERE id = ?', [$workspace->getId()]);
-        self::assertSame(['phone_number_id' => 'char-upd-2', 'display_name' => 'After', 'is_active' => 0], [
-            'phone_number_id' => $row['phone_number_id'],
-            'display_name' => $row['display_name'],
-            'is_active' => (int) $row['is_active'],
+        self::assertSame(['phoneNumberId' => 'char-upd-2', 'nombreVisible' => 'After', 'activo' => 0], [
+            'phoneNumberId' => $row['phone_number_id'],
+            'nombreVisible' => $row['display_name'],
+            'activo' => (int) $row['is_active'],
         ]);
     }
 
@@ -184,12 +184,12 @@ final class WorkspaceControllerCharacterizationTest extends CharacterizationTest
     {
         $workspace = $this->createWorkspace('char-upd', 'Before');
         $token = $this->adminToken();
-        $uri = '/api/admin/workspaces/' . $workspace->getId();
+        $uri = '/api/administracion/espacios-de-trabajo/' . $workspace->getId();
 
-        $this->assertJsonResponse(404, ['error' => 'Workspace not found'], $this->request('PUT', '/api/admin/workspaces/999999999', $token, ['displayName' => 'X']));
+        $this->assertJsonResponse(404, ['error' => 'Workspace not found'], $this->request('PUT', '/api/administracion/espacios-de-trabajo/999999999', $token, ['nombreVisible' => 'X']));
         $this->assertJsonResponse(400, ['error' => 'Invalid JSON body'], $this->request('PUT', $uri, $token, '{not json'));
         $this->assertJsonResponse(400, ['error' => 'phoneNumberId must be a non-empty string'], $this->request('PUT', $uri, $token, ['phoneNumberId' => 42]));
-        $this->assertJsonResponse(400, ['error' => 'displayName must be a non-empty string'], $this->request('PUT', $uri, $token, ['displayName' => '']));
+        $this->assertJsonResponse(400, ['error' => 'nombreVisible must be a non-empty string'], $this->request('PUT', $uri, $token, ['nombreVisible' => '']));
 
         self::assertSame('Before', $this->connection()->fetchOne('SELECT display_name FROM workspaces WHERE id = ?', [$workspace->getId()]));
     }
@@ -201,7 +201,7 @@ final class WorkspaceControllerCharacterizationTest extends CharacterizationTest
         $workspace = $this->createWorkspace('char-del', 'Delete Me');
         $token = $this->adminToken();
 
-        $response = $this->request('DELETE', '/api/admin/workspaces/' . $workspace->getId(), $token);
+        $response = $this->request('DELETE', '/api/administracion/espacios-de-trabajo/' . $workspace->getId(), $token);
 
         self::assertSame(204, $response->getStatusCode());
         self::assertSame('', $response->getContent());
@@ -213,7 +213,7 @@ final class WorkspaceControllerCharacterizationTest extends CharacterizationTest
     {
         $token = $this->adminToken();
 
-        $this->assertJsonResponse(404, ['error' => 'Workspace not found'], $this->request('DELETE', '/api/admin/workspaces/999999999', $token));
+        $this->assertJsonResponse(404, ['error' => 'Workspace not found'], $this->request('DELETE', '/api/administracion/espacios-de-trabajo/999999999', $token));
     }
 
     // ── app_admin_workspaces_assign_agents ──
@@ -228,15 +228,15 @@ final class WorkspaceControllerCharacterizationTest extends CharacterizationTest
         $this->em->flush();
         $token = $this->adminToken();
 
-        $response = $this->request('PUT', '/api/admin/workspaces/' . $workspace->getId() . '/agents', $token, [
-            'agentIds' => [$new1->getId(), 999999999, $new2->getId()],
+        $response = $this->request('PUT', '/api/administracion/espacios-de-trabajo/' . $workspace->getId() . '/agentes', $token, [
+            'agenteIds' => [$new1->getId(), 999999999, $new2->getId()],
         ]);
 
         self::assertSame(200, $response->getStatusCode());
         $body = $this->json($response);
-        self::assertSame(['workspace_id', 'agent_ids'], \array_keys($body));
-        self::assertSame($workspace->getId(), $body['workspace_id']);
-        self::assertEqualsCanonicalizing([$new1->getId(), $new2->getId()], $body['agent_ids']);
+        self::assertSame(['espacioDeTrabajoId', 'agenteIds'], \array_keys($body));
+        self::assertSame($workspace->getId(), $body['espacioDeTrabajoId']);
+        self::assertEqualsCanonicalizing([$new1->getId(), $new2->getId()], $body['agenteIds']);
 
         $stored = \array_map('intval', $this->connection()->fetchFirstColumn('SELECT agent_id FROM agent_workspace WHERE workspace_id = ?', [$workspace->getId()]));
         self::assertEqualsCanonicalizing([$new1->getId(), $new2->getId()], $stored);
@@ -250,9 +250,9 @@ final class WorkspaceControllerCharacterizationTest extends CharacterizationTest
         $token = $this->adminToken();
 
         // A missing agentIds key behaves like an empty list.
-        $response = $this->request('PUT', '/api/admin/workspaces/' . $workspace->getId() . '/agents', $token, []);
+        $response = $this->request('PUT', '/api/administracion/espacios-de-trabajo/' . $workspace->getId() . '/agentes', $token, []);
 
-        $this->assertJsonResponse(200, ['workspace_id' => $workspace->getId(), 'agent_ids' => []], $response);
+        $this->assertJsonResponse(200, ['espacioDeTrabajoId' => $workspace->getId(), 'agenteIds' => []], $response);
         self::assertSame(0, $this->countRows('agent_workspace'));
     }
 
@@ -263,12 +263,12 @@ final class WorkspaceControllerCharacterizationTest extends CharacterizationTest
         $workspace->addAgente($old);
         $this->em->flush();
         $token = $this->adminToken();
-        $uri = '/api/admin/workspaces/' . $workspace->getId() . '/agents';
+        $uri = '/api/administracion/espacios-de-trabajo/' . $workspace->getId() . '/agentes';
 
-        $this->assertJsonResponse(404, ['error' => 'Workspace not found'], $this->request('PUT', '/api/admin/workspaces/999999999/agents', $token, ['agentIds' => []]));
+        $this->assertJsonResponse(404, ['error' => 'Workspace not found'], $this->request('PUT', '/api/administracion/espacios-de-trabajo/999999999/agentes', $token, ['agenteIds' => []]));
         $this->assertJsonResponse(400, ['error' => 'Invalid JSON body'], $this->request('PUT', $uri, $token, '{not json'));
-        $this->assertJsonResponse(400, ['error' => 'agentIds must be an array of integers'], $this->request('PUT', $uri, $token, ['agentIds' => 'x']));
-        $this->assertJsonResponse(400, ['error' => 'agentIds must contain only integers'], $this->request('PUT', $uri, $token, ['agentIds' => ['1']]));
+        $this->assertJsonResponse(400, ['error' => 'agenteIds must be an array of integers'], $this->request('PUT', $uri, $token, ['agenteIds' => 'x']));
+        $this->assertJsonResponse(400, ['error' => 'agenteIds must contain only integers'], $this->request('PUT', $uri, $token, ['agenteIds' => ['1']]));
 
         // The transaction rolled back: the previous agent set is intact.
         $stored = \array_map('intval', $this->connection()->fetchFirstColumn('SELECT agent_id FROM agent_workspace WHERE workspace_id = ?', [$workspace->getId()]));
