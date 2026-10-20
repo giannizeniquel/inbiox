@@ -13,7 +13,7 @@
 | [F4](#f4-transiciones-de-estado-del-ticket) | Transiciones de estado (resolver, cerrar) | Botón "Resolver" / API |
 | [F5](#f5-asignación-manual) | Asignación manual | Desplegable de la bandeja |
 | [F6](#f6-asignación-automática) | Asignación automática | Cada mensaje entrante / API |
-| [F7](#f7-disponibilidad-override-y-turnos) | Disponibilidad, override y turnos | `/settings` / API |
+| [F7](#f7-disponibilidad-override-y-turnos) | Disponibilidad, override y turnos | `/configuracion` / API |
 | [F8](#f8-ventana-de-24-h-cierre-automático-y-reapertura) | Ventana de 24 h: cierre y reapertura | Proceso `window-closer` / mensaje entrante |
 | [F9](#f9-reglas-automáticas-y-auto-respuesta) | Reglas automáticas y auto-respuesta | Mensaje entrante |
 | [F10](#f10-etiquetas) | Etiquetas | Regla automática |
@@ -260,7 +260,7 @@ stateDiagram-v2
 
 | Operación | Endpoint | Caso de uso | Desde la UI |
 |---|---|---|---|
-| Reemplazar mis turnos | `PUT /api/me/shifts` | `ReplaceAgentShiftsUseCase` (`:56-90`) | Sí, `/settings` → Horario laboral |
+| Reemplazar mis turnos | `PUT /api/me/shifts` | `ReplaceAgentShiftsUseCase` (`:56-90`) | Sí, `/configuracion` → Horario laboral |
 | Crear/borrar turno de un agente | `POST /api/agents/{id}/shifts`, `DELETE …/shifts/{shiftId}` | `CreateAgentShiftUseCase` (`:105-137`), `DeleteAgentShiftUseCase` | **No** (página rota) |
 | Override | `POST/DELETE /api/agents/{id}/availability` | `SetAgentAvailabilityUseCase` (`:42-91`), `ClearAgentAvailabilityUseCase` | **No** |
 | Zona horaria | `PUT /api/admin/agents/{id}` | `Admin/AgentController::update` | Sí, Admin → Agentes |
@@ -309,7 +309,7 @@ stateDiagram-v2
 4. Máximo una por contacto cada **2 h** (`AUTO_REPLY_WINDOW_HOURS = 2`, `:38`; el docblock `:31` y el análisis de brecha dicen 4 h). Guardado en `processed_events`.
 5. Respeta la ventana de 24 h; envía por Graph; persiste el mensaje con `sender_type=automatic`.
 
-**Si falla, revisar:** `AutoReplyService.php` (errores tragados en `:60-66`) → configuración del agente en `/settings` → `processed_events` (clave `auto-reply:{contactId}`) → `rule_execution_logs` para las reglas.
+**Si falla, revisar:** `AutoReplyService.php` (errores tragados en `:60-66`) → configuración del agente en `/configuracion` → `processed_events` (clave `auto-reply:{contactId}`) → `rule_execution_logs` para las reglas.
 
 ---
 
@@ -396,7 +396,7 @@ Un mensaje `failed` no afecta el estado del ticket.
 
 ## F15. Reportes y exportación
 
-**Entrada:** `/reports` → `GetReportsDashboardUseCase` → 15 endpoints `GET /api/reports/*` → `Controller/ReportingController.php` → `Application/Service/ReportingService.php` (fachada) → `Repository/ReportingRepository.php` (SQL nativo).
+**Entrada:** `/reportes` → `GetReportsDashboardUseCase` → 15 endpoints `GET /api/reports/*` → `Controller/ReportingController.php` → `Application/Service/ReportingService.php` (fachada) → `Repository/ReportingRepository.php` (SQL nativo).
 
 | Métrica | Definición en código | Observación |
 |---|---|---|
@@ -435,7 +435,7 @@ Un mensaje `failed` no afecta el estado del ticket.
 
 | # | Paso | Dónde |
 |---|---|---|
-| 1 | El shell, en la ruta `/inbox`, pinta directamente `TicketListComponent` + `ConversacionComponent` (la ruta `/inbox` no tiene componente propio). | `shell/app-shell.component.html:24-37` |
+| 1 | El shell, en la ruta `/bandeja`, pinta directamente `TicketListComponent` + `ConversacionComponent` (la ruta `/bandeja` no tiene componente propio). | `shell/app-shell.component.html:24-37` |
 | 2 | `GET /api/tickets[?teamId=N]` **sin `page`/`limit`** → el backend devuelve 20. | `data-access/ticket/ticket-api.service.ts:20-34`; `Controller/InboxController.php:44-45`; `Application/Query/ListTicketsQuery.php` |
 | 3 | Pestañas Míos / Sin asignar / Todos y contadores: en el navegador sobre lo cargado. | `data-access/ticket/ticket.store.ts:86-107` |
 | 4 | Abrir ticket: `GET /api/tickets/{id}/messages?limit=20&offset=0` (mensajes de toda la conversación); scroll hacia arriba pide más. | `ticket-list.component.ts:178-194`; `conversacion-scroll.controller.ts:180-213`; `Application/Query/GetTicketMessagesQuery.php:23-53` |

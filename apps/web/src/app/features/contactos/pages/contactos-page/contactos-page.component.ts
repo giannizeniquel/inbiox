@@ -25,7 +25,7 @@ let updatingFromUrl = false;
  * - Single panel on mobile
  * - Loads contacts on init via ContactoApiService.getContacts
  * - NO realtime in Fase 2A (deterministic only)
- * - Supports /contacts/:contactId deep links
+ * - Supports /contactos/:contactoId deep links
  * - Create/Edit dialogs for CRUD operations
  */
 @Component({
@@ -67,7 +67,7 @@ export class ContactosPageComponent implements OnInit, OnDestroy {
 
     // Handle deep link and browser back/forward buttons
     this.routeSubscription = this.route.paramMap.subscribe(params => {
-      const contactoId = params.get('contactId');
+      const contactoId = params.get('contactoId');
       if (contactoId) {
         // Check if contact is already in the cached list
         const cached = this.store.contactoById(contactoId);
@@ -107,8 +107,8 @@ export class ContactosPageComponent implements OnInit, OnDestroy {
 
     // Sync from URL on first load (initial navigation only)
     const q = this.route.snapshot.queryParams['q'];
-    const estado = this.route.snapshot.queryParams['status'];
-    const channel = this.route.snapshot.queryParams['channel'];
+    const estado = this.route.snapshot.queryParams['estado'] ?? this.route.snapshot.queryParams['status'];
+    const channel = this.route.snapshot.queryParams['canal'] ?? this.route.snapshot.queryParams['channel'];
     if (q !== undefined || estado !== undefined || channel !== undefined) {
       if (q !== undefined) this.screen.setSearchTerm(q);
       const filtros: FiltrosDeContacto = {};
@@ -121,8 +121,8 @@ export class ContactosPageComponent implements OnInit, OnDestroy {
     this.route.queryParams.subscribe(params => {
       updatingFromUrl = true;
       const q = params['q'];
-      const estado = params['status'];
-      const channel = params['channel'];
+      const estado = params['estado'] ?? params['status'];
+      const channel = params['canal'] ?? params['channel'];
       if (q !== undefined) this.screen.setSearchTerm(q);
       const filtros: FiltrosDeContacto = {};
       if (estado !== undefined) filtros.status = estado as 'active' | 'inactive' | 'all';
@@ -138,8 +138,8 @@ export class ContactosPageComponent implements OnInit, OnDestroy {
 
   onSeleccionarContacto(contactoId: string): void {
     this.screen.seleccionarContacto(contactoId);
-    // Update URL to /contacts/:contactId
-    this.router.navigate(['/contacts', contactoId], { replaceUrl: true });
+    // Update URL to /contactos/:contactoId
+    this.router.navigate(['/contactos', contactoId], { replaceUrl: true });
   }
 
   onSearchChange(term: string): void {
@@ -159,8 +159,11 @@ export class ContactosPageComponent implements OnInit, OnDestroy {
     if (!updatingFromUrl) {
       this.router.navigate([], {
         queryParams: {
-          status: change.status ?? this.screen.filtros().status ?? null,
-          channel: change.channel ?? this.screen.filtros().channel ?? null,
+          estado: change.status ?? this.screen.filtros().status ?? null,
+          canal: change.channel ?? this.screen.filtros().channel ?? null,
+          // Stage 4: drop the old names together with the redirects.
+          status: null,
+          channel: null,
         },
         queryParamsHandling: 'merge',
         replaceUrl: true,
@@ -200,10 +203,10 @@ export class ContactosPageComponent implements OnInit, OnDestroy {
     if (contacto?.activeTicketId) {
       console.log('[ContactsPage] Has active ticket:', contacto.activeTicketId);
       // Navigate to inbox with ticket — for now, just log
-      this.router.navigate(['/inbox'], { queryParams: { ticketId: contacto.activeTicketId } });
+      this.router.navigate(['/bandeja'], { queryParams: { ticketId: contacto.activeTicketId } });
     } else {
       console.log('[ContactsPage] No active ticket — open new conversation');
-      this.router.navigate(['/inbox']);
+      this.router.navigate(['/bandeja']);
     }
   }
 
@@ -216,7 +219,7 @@ export class ContactosPageComponent implements OnInit, OnDestroy {
   }
 
   onAbrirTicketDesdeLineaDeTiempo(ticketId: string): void {
-    this.router.navigate(['/inbox'], { queryParams: { ticketId } });
+    this.router.navigate(['/bandeja'], { queryParams: { ticketId } });
   }
 
   /** Handle create dialog close */

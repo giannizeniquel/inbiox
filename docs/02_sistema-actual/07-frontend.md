@@ -11,18 +11,19 @@
 | Path | Componente | Guard | Quién la ve | Enlace en la UI |
 |---|---|---|---|---|
 | `/login` | `LoginPageComponent` | — | Público | — |
-| `/` → `/inbox` | `AppShellComponent` (layout) | `authGuard` | Autenticado | — |
-| `/inbox` | Ruta sin componente: el shell pinta la bandeja directamente | — | Autenticado | "Chats" |
-| `/contacts`, `/contacts/:contactId` | `ContactosPageComponent` | — | Autenticado | "Contactos" |
-| `/reports` | `ReportesPageComponent` | — | Autenticado (también agentes) | "Informes" |
-| `/agents/:agentId/availability` | `DisponibilidadPageComponent` | — | Autenticado | Ninguno (**rota**) |
-| `/agents/:agentId/shifts` | `TurnosPageComponent` | — | Autenticado | `/settings` (enlace con el id del workspace; **rota**) |
-| `/admin/users` | `UsuariosPageComponent` | `roleGuard('ROLE_ADMIN')` | Admin | "Usuarios" |
-| `/admin/agents` | `AgentesPageComponent` | `roleGuard('ROLE_SUPERVISOR')` | Supervisor, admin | "Agentes" |
-| `/admin/workspaces` | `EspaciosDeTrabajoPageComponent` | `roleGuard('ROLE_ADMIN')` | Admin | "Workspaces" |
-| `/admin/teams` | `EquiposPageComponent` | `roleGuard('ROLE_SUPERVISOR')` | Supervisor, admin | "Equipos" |
-| `/settings` | `ConfiguracionPageComponent` | — | Autenticado | "Configuración" |
-| `**` | redirect `/inbox` | — | — | — |
+| `/` → `/bandeja` | `AppShellComponent` (layout) | `authGuard` | Autenticado | — |
+| `/bandeja` | Ruta sin componente: el shell pinta la bandeja directamente | — | Autenticado | "Chats" |
+| `/contactos`, `/contactos/:contactoId` | `ContactosPageComponent` | — | Autenticado | "Contactos" |
+| `/reportes` | `ReportesPageComponent` | — | Autenticado (también agentes) | "Informes" |
+| `/agentes/:agenteId/disponibilidad` | `DisponibilidadPageComponent` | — | Autenticado | Ninguno (**rota**) |
+| `/agentes/:agenteId/turnos` | `TurnosPageComponent` | — | Autenticado | `/configuracion` (enlace con el id del workspace; **rota**) |
+| `/administracion/usuarios` | `UsuariosPageComponent` | `roleGuard('ROLE_ADMIN')` | Admin | "Usuarios" |
+| `/administracion/agentes` | `AgentesPageComponent` | `roleGuard('ROLE_SUPERVISOR')` | Supervisor, admin | "Agentes" |
+| `/administracion/espacios-de-trabajo` | `EspaciosDeTrabajoPageComponent` | `roleGuard('ROLE_ADMIN')` | Admin | "Workspaces" |
+| `/administracion/equipos` | `EquiposPageComponent` | `roleGuard('ROLE_SUPERVISOR')` | Supervisor, admin | "Equipos" |
+| `/configuracion` | `ConfiguracionPageComponent` | — | Autenticado | "Configuración" |
+| `**` | redirect `/bandeja` | — | — | — |
+| `/inbox`, `/contacts`, `/contacts/:contactId`, `/reports`, `/agents/:agentId/availability`, `/agents/:agentId/shifts`, `/admin/users`, `/admin/agents`, `/admin/workspaces`, `/admin/teams`, `/settings` | redirect a la URL nueva (favoritos viejos; se quitan en la etapa 4 del contrato) | — | — | — |
 
 Roles: `AuthStore.isAdmin()` / `isSupervisor()` (no jerárquicos; no existe `isAgent`) en `core/auth/auth.store.ts:40-52`. `roleGuard` siempre deja pasar al admin (`core/auth/auth.guard.ts:35-38`).
 
@@ -100,7 +101,7 @@ Contenedor: `features/bandeja/pages/conversacion/conversacion.component.ts` (scr
 | Buscar, filtrar por estado/canal | `ContactosScreenStore.contactosFiltrados` (`features/contactos/contactos-screen.store.ts:40-74`) | — | **Navegador** (solo lo cargado) | Todos |
 | Detalle | `DetalleDeContactoComponent`; si no está en caché, API directa | `GET /api/contacts/{id}` | — | Todos |
 | Línea de tiempo | `LineaDeTiempoDeContactoComponent` → `LineaDeTiempoDeContactoStore` (hace HTTP) | `GET /api/contacts/{id}/timeline?before&limit=20` | Servidor | Todos |
-| Abrir ticket desde el contacto | navega a `/inbox?ticketId=…`; sin ticket activo, solo a `/inbox` (`TODO`) | — | — | Todos |
+| Abrir ticket desde el contacto | navega a `/bandeja?ticketId=…`; sin ticket activo, solo a `/bandeja` (`TODO`) | — | — | Todos |
 | Crear / editar | diálogos → `CreateContactUseCase` / `UpdateContactUseCase` | `POST` / `PUT /api/contacts` | — | Todos |
 | Importar CSV | `ImportacionDeContactosDialogComponent` → API directa | `POST /api/contacts/import` | — | Admin, supervisor |
 | Borrar | **sin UI** | — | — | — |
@@ -131,7 +132,7 @@ Lógica inventada: nombres `Agent {id}` y `loadPercentage = asignados × 20` (`:
 
 Con más de 100 agentes, los modales no muestran el resto.
 
-## Configuración personal (`/settings`)
+## Configuración personal (`/configuracion`)
 
 | Pestaña | Endpoint | Nota |
 |---|---|---|
@@ -143,12 +144,12 @@ Con más de 100 agentes, los modales no muestran el resto.
 
 El store (`data-access/agente/configuracion.store.ts`) hace HTTP sin esperar el resultado: el mensaje de éxito aparece aunque el backend falle.
 
-## Disponibilidad y turnos (`/agents/:agentId/...`)
+## Disponibilidad y turnos (`/agentes/:agenteId/...`)
 
 - No existe un interruptor de disponibilidad en la UI.
 - `data-access/disponibilidad/disponibilidad-api.service.ts:64-125` llama `${apiUrl}/agents/{id}/…` **sin `/api`**: esas URLs no existen y además el interceptor no agrega el token.
 - Las páginas ignoran `:agentId` y leen `DisponibilidadStore.agenteActual()`, que nadie asigna (siempre `null`). `DisponibilidadStore.cargarTurnos()` no hace nada.
-- Resultado: ambas páginas no funcionan. Los turnos solo se gestionan desde `/settings`.
+- Resultado: ambas páginas no funcionan. Los turnos solo se gestionan desde `/configuracion`.
 
 ---
 
@@ -224,4 +225,4 @@ El código sin uso listado aquí se borró en la fase 1 de la limpieza (ver `odd
 | No se puede escribir al cliente | `composer.component.ts:70-76` (ventana 24 h) |
 | Informes en cero | `get-reports-dashboard.use-case.ts` (errores degradados a 0) |
 | Supervisor no puede crear equipos / vincular usuarios | `equipos-page.component.ts:80-87`, `agentes-page.component.html:67-71` |
-| Horarios / disponibilidad | `/settings` funciona; `features/disponibilidad/*` y `data-access/disponibilidad/disponibilidad-api.service.ts` no |
+| Horarios / disponibilidad | `/configuracion` funciona; `features/disponibilidad/*` y `data-access/disponibilidad/disponibilidad-api.service.ts` no |

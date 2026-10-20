@@ -12,7 +12,7 @@
         @if (contactoId(); as cid) {
           <a
             class="conversation-header__name"
-            [routerLink]="['/contacts', cid]"
+            [routerLink]="['/contactos', cid]"
             [attr.aria-label]="'Ver ficha de ' + nombreDeContacto()"
           >{{ nombreDeContacto() }}</a>
         } @else {

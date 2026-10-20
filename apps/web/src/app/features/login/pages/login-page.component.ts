@@ -48,7 +48,7 @@ export class LoginPageComponent {
     this.loginSubscription = this.authStore.login(email, password).subscribe({
       next: () => {
         this.isLoading.set(false);
-        this.router.navigate(['/inbox']);
+        this.router.navigate(['/bandeja']);
       },
       error: (err: Error) => {
         this.isLoading.set(false);

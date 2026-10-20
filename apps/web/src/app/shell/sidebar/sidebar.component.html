@@ -21,7 +21,7 @@
     <!-- Nav section -->
     <nav class="sidebar-nav" role="navigation" aria-label="Navegación principal">
       <a
-        routerLink="/inbox"
+        routerLink="/bandeja"
         routerLinkActive="sidebar-nav__item--active"
         class="sidebar-nav__item"
         aria-label="Chats"
@@ -45,7 +45,7 @@
       </a>
 
       <a
-        routerLink="/contacts"
+        routerLink="/contactos"
         routerLinkActive="sidebar-nav__item--active"
         class="sidebar-nav__item"
         aria-label="Contactos"
@@ -63,7 +63,7 @@
       </a>
 
       <a
-        routerLink="/reports"
+        routerLink="/reportes"
         routerLinkActive="sidebar-nav__item--active"
         class="sidebar-nav__item"
         aria-label="Informes"
@@ -86,7 +86,7 @@
 
       @if (authStore.isAdmin()) {
         <a
-          routerLink="/admin/users"
+          routerLink="/administracion/usuarios"
           routerLinkActive="sidebar-nav__item--active"
           class="sidebar-nav__item"
           aria-label="Usuarios"
@@ -106,7 +106,7 @@
 
       @if (authStore.isAdmin() || authStore.isSupervisor()) {
         <a
-          routerLink="/admin/agents"
+          routerLink="/administracion/agentes"
           routerLinkActive="sidebar-nav__item--active"
           class="sidebar-nav__item"
           aria-label="Agentes"
@@ -124,7 +124,7 @@
 
       @if (authStore.isAdmin() || authStore.isSupervisor()) {
         <a
-          routerLink="/admin/teams"
+          routerLink="/administracion/equipos"
           routerLinkActive="sidebar-nav__item--active"
           class="sidebar-nav__item"
           aria-label="Equipos"
@@ -144,7 +144,7 @@
 
       @if (authStore.isAdmin()) {
         <a
-          routerLink="/admin/workspaces"
+          routerLink="/administracion/espacios-de-trabajo"
           routerLinkActive="sidebar-nav__item--active"
           class="sidebar-nav__item"
           aria-label="Workspaces"
@@ -161,7 +161,7 @@
       }
 
       <a
-        routerLink="/settings"
+        routerLink="/configuracion"
         routerLinkActive="sidebar-nav__item--active"
         class="sidebar-nav__item"
         aria-label="Configuración"

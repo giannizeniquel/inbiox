@@ -36,7 +36,7 @@ export class AppShellComponent implements OnDestroy {
   private readonly router = inject(Router);
   
   /** Current route for layout decision */
-  readonly currentRoute = signal<string>('inbox');
+  readonly currentRoute = signal<string>('bandeja');
 
   /** Whether the mobile sidebar drawer is open */
   readonly isSidebarOpen = signal(false);
@@ -65,12 +65,12 @@ export class AppShellComponent implements OnDestroy {
       filter(event => event instanceof NavigationEnd)
     ).subscribe((event: any) => {
       const url = (event.urlAfterRedirects || event.url).split('?')[0];
-      this.currentRoute.set(url.split('/')[1] || 'inbox');
+      this.currentRoute.set(url.split('/')[1] || 'bandeja');
     });
 
     // Initial route
     const initialUrl = this.router.url.split('?')[0];
-    this.currentRoute.set(initialUrl.split('/')[1] || 'inbox');
+    this.currentRoute.set(initialUrl.split('/')[1] || 'bandeja');
 
     this.syncResponsiveState();
     if (typeof window !== 'undefined') {
@@ -115,7 +115,7 @@ export class AppShellComponent implements OnDestroy {
   /** Check if current route is inbox */
   isRutaDeBandeja(): boolean {
     const route = this.currentRoute();
-    return route === 'inbox' || route.startsWith('inbox?');
+    return route === 'bandeja' || route.startsWith('bandeja?');
   }
 
   toggleSidebar(): void {

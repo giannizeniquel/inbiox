@@ -19,7 +19,7 @@ export const authGuard: CanActivateFn = () => {
 
 /**
  * roleGuard — factory that returns a guard for a specific role.
- * Redirects to /inbox if the user lacks the required role.
+ * Redirects to /bandeja if the user lacks the required role.
  * ROLE_ADMIN has implicit access to everything.
  */
 export function roleGuard(role: string): CanActivateFn {
@@ -38,7 +38,7 @@ export function roleGuard(role: string): CanActivateFn {
     }
 
     if (!authStore.hasRole(role)) {
-      router.navigate(['/inbox']);
+      router.navigate(['/bandeja']);
       return false;
     }
 

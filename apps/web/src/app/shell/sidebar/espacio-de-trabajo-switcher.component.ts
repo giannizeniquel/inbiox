@@ -64,7 +64,7 @@ import { EspacioDeTrabajoStore } from '../../data-access/administracion/espacio-
                 <!-- Future: settings link -->
                 <!--
                 <div class="workspace-switcher__dropdown-divider"></div>
-                <button class="workspace-switcher__dropdown-item" routerLink="/admin/workspaces">
+                <button class="workspace-switcher__dropdown-item" routerLink="/administracion/espacios-de-trabajo">
                   <span>Gestionar workspaces</span>
                 </button>
                 -->
