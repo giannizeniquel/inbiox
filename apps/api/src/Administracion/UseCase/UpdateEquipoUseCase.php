@@ -17,13 +17,13 @@ final class UpdateEquipoUseCase
     ) {}
 
     /**
-     * Applies only the fields present in $data, checking them in order and
-     * saving nothing if one fails.
+     * Aplica solo los campos presentes en $data, validándolos en orden y
+     * sin guardar nada si alguno falla.
      *
-     * @param array<mixed> $data decoded request body
+     * @param array<mixed> $data cuerpo de la request decodificado
      *
-     * @throws \InvalidArgumentException when a field is invalid
-     * @throws ConflictoDeEstadoException    when another team in the workspace has the name
+     * @throws \InvalidArgumentException cuando un campo es inválido
+     * @throws ConflictoDeEstadoException    cuando otro equipo del espacio de trabajo tiene ese nombre
      */
     public function execute(Equipo $equipo, array $data): void
     {

@@ -15,15 +15,15 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Ulid;
 
 /**
- * Processes Meta WhatsApp status webhook entries.
+ * Procesa las entradas de estado del webhook de WhatsApp de Meta.
  *
- * For each status entry from value.statuses[], this use case:
- * 1. Finds the Message by WAMID (externalId)
- * 2. Validates the status transition (forward-only FSM)
- * 3. Updates the Message deliveryStatus
- * 4. Publishes a MessageUpdatedEvent via Outbox → Mercure
+ * Para cada entrada de estado de value.statuses[], este caso de uso:
+ * 1. Busca el mensaje por WAMID (externalId)
+ * 2. Valida la transición de estado (FSM solo hacia adelante)
+ * 3. Actualiza el deliveryStatus del mensaje
+ * 4. Publica un MessageUpdatedEvent vía Outbox → Mercure
  *
- * Design: AD-4 — forward-only status FSM with terminal read/failed.
+ * Diseño: AD-4 — FSM de estados solo hacia adelante, con read/failed terminales.
  */
 class ProcesarActualizacionDeEstadoUseCase
 {
@@ -44,7 +44,7 @@ class ProcesarActualizacionDeEstadoUseCase
         'failed' => 'failed',
     ];
 
-    /** @var string|null Current phoneNumberId being processed (set during procesarActualizacionDeEstado) */
+    /** @var string|null phoneNumberId en proceso (se asigna durante procesarActualizacionDeEstado) */
     private ?string $currentPhoneNumberId = null;
 
     public function __construct(
@@ -57,17 +57,17 @@ class ProcesarActualizacionDeEstadoUseCase
     ) {}
 
     /**
-     * Process a single status update entry from a Meta webhook payload.
+     * Procesa una sola entrada de actualización de estado de un payload de webhook de Meta.
      *
-     * @param array  $statusEntry The status entry from value.statuses[]
-     * @param string|null $phoneNumberId Optional phone number ID from metadata (reserved for multi-number)
+     * @param array  $statusEntry La entrada de estado de value.statuses[]
+     * @param string|null $phoneNumberId phone number id opcional de metadata (reservado para multinúmero)
      */
     public function procesarActualizacionDeEstado(array $statusEntry, ?string $phoneNumberId = null): void
     {
-        // Store for outbox event payload inclusion (CAP-7 / META-019)
+        // Se guarda para incluirlo en el payload del evento de outbox (CAP-7 / META-019)
         $this->currentPhoneNumberId = $phoneNumberId;
 
-        // 1. Extract fields
+        // 1. Extrae los campos
         $wamid = $statusEntry['id'] ?? null;
         $nuevoEstadoCrudo = $statusEntry['status'] ?? null;
         $errors = $statusEntry['errors'] ?? [];
@@ -80,7 +80,7 @@ class ProcesarActualizacionDeEstadoUseCase
             return;
         }
 
-        // 2. Map Meta status → Inbiox deliveryStatus
+        // 2. Mapea el estado de Meta → deliveryStatus de Inbiox
         $nuevoEstado = self::META_TO_INBIOX[$nuevoEstadoCrudo] ?? null;
 
         if (!$nuevoEstado) {
@@ -92,7 +92,7 @@ class ProcesarActualizacionDeEstadoUseCase
             return;
         }
 
-        // 3. Find Message by WAMID
+        // 3. Busca el mensaje por WAMID
         $mensaje = $this->mensajeRepo->findByExternalId($wamid);
 
         if (!$mensaje) {
@@ -104,7 +104,7 @@ class ProcesarActualizacionDeEstadoUseCase
             return;
         }
 
-        // 4. Validate transition (forward-only FSM, terminal-aware)
+        // 4. Valida la transición (FSM solo hacia adelante, con estados terminales)
         $estadoActual = $mensaje->getEstadoDeEntrega();
 
         if (!$this->isTransicionValida($estadoActual, $nuevoEstado)) {
@@ -117,7 +117,7 @@ class ProcesarActualizacionDeEstadoUseCase
             return;
         }
 
-        // 5. Update Message entity
+        // 5. Actualiza la entidad del mensaje
         $mensaje->setEstadoDeEntrega($nuevoEstado);
 
         if ($nuevoEstado === 'failed' && !empty($errors)) {
@@ -126,34 +126,34 @@ class ProcesarActualizacionDeEstadoUseCase
 
         $mensaje->setActualizadoAt(new \DateTimeImmutable());
 
-        // 6. Persist the message update
+        // 6. Persiste la actualización del mensaje
         $this->em->flush();
 
-        // 7. Publish MessageUpdatedEvent via Outbox → Mercure
+        // 7. Publica MessageUpdatedEvent vía Outbox → Mercure
         $this->registrarMessageUpdatedEvent($mensaje, $nuevoEstado);
     }
 
     /**
-     * Validate that a status transition is allowed by the FSM.
+     * Valida que la FSM permita una transición de estado.
      *
-     * Rules (AD-4):
-     * - Terminal states (read, failed) allow NO transitions out
-     * - 'failed' is reachable from ANY non-terminal state
-     * - All other transitions must be strictly forward (order increasing)
+     * Reglas (AD-4):
+     * - Los estados terminales (read, failed) NO permiten transiciones de salida
+     * - 'failed' se alcanza desde CUALQUIER estado no terminal
+     * - Todas las demás transiciones deben ir estrictamente hacia adelante (orden creciente)
      */
     private function isTransicionValida(string $from, string $to): bool
     {
-        // No transitions out of terminal states
+        // Sin transiciones de salida desde estados terminales
         if (in_array($from, self::ESTADOS_FINALES, true)) {
             return false;
         }
 
-        // Failed is reachable from any non-terminal state
+        // Failed se alcanza desde cualquier estado no terminal
         if ($to === 'failed') {
             return true;
         }
 
-        // Forward-only: new status must have higher order
+        // Solo hacia adelante: el nuevo estado debe tener un orden mayor
         $fromOrder = self::ORDEN_DE_ESTADOS[$from] ?? -1;
         $toOrder = self::ORDEN_DE_ESTADOS[$to] ?? -1;
 
@@ -161,11 +161,11 @@ class ProcesarActualizacionDeEstadoUseCase
     }
 
     /**
-     * Persist a MessageUpdatedEvent to the outbox for Mercure delivery.
+     * Persiste un MessageUpdatedEvent en el outbox para su entrega por Mercure.
      */
     private function registrarMessageUpdatedEvent(\App\Conversacion\Mensaje $mensaje, string $nuevoEstado): void
     {
-        // Resolve ticket ID through the conversation chain
+        // Resuelve el ID del ticket a través de la cadena de la conversación
         $conversacion = $mensaje->getConversacion();
 
         if (!$conversacion) {
@@ -192,7 +192,7 @@ class ProcesarActualizacionDeEstadoUseCase
         $seq = $ticket->incrementLastEventSeq();
         $occurredAt = new \DateTimeImmutable();
 
-        // Collect the domain event
+        // Recolecta el evento de dominio
         $this->recolectorDeEventos->recolectar(new MessageUpdatedEvent(
             eventId: new Ulid(),
             ticketId: $ticketId,
@@ -204,16 +204,16 @@ class ProcesarActualizacionDeEstadoUseCase
             failedReason: $mensaje->getMotivoDeFallo(),
         ));
 
-        // Persist collected events to the outbox table
-        $this->persistEventsToOutbox();
+        // Persiste los eventos recolectados en la tabla del outbox
+        $this->persistirEventosEnOutbox();
     }
 
     /**
-     * Persist collected domain events from RecolectorDeEventos to the EventoOutbox table.
+     * Persiste los eventos de dominio recolectados por RecolectorDeEventos en la tabla EventoOutbox.
      *
-     * Pattern matches ProcesarMensajeEntranteUseCase::persistEventsToOutbox().
+     * Sigue el mismo patrón que ProcesarMensajeEntranteUseCase::persistirEventosEnOutbox().
      */
-    private function persistEventsToOutbox(): void
+    private function persistirEventosEnOutbox(): void
     {
         $events = $this->recolectorDeEventos->getEventos();
 

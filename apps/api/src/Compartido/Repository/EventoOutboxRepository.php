@@ -7,10 +7,10 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * Reads and writes on the raw `outbox_events` table for the publisher and the
- * dead-letter command. They work on plain rows, not managed EventoOutbox
- * entities, so every method uses the DBAL QueryBuilder on the EntityManager's
- * connection and never flushes.
+ * Lecturas y escrituras sobre la tabla cruda `outbox_events` para el publisher y el
+ * comando de dead letter. Trabajan con filas planas, no con entidades EventoOutbox
+ * gestionadas, así que todos los métodos usan el QueryBuilder de DBAL sobre la conexión
+ * del EntityManager y nunca hacen flush.
  */
 class EventoOutboxRepository extends ServiceEntityRepository
 {
@@ -20,7 +20,7 @@ class EventoOutboxRepository extends ServiceEntityRepository
     }
 
     /**
-     * The next batch of pending, unpublished events, oldest first (max 100).
+     * El siguiente lote de eventos pendientes y no publicados, los más antiguos primero (máx. 100).
      *
      * @return list<array<string, mixed>>
      */
@@ -38,9 +38,9 @@ class EventoOutboxRepository extends ServiceEntityRepository
     }
 
     /**
-     * Pending or published events of an aggregate with a sequence greater
-     * than $afterSequence, lowest sequence first (max 100). Used by the
-     * ticket events resync endpoint.
+     * Eventos pendientes o publicados de un agregado con un sequence mayor
+     * que $afterSequence, el sequence más bajo primero (máx. 100). Lo usa el
+     * endpoint de resincronización de eventos de ticket.
      *
      * @return list<array<string, mixed>>
      */
@@ -72,7 +72,7 @@ class EventoOutboxRepository extends ServiceEntityRepository
     }
 
     /**
-     * Store the final retry count and move the event to `$estado` (dead letter).
+     * Guarda el contador final de reintentos y pasa el evento a `$estado` (dead letter).
      */
     public function marcarDeadLetter(string $id, int $reintentos, string $estado): void
     {
@@ -98,7 +98,7 @@ class EventoOutboxRepository extends ServiceEntityRepository
     }
 
     /**
-     * The latest 100 dead-lettered events, newest first.
+     * Los últimos 100 eventos en dead letter, los más recientes primero.
      *
      * @return list<array<string, mixed>>
      */
@@ -114,9 +114,9 @@ class EventoOutboxRepository extends ServiceEntityRepository
     }
 
     /**
-     * Put a dead-lettered event back to pending with retry_count = 0.
+     * Devuelve un evento en dead letter a pending con retry_count = 0.
      *
-     * @return int|string affected rows (0 when the event is missing or not dead-lettered)
+     * @return int|string filas afectadas (0 cuando el evento no existe o no está en dead letter)
      */
     public function devolverDeadLetterAPendiente(string $id): int|string
     {
@@ -131,9 +131,9 @@ class EventoOutboxRepository extends ServiceEntityRepository
     }
 
     /**
-     * Delete dead-lettered events created before `$corte` (`Y-m-d H:i:s`).
+     * Borra los eventos en dead letter creados antes de `$corte` (`Y-m-d H:i:s`).
      *
-     * @return int|string deleted rows
+     * @return int|string filas borradas
      */
     public function purgarDeadLettersCreadosAntesDe(string $corte): int|string
     {

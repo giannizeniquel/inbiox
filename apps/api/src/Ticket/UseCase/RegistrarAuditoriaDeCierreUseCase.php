@@ -11,12 +11,12 @@ use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * Classifies and persists the manual closure/resolution `EventoDeTicket`
- * (design.md D2/D4/D5). The previous owner comes from the transition use
- * case's own `FOR UPDATE`-locked read — no second query, no TOCTOU.
+ * Clasifica y persiste el `EventoDeTicket` de cierre/resolución manual
+ * (design.md D2/D4/D5). El responsable anterior viene de la propia lectura con
+ * bloqueo `FOR UPDATE` del caso de uso de transición — sin segunda query, sin TOCTOU.
  *
- * D8: an audit-write failure must NOT fail an already-committed transition.
- * It is logged at `error` and swallowed.
+ * D8: un fallo al escribir la auditoría NO debe hacer fallar una transición ya confirmada.
+ * Se registra en el log con nivel `error` y se descarta.
  */
 final class RegistrarAuditoriaDeCierreUseCase
 {

@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Compartido;
 
 /**
- * Exception thrown when a state transition is not allowed.
+ * Excepción que se lanza cuando una transición de estado no está permitida.
  *
- * Used by TicketVoter when trying to assign a ticket in resolved/closed state.
+ * La usa TicketVoter al intentar asignar un ticket en estado resolved/closed.
  */
 class ConflictoDeEstadoException extends \RuntimeException
 {

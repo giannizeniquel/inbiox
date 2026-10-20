@@ -28,7 +28,7 @@ class GetDetalleDeTicketQuery
         if ($row['owner_id'] !== null) {
             $responsable = [
                 'id' => $row['owner_id'],
-                'name' => null, // Placeholder - would need User entity
+                'name' => null, // Provisorio: necesitaría la entidad User
             ];
         }
 
@@ -40,7 +40,7 @@ class GetDetalleDeTicketQuery
             'resolved_at' => $row['resolved_at']
                 ? (new \DateTimeImmutable($row['resolved_at']))->format('Y-m-d\TH:i:s\Z')
                 : null,
-            'closed_at' => null, // Will be populated when closed_at field exists
+            'closed_at' => null, // Se completará cuando exista el campo closed_at
             'last_inbound_message_at' => $row['last_inbound_message_at']
                 ? (new \DateTimeImmutable($row['last_inbound_message_at']))->format('Y-m-d\TH:i:s\Z')
                 : null,

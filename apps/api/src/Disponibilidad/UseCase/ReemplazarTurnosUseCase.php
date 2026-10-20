@@ -11,11 +11,11 @@ use App\Agente\Repository\AgenteRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * Replace ALL shifts for an agent atomically.
+ * Reemplaza TODOS los turnos de un agente de forma atómica.
  *
- * Runs in a single transaction: bulk-deletes all existing shifts,
- * then recreates them from the supplied array. Partial state is
- * never visible.
+ * Se ejecuta en una sola transacción: borra en bloque todos los turnos existentes
+ * y luego los recrea a partir del array recibido. Nunca queda visible un
+ * estado parcial.
  */
 final class ReemplazarTurnosUseCase
 {
@@ -30,7 +30,7 @@ final class ReemplazarTurnosUseCase
      *
      * @return array<int, array{dayOfWeek: int, start: string, end: string}>
      *
-     * @throws \InvalidArgumentException if agent not found
+     * @throws \InvalidArgumentException si no se encuentra el agente
      */
     public function execute(int $agenteId, array $turnos): array
     {
@@ -40,10 +40,10 @@ final class ReemplazarTurnosUseCase
                 throw new \InvalidArgumentException('Agent not found');
             }
 
-            // 1. Delete all existing shifts
+            // 1. Borra todos los turnos existentes
             $this->turnoRepo->deleteTodosDeAgente($agenteId);
 
-            // 2. Create new shifts
+            // 2. Crea los turnos nuevos
             $creado = [];
             foreach ($turnos as $input) {
                 $this->validarDatosDeTurno($input->dayOfWeek, $input->start, $input->end);

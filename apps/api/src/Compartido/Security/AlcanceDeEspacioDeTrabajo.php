@@ -8,14 +8,14 @@ use App\Administracion\Usuario;
 use Symfony\Bundle\SecurityBundle\Security;
 
 /**
- * Determines the workspace scope for the current authenticated user.
+ * Determina el alcance de espacio de trabajo del usuario autenticado actual.
  *
- * Returns the active workspace's phoneNumberId for ROLE_AGENT users
- * with a linked Agent that has an active workspace set.
- * Returns null for SUPERVISOR, ADMIN, or AGENT without active workspace.
+ * Devuelve el phoneNumberId del espacio de trabajo activo para usuarios ROLE_AGENT
+ * con un Agent vinculado que tenga un espacio de trabajo activo.
+ * Devuelve null para SUPERVISOR, ADMIN o AGENT sin espacio de trabajo activo.
  *
- * This is used at the QUERY level to add WHERE clauses, filtering
- * tickets/conversations/contacts by the active workspace's phone number ID.
+ * Se usa a nivel de QUERY para agregar cláusulas WHERE, filtrando
+ * tickets/conversaciones/contactos por el phone number ID del espacio de trabajo activo.
  */
 final class AlcanceDeEspacioDeTrabajo
 {
@@ -24,21 +24,21 @@ final class AlcanceDeEspacioDeTrabajo
     ) {}
 
     /**
-     * Get the scoped phoneNumberId for the current user.
+     * Obtiene el phoneNumberId que acota al usuario actual.
      *
-     * ALL roles (ADMIN, SUPERVISOR, AGENT) go through the same path:
-     * user → agent → activeWorkspace → phoneNumberId.
+     * TODOS los roles (ADMIN, SUPERVISOR, AGENT) siguen el mismo camino:
+     * usuario → agente → espacio de trabajo activo → phoneNumberId.
      *
-     * - Usuario with linked Agent that has an active workspace: the workspace's phoneNumberId
-     * - Usuario without Agent or without active workspace: null (no scope)
-     * - No authenticated user: null
+     * - Usuario con un Agent vinculado que tiene un espacio de trabajo activo: el phoneNumberId de ese espacio de trabajo
+     * - Usuario sin Agent o sin espacio de trabajo activo: null (sin alcance)
+     * - Sin usuario autenticado: null
      *
-     * The workspace switcher is responsible for setting the active workspace
-     * via PUT /api/me/workspace. Admin/Supervisor can switch to any workspace;
-     * Agent can only switch to assigned workspaces.
+     * El selector de espacio de trabajo se encarga de fijar el espacio de trabajo activo
+     * mediante PUT /api/me/workspace. Admin/Supervisor pueden cambiar a cualquier espacio de trabajo;
+     * Agent solo puede cambiar a los espacios de trabajo asignados.
      *
      * @see MiEspacioDeTrabajoController::setEspacioDeTrabajoActivo()
-     * @see AsegurarAgenteDeUsuarioUseCase — auto-creates Agent for admin/supervisor
+     * @see AsegurarAgenteDeUsuarioUseCase — crea automáticamente el Agent de admin/supervisor
      */
     public function getPhoneNumberIdActivo(): ?string
     {

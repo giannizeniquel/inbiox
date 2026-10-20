@@ -8,9 +8,9 @@ use App\Conversacion\Repository\MensajeRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * After Graph accepts an outbound message, stores its WhatsApp id (WAMID)
- * so status webhooks can find it, and marks it sent. A missing message is
- * ignored.
+ * Después de que Graph acepta un mensaje saliente, guarda su id de WhatsApp (WAMID)
+ * para que los webhooks de estado puedan encontrarlo, y lo marca como enviado. Un mensaje
+ * inexistente se ignora.
  */
 final class MarcarMensajeSalienteEnviadoUseCase
 {

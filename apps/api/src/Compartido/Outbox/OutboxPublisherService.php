@@ -8,11 +8,11 @@ use App\Compartido\Realtime\EventoEnTiempoRealFactory;
 use App\Compartido\Repository\EventoOutboxRepository;
 
 /**
- * Publishes unpublished outbox events to Mercure hub.
+ * Publica en el hub de Mercure los eventos del outbox no publicados.
  *
- * This service is idempotent - safe to run multiple times.
- * It queries events where publishedAt IS NULL, publishes to Mercure,
- * and marks them as published on success or increments retry count on failure.
+ * Este servicio es idempotente: se puede ejecutar varias veces sin riesgo.
+ * Consulta los eventos con publishedAt IS NULL, los publica en Mercure
+ * y los marca como publicados si tiene éxito o incrementa el contador de reintentos si falla.
  */
 class OutboxPublisherService
 {
@@ -28,13 +28,13 @@ class OutboxPublisherService
     ) {}
 
     /**
-     * Publish all pending events to Mercure.
+     * Publica en Mercure todos los eventos pendientes.
      *
-     * @return int Number of events successfully published
+     * @return int Cantidad de eventos publicados con éxito
      */
     public function publishPending(): int
     {
-        $eventos = $this->findUnpublishedEvents();
+        $eventos = $this->findEventosNoPublicados();
 
         if (empty($eventos)) {
             return 0;
@@ -44,7 +44,7 @@ class OutboxPublisherService
         $total = count($eventos);
 
         foreach ($eventos as $evento) {
-            $this->publishEvent($evento) ? $publishedCount++ : null;
+            $this->publicarEvento($evento) ? $publishedCount++ : null;
         }
 
         error_log(sprintf(
@@ -58,11 +58,11 @@ class OutboxPublisherService
     }
 
     /**
-     * Find unpublished events ordered by creation date.
+     * Busca los eventos no publicados ordenados por fecha de creación.
      *
      * @return EventoOutbox[]
      */
-    private function findUnpublishedEvents(): array
+    private function findEventosNoPublicados(): array
     {
         $rows = $this->eventoOutboxRepository->findLotePendiente();
 
@@ -74,18 +74,18 @@ class OutboxPublisherService
 
         $eventos = [];
         foreach ($rows as $row) {
-            $eventos[] = $this->hydrateEvent($row);
+            $eventos[] = $this->hidratarEvento($row);
         }
 
         return $eventos;
     }
 
     /**
-     * Hydrate EventoOutbox from database row.
+     * Hidrata un EventoOutbox a partir de una fila de la base de datos.
      */
-    private function hydrateEvent(array $row): EventoOutbox
+    private function hidratarEvento(array $row): EventoOutbox
     {
-        // Use string ID directly - no Ulid conversion needed
+        // Usa el ID string directamente - no hace falta convertirlo a Ulid
         $evento = new EventoOutbox(
             aggregateType: $row['aggregate_type'],
             aggregateId: (int) $row['aggregate_id'],
@@ -94,27 +94,27 @@ class OutboxPublisherService
             payload: json_decode($row['payload'], true) ?? []
         );
 
-        // Use reflection to set the ID and other fields
+        // Usa reflection para asignar el ID y los demás campos
         $idReflection = new \ReflectionProperty(EventoOutbox::class, 'id');
         $idReflection->setAccessible(true);
-        $idReflection->setValue($evento, $row['id']); // ID is already a string
+        $idReflection->setValue($evento, $row['id']); // El ID ya es un string
 
-        // Set retry count
+        // Asigna el contador de reintentos
         $reintentosReflection = new \ReflectionProperty(EventoOutbox::class, 'reintentos');
         $reintentosReflection->setAccessible(true);
         $reintentosReflection->setValue($evento, (int) $row['retry_count']);
 
-        // Set created at
+        // Asigna la fecha de creación
         $creadoAtReflection = new \ReflectionProperty(EventoOutbox::class, 'creadoAt');
         $creadoAtReflection->setAccessible(true);
         $creadoAtReflection->setValue($evento, new \DateTimeImmutable($row['created_at']));
 
-        // Set status via reflection
+        // Asigna el estado mediante reflection
         $estadoReflection = new \ReflectionProperty(EventoOutbox::class, 'estado');
         $estadoReflection->setAccessible(true);
         $estadoReflection->setValue($evento, $row['status'] ?? 'pending');
 
-        // Set sequence via reflection
+        // Asigna el sequence mediante reflection
         $seqReflection = new \ReflectionProperty(EventoOutbox::class, 'sequence');
         $seqReflection->setAccessible(true);
         $seqReflection->setValue($evento, (int) ($row['sequence'] ?? 0));
@@ -123,14 +123,14 @@ class OutboxPublisherService
     }
 
     /**
-     * Publish a single event to Mercure.
+     * Publica un único evento en Mercure.
      *
-     * @return bool True if published successfully
+     * @return bool True si se publicó con éxito
      */
-    private function publishEvent(EventoOutbox $evento): bool
+    private function publicarEvento(EventoOutbox $evento): bool
     {
         try {
-            // Generate JWT for publishing
+            // Genera el JWT para publicar
             $token = $this->getJwtToken();
             $tokenPreview = substr($token, 0, 30) . '...';
 
@@ -142,7 +142,7 @@ class OutboxPublisherService
                 $tokenPreview
             ));
 
-            // Build RealtimeEventContract v1 JSON for the wire format
+            // Arma el JSON de RealtimeEventContract v1 para el formato de cable
             $contractData = $this->factory->build($evento);
             $dataJson = json_encode($contractData);
             $postFields = http_build_query([
@@ -154,7 +154,7 @@ class OutboxPublisherService
 
             error_log('OutboxPublisher: POST data (first 200 chars): ' . substr($postFields, 0, 200));
 
-            // Publish directly via curl
+            // Publica directamente mediante curl
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_URL, $this->mercureUrl);
             curl_setopt($ch, CURLOPT_POST, true);
@@ -189,28 +189,28 @@ class OutboxPublisherService
                     $response ?: '(empty)',
                     $error ?: '(none)'
                 ));
-                $this->handleFailure($evento);
+                $this->registrarFallo($evento);
                 return false;
             }
         } catch (\Throwable $e) {
             error_log('OutboxPublisher: Exception publishing event=' . $evento->getId() . ' error=' . $e->getMessage());
-            $this->handleFailure($evento);
+            $this->registrarFallo($evento);
 
             return false;
         }
     }
 
     /**
-     * Get JWT token for publishing.
+     * Obtiene el token JWT para publicar.
      */
     private function getJwtToken(): string
     {
-        // Publisher token with wildcard publish permission (agent ID 0 = system publisher)
+        // Token de publicador con permiso de publicación comodín (ID de agente 0 = publicador del sistema)
         return $this->jwtService->generateToken(0, ['*']);
     }
 
     /**
-     * Mark event as published.
+     * Marca el evento como publicado.
      */
     private function marcarPublicado(EventoOutbox $evento): void
     {
@@ -218,9 +218,9 @@ class OutboxPublisherService
     }
 
     /**
-     * Handle publishing failure - increment retry count or dead-letter if exhausted.
+     * Maneja un fallo de publicación - incrementa el contador de reintentos o lo pasa a dead letter si se agotaron.
      */
-    private function handleFailure(EventoOutbox $evento): void
+    private function registrarFallo(EventoOutbox $evento): void
     {
         $reintentosActuales = $evento->getReintentos();
         $nuevosReintentos = $reintentosActuales + 1;

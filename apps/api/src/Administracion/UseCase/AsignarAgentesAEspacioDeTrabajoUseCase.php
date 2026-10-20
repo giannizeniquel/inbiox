@@ -9,7 +9,7 @@ use App\Agente\Repository\AgenteRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * Replaces the workspace's agents with the given ids. Unknown ids are skipped.
+ * Reemplaza los agentes del espacio de trabajo por los ids dados. Los ids desconocidos se omiten.
  */
 final class AsignarAgentesAEspacioDeTrabajoUseCase
 {
@@ -19,9 +19,9 @@ final class AsignarAgentesAEspacioDeTrabajoUseCase
     ) {}
 
     /**
-     * @param array<mixed> $data decoded request body
+     * @param array<mixed> $data cuerpo de la request decodificado
      *
-     * @throws \InvalidArgumentException when agentIds is invalid
+     * @throws \InvalidArgumentException cuando agentIds es inválido
      */
     public function execute(EspacioDeTrabajo $espacioDeTrabajo, array $data): void
     {
@@ -31,7 +31,7 @@ final class AsignarAgentesAEspacioDeTrabajoUseCase
             throw new \InvalidArgumentException('agentIds must be an array of integers');
         }
 
-        // All-or-nothing: a non-integer id rolls back the whole batch.
+        // Todo o nada: un id no entero hace rollback de todo el lote.
         $this->entityManager->wrapInTransaction(function () use ($espacioDeTrabajo, $agenteIds): void {
             foreach ($espacioDeTrabajo->getAgentes() as $agenteExistente) {
                 $espacioDeTrabajo->removeAgente($agenteExistente);

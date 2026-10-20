@@ -5,16 +5,16 @@ declare(strict_types=1);
 namespace App\Contacto;
 
 /**
- * Shared phone normalization rule.
+ * Regla compartida de normalización de teléfonos.
  *
- * Used by both single-contact creation (CreateContactoUseCase) and bulk CSV
- * import (ImportarContactosDesdeCsvUseCase) so in-file dedupe and persisted
- * contacts always agree on what "the same phone" means.
+ * La usan tanto la creación de un solo contacto (CreateContactoUseCase) como la importación
+ * masiva por CSV (ImportarContactosDesdeCsvUseCase) para que la deduplicación dentro del archivo y los contactos
+ * persistidos siempre coincidan en qué significa "el mismo teléfono".
  */
 final class NormalizadorDeTelefono
 {
     /**
-     * @throws \InvalidArgumentException when the normalized phone has fewer than 10 digits
+     * @throws \InvalidArgumentException cuando el teléfono normalizado tiene menos de 10 dígitos
      */
     public static function normalizar(string $raw): string
     {

@@ -11,8 +11,8 @@ use App\Ticket\Ticket;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * Persists a template that Graph accepted as a new outbound message, with
- * its WAMID as externalId for webhook correlation.
+ * Persiste una plantilla que Graph aceptó como un nuevo mensaje saliente, con
+ * su WAMID como externalId para correlacionarla con los webhooks.
  */
 final class RegistrarPlantillaEnviadaUseCase
 {
@@ -21,7 +21,7 @@ final class RegistrarPlantillaEnviadaUseCase
     ) {}
 
     /**
-     * @param array<mixed> $parametros the template parameters sent to Graph
+     * @param array<mixed> $parametros los parámetros de la plantilla enviados a Graph
      */
     public function execute(Ticket $ticket, string $nombreDePlantilla, array $parametros, string $wamid, ?int $agenteRemitenteId): void
     {

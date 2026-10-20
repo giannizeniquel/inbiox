@@ -43,8 +43,8 @@ class FlujoDeTicketController
                 return new JsonResponse(['error' => 'status is required'], 400);
             }
 
-            // Gate ownership only when the target status is resolved/closed
-            // (design.md — "conditional" gating for transition()).
+            // Exige la responsabilidad solo cuando el estado destino es resolved/closed
+            // (design.md — control "condicional" para transition()).
             $isEstadoDestinoDeCierre = $estadoDestino === EstadoDeTicket::RESUELTO->value || $estadoDestino === EstadoDeTicket::CERRADO->value;
             if ($isEstadoDestinoDeCierre) {
                 $denied = $this->denyUnlessGrantedClose($id, $usuario, 'transition');
@@ -126,12 +126,12 @@ class FlujoDeTicketController
     }
 
     /**
-     * Loads the ticket and checks `TicketVoter::CLOSE` (design.md D1/D3).
+     * Carga el ticket y comprueba `TicketVoter::CLOSE` (design.md D1/D3).
      *
-     * Returns the 403 `JsonResponse` to send back when denied, or `null`
-     * when the caller should proceed. A missing ticket deliberately falls
-     * through to `null` (skip the voter) so the existing use-case 400 stays
-     * the contract for a nonexistent ticket — no new 404 is introduced.
+     * Devuelve el `JsonResponse` 403 que se debe responder cuando se deniega, o `null`
+     * cuando quien llama debe continuar. Un ticket inexistente pasa deliberadamente
+     * a `null` (se omite el voter) para que el 400 existente del caso de uso siga siendo
+     * el contrato para un ticket inexistente — no se introduce ningún 404 nuevo.
      */
     private function denyUnlessGrantedClose(int $ticketId, ?Usuario $usuario, string $action): ?JsonResponse
     {

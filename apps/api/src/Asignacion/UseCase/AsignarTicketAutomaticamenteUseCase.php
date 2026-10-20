@@ -18,23 +18,23 @@ use App\Ticket\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * Deterministic auto-assignment of tickets to the least-loaded eligible agent.
+ * Asignación automática determinista de tickets al agente elegible con menos carga.
  *
- * Pipeline (single transaction):
- *   1. SELECT ticket FOR UPDATE (idempotent)
- *   2. listarAgentesDisponibles() via DisponibilidadDeAgenteService (SOLE eligibility check)
- *   3. SELECT agents FOR UPDATE WHERE id IN (...)
- *   4. Re-filter capacity inside lock (COUNT may have changed)
- *   5. Tiebreaker: lowest active count → fewest AUTO_ASSIGN today → lowest id
+ * Pipeline (una sola transacción):
+ *   1. SELECT del ticket FOR UPDATE (idempotente)
+ *   2. listarAgentesDisponibles() mediante DisponibilidadDeAgenteService (ÚNICA verificación de elegibilidad)
+ *   3. SELECT de agentes FOR UPDATE WHERE id IN (...)
+ *   4. Vuelve a filtrar por capacidad dentro del bloqueo (el COUNT puede haber cambiado)
+ *   5. Desempate: menor cantidad de activos → menos AUTO_ASSIGN hoy → menor id
  *   6. ResponsabilidadDeTicketService.registrarCambioDeResponsable()
- *   7. Collect outbox events for PR4 Mercure
+ *   7. Recolecta eventos de outbox para Mercure (PR4)
  *
- * The old hardcoded "WHERE active = 1 AND is_available = 1" filter is REMOVED.
- * DisponibilidadDeAgenteService is the SOLE eligibility check.
+ * Se ELIMINÓ el antiguo filtro fijo "WHERE active = 1 AND is_available = 1".
+ * DisponibilidadDeAgenteService es la ÚNICA verificación de elegibilidad.
  */
 final class AsignarTicketAutomaticamenteUseCase
 {
-    /** Track the last assignment type for outbox payload enrichment. */
+    /** Guarda el último tipo de asignación para enriquecer el payload del outbox. */
     private ?string $ultimoTipoDeAsignacion = null;
 
     public function __construct(
@@ -49,7 +49,7 @@ final class AsignarTicketAutomaticamenteUseCase
     ) {}
 
     /**
-     * Execute auto-assignment in its own transaction.
+     * Ejecuta la asignación automática en su propia transacción.
      *
      * @param int $ticketId
      * @return array{ticket_id: int, assigned: bool, agent_id: ?int, reason: string}
@@ -60,15 +60,15 @@ final class AsignarTicketAutomaticamenteUseCase
             return $this->executeInternal($ticketId);
         });
 
-        // After commit, persist collected events to outbox (for PR4)
-        $this->persistEventsToOutbox();
+        // Después del commit, persiste en el outbox los eventos recolectados (para PR4)
+        $this->persistirEventosEnOutbox();
 
         return $result;
     }
 
     /**
-     * Execute auto-assignment WITHOUT starting a new transaction.
-     * Use this when already inside a transaction (e.g., the inbound-message listener).
+     * Ejecuta la asignación automática SIN iniciar una transacción nueva.
+     * Usar cuando ya se está dentro de una transacción (p. ej., el listener de mensajes entrantes).
      *
      * @param int $ticketId
      * @return array{ticket_id: int, assigned: bool, agent_id: ?int, reason: string}
@@ -79,11 +79,11 @@ final class AsignarTicketAutomaticamenteUseCase
     }
 
     /**
-     * Internal execution logic — must be called inside a transaction.
+     * Lógica interna de ejecución — debe llamarse dentro de una transacción.
      */
     private function executeInternal(int $ticketId): array
     {
-        // 1. Lock the ticket row FOR UPDATE
+        // 1. Bloquea la fila del ticket FOR UPDATE
         $filaDeTicket = $this->ticketRepo->findFilaByIdForUpdate($ticketId);
 
         if (!$filaDeTicket) {
@@ -95,7 +95,7 @@ final class AsignarTicketAutomaticamenteUseCase
             ];
         }
 
-        // 2. If already assigned, return idempotent (no new Asignacion row)
+        // 2. Si ya está asignado, devuelve de forma idempotente (sin nueva fila de Asignacion)
         if ($filaDeTicket['assigned_agent_id'] !== null) {
             return [
                 'ticket_id' => $ticketId,
@@ -105,8 +105,8 @@ final class AsignarTicketAutomaticamenteUseCase
             ];
         }
 
-        // 3. Get available agents via DisponibilidadDeAgenteService (SOLE eligibility check)
-        //    This uses the full cascade: active → override → schedule → capacity.
+        // 3. Obtiene los agentes disponibles mediante DisponibilidadDeAgenteService (ÚNICA verificación de elegibilidad)
+        //    Usa la cascada completa: activo → override → horario → capacidad.
         $nowUtc = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
         $agentesDisponibles = $this->disponibilidadDeAgenteService->listarAgentesDisponibles($nowUtc);
 
@@ -119,18 +119,18 @@ final class AsignarTicketAutomaticamenteUseCase
             ];
         }
 
-        // 4. Lock candidate agent rows FOR UPDATE
+        // 4. Bloquea las filas de los agentes candidatos FOR UPDATE
         $agenteIds = array_map(fn (Agente $a): int => (int) $a->getId(), $agentesDisponibles);
         $this->agentRepo->lockRowsForUpdate($agenteIds);
 
-        // 5. Re-filter capacity inside the lock + gather tiebreaker data
+        // 5. Vuelve a filtrar por capacidad dentro del bloqueo + reúne los datos de desempate
         $inicioDeHoy = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->setTime(0, 0, 0);
         $elegibles = [];
 
         foreach ($agentesDisponibles as $agente) {
             $cantidadDeActivos = $this->ticketRepo->countActivosDeAgente((int) $agente->getId());
             if ($cantidadDeActivos >= $agente->getMaxTicketsActivos()) {
-                continue; // at capacity — skip
+                continue; // sin capacidad — se omite
             }
 
             $cantidadDeHoy = $this->asignacionRepo->countAsignacionesAutomaticasDeHoy(
@@ -154,26 +154,26 @@ final class AsignarTicketAutomaticamenteUseCase
             ];
         }
 
-        // 6. DETERMINISTIC tiebreaker (no shuffle, no rand — same data = same result)
+        // 6. Desempate DETERMINISTA (sin shuffle ni rand — mismos datos = mismo resultado)
         usort($elegibles, function (array $a, array $b): int {
-            // First: lowest active ticket count
+            // Primero: menor cantidad de tickets activos
             if ($a['activeCount'] !== $b['activeCount']) {
                 return $a['activeCount'] <=> $b['activeCount'];
             }
-            // Second: fewest AUTO_ASSIGN today
+            // Segundo: menos AUTO_ASSIGN hoy
             if ($a['todayCount'] !== $b['todayCount']) {
                 return $a['todayCount'] <=> $b['todayCount'];
             }
-            // Third: lowest agent.id
+            // Tercero: menor agent.id
             return $a['agent']->getId() <=> $b['agent']->getId();
         });
 
         $agenteSeleccionado = $elegibles[0]['agent'];
 
-        // 7. Load the Ticket entity for ResponsabilidadDeTicketService
+        // 7. Carga la entidad Ticket para ResponsabilidadDeTicketService
         $ticket = $this->ticketRepo->findById($ticketId);
         if ($ticket === null) {
-            // Should not happen — we already locked the row above
+            // No debería ocurrir — ya bloqueamos la fila arriba
             return [
                 'ticket_id' => $ticketId,
                 'assigned' => false,
@@ -182,9 +182,9 @@ final class AsignarTicketAutomaticamenteUseCase
             ];
         }
 
-        // 8. Record ownership change via ResponsabilidadDeTicketService (single point of change)
-        //    This creates the Asignacion audit row, updates ticket.assigned_agent_id,
-        //    and emits domain events.
+        // 8. Registra el cambio de responsable mediante ResponsabilidadDeTicketService (único punto de cambio)
+        //    Esto crea la fila de auditoría de Asignacion, actualiza ticket.assigned_agent_id
+        //    y emite los eventos de dominio.
         $this->ultimoTipoDeAsignacion = TipoDeAsignacion::AUTOMATICA->value;
         $this->responsabilidadDeTicketService->registrarCambioDeResponsable(
             ticket: $ticket,
@@ -194,7 +194,7 @@ final class AsignarTicketAutomaticamenteUseCase
             asignadoPor: 'system',
         );
 
-        // 9. Flush to persist all changes in the current transaction
+        // 9. Flush para persistir todos los cambios en la transacción actual
         $this->em->flush();
 
         return [
@@ -206,9 +206,9 @@ final class AsignarTicketAutomaticamenteUseCase
     }
 
     /**
-     * Persist collected domain events to outbox table (post-commit).
+     * Persiste en la tabla del outbox los eventos de dominio recolectados (post-commit).
      */
-    private function persistEventsToOutbox(): void
+    private function persistirEventosEnOutbox(): void
     {
         $events = $this->recolectorDeEventos->getEventos();
         if (empty($events)) {

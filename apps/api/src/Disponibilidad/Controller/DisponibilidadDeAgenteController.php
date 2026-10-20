@@ -21,15 +21,15 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * Agent availability and shift management endpoints.
+ * Endpoints de disponibilidad y gestión de turnos de agentes.
  *
- * Thin controllers — all business logic is delegated to UseCases or Services.
- * No direct entityManager->persist(), no direct Mercure publishing.
+ * Controladores delgados: toda la lógica de negocio se delega a UseCases o Services.
+ * Sin entityManager->persist() directo ni publicación directa en Mercure.
  *
- * Authorization:
- * - All methods require ROLE_AGENT
- * - Agent can only view/manage their own availability
- * - Admin/Supervisor can view/manage any agent
+ * Autorización:
+ * - Todos los métodos requieren ROLE_AGENT
+ * - Un agente solo puede ver/gestionar su propia disponibilidad
+ * - Admin/Supervisor pueden ver/gestionar cualquier agente
  */
 #[IsGranted('ROLE_AGENT')]
 class DisponibilidadDeAgenteController
@@ -49,15 +49,15 @@ class DisponibilidadDeAgenteController
     /**
      * POST /agents/{id}/availability
      *
-     * Set an agent's availability override with optional TTL.
-     * Returns 200 with the updated availability state.
+     * Define el override de disponibilidad de un agente con TTL opcional.
+     * Devuelve 200 con el estado de disponibilidad actualizado.
      */
     #[Route('/api/agents/{id}/availability', name: 'app_agent_set_availability', methods: ['POST'])]
     public function setDisponibilidadManual(
         int $id,
         #[MapRequestPayload] SetDisponibilidadManualRequest $request,
     ): JsonResponse {
-        // Ownership check: AGENT can only modify their own availability
+        // Verificación de pertenencia: un AGENT solo puede modificar su propia disponibilidad
         if (false === $this->isPermitidoParaAgente($id)) {
             return new JsonResponse(['error' => 'Forbidden'], 403);
         }
@@ -89,13 +89,13 @@ class DisponibilidadDeAgenteController
     /**
      * DELETE /agents/{id}/availability
      *
-     * Clear an agent's availability override (reset to NULL).
-     * Returns 204 on success.
+     * Quita el override de disponibilidad de un agente (lo vuelve a NULL).
+     * Devuelve 204 si tiene éxito.
      */
     #[Route('/api/agents/{id}/availability', name: 'app_agent_clear_availability', methods: ['DELETE'])]
     public function quitarDisponibilidadManual(int $id): JsonResponse
     {
-        // Ownership check: AGENT can only modify their own availability
+        // Verificación de pertenencia: un AGENT solo puede modificar su propia disponibilidad
         if (false === $this->isPermitidoParaAgente($id)) {
             return new JsonResponse(['error' => 'Forbidden'], 403);
         }
@@ -119,13 +119,13 @@ class DisponibilidadDeAgenteController
     /**
      * GET /agents/{id}/availability
      *
-     * Read the full availability state for an agent.
-     * Reuses DisponibilidadDeAgenteService for determination. Read-only.
+     * Lee el estado completo de disponibilidad de un agente.
+     * Reutiliza DisponibilidadDeAgenteService para determinarlo. Solo lectura.
      */
     #[Route('/api/agents/{id}/availability', name: 'app_agent_get_availability', methods: ['GET'])]
     public function getDisponibilidad(int $id): JsonResponse
     {
-        // Ownership check: AGENT can only view their own availability
+        // Verificación de pertenencia: un AGENT solo puede ver su propia disponibilidad
         if (false === $this->isPermitidoParaAgente($id)) {
             return new JsonResponse(['error' => 'Forbidden'], 403);
         }
@@ -142,10 +142,10 @@ class DisponibilidadDeAgenteController
         $isDisponible = $this->disponibilidadDeAgenteService->isDisponible($agente, $nowUtc);
         $cargaActual = $this->ticketRepo->countActivosDeAgente($id);
 
-        // Compute is_in_shift by checking schedule only (no override, no capacity)
+        // Calcula is_in_shift verificando solo el horario (sin override ni capacidad)
         $isEnTurno = $this->isAgenteEnTurno($agente, $localNow);
 
-        // Compute override info
+        // Calcula la información del override
         $disponibilidadManualActiva = false;
         $disponibilidadManual = null;
         $disponibilidadManualVenceAt = null;
@@ -176,15 +176,15 @@ class DisponibilidadDeAgenteController
     /**
      * POST /agents/{id}/shifts
      *
-     * Create a weekly shift for an agent.
-     * Returns 201 with the created shift data.
+     * Crea un turno semanal para un agente.
+     * Devuelve 201 con los datos del turno creado.
      */
     #[Route('/api/agents/{id}/shifts', name: 'app_agent_create_shift', methods: ['POST'])]
     public function createTurno(
         int $id,
         #[MapRequestPayload] CreateTurnoRequest $request,
     ): JsonResponse {
-        // Ownership check: AGENT can only modify their own shifts
+        // Verificación de pertenencia: un AGENT solo puede modificar sus propios turnos
         if (false === $this->isPermitidoParaAgente($id)) {
             return new JsonResponse(['error' => 'Forbidden'], 403);
         }
@@ -194,8 +194,8 @@ class DisponibilidadDeAgenteController
             return new JsonResponse(['error' => 'Agent not found'], 404);
         }
 
-        // DTO validation already ensures dayOfWeek 1-7 and HH:MM format.
-        // Additional validation: start != end (DTO can't cross-validate fields).
+        // La validación del DTO ya garantiza dayOfWeek 1-7 y el formato HH:MM.
+        // Validación adicional: start != end (el DTO no puede validar campos cruzados).
         if ($request->startTime === $request->endTime) {
             return new JsonResponse(
                 ['error' => 'start_time and end_time must differ'],
@@ -224,13 +224,13 @@ class DisponibilidadDeAgenteController
     /**
      * DELETE /agents/{id}/shifts/{shiftId}
      *
-     * Delete an agent's shift.
-     * Returns 204 on success.
+     * Elimina un turno de un agente.
+     * Devuelve 204 si tiene éxito.
      */
     #[Route('/api/agents/{id}/shifts/{shiftId}', name: 'app_agent_delete_shift', methods: ['DELETE'])]
     public function deleteTurno(int $id, int $shiftId): JsonResponse
     {
-        // Ownership check: AGENT can only modify their own shifts
+        // Verificación de pertenencia: un AGENT solo puede modificar sus propios turnos
         if (false === $this->isPermitidoParaAgente($id)) {
             return new JsonResponse(['error' => 'Forbidden'], 403);
         }
@@ -262,29 +262,29 @@ class DisponibilidadDeAgenteController
     }
 
     /**
-     * Check if the current user is allowed to act on the given agent.
+     * Verifica si el usuario actual puede actuar sobre el agente dado.
      *
-     * ADMIN/SUPERVISOR can act on any agent.
-     * AGENT can only act on their own agent.
+     * ADMIN/SUPERVISOR pueden actuar sobre cualquier agente.
+     * AGENT solo puede actuar sobre su propio agente.
      */
     private function isPermitidoParaAgente(int $agenteId): bool
     {
         $scopeId = $this->alcanceDeResponsabilidad->getAgenteId();
 
-        // null scope means SUPERVISOR/ADMIN (no scope restriction)
+        // un scope null significa SUPERVISOR/ADMIN (sin restricción de alcance)
         if (null === $scopeId) {
             return true;
         }
 
-        // AGENT: only their own agent
+        // AGENT: solo su propio agente
         return $scopeId === $agenteId;
     }
 
     /**
-     * Check if an agent has a shift at the given local time.
+     * Verifica si un agente tiene un turno en la hora local dada.
      *
-     * Reuses the same cross-midnight logic as DisponibilidadDeAgenteService
-     * but checks schedule only — no override, no capacity.
+     * Reutiliza la misma lógica de cruce de medianoche que DisponibilidadDeAgenteService
+     * pero verifica solo el horario, sin override ni capacidad.
      */
     private function isAgenteEnTurno(\App\Agente\Agente $agente, \DateTimeImmutable $localDateTime): bool
     {
@@ -296,19 +296,19 @@ class DisponibilidadDeAgenteController
             $horaDeFin = $turno->getHoraDeFin()->format('H:i:s');
 
             if ($horaDeFin > $horaDeInicio) {
-                // Normal shift (same day, half-open [start, end))
+                // Turno normal (mismo día, semiabierto [start, end))
                 if ($turno->getDiaDeLaSemana() === $dow && $time >= $horaDeInicio && $time < $horaDeFin) {
                     return true;
                 }
             } else {
-                // Cross-midnight shift (end < start, e.g. 22:00-06:00)
+                // Turno que cruza la medianoche (end < start, p. ej. 22:00-06:00)
                 $nextDow = $turno->getDiaDeLaSemana() === 7 ? 1 : $turno->getDiaDeLaSemana() + 1;
 
                 if ($dow === $turno->getDiaDeLaSemana() && $time >= $horaDeInicio) {
-                    return true; // First night
+                    return true; // Primera noche
                 }
                 if ($dow === $nextDow && $time < $horaDeFin) {
-                    return true; // Next morning
+                    return true; // Mañana siguiente
                 }
             }
         }

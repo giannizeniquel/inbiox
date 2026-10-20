@@ -7,11 +7,11 @@ namespace App\Compartido\Outbox;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * The only place that writes rows to `outbox_events`.
+ * El único lugar que escribe filas en `outbox_events`.
  *
- * Callers build the events and call this after their business transaction
- * has committed, so a failed outbox write does not roll the business change
- * back (decision L40 in odd/tasks/limpieza-backend.md).
+ * Quienes lo llaman arman los eventos y lo invocan después de que su transacción de negocio
+ * hizo commit, así que una escritura fallida en el outbox no revierte el cambio
+ * de negocio (decisión L40 en odd/tasks/limpieza-backend.md).
  */
 final class OutboxWriter
 {
@@ -20,8 +20,8 @@ final class OutboxWriter
     ) {}
 
     /**
-     * Persists the events and flushes once. It always flushes, even with no
-     * events, as the writers it replaced did.
+     * Persiste los eventos y hace flush una vez. Siempre hace flush, incluso sin
+     * eventos, como lo hacían los writers que reemplazó.
      */
     public function write(EventoOutbox ...$eventos): void
     {

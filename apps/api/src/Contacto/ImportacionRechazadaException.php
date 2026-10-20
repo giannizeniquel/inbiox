@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Contacto;
 
 /**
- * Whole-file rejection for CSV contact import.
+ * Rechazo de todo el archivo en la importación de contactos por CSV.
  *
- * Thrown when the uploaded file itself is unusable (missing, too large, wrong
- * type, missing required column, empty, or exceeding the row cap) — never for
- * per-row validation failures, which are reported in the partial-success
- * result instead. The controller maps `getMotivo()` to HTTP 400.
+ * Se lanza cuando el propio archivo subido no se puede usar (falta, es demasiado grande, tipo
+ * incorrecto, falta una columna obligatoria, está vacío o supera el límite de filas) — nunca por
+ * fallos de validación por fila, que se informan en el resultado de éxito
+ * parcial. El controller traduce `getMotivo()` a HTTP 400.
  */
 class ImportacionRechazadaException extends \RuntimeException
 {

@@ -147,7 +147,7 @@ sequenceDiagram
 
     UC->>EC: collect(evento)
     UC->>UC: commit de la transacción
-    UC->>DB: persistEventsToOutbox() → filas pending
+    UC->>DB: persistirEventosEnOutbox() → filas pending
     PUB->>DB: SELECT pending LIMIT 100
     PUB->>PUB: EventoEnTiempoRealFactory + TipoDeEventoMapper → JSON v1
     PUB->>HUB: POST topic=tickets (JWT publicador)
@@ -160,7 +160,7 @@ sequenceDiagram
 | Paso | Archivos |
 |---|---|
 | Recolección de eventos | `Compartido/DomainEvent.php`, `Compartido/RecolectorDeEventos.php` |
-| Escritura en outbox | Un solo escritor: `Compartido/Outbox/OutboxWriter::write()` (persist + flush, siempre después del commit del negocio). Cada caso de uso sigue armando **su propio payload** en `persistEventsToOutbox()`: `ProcesarMensajeEntranteUseCase.php:109-157`, `ProcesarMensajeSalienteUseCase.php:371-428`, `AsignarTicketUseCase.php:145-184`, `AsignarTicketAutomaticamenteUseCase.php:211-249`, `ProcesarActualizacionDeEstadoUseCase.php:216-257`. Disponibilidad, turnos y `MarcarTicketLeidoUseCase` arman un `EventoOutbox` y lo pasan al mismo escritor. |
+| Escritura en outbox | Un solo escritor: `Compartido/Outbox/OutboxWriter::write()` (persist + flush, siempre después del commit del negocio). Cada caso de uso sigue armando **su propio payload** en `persistirEventosEnOutbox()`: `ProcesarMensajeEntranteUseCase.php:109-157`, `ProcesarMensajeSalienteUseCase.php:371-428`, `AsignarTicketUseCase.php:145-184`, `AsignarTicketAutomaticamenteUseCase.php:211-249`, `ProcesarActualizacionDeEstadoUseCase.php:216-257`. Disponibilidad, turnos y `MarcarTicketLeidoUseCase` arman un `EventoOutbox` y lo pasan al mismo escritor. |
 | Publicación | `Compartido/Command/OutboxPublishCommand.php` → `Compartido/Outbox/OutboxPublisherService.php` |
 | Contrato | `Compartido/Realtime/EventoEnTiempoRealFactory.php`, `TipoDeEventoMapper.php`, `TipoDeEventoEnTiempoReal.php` (`ticket.created`, `ticket.status_changed`, `ticket.assigned`, `message.added`, `message.updated`, `conversation.updated`, `agent.availability_changed`, `agent.shift_changed`) |
 | Token de suscripción | `GET /api/mercure/token` → `MercureJwtService::issueParaUsuario()`; en la práctica el frontend **no lo usa para suscribirse** (el hub es anónimo), solo para el resync. |
@@ -177,7 +177,7 @@ Deducidos de la lectura; confirmar con `SELECT event_type, status, COUNT(*) FROM
 | P-3 | El resync filtra por `aggregate_id` sin `aggregate_type` (mezcla eventos de agente y de ticket). Además es inalcanzable (401 del firewall). | `EventoOutboxRepository::findFilasParaResincronizar` |
 | P-4 | En el mensaje entrante, la auto-asignación se publica como `ticket.status_changed` vacío, no como `ticket.assigned`. | `ProcesarMensajeEntranteUseCase.php:124-142` |
 | P-5 | Resolver, cerrar, transicionar y el cierre por ventana **no escriben nada** en el outbox. | `CambiarEstadoDeTicketUseCase.php` (no tiene `RecolectorDeEventos`) |
-| P-6 | `ConversationUpdatedEvent` existía en el contrato sin que nadie lo emitiera; se borró en la fase 1 (el frontend todavía declara `conversation.updated`). (`ticket.read` sí se emite: lo inserta `BandejaController::marcarLeido` por SQL con el tipo ya en formato de contrato, que `EventoEnTiempoRealFactory::resolveEnum()` acepta.) | `BandejaController.php:189-202`; `EventoEnTiempoRealFactory.php:42-53` |
+| P-6 | `ConversationUpdatedEvent` existía en el contrato sin que nadie lo emitiera; se borró en la fase 1 (el frontend todavía declara `conversation.updated`). (`ticket.read` sí se emite: lo inserta `BandejaController::marcarLeido` por SQL con el tipo ya en formato de contrato, que `EventoEnTiempoRealFactory::resolverTipoDeEvento()` acepta.) | `BandejaController.php:189-202`; `EventoEnTiempoRealFactory.php:42-53` |
 | P-7 | Plantillas y reaperturas por ventana no emiten eventos (la segunda es una limitación aceptada y documentada en `ProcesarMensajeEntranteUseCase.php:342-350`). | — |
 | P-8 | Topics `agent/{id}/availability`, `agent/{id}/shifts`, `agents`: se publican o conceden, pero el frontend no los escucha. | `MercureJwtService.php:28-32` |
 | P-9 | El publicador lee el outbox sin bloqueo de filas: si corren dos a la vez (por ejemplo el servicio docker `publisher` y `POST /admin/outbox/publish`), se duplican eventos (el frontend deduplica por `eventId`). La unidad systemd alternativa se borró en la fase 1; el publicador solo corre en docker. | `OutboxPublisherService.php:65-78` |

@@ -15,9 +15,9 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * The current agent's auto-reply settings.
+ * La configuración de respuesta automática del agente actual.
  *
- * PUT /api/me/auto-reply — update auto-reply settings
+ * PUT /api/me/auto-reply — actualiza la configuración de respuesta automática
  */
 #[IsGranted('IS_AUTHENTICATED_FULLY')]
 final class MiRespuestaAutomaticaController

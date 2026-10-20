@@ -19,21 +19,21 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * Admin Team management (Tier 2 #7 — Team/Area Entity, Slice 1).
+ * Administración de equipos (Tier 2 #7 — Team/Area Entity, Slice 1).
  *
- * Structural copy of Admin/GestionDeEspaciosDeTrabajoController.php: same pagination shape,
- * same reference-id error logging, same transaction-wrapped bulk-assign
- * pattern. All endpoints require ROLE_SUPERVISOR or higher (mirrors Agent
- * CRUD access per spec — administration domain, "Team CRUD (Admin/Supervisor)").
+ * Copia estructural de Admin/GestionDeEspaciosDeTrabajoController.php: misma forma de paginación,
+ * mismo registro de errores con reference-id, mismo patrón de asignación masiva
+ * dentro de una transacción. Todos los endpoints requieren ROLE_SUPERVISOR o superior (replica el acceso
+ * del CRUD de Agent según la spec — dominio de administración, "Team CRUD (Admin/Supervisor)").
  *
- * NOTE: unlike Admin/GestionDeAgentesController.php (which declares `#[IsGranted('ROLE_ADMIN')]`
- * on the class despite its docblock/access_control intending ROLE_SUPERVISOR —
- * a pre-existing inconsistency confirmed by the failing
- * `AgentControllerTest::testListAgentsAllowedForSupervisor` baseline test),
- * this controller declares `#[IsGranted('ROLE_SUPERVISOR')]` directly so the
- * class-level attribute agrees with the `^/api/admin/teams` access_control
- * entry and actually grants both ROLE_ADMIN (via role_hierarchy) and
- * ROLE_SUPERVISOR, per spec.
+ * NOTA: a diferencia de Admin/GestionDeAgentesController.php (que declara `#[IsGranted('ROLE_ADMIN')]`
+ * en la clase aunque su docblock/access_control apunta a ROLE_SUPERVISOR —
+ * una inconsistencia preexistente confirmada por el test de baseline que falla
+ * `AgentControllerTest::testListAgentsAllowedForSupervisor`),
+ * este controlador declara `#[IsGranted('ROLE_SUPERVISOR')]` directamente para que el
+ * atributo a nivel de clase coincida con la entrada de access_control `^/api/admin/teams`
+ * y realmente otorgue acceso tanto a ROLE_ADMIN (vía role_hierarchy) como a
+ * ROLE_SUPERVISOR, según la spec.
  */
 #[IsGranted('ROLE_SUPERVISOR')]
 final class GestionDeEquiposController

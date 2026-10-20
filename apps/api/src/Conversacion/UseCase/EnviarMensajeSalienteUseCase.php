@@ -12,11 +12,11 @@ use App\Conversacion\TelefonoDeDestinatarioNoEncontradoException;
 use App\Ticket\Repository\TicketRepository;
 
 /**
- * Sends an agent's text or media reply on a ticket through WhatsApp.
+ * Envía por WhatsApp la respuesta de texto o con adjunto de un agente en un ticket.
  *
- * The message is stored (with its assignment and status effects) before the
- * Graph call, so it stays stored when the recipient cannot be resolved or
- * Graph rejects the send.
+ * El mensaje se guarda (con sus efectos de asignación y estado) antes de la
+ * llamada a Graph, así que queda guardado cuando no se puede resolver el destinatario o
+ * Graph rechaza el envío.
  */
 final class EnviarMensajeSalienteUseCase
 {
@@ -28,13 +28,13 @@ final class EnviarMensajeSalienteUseCase
     ) {}
 
     /**
-     * The media fields are passed as the client sent them; a media send
-     * needs both `$mediaId` and `$mimeType`, otherwise the content goes as
-     * text.
+     * Los campos del adjunto se pasan tal como los envió el cliente; un envío con
+     * adjunto necesita tanto `$mediaId` como `$mimeType`; si no, el contenido va como
+     * texto.
      *
      * @return array{messageId: mixed, externalId: ?string}
      *
-     * @throws NotFoundException               the ticket disappeared after the message was stored
+     * @throws NotFoundException               el ticket desapareció después de guardar el mensaje
      * @throws TelefonoDeDestinatarioNoEncontradoException
      * @throws GraphApiException
      */
@@ -65,7 +65,7 @@ final class EnviarMensajeSalienteUseCase
             ];
         }
 
-        // Creates the Message and applies the assignment and status changes.
+        // Crea el mensaje y aplica los cambios de asignación y estado.
         $result = $this->procesarMensajeSalienteUseCase->procesarMensajeSaliente(
             ticketId: $ticketId,
             contenido: $contenido,
@@ -81,7 +81,7 @@ final class EnviarMensajeSalienteUseCase
 
         $telefono = $ticket->telefonoDestinatario();
 
-        // Each ticket replies from the WhatsApp number it came in on (CAP-7 / META-018).
+        // Cada ticket responde desde el número de WhatsApp por el que entró (CAP-7 / META-018).
         $phoneNumberId = $ticket->getPhoneNumberId();
 
         if ($isMedia) {

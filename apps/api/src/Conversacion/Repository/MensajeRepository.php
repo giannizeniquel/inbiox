@@ -31,9 +31,9 @@ class MensajeRepository extends ServiceEntityRepository
     }
 
     /**
-     * Up to `$maxResults` messages of a conversation, oldest first (ties by
-     * id). With a cursor, only messages after it: later `created_at`, or the
-     * same `created_at` and a higher id.
+     * Hasta `$maxResults` mensajes de una conversación, del más antiguo al más nuevo
+     * (empates por id). Con un cursor, solo los mensajes posteriores a él: `created_at`
+     * mayor, o el mismo `created_at` y un id mayor.
      *
      * @return list<array<string, mixed>>
      */
@@ -54,10 +54,10 @@ class MensajeRepository extends ServiceEntityRepository
     }
 
     /**
-     * Up to `$maxResults` messages of a conversation, newest first (ties by
-     * id), skipping `$offset` rows when it is positive. With a cursor, only
-     * messages before it: earlier `created_at`, or the same `created_at` and
-     * a lower id.
+     * Hasta `$maxResults` mensajes de una conversación, del más nuevo al más antiguo
+     * (empates por id), saltando `$offset` filas cuando es positivo. Con un cursor, solo
+     * los mensajes anteriores a él: `created_at` menor, o el mismo `created_at` y
+     * un id menor.
      *
      * @return list<array<string, mixed>>
      */

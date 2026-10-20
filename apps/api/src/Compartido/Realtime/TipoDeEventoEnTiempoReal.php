@@ -3,9 +3,9 @@
 namespace App\Compartido\Realtime;
 
 /**
- * Backed enum of realtime event types for the RealtimeEventContract v1.
- * These string values are used on the wire (Mercure SSE) and must match
- * the frontend RealtimeEventType enum exactly.
+ * Enum respaldado de tipos de evento en tiempo real para el RealtimeEventContract v1.
+ * Estos valores string se usan en el cable (Mercure SSE) y deben coincidir
+ * exactamente con el enum RealtimeEventType del frontend.
  */
 enum TipoDeEventoEnTiempoReal: string
 {

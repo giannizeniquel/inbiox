@@ -5,8 +5,8 @@ namespace App\Compartido;
 use RuntimeException;
 
 /**
- * Thrown when optimistic locking retries are exhausted.
- * Indicates a concurrency conflict that could not be resolved.
+ * Se lanza cuando se agotan los reintentos del bloqueo optimista.
+ * Indica un conflicto de concurrencia que no se pudo resolver.
  */
 class ConcurrencyException extends RuntimeException
 {

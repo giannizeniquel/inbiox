@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Contacto\UseCase;
 
 /**
- * Partial-success result of a CSV contact import.
+ * Resultado de éxito parcial de una importación de contactos por CSV.
  *
  * @phpstan-type ImportErrorEntry array{row: int, phone: string, reason: string, message: string}
  */

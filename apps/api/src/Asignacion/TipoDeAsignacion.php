@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Asignacion;
 
 /**
- * Types of ticket ownership changes for the audit trail.
+ * Tipos de cambio de responsable de un ticket para el registro de auditoría.
  *
- * Every assignment path (auto, manual, reassign, unassign) creates an
- * Asignacion row with one of these types. ResponsabilidadDeTicketService is the ONLY
- * place that creates Asignacion rows.
+ * Cada vía de asignación (automática, manual, reasignación, desasignación) crea una
+ * fila de Asignacion con uno de estos tipos. ResponsabilidadDeTicketService es el ÚNICO
+ * lugar que crea filas de Asignacion.
  */
 enum TipoDeAsignacion: string
 {

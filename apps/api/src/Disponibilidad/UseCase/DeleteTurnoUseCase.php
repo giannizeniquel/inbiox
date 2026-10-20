@@ -13,10 +13,10 @@ use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * Delete an agent's shift.
+ * Elimina un turno de un agente.
  *
- * Finds the shift, verifies it belongs to the agent, removes it,
- * and emits an agent.shift_changed outbox event.
+ * Busca el turno, verifica que pertenezca al agente, lo elimina
+ * y emite un evento de outbox agent.shift_changed.
  */
 final class DeleteTurnoUseCase
 {
@@ -30,19 +30,19 @@ final class DeleteTurnoUseCase
     ) {}
 
     /**
-     * Delete a shift for the given agent.
+     * Elimina un turno del agente dado.
      *
      * @param int $agenteId
      * @param int $shiftId
      *
      * @return array{agent_id: int, shift_id: int, action: string}
      *
-     * @throws \InvalidArgumentException if agent or shift not found, or shift does not belong to agent
+     * @throws \InvalidArgumentException si no se encuentra el agente o el turno, o el turno no pertenece al agente
      */
     public function execute(int $agenteId, int $shiftId): array
     {
         $result = $this->em->getConnection()->transactional(function () use ($agenteId, $shiftId) {
-            // 1. Find and lock agent FOR UPDATE
+            // 1. Busca y bloquea el agente con FOR UPDATE
             $agente = $this->agentRepo->findById($agenteId);
             if ($agente === null) {
                 throw new \InvalidArgumentException('Agent not found');
@@ -50,7 +50,7 @@ final class DeleteTurnoUseCase
 
             $this->em->lock($agente, LockMode::PESSIMISTIC_WRITE);
 
-            // 2. Find shift and verify ownership
+            // 2. Busca el turno y verifica a quién pertenece
             $turno = $this->turnoRepo->find($shiftId);
             if ($turno === null) {
                 throw new \InvalidArgumentException('Shift not found');
@@ -58,24 +58,24 @@ final class DeleteTurnoUseCase
 
             $agenteDelTurno = $turno->getAgente();
 
-            // Check either by ID (if loaded reference) or by entity reference
+            // Verifica por ID (si la referencia está cargada) o por referencia a la entidad
             if ($agenteDelTurno === null || $agenteDelTurno->getId() !== $agente->getId()) {
                 throw new \InvalidArgumentException('Shift does not belong to this agent');
             }
 
-            // Store shift data before removal for the outbox event
+            // Guarda los datos del turno antes de eliminarlo, para el evento de outbox
             $diaDeLaSemana = $turno->getDiaDeLaSemana();
             $horaDeInicio = $turno->getHoraDeInicio()->format('H:i');
             $horaDeFin = $turno->getHoraDeFin()->format('H:i');
 
-            // 3. Remove shift
+            // 3. Elimina el turno
             $agente->removeTurno($turno);
             $this->em->remove($turno);
 
-            // 4. Persist
+            // 4. Persiste
             $this->em->flush();
 
-            // 5. Track outbox event
+            // 5. Registra el evento de outbox
             $now = new \DateTimeImmutable();
             $this->pendingOutboxEvent = [
                 'aggregate_id' => $agenteId,
@@ -97,15 +97,15 @@ final class DeleteTurnoUseCase
             ];
         });
 
-        $this->persistOutboxEvent();
+        $this->persistirEventoOutbox();
 
         return $result;
     }
 
     /**
-     * Persist the outbox event after the main transaction has committed.
+     * Persiste el evento de outbox después del commit de la transacción principal.
      */
-    private function persistOutboxEvent(): void
+    private function persistirEventoOutbox(): void
     {
         if ($this->pendingOutboxEvent === null) {
             return;

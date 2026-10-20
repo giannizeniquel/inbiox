@@ -49,14 +49,14 @@ class ProcesarMensajeEntranteUseCase
     ) {}
 
     /**
-     * Process an incoming message from a webhook or API call.
+     * Procesa un mensaje entrante de un webhook o de una llamada a la API.
      *
-     * @param string      $telefono           Sender's phone number in E.164 format
-     * @param string      $texto         Message content
-     * @param string|null $externalId      WAMID from Meta (for idempotency)
-     * @param string|null $phoneNumberId   WhatsApp phone number ID that received this message (CAP-7)
-     * @param string|null $nombreDeContacto     Optional contact name to set on new/existing contacts
-     * @param array|null  $datosDeDescargaDeAdjunto  Optional media payload: {mediaId, mimeType, filename, caption}
+     * @param string      $telefono           Número de teléfono del remitente en formato E.164
+     * @param string      $texto         Contenido del mensaje
+     * @param string|null $externalId      WAMID de Meta (para la idempotencia)
+     * @param string|null $phoneNumberId   phone number id de WhatsApp que recibió este mensaje (CAP-7)
+     * @param string|null $nombreDeContacto     Nombre de contacto opcional para asignar a contactos nuevos o existentes
+     * @param array|null  $datosDeDescargaDeAdjunto  Payload opcional del adjunto: {mediaId, mimeType, filename, caption}
      *
      * @return array{contact_id: int, conversation_id: int, message_id: int, ticket_id: int|null, status: string}
      */
@@ -68,7 +68,7 @@ class ProcesarMensajeEntranteUseCase
         ?string $nombreDeContacto = null,
         ?array $datosDeDescargaDeAdjunto = null,
     ): array {
-        // 1. Normalize phone: strip non-digits, keep format as-is (WhatsApp sends correct prefix)
+        // 1. Normaliza el teléfono: quita lo que no son dígitos y mantiene el formato tal cual (WhatsApp envía el prefijo correcto)
         $telefonoNormalizado = preg_replace('/[^0-9]/', '', $telefono);
         if (strlen($telefonoNormalizado) < 10) {
             throw new \InvalidArgumentException('Invalid phone number');
@@ -80,8 +80,8 @@ class ProcesarMensajeEntranteUseCase
             return $this->executeInternal($telefonoNormalizado, $texto, $externalId, $phoneNumberId, $nombreDeContacto, $datosDeDescargaDeAdjunto);
         });
 
-        // After commit, attempt auto-reply (fire-and-forget)
-        // This runs BEFORE persistEventsToOutbox to keep ordering deterministic
+        // Después del commit, intenta la respuesta automática (fire-and-forget)
+        // Se ejecuta ANTES de persistirEventosEnOutbox para mantener un orden determinista
         try {
             $ticketId = $result['ticket_id'] ?? null;
             if ($ticketId !== null) {
@@ -97,16 +97,16 @@ class ProcesarMensajeEntranteUseCase
             ]);
         }
 
-        // After commit, persist collected events to outbox
-        $this->persistEventsToOutbox();
+        // Después del commit, persiste los eventos recolectados en el outbox
+        $this->persistirEventosEnOutbox();
 
         return $result;
     }
 
     /**
-     * Persist collected domain events to outbox table
+     * Persiste los eventos de dominio recolectados en la tabla del outbox
      */
-    private function persistEventsToOutbox(): void
+    private function persistirEventosEnOutbox(): void
     {
         $events = $this->recolectorDeEventos->getEventos();
         if (empty($events)) {
@@ -125,14 +125,14 @@ foreach ($events as $event) {
                 'version' => $event->version,
             ];
 
-            // Add event-specific fields
+            // Agrega los campos propios de cada evento
             if ($event instanceof MessageCreatedEvent) {
                 $payload['message_id'] = $event->messageId;
                 $payload['direction'] = $event->direction->value;
                 $payload['content'] = $event->content;
                 $payload['sender_name'] = $event->senderName;
                 $payload['media'] = $event->media;
-                // Include phone_number_id for workspace-pending indicator
+                // Incluye phone_number_id para el indicador de pendientes del workspace
                 $phoneNumberId = $this->ticketRepo->findPhoneNumberId($event->ticketId);
                 if (!empty($phoneNumberId)) {
                     $payload['phone_number_id'] = $phoneNumberId;
@@ -157,10 +157,10 @@ foreach ($events as $event) {
     }
 
     /**
-     * Runs inside the inbound transaction. The steps keep their original
-     * order: three flushes (message, media, everything else), the media
-     * download from Graph before the ticket lock, and the event sequence
-     * increments after the last flush.
+     * Se ejecuta dentro de la transacción entrante. Los pasos mantienen su orden
+     * original: tres flush (mensaje, adjunto, todo lo demás), la descarga del
+     * adjunto desde Graph antes del bloqueo del ticket, y los incrementos de la
+     * secuencia de eventos después del último flush.
      */
     private function executeInternal(
         string $telefono,
@@ -173,8 +173,8 @@ foreach ($events as $event) {
         $contacto = $this->findOrCreateContacto($telefono, $nombreDeContacto);
         $conversacion = $this->findOrCreateConversacionAbierta($contacto, $phoneNumberId);
 
-        // Idempotency by WAMID. It runs after the contact and conversation
-        // may have been created, so a duplicate still stores those.
+        // Idempotencia por WAMID. Se ejecuta después de que el contacto y la conversación
+        // pudieron haberse creado, así que un duplicado igual los guarda.
         $mensajeExistente = $this->findMensajeYaGuardado($externalId);
         if ($mensajeExistente) {
             return [
@@ -220,7 +220,7 @@ foreach ($events as $event) {
             }
             $this->em->persist($contacto);
         } elseif ($nombreDeContacto !== null && $contacto->getNombre() === null) {
-            // Update name on existing contact if it was missing
+            // Actualiza el nombre del contacto existente si faltaba
             $contacto->setNombre($nombreDeContacto);
         }
 
@@ -252,7 +252,7 @@ foreach ($events as $event) {
         return $this->mensajeRepo->findByExternalId($externalId);
     }
 
-    /** Persists the message and flushes (first flush), so it has an id for the media key. */
+    /** Persiste el mensaje y hace flush (primer flush), para que tenga id para la clave del adjunto. */
     private function guardarMensajeEntrante(Conversacion $conversacion, string $texto, ?string $externalId): Mensaje
     {
         $mensaje = new Mensaje();
@@ -271,9 +271,9 @@ foreach ($events as $event) {
     }
 
     /**
-     * Downloads the media from Graph and stores it while the inbound
-     * transaction is open (contradiction track, S10). A failure only logs:
-     * the message stays stored without media. Success flushes (second flush).
+     * Descarga el adjunto desde Graph y lo guarda mientras la transacción
+     * entrante está abierta (contradiction track, S10). Un fallo solo se registra en el log:
+     * el mensaje queda guardado sin adjunto. Si sale bien, hace flush (segundo flush).
      */
     private function descargarAdjuntoEnLaTransaccion(Mensaje $mensaje, ?array $datosDeDescargaDeAdjunto): void
     {
@@ -287,9 +287,9 @@ foreach ($events as $event) {
             $filename = $datosDeDescargaDeAdjunto['filename'] ?? 'file';
             $leyenda = $datosDeDescargaDeAdjunto['caption'] ?? null;
 
-            // Determine tenant and ticket for the object key
-            $tenantId = 'default'; // Default tenant prefix
-            $ticketId = $mensaje->getId(); // Use message ID as part of key
+            // Determina el tenant y el ticket para la clave del objeto
+            $tenantId = 'default'; // Prefijo de tenant por defecto
+            $ticketId = $mensaje->getId(); // Usa el ID del mensaje como parte de la clave
 
             $resultadoDeAdjunto = $this->descargaDeAdjuntoService->descargarYGuardar(
                 mediaId: $mediaId,
@@ -316,38 +316,38 @@ foreach ($events as $event) {
                 'error' => $e->getMessage(),
                 'mediaId' => $datosDeDescargaDeAdjunto['mediaId'] ?? null,
             ]);
-            // Continue without media — message is already persisted
+            // Continúa sin adjunto: el mensaje ya está persistido
         }
     }
 
     /**
-     * Uses the contact's not-closed ticket (resolved included, for the
-     * auto-reopen), else reopens its window-expired closed ticket on the same
-     * conversation, else creates a new one. An existing ticket is locked.
+     * Usa el ticket no cerrado del contacto (incluidos los resueltos, para la
+     * reapertura automática); si no, reabre su ticket cerrado por vencimiento de ventana
+     * en la misma conversación; si no, crea uno nuevo. Un ticket existente se bloquea.
      *
-     * @return array{0: Ticket, 1: bool} the ticket and whether it is new
+     * @return array{0: Ticket, 1: bool} el ticket y si es nuevo
      */
     private function findOrReabrirOrCreateTicketBloqueado(Contacto $contacto, Conversacion $conversacion, ?string $phoneNumberId): array
     {
         $ticket = $this->ticketRepo->findNoCerradoByContacto($contacto, $phoneNumberId);
         $fueReabierto = false;
 
-        // WhatsApp 24h conversation-window compliance: a ticket closed
-        // specifically by the window-expiry process reactivates on a new
-        // inbound message instead of spawning a new ticket (design.md D1).
-        // No human-facing endpoint can trigger this — see
-        // CambiarEstadoDeTicketUseCase::reopenDueToInboundMessage()'s own
-        // guard and TicketWorkflowControllerWindowIsolationTest.
+        // Cumplimiento de la ventana de conversación de 24 h de WhatsApp: un ticket cerrado
+        // específicamente por el proceso de vencimiento de ventana se reactiva ante un nuevo
+        // mensaje entrante en lugar de generar un ticket nuevo (design.md D1).
+        // Ningún endpoint de uso humano puede disparar esto; ver la guarda propia de
+        // CambiarEstadoDeTicketUseCase::reopenDueToInboundMessage() y
+        // TicketWorkflowControllerWindowIsolationTest.
         //
-        // Known accepted limitation (proposal.md/design.md, deferred to a
-        // future phase): a reopened ticket may not appear live in the
-        // agent's ticket list, because no ticket-level Mercure event fires
-        // for it — `TicketUpdatedEvent` is deliberately NOT extended here
-        // (fixed constraint). The reopen is fully correct in the database
-        // (status='active', closed_at=NULL, `ticket_events` audit row) and
-        // becomes visible on the agent's next list load. Do NOT add a new
-        // event emission here to close this gap — it is out of scope for
-        // this change.
+        // Limitación conocida y aceptada (proposal.md/design.md, postergada a una
+        // fase futura): un ticket reabierto puede no aparecer en vivo en la
+        // lista de tickets del agente, porque no se dispara ningún evento de Mercure a nivel
+        // de ticket para él: `TicketUpdatedEvent` deliberadamente NO se extiende aquí
+        // (restricción fija). La reapertura es totalmente correcta en la base de datos
+        // (status='active', closed_at=NULL, fila de auditoría en `ticket_events`) y
+        // se ve en la siguiente carga de la lista del agente. NO agregar aquí una nueva
+        // emisión de eventos para cerrar esta brecha: está fuera del alcance de
+        // este cambio.
         if (!$ticket) {
             $reabrible = $this->ticketRepo->findCerradoPorVentanaVencidaByContacto($contacto, $phoneNumberId);
             if ($reabrible !== null
@@ -372,14 +372,14 @@ foreach ($events as $event) {
             return [$ticket, true];
         }
 
-        // Existing ticket: lock to prevent seq duplicates under concurrency
+        // Ticket existente: se bloquea para evitar seq duplicados con concurrencia
         $this->em->lock($ticket, LockMode::PESSIMISTIC_WRITE);
 
-        // `reopenDueToInboundMessage()` writes via raw SQL, so the
-        // managed entity fetched above still reports the stale
-        // `status = 'closed'`. Without this refresh, the waiting→active
-        // step (and the returned `ticket_status`) would read/report the
-        // wrong status.
+        // `reopenDueToInboundMessage()` escribe con SQL crudo, así que la
+        // entidad gestionada obtenida arriba todavía informa el obsoleto
+        // `status = 'closed'`. Sin este refresh, el paso waiting→active
+        // (y el `ticket_status` devuelto) leería/informaría un
+        // estado equivocado.
         if ($fueReabierto) {
             $this->em->refresh($ticket);
         }
@@ -388,8 +388,8 @@ foreach ($events as $event) {
     }
 
     /**
-     * FSM transition on a customer response. The transition writes with raw
-     * SQL and the managed ticket keeps `waiting` (contradiction track, S10).
+     * Transición de la FSM ante una respuesta del cliente. La transición escribe con
+     * SQL crudo y el ticket gestionado mantiene `waiting` (contradiction track, S10).
      */
     private function activarTicketEnEspera(Ticket $ticket): ?string
     {
@@ -400,8 +400,8 @@ foreach ($events as $event) {
         $this->cambiarEstadoDeTicketUseCase->execute(
             $ticket->getId(),
             EstadoDeTicket::ACTIVO->value,
-            false, // don't set first_response - this is customer
-            false  // don't set resolved
+            false, // no asigna first_response: es el cliente
+            false  // no asigna resolved
         );
 
         return 'waiting_to_active';
@@ -414,17 +414,17 @@ foreach ($events as $event) {
         $contacto->setActualizadoAt(new \DateTimeImmutable());
         $ticket->setActualizadoAt(new \DateTimeImmutable());
 
-        // WhatsApp 24h conversation-window compliance: this is the single
-        // writer for `lastInboundMessageAt` (design.md, task 3.1/3.8) — it
-        // must fire on every inbound message, for both a brand-new ticket
-        // and a reused/reopened one, and on no other path (outbound sends
-        // and auto-replies never touch this field).
+        // Cumplimiento de la ventana de conversación de 24 h de WhatsApp: este es el único
+        // que escribe `lastInboundMessageAt` (design.md, task 3.1/3.8); debe
+        // ejecutarse en cada mensaje entrante, tanto para un ticket nuevo
+        // como para uno reutilizado/reabierto, y en ningún otro camino (los envíos salientes
+        // y las respuestas automáticas nunca tocan este campo).
         $ticket->setUltimoMensajeEntranteAt($mensaje->getCreadoAt());
     }
 
     /**
-     * Collected after the last flush, so the ticket has its id. The sequence
-     * increments are saved by the outbox writer's flush.
+     * Se recolecta después del último flush, así el ticket ya tiene id. Los incrementos
+     * de la secuencia se guardan con el flush del escritor del outbox.
      */
     private function registrarEventosDeEntrada(Ticket $ticket, bool $ticketNuevo, Mensaje $mensaje, string $texto, Contacto $contacto): void
     {
@@ -455,8 +455,8 @@ foreach ($events as $event) {
     }
 
     /**
-     * Inbound automation rules, then the auto-assignment request. Its
-     * listener runs synchronously, inside the inbound transaction.
+     * Reglas de automatización entrantes y luego la solicitud de autoasignación. Su
+     * listener se ejecuta de forma síncrona, dentro de la transacción entrante.
      */
     private function ejecutarReglasYPedirAsignacionAutomatica(Ticket $ticket, Mensaje $mensaje): void
     {

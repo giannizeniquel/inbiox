@@ -18,8 +18,8 @@ final class MarcarTicketLeidoUseCase
     ) {}
 
     /**
-     * Only the assigned agent marks the ticket as read. Other users can view
-     * it without affecting the read state, so for them this does nothing.
+     * Solo el agente asignado marca el ticket como leído. Otros usuarios pueden verlo
+     * sin afectar el estado de lectura, así que para ellos esto no hace nada.
      */
     public function execute(Ticket $ticket, ?int $agenteActualId): void
     {
@@ -32,7 +32,7 @@ final class MarcarTicketLeidoUseCase
         $ticket->setUltimaLecturaAt(new \DateTimeImmutable());
         $this->entityManager->flush();
 
-        // Emit real-time event so other clients clear their unread badge
+        // Emite un evento en tiempo real para que los otros clientes limpien su indicador de no leídos
         $ticketId = (int) $ticket->getId();
         $this->outboxWriter->write(new EventoOutbox(
             aggregateType: 'ticket',

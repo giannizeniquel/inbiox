@@ -17,7 +17,7 @@ class EventoProcesadoRepository extends ServiceEntityRepository
     }
 
     /**
-     * Check if an event has already been processed
+     * Verifica si un evento ya fue procesado
      */
     public function exists(string $eventoId): bool
     {
@@ -25,7 +25,7 @@ class EventoProcesadoRepository extends ServiceEntityRepository
     }
 
     /**
-     * Find processed event by event ID
+     * Busca un evento procesado por su ID de evento
      */
     public function findByEventoId(string $eventoId): ?EventoProcesado
     {
@@ -33,7 +33,7 @@ class EventoProcesadoRepository extends ServiceEntityRepository
     }
 
     /**
-     * Save a processed event
+     * Guarda un evento procesado
      */
     public function save(EventoProcesado $evento): void
     {

@@ -20,11 +20,11 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * The current user's workspaces.
+ * Los espacios de trabajo del usuario actual.
  *
- * GET  /api/me/workspace   — returns the active workspace or 404 if none set
- * PUT  /api/me/workspace   — sets the active workspace
- * GET  /api/me/workspaces  — returns the user's workspaces
+ * GET  /api/me/workspace   — devuelve el espacio de trabajo activo, o 404 si no hay ninguno definido
+ * PUT  /api/me/workspace   — define el espacio de trabajo activo
+ * GET  /api/me/workspaces  — devuelve los espacios de trabajo del usuario
  */
 #[IsGranted('IS_AUTHENTICATED_FULLY')]
 final class MiEspacioDeTrabajoController
@@ -65,7 +65,7 @@ final class MiEspacioDeTrabajoController
             return new JsonResponse(['error' => 'Invalid JSON body'], Response::HTTP_BAD_REQUEST);
         }
 
-        // Unreachable with the entity user provider; kept as a guard.
+        // Inalcanzable con el user provider de entidad; se conserva como guarda.
         $usuario = $this->security->getUser();
         if (!$usuario instanceof Usuario) {
             return new JsonResponse(['error' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
@@ -96,14 +96,14 @@ final class MiEspacioDeTrabajoController
             return new JsonResponse(['error' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
         }
 
-        // Admin/Supervisor: see ALL workspaces
+        // Admin/Supervisor: ven TODOS los espacios de trabajo
         if ($this->security->isGranted('ROLE_ADMIN') || $this->security->isGranted('ROLE_SUPERVISOR')) {
             $espaciosDeTrabajo = $this->espacioDeTrabajoRepository->findBy(['activo' => true]);
             $items = array_map(fn(EspacioDeTrabajo $w) => EspacioDeTrabajoDTO::fromEntity($w)->toArray(), $espaciosDeTrabajo);
             return new JsonResponse($items);
         }
 
-        // Agent: only assigned workspaces
+        // Agente: solo los espacios de trabajo asignados
         $agente = $usuario->getAgente();
         if (null === $agente) {
             return new JsonResponse([], Response::HTTP_OK);

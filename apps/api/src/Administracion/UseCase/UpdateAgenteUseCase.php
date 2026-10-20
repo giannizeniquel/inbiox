@@ -14,12 +14,12 @@ final class UpdateAgenteUseCase
     ) {}
 
     /**
-     * Applies only the fields present in $data, checking them in order and
-     * saving nothing if one fails.
+     * Aplica solo los campos presentes en $data, validándolos en orden y
+     * sin guardar nada si alguno falla.
      *
-     * @param array<mixed> $data decoded request body
+     * @param array<mixed> $data cuerpo de la request decodificado
      *
-     * @throws \InvalidArgumentException when a field is invalid
+     * @throws \InvalidArgumentException cuando un campo es inválido
      */
     public function execute(Agente $agente, array $data): void
     {
@@ -27,8 +27,8 @@ final class UpdateAgenteUseCase
             if (!\is_string($data['name']) || empty($data['name'])) {
                 throw new \InvalidArgumentException('name must be a non-empty string');
             }
-            // Agent has no name setter. Reflection sets the name without
-            // touching updated_at, which is the current behavior.
+            // Agente no tiene setter de name. La reflexión asigna el nombre sin
+            // tocar updated_at, que es el comportamiento actual.
             $propiedadNombre = new \ReflectionProperty(Agente::class, 'nombre');
             $propiedadNombre->setAccessible(true);
             $propiedadNombre->setValue($agente, $data['name']);

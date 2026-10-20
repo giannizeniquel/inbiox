@@ -7,7 +7,7 @@ namespace App\Administracion\Query;
 use App\Administracion\EspacioDeTrabajo;
 
 /**
- * Data Transfer Object for workspace responses.
+ * Data Transfer Object para las respuestas de espacios de trabajo.
  */
 class EspacioDeTrabajoDTO
 {

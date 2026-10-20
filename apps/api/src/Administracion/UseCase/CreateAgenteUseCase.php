@@ -14,9 +14,9 @@ final class CreateAgenteUseCase
     ) {}
 
     /**
-     * @param array<mixed> $data decoded request body
+     * @param array<mixed> $data cuerpo de la request decodificado
      *
-     * @throws \InvalidArgumentException when a field is missing or invalid
+     * @throws \InvalidArgumentException cuando falta un campo o es inválido
      */
     public function execute(array $data): Agente
     {

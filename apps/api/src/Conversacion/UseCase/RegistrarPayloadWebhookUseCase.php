@@ -8,10 +8,10 @@ use App\Conversacion\PayloadWebhook;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * Persists the raw webhook payload to webhook_payloads (T-02).
+ * Persiste el payload crudo del webhook en webhook_payloads (T-02).
  *
- * It runs BEFORE dispatch so there is a record even if processing fails.
- * It extracts phone_number_id from metadata for multi-number traceability (CAP-7).
+ * Se ejecuta ANTES del despacho, así queda un registro aunque el procesamiento falle.
+ * Extrae phone_number_id de metadata para la trazabilidad multinúmero (CAP-7).
  */
 final class RegistrarPayloadWebhookUseCase
 {
@@ -20,14 +20,14 @@ final class RegistrarPayloadWebhookUseCase
     ) {}
 
     /**
-     * @param array<mixed> $payload decoded webhook body
+     * @param array<mixed> $payload cuerpo del webhook decodificado
      */
     public function execute(array $payload): void
     {
         $eventType = 'unknown';
         $phoneNumberId = null;
 
-        // Determine event type and extract phoneNumberId from metadata
+        // Determina el tipo de evento y extrae phoneNumberId de metadata
         foreach ($payload['entry'] ?? [] as $entry) {
             foreach ($entry['changes'] ?? [] as $change) {
                 $value = $change['value'] ?? [];
@@ -37,7 +37,7 @@ final class RegistrarPayloadWebhookUseCase
                 if (isset($value['statuses'])) {
                     $eventType = 'status';
                 }
-                // Extract phone_number_id from metadata (CAP-7 / META-017)
+                // Extrae phone_number_id de metadata (CAP-7 / META-017)
                 if ($phoneNumberId === null && isset($value['metadata']['phone_number_id'])) {
                     $phoneNumberId = $value['metadata']['phone_number_id'];
                 }

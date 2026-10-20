@@ -8,9 +8,9 @@ use App\Disponibilidad\DisponibilidadDeAgenteService;
 use App\Ticket\Repository\TicketRepository;
 
 /**
- * Lists the agents available at a given moment (in shift and under capacity,
- * or forced by an override), optionally restricted to one workspace, with
- * their current number of active tickets.
+ * Lista los agentes disponibles en un momento dado (en turno y por debajo de su capacidad,
+ * o forzados por un override), opcionalmente restringidos a un espacio de trabajo, con
+ * su número actual de tickets activos.
  */
 final class ListarAgentesDisponiblesQuery
 {
@@ -20,9 +20,9 @@ final class ListarAgentesDisponiblesQuery
     ) {}
 
     /**
-     * The active ticket count runs one query per agent.
+     * El conteo de tickets activos ejecuta una query por agente.
      *
-     * @param string|null $phoneNumberId Workspace to restrict to; null lists every available agent
+     * @param string|null $phoneNumberId Espacio de trabajo al que restringir; null lista todos los agentes disponibles
      * @return array<int, array{agent_id: int|null, agent_name: string, in_shift: true, active_tickets: int}>
      */
     public function execute(?string $phoneNumberId, \DateTimeImmutable $atUtc): array
@@ -31,7 +31,7 @@ final class ListarAgentesDisponiblesQuery
 
         $result = [];
         foreach ($disponibles as $agente) {
-            // Filter by workspace if scoped
+            // Filtrar por espacio de trabajo si está acotado
             if ($phoneNumberId !== null) {
                 $enEspacioDeTrabajo = false;
                 foreach ($agente->getEspaciosDeTrabajo() as $ws) {

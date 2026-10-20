@@ -19,7 +19,7 @@ class UsuarioRepository extends ServiceEntityRepository
     }
 
     /**
-     * Newest first, with the linked agent fetched in the same query.
+     * Los más recientes primero, con el agente vinculado obtenido en la misma query.
      *
      * @return Usuario[]
      */

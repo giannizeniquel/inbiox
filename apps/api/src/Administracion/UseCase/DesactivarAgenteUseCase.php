@@ -8,7 +8,7 @@ use App\Agente\Agente;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * Soft delete: the agent stays, with active = false.
+ * Borrado lógico: el agente se conserva, con active = false.
  */
 final class DesactivarAgenteUseCase
 {

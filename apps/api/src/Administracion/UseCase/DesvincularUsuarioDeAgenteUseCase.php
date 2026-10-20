@@ -14,7 +14,7 @@ final class DesvincularUsuarioDeAgenteUseCase
     ) {}
 
     /**
-     * @throws \InvalidArgumentException when the agent has no linked user
+     * @throws \InvalidArgumentException cuando el agente no tiene un usuario vinculado
      */
     public function execute(Agente $agente): void
     {

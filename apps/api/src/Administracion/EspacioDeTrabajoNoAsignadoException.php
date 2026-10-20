@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Administracion;
 
 /**
- * An agent tried to make active a workspace it is not assigned to.
+ * Un agente intentó activar un espacio de trabajo al que no está asignado.
  *
- * Only admins and supervisors may switch to any workspace. Controllers map it
- * to 403 with the exception message.
+ * Solo los administradores y supervisores pueden cambiar a cualquier espacio de trabajo. Los controladores la
+ * traducen a 403 con el mensaje de la excepción.
  */
 class EspacioDeTrabajoNoAsignadoException extends \RuntimeException
 {

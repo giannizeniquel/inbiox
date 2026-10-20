@@ -11,11 +11,11 @@ use App\Conversacion\TelefonoDeDestinatarioNoEncontradoException;
 use App\Ticket\Repository\TicketRepository;
 
 /**
- * Sends a Meta-approved template on a ticket through WhatsApp.
+ * Envía por WhatsApp una plantilla aprobada por Meta en un ticket.
  *
- * Unlike a reply, it does not check the 24 h window and does not change the
- * ticket's status or assignee. It stores a message only when Graph returns
- * a WAMID.
+ * A diferencia de una respuesta, no verifica la ventana de 24 h ni cambia el
+ * estado ni el responsable del ticket. Guarda un mensaje solo cuando Graph devuelve
+ * un WAMID.
  */
 final class EnviarPlantillaUseCase
 {
@@ -26,14 +26,14 @@ final class EnviarPlantillaUseCase
     ) {}
 
     /**
-     * `$nombreDePlantilla` and `$idioma` are passed as the client sent them.
-     * `$resolverAgenteRemitenteId` is called only after a send that returned a
-     * WAMID, because resolving the agent can create one.
+     * `$nombreDePlantilla` y `$idioma` se pasan tal como los envió el cliente.
+     * `$resolverAgenteRemitenteId` se llama solo después de un envío que devolvió un
+     * WAMID, porque resolver el agente puede crear uno.
      *
      * @param array<mixed>        $parametros
      * @param \Closure(): ?int    $resolverAgenteRemitenteId
      *
-     * @return ?string the WAMID
+     * @return ?string el WAMID
      *
      * @throws NotFoundException
      * @throws TelefonoDeDestinatarioNoEncontradoException
@@ -53,12 +53,12 @@ final class EnviarPlantillaUseCase
 
         $telefono = $ticket->telefonoDestinatario();
 
-        // Each ticket replies from the WhatsApp number it came in on (CAP-7 / META-018).
+        // Cada ticket responde desde el número de WhatsApp por el que entró (CAP-7 / META-018).
         $graphResponse = $this->graphClient->sendTemplate($telefono, $nombreDePlantilla, $idioma, $parametros, $ticket->getPhoneNumberId());
 
         $wamid = $graphResponse['messages'][0]['id'] ?? null;
 
-        // Stored with the WAMID as external id so status webhooks can find it.
+        // Se guarda con el WAMID como external id para que los webhooks de estado puedan encontrarlo.
         if ($wamid !== null) {
             $this->registrarPlantillaEnviada->execute($ticket, $nombreDePlantilla, $parametros, $wamid, $resolverAgenteRemitenteId());
         }

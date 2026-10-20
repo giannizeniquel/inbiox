@@ -14,11 +14,11 @@ use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * Create a weekly shift for an agent.
+ * Crea un turno semanal para un agente.
  *
- * Validates day_of_week (1-7), time format (HH:MM), and start != end.
- * Creates an Turno entity, persists it, and emits an
- * agent.shift_changed outbox event.
+ * Valida day_of_week (1-7), el formato de hora (HH:MM) y que start != end.
+ * Crea una entidad Turno, la persiste y emite un evento de outbox
+ * agent.shift_changed.
  */
 final class CreateTurnoUseCase
 {
@@ -32,24 +32,24 @@ final class CreateTurnoUseCase
     ) {}
 
     /**
-     * Create a shift for the given agent.
+     * Crea un turno para el agente dado.
      *
      * @param int    $agenteId
-     * @param int    $diaDeLaSemana  1=Monday ... 7=Sunday
-     * @param string $horaDeInicio  "HH:MM" in agent's local timezone
-     * @param string $horaDeFin    "HH:MM" in agent's local timezone
+     * @param int    $diaDeLaSemana  1=lunes ... 7=domingo
+     * @param string $horaDeInicio  "HH:MM" en la zona horaria local del agente
+     * @param string $horaDeFin    "HH:MM" en la zona horaria local del agente
      *
      * @return array{shift_id: int, agent_id: int, day_of_week: int, start_time: string, end_time: string}
      *
-     * @throws \InvalidArgumentException if agent not found or validation fails
+     * @throws \InvalidArgumentException si no se encuentra el agente o falla la validación
      */
     public function execute(int $agenteId, int $diaDeLaSemana, string $horaDeInicio, string $horaDeFin): array
     {
-        // Pre-flight validation
+        // Validación previa
         $this->validarDatosDeTurno($diaDeLaSemana, $horaDeInicio, $horaDeFin);
 
         $result = $this->em->getConnection()->transactional(function () use ($agenteId, $diaDeLaSemana, $horaDeInicio, $horaDeFin) {
-            // 1. Find and lock agent FOR UPDATE
+            // 1. Busca y bloquea el agente con FOR UPDATE
             $agente = $this->agentRepo->findById($agenteId);
             if ($agente === null) {
                 throw new \InvalidArgumentException('Agent not found');
@@ -57,7 +57,7 @@ final class CreateTurnoUseCase
 
             $this->em->lock($agente, LockMode::PESSIMISTIC_WRITE);
 
-            // 2. Create Turno entity
+            // 2. Crea la entidad Turno
             $inicio = \DateTimeImmutable::createFromFormat('H:i', $horaDeInicio);
             $fin = \DateTimeImmutable::createFromFormat('H:i', $horaDeFin);
 
@@ -68,11 +68,11 @@ final class CreateTurnoUseCase
             $turno = new Turno($agente, $diaDeLaSemana, $inicio, $fin);
             $agente->addTurno($turno);
 
-            // 3. Persist
+            // 3. Persiste
             $this->em->persist($turno);
             $this->em->flush();
 
-            // 4. Track outbox event
+            // 4. Registra el evento de outbox
             $now = new \DateTimeImmutable();
             $this->pendingOutboxEvent = [
                 'aggregate_id' => $agenteId,
@@ -96,13 +96,13 @@ final class CreateTurnoUseCase
             ];
         });
 
-        $this->persistOutboxEvent();
+        $this->persistirEventoOutbox();
 
         return $result;
     }
 
     /**
-     * Validate shift input parameters.
+     * Valida los parámetros de entrada del turno.
      *
      * @throws \InvalidArgumentException
      */
@@ -124,7 +124,7 @@ final class CreateTurnoUseCase
             throw new \InvalidArgumentException('start_time and end_time must differ');
         }
 
-        // Validate time values are real
+        // Valida que los valores de hora sean reales
         $parts = \explode(':', $horaDeInicio);
         $h = (int) $parts[0];
         $m = (int) $parts[1];
@@ -141,9 +141,9 @@ final class CreateTurnoUseCase
     }
 
     /**
-     * Persist the outbox event after the main transaction has committed.
+     * Persiste el evento de outbox después del commit de la transacción principal.
      */
-    private function persistOutboxEvent(): void
+    private function persistirEventoOutbox(): void
     {
         if ($this->pendingOutboxEvent === null) {
             return;

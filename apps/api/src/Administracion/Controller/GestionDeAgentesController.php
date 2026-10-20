@@ -16,9 +16,9 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * Admin Agent management.
+ * Administración de agentes.
  *
- * All endpoints require ROLE_SUPERVISOR.
+ * Todos los endpoints requieren ROLE_SUPERVISOR.
  */
 #[IsGranted('ROLE_SUPERVISOR')]
 final class GestionDeAgentesController

@@ -20,12 +20,12 @@ final class VincularUsuarioConAgenteUseCase
     ) {}
 
     /**
-     * @param array<mixed> $data decoded request body
+     * @param array<mixed> $data cuerpo de la request decodificado
      *
-     * @throws \InvalidArgumentException when user_id is invalid, the user is
-     *                                   deactivated, or either side is already linked
-     * @throws NotFoundException         when the user does not exist
-     * @throws ConflictoDeEstadoException    when the database rejects the link as a duplicate
+     * @throws \InvalidArgumentException cuando user_id es inválido, el usuario está
+     *                                   desactivado o alguna de las partes ya está vinculada
+     * @throws NotFoundException         cuando el usuario no existe
+     * @throws ConflictoDeEstadoException    cuando la base de datos rechaza el vínculo por duplicado
      */
     public function execute(Agente $agente, array $data): Usuario
     {
@@ -41,7 +41,7 @@ final class VincularUsuarioConAgenteUseCase
             throw new NotFoundException('User not found');
         }
 
-        // Q3: Deny linking deactivated user to agent
+        // Q3: impide vincular un usuario desactivado a un agente
         if (!$usuario->isActivo()) {
             throw new \InvalidArgumentException('Cannot link a deactivated user to an agent');
         }
@@ -50,7 +50,7 @@ final class VincularUsuarioConAgenteUseCase
             throw new \InvalidArgumentException('Agent already linked to a user');
         }
 
-        // Check if user already has an agent (UNIQUE constraint)
+        // Verifica si el usuario ya tiene un agente (restricción UNIQUE)
         if (null !== $usuario->getAgente()) {
             throw new \InvalidArgumentException('User already linked to an agent');
         }
@@ -61,7 +61,7 @@ final class VincularUsuarioConAgenteUseCase
         try {
             $this->entityManager->flush();
         } catch (UniqueConstraintViolationException $e) {
-            // Defensive: the checks above should prevent it.
+            // Defensivo: las verificaciones anteriores deberían evitarlo.
             throw new ConflictoDeEstadoException('Link conflict: agent or user already linked', 0, $e);
         }
 

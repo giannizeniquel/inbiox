@@ -37,7 +37,7 @@ class AsignacionRepository extends ServiceEntityRepository
     }
 
     /**
-     * Find the current (most recent) assignment for a ticket
+     * Busca la asignación actual (la más reciente) de un ticket
      */
     public function findActualByTicket(int $ticketId): ?Asignacion
     {
@@ -52,10 +52,10 @@ class AsignacionRepository extends ServiceEntityRepository
     }
 
     /**
-     * Count AUTO_ASSIGN assignments for an agent since the start of today.
+     * Cuenta las asignaciones AUTO_ASSIGN de un agente desde el inicio del día de hoy.
      *
-     * Used as the second tiebreaker in the auto-assignment algorithm.
-     * Uses index idx_assignments_agent_assigned_at (agent_id, assigned_at).
+     * Se usa como segundo criterio de desempate en el algoritmo de asignación automática.
+     * Usa el índice idx_assignments_agent_assigned_at (agent_id, assigned_at).
      */
     public function countAsignacionesAutomaticasDeHoy(int $agenteId, \DateTimeImmutable $inicioDeHoy): int
     {

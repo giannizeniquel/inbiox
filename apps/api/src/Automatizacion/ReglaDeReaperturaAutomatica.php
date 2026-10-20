@@ -16,13 +16,13 @@ class ReglaDeReaperturaAutomatica implements ReglaInterface
 
     public function supports(ContextoDeRegla $contexto): bool
     {
-        // Only supports inbound messages on resolved tickets
+        // Solo admite mensajes entrantes en tickets resueltos
         if ($contexto->getTipoDeDisparador() !== 'inbound') {
             return false;
         }
 
         $ticket = $contexto->getTicket();
-        // MUST return false for CLOSED tickets - don't reopen closed tickets
+        // DEBE devolver false para tickets CLOSED - no se reabren los tickets cerrados
         if ($ticket->getEstado() === EstadoDeTicket::CERRADO->value) {
             return false;
         }
@@ -32,15 +32,15 @@ class ReglaDeReaperturaAutomatica implements ReglaInterface
 
     public function execute(ContextoDeRegla $contexto): void
     {
-        // Transition resolved → waiting (NOT to active)
+        // Transición resolved → waiting (NO a active)
         $this->cambiarEstadoUseCase->execute(
             $contexto->getTicketId(),
             EstadoDeTicket::EN_ESPERA->value,
-            false, // don't set first_response
-            false  // don't set resolved
+            false, // no fija first_response
+            false  // no fija resolved
         );
 
-        // Emit auto_reopened event
+        // Emite el evento auto_reopened
         $event = new EventoDeTicket($contexto->getTicketId(), 'auto_reopened', 'system');
         $this->em->persist($event);
         $this->em->flush();

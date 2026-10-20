@@ -41,9 +41,9 @@ class TurnoRepository extends ServiceEntityRepository
     }
 
     /**
-     * Delete all shifts for a given agent.
+     * Elimina todos los turnos de un agente dado.
      *
-     * @return int Number of deleted rows
+     * @return int Cantidad de filas eliminadas
      */
     public function deleteTodosDeAgente(int $agenteId): int
     {

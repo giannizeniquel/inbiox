@@ -14,7 +14,7 @@ class ValidadorDeAdjunto
     ];
 
     private const MIME_PERMITIDOS = [
-        // images
+        // imágenes
         'image/jpeg',
         'image/png',
         'image/webp',
@@ -30,7 +30,7 @@ class ValidadorDeAdjunto
         'audio/wav',
         'audio/aac',
         'audio/x-m4a',
-        // documents
+        // documentos
         'application/pdf',
         'text/plain',
         'application/msword',
@@ -38,10 +38,10 @@ class ValidadorDeAdjunto
         'text/csv',
         'application/vnd.ms-excel',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        // presentations
+        // presentaciones
         'application/vnd.ms-powerpoint',
         'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-        // archives
+        // archivos comprimidos
         'application/zip',
         'application/x-zip-compressed',
         'application/x-rar-compressed',
@@ -53,19 +53,19 @@ class ValidadorDeAdjunto
         'application/x-tar',
         'application/gzip',
         'application/x-gzip',
-        // executables
+        // ejecutables
         'application/x-msdownload',
         'application/vnd.microsoft.portable-executable',
         'application/x-msdos-program',
-        // generic binary (catch-all for unknown types)
+        // binario genérico (comodín para tipos desconocidos)
         'application/octet-stream',
     ];
 
     /**
-     * Validate a file upload against size caps and MIME whitelist.
+     * Valida un archivo subido contra los límites de tamaño y la lista blanca de tipos MIME.
      *
-     * @throws AdjuntoDemasiadoGrandeException if file exceeds kind-specific cap
-     * @throws MimeDeAdjuntoNoPermitidoException if MIME type is not in whitelist
+     * @throws AdjuntoDemasiadoGrandeException si el archivo supera el límite de su tipo
+     * @throws MimeDeAdjuntoNoPermitidoException si el tipo MIME no está en la lista blanca
      */
     public function validar(string $mimeType, int $tamanioDeArchivo): void
     {
@@ -74,7 +74,7 @@ class ValidadorDeAdjunto
     }
 
     /**
-     * Get the max allowed size for a given MIME type.
+     * Obtiene el tamaño máximo permitido para un tipo MIME.
      */
     public function getTamanioMaximo(string $mimeType): int
     {
@@ -91,9 +91,9 @@ class ValidadorDeAdjunto
     }
 
     /**
-     * Normalize a MIME type by stripping parameters (e.g. "; codecs=opus")
-     * and lowercasing. WhatsApp voice notes arrive as "audio/ogg; codecs=opus"
-     * but the whitelist stores the bare "audio/ogg".
+     * Normaliza un tipo MIME quitando los parámetros (p. ej. "; codecs=opus")
+     * y pasándolo a minúsculas. Las notas de voz de WhatsApp llegan como "audio/ogg; codecs=opus",
+     * pero la lista blanca guarda el "audio/ogg" sin parámetros.
      */
     private function normalizarMime(string $mimeType): string
     {

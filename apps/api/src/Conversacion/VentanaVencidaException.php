@@ -7,13 +7,13 @@ namespace App\Conversacion;
 use App\Compartido\Graph\GraphApiException;
 
 /**
- * Thrown when a caller attempts to send free text to a customer after the
- * WhatsApp 24h conversation window has elapsed.
+ * Se lanza cuando se intenta enviar texto libre a un cliente después de que
+ * venció la ventana de conversación de 24 h de WhatsApp.
  *
- * Deliberately distinct from `GraphApiException(132000)` (design.md D5):
- * reusing Meta's own error code would lie about the exception's origin (it
- * never reached Meta) and would be indistinguishable in logs from a genuine
- * Meta rejection.
+ * Es deliberadamente distinta de `GraphApiException(132000)` (design.md D5):
+ * reutilizar el código de error de Meta mentiría sobre el origen de la excepción
+ * (nunca llegó a Meta) y en los logs no se podría distinguir de un rechazo
+ * real de Meta.
  */
 class VentanaVencidaException extends \RuntimeException
 {

@@ -20,9 +20,9 @@ class EquipoRepository extends ServiceEntityRepository
     }
 
     /**
-     * @param EspacioDeTrabajo[] $espaciosDeTrabajo non-empty
+     * @param EspacioDeTrabajo[] $espaciosDeTrabajo no vacío
      *
-     * @return Equipo[] ordered by name
+     * @return Equipo[] ordenados por nombre
      */
     public function findByEspaciosDeTrabajo(array $espaciosDeTrabajo): array
     {

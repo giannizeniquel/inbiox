@@ -60,7 +60,7 @@ class AgenteRepository extends ServiceEntityRepository
     }
 
     /**
-     * Find active agents in a workspace.
+     * Busca los agentes activos de un espacio de trabajo.
      *
      * @return Agente[]
      */
@@ -77,15 +77,15 @@ class AgenteRepository extends ServiceEntityRepository
     }
 
     /**
-     * Take row locks on the given `agents` rows: `SELECT id ... FOR UPDATE`.
-     * Only the lock matters; the result is discarded.
+     * Toma bloqueos de fila sobre las filas indicadas de `agents`: `SELECT id ... FOR UPDATE`.
+     * Solo importa el bloqueo; el resultado se descarta.
      *
-     * Native SQL because DQL cannot do this without side effects: a DQL
-     * PESSIMISTIC_WRITE read hydrates and refreshes the managed Agent
-     * entities, which the caller already holds. Runs on the EntityManager's
-     * connection, so it joins the caller's open transaction.
+     * SQL nativo porque DQL no puede hacerlo sin efectos secundarios: una lectura DQL
+     * PESSIMISTIC_WRITE hidrata y refresca las entidades Agente gestionadas,
+     * que el llamador ya tiene. Se ejecuta sobre la conexión del EntityManager,
+     * así que se une a la transacción abierta del llamador.
      *
-     * @param int[] $ids non-empty
+     * @param int[] $ids no vacío
      */
     public function lockRowsForUpdate(array $ids): void
     {
@@ -97,7 +97,7 @@ class AgenteRepository extends ServiceEntityRepository
     }
 
     /**
-     * Newest first, with the linked user fetched in the same query.
+     * Los más recientes primero, con el usuario vinculado obtenido en la misma query.
      *
      * @return Agente[]
      */

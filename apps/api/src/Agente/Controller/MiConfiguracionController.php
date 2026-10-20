@@ -16,14 +16,14 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * Current agent's settings page and preferences.
+ * Página de configuración y preferencias del agente actual.
  *
- * GET  /api/me/settings        — returns all settings sections
- * PUT  /api/me/profile         — update signature
- * PUT  /api/me/notifications   — update notification preferences
+ * GET  /api/me/settings        — devuelve todas las secciones de configuración
+ * PUT  /api/me/profile         — actualiza la firma
+ * PUT  /api/me/notifications   — actualiza las preferencias de notificación
  *
- * The other /api/me endpoints live in their modules: auto-reply in
- * Automatizacion, shifts in Disponibilidad, workspaces in Administracion.
+ * Los demás endpoints de /api/me viven en sus módulos: la respuesta automática en
+ * Automatizacion, los turnos en Disponibilidad y los espacios de trabajo en Administracion.
  */
 #[IsGranted('IS_AUTHENTICATED_FULLY')]
 final class MiConfiguracionController
@@ -45,26 +45,26 @@ final class MiConfiguracionController
 
         $usuario = $agente->getUsuario();
 
-        // Profile
+        // Perfil
         $perfil = [
             'name' => $agente->getNombre(),
             'email' => $usuario?->getEmail() ?? '',
             'signature' => $agente->getFirma(),
         ];
 
-        // Notifications
+        // Notificaciones
         $notificaciones = [
             'sound' => $agente->hasSonidoDeNotificacion(),
             'desktop' => $agente->hasNotificacionesDeEscritorio(),
         ];
 
-        // AutoReply
+        // Respuesta automática
         $respuestaAutomatica = [
             'enabled' => $agente->isRespuestaAutomaticaActiva(),
             'message' => $agente->getMensajeDeRespuestaAutomatica(),
         ];
 
-        // Workspace
+        // Espacio de trabajo
         $espacioDeTrabajoActivo = $agente->getEspacioDeTrabajoActivo();
         $datosDelEspacioDeTrabajo = null;
         if ($espacioDeTrabajoActivo !== null) {
@@ -75,7 +75,7 @@ final class MiConfiguracionController
             ];
         }
 
-        // Business hours (shifts)
+        // Horario laboral (turnos)
         $horarioDeAtencion = [];
         foreach ($agente->getTurnos() as $turno) {
             $horarioDeAtencion[] = [
@@ -85,7 +85,7 @@ final class MiConfiguracionController
             ];
         }
 
-        // Sort shifts by dayOfWeek then start
+        // Ordenar los turnos por dayOfWeek y luego por start
         \usort($horarioDeAtencion, function (array $a, array $b) {
             return [$a['dayOfWeek'], $a['start']] <=> [$b['dayOfWeek'], $b['start']];
         });

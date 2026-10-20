@@ -6,7 +6,7 @@ use App\Conversacion\Mensaje;
 use App\Ticket\Ticket;
 
 /**
- * Value object representing the context for rule execution.
+ * Value object que representa el contexto de ejecución de una regla.
  */
 class ContextoDeRegla
 {

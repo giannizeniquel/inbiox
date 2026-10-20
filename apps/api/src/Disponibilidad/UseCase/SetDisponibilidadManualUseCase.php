@@ -13,11 +13,11 @@ use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * Set an agent's availability override with optional TTL.
+ * Define el override de disponibilidad de un agente con TTL opcional.
  *
- * Locks the agent row FOR UPDATE, sets the override fields,
- * computes current load, and emits an agent.availability_changed
- * outbox event after the transaction commits.
+ * Bloquea la fila del agente con FOR UPDATE, define los campos del override,
+ * calcula la carga actual y emite un evento de outbox
+ * agent.availability_changed después del commit de la transacción.
  */
 final class SetDisponibilidadManualUseCase
 {
@@ -31,20 +31,20 @@ final class SetDisponibilidadManualUseCase
     ) {}
 
     /**
-     * Set availability override for an agent.
+     * Define el override de disponibilidad de un agente.
      *
      * @param int     $agenteId
      * @param bool    $isDisponible
-     * @param ?int    $ttlMinutes  null = persistent override (no expiry)
+     * @param ?int    $ttlMinutes  null = override persistente (sin vencimiento)
      *
      * @return array{agent_id: int, is_available: bool, override_active: bool, current_load: int, max_capacity: int}
      *
-     * @throws \InvalidArgumentException if agent not found
+     * @throws \InvalidArgumentException si no se encuentra el agente
      */
     public function execute(int $agenteId, bool $isDisponible, ?int $ttlMinutes): array
     {
         $result = $this->em->getConnection()->transactional(function () use ($agenteId, $isDisponible, $ttlMinutes) {
-            // 1. Find and lock agent FOR UPDATE
+            // 1. Busca y bloquea el agente con FOR UPDATE
             $agente = $this->agentRepo->findById($agenteId);
             if ($agente === null) {
                 throw new \InvalidArgumentException('Agent not found');
@@ -52,20 +52,20 @@ final class SetDisponibilidadManualUseCase
 
             $this->em->lock($agente, LockMode::PESSIMISTIC_WRITE);
 
-            // 2. Set override fields
+            // 2. Define los campos del override
             $now = new \DateTimeImmutable();
             $disponibilidadManualHasta = $ttlMinutes !== null ? $now->modify(\sprintf('+%d minutes', $ttlMinutes)) : null;
 
             $agente->setDisponibilidadManual($isDisponible);
             $agente->setDisponibilidadManualHasta($disponibilidadManualHasta);
 
-            // 3. Persist
+            // 3. Persiste
             $this->em->flush();
 
-            // 4. Compute current load
+            // 4. Calcula la carga actual
             $cargaActual = $this->ticketRepo->countActivosDeAgente($agenteId);
 
-            // 5. Track outbox event data
+            // 5. Registra los datos del evento de outbox
             $this->pendingOutboxEvent = [
                 'aggregate_id' => $agenteId,
                 'payload' => [
@@ -87,15 +87,15 @@ final class SetDisponibilidadManualUseCase
             ];
         });
 
-        $this->persistOutboxEvent();
+        $this->persistirEventoOutbox();
 
         return $result;
     }
 
     /**
-     * Persist the outbox event after the main transaction has committed.
+     * Persiste el evento de outbox después del commit de la transacción principal.
      */
-    private function persistOutboxEvent(): void
+    private function persistirEventoOutbox(): void
     {
         if ($this->pendingOutboxEvent === null) {
             return;

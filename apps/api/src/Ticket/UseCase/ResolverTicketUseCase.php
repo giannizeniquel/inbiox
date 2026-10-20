@@ -7,7 +7,7 @@ use App\Ticket\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * Resolves a ticket manually (agent marks as resolved).
+ * Resuelve un ticket manualmente (el agente lo marca como resuelto).
  */
 class ResolverTicketUseCase
 {
@@ -16,7 +16,7 @@ class ResolverTicketUseCase
     ) {}
 
     /**
-     * Resolve a ticket
+     * Resuelve un ticket
      *
      * @param int $ticketId
      * @return array

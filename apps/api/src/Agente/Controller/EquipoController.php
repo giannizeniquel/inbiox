@@ -13,18 +13,18 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * Non-admin, workspace-scoped Team listing (Tier 2 #7 — Team/Area Entity,
- * Slice 1). Built now as part of Slice 1's API surface for the future
- * inbox filter dropdown (Slice 3).
+ * Listado de equipos no exclusivo de admin y acotado al espacio de trabajo (Tier 2 #7 — Team/Area Entity,
+ * Slice 1). Se construye ahora como parte de la superficie de API del Slice 1 para el futuro
+ * desplegable de filtro de la bandeja de entrada (Slice 3).
  *
- * Accessible to ANY authenticated agent (ROLE_AGENT included) — not
- * admin-only, unlike Controller/Admin/TeamController. Results are scoped
- * to the requester's own workspace(s) via their linked Agent entity.
+ * Accesible para CUALQUIER agente autenticado (incluido ROLE_AGENT), no
+ * solo para admin, a diferencia de Controller/Admin/TeamController. Los resultados se acotan
+ * al espacio o los espacios de trabajo del solicitante mediante su entidad Agente vinculada.
  *
- * Deactivated teams ARE included (unlike an active-assignment picker):
- * per spec (team-management, "Team Deactivation Retains Historical Ticket
- * Attribution"), a deactivated team must remain selectable in inbox/report
- * filters even though it's hidden from NEW-assignment pickers.
+ * Los equipos desactivados SÍ se incluyen (a diferencia de un selector de asignación activa):
+ * según el spec (team-management, "Team Deactivation Retains Historical Ticket
+ * Attribution"), un equipo desactivado debe seguir siendo seleccionable en los filtros
+ * de bandeja de entrada y de reportes aunque esté oculto en los selectores de NUEVA asignación.
  */
 #[IsGranted('ROLE_AGENT')]
 final class EquipoController

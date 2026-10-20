@@ -7,17 +7,17 @@ namespace App\Autenticacion\EventListener;
 use Lexik\Bundle\JWTAuthenticationBundle\Event\AuthenticationSuccessEvent;
 
 /**
- * Normalizes the login and refresh success response to match the API contract.
+ * Normaliza la respuesta exitosa de login y refresh para cumplir el contrato de la API.
  *
- * Lexik returns `{ token: "..." }` but the spec requires:
+ * Lexik devuelve `{ token: "..." }`, pero la spec exige:
  *   `{ access_token: "...", token_type: "Bearer", expires_in: 900 }`
  *
- * Runs after Gesdinet's refresh token listener has modified the data.
+ * Se ejecuta después de que el listener de refresh token de Gesdinet modificó los datos.
  */
 final class RespuestaDeAutenticacionListener
 {
     /**
-     * @param int $tokenTtl The JWT TTL in seconds (from `lexik_jwt_authentication.token_ttl`)
+     * @param int $tokenTtl TTL del JWT en segundos (de `lexik_jwt_authentication.token_ttl`)
      */
     public function __construct(
         private readonly int $tokenTtl,
@@ -27,13 +27,13 @@ final class RespuestaDeAutenticacionListener
     {
         $data = $event->getData();
 
-        // Rename token → access_token
+        // Renombra token → access_token
         if (\array_key_exists('token', $data)) {
             $data['access_token'] = $data['token'];
             unset($data['token']);
         }
 
-        // Standard OAuth2 fields
+        // Campos estándar de OAuth2
         $data['token_type'] = 'Bearer';
         $data['expires_in'] = $this->tokenTtl;
 

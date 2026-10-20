@@ -10,11 +10,11 @@ use Symfony\Component\Security\Core\User\UserCheckerInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 /**
- * Validates user account status on every authentication attempt.
+ * Valida el estado de la cuenta del usuario en cada intento de autenticación.
  *
- * checkPostAuth() runs after every successful authentication (json_login and
- * JWT alike), so an inactive user is rejected even with a still-valid token
- * (covered by AuthControllerTest::testDeactivatedUserGets403OnAuthenticatedRequest).
+ * checkPostAuth() se ejecuta después de cada autenticación exitosa (tanto json_login
+ * como JWT), así que un usuario inactivo se rechaza aunque tenga un token todavía válido
+ * (cubierto por AuthControllerTest::testDeactivatedUserGets403OnAuthenticatedRequest).
  */
 final class VerificadorDeUsuario implements UserCheckerInterface
 {

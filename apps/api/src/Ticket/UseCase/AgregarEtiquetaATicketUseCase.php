@@ -21,20 +21,20 @@ class AgregarEtiquetaATicketUseCase
     ) {}
 
     /**
-     * Add a tag to a ticket idempotently.
+     * Agrega una etiqueta a un ticket de forma idempotente.
      */
     public function execute(int $ticketId, string $nombreDeEtiqueta, string $origen = 'manual'): array
     {
         $nombreNormalizado = Etiqueta::normalizar($nombreDeEtiqueta);
 
         return $this->em->getConnection()->transactional(function() use ($ticketId, $nombreNormalizado, $origen) {
-            // Find ticket
+            // Busca el ticket
             $ticket = $this->ticketRepo->findById($ticketId);
             if (!$ticket) {
                 throw new \InvalidArgumentException('Ticket not found: ' . $ticketId);
             }
 
-            // Find or create tag
+            // Busca o crea la etiqueta
             $etiqueta = $this->etiquetaRepo->findByNombre($nombreNormalizado);
             if (!$etiqueta) {
                 $etiqueta = new Etiqueta($nombreNormalizado);
@@ -42,10 +42,10 @@ class AgregarEtiquetaATicketUseCase
                 $this->em->flush();
             }
 
-            // Check if ticket already has this tag
+            // Comprueba si el ticket ya tiene esta etiqueta
             $existing = $this->etiquetaRepo->isAsociadaATicket($ticketId, $etiqueta->getId());
 
-            // Idempotent - don't add duplicate or emit event
+            // Idempotente: no agrega un duplicado ni emite el evento
             if ($existing) {
                 return [
                     'ticket_id' => $ticketId,
@@ -55,12 +55,12 @@ class AgregarEtiquetaATicketUseCase
                 ];
             }
 
-            // Add tag
+            // Agrega la etiqueta
             $etiquetaDeTicket = new EtiquetaDeTicket($ticket, $etiqueta);
             $this->em->persist($etiquetaDeTicket);
             $this->em->flush();
 
-            // Emit event
+            // Emite el evento
             $evento = new EventoDeTicket($ticketId, 'tag_added', $origen);
             $this->em->persist($evento);
             $this->em->flush();

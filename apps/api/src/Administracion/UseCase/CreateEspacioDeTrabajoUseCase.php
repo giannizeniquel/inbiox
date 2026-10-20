@@ -17,10 +17,10 @@ final class CreateEspacioDeTrabajoUseCase
     ) {}
 
     /**
-     * @param array<mixed> $data decoded request body
+     * @param array<mixed> $data cuerpo de la request decodificado
      *
-     * @throws \InvalidArgumentException when a field is missing or invalid
-     * @throws ConflictoDeEstadoException    when the phone number id is taken
+     * @throws \InvalidArgumentException cuando falta un campo o es inválido
+     * @throws ConflictoDeEstadoException    cuando el phone number id ya está en uso
      */
     public function execute(array $data): EspacioDeTrabajo
     {

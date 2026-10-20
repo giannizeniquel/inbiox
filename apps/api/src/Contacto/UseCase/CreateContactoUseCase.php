@@ -57,11 +57,11 @@ class CreateContactoUseCase
         try {
             $this->entityManager->flush();
         } catch (UniqueConstraintViolationException $e) {
-            // Defense-in-depth: the pre-check above closes this race in the
-            // overwhelming majority of cases, but a true concurrent request can
-            // still win the DB-level unique constraint at flush time. Convert it
-            // into the same deterministic error the pre-check throws instead of
-            // letting it propagate uncaught (which would close the EntityManager).
+            // Defensa en profundidad: el chequeo previo de arriba cierra esta carrera en la
+            // inmensa mayoría de los casos, pero una petición realmente concurrente puede
+            // ganar igual la restricción única a nivel de base de datos al momento del flush. Se convierte
+            // en el mismo error determinista que lanza el chequeo previo en lugar de
+            // dejar que se propague sin capturar (lo que cerraría el EntityManager).
             throw new \InvalidArgumentException('Contact with this phone already exists');
         }
 

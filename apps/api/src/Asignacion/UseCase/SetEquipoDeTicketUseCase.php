@@ -16,14 +16,14 @@ final class SetEquipoDeTicketUseCase
     ) {}
 
     /**
-     * Sets or clears (null) the ticket's team. The team's workspace must be
-     * the ticket's workspace (same phone_number_id); otherwise team_id is
-     * left unchanged.
+     * Asigna o quita (null) el equipo del ticket. El espacio de trabajo del equipo debe ser
+     * el del ticket (mismo phone_number_id); si no, team_id queda
+     * sin cambios.
      *
-     * @param mixed $equipoId the request's teamId value
+     * @param mixed $equipoId el valor teamId de la solicitud
      *
-     * @throws \InvalidArgumentException when teamId is not an integer, the
-     *                                   team does not exist, or it is in another workspace
+     * @throws \InvalidArgumentException cuando teamId no es un entero, el
+     *                                   equipo no existe o pertenece a otro espacio de trabajo
      */
     public function execute(Ticket $ticket, mixed $equipoId): void
     {
@@ -39,7 +39,7 @@ final class SetEquipoDeTicketUseCase
         }
 
         $equipo = $this->teamRepository->find($equipoId);
-        // An unknown team is a 400, not a 404 (current behavior).
+        // Un equipo desconocido es un 400, no un 404 (comportamiento actual).
         if (null === $equipo) {
             throw new \InvalidArgumentException('Team not found');
         }

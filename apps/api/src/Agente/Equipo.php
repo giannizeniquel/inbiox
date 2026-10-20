@@ -37,7 +37,7 @@ class Equipo
     #[ORM\Column(name: 'updated_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $actualizadoAt;
 
-    /** Inverse side of Agent↔Team M:N */
+    /** Lado inverso de la relación M:N Agente↔Equipo */
     #[ORM\ManyToMany(targetEntity: Agente::class, mappedBy: 'equipos')]
     private Collection $agentes;
 
@@ -101,17 +101,17 @@ class Equipo
     }
 
     /**
-     * Adds an agent to the team.
+     * Agrega un agente al equipo.
      *
-     * Invariant: the agent MUST already belong to the team's workspace.
-     * This is a HARD REJECT (design.md D3) — not a warning, not a
-     * ConflictoDeEstadoException. There is no use-case precedent for the
-     * workspace-membership equivalent (that logic is inline in
-     * GestionDeEspaciosDeTrabajoController::asignarAgentes), and \InvalidArgumentException
-     * already maps to 400 in Controller/Admin/* via the existing catch
-     * block, which is the correct response for malformed input.
+     * Invariante: el agente DEBE pertenecer ya al espacio de trabajo del equipo.
+     * Es un RECHAZO ESTRICTO (design.md D3), no una advertencia ni una
+     * ConflictoDeEstadoException. No hay precedente de caso de uso para el
+     * equivalente de pertenencia al espacio de trabajo (esa lógica está inline en
+     * GestionDeEspaciosDeTrabajoController::asignarAgentes), y \InvalidArgumentException
+     * ya se traduce a 400 en Controller/Admin/* mediante el bloque catch
+     * existente, que es la respuesta correcta para una entrada malformada.
      *
-     * @throws \InvalidArgumentException if the agent is not a member of the team's workspace
+     * @throws \InvalidArgumentException si el agente no es miembro del espacio de trabajo del equipo
      */
     public function addAgente(Agente $agente): self
     {

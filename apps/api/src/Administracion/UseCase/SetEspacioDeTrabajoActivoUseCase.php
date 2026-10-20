@@ -21,17 +21,17 @@ final class SetEspacioDeTrabajoActivoUseCase
     ) {}
 
     /**
-     * Sets the user's active workspace.
+     * Define el espacio de trabajo activo del usuario.
      *
-     * Admins and supervisors ($puedeUsarCualquierEspacioDeTrabajo) may pick any active
-     * workspace; if they have no agent, one is created for them. Agents may
-     * only pick a workspace they are assigned to.
+     * Los administradores y supervisores ($puedeUsarCualquierEspacioDeTrabajo) pueden elegir cualquier espacio
+     * de trabajo activo; si no tienen agente, se les crea uno. Los agentes solo pueden
+     * elegir un espacio de trabajo al que estén asignados.
      *
-     * @param array<mixed> $data decoded request body
+     * @param array<mixed> $data cuerpo de la request decodificado
      *
-     * @throws \InvalidArgumentException     when workspaceId is invalid or the workspace is inactive
-     * @throws NotFoundException             when the workspace, or the agent of an agent-role user, does not exist
-     * @throws EspacioDeTrabajoNoAsignadoException when an agent is not assigned to the workspace
+     * @throws \InvalidArgumentException     cuando workspaceId es inválido o el espacio de trabajo está inactivo
+     * @throws NotFoundException             cuando no existe el espacio de trabajo, o el agente de un usuario con rol de agente
+     * @throws EspacioDeTrabajoNoAsignadoException cuando un agente no está asignado al espacio de trabajo
      */
     public function execute(Usuario $usuario, bool $puedeUsarCualquierEspacioDeTrabajo, array $data): EspacioDeTrabajo
     {

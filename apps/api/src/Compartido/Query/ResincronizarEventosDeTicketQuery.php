@@ -7,8 +7,8 @@ use App\Compartido\Realtime\EventoEnTiempoRealFactory;
 use App\Compartido\Repository\EventoOutboxRepository;
 
 /**
- * The realtime events of a ticket after a sequence, for the frontend to
- * recover missed events after a reconnection or a gap.
+ * Los eventos en tiempo real de un ticket posteriores a un sequence, para que el frontend
+ * recupere los eventos perdidos después de una reconexión o un hueco.
  */
 final class ResincronizarEventosDeTicketQuery
 {
@@ -28,7 +28,7 @@ final class ResincronizarEventosDeTicketQuery
         $highest = $afterSequence;
 
         foreach ($this->eventoOutboxRepository->findFilasParaResincronizar($ticketId, $afterSequence) as $row) {
-            $eventos[] = $this->factory->build($this->hydrateEvent($row));
+            $eventos[] = $this->factory->build($this->hidratarEvento($row));
             $highest = max($highest, (int) $row['sequence']);
         }
 
@@ -40,11 +40,11 @@ final class ResincronizarEventosDeTicketQuery
     }
 
     /**
-     * Hydrate an EventoOutbox from a raw DB row.
+     * Hidrata un EventoOutbox a partir de una fila cruda de la base de datos.
      *
      * @param array<string, mixed> $row
      */
-    private function hydrateEvent(array $row): EventoOutbox
+    private function hidratarEvento(array $row): EventoOutbox
     {
         $evento = new EventoOutbox(
             aggregateType: $row['aggregate_type'],
@@ -55,19 +55,19 @@ final class ResincronizarEventosDeTicketQuery
             sequence: (int) ($row['sequence'] ?? 0)
         );
 
-        // Use reflection to set the ID (generated in constructor, we want the persisted one)
+        // Usa reflection para asignar el ID (se genera en el constructor; queremos el persistido)
         $idReflection = new \ReflectionProperty(EventoOutbox::class, 'id');
         $idReflection->setAccessible(true);
         $idReflection->setValue($evento, $row['id']);
 
-        // Set created_at
+        // Asigna created_at
         $creadoAtReflection = new \ReflectionProperty(EventoOutbox::class, 'creadoAt');
         $creadoAtReflection->setAccessible(true);
         if (isset($row['created_at'])) {
             $creadoAtReflection->setValue($evento, new \DateTimeImmutable($row['created_at']));
         }
 
-        // Set status
+        // Asigna el estado
         $estadoReflection = new \ReflectionProperty(EventoOutbox::class, 'estado');
         $estadoReflection->setAccessible(true);
         $estadoReflection->setValue($evento, $row['status'] ?? 'pending');

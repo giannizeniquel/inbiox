@@ -14,12 +14,12 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Security\Core\Exception\AuthenticationException;
 
 /**
- * The single place that turns an unexpected exception on an /api route into the
- * generic 500 envelope `{"error":"Internal server error","reference":"<16 hex>"}`.
+ * El único lugar que convierte una excepción inesperada en una ruta /api en el
+ * envoltorio 500 genérico `{"error":"Internal server error","reference":"<16 hex>"}`.
  *
- * HTTP exceptions (404, 403, 400...) and security exceptions keep their
- * framework handling. Specific error arms in controllers still run first,
- * because they catch before the exception reaches the kernel.
+ * Las excepciones HTTP (404, 403, 400...) y las de seguridad conservan su
+ * manejo del framework. Los bloques de error específicos de los controladores siguen corriendo primero,
+ * porque capturan antes de que la excepción llegue al kernel.
  */
 #[AsEventListener(event: KernelEvents::EXCEPTION)]
 final class InternalServerErrorListener

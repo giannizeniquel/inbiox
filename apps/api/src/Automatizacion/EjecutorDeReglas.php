@@ -23,7 +23,7 @@ class EjecutorDeReglas
     }
 
     /**
-     * Add a rule to be executed.
+     * Agrega una regla para ejecutar.
      */
     public function agregarRegla(ReglaInterface $regla): void
     {
@@ -31,7 +31,7 @@ class EjecutorDeReglas
     }
 
     /**
-     * Execute all rules that support the given context.
+     * Ejecuta todas las reglas que admiten el contexto dado.
      */
     public function execute(ContextoDeRegla $contexto): void
     {
@@ -42,7 +42,7 @@ class EjecutorDeReglas
 
             $claveDeEjecucion = $regla->armarClaveDeEjecucion($contexto);
 
-            // Idempotency check
+            // Verificación de idempotencia
             if ($this->registroDeReglaRepo->findByClaveDeEjecucion($claveDeEjecucion)) {
                 continue;
             }
@@ -50,7 +50,7 @@ class EjecutorDeReglas
             try {
                 $regla->execute($contexto);
 
-                // Log successful execution
+                // Registra la ejecución exitosa
                 $registro = new RegistroDeRegla(
                     $claveDeEjecucion,
                     $regla->getNombre(),
@@ -59,7 +59,7 @@ class EjecutorDeReglas
                 );
                 $this->registroDeReglaRepo->save($registro);
             } catch (\Throwable $e) {
-                // Log failed execution but don't break the chain
+                // Registra la ejecución fallida pero no corta la cadena
                 $registro = new RegistroDeRegla(
                     $claveDeEjecucion,
                     $regla->getNombre(),

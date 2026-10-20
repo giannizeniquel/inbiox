@@ -14,7 +14,7 @@ class UrlDeAdjuntoService
     ) {}
 
     /**
-     * Generate a pre-signed URL for the given object key.
+     * Genera una URL prefirmada para la clave de objeto indicada.
      *
      * @return array{url: string, expiresAt: \DateTimeImmutable}
      */

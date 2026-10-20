@@ -11,13 +11,13 @@ class GetLineaDeTiempoDeContactoQuery
     ) {}
 
     /**
-     * Execute the timeline query for a given contact.
+     * Ejecuta la query de la línea de tiempo para un contacto dado.
      *
      * @return array{events: EventoDeLineaDeTiempoDTO[], cursor: string|null, hasMore: bool}
      */
     public function execute(int $contactoId, ?string $before, int $limit, ?string $phoneNumberId = null): array
     {
-        // Fetch limit+1 to determine hasMore
+        // Pide limit+1 para determinar hasMore
         $rows = $this->contactoRepository->findFilasDeLineaDeTiempo($contactoId, $before, $limit + 1, $phoneNumberId);
 
         $hasMore = count($rows) > $limit;
@@ -39,7 +39,7 @@ class GetLineaDeTiempoDeContactoQuery
             $rows,
         );
 
-        // Cursor: ISO 8601 of the oldest event in the batch
+        // Cursor: ISO 8601 del evento más antiguo del lote
         $cursor = null;
         if (!empty($rows)) {
             $lastRow = $rows[count($rows) - 1];

@@ -8,9 +8,9 @@ use App\Agente\Equipo;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * Soft delete: the team stays, with is_active = false.
+ * Borrado lógico: el equipo se conserva, con is_active = false.
  *
- * It must not clear tickets.team_id on the team's tickets (spec: Team
+ * No debe limpiar tickets.team_id en los tickets del equipo (spec: Team
  * Deactivation Retains Historical Ticket Attribution).
  */
 final class DesactivarEquipoUseCase

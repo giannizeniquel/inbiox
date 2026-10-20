@@ -34,13 +34,13 @@ class AsignacionDeTicketController
         #[MapRequestPayload] AsignarTicketRequest $request
     ): JsonResponse {
         try {
-            // Load ticket for voter check
+            // Carga el ticket para la verificación del voter
             $ticket = $this->ticketRepo->findById($id);
             if (!$ticket) {
                 return new JsonResponse(['error' => 'Ticket not found'], 404);
             }
 
-            // Check ASSIGN permission via voter
+            // Verifica el permiso ASSIGN mediante el voter
             if (!$this->security->isGranted('ASSIGN', $ticket)) {
                 return new JsonResponse(['error' => 'Forbidden'], 403);
             }
@@ -53,8 +53,8 @@ class AsignacionDeTicketController
             );
             return new JsonResponse($result);
         } catch (AgenteInactivoException $e) {
-            // Subclass-first: must be caught BEFORE the generic ConflictoDeEstadoException
-            // arm below so the frontend gets the machine-readable discriminator.
+            // Primero la subclase: debe capturarse ANTES del bloque genérico de ConflictoDeEstadoException
+            // de abajo para que el frontend reciba el discriminador legible por máquina.
             return new JsonResponse(['type' => 'AGENT_NOT_ACTIVE', 'error' => $e->getMessage()], 409);
         } catch (ConflictoDeEstadoException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 409);
@@ -64,13 +64,13 @@ class AsignacionDeTicketController
     }
 
     /**
-     * Set or clear a ticket's team (Tier 2 #7 — Team/Area Entity, Slice 1).
+     * Asigna o quita el equipo de un ticket (Tier 2 #7 — Team/Area Entity, Slice 1).
      *
-     * Any authenticated agent may call this — no Supervisor/Admin restriction and no ownership voter
-     * (design.md D5). `teamId: null` clears the assignment. Enforces the
-     * cross-workspace invariant: the team's workspace phone_number_id must
-     * match the ticket's phone_number_id, otherwise 400 and team_id is left
-     * unchanged.
+     * Cualquier agente autenticado puede llamarlo — sin restricción de Supervisor/Admin y sin voter de responsable
+     * (design.md D5). `teamId: null` quita la asignación. Aplica la
+     * invariante entre espacios de trabajo: el phone_number_id del espacio de trabajo del equipo debe
+     * coincidir con el phone_number_id del ticket; si no, responde 400 y team_id queda
+     * sin cambios.
      */
     #[Route('/api/tickets/{id}/team', name: 'app_ticket_set_team', methods: ['PUT'])]
     public function setEquipo(int $id, Request $request): JsonResponse
@@ -98,13 +98,13 @@ class AsignacionDeTicketController
     #[Route('/api/tickets/{id}/assignment', name: 'app_ticket_assignment', methods: ['GET'])]
     public function getAsignacion(int $id): JsonResponse
     {
-        // Find the ticket first
+        // Primero busca el ticket
         $ticket = $this->ticketRepo->findById($id);
         if (!$ticket) {
             return new JsonResponse(['error' => 'Ticket not found'], 404);
         }
 
-        // Get assignment history
+        // Obtiene el historial de asignaciones
         $asignaciones = $this->asignacionRepo->findByTicket($ticket);
 
         $data = [
@@ -121,9 +121,9 @@ class AsignacionDeTicketController
             'current_assignment' => null,
         ];
 
-        // Get the most recent assignment as current
+        // Toma la asignación más reciente como la actual
         if (!empty($asignaciones)) {
-            $actual = $asignaciones[0]; // Already ordered by DESC
+            $actual = $asignaciones[0]; // Ya viene ordenado DESC
             $data['current_assignment'] = [
                 'agent_id' => $actual->getAgenteId(),
                 'assigned_by' => $actual->getAsignadoPor(),

@@ -5,23 +5,23 @@ namespace App\Ticket\Query;
 use App\Ticket\Repository\FiltrosDeTicket;
 
 /**
- * Builds the normalized ticket list filters shared by `ListTicketsQuery`,
- * `ExportarTicketsCsvQuery`, and the export endpoint's up-front validation.
- * It holds no SQL: `TicketRepository::aplicarFiltrosDeLista()` turns the result
- * into WHERE clauses.
+ * Arma los filtros normalizados de la lista de tickets compartidos por `ListTicketsQuery`,
+ * `ExportarTicketsCsvQuery` y la validación previa del endpoint de exportación.
+ * No contiene SQL: `TicketRepository::aplicarFiltrosDeLista()` convierte el resultado
+ * en cláusulas WHERE.
  */
 class FiltrosDeTicketBuilder
 {
     /**
-     * @param string $filtro 'all', 'unassigned', 'assigned', or 'mine'
-     * @param string|null $agenteId Agent ID for 'mine' filter
-     * @param string|null $estado Comma-separated status filter
-     * @param int|null $scopeAgenteId Ownership scope: forces WHERE assigned_agent_id = scopeAgentId
-     * @param string|null $phoneNumberId Workspace scope: filters by ticket phone_number_id
-     * @param string|null $etiqueta Comma-separated tag names (AND semantics, max 5)
-     * @param int|null $equipoId Single-select team filter
+     * @param string $filtro 'all', 'unassigned', 'assigned' o 'mine'
+     * @param string|null $agenteId ID del agente para el filtro 'mine'
+     * @param string|null $estado Filtro de estados separados por comas
+     * @param int|null $scopeAgenteId Alcance de responsabilidad: fuerza WHERE assigned_agent_id = scopeAgentId
+     * @param string|null $phoneNumberId Alcance del espacio de trabajo: filtra por el phone_number_id del ticket
+     * @param string|null $etiqueta Nombres de etiquetas separados por comas (semántica AND, máximo 5)
+     * @param int|null $equipoId Filtro de equipo de selección única
      *
-     * @throws \InvalidArgumentException when more than 5 tags are given
+     * @throws \InvalidArgumentException cuando se indican más de 5 etiquetas
      */
     public function build(
         string $filtro = 'all',

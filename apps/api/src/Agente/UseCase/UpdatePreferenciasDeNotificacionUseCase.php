@@ -14,7 +14,7 @@ final class UpdatePreferenciasDeNotificacionUseCase
     ) {}
 
     /**
-     * A null preference is left unchanged.
+     * Una preferencia null se deja sin cambios.
      */
     public function execute(Agente $agente, ?bool $sonido, ?bool $escritorio): void
     {

@@ -13,8 +13,8 @@ use App\Conversacion\ValidadorDeAdjunto;
 use Symfony\Component\Uid\Ulid;
 
 /**
- * Uploads an agent's attachment to WhatsApp and keeps a copy in object
- * storage, so a later send can reference it by its Graph media id.
+ * Sube el adjunto de un agente a WhatsApp y guarda una copia en el almacenamiento
+ * de objetos, para que un envío posterior pueda referenciarlo por su media id de Graph.
  */
 final class SubirAdjuntoUseCase
 {
@@ -25,10 +25,10 @@ final class SubirAdjuntoUseCase
     ) {}
 
     /**
-     * Storing the copy is best effort: when it fails, `key` is null and the
-     * upload still succeeds.
+     * Guardar la copia es best effort: si falla, `key` es null y la
+     * subida igual se completa.
      *
-     * `$ticketId` is the raw form value; it only names the storage key.
+     * `$ticketId` es el valor crudo del formulario; solo da nombre a la clave de almacenamiento.
      *
      * @return array{mediaId: mixed, key: ?string}
      *
@@ -45,7 +45,7 @@ final class SubirAdjuntoUseCase
 
         $key = null;
         try {
-            // A non-scalar ticketId fails this step, as it did when it was read with InputBag::get().
+            // Un ticketId no escalar falla en este paso, igual que cuando se leía con InputBag::get().
             if ($ticketId !== null && !\is_scalar($ticketId)) {
                 throw new \UnexpectedValueException('ticketId must be a scalar');
             }
@@ -57,7 +57,7 @@ final class SubirAdjuntoUseCase
             $this->adjuntoStorageService->put($s3Key, file_get_contents($filePath), $mimeType);
             $key = $s3Key;
         } catch (\Throwable) {
-            // Non-fatal: the caller already has the media id from WhatsApp.
+            // No es fatal: quien llama ya tiene el media id de WhatsApp.
         }
 
         return [

@@ -12,8 +12,8 @@ enum TipoDeAdjunto: string
     case DOCUMENTO = 'document';
 
     /**
-     * Map a MIME type to the corresponding TipoDeAdjunto.
-     * Unknown MIME types default to DOCUMENTO.
+     * Asocia un tipo MIME con su TipoDeAdjunto.
+     * Los tipos MIME desconocidos se tratan como DOCUMENTO.
      */
     public static function fromMime(string $mimeType): self
     {
@@ -26,7 +26,7 @@ enum TipoDeAdjunto: string
     }
 
     /**
-     * Map a TipoDeAdjunto to its file extension.
+     * Asocia un TipoDeAdjunto con su extensión de archivo.
      */
     public static function toExtension(TipoDeAdjunto $tipo): string
     {

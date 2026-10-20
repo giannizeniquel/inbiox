@@ -12,11 +12,11 @@ use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
 /**
- * Authorizes access to Message resources.
+ * Autoriza el acceso a los mensajes.
  *
- * A caller can ACCESS a message if they can VIEW the parent ticket.
- * SUPERVISOR+ can access any message.
- * AGENT can access messages on tickets assigned to them.
+ * Un usuario tiene ACCESS sobre un mensaje si tiene VIEW sobre su ticket.
+ * SUPERVISOR+ puede acceder a cualquier mensaje.
+ * AGENT puede acceder a los mensajes de los tickets que tiene asignados.
  */
 final class MensajeVoter extends Voter
 {
@@ -48,12 +48,12 @@ final class MensajeVoter extends Voter
             return false;
         }
 
-        // SUPERVISOR+ can access any message
+        // SUPERVISOR+ puede acceder a cualquier mensaje
         if ($this->security->isGranted('ROLE_SUPERVISOR')) {
             return true;
         }
 
-        // AGENT can access messages on tickets they're assigned to
+        // AGENT puede acceder a los mensajes de los tickets que tiene asignados
         if ($this->security->isGranted('ROLE_AGENT')) {
             $agente = $usuario->getAgente();
 
@@ -61,14 +61,14 @@ final class MensajeVoter extends Voter
                 return false;
             }
 
-            // Find the ticket for this conversation
+            // Busca el ticket de esta conversación
             $ticket = $this->ticketRepository->findByConversacion($conversacion);
 
             if ($ticket === null) {
                 return false;
             }
 
-            // Agent can access if assigned to this ticket
+            // El agente puede acceder si este ticket está asignado a él
             return $ticket->getAgenteAsignadoId() === $agente->getId();
         }
 

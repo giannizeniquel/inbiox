@@ -7,7 +7,7 @@ namespace App\Disponibilidad\Query;
 use App\Agente\Agente;
 
 /**
- * Data Transfer Object for agent availability in workspace listing.
+ * Data Transfer Object para la disponibilidad de agentes en el listado de un espacio de trabajo.
  */
 class DisponibilidadDeAgenteDTO
 {

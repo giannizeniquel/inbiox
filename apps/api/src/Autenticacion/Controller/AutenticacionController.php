@@ -15,12 +15,12 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
 /**
- * Authentication controller.
+ * Controlador de autenticación.
  *
- * POST /api/auth/login       — handled by security.yaml json_login (no controller method)
- * POST /api/auth/refresh     — handled by security.yaml refresh_jwt authenticator (no controller method)
- * POST /api/auth/logout      — invalidates refresh token, clears cookie
- * GET  /api/auth/me          — returns current user profile
+ * POST /api/auth/login       — lo atiende json_login de security.yaml (sin método de controlador)
+ * POST /api/auth/refresh     — lo atiende el autenticador refresh_jwt de security.yaml (sin método de controlador)
+ * POST /api/auth/logout      — invalida el refresh token y limpia la cookie
+ * GET  /api/auth/me          — devuelve el perfil del usuario actual
  */
 final class AutenticacionController extends AbstractController
 {
@@ -36,9 +36,9 @@ final class AutenticacionController extends AbstractController
     /**
      * POST /api/auth/login
      *
-     * Handled by security.yaml json_login firewall authenticator.
-     * This route exists only to pass the RouterListener; the controller
-     * is never reached because json_login returns a response directly.
+     * Lo atiende el autenticador json_login del firewall en security.yaml.
+     * Esta ruta existe solo para pasar el RouterListener; nunca se llega al
+     * controlador porque json_login devuelve una respuesta directamente.
      */
     #[Route('/api/auth/login', name: 'api_auth_login', methods: ['POST'])]
     public function login(): never
@@ -49,9 +49,9 @@ final class AutenticacionController extends AbstractController
     /**
      * POST /api/auth/refresh
      *
-     * Handled by security.yaml refresh_jwt firewall authenticator.
-     * This route exists only to pass the RouterListener; the controller
-     * is never reached because refresh_jwt returns a response directly.
+     * Lo atiende el autenticador refresh_jwt del firewall en security.yaml.
+     * Esta ruta existe solo para pasar el RouterListener; nunca se llega al
+     * controlador porque refresh_jwt devuelve una respuesta directamente.
      */
     #[Route('/api/auth/refresh', name: 'api_auth_refresh_path', methods: ['POST'])]
     public function refresh(): never
@@ -62,26 +62,26 @@ final class AutenticacionController extends AbstractController
     /**
      * POST /api/auth/logout
      *
-     * Invalidates the current refresh token and clears the cookie.
-     * Requires a valid JWT (IS_AUTHENTICATED_FULLY).
+     * Invalida el refresh token actual y limpia la cookie.
+     * Requiere un JWT válido (IS_AUTHENTICATED_FULLY).
      */
     #[Route('/api/auth/logout', name: 'api_auth_logout', methods: ['POST'])]
     public function cerrarSesion(Request $request): JsonResponse
     {
-        // Invalidate the cookie's refresh token and all of the user's refresh tokens
+        // Invalida el refresh token de la cookie y todos los refresh tokens del usuario
         $usuario = $this->getUser();
         $this->cerrarSesionUseCase->execute(
             $request->cookies->get(self::REFRESH_COOKIE_NAME),
             $usuario instanceof Usuario ? $usuario : null,
         );
 
-        // Build response with cleared cookie
+        // Arma la respuesta con la cookie limpia
         $response = new JsonResponse(['message' => 'Logged out successfully']);
         $response->headers->clearCookie(
             self::REFRESH_COOKIE_NAME,
             '/',                        // path
             null,                       // domain
-            $this->refreshCookieSecure, // secure — same env-driven flag as gesdinet_jwt_refresh_token.yaml
+            $this->refreshCookieSecure, // secure — el mismo flag definido por entorno que gesdinet_jwt_refresh_token.yaml
             true,                       // httpOnly
             'lax'                       // sameSite
         );
@@ -92,8 +92,8 @@ final class AutenticacionController extends AbstractController
     /**
      * GET /api/auth/me
      *
-     * Returns the current authenticated user's profile.
-     * Requires a valid JWT (IS_AUTHENTICATED_FULLY).
+     * Devuelve el perfil del usuario autenticado actual.
+     * Requiere un JWT válido (IS_AUTHENTICATED_FULLY).
      */
     #[Route('/api/auth/me', name: 'api_auth_me', methods: ['GET'])]
     public function getMiPerfil(): JsonResponse

@@ -35,7 +35,7 @@ class EspacioDeTrabajo
     #[ORM\Column(name: 'updated_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $actualizadoAt;
 
-    /** Inverse side of Agente↔EspacioDeTrabajo M:N */
+    /** Lado inverso de la relación M:N Agente↔EspacioDeTrabajo */
     #[ORM\ManyToMany(targetEntity: Agente::class, mappedBy: 'espaciosDeTrabajo')]
     private Collection $agentes;
 

@@ -7,21 +7,21 @@ namespace App\Conversacion\UseCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * Routes a verified Meta webhook payload: inbound messages to
- * ProcesarMensajeEntranteUseCase, status updates to ProcesarActualizacionDeEstadoUseCase.
+ * Enruta un payload de webhook de Meta verificado: los mensajes entrantes a
+ * ProcesarMensajeEntranteUseCase y las actualizaciones de estado a ProcesarActualizacionDeEstadoUseCase.
  *
- * Meta's payload structure (META-002):
+ * Estructura del payload de Meta (META-002):
  *   entry[].changes[].value.messaging_product === 'whatsapp'
- *   value.messages[]     → inbound messages
- *   value.statuses[]     → status updates
+ *   value.messages[]     → mensajes entrantes
+ *   value.statuses[]     → actualizaciones de estado
  *
- * Meta sends both messages and statuses under field = "messages", so the
- * route depends on which list is present. The phone_number_id from the
- * metadata goes to both handlers (CAP-7 / META-017).
+ * Meta envía tanto messages como statuses bajo field = "messages", así que la
+ * ruta depende de qué lista está presente. El phone_number_id de la
+ * metadata va a ambos handlers (CAP-7 / META-017).
  *
- * Each inbound message has its own catch, so one failure does not stop the
- * next. Status entries have none: one that throws stops the rest of the
- * payload and the exception reaches the caller (contradiction track, S10).
+ * Cada mensaje entrante tiene su propio catch, así un fallo no detiene el
+ * siguiente. Las entradas de estado no lo tienen: una que lanza detiene el resto del
+ * payload y la excepción llega a quien llama (contradiction track, S10).
  */
 final class ProcesarPayloadWebhookUseCase
 {
@@ -41,17 +41,17 @@ final class ProcesarPayloadWebhookUseCase
             foreach ($changes as $change) {
                 $value = $change['value'] ?? [];
 
-                // Validate messaging_product is 'whatsapp'
+                // Valida que messaging_product sea 'whatsapp'
                 if (($value['messaging_product'] ?? null) !== 'whatsapp') {
                     continue;
                 }
 
-                // Extract phone_number_id from metadata (CAP-7 / META-017)
+                // Extrae phone_number_id de metadata (CAP-7 / META-017)
                 $phoneNumberId = $value['metadata']['phone_number_id'] ?? null;
 
-                // Handle inbound messages — process via ProcesarMensajeEntranteUseCase
+                // Atiende los mensajes entrantes: se procesan con ProcesarMensajeEntranteUseCase
                 if (isset($value['messages']) && is_array($value['messages'])) {
-                    // Build phone→name lookup from contacts[] (Meta sends wa_id + profile.name)
+                    // Arma el mapa teléfono→nombre a partir de contacts[] (Meta envía wa_id + profile.name)
                     $nombresDeContacto = [];
                     if (isset($value['contacts']) && is_array($value['contacts'])) {
                         foreach ($value['contacts'] as $contacto) {
@@ -66,14 +66,14 @@ final class ProcesarPayloadWebhookUseCase
                         $wamid = $msg['id'] ?? null;
                         $msgType = $msg['type'] ?? null;
 
-                        // Skip messages without a sender
+                        // Omite los mensajes sin remitente
                         if ($from === null) {
                             continue;
                         }
 
                         $nombreDeContacto = $nombresDeContacto[$from] ?? null;
 
-                        // Supported message types: text, document, image, audio, video
+                        // Tipos de mensaje soportados: text, document, image, audio, video
                         $supportedTypes = ['text', 'document', 'image', 'audio', 'video'];
                         if (!in_array($msgType, $supportedTypes, true)) {
                             $this->logger->debug('Skipping unsupported inbound message type', [
@@ -84,12 +84,12 @@ final class ProcesarPayloadWebhookUseCase
                             continue;
                         }
 
-                        // Extract message content based on type
+                        // Extrae el contenido del mensaje según el tipo
                         $datosDeDescargaDeAdjunto = null;
                         if ($msgType === 'text') {
                             $text = $msg['text']['body'] ?? '';
                         } else {
-                        // Media types: build descriptive content for inbox display
+                        // Tipos con adjunto: arma un contenido descriptivo para mostrar en el inbox
                         $mediaId = $msg[$msgType]['id'] ?? null;
                         $filename = $msg[$msgType]['filename'] ?? null;
                         $mimeType = $msg[$msgType]['mime_type'] ?? null;
@@ -107,7 +107,7 @@ final class ProcesarPayloadWebhookUseCase
                             ? "{$typeLabel}: {$filename} — \"{$leyenda}\""
                             : "{$typeLabel}: {$filename}";
 
-                        // Build media download payload for storage
+                        // Arma el payload de descarga del adjunto para el almacenamiento
                         $datosDeDescargaDeAdjunto = $mediaId ? [
                             'mediaId' => $mediaId,
                             'mimeType' => $mimeType,
@@ -143,7 +143,7 @@ final class ProcesarPayloadWebhookUseCase
                     }
                 }
 
-                // Handle status updates — pass phoneNumberId for multi-number (CAP-7)
+                // Atiende las actualizaciones de estado: pasa phoneNumberId para multinúmero (CAP-7)
                 if (isset($value['statuses']) && is_array($value['statuses'])) {
                     foreach ($value['statuses'] as $statusEntry) {
                         $this->procesarActualizacionDeEstado->procesarActualizacionDeEstado($statusEntry, $phoneNumberId);

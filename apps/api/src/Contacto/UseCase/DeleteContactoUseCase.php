@@ -21,7 +21,7 @@ class DeleteContactoUseCase
             throw new \InvalidArgumentException('Contact not found');
         }
 
-        // Soft delete: set status to inactive
+        // Borrado lógico: pasa el estado a inactive
         $contacto->setEstado('inactive');
         $contacto->setActualizadoAt(new \DateTimeImmutable());
 

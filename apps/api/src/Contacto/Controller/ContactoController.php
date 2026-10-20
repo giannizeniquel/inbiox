@@ -43,7 +43,7 @@ class ContactoController
         $responsableId = $request->query->get('ownerId');
         $email = $request->query->get('email');
 
-        // Workspace scope: AGENT sees only contacts with conversations in active workspace
+        // Alcance del espacio de trabajo: AGENT ve solo los contactos con conversaciones en el espacio de trabajo activo
         $phoneNumberId = $this->alcanceDeEspacioDeTrabajo->getPhoneNumberIdActivo();
 
         $result = $this->listContactosQuery->execute(
@@ -121,11 +121,11 @@ class ContactoController
     }
 
     /**
-     * POST /contacts/import — bulk CSV contact import.
+     * POST /contacts/import — importación masiva de contactos por CSV.
      *
-     * Method-level ROLE_SUPERVISOR overrides the class-level ROLE_AGENT: single-contact
-     * creation stays available to agents, but a request that can create up to 1000
-     * globally shared contacts in one shot is gated to supervisors.
+     * El ROLE_SUPERVISOR a nivel de método prevalece sobre el ROLE_AGENT a nivel de clase: la creación
+     * de un solo contacto sigue disponible para los agentes, pero una petición que puede crear hasta 1000
+     * contactos compartidos globalmente de una sola vez queda restringida a los supervisores.
      */
     #[IsGranted('ROLE_SUPERVISOR')]
     #[Route('/api/contacts/import', name: 'app_contacts_import', methods: ['POST'])]

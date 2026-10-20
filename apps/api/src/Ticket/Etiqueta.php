@@ -48,7 +48,7 @@ class Etiqueta
     }
 
     /**
-     * Normalize tag name: lowercase + trim + reduce multiple spaces
+     * Normaliza el nombre de la etiqueta: minúsculas + trim + reduce los espacios múltiples
      */
     public static function normalizar(string $nombre): string
     {

@@ -8,7 +8,7 @@ use App\Administracion\Usuario;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * Soft delete: the user stays, with is_active = false.
+ * Borrado lógico: el usuario se conserva, con is_active = false.
  */
 final class DesactivarUsuarioUseCase
 {

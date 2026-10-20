@@ -22,11 +22,11 @@ final class CreateUsuarioUseCase
     ) {}
 
     /**
-     * @param array<mixed> $data decoded request body
+     * @param array<mixed> $data cuerpo de la request decodificado
      *
-     * @throws \InvalidArgumentException when a field is missing or invalid
-     * @throws ConflictoDeEstadoException    when the email or the agent is taken
-     * @throws NotFoundException         when agent_id does not exist
+     * @throws \InvalidArgumentException cuando falta un campo o es inválido
+     * @throws ConflictoDeEstadoException    cuando el email o el agente ya están en uso
+     * @throws NotFoundException         cuando agent_id no existe
      */
     public function execute(array $data): Usuario
     {
@@ -51,7 +51,7 @@ final class CreateUsuarioUseCase
         $usuario->setPassword($this->passwordHasher->hashPassword($usuario, $password));
         $usuario->setRoles($roles);
 
-        // Optional agent link
+        // Vínculo opcional con un agente
         if (isset($data['agent_id']) && null !== $data['agent_id']) {
             $agente = $this->agenteRepository->find($data['agent_id']);
             if (null === $agente) {

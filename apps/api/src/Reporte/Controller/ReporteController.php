@@ -20,16 +20,16 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * REST controller for reporting and metrics endpoints.
+ * Controlador REST para los endpoints de reportes y métricas.
  *
- * All endpoints require `from` and `to` query parameters in UTC.
+ * Todos los endpoints requieren los parámetros de query `from` y `to` en UTC.
  *
- * Authorization: any authenticated agent (ROLE_AGENT or higher) can access
- * every endpoint here. Reports/metrics are NOT restricted by agent — this
- * is an intentional product decision (see docs/04_sprints/sprint_16
- * (Production Readiness).md), not a bug. `getAgenteIdDeAlcance()` below always
- * returns null (see AlcanceDeResponsabilidad), so no per-agent filtering is applied
- * to any query.
+ * Autorización: cualquier agente autenticado (ROLE_AGENT o superior) puede acceder
+ * a todos los endpoints de aquí. Los reportes y métricas NO se restringen por agente: esta
+ * es una decisión de producto intencional (ver docs/04_sprints/sprint_16
+ * (Production Readiness).md), no un bug. `getAgenteIdDeAlcance()`, más abajo, siempre
+ * devuelve null (ver AlcanceDeResponsabilidad), así que no se aplica filtrado por agente
+ * a ninguna query.
  */
 #[IsGranted('ROLE_AGENT')]
 class ReporteController
@@ -46,9 +46,9 @@ class ReporteController
     ) {}
 
     /**
-     * Parse datetime from query parameter.
+     * Interpreta la fecha y hora de un parámetro de query.
      *
-     * @throws \InvalidArgumentException If datetime is invalid or missing
+     * @throws \InvalidArgumentException Si la fecha y hora es inválida o falta
      */
     private function parseDateTime(?string $value): \DateTimeImmutable
     {
@@ -63,10 +63,10 @@ class ReporteController
     }
 
     /**
-     * Get the scoped agent ID for ownership filtering.
+     * Obtiene el ID de agente de alcance para el filtrado por responsabilidad.
      *
-     * Always null today for every role (including AGENT) — see
-     * AlcanceDeResponsabilidad for why this is intentional and not a bug.
+     * Hoy siempre es null para todos los roles (incluido AGENT); ver
+     * AlcanceDeResponsabilidad para saber por qué es intencional y no un bug.
      */
     private function getAgenteIdDeAlcance(): ?int
     {
@@ -74,8 +74,8 @@ class ReporteController
     }
 
     /**
-     * Get the scoped phoneNumberId for workspace filtering.
-     * AGENT sees only their active workspace; SUPERVISOR/ADMIN see all.
+     * Obtiene el phoneNumberId de alcance para el filtrado por espacio de trabajo.
+     * AGENT ve solo su espacio de trabajo activo; SUPERVISOR/ADMIN ven todos.
      */
     private function getPhoneNumberIdDeAlcance(): ?string
     {
@@ -83,7 +83,7 @@ class ReporteController
     }
 
     /**
-     * Read the optional `teamId` query parameter (single-select team filter).
+     * Lee el parámetro de query opcional `teamId` (filtro de equipo de selección única).
      */
     private function getEquipoId(Request $request): ?int
     {
@@ -93,7 +93,7 @@ class ReporteController
     }
 
     /**
-     * Get First Response Time metrics.
+     * Obtiene las métricas de tiempo de primera respuesta.
      *
      * GET /reports/frt?from=2026-01-01T00:00:00Z&to=2026-01-02T00:00:00Z[&agent_id=1]
      */
@@ -105,7 +105,7 @@ class ReporteController
             $to = $this->parseDateTime($request->query->get('to'));
             $agenteId = $request->query->get('agent_id') ? (int) $request->query->get('agent_id') : null;
 
-            // Ownership scoping: force agent_id for AGENT role
+            // Alcance por responsabilidad: forzar agent_id para el rol AGENT
             $agenteIdDeAlcance = $this->getAgenteIdDeAlcance();
             if (null !== $agenteIdDeAlcance) {
                 $agenteId = $agenteIdDeAlcance;
@@ -122,7 +122,7 @@ class ReporteController
     }
 
     /**
-     * Get Resolution Time metrics.
+     * Obtiene las métricas de tiempo de resolución.
      *
      * GET /reports/rt?from=2026-01-01T00:00:00Z&to=2026-01-02T00:00:00Z
      */
@@ -145,7 +145,7 @@ class ReporteController
     }
 
     /**
-     * Get ticket counts by status.
+     * Obtiene la cantidad de tickets por estado.
      *
      * GET /reports/counts?from=2026-01-01T00:00:00Z&to=2026-01-02T00:00:00Z
      */
@@ -168,7 +168,7 @@ class ReporteController
     }
 
     /**
-     * Get ticket volume over time.
+     * Obtiene el volumen de tickets a lo largo del tiempo.
      *
      * GET /reports/volume?from=2026-01-01T00:00:00Z&to=2026-01-02T00:00:00Z
      */
@@ -191,7 +191,7 @@ class ReporteController
     }
 
     /**
-     * Get agent performance metrics.
+     * Obtiene las métricas de rendimiento de los agentes.
      *
      * GET /reports/agents?from=2026-01-01T00:00:00Z&to=2026-01-02T00:00:00Z[&agent_id=1]
      */
@@ -203,7 +203,7 @@ class ReporteController
             $to = $this->parseDateTime($request->query->get('to'));
             $agenteId = $request->query->get('agent_id') ? (int) $request->query->get('agent_id') : null;
 
-            // Ownership scoping: force agent_id for AGENT role
+            // Alcance por responsabilidad: forzar agent_id para el rol AGENT
             $agenteIdDeAlcance = $this->getAgenteIdDeAlcance();
             if (null !== $agenteIdDeAlcance) {
                 $agenteId = $agenteIdDeAlcance;
@@ -219,7 +219,7 @@ class ReporteController
     }
 
     /**
-     * Get per-agent active ticket count vs max capacity.
+     * Obtiene, por agente, la cantidad de tickets activos frente a la capacidad máxima.
      *
      * GET /reports/agent-load[?agent_id=1][&phone_number_id=...]
      */
@@ -240,7 +240,7 @@ class ReporteController
     }
 
     /**
-     * Get unassigned tickets (no agent assigned).
+     * Obtiene los tickets sin asignar (sin agente asignado).
      *
      * GET /reports/unassigned[?from=...][&to=...][&phone_number_id=...]
      */
@@ -261,7 +261,7 @@ class ReporteController
     }
 
     /**
-     * Get agents currently available (in-shift and under capacity).
+     * Obtiene los agentes disponibles en este momento (en turno y por debajo de su capacidad).
      *
      * GET /reports/available-agents[?phone_number_id=...]
      */
@@ -274,7 +274,7 @@ class ReporteController
     }
 
     /**
-     * Get FRT aggregated by day within a date range.
+     * Obtiene el FRT agregado por día dentro de un rango de fechas.
      *
      * GET /reports/frt-trend?from=...&to=...[&phone_number_id=...]
      */
@@ -295,7 +295,7 @@ class ReporteController
     }
 
     /**
-     * Get ticket volume grouped by day-of-week x hour for heatmap.
+     * Obtiene el volumen de tickets agrupado por día de la semana x hora para el mapa de calor.
      *
      * GET /reports/heatmap?from=...&to=...[&phone_number_id=...]
      */
@@ -316,7 +316,7 @@ class ReporteController
     }
 
     /**
-     * Get contacts with >= threshold tickets in the last N days.
+     * Obtiene los contactos con >= umbral tickets en los últimos N días.
      *
      * GET /reports/recurring-customers[?phone_number_id=...][&threshold=3]
      */
@@ -332,7 +332,7 @@ class ReporteController
     }
 
     /**
-     * Get tickets that transitioned out of resolved status.
+     * Obtiene los tickets que salieron del estado resuelto.
      *
      * GET /reports/reopened?from=...&to=...[&phone_number_id=...]
      */
@@ -353,14 +353,14 @@ class ReporteController
     }
 
     /**
-     * Export the filtered ticket list as a streamed CSV download.
+     * Exporta la lista filtrada de tickets como una descarga CSV en streaming.
      *
      * GET /reports/export?from=...&to=...[&agent_id=1][&status=...][&tag=...]
      *
-     * Supervisor-gated (bulk PII export): `#[IsGranted('ROLE_SUPERVISOR')]`.
-     * `ROLE_ADMIN` inherits via `security.yaml`'s `role_hierarchy`. Filter
-     * semantics (status whitelist, tag AND-semantics, max 5 tags) match
-     * `ListTicketsQuery` exactly via the shared `FiltrosDeTicketBuilder`.
+     * Restringido a supervisores (exportación masiva de PII): `#[IsGranted('ROLE_SUPERVISOR')]`.
+     * `ROLE_ADMIN` lo hereda mediante el `role_hierarchy` de `security.yaml`. La semántica
+     * de los filtros (lista blanca de estados, semántica AND de etiquetas, máximo 5 etiquetas) coincide
+     * exactamente con `ListTicketsQuery` mediante el `FiltrosDeTicketBuilder` compartido.
      */
     #[IsGranted('ROLE_SUPERVISOR')]
     #[Route('/api/reports/export', name: 'app_report_export', methods: ['GET'])]
@@ -379,9 +379,9 @@ class ReporteController
         $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
         $equipoId = $this->getEquipoId($request);
 
-        // Validate filter args up front (no DB query — same pure builder used
-        // inside ExportarTicketsCsvQuery::stream) so an invalid request (e.g.
-        // >5 tags) fails with 400 before any streaming/headers are sent.
+        // Validar los argumentos de filtro de antemano (sin query a la BD; es el mismo builder puro usado
+        // dentro de ExportarTicketsCsvQuery::stream) para que una petición inválida (p. ej.
+        // >5 etiquetas) falle con 400 antes de enviar cualquier streaming o cabecera.
         try {
             $this->filtrosDeTicketBuilder->build(
                 filtro: $agenteId ? 'mine' : 'all',
@@ -402,10 +402,10 @@ class ReporteController
             set_time_limit(0);
 
             $stream = fopen('php://output', 'w+');
-            // `Writer::setOutputBOM()` only takes effect via league/csv's own
-            // `download()`/`toString()` readers, which is not compatible with
-            // writing directly to an already-open output stream in chunks —
-            // so the BOM is written to the stream by hand instead.
+            // `Writer::setOutputBOM()` solo tiene efecto mediante los lectores propios de league/csv
+            // `download()`/`toString()`, que no son compatibles con
+            // escribir por bloques directamente en un stream de salida ya abierto;
+            // por eso el BOM se escribe a mano en el stream.
             fwrite($stream, Bom::Utf8->value);
 
             $writer = Writer::createFromStream($stream);
@@ -422,7 +422,7 @@ class ReporteController
     }
 
     /**
-     * Get aggregate + per-agent response-delay metrics.
+     * Obtiene las métricas de demora de respuesta agregadas y por agente.
      *
      * GET /reports/response-delay?from=...&to=...
      */
@@ -443,7 +443,7 @@ class ReporteController
     }
 
     /**
-     * Get per-ticket participation drill-down.
+     * Obtiene el detalle de participación por ticket.
      *
      * GET /reports/tickets/{id}/participation
      */

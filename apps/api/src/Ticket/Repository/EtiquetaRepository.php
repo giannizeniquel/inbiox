@@ -30,7 +30,7 @@ class EtiquetaRepository extends ServiceEntityRepository
     }
 
     /**
-     * Persist and flush a tag entity
+     * Persiste y hace flush de una entidad de etiqueta
      */
     public function guardar(Etiqueta $etiqueta): void
     {
@@ -39,7 +39,7 @@ class EtiquetaRepository extends ServiceEntityRepository
     }
 
     /**
-     * Whether a `ticket_tags` row links this ticket and tag.
+     * Indica si una fila de `ticket_tags` vincula este ticket y esta etiqueta.
      */
     public function isAsociadaATicket(int $ticketId, int $etiquetaId): bool
     {
@@ -54,8 +54,8 @@ class EtiquetaRepository extends ServiceEntityRepository
     }
 
     /**
-     * Etiqueta names attached to each of these tickets, ordered by ticket id and
-     * then by the order the tags were attached (`ticket_tags.id`).
+     * Nombres de las etiquetas asociadas a cada uno de estos tickets, ordenados por id de ticket y
+     * luego por el orden en que se asociaron las etiquetas (`ticket_tags.id`).
      *
      * @param int[] $ticketIds
      * @return list<array{ticket_id: mixed, name: string}>

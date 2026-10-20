@@ -8,7 +8,7 @@ use App\Administracion\EspacioDeTrabajo;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * Soft delete: the workspace stays, with is_active = false.
+ * Borrado lógico: el espacio de trabajo se conserva, con is_active = false.
  */
 final class DesactivarEspacioDeTrabajoUseCase
 {

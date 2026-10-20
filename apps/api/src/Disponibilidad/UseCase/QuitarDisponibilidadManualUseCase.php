@@ -13,11 +13,11 @@ use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * Clear an agent's availability override.
+ * Quita el override de disponibilidad de un agente.
  *
- * Locks the agent row FOR UPDATE, sets both override fields to NULL,
- * and emits an agent.availability_changed outbox event.
- * After clearing, schedule-based evaluation resumes.
+ * Bloquea la fila del agente con FOR UPDATE, pone ambos campos del override en NULL
+ * y emite un evento de outbox agent.availability_changed.
+ * Después de quitarlo, se retoma la evaluación basada en el horario.
  */
 final class QuitarDisponibilidadManualUseCase
 {
@@ -31,18 +31,18 @@ final class QuitarDisponibilidadManualUseCase
     ) {}
 
     /**
-     * Clear availability override for an agent.
+     * Quita el override de disponibilidad del agente.
      *
      * @param int $agenteId
      *
      * @return array{agent_id: int, is_available: bool, override_active: bool, current_load: int, max_capacity: int}
      *
-     * @throws \InvalidArgumentException if agent not found
+     * @throws \InvalidArgumentException si no se encuentra el agente
      */
     public function execute(int $agenteId): array
     {
         $result = $this->em->getConnection()->transactional(function () use ($agenteId) {
-            // 1. Find and lock agent FOR UPDATE
+            // 1. Busca y bloquea el agente con FOR UPDATE
             $agente = $this->agentRepo->findById($agenteId);
             if ($agente === null) {
                 throw new \InvalidArgumentException('Agent not found');
@@ -50,25 +50,25 @@ final class QuitarDisponibilidadManualUseCase
 
             $this->em->lock($agente, LockMode::PESSIMISTIC_WRITE);
 
-            // 2. Clear override fields
+            // 2. Limpia los campos del override
             $agente->setDisponibilidadManual(null);
             $agente->setDisponibilidadManualHasta(null);
 
-            // 3. Persist
+            // 3. Persiste
             $this->em->flush();
 
-            // 4. Compute current load and availability
+            // 4. Calcula la carga actual y la disponibilidad
             $now = new \DateTimeImmutable();
             $cargaActual = $this->ticketRepo->countActivosDeAgente($agenteId);
 
-            // After clearing, availability is determined by schedule + capacity
-            // We report is_available after the fact using the service,
-            // but for the outbox event we just note override is no longer active.
+            // Después de quitarlo, la disponibilidad depende del horario + la capacidad
+            // is_available se informa después usando el service,
+            // pero en el evento de outbox solo se indica que el override ya no está activo.
             $this->pendingOutboxEvent = [
                 'aggregate_id' => $agenteId,
                 'payload' => [
                     'agent_id'        => $agenteId,
-                    'is_available'    => false, // will be re-evaluated on next check
+                    'is_available'    => false, // se reevalúa en la próxima verificación
                     'override_active' => false,
                     'current_load'    => $cargaActual,
                     'max_capacity'    => $agente->getMaxTicketsActivos(),
@@ -84,15 +84,15 @@ final class QuitarDisponibilidadManualUseCase
             ];
         });
 
-        $this->persistOutboxEvent();
+        $this->persistirEventoOutbox();
 
         return $result;
     }
 
     /**
-     * Persist the outbox event after the main transaction has committed.
+     * Persiste el evento de outbox después del commit de la transacción principal.
      */
-    private function persistOutboxEvent(): void
+    private function persistirEventoOutbox(): void
     {
         if ($this->pendingOutboxEvent === null) {
             return;

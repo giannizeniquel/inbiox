@@ -44,7 +44,7 @@ class OutboxDeadLetterCommand extends Command
     }
 
     /**
-     * List all dead-letter events.
+     * Lista todos los eventos en dead letter.
      */
     private function listarEventos(OutputInterface $output): int
     {
@@ -75,7 +75,7 @@ class OutboxDeadLetterCommand extends Command
     }
 
     /**
-     * Retry a dead-letter event: reset status to pending and retry_count to 0.
+     * Reintenta un evento en dead letter: vuelve el estado a pending y retry_count a 0.
      */
     private function reintentarEvento(InputInterface $input, OutputInterface $output): int
     {
@@ -97,7 +97,7 @@ class OutboxDeadLetterCommand extends Command
     }
 
     /**
-     * Purge dead-letter events older than N days.
+     * Purga los eventos en dead letter con más de N días.
      */
     private function purgarEventos(InputInterface $input, OutputInterface $output): int
     {

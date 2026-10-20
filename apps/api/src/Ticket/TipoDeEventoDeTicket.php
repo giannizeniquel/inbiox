@@ -5,20 +5,20 @@ declare(strict_types=1);
 namespace App\Ticket;
 
 /**
- * Type constants for `ticket_events` rows introduced by the WhatsApp 24h
- * conversation-window compliance change.
+ * Constantes de tipo para las filas de `ticket_events` introducidas por el cambio
+ * de cumplimiento de la ventana de conversación de 24 h de WhatsApp.
  *
- * Existing raw-string types (`auto_closed`, `auto_reopened`, `tag_added`,
- * `tag_removed`, ...) are intentionally left as-is — refactoring them is
- * out of scope for this change (design.md).
+ * Los tipos existentes como string crudo (`auto_closed`, `auto_reopened`, `tag_added`,
+ * `tag_removed`, ...) se dejan intencionalmente como están — refactorizarlos queda
+ * fuera del alcance de este cambio (design.md).
  */
 final class TipoDeEventoDeTicket
 {
     public const VENTANA_VENCIDA_CERRADO = 'window_expired_closed';
     public const VENTANA_REABIERTO = 'window_reopened';
 
-    // Manual closure/resolution audit trail (ticket-closure-authorization).
-    // See ClasificadorDeAuditoriaDeCierre for the truth table that reaches these.
+    // Registro de auditoría del cierre/resolución manual (ticket-closure-authorization).
+    // Ver ClasificadorDeAuditoriaDeCierre para la tabla de verdad que llega a estos.
     public const MANUAL_RESUELTO_RESPONSABLE = 'manual_resolved_owner';
     public const MANUAL_RESUELTO_FORZADO = 'manual_resolved_override';
     public const MANUAL_RESUELTO_SIN_RESPONSABLE = 'manual_resolved_unowned';

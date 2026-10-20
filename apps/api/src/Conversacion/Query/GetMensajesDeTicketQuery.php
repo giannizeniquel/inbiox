@@ -21,14 +21,14 @@ class GetMensajesDeTicketQuery
     ): array {
         $limit = min(200, max(1, $limit));
         
-        // Get ticket's conversation
+        // Obtiene la conversación del ticket
         $conversacionId = $this->ticketRepository->findConversacionId($ticketId);
 
         if ($conversacionId === false) {
             return ['items' => [], 'has_more' => false, 'next_cursor' => null];
         }
         
-        // Decode cursor
+        // Decodifica el cursor
         $cursorData = null;
         if ($cursor) {
             $decoded = base64_decode($cursor, true);
@@ -97,7 +97,7 @@ class GetMensajesDeTicketQuery
             array_pop($results);
         }
 
-        // Reverse to chronological
+        // Invierte a orden cronológico
         $results = array_reverse($results);
 
         $nextCursor = null;

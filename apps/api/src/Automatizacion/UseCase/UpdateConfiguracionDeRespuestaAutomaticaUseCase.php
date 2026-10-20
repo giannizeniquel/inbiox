@@ -14,8 +14,8 @@ final class UpdateConfiguracionDeRespuestaAutomaticaUseCase
     ) {}
 
     /**
-     * A null $habilitado is left unchanged. The message is always set, so a null
-     * message clears it.
+     * Un $habilitado null queda sin cambios. El mensaje siempre se asigna, así que un
+     * mensaje null lo borra.
      */
     public function execute(Agente $agente, ?bool $habilitado, ?string $mensaje): void
     {

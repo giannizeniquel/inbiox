@@ -50,10 +50,10 @@ class BandejaController
             $equipoIdRaw = $request->query->get('teamId');
             $equipoId = null !== $equipoIdRaw ? (int) $equipoIdRaw : null;
 
-            // Ownership scope: AGENT sees only own tickets; SUPERVISOR/ADMIN see all
+            // Alcance de responsabilidad: AGENT ve solo sus propios tickets; SUPERVISOR/ADMIN ven todos
             $scopeAgenteId = $this->alcanceDeResponsabilidad->getAgenteId();
 
-            // Workspace scope: AGENT sees only active workspace's tickets
+            // Alcance del espacio de trabajo: AGENT ve solo los tickets del espacio de trabajo activo
             $phoneNumberId = $this->alcanceDeEspacioDeTrabajo->getPhoneNumberIdActivo();
 
             $result = $this->listTicketsQuery->execute(

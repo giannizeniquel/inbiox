@@ -7,7 +7,7 @@ namespace App\Administracion\Controller;
 use App\Administracion\EspacioDeTrabajo;
 
 /**
- * Data Transfer Object for the active workspace preference response.
+ * Data Transfer Object para la respuesta de preferencia de espacio de trabajo activo.
  */
 class EspacioDeTrabajoActivoDTO
 {

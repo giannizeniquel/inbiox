@@ -12,44 +12,44 @@ use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
 /**
- * Authorizes actions on Ticket objects.
+ * Autoriza acciones sobre objetos Ticket.
  *
- * IMPORTANT — read before "fixing" anything here:
+ * IMPORTANTE — leer antes de "arreglar" cualquier cosa aquí:
  *
- * Inbiox is a SHARED inbox by design (confirmed product decision, see
- * docs/04_sprints/sprint_16 (Production Readiness).md). Any authenticated
- * agent can VIEW any ticket, regardless of who it's assigned to. There is
- * no VIEW check applied anywhere in the controllers that list or read
- * tickets — visibility is intentionally unrestricted.
+ * Inbiox es una bandeja COMPARTIDA por diseño (decisión de producto confirmada, ver
+ * docs/04_sprints/sprint_16 (Production Readiness).md). Cualquier agente
+ * autenticado puede VER cualquier ticket, sin importar a quién esté asignado. No se
+ * aplica ningún chequeo VIEW en los controllers que listan o leen
+ * tickets — la visibilidad es intencionalmente irrestricta.
  *
- * The ASSIGN and CLOSE attributes are the ones actually invoked by callers
- * today. Their "AGENT can only act on own tickets" logic applies to both
- * (e.g. reassigning/taking over a ticket, or resolving/closing it). It does
- * NOT reflect a VIEW restriction.
+ * Los atributos ASSIGN y CLOSE son los que realmente invocan quienes llaman
+ * hoy. Su lógica de "AGENT solo puede actuar sobre sus propios tickets" se aplica a ambos
+ * (p. ej. reasignar/tomar un ticket, o resolverlo/cerrarlo). NO
+ * refleja una restricción de VIEW.
  *
- * There is deliberately no VIEW/EDIT attribute: visibility is unrestricted.
- * If one is ever added, do not reuse the "own tickets only" logic below.
+ * Deliberadamente no existe un atributo VIEW/EDIT: la visibilidad es irrestricta.
+ * Si alguna vez se agrega uno, no reutilizar la lógica de "solo tickets propios" de abajo.
  *
- * Attribute matrix:
- *   - ASSIGN: invoked by AsignacionDeTicketController::asignar(). Rejects with a 409
- *     `ConflictoDeEstadoException` when the ticket is already resolved/closed,
- *     for every role, before the role checks below even run.
- *   - CLOSE: invoked by FlujoDeTicketController for resolve()/close()/
- *     transition() (target resolved/closed). Does NOT hit the ASSIGN state
- *     guard — a resolved ticket is exactly the state a legitimate close
- *     targets (ticket-closure-authorization design.md D1/D3).
- *   Both ASSIGN and CLOSE share the same role logic once past ASSIGN's
- *   state guard:
- *       ADMIN / SUPERVISOR: always allowed.
- *       AGENT: only allowed when the ticket is already assigned to that
- *         agent (ticket.assignedAgentId === user.agent.id); denied for
- *         unassigned tickets and tickets assigned to a different agent.
- *         Note (D3): every ticket reachable via `POST /tickets/{id}/close`
- *         is structurally unassigned by the time it gets there (resolving
- *         unassigns), so CLOSE denies every ROLE_AGENT on that endpoint —
- *         only supervisors/admins can use it. An agent's own-ticket close
- *         goes through `POST /transition {"status":"closed"}` instead,
- *         while the ticket is still owned.
+ * Matriz de atributos:
+ *   - ASSIGN: lo invoca AsignacionDeTicketController::asignar(). Rechaza con un 409
+ *     `ConflictoDeEstadoException` cuando el ticket ya está resolved/closed,
+ *     para todos los roles, antes incluso de que se ejecuten los chequeos de rol de abajo.
+ *   - CLOSE: lo invoca FlujoDeTicketController para resolve()/close()/
+ *     transition() (destino resolved/closed). NO pasa por la guarda de estado
+ *     de ASSIGN — un ticket resuelto es justamente el estado al que apunta un cierre
+ *     legítimo (ticket-closure-authorization design.md D1/D3).
+ *   ASSIGN y CLOSE comparten la misma lógica de roles una vez superada la guarda
+ *   de estado de ASSIGN:
+ *       ADMIN / SUPERVISOR: siempre permitido.
+ *       AGENT: permitido solo cuando el ticket ya está asignado a ese
+ *         agente (ticket.assignedAgentId === user.agent.id); denegado para
+ *         tickets sin asignar y tickets asignados a otro agente.
+ *         Nota (D3): todo ticket que llega a `POST /tickets/{id}/close`
+ *         está estructuralmente sin asignar para ese momento (resolver
+ *         desasigna), así que CLOSE deniega a todo ROLE_AGENT en ese endpoint —
+ *         solo supervisores/admins pueden usarlo. El cierre de un ticket propio
+ *         por parte de un agente pasa por `POST /transition {"status":"closed"}`,
+ *         mientras el ticket todavía tiene responsable.
  */
 final class TicketVoter extends Voter
 {
@@ -77,7 +77,7 @@ final class TicketVoter extends Voter
         /** @var Ticket $ticket */
         $ticket = $subject;
 
-        // For ASSIGN attribute, reject resolved/closed tickets with 409
+        // Para el atributo ASSIGN, rechaza los tickets resolved/closed con 409
         if ($attribute === self::ASSIGN) {
             $estado = $ticket->getEstado();
             if ($estado === EstadoDeTicket::RESUELTO->value || $estado === EstadoDeTicket::CERRADO->value) {
@@ -87,22 +87,22 @@ final class TicketVoter extends Voter
             }
         }
 
-        // ADMIN and SUPERVISOR can do everything on tickets
+        // ADMIN y SUPERVISOR pueden hacer todo sobre los tickets
         if ($this->security->isGranted('ROLE_SUPERVISOR')) {
             return true;
         }
 
-        // AGENT can only act on own tickets
+        // AGENT solo puede actuar sobre sus propios tickets
         if ($this->security->isGranted('ROLE_AGENT')) {
             $agente = $usuario->getAgente();
 
             if (null === $agente) {
-                return false; // R1: no linked agent → 403
+                return false; // R1: sin agente vinculado → 403
             }
 
-            // R2: AGENT cannot ASSIGN an unassigned ticket via this voter
-            // (this only governs the ASSIGN attribute, not visibility —
-            // ticket VIEW is unrestricted for all authenticated agents).
+            // R2: AGENT no puede hacer ASSIGN de un ticket sin asignar mediante este voter
+            // (esto solo rige el atributo ASSIGN, no la visibilidad —
+            // el VIEW de tickets es irrestricto para todos los agentes autenticados).
             if (null === $ticket->getAgenteAsignadoId()) {
                 return false;
             }

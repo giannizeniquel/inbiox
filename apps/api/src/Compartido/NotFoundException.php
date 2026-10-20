@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Compartido;
 
 /**
- * A use case could not find an entity it was asked to work with.
+ * Un caso de uso no encontró una entidad con la que se le pidió trabajar.
  *
- * Controllers map it to 404 with the exception message.
+ * Los controladores la mapean a 404 con el mensaje de la excepción.
  */
 class NotFoundException extends \RuntimeException
 {

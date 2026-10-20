@@ -3,8 +3,8 @@
 namespace App\Compartido\Realtime;
 
 /**
- * Maps PHP domain event FQCNs to TipoDeEventoEnTiempoReal enum values.
- * Single source of truth for the FQCN → enum string mapping.
+ * Mapea los FQCN de los eventos de dominio de PHP a valores del enum TipoDeEventoEnTiempoReal.
+ * Única fuente de verdad del mapeo de FQCN → string del enum.
  */
 final readonly class TipoDeEventoMapper
 {
@@ -18,9 +18,9 @@ final readonly class TipoDeEventoMapper
     ];
 
     /**
-     * Map a PHP FQCN to its corresponding TipoDeEventoEnTiempoReal string value.
+     * Mapea un FQCN de PHP a su valor string correspondiente de TipoDeEventoEnTiempoReal.
      *
-     * @throws \InvalidArgumentException if no mapping exists for the class name
+     * @throws \InvalidArgumentException si no existe un mapeo para el nombre de la clase
      */
     public function toEnum(string $phpClassName): string
     {
@@ -31,8 +31,8 @@ final readonly class TipoDeEventoMapper
     }
 
     /**
-     * Determine if a TicketUpdatedEvent represents a ticket.assigned event
-     * (has assignee_id in the payload).
+     * Determina si un TicketUpdatedEvent representa un evento ticket.assigned
+     * (tiene assignee_id en el payload).
      */
     public function isTicketAsignado(string $phpClassName, array $payload): bool
     {

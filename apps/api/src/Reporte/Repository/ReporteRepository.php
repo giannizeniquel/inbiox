@@ -11,16 +11,16 @@ use Doctrine\ORM\Query\Expr\Join;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * Repository for reporting queries.
+ * Repositorio para las queries de reportes.
  *
- * Provides aggregated metrics queries for tickets:
- * - First Response Time (FRT)
- * - Resolution Time (RT)
- * - Ticket counts by status
- * - Volume over time
- * - Agent performance
+ * Provee queries de métricas agregadas de tickets:
+ * - Tiempo de primera respuesta (FRT)
+ * - Tiempo de resolución (RT)
+ * - Cantidad de tickets por estado
+ * - Volumen a lo largo del tiempo
+ * - Rendimiento de los agentes
  *
- * All methods support optional ?int $agenteId parameter for ownership scoping.
+ * Todos los métodos admiten el parámetro opcional ?int $agenteId para el alcance por responsabilidad.
  */
 class ReporteRepository extends ServiceEntityRepository
 {
@@ -32,11 +32,11 @@ class ReporteRepository extends ServiceEntityRepository
     ) {
         parent::__construct($registry, Ticket::class);
         
-        // Detect database platform at construction time
-        $this->detectPlatform();
+        // Detectar la plataforma de base de datos al construir
+        $this->detectarPlataforma();
     }
     
-    private function detectPlatform(): void
+    private function detectarPlataforma(): void
     {
         try {
             $params = $this->entityManager->getConnection()->getParams();
@@ -48,11 +48,11 @@ class ReporteRepository extends ServiceEntityRepository
     }
 
     /**
-     * Get SQL expression for time difference between two columns.
+     * Obtiene la expresión SQL para la diferencia de tiempo entre dos columnas.
      *
-     * @param string $startColumn Start column (e.g., 't.created_at')
-     * @param string $endColumn End column (e.g., 't.first_response_at')
-     * @return string SQL expression for time difference in seconds
+     * @param string $startColumn Columna de inicio (p. ej., 't.created_at')
+     * @param string $endColumn Columna de fin (p. ej., 't.first_response_at')
+     * @return string Expresión SQL para la diferencia de tiempo en segundos
      */
     private function getTimeDiffExpression(string $startColumn, string $endColumn): string
     {
@@ -63,14 +63,14 @@ class ReporteRepository extends ServiceEntityRepository
     }
 
     /**
-     * Build the optional ticket filters shared by the native report queries
-     * and bind their parameters. The clauses keep a fixed order: agent,
-     * workspace, team. Returns an empty string when no filter is set.
+     * Construye los filtros opcionales de ticket compartidos por las queries nativas de reportes
+     * y vincula sus parámetros. Las cláusulas mantienen un orden fijo: agente,
+     * espacio de trabajo, equipo. Devuelve una cadena vacía cuando no hay ningún filtro.
      *
-     * @param array<string, mixed> $params Query parameters, extended in place
-     * @param string $alias Alias of the tickets table in the query
+     * @param array<string, mixed> $params Parámetros de la query, ampliados en el lugar
+     * @param string $alias Alias de la tabla tickets en la query
      */
-    private function ticketFilterClause(array &$params, string $alias, ?int $agenteId, ?string $phoneNumberId, ?int $equipoId): string
+    private function clausulaDeFiltroDeTicket(array &$params, string $alias, ?int $agenteId, ?string $phoneNumberId, ?int $equipoId): string
     {
         $clause = '';
 
@@ -93,20 +93,20 @@ class ReporteRepository extends ServiceEntityRepository
     }
 
     /**
-     * Get First Response Time metrics.
+     * Obtiene las métricas de tiempo de primera respuesta.
      *
-     * All values are in SECONDS (UTC-based).
-     * Use _minutes convenience fields for UI.
+     * Todos los valores están en SEGUNDOS (basados en UTC).
+     * Usar los campos de conveniencia _minutes para la UI.
      *
-     * Native SQL because the delay is a TIMESTAMPDIFF() between two columns,
-     * which DQL has no function for. Tested by Sprint09AReportingTest,
-     * ReportingRepositoryTeamFilterTest and ReportingControllerCharacterizationTest.
+     * SQL nativo porque la demora es un TIMESTAMPDIFF() entre dos columnas,
+     * para el que DQL no tiene función. Probado por Sprint09AReportingTest,
+     * ReportingRepositoryTeamFilterTest y ReportingControllerCharacterizationTest.
      *
-     * @param \DateTimeImmutable $from Start of date range (UTC)
-     * @param \DateTimeImmutable $to End of date range (UTC)
-     * @param int|null $agenteId Optional filter by assigned agent
-     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
-     * @param int|null $equipoId Optional filter by team (single-select)
+     * @param \DateTimeImmutable $from Inicio del rango de fechas (UTC)
+     * @param \DateTimeImmutable $to Fin del rango de fechas (UTC)
+     * @param int|null $agenteId Filtro opcional por agente asignado
+     * @param string|null $phoneNumberId Filtro opcional por phone_number_id del espacio de trabajo
+     * @param int|null $equipoId Filtro opcional por equipo (selección única)
      * @return array{avg_frt_seconds: float|null, min_frt_seconds: int|null, max_frt_seconds: int|null, avg_frt_minutes: float|null, min_frt_minutes: int|null, max_frt_minutes: int|null}
      */
     public function getMetricasDeFrt(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agenteId = null, ?string $phoneNumberId = null, ?int $equipoId = null): array
@@ -125,7 +125,7 @@ class ReporteRepository extends ServiceEntityRepository
         
         $params = ['from' => $from->format('Y-m-d H:i:s'), 'to' => $to->format('Y-m-d H:i:s')];
         
-        $sql .= $this->ticketFilterClause($params, 't', $agenteId, $phoneNumberId, $equipoId);
+        $sql .= $this->clausulaDeFiltroDeTicket($params, 't', $agenteId, $phoneNumberId, $equipoId);
 
         $result = $conn->fetchAssociative($sql, $params);
 
@@ -144,20 +144,20 @@ class ReporteRepository extends ServiceEntityRepository
     }
 
     /**
-     * Get Resolution Time metrics.
+     * Obtiene las métricas de tiempo de resolución.
      *
-     * All values are in SECONDS (UTC-based).
-     * Use _minutes convenience fields for UI.
+     * Todos los valores están en SEGUNDOS (basados en UTC).
+     * Usar los campos de conveniencia _minutes para la UI.
      *
-     * Native SQL because the delay is a TIMESTAMPDIFF() between two columns,
-     * which DQL has no function for. Tested by Sprint09AReportingTest,
-     * ReportingRepositoryTeamFilterTest and ReportingControllerCharacterizationTest.
+     * SQL nativo porque la demora es un TIMESTAMPDIFF() entre dos columnas,
+     * para el que DQL no tiene función. Probado por Sprint09AReportingTest,
+     * ReportingRepositoryTeamFilterTest y ReportingControllerCharacterizationTest.
      *
-     * @param \DateTimeImmutable $from Start of date range (UTC)
-     * @param \DateTimeImmutable $to End of date range (UTC)
-     * @param int|null $agenteId Optional filter by assigned agent
-     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
-     * @param int|null $equipoId Optional filter by team (single-select)
+     * @param \DateTimeImmutable $from Inicio del rango de fechas (UTC)
+     * @param \DateTimeImmutable $to Fin del rango de fechas (UTC)
+     * @param int|null $agenteId Filtro opcional por agente asignado
+     * @param string|null $phoneNumberId Filtro opcional por phone_number_id del espacio de trabajo
+     * @param int|null $equipoId Filtro opcional por equipo (selección única)
      * @return array{avg_rt_seconds: float|null, min_rt_seconds: int|null, max_rt_seconds: int|null, avg_rt_minutes: float|null, min_rt_minutes: int|null, max_rt_minutes: int|null}
      */
     public function getMetricasDeRt(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agenteId = null, ?string $phoneNumberId = null, ?int $equipoId = null): array
@@ -176,7 +176,7 @@ class ReporteRepository extends ServiceEntityRepository
         
         $params = ['from' => $from->format('Y-m-d H:i:s'), 'to' => $to->format('Y-m-d H:i:s')];
         
-        $sql .= $this->ticketFilterClause($params, 't', $agenteId, $phoneNumberId, $equipoId);
+        $sql .= $this->clausulaDeFiltroDeTicket($params, 't', $agenteId, $phoneNumberId, $equipoId);
 
         $result = $conn->fetchAssociative($sql, $params);
 
@@ -195,13 +195,13 @@ class ReporteRepository extends ServiceEntityRepository
     }
 
     /**
-     * Get ticket counts grouped by status.
+     * Obtiene la cantidad de tickets agrupada por estado.
      *
-     * @param \DateTimeImmutable $from Start of date range (UTC)
-     * @param \DateTimeImmutable $to End of date range (UTC)
-     * @param int|null $agenteId Optional filter by assigned agent
-     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
-     * @param int|null $equipoId Optional filter by team (single-select)
+     * @param \DateTimeImmutable $from Inicio del rango de fechas (UTC)
+     * @param \DateTimeImmutable $to Fin del rango de fechas (UTC)
+     * @param int|null $agenteId Filtro opcional por agente asignado
+     * @param string|null $phoneNumberId Filtro opcional por phone_number_id del espacio de trabajo
+     * @param int|null $equipoId Filtro opcional por equipo (selección única)
      * @return array{new: int, active: int, waiting: int, resolved: int, closed: int}
      */
     public function getConteosPorEstado(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agenteId = null, ?string $phoneNumberId = null, ?int $equipoId = null): array
@@ -250,17 +250,17 @@ class ReporteRepository extends ServiceEntityRepository
     }
 
     /**
-     * Get ticket volume grouped by day.
+     * Obtiene el volumen de tickets agrupado por día.
      *
-     * Native SQL because it groups by DATE(), which DQL has no function for.
-     * Tested by Sprint09AReportingTest, ReportingRepositoryTeamFilterTest and
+     * SQL nativo porque agrupa por DATE(), para la que DQL no tiene función.
+     * Probado por Sprint09AReportingTest, ReportingRepositoryTeamFilterTest y
      * ReportingControllerCharacterizationTest.
      *
-     * @param \DateTimeImmutable $from Start of date range (UTC)
-     * @param \DateTimeImmutable $to End of date range (UTC)
-     * @param int|null $agenteId Optional filter by assigned agent
-     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
-     * @param int|null $equipoId Optional filter by team (single-select)
+     * @param \DateTimeImmutable $from Inicio del rango de fechas (UTC)
+     * @param \DateTimeImmutable $to Fin del rango de fechas (UTC)
+     * @param int|null $agenteId Filtro opcional por agente asignado
+     * @param string|null $phoneNumberId Filtro opcional por phone_number_id del espacio de trabajo
+     * @param int|null $equipoId Filtro opcional por equipo (selección única)
      * @return array<int, array{date: string, tickets_created: int, tickets_resolved: int}>
      */
     public function getVolumenEnElTiempo(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agenteId = null, ?string $phoneNumberId = null, ?int $equipoId = null): array
@@ -268,9 +268,9 @@ class ReporteRepository extends ServiceEntityRepository
         $conn = $this->entityManager->getConnection();
         $params = ['from' => $from->format('Y-m-d H:i:s'), 'to' => $to->format('Y-m-d H:i:s')];
 
-        $filterClause = $this->ticketFilterClause($params, 't', $agenteId, $phoneNumberId, $equipoId);
+        $filterClause = $this->clausulaDeFiltroDeTicket($params, 't', $agenteId, $phoneNumberId, $equipoId);
 
-        // Created tickets grouped by date
+        // Tickets creados agrupados por fecha
         $sqlCreated = 'SELECT DATE(t.created_at) as date, COUNT(t.id) as tickets_created
         FROM tickets t
         WHERE t.created_at >= :from AND t.created_at < :to' . $filterClause . '
@@ -278,7 +278,7 @@ class ReporteRepository extends ServiceEntityRepository
 
         $createdResults = $conn->fetchAllAssociative($sqlCreated, $params);
 
-        // Resolved tickets grouped by date
+        // Tickets resueltos agrupados por fecha
         $sqlResolved = 'SELECT DATE(t.resolved_at) as date, COUNT(t.id) as tickets_resolved
         FROM tickets t
         WHERE t.resolved_at IS NOT NULL AND t.resolved_at >= :from AND t.resolved_at < :to' . $filterClause . '
@@ -286,7 +286,7 @@ class ReporteRepository extends ServiceEntityRepository
         
         $resolvedResults = $conn->fetchAllAssociative($sqlResolved, $params);
 
-        // Merge results
+        // Combinar los resultados
         $mapaDeVolumen = [];
         foreach ($createdResults as $row) {
             $date = $row['date'];
@@ -309,27 +309,27 @@ class ReporteRepository extends ServiceEntityRepository
             $mapaDeVolumen[$date]['tickets_resolved'] = (int) $row['tickets_resolved'];
         }
 
-        // Sort by date
+        // Ordenar por fecha
         ksort($mapaDeVolumen);
 
         return array_values($mapaDeVolumen);
     }
 
     /**
-     * Get agent performance metrics.
+     * Obtiene las métricas de rendimiento de los agentes.
      *
-     * All time values are in SECONDS (UTC-based).
-     * Use _minutes convenience fields for UI.
+     * Todos los valores de tiempo están en SEGUNDOS (basados en UTC).
+     * Usar los campos de conveniencia _minutes para la UI.
      *
-     * Native SQL because the averages use TIMESTAMPDIFF(), which DQL has no
-     * function for. Tested by Sprint09AReportingTest,
-     * ReportingRepositoryTeamFilterTest and ReportingControllerCharacterizationTest.
+     * SQL nativo porque los promedios usan TIMESTAMPDIFF(), para la que DQL no tiene
+     * función. Probado por Sprint09AReportingTest,
+     * ReportingRepositoryTeamFilterTest y ReportingControllerCharacterizationTest.
      *
-     * @param \DateTimeImmutable $from Start of date range (UTC)
-     * @param \DateTimeImmutable $to End of date range (UTC)
-     * @param int|null $agenteId Optional filter by specific agent
-     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
-     * @param int|null $equipoId Optional filter by team (single-select)
+     * @param \DateTimeImmutable $from Inicio del rango de fechas (UTC)
+     * @param \DateTimeImmutable $to Fin del rango de fechas (UTC)
+     * @param int|null $agenteId Filtro opcional por un agente específico
+     * @param string|null $phoneNumberId Filtro opcional por phone_number_id del espacio de trabajo
+     * @param int|null $equipoId Filtro opcional por equipo (selección única)
      * @return array<int, array{agent_id: int, agent_name: string|null, tickets_assigned: int, tickets_resolved: int, current_active_tickets: int, max_active_tickets: int, current_load: float, avg_frt_seconds: float|null, avg_frt_minutes: float|null, avg_rt_seconds: float|null, avg_rt_minutes: float|null}>
      */
     public function getRendimientoDeAgentes(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agenteId = null, ?string $phoneNumberId = null, ?int $equipoId = null): array
@@ -340,8 +340,8 @@ class ReporteRepository extends ServiceEntityRepository
         $rtTimeDiff = $this->getTimeDiffExpression('t.created_at', 't.resolved_at');
 
         $params = ['from' => $from->format('Y-m-d H:i:s'), 'to' => $to->format('Y-m-d H:i:s')];
-        $subFilterClause = $this->ticketFilterClause($params, 't2', null, $phoneNumberId, $equipoId);
-        $joinFilterClause = $this->ticketFilterClause($params, 't', null, $phoneNumberId, $equipoId);
+        $subFilterClause = $this->clausulaDeFiltroDeTicket($params, 't2', null, $phoneNumberId, $equipoId);
+        $joinFilterClause = $this->clausulaDeFiltroDeTicket($params, 't', null, $phoneNumberId, $equipoId);
 
         $sql = "SELECT
             a.id as agent_id,
@@ -395,14 +395,14 @@ class ReporteRepository extends ServiceEntityRepository
     }
 
     /**
-     * Get per-agent active ticket count vs max capacity.
+     * Obtiene, por agente, la cantidad de tickets activos frente a la capacidad máxima.
      *
-     * Native SQL kept from the original implementation: DQL could express this
-     * query, and converting it is a separate change from this cleanup. Tested
-     * by ReportingV2Test and ReportingControllerCharacterizationTest.
+     * SQL nativo conservado de la implementación original: DQL podría expresar esta
+     * query, y convertirla es un cambio aparte de esta limpieza. Probado
+     * por ReportingV2Test y ReportingControllerCharacterizationTest.
      *
-     * @param int|null $agenteId Optional filter by specific agent
-     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
+     * @param int|null $agenteId Filtro opcional por un agente específico
+     * @param string|null $phoneNumberId Filtro opcional por phone_number_id del espacio de trabajo
      * @return array<int, array{agent_id: int, agent_name: string, active_tickets: int, max_capacity: int, load_percent: float}>
      */
     public function getCargaDeAgentes(?int $agenteId = null, ?string $phoneNumberId = null): array
@@ -410,7 +410,7 @@ class ReporteRepository extends ServiceEntityRepository
         $conn = $this->entityManager->getConnection();
 
         $params = [];
-        $workspaceClause = $this->ticketFilterClause($params, 't', null, $phoneNumberId, null);
+        $workspaceClause = $this->clausulaDeFiltroDeTicket($params, 't', null, $phoneNumberId, null);
 
         $agentClause = '';
         if ($agenteId !== null) {
@@ -448,16 +448,16 @@ class ReporteRepository extends ServiceEntityRepository
     }
 
     /**
-     * Get tickets where assigned_agent_id IS NULL.
+     * Obtiene los tickets cuyo assigned_agent_id IS NULL.
      *
-     * Native SQL because `created_at` is returned as MySQL formats it
-     * (`Y-m-d H:i:s`); DQL would hydrate it into a DateTime object. Tested by
-     * ReportingV2Test and ReportingControllerCharacterizationTest.
+     * SQL nativo porque `created_at` se devuelve con el formato de MySQL
+     * (`Y-m-d H:i:s`); DQL lo hidrataría en un objeto DateTime. Probado por
+     * ReportingV2Test y ReportingControllerCharacterizationTest.
      *
-     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
-     * @param \DateTimeImmutable|null $from Optional start of date range
-     * @param \DateTimeImmutable|null $to Optional end of date range
-     * @param int $limit Maximum results (default 50)
+     * @param string|null $phoneNumberId Filtro opcional por phone_number_id del espacio de trabajo
+     * @param \DateTimeImmutable|null $from Inicio opcional del rango de fechas
+     * @param \DateTimeImmutable|null $to Fin opcional del rango de fechas
+     * @param int $limit Máximo de resultados (por defecto 50)
      * @return array{count: int, tickets: array<int, array{id: int, contact_name: string|null, created_at: string, priority: string}>}
      */
     public function getSinAsignar(?string $phoneNumberId = null, ?\DateTimeImmutable $from = null, ?\DateTimeImmutable $to = null, int $limit = 50): array
@@ -475,7 +475,7 @@ class ReporteRepository extends ServiceEntityRepository
 
         $params = [];
 
-        $sql .= $this->ticketFilterClause($params, 't', null, $phoneNumberId, null);
+        $sql .= $this->clausulaDeFiltroDeTicket($params, 't', null, $phoneNumberId, null);
 
         if ($from !== null) {
             $sql .= ' AND t.created_at >= :from';
@@ -487,7 +487,7 @@ class ReporteRepository extends ServiceEntityRepository
             $params['to'] = $to->format('Y-m-d H:i:s');
         }
 
-        // Count first
+        // Contar primero
         $countSql = str_replace(
             'SELECT t.id, c.name as contact_name, t.created_at, t.priority',
             'SELECT COUNT(*) as cnt',
@@ -517,15 +517,15 @@ class ReporteRepository extends ServiceEntityRepository
     }
 
     /**
-     * Get FRT aggregated by day within a date range.
+     * Obtiene el FRT agregado por día dentro de un rango de fechas.
      *
-     * Native SQL because it uses TIMESTAMPDIFF() and groups by DATE(), which
-     * DQL has no functions for. Tested by ReportingV2Test and
+     * SQL nativo porque usa TIMESTAMPDIFF() y agrupa por DATE(), funciones que
+     * DQL no tiene. Probado por ReportingV2Test y
      * ReportingControllerCharacterizationTest.
      *
-     * @param \DateTimeImmutable $from Start of date range (UTC)
-     * @param \DateTimeImmutable $to End of date range (UTC)
-     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
+     * @param \DateTimeImmutable $from Inicio del rango de fechas (UTC)
+     * @param \DateTimeImmutable $to Fin del rango de fechas (UTC)
+     * @param string|null $phoneNumberId Filtro opcional por phone_number_id del espacio de trabajo
      * @return array<int, array{date: string, avg_frt_seconds: float, ticket_count: int}>
      */
     public function getTendenciaDeFrt(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null): array
@@ -547,7 +547,7 @@ class ReporteRepository extends ServiceEntityRepository
             'to' => $to->format('Y-m-d H:i:s'),
         ];
 
-        $sql .= $this->ticketFilterClause($params, 't', null, $phoneNumberId, null);
+        $sql .= $this->clausulaDeFiltroDeTicket($params, 't', null, $phoneNumberId, null);
 
         $sql .= ' GROUP BY DATE(t.created_at) ORDER BY date ASC';
 
@@ -566,18 +566,18 @@ class ReporteRepository extends ServiceEntityRepository
     }
 
     /**
-     * Get ticket volume grouped by day-of-week x hour for heatmap.
+     * Obtiene el volumen de tickets agrupado por día de la semana x hora para el mapa de calor.
      *
-     * dayOfWeek is normalized to ISO: 1=Monday, 7=Sunday.
-     * MySQL DAYOFWEEK: 1=Sunday, 7=Saturday → convert via (dow+5)%7+1
+     * dayOfWeek se normaliza a ISO: 1=lunes, 7=domingo.
+     * DAYOFWEEK de MySQL: 1=domingo, 7=sábado → se convierte con (dow+5)%7+1
      *
-     * Native SQL because it groups by DAYOFWEEK() and HOUR(), which DQL has
-     * no functions for. Tested by ReportingV2Test and
+     * SQL nativo porque agrupa por DAYOFWEEK() y HOUR(), funciones que DQL
+     * no tiene. Probado por ReportingV2Test y
      * ReportingControllerCharacterizationTest.
      *
-     * @param \DateTimeImmutable $from Start of date range (UTC)
-     * @param \DateTimeImmutable $to End of date range (UTC)
-     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
+     * @param \DateTimeImmutable $from Inicio del rango de fechas (UTC)
+     * @param \DateTimeImmutable $to Fin del rango de fechas (UTC)
+     * @param string|null $phoneNumberId Filtro opcional por phone_number_id del espacio de trabajo
      * @return array<int, array{day_of_week: int, hour: int, count: int}>
      */
     public function getMapaDeCalor(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null): array
@@ -585,13 +585,13 @@ class ReporteRepository extends ServiceEntityRepository
         $conn = $this->entityManager->getConnection();
 
         if ($this->isPostgres) {
-            // PostgreSQL: EXTRACT(DOW) → 0=Sunday, 6=Saturday
-            // Normalize to ISO: (dow+6)%7+1 → 1=Monday, 7=Sunday
+            // PostgreSQL: EXTRACT(DOW) → 0=domingo, 6=sábado
+            // Normalizar a ISO: (dow+6)%7+1 → 1=lunes, 7=domingo
             $dowExpr = "((EXTRACT(DOW FROM t.created_at) + 6) % 7 + 1)";
             $hourExpr = "EXTRACT(HOUR FROM t.created_at)";
         } else {
-            // MySQL: DAYOFWEEK → 1=Sunday, 7=Saturday
-            // Normalize to ISO: (dow+5)%7+1 → 1=Monday, 7=Sunday
+            // MySQL: DAYOFWEEK → 1=domingo, 7=sábado
+            // Normalizar a ISO: (dow+5)%7+1 → 1=lunes, 7=domingo
             $dowExpr = "((DAYOFWEEK(t.created_at) + 5) % 7 + 1)";
             $hourExpr = "HOUR(t.created_at)";
         }
@@ -608,7 +608,7 @@ class ReporteRepository extends ServiceEntityRepository
             'to' => $to->format('Y-m-d H:i:s'),
         ];
 
-        $sql .= $this->ticketFilterClause($params, 't', null, $phoneNumberId, null);
+        $sql .= $this->clausulaDeFiltroDeTicket($params, 't', null, $phoneNumberId, null);
 
         $sql .= ' GROUP BY day_of_week, hour ORDER BY day_of_week ASC, hour ASC';
 
@@ -630,15 +630,15 @@ class ReporteRepository extends ServiceEntityRepository
     }
 
     /**
-     * Get contacts with >= threshold tickets in the last N days.
+     * Obtiene los contactos con >= umbral tickets en los últimos N días.
      *
-     * Native SQL kept from the original implementation: DQL could express this
-     * query, and converting it is a separate change from this cleanup. Tested
-     * by ReportingV2Test and ReportingControllerCharacterizationTest.
+     * SQL nativo conservado de la implementación original: DQL podría expresar esta
+     * query, y convertirla es un cambio aparte de esta limpieza. Probado
+     * por ReportingV2Test y ReportingControllerCharacterizationTest.
      *
-     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
-     * @param int $umbral Minimum ticket count (default 3)
-     * @param int $days Lookback window in days (default 90)
+     * @param string|null $phoneNumberId Filtro opcional por phone_number_id del espacio de trabajo
+     * @param int $umbral Cantidad mínima de tickets (por defecto 3)
+     * @param int $days Ventana retrospectiva en días (por defecto 90)
      * @return array<int, array{contact_id: int, contact_name: string|null, email: string|null, ticket_count: int, last_ticket_at: string}>
      */
     public function getContactosRecurrentes(?string $phoneNumberId = null, int $umbral = 3, int $days = 90): array
@@ -659,7 +659,7 @@ class ReporteRepository extends ServiceEntityRepository
 
         $params = ['since' => $since->format('Y-m-d H:i:s')];
 
-        $sql .= $this->ticketFilterClause($params, 't', null, $phoneNumberId, null);
+        $sql .= $this->clausulaDeFiltroDeTicket($params, 't', null, $phoneNumberId, null);
 
         $sql .= ' GROUP BY c.id, c.name, c.email
                   HAVING COUNT(t.id) >= :threshold
@@ -684,16 +684,16 @@ class ReporteRepository extends ServiceEntityRepository
     }
 
     /**
-     * Get tickets that transitioned out of resolved status (auto_reopened events).
+     * Obtiene los tickets que salieron del estado resuelto (eventos auto_reopened).
      *
-     * Native SQL because `resolved_at` and `reopened_at` are returned as MySQL
-     * formats them (`Y-m-d H:i:s`); DQL would hydrate them into DateTime
-     * objects. Tested by ReportingV2Test and ReportingControllerCharacterizationTest.
+     * SQL nativo porque `resolved_at` y `reopened_at` se devuelven con el formato
+     * de MySQL (`Y-m-d H:i:s`); DQL los hidrataría en objetos DateTime.
+     * Probado por ReportingV2Test y ReportingControllerCharacterizationTest.
      *
-     * @param \DateTimeImmutable $from Start of date range (UTC)
-     * @param \DateTimeImmutable $to End of date range (UTC)
-     * @param string|null $phoneNumberId Optional filter by workspace phone_number_id
-     * @param int $limit Maximum results (default 100)
+     * @param \DateTimeImmutable $from Inicio del rango de fechas (UTC)
+     * @param \DateTimeImmutable $to Fin del rango de fechas (UTC)
+     * @param string|null $phoneNumberId Filtro opcional por phone_number_id del espacio de trabajo
+     * @param int $limit Máximo de resultados (por defecto 100)
      * @return array<int, array{ticket_id: int, contact_name: string|null, resolved_at: string|null, reopened_at: string, current_status: string}>
      */
     public function getReabiertos(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null, int $limit = 100): array
@@ -717,7 +717,7 @@ class ReporteRepository extends ServiceEntityRepository
             'to' => $to->format('Y-m-d H:i:s'),
         ];
 
-        $sql .= $this->ticketFilterClause($params, 't', null, $phoneNumberId, null);
+        $sql .= $this->clausulaDeFiltroDeTicket($params, 't', null, $phoneNumberId, null);
 
         $sql .= ' ORDER BY te.created_at DESC LIMIT :limit';
         $params['limit'] = $limit;
@@ -739,16 +739,16 @@ class ReporteRepository extends ServiceEntityRepository
     }
 
     /**
-     * Get the attribution cutoff — the earliest `created_at` among any
-     * `sender_type IN ('agent', 'automatic', 'contact')` message.
+     * Obtiene el corte de atribución: el `created_at` más antiguo entre los mensajes
+     * con `sender_type IN ('agent', 'automatic', 'contact')`.
      *
-     * Messages before this timestamp have `sender_type IS NULL` (legacy,
-     * pre-attribution-rollout rows) and must be excluded from response-delay
-     * sampling and attribution everywhere. Returns null only when the whole
-     * `messages` table is unattributed (no non-NULL sender_type row exists).
+     * Los mensajes anteriores a este timestamp tienen `sender_type IS NULL` (filas legacy,
+     * previas al despliegue de la atribución) y deben excluirse del muestreo de demora
+     * de respuesta y de la atribución en todas partes. Devuelve null solo cuando toda la
+     * tabla `messages` está sin atribuir (no existe ninguna fila con sender_type no NULL).
      *
-     * Native SQL because it combines three `LIMIT 1` subqueries with UNION
-     * ALL, which DQL cannot express. Tested by ReportingResponseDelayTest.
+     * SQL nativo porque combina tres subqueries `LIMIT 1` con UNION
+     * ALL, que DQL no puede expresar. Probado por ReportingResponseDelayTest.
      */
     public function getCorteDeAtribucion(): ?\DateTimeImmutable
     {
@@ -769,22 +769,22 @@ class ReporteRepository extends ServiceEntityRepository
     }
 
     /**
-     * Get aggregate + per-agent response-delay metrics.
+     * Obtiene las métricas de demora de respuesta agregadas y por agente.
      *
-     * Episode-partition scoping: a message belongs to the ticket most recently
-     * opened at or before it on the same conversation (`[ticket.created_at,
-     * next_ticket.created_at)`). Burst collapse: consecutive inbound messages
-     * with no intervening `sender_type='agent'` reply are one run — exactly
-     * one delay sample per run, measured from the run's first message to the
-     * next agent reply. `automatic` messages never split a burst nor stop the
-     * clock. Legacy `sender_type IS NULL` rows (before the attribution
-     * cutoff) are excluded from the whole stream. Range filter is on
-     * `tickets.created_at` (episode start), not reply timestamp.
+     * Alcance por partición de episodios: un mensaje pertenece al ticket abierto más
+     * recientemente en el mismo momento o antes que él en la misma conversación (`[ticket.created_at,
+     * next_ticket.created_at)`). Colapso de ráfagas: los mensajes entrantes consecutivos
+     * sin una respuesta `sender_type='agent'` intermedia forman una corrida: exactamente
+     * una muestra de demora por corrida, medida desde el primer mensaje de la corrida hasta la
+     * siguiente respuesta de agente. Los mensajes `automatic` nunca dividen una ráfaga ni detienen el
+     * reloj. Las filas legacy `sender_type IS NULL` (anteriores al corte de
+     * atribución) se excluyen de todo el flujo. El filtro de rango es sobre
+     * `tickets.created_at` (inicio del episodio), no sobre el timestamp de la respuesta.
      *
-     * Native SQL because the burst pairing needs CTEs and window functions
-     * (`LEAD() OVER`, `SUM() OVER`, `ROW_NUMBER() OVER`, `COUNT() OVER`), which
-     * neither DQL nor DBAL's QueryBuilder can express. Parameters are bound.
-     * Tested by ReportingResponseDelayTest and ReportingControllerCharacterizationTest.
+     * SQL nativo porque el emparejamiento de ráfagas necesita CTE y funciones de ventana
+     * (`LEAD() OVER`, `SUM() OVER`, `ROW_NUMBER() OVER`, `COUNT() OVER`), que
+     * ni DQL ni el QueryBuilder de DBAL pueden expresar. Los parámetros van vinculados.
+     * Probado por ReportingResponseDelayTest y ReportingControllerCharacterizationTest.
      *
      * @return array{aggregate: array{avg_delay_seconds: float|null, sample_count: int, unanswered_inbound_count: int}, per_agent: array<int, array{agent_id: int, agent_name: string|null, avg_delay_seconds: float|null, sample_count: int}>}
      */
@@ -796,8 +796,8 @@ class ReporteRepository extends ServiceEntityRepository
     }
 
     /**
-     * One row per replying agent (and one with a null agent for the bursts
-     * nobody answered), with its sample count, delay sum and unanswered count.
+     * Una fila por cada agente que respondió (y una con agente null para las ráfagas
+     * que nadie respondió), con su cantidad de muestras, su suma de demoras y su cantidad sin responder.
      *
      * @return list<array<string, mixed>>
      */
@@ -811,7 +811,7 @@ class ReporteRepository extends ServiceEntityRepository
             'to' => $to->format('Y-m-d H:i:s'),
         ];
 
-        $workspaceClause = $this->ticketFilterClause($params, 't', null, $phoneNumberId, null);
+        $workspaceClause = $this->clausulaDeFiltroDeTicket($params, 't', null, $phoneNumberId, null);
 
         $sql = "WITH cutoff AS (
                 SELECT MIN(c) AS data_available_from FROM (
@@ -882,7 +882,7 @@ class ReporteRepository extends ServiceEntityRepository
     }
 
     /**
-     * Fold the per-agent rows into the aggregate and the per-agent list.
+     * Combina las filas por agente en el agregado y en la lista por agente.
      *
      * @param list<array<string, mixed>> $rows
      * @return array{aggregate: array{avg_delay_seconds: float|null, sample_count: int, unanswered_inbound_count: int}, per_agent: array<int, array{agent_id: int, agent_name: string|null, avg_delay_seconds: float|null, sample_count: int}>}
@@ -925,18 +925,18 @@ class ReporteRepository extends ServiceEntityRepository
     }
 
     /**
-     * Get per-ticket participation drill-down: participants, per-agent
-     * delay samples, automatic activity, and burst pairs — scoped to the
-     * ticket's own episode. Reuses the same burst-based sampling and
-     * clock start/stop rules as {@see getMetricasDeDemoraDeRespuesta()}.
+     * Obtiene el detalle de participación por ticket: participantes, muestras de demora
+     * por agente, actividad automática y pares de ráfagas, acotados al
+     * propio episodio del ticket. Reutiliza el mismo muestreo basado en ráfagas y las
+     * reglas de inicio y detención del reloj que {@see getMetricasDeDemoraDeRespuesta()}.
      *
-     * Native SQL because the burst pairing needs CTEs and window functions
-     * (`SUM() OVER`, `ROW_NUMBER() OVER`, `COUNT() OVER`), which neither DQL
-     * nor DBAL's QueryBuilder can express. Parameters are bound. Tested
-     * directly by the `testGetTicketParticipation*` and degenerate-tie cases
-     * in `tests/Integration/ReportingResponseDelayTest.php`.
+     * SQL nativo porque el emparejamiento de ráfagas necesita CTE y funciones de ventana
+     * (`SUM() OVER`, `ROW_NUMBER() OVER`, `COUNT() OVER`), que ni DQL
+     * ni el QueryBuilder de DBAL pueden expresar. Los parámetros van vinculados. Probado
+     * directamente por los casos `testGetTicketParticipation*` y de empate degenerado
+     * de `tests/Integration/ReportingResponseDelayTest.php`.
      *
-     * @return array{ticket_id: int, data_available_from: \DateTimeImmutable|null, partial_data: bool, participants: array<int, array{agent_id: int, agent_name: string|null, message_count: int, sample_count: int, avg_delay_seconds: float|null}>, automatic_message_count: int, unanswered_inbound_count: int, pairs: array<int, array{run_start_at: string, reply_at: string|null, agent_id: int|null, delay_seconds: float|null}>}|null null when the ticket does not exist or has no conversation
+     * @return array{ticket_id: int, data_available_from: \DateTimeImmutable|null, partial_data: bool, participants: array<int, array{agent_id: int, agent_name: string|null, message_count: int, sample_count: int, avg_delay_seconds: float|null}>, automatic_message_count: int, unanswered_inbound_count: int, pairs: array<int, array{run_start_at: string, reply_at: string|null, agent_id: int|null, delay_seconds: float|null}>}|null null cuando el ticket no existe o no tiene conversación
      */
     public function getParticipacionEnTicket(int $ticketId): ?array
     {
@@ -946,9 +946,9 @@ class ReporteRepository extends ServiceEntityRepository
         }
 
         $corte = $this->getCorteDeAtribucion();
-        $pairRows = $this->fetchFilasDeParesDeParticipacion($episodio, $corte);
+        $filasDePares = $this->fetchFilasDeParesDeParticipacion($episodio, $corte);
         $cantidadesDeMensajes = $this->countMensajesDelEpisodioPorRemitente($episodio);
-        [$pairs, $estadisticasDeParticipantes, $cantidadDeEntrantesSinResponder] = $this->plegarParesDeParticipacion($pairRows);
+        [$pairs, $estadisticasDeParticipantes, $cantidadDeEntrantesSinResponder] = $this->plegarParesDeParticipacion($filasDePares);
         $participantes = $this->armarParticipantes($cantidadesDeMensajes['by_agent'], $estadisticasDeParticipantes);
 
         return [
@@ -963,11 +963,11 @@ class ReporteRepository extends ServiceEntityRepository
     }
 
     /**
-     * The ticket's episode: its conversation, its own creation time as the
-     * start, and the next ticket's creation time on that conversation as the
-     * end (null for the latest ticket).
+     * El episodio del ticket: su conversación, su propia hora de creación como
+     * inicio y la hora de creación del siguiente ticket de esa conversación como
+     * fin (null para el ticket más reciente).
      *
-     * @return array{conversation_id: int, start: string, end: string|null}|null null when the ticket does not exist or has no conversation
+     * @return array{conversation_id: int, start: string, end: string|null}|null null cuando el ticket no existe o no tiene conversación
      */
     private function findEpisodioDeParticipacion(int $ticketId): ?array
     {
@@ -985,9 +985,9 @@ class ReporteRepository extends ServiceEntityRepository
         $conversacionId = (int) $ticketRow['conversation_id'];
         $inicioDeEpisodio = $ticketRow['created_at'];
 
-        // Episode end: next ticket on the same conversation, (created_at, id)
-        // lexicographic tie-break — same order as the LEAD() version, so both
-        // queries agree on episode bounds (see design.md "degenerate tie" note).
+        // Fin del episodio: siguiente ticket de la misma conversación, con desempate
+        // lexicográfico por (created_at, id), el mismo orden que la versión con LEAD(), para que ambas
+        // queries coincidan en los límites del episodio (ver la nota "degenerate tie" de design.md).
         $episodeEndRow = $conn->fetchAssociative(
             'SELECT MIN(t2.created_at) AS episode_end FROM tickets t2
              WHERE t2.conversation_id = :conversationId
@@ -1004,8 +1004,8 @@ class ReporteRepository extends ServiceEntityRepository
     }
 
     /**
-     * One row per inbound burst of the episode (attributed messages after
-     * the cutoff only), joined to the agent reply that closed it, if any.
+     * Una fila por cada ráfaga entrante del episodio (solo mensajes atribuidos posteriores
+     * al corte), unida a la respuesta de agente que la cerró, si la hay.
      *
      * @param array{conversation_id: int, start: string, end: string|null} $episodio
      * @return list<array<string, mixed>>
@@ -1065,9 +1065,9 @@ class ReporteRepository extends ServiceEntityRepository
     }
 
     /**
-     * Rollup over ALL episode messages (including legacy sender_type IS
-     * NULL rows) for message counts / automatic activity / unattributed
-     * detection — independent of the cutoff-filtered seq/bursts pipeline.
+     * Agregado sobre TODOS los mensajes del episodio (incluidas las filas legacy sender_type IS
+     * NULL) para los conteos de mensajes, la actividad automática y la detección de mensajes
+     * sin atribuir, de forma independiente del pipeline seq/ráfagas filtrado por el corte.
      *
      * @param array{conversation_id: int, start: string, end: string|null} $episodio
      * @return array{by_agent: array<int, int>, automatic: int, unattributed: int}
@@ -1112,19 +1112,19 @@ class ReporteRepository extends ServiceEntityRepository
     }
 
     /**
-     * Turn the burst rows into the public pairs, per-agent delay totals and
-     * the number of bursts nobody answered.
+     * Convierte las filas de ráfagas en los pares públicos, los totales de demora por agente y
+     * la cantidad de ráfagas que nadie respondió.
      *
-     * @param list<array<string, mixed>> $pairRows
+     * @param list<array<string, mixed>> $filasDePares
      * @return array{0: list<array{run_start_at: string, reply_at: string|null, agent_id: int|null, delay_seconds: float|null}>, 1: array<int, array{agent_name: string|null, sample_count: int, sum_delay: float}>, 2: int}
      */
-    private function plegarParesDeParticipacion(array $pairRows): array
+    private function plegarParesDeParticipacion(array $filasDePares): array
     {
         $estadisticasDeParticipantes = [];
         $cantidadDeEntrantesSinResponder = 0;
         $pairs = [];
 
-        foreach ($pairRows as $row) {
+        foreach ($filasDePares as $row) {
             $agenteId = $row['agent_id'] !== null ? (int) $row['agent_id'] : null;
             $segundosDeDemora = $row['delay_seconds'] !== null ? (float) $row['delay_seconds'] : null;
 
@@ -1155,8 +1155,8 @@ class ReporteRepository extends ServiceEntityRepository
     }
 
     /**
-     * One entry per agent who wrote in the episode or answered a burst,
-     * sorted by agent id.
+     * Una entrada por cada agente que escribió en el episodio o respondió una ráfaga,
+     * ordenadas por id de agente.
      *
      * @param array<int, int> $mensajesPorAgente
      * @param array<int, array{agent_name: string|null, sample_count: int, sum_delay: float}> $estadisticasDeParticipantes
@@ -1166,9 +1166,9 @@ class ReporteRepository extends ServiceEntityRepository
     {
         $conn = $this->entityManager->getConnection();
 
-        // Fallback agent-name lookup: an agent who replied without a
-        // preceding unanswered burst (unprompted message) has message_count
-        // but never appears in $participantStats.
+        // Búsqueda de respaldo del nombre del agente: un agente que respondió sin una
+        // ráfaga previa sin responder (mensaje no solicitado) tiene message_count
+        // pero nunca aparece en $participantStats.
         $agenteIdsFaltantes = array_diff(array_keys($mensajesPorAgente), array_keys($estadisticasDeParticipantes));
         $nombresDeAgentes = [];
         if (!empty($agenteIdsFaltantes)) {
@@ -1200,13 +1200,13 @@ class ReporteRepository extends ServiceEntityRepository
     }
 
     /**
-     * Empty the tables that `app:seed-reports` refills: ticket_events,
-     * tickets, agent_shifts, contacts and agents, in that order, with foreign
-     * key checks off while it runs. Test database only; the command guards it.
+     * Vacía las tablas que `app:seed-reports` vuelve a llenar: ticket_events,
+     * tickets, agent_shifts, contacts y agents, en ese orden, con la verificación de claves
+     * foráneas desactivada mientras se ejecuta. Solo para la base de datos de prueba; el comando lo protege.
      *
-     * Native SQL because DQL and the QueryBuilder have no TRUNCATE and no
-     * session variables (`SET FOREIGN_KEY_CHECKS`). TRUNCATE commits
-     * implicitly in MySQL, so never call this inside a transaction.
+     * SQL nativo porque ni DQL ni el QueryBuilder tienen TRUNCATE ni
+     * variables de sesión (`SET FOREIGN_KEY_CHECKS`). TRUNCATE hace commit
+     * implícito en MySQL, así que nunca debe llamarse dentro de una transacción.
      */
     public function truncateSeedTables(): void
     {

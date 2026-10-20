@@ -9,16 +9,16 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
- * Provides sequence-based resync of outbox events for a ticket.
+ * Ofrece la resincronización por sequence de los eventos del outbox de un ticket.
  *
- * The frontend calls this after reconnection or gap detection to recover
- * missed events. JWT auth mirrors the Mercure SSE subscription model:
- * the JWT must include "ticket/{id}" in its subscribe topics.
+ * El frontend lo llama después de una reconexión o de detectar un hueco para recuperar
+ * los eventos perdidos. La autenticación JWT replica el modelo de suscripción SSE de Mercure:
+ * el JWT debe incluir "ticket/{id}" en sus topics de suscripción.
  *
- * Response shape uses `events`/`lastSequence`/`hasMore` (NOT data/meta).
+ * La forma de la respuesta usa `events`/`lastSequence`/`hasMore` (NO data/meta).
  *
- * NOTE: The `/api/mercure/token` endpoint has been moved to MercureTokenController.
- * This controller only handles ticket event resync.
+ * NOTA: el endpoint `/api/mercure/token` se movió a MercureTokenController.
+ * Este controlador solo se ocupa de la resincronización de eventos de ticket.
  */
 final class EventosDeTicketController
 {
@@ -30,19 +30,19 @@ final class EventosDeTicketController
     #[Route('/api/tickets/{id}/events', name: 'app_ticket_events_resync', methods: ['GET'])]
     public function listarDesde(int $id, Request $request): JsonResponse
     {
-        // 1. Auth: validate JWT
-        $token = $this->resolveJwt($request);
+        // 1. Auth: valida el JWT
+        $token = $this->resolverJwt($request);
         if ($token === null) {
             return new JsonResponse(['error' => 'Unauthorized — missing or invalid JWT'], 401);
         }
 
-        // 2. Validate JWT topic includes 'tickets'
+        // 2. Valida que el topic del JWT incluya 'tickets'
         $topics = $this->jwtService->extractTopics($token);
         if ($topics === null || !\in_array('tickets', $topics, true)) {
             return new JsonResponse(['error' => 'Forbidden — JWT does not grant access to this ticket'], 403);
         }
 
-        // 3. Validate afterSequence parameter
+        // 3. Valida el parámetro afterSequence
         $afterSequence = $request->query->getInt('afterSequence', 0);
         if ($afterSequence < -1) {
             return new JsonResponse(['error' => 'afterSequence must be >= -1'], 400);
@@ -52,11 +52,11 @@ final class EventosDeTicketController
     }
 
     /**
-     * Resolve JWT from Authorization header or mercureAuthorization cookie.
+     * Resuelve el JWT desde el header Authorization o la cookie mercureAuthorization.
      */
-    private function resolveJwt(Request $request): ?\Lcobucci\JWT\Token
+    private function resolverJwt(Request $request): ?\Lcobucci\JWT\Token
     {
-        // Try Authorization header first
+        // Primero intenta con el header Authorization
         $authHeader = $request->headers->get('Authorization');
         if ($authHeader !== null && str_starts_with($authHeader, 'Bearer ')) {
             $tokenString = substr($authHeader, 7);
@@ -66,7 +66,7 @@ final class EventosDeTicketController
             }
         }
 
-        // Fall back to mercureAuthorization cookie (same cookie the Mercure hub uses)
+        // Si no, usa la cookie mercureAuthorization (la misma cookie que usa el hub de Mercure)
         $cookieToken = $request->cookies->get('mercureAuthorization');
         if ($cookieToken !== null) {
             $token = $this->jwtService->verifyToken($cookieToken);

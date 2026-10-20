@@ -12,13 +12,13 @@ use League\Csv\Info;
 use League\Csv\Reader;
 
 /**
- * Bulk CSV contact import.
+ * Importación masiva de contactos por CSV.
  *
- * Parses the uploaded file, enforces file/row limits before any write, then
- * calls CreateContactoUseCase once per row — reusing its phone/whitelist
- * validation instead of duplicating it. Continues past per-row failures and
- * reports a partial-success summary (see design.md § EntityManager survival
- * across a duplicate row for the isOpen()/resetManager() defense-in-depth).
+ * Interpreta el archivo subido, aplica los límites de archivo/filas antes de cualquier escritura y luego
+ * llama a CreateContactoUseCase una vez por fila — reutilizando su validación de teléfono/lista blanca
+ * en lugar de duplicarla. Sigue adelante ante fallos por fila e
+ * informa un resumen de éxito parcial (ver design.md § supervivencia del EntityManager
+ * ante una fila duplicada, para la defensa en profundidad con isOpen()/resetManager()).
  */
 final class ImportarContactosDesdeCsvUseCase
 {
@@ -36,7 +36,7 @@ final class ImportarContactosDesdeCsvUseCase
     ) {}
 
     /**
-     * @throws ImportacionRechazadaException whole-file reason -> HTTP 400
+     * @throws ImportacionRechazadaException motivo de todo el archivo -> HTTP 400
      */
     public function execute(string $path, ?string $originalName): ResultadoDeImportacionDeContactosDTO
     {
@@ -105,8 +105,8 @@ final class ImportarContactosDesdeCsvUseCase
     }
 
     /**
-     * Materialize every data row before any write, so the 1000-row cap can be
-     * enforced with zero inserts having happened yet.
+     * Materializa todas las filas de datos antes de cualquier escritura, para que el límite de 1000 filas
+     * se pueda aplicar sin que se haya hecho todavía ningún insert.
      *
      * @param list<string> $normalizedHeader
      * @return list<array{row: int, data: array<string, string>}>
@@ -114,7 +114,7 @@ final class ImportarContactosDesdeCsvUseCase
     private function leerFilas(Reader $reader, array $normalizedHeader): array
     {
         $rows = [];
-        $numeroDeFila = 1; // row 1 is the header itself
+        $numeroDeFila = 1; // la fila 1 es la propia cabecera
 
         foreach ($reader->getRecords($normalizedHeader) as $record) {
             $numeroDeFila++;
@@ -140,7 +140,7 @@ final class ImportarContactosDesdeCsvUseCase
     {
         $importados = 0;
         $errores = [];
-        /** @var array<string, int> $telefonosVistos normalizedPhone => first row number */
+        /** @var array<string, int> $telefonosVistos teléfono normalizado => número de la primera fila */
         $telefonosVistos = [];
 
         foreach ($rows as $entry) {
@@ -174,9 +174,9 @@ final class ImportarContactosDesdeCsvUseCase
                 $errores[] = $this->armarError($row, $telefonoCrudo, 'unknown_error', 'Unexpected error while importing this row');
             }
 
-            // Defense-in-depth: a concurrent unique-constraint violation that
-            // escapes CreateContactoUseCase's own catch could still close the
-            // EntityManager. Recover it so subsequent rows are not poisoned.
+            // Defensa en profundidad: una violación concurrente de restricción única que
+            // escape del propio catch de CreateContactoUseCase todavía podría cerrar el
+            // EntityManager. Se recupera para que las filas siguientes no queden contaminadas.
             if (!$this->entityManager->isOpen()) {
                 $this->managerRegistry->resetManager();
             }

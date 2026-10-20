@@ -13,9 +13,9 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * Controller for workspace agent availability.
+ * Controlador de la disponibilidad de agentes de un espacio de trabajo.
  *
- * GET /api/workspaces/{id}/available-agents — returns agents available for assignment
+ * GET /api/workspaces/{id}/available-agents — devuelve los agentes disponibles para asignación
  */
 #[IsGranted('ROLE_AGENT')]
 final class AgentesDisponiblesController

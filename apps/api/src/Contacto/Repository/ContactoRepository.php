@@ -28,9 +28,9 @@ class ContactoRepository extends ServiceEntityRepository
     }
 
     /**
-     * One page of the contact list, most recently updated first (ties by id,
-     * newest first). Empty values and unknown status or channel values add no
-     * filter; `$search` matches name or phone as a substring.
+     * Una página de la lista de contactos, los actualizados más recientemente primero (los empates por id,
+     * el más nuevo primero). Los valores vacíos y los estados o canales desconocidos no agregan
+     * filtro; `$search` busca en el nombre o el teléfono como subcadena.
      *
      * @return list<array<string, mixed>>
      */
@@ -57,7 +57,7 @@ class ContactoRepository extends ServiceEntityRepository
     }
 
     /**
-     * Total number of contacts matching the same filters as findPaginaDeLista().
+     * Cantidad total de contactos que cumplen los mismos filtros que findPaginaDeLista().
      */
     public function countLista(?string $search, ?string $estado, ?string $canal, ?int $responsableId, ?string $email): int
     {
@@ -71,8 +71,8 @@ class ContactoRepository extends ServiceEntityRepository
     }
 
     /**
-     * The contact columns shown in the contact detail, or false when the
-     * contact does not exist.
+     * Las columnas del contacto que se muestran en el detalle del contacto, o false cuando el
+     * contacto no existe.
      *
      * @return array<string, mixed>|false
      */
@@ -87,16 +87,16 @@ class ContactoRepository extends ServiceEntityRepository
     }
 
     /**
-     * The contact timeline, newest first, at most `$limit` rows: ticket
-     * created/updated outbox events, assignments, and the allow-listed
-     * `ticket_events` types (WhatsApp 24h window closure/reopen and the six
-     * manual resolve/close audit types). Optionally only events before
-     * `$before` and only tickets of one workspace (`$phoneNumberId`).
+     * La línea de tiempo del contacto, la más reciente primero, como máximo `$limit` filas: eventos
+     * de outbox de ticket creado/actualizado, asignaciones y los tipos permitidos de
+     * `ticket_events` (cierre/reapertura por la ventana de 24 h de WhatsApp y los seis
+     * tipos de auditoría de resolución/cierre manual). Opcionalmente, solo los eventos anteriores a
+     * `$before` y solo los tickets de un espacio de trabajo (`$phoneNumberId`).
      *
-     * Native SQL because DBAL's QueryBuilder cannot express a UNION ALL inside
-     * a derived table with an outer ORDER BY/LIMIT, and DQL has no UNION at
-     * all. The optional filters are written as `(:param IS NULL OR ...)` so
-     * the statement is one fixed string with bound parameters.
+     * SQL nativo porque el QueryBuilder de DBAL no puede expresar un UNION ALL dentro de
+     * una tabla derivada con un ORDER BY/LIMIT exterior, y DQL no tiene UNION en
+     * absoluto. Los filtros opcionales se escriben como `(:param IS NULL OR ...)` para que
+     * la sentencia sea un único string fijo con parámetros enlazados.
      *
      * @return list<array{type: string, occurred_at: string, content: null, ticket_id: mixed, ticket_status: ?string, assigned_to: ?string, agent_id: mixed, direction: null}>
      */
@@ -186,8 +186,8 @@ class ContactoRepository extends ServiceEntityRepository
         LIMIT :limit
         SQL;
 
-        // D6 allow-list: only the WhatsApp 24h window-compliance event types
-        // plus the six manual closure/resolution audit types are surfaced.
+        // Lista permitida D6: solo se muestran los tipos de evento de cumplimiento de la ventana de 24 h de WhatsApp
+        // más los seis tipos de auditoría de cierre/resolución manual.
         $typeParams = [
             'window_expired_closed' => TipoDeEventoDeTicket::VENTANA_VENCIDA_CERRADO,
             'window_reopened' => TipoDeEventoDeTicket::VENTANA_REABIERTO,

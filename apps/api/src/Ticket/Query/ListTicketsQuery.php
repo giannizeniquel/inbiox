@@ -17,22 +17,22 @@ class ListTicketsQuery
     ) {}
 
     /**
-     * @param int $page Page number (1-indexed)
-     * @param int $limit Items per page (max 100)
-     * @param string $filtro 'all', 'unassigned', 'assigned', or 'mine'
-     * @param string|null $agenteId Agent ID for 'mine' filter (DEPRECATED: use scopeAgentId instead)
-     * @param string|null $estado Comma-separated status filter
-     * @param string|null $search Search query (not implemented)
-     * @param string $sort Sort order
-     * @param int|null $scopeAgenteId Ownership scope: forces WHERE assigned_agent_id = scopeAgentId
-     *                                Used by BandejaController to restrict AGENT to own tickets.
-     *                                null = no scope restriction (SUPERVISOR/ADMIN).
-     * @param string|null $phoneNumberId Workspace scope: filters by ticket phone_number_id.
-     *                                   Used by BandejaController via AlcanceDeEspacioDeTrabajo.
-     *                                   null = no workspace filter (SUPERVISOR/ADMIN).
-     * @param string|null $etiqueta Comma-separated tag names (AND semantics, max 5).
-     *                         Each matched ticket must carry ALL specified tags.
-     * @param int|null $equipoId Single-select team filter, composable with $etiqueta.
+     * @param int $page Número de página (empieza en 1)
+     * @param int $limit Elementos por página (máximo 100)
+     * @param string $filtro 'all', 'unassigned', 'assigned' o 'mine'
+     * @param string|null $agenteId ID del agente para el filtro 'mine' (DEPRECATED: usar scopeAgentId en su lugar)
+     * @param string|null $estado Filtro de estados separados por comas
+     * @param string|null $search Query de búsqueda (no implementada)
+     * @param string $sort Orden
+     * @param int|null $scopeAgenteId Alcance de responsabilidad: fuerza WHERE assigned_agent_id = scopeAgentId
+     *                                La usa BandejaController para limitar AGENT a sus propios tickets.
+     *                                null = sin restricción de alcance (SUPERVISOR/ADMIN).
+     * @param string|null $phoneNumberId Alcance del espacio de trabajo: filtra por el phone_number_id del ticket.
+     *                                   La usa BandejaController mediante AlcanceDeEspacioDeTrabajo.
+     *                                   null = sin filtro de espacio de trabajo (SUPERVISOR/ADMIN).
+     * @param string|null $etiqueta Nombres de etiquetas separados por comas (semántica AND, máximo 5).
+     *                         Cada ticket encontrado debe tener TODAS las etiquetas indicadas.
+     * @param int|null $equipoId Filtro de equipo de selección única, combinable con $etiqueta.
      */
     public function execute(
         int $page = 1,
@@ -64,7 +64,7 @@ class ListTicketsQuery
         $results = $this->ticketRepository->findPaginaDeLista($filtros, $limit, $offset);
         $total = $this->ticketRepository->countLista($filtros);
 
-        // Compute unread counts post-query: count inbound messages after ticket.last_read_at
+        // Calcula los no leídos después de la query: cuenta los mensajes entrantes posteriores a ticket.last_read_at
         $conteosNoLeidos = [];
         if (!empty($results)) {
             $convIds = array_unique(array_column($results, 'conv_id'));
@@ -78,7 +78,7 @@ class ListTicketsQuery
             }
         }
 
-        // Preload agent entities for is_in_shift evaluation
+        // Precarga las entidades de agente para evaluar is_in_shift
         $now = new \DateTimeImmutable();
         $agenteIds = array_unique(array_filter(array_map(fn($r) => $r['assigned_agent_id'] ? (int) $r['assigned_agent_id'] : null, $results)));
         $agenteEntities = [];

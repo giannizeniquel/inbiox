@@ -25,16 +25,16 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Ulid;
 
 /**
- * Fire-and-forget service to send auto-reply messages when conditions are met.
+ * Servicio fire-and-forget que envía respuestas automáticas cuando se cumplen las condiciones.
  *
- * Conditions (all must pass):
- * 1. Target agent has auto_reply_enabled = true
- * 2. Target agent has a non-empty auto_reply_message
- * 3. Target agent is NOT currently available (unavailable/off-shift)
- * 4. No recent auto-reply was sent to this contact (4h rate limit)
+ * Condiciones (deben cumplirse todas):
+ * 1. El agente destino tiene auto_reply_enabled = true
+ * 2. El agente destino tiene un auto_reply_message no vacío
+ * 3. El agente destino NO está disponible en este momento (no disponible/fuera de turno)
+ * 4. No se envió una respuesta automática reciente a este contacto (límite de 4 h)
  *
- * If any condition fails, the method returns silently (fire-and-forget).
- * Exceptions from GraphClient are caught and logged — never propagated.
+ * Si alguna condición falla, el método vuelve sin hacer nada (fire-and-forget).
+ * Las excepciones de GraphClient se capturan y se registran en el log — nunca se propagan.
  */
 final class RespuestaAutomaticaService
 {
@@ -52,10 +52,10 @@ final class RespuestaAutomaticaService
     ) {}
 
     /**
-     * Attempt to send an auto-reply for the given ticket.
+     * Intenta enviar una respuesta automática para el ticket dado.
      *
-     * This is a fire-and-forget method: it catches all exceptions and logs them,
-     * never re-throwing. Called AFTER the inbound message transaction commits.
+     * Es un método fire-and-forget: captura todas las excepciones y las registra en el log,
+     * sin relanzarlas nunca. Se llama DESPUÉS del commit de la transacción del mensaje entrante.
      */
     public function enviarSiCorresponde(Ticket $ticket): void
     {
@@ -72,13 +72,13 @@ final class RespuestaAutomaticaService
 
     private function ejecutarEnvioSiCorresponde(Ticket $ticket): void
     {
-        // 1. Resolve target agent
+        // 1. Resuelve el agente destino
         $agente = $this->buscarAgenteDestino($ticket);
         if ($agente === null) {
-            return; // No eligible agent
+            return; // No hay agente elegible
         }
 
-        // 2. Check auto-reply is enabled and has a message
+        // 2. Verifica que la respuesta automática esté habilitada y tenga mensaje
         if (!$agente->isRespuestaAutomaticaActiva()) {
             return;
         }
@@ -88,13 +88,13 @@ final class RespuestaAutomaticaService
             return;
         }
 
-        // 3. Check agent is NOT available (we send when they're unavailable)
+        // 3. Verifica que el agente NO esté disponible (se envía cuando no está disponible)
         $now = new \DateTimeImmutable('now');
         if ($this->availabilityService->isDisponible($agente, $now)) {
-            return; // Agent is available — don't send auto-reply
+            return; // El agente está disponible — no se envía la respuesta automática
         }
 
-        // 4. Rate limit check
+        // 4. Verificación del límite de frecuencia
         $contacto = $ticket->getContacto();
         if ($contacto === null) {
             return;
@@ -111,7 +111,7 @@ final class RespuestaAutomaticaService
             return;
         }
 
-        // 5. Send the message
+        // 5. Envía el mensaje
         $phoneNumberId = $ticket->getPhoneNumberId();
         $telefonoDestino = $contacto->getTelefono();
 
@@ -123,9 +123,9 @@ final class RespuestaAutomaticaService
             return;
         }
 
-        // WhatsApp 24h conversation-window guard: an auto-reply is fire-and-
-        // forget, so an expired window is not an error — just an early
-        // return with a log line, never a throw (design.md caller table).
+        // Guarda de la ventana de conversación de 24 h de WhatsApp: una respuesta automática es fire-and-
+        // forget, así que una ventana vencida no es un error — solo un return
+        // temprano con una línea de log, nunca un throw (design.md, tabla de llamadores).
         if (!$this->windowPolicy->isAbiertaParaEnviar($ticket->getUltimoMensajeEntranteAt(), new \DateTimeImmutable())) {
             $this->logger->info('AutoReply skipped: conversation window has expired', [
                 'contactId' => $contactoId,
@@ -143,10 +143,10 @@ final class RespuestaAutomaticaService
                 'contactId' => $contactoId,
                 'ticket_id' => $ticket->getId(),
             ]);
-            return; // Fire-and-forget: swallow the exception
+            return; // Fire-and-forget: se descarta la excepción
         }
 
-        // 6. Create local Message entity so the auto-reply appears in the conversation
+        // 6. Crea la entidad Message local para que la respuesta automática aparezca en la conversación
         $wamid = $graphResponse['messages'][0]['id'] ?? null;
         $conversacion = $ticket->getConversacion();
         $mensajeSaliente = null;
@@ -163,12 +163,12 @@ final class RespuestaAutomaticaService
             $mensajeSaliente->setTipoDeRemitente(TipoDeRemitente::AUTOMATICO);
             $this->em->persist($mensajeSaliente);
 
-            // Update conversation timestamp
+            // Actualiza la marca de tiempo de la conversación
             $conversacion->setUltimoMensajeAt($mensajeSaliente->getCreadoAt());
             $conversacion->setActualizadoAt(new \DateTimeImmutable());
         }
 
-        // 7. Upsert rate-limit key (update timestamp or insert new)
+        // 7. Upsert de la clave de límite de frecuencia (actualiza la marca de tiempo o inserta una nueva)
         $existingEvent = $this->eventoProcesadoRepository->findByEventoId($rateLimitKey);
         if ($existingEvent !== null) {
             $existingEvent->setProcesadoAt(new \DateTimeImmutable('now'));
@@ -178,7 +178,7 @@ final class RespuestaAutomaticaService
         }
         $this->em->flush();
 
-        // 8. Emit outbox event so the message appears in real-time via Mercure
+        // 8. Emite un evento de outbox para que el mensaje aparezca en tiempo real mediante Mercure
         if ($mensajeSaliente !== null) {
             $this->recolectorDeEventos->recolectar(new MessageCreatedEvent(
                 eventId: new Ulid(),
@@ -200,12 +200,12 @@ final class RespuestaAutomaticaService
     }
 
     /**
-     * Resolve which agent should send the auto-reply.
+     * Resuelve qué agente debe enviar la respuesta automática.
      *
-     * Priority:
-     * 1. Assigned agent (if set)
-     * 2. First active agent in the workspace matching the ticket's phoneNumberId
-     *    with auto_reply_enabled = true
+     * Prioridad:
+     * 1. Agente asignado (si lo hay)
+     * 2. Primer agente activo del espacio de trabajo que coincida con el phoneNumberId del ticket
+     *    con auto_reply_enabled = true
      */
     private function buscarAgenteDestino(Ticket $ticket): ?Agente
     {
@@ -218,13 +218,13 @@ final class RespuestaAutomaticaService
             }
         }
 
-        // Fallback: find first active agent with auto_reply_enabled
-        // Use the ticket's phoneNumberId to scope to the right workspace
+        // Alternativa: busca el primer agente activo con auto_reply_enabled
+        // Usa el phoneNumberId del ticket para acotar al espacio de trabajo correcto
         $phoneNumberId = $ticket->getPhoneNumberId();
         $agentesActivos = $this->agentRepo->findActivos();
         foreach ($agentesActivos as $candidato) {
             if ($candidato->isRespuestaAutomaticaActiva()) {
-                // Check if this agent is in a workspace matching the ticket's phoneNumberId
+                // Verifica si este agente está en un espacio de trabajo que coincida con el phoneNumberId del ticket
                 if ($phoneNumberId !== null) {
                     foreach ($candidato->getEspaciosDeTrabajo() as $ws) {
                         if ($ws->getPhoneNumberId() === $phoneNumberId) {
@@ -241,7 +241,7 @@ final class RespuestaAutomaticaService
     }
 
     /**
-     * Check if a recent auto-reply was sent for the given rate-limit key.
+     * Verifica si se envió una respuesta automática reciente para la clave de límite de frecuencia dada.
      */
     private function hasRespuestaAutomaticaReciente(string $rateLimitKey): bool
     {

@@ -13,14 +13,14 @@ use App\Agente\Repository\AgenteRepository;
 use App\Ticket\Repository\TicketRepository;
 
 /**
- * Single source of truth for agent availability evaluation.
+ * Fuente única de verdad para evaluar la disponibilidad de un agente.
  *
- * Algorithm (4-step deterministic cascade):
- *   1. Account active check  → if inactive, return false
- *   2. Override check        → if active and not expired, return override value
- *   3. Schedule check        → convert UTC to agent local time, check shift match
- *   4. Capacity check        → COUNT active tickets, compare to max
- *   5. Default               → return true
+ * Algoritmo (cascada determinista de 4 pasos):
+ *   1. Cuenta activa         → si está inactiva, devuelve false
+ *   2. Override              → si está activo y no venció, devuelve el valor del override
+ *   3. Horario               → convierte UTC a la hora local del agente y verifica si coincide con un turno
+ *   4. Capacidad             → COUNT de tickets activos, compara con el máximo
+ *   5. Por defecto           → devuelve true
  */
 final class DisponibilidadDeAgenteService
 {
@@ -31,92 +31,92 @@ final class DisponibilidadDeAgenteService
     ) {}
 
     /**
-     * Evaluate whether a single agent is available at a given UTC moment.
+     * Evalúa si un agente está disponible en un momento UTC dado.
      *
-     * The agent's shifts are loaded from the entity (lazy-loads if not already
-     * initialized). For batch evaluation, use listarAgentesDisponibles().
+     * Los turnos del agente se cargan desde la entidad (con carga diferida si aún no
+     * están inicializados). Para evaluar en lote, usar listarAgentesDisponibles().
      */
     public function isDisponible(Agente $agente, \DateTimeImmutable $atUtc): bool
     {
-        // Step 1: Account active check
+        // Paso 1: cuenta activa
         if (!$agente->isActivo()) {
             return false;
         }
 
-        // Step 2: Override check (dominates schedule and capacity)
+        // Paso 2: override (prevalece sobre el horario y la capacidad)
         if ($agente->getDisponibilidadManual() !== null) {
             if ($agente->getDisponibilidadManualHasta() === null || $agente->getDisponibilidadManualHasta() >= $atUtc) {
                 return $agente->getDisponibilidadManual();
             }
         }
 
-        // Step 3: Schedule check
+        // Paso 3: horario
         $localTime = $this->utcToLocal($atUtc, $agente->getZonaHoraria());
         if (!$this->hasTurnoEnHorario($localTime, $agente->getTurnos()->toArray())) {
             return false;
         }
 
-        // Step 4: Capacity check
+        // Paso 4: capacidad
         $cantidadDeActivos = $this->countTicketsActivos($agente->getId());
         if ($cantidadDeActivos >= $agente->getMaxTicketsActivos()) {
             return false;
         }
 
-        // Step 5: Available
+        // Paso 5: disponible
         return true;
     }
 
     /**
-     * Evaluate manual-assign eligibility ("Activo"/"Inactivo") for a single
-     * agent at a given UTC moment.
+     * Evalúa la elegibilidad para asignación manual ("Activo"/"Inactivo") de un
+     * agente en un momento UTC dado.
      *
-     * Narrower than isDisponible(): account-active pre-filter, then override
-     * (if set and unexpired) takes precedence, ELSE shift-match. CAPACITY IS
-     * NEVER CONSULTED — an in-shift agent at full capacity is still Activo.
+     * Más acotado que isDisponible(): primero filtra por cuenta activa, luego el override
+     * (si está definido y no venció) tiene prioridad; SI NO, la coincidencia de turno. LA CAPACIDAD
+     * NUNCA SE CONSULTA: un agente en turno con la capacidad completa sigue Activo.
      *
-     * Shifts are passed explicitly so both the batch roster (preloaded via
-     * findByAgentes()) and a single-agent guard check can call this with no
-     * N+1 query.
+     * Los turnos se pasan explícitamente para que tanto el listado en lote (precargado con
+     * findByAgentes()) como una verificación de guarda de un solo agente puedan llamarlo sin
+     * una query N+1.
      *
      * @param Turno[] $turnos
      */
     public function isActivoAhora(Agente $agente, array $turnos, \DateTimeImmutable $atUtc): bool
     {
-        // Step 1: Account active check
+        // Paso 1: cuenta activa
         if (!$agente->isActivo()) {
             return false;
         }
 
-        // Step 2: Override check (dominates schedule; capacity never checked)
+        // Paso 2: override (prevalece sobre el horario; la capacidad nunca se verifica)
         if ($agente->getDisponibilidadManual() !== null) {
             if ($agente->getDisponibilidadManualHasta() === null || $agente->getDisponibilidadManualHasta() >= $atUtc) {
                 return $agente->getDisponibilidadManual();
             }
         }
 
-        // Step 3: Schedule check (capacity deliberately ignored)
+        // Paso 3: horario (la capacidad se ignora a propósito)
         $localTime = $this->utcToLocal($atUtc, $agente->getZonaHoraria());
 
         return $this->hasTurnoEnHorario($localTime, $turnos);
     }
 
     /**
-     * Return all active agents that are available at a given UTC moment.
+     * Devuelve todos los agentes activos que están disponibles en un momento UTC dado.
      *
-     * Batch-loads shifts in one query (no N+1). Applies the full cascade in
-     * PHP: override → schedule → capacity. Returns agents sorted by id ASC.
+     * Carga los turnos en lote en una sola query (sin N+1). Aplica la cascada completa en
+     * PHP: override → horario → capacidad. Devuelve los agentes ordenados por id ASC.
      *
      * @return Agente[]
      */
     public function listarAgentesDisponibles(\DateTimeImmutable $atUtc): array
     {
-        // 1. Fetch all active agents (1 query)
+        // 1. Obtiene todos los agentes activos (1 query)
         $agentes = $this->agentRepository->findActivos();
         if (empty($agentes)) {
             return [];
         }
 
-        // 2. Batch-load shifts for all active agents (1 query, no N+1)
+        // 2. Carga en lote los turnos de todos los agentes activos (1 query, sin N+1)
         $agenteIds = \array_map(fn (Agente $a): ?int => $a->getId(), $agentes);
         $todosLosTurnos = $this->turnoRepository->findByAgentes(\array_filter($agenteIds));
 
@@ -129,12 +129,12 @@ final class DisponibilidadDeAgenteService
             }
         }
 
-        // 3+4. Apply cascade per agent
+        // 3+4. Aplica la cascada por agente
         $disponible = [];
         foreach ($agentes as $agente) {
             $agenteId = $agente->getId();
 
-            // Override check
+            // Verificación del override
             if ($agente->getDisponibilidadManual() !== null) {
                 if ($agente->getDisponibilidadManualHasta() === null || $agente->getDisponibilidadManualHasta() >= $atUtc) {
                     if ($agente->getDisponibilidadManual()) {
@@ -144,13 +144,13 @@ final class DisponibilidadDeAgenteService
                 }
             }
 
-            // Schedule check (uses preloaded shifts — no lazy load)
+            // Verificación de horario (usa los turnos precargados, sin carga diferida)
             $localTime = $this->utcToLocal($atUtc, $agente->getZonaHoraria());
             if (!$this->hasTurnoEnHorario($localTime, $turnosPorAgente[$agenteId] ?? [])) {
                 continue;
             }
 
-            // Capacity check
+            // Verificación de capacidad
             $cantidadDeActivos = $this->countTicketsActivos($agenteId);
             if ($cantidadDeActivos >= $agente->getMaxTicketsActivos()) {
                 continue;
@@ -159,27 +159,27 @@ final class DisponibilidadDeAgenteService
             $disponible[] = $agente;
         }
 
-        // Sort by id ASC (stable order)
+        // Ordena por id ASC (orden estable)
         \usort($disponible, fn (Agente $a, Agente $b): int => $a->getId() <=> $b->getId());
 
         return $disponible;
     }
 
     /**
-     * Return the FULL manual-assign roster for a workspace: every
-     * `active = true` agent (an `active = false` agent NEVER appears),
-     * each carrying a computed `is_active_now` (Activo/Inactivo) flag.
+     * Devuelve el listado COMPLETO para asignación manual de un espacio de trabajo: cada
+     * agente con `active = true` (un agente con `active = false` NUNCA aparece),
+     * cada uno con un indicador calculado `is_active_now` (Activo/Inactivo).
      *
-     * Unlike listarAgentesDisponibles()/listAvailableAgentsInWorkspace() (removed),
-     * this does NOT filter agents out — it always returns the roster so the
-     * UI can show who exists and why they are or aren't currently assignable.
-     * Capacity is NEVER consulted for eligibility (only reported for display).
+     * A diferencia de listarAgentesDisponibles()/listAvailableAgentsInWorkspace() (eliminado),
+     * esto NO excluye agentes: siempre devuelve el listado para que la
+     * UI pueda mostrar quién existe y por qué puede o no recibir asignaciones en este momento.
+     * La capacidad NUNCA se consulta para la elegibilidad (solo se informa para mostrarla).
      *
      * @return DisponibilidadDeAgenteDTO[]
      */
     public function listarAgentesDelEspacioDeTrabajo(EspacioDeTrabajo $espacioDeTrabajo, \DateTimeImmutable $atUtc): array
     {
-        // 1. Fetch all workspace agents, then filter to active=true in PHP
+        // 1. Obtiene todos los agentes del espacio de trabajo y luego filtra active=true en PHP
         $agentes = $this->agentRepository->findByEspacioDeTrabajo($espacioDeTrabajo);
         $agentesActivos = \array_values(\array_filter($agentes, fn (Agente $a): bool => $a->isActivo()));
 
@@ -187,7 +187,7 @@ final class DisponibilidadDeAgenteService
             return [];
         }
 
-        // 2. Batch-load shifts for the active agents only (1 query, no N+1)
+        // 2. Carga en lote los turnos solo de los agentes activos (1 query, sin N+1)
         $agenteIds = \array_map(fn (Agente $a): ?int => $a->getId(), $agentesActivos);
         $todosLosTurnos = $this->turnoRepository->findByAgentes(\array_filter($agenteIds));
 
@@ -200,7 +200,7 @@ final class DisponibilidadDeAgenteService
             }
         }
 
-        // 3. Build the full roster (no eligibility-based exclusion)
+        // 3. Arma el listado completo (sin exclusiones por elegibilidad)
         $agentesDelEspacioDeTrabajo = [];
         foreach ($agentesActivos as $agente) {
             $agenteId = $agente->getId();
@@ -210,7 +210,7 @@ final class DisponibilidadDeAgenteService
             $agentesDelEspacioDeTrabajo[] = DisponibilidadDeAgenteDTO::fromEntity($agente, $cantidadDeActivos, $isActivoAhora);
         }
 
-        // 4. Sort: Activo first, then id ASC (stable order within each tier)
+        // 4. Ordena: Activo primero, luego id ASC (orden estable dentro de cada grupo)
         \usort($agentesDelEspacioDeTrabajo, function (DisponibilidadDeAgenteDTO $a, DisponibilidadDeAgenteDTO $b): int {
             if ($a->isActivoAhora !== $b->isActivoAhora) {
                 return $a->isActivoAhora ? -1 : 1;
@@ -223,11 +223,11 @@ final class DisponibilidadDeAgenteService
     }
 
     /**
-     * Check whether an agent is currently in their scheduled shift (schedule only).
+     * Verifica si un agente está actualmente dentro de su turno programado (solo horario).
      *
-     * This is a SCHEDULE-ONLY check — it does NOT consider override or capacity.
-     * Used by reports and inbox enrichment for read-only projections.
-     * The full availability cascade is isDisponible().
+     * Es una verificación SOLO DE HORARIO: NO considera el override ni la capacidad.
+     * La usan los reportes y el enriquecimiento del inbox para proyecciones de solo lectura.
+     * La cascada completa de disponibilidad es isDisponible().
      */
     public function isEnTurno(Agente $agente, \DateTimeImmutable $atUtc): bool
     {
@@ -241,7 +241,7 @@ final class DisponibilidadDeAgenteService
     }
 
     /**
-     * Convert a UTC DateTimeImmutable to the agent's local timezone.
+     * Convierte un DateTimeImmutable en UTC a la zona horaria local del agente.
      */
     private function utcToLocal(\DateTimeImmutable $utc, string $timezoneName): \DateTimeImmutable
     {
@@ -251,16 +251,16 @@ final class DisponibilidadDeAgenteService
     }
 
     /**
-     * Check whether any shift covers the given local time.
+     * Verifica si algún turno cubre la hora local dada.
      *
-     * Handles both normal shifts (end > start) and cross-midnight shifts
-     * (end < start, e.g. 22:00-06:00). The interval is half-open: [start, end).
+     * Contempla tanto turnos normales (end > start) como turnos que cruzan la medianoche
+     * (end < start, p. ej. 22:00-06:00). El intervalo es semiabierto: [start, end).
      *
      * @param Turno[] $turnos
      */
     private function hasTurnoEnHorario(\DateTimeImmutable $localDateTime, array $turnos): bool
     {
-        $dow = (int) $localDateTime->format('N'); // 1=Monday, 7=Sunday
+        $dow = (int) $localDateTime->format('N'); // 1=lunes, 7=domingo
         $time = $localDateTime->format('H:i:s');
 
         foreach ($turnos as $turno) {
@@ -268,19 +268,19 @@ final class DisponibilidadDeAgenteService
             $horaDeFin = $turno->getHoraDeFin()->format('H:i:s');
 
             if ($horaDeFin > $horaDeInicio) {
-                // Normal shift (same day, half-open [start, end))
+                // Turno normal (mismo día, semiabierto [start, end))
                 if ($turno->getDiaDeLaSemana() === $dow && $time >= $horaDeInicio && $time < $horaDeFin) {
                     return true;
                 }
             } else {
-                // Cross-midnight shift (end < start, e.g. 22:00-06:00)
+                // Turno que cruza la medianoche (end < start, p. ej. 22:00-06:00)
                 $nextDow = $turno->getDiaDeLaSemana() === 7 ? 1 : $turno->getDiaDeLaSemana() + 1;
 
                 if ($dow === $turno->getDiaDeLaSemana() && $time >= $horaDeInicio) {
-                    return true; // First night: e.g., Fri 22:00-23:59
+                    return true; // Primera noche: p. ej., vie 22:00-23:59
                 }
                 if ($dow === $nextDow && $time < $horaDeFin) {
-                    return true; // Next morning: e.g., Sat 00:00-05:59
+                    return true; // Mañana siguiente: p. ej., sáb 00:00-05:59
                 }
             }
         }
@@ -289,10 +289,10 @@ final class DisponibilidadDeAgenteService
     }
 
     /**
-     * Count active tickets assigned to an agent.
+     * Cuenta los tickets activos asignados a un agente.
      *
-     * Active tickets are those with status IN ('new', 'active', 'waiting').
-     * Uses index idx_tickets_owner_status (assigned_agent_id, status).
+     * Los tickets activos son los que tienen status IN ('new', 'active', 'waiting').
+     * Usa el índice idx_tickets_owner_status (assigned_agent_id, status).
      */
     private function countTicketsActivos(?int $agenteId): int
     {

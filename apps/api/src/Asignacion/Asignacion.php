@@ -84,7 +84,7 @@ class Asignacion
     }
 
     /**
-     * Compatibility wrapper — returns the agent ID from the relationship.
+     * Envoltorio de compatibilidad — devuelve el ID del agente desde la relación.
      */
     public function getAgenteId(): ?int
     {
@@ -103,7 +103,7 @@ class Asignacion
     }
 
     /**
-     * Compatibility wrapper — returns the previous agent ID from the relationship.
+     * Envoltorio de compatibilidad — devuelve el ID del agente anterior desde la relación.
      */
     public function getAgenteAnteriorId(): ?int
     {

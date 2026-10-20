@@ -3,33 +3,33 @@
 namespace App\Ticket;
 
 /**
- * Finite State Machine for Ticket workflow.
+ * Máquina de estados finitos para el flujo de trabajo del Ticket.
  *
- * Valid transitions:
- * - new → active (first agent response)
- * - new → closed (WhatsApp 24h window expired before any agent response)
- * - active → waiting (agent waits for customer)
- * - active → closed (WhatsApp 24h window expired)
- * - waiting → active (customer responds)
- * - waiting → closed (WhatsApp 24h window expired)
- * - active → resolved (ticket resolved)
- * - waiting → resolved (ticket resolved)
- * - resolved → waiting (customer responds - auto-reopen)
- * - resolved → closed (auto-close after inactivity)
+ * Transiciones válidas:
+ * - new → active (primera respuesta del agente)
+ * - new → closed (la ventana de 24 h de WhatsApp venció antes de cualquier respuesta del agente)
+ * - active → waiting (el agente espera al cliente)
+ * - active → closed (venció la ventana de 24 h de WhatsApp)
+ * - waiting → active (el cliente responde)
+ * - waiting → closed (venció la ventana de 24 h de WhatsApp)
+ * - active → resolved (ticket resuelto)
+ * - waiting → resolved (ticket resuelto)
+ * - resolved → waiting (el cliente responde - reapertura automática)
+ * - resolved → closed (cierre automático tras inactividad)
  *
- * `new|active|waiting → closed` was added for WhatsApp 24h conversation-
- * window compliance (design.md D2 — Option A: never routed through
- * `resolved`, so `resolved_at` and resolution metrics stay uncontaminated).
- * This widening only affects the CLOSING side. `closed` remains strictly
- * terminal: no `closed → *` transition exists in this table, by design.
- * The system-triggered reopen path (`CambiarEstadoDeTicketUseCase::
- * reopenDueToInboundMessage()`) never routes through this shared table —
- * see design.md D1.
+ * `new|active|waiting → closed` se agregó para cumplir con la ventana de conversación
+ * de 24 h de WhatsApp (design.md D2 — Opción A: nunca pasa por
+ * `resolved`, así `resolved_at` y las métricas de resolución no se contaminan).
+ * Esta ampliación solo afecta al lado de CIERRE. `closed` sigue siendo estrictamente
+ * terminal: no existe ninguna transición `closed → *` en esta tabla, por diseño.
+ * El camino de reapertura disparado por el sistema (`CambiarEstadoDeTicketUseCase::
+ * reopenDueToInboundMessage()`) nunca pasa por esta tabla compartida —
+ * ver design.md D1.
  */
 class MaquinaDeEstadosDeTicket
 {
     /**
-     * @var array<string, array<string, true>> Valid transitions
+     * @var array<string, array<string, true>> Transiciones válidas
      */
     private const TRANSICIONES = [
         EstadoDeTicket::NUEVO->value => [
@@ -50,14 +50,14 @@ class MaquinaDeEstadosDeTicket
             EstadoDeTicket::EN_ESPERA->value => true,
             EstadoDeTicket::CERRADO->value => true,
         ],
-        // closed is terminal - no transitions allowed
+        // closed es terminal - no se permiten transiciones
     ];
 
     /**
-     * Check if a transition is valid
+     * Comprueba si una transición es válida
      *
-     * @param string $from Current status
-     * @param string $to Target status
+     * @param string $from Estado actual
+     * @param string $to Estado destino
      * @return bool
      */
     public function puedeTransicionar(string $from, string $to): bool
@@ -66,12 +66,12 @@ class MaquinaDeEstadosDeTicket
     }
 
     /**
-     * Validate and return new status, or throw exception
+     * Valida y devuelve el nuevo estado, o lanza una excepción
      *
      * @param string $estadoActual
      * @param string $estadoDestino
-     * @return string The new status
-     * @throws TransicionInvalidaException If transition is invalid
+     * @return string El nuevo estado
+     * @throws TransicionInvalidaException Si la transición no es válida
      */
     public function transicionar(string $estadoActual, string $estadoDestino): string
     {
@@ -91,7 +91,7 @@ class MaquinaDeEstadosDeTicket
     }
 
     /**
-     * Check if status is terminal (no more transitions)
+     * Comprueba si el estado es terminal (sin más transiciones)
      *
      * @param string $estado
      * @return bool

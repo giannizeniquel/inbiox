@@ -93,9 +93,9 @@ class Ticket
     }
 
     /**
-     * The WhatsApp number replies on this ticket go to.
+     * El número de WhatsApp al que van las respuestas de este ticket.
      *
-     * @throws TelefonoDeDestinatarioNoEncontradoException when there is no contact or it has no phone
+     * @throws TelefonoDeDestinatarioNoEncontradoException cuando no hay contacto o no tiene teléfono
      */
     public function telefonoDestinatario(): string
     {

@@ -14,7 +14,7 @@ final class UpdatePerfilDeAgenteUseCase
     ) {}
 
     /**
-     * Sets the signature; null clears it.
+     * Establece la firma; null la borra.
      */
     public function execute(Agente $agente, ?string $firma): void
     {

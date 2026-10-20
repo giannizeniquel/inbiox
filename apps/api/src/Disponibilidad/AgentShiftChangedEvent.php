@@ -7,10 +7,10 @@ namespace App\Disponibilidad;
 use App\Compartido\RecolectorDeEventos;
 
 /**
- * Marker domain event for agent shift changes.
+ * Evento de dominio marcador para cambios de turno de un agente.
  *
- * FQCN used by TipoDeEventoMapper to map to TipoDeEventoEnTiempoReal::TURNO_DE_AGENTE_CAMBIADO.
- * Not collected via RecolectorDeEventos — EventoOutbox is created directly.
+ * FQCN que TipoDeEventoMapper usa para mapearlo a TipoDeEventoEnTiempoReal::TURNO_DE_AGENTE_CAMBIADO.
+ * No se recolecta mediante RecolectorDeEventos: el EventoOutbox se crea directamente.
  */
 final class AgentShiftChangedEvent
 {

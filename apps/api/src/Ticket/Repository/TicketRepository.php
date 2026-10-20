@@ -68,17 +68,17 @@ class TicketRepository extends ServiceEntityRepository
     }
 
     /**
-     * Locking read: PESSIMISTIC_WRITE acquired as part of the SELECT itself
-     * (design.md D1). MUST be the transaction's FIRST statement so nothing
-     * else can open a consistent-read snapshot ahead of the lock.
+     * Lectura con bloqueo: PESSIMISTIC_WRITE adquirido como parte del propio SELECT
+     * (design.md D1). DEBE ser la PRIMERA sentencia de la transacción para que nada
+     * más pueda abrir un snapshot de lectura consistente antes del bloqueo.
      *
-     * Query::HINT_REFRESH forces Doctrine to overwrite any stale identity-map
-     * copy with the just-locked row instead of silently reusing it.
+     * Query::HINT_REFRESH obliga a Doctrine a sobrescribir cualquier copia obsoleta
+     * del identity map con la fila recién bloqueada en lugar de reutilizarla en silencio.
      *
-     * Rejected: `findById()` + `$em->lock()` (AsignarTicketUseCase convention)
-     * — under MySQL REPEATABLE READ, `findById()` opens the consistent-read
-     * snapshot BEFORE the lock is acquired, so a later `refresh()` still
-     * reads the pre-lock snapshot. TOCTOU survives.
+     * Descartado: `findById()` + `$em->lock()` (convención de AsignarTicketUseCase)
+     * — con MySQL REPEATABLE READ, `findById()` abre el snapshot de lectura
+     * consistente ANTES de adquirir el bloqueo, así que un `refresh()` posterior
+     * sigue leyendo el snapshot previo al bloqueo. El TOCTOU sobrevive.
      */
     public function findByIdForUpdate(int $id): ?Ticket
     {
@@ -92,17 +92,17 @@ class TicketRepository extends ServiceEntityRepository
     }
 
     /**
-     * Find a `closed` ticket for this contact eligible for system-triggered
-     * reopen: the ticket's MOST RECENT `ticket_events` row must be of type
-     * `window_expired_closed`. A ticket with zero events, a different
-     * latest event type, or closed for another reason yields no match —
-     * unchanged, so `ProcesarMensajeEntranteUseCase` falls back to creating a
-     * new ticket, exactly as it does today (design.md).
+     * Busca un ticket `closed` de este contacto apto para la reapertura disparada
+     * por el sistema: la fila MÁS RECIENTE de `ticket_events` del ticket debe ser del tipo
+     * `window_expired_closed`. Un ticket sin eventos, con otro tipo de
+     * último evento o cerrado por otro motivo no produce coincidencia —
+     * sin cambios, así que `ProcesarMensajeEntranteUseCase` recurre a crear un
+     * ticket nuevo, exactamente como lo hace hoy (design.md).
      *
-     * DQL cannot express a correlated `ORDER BY ... LIMIT 1` subquery, so
-     * this uses the connection directly (precedent: `CambiarEstadoDeTicketUseCase`),
-     * then rehydrates via `$this->find($id)` so the caller receives a
-     * managed entity it can `lock()`.
+     * DQL no puede expresar una subconsulta correlacionada con `ORDER BY ... LIMIT 1`, así que
+     * esto usa la conexión directamente (precedente: `CambiarEstadoDeTicketUseCase`),
+     * y luego rehidrata con `$this->find($id)` para que quien llama reciba una
+     * entidad gestionada sobre la que pueda hacer `lock()`.
      */
     public function findCerradoPorVentanaVencidaByContacto(Contacto $contacto, ?string $phoneNumberId = null): ?Ticket
     {
@@ -139,10 +139,10 @@ class TicketRepository extends ServiceEntityRepository
     }
 
     /**
-     * Count active tickets currently assigned to an agent.
+     * Cuenta los tickets activos asignados actualmente a un agente.
      *
-     * Active tickets are those with status IN ('new', 'active', 'waiting').
-     * Uses index idx_tickets_owner_status (assigned_agent_id, status).
+     * Los tickets activos son los que tienen status IN ('new', 'active', 'waiting').
+     * Usa el índice idx_tickets_owner_status (assigned_agent_id, status).
      */
     public function countActivosDeAgente(int $agenteId): int
     {
@@ -161,15 +161,15 @@ class TicketRepository extends ServiceEntityRepository
     }
 
     /**
-     * Locking read of the raw `tickets` row: `SELECT * ... FOR UPDATE`.
-     * Returns the row as an associative array, or false when it does not exist.
+     * Lectura con bloqueo de la fila cruda de `tickets`: `SELECT * ... FOR UPDATE`.
+     * Devuelve la fila como array asociativo, o false cuando no existe.
      *
-     * Native SQL because DQL cannot do this without side effects: a DQL
-     * PESSIMISTIC_WRITE read hydrates (and with HINT_REFRESH overwrites) the
-     * managed Ticket entity, while the callers need the latest-committed
-     * column values as a plain array and leave the identity map untouched.
-     * Runs on the EntityManager's connection, so it joins the caller's
-     * open transaction.
+     * SQL nativo porque DQL no puede hacerlo sin efectos secundarios: una lectura
+     * DQL con PESSIMISTIC_WRITE hidrata (y con HINT_REFRESH sobrescribe) la
+     * entidad Ticket gestionada, mientras que quienes llaman necesitan los últimos
+     * valores confirmados de las columnas como array plano y sin tocar el identity map.
+     * Se ejecuta sobre la conexión del EntityManager, así que se suma a la
+     * transacción abierta de quien llama.
      *
      * @return array<string, mixed>|false
      */
@@ -182,9 +182,9 @@ class TicketRepository extends ServiceEntityRepository
     }
 
     /**
-     * Status change written by CambiarEstadoDeTicketUseCase::execute():
-     * sets status and updated_at, plus each SLA timestamp the caller asks for,
-     * in this SET order: first_response_at, resolved_at, closed_at.
+     * Cambio de estado escrito por CambiarEstadoDeTicketUseCase::execute():
+     * asigna status y updated_at, más cada timestamp de SLA que pida quien llama,
+     * en este orden del SET: first_response_at, resolved_at, closed_at.
      */
     public function updateEstadoTrasTransicion(
         int $id,
@@ -215,7 +215,7 @@ class TicketRepository extends ServiceEntityRepository
     }
 
     /**
-     * Close write: status, closed_at = NOW(), updated_at = NOW().
+     * Escritura de cierre: status, closed_at = NOW(), updated_at = NOW().
      */
     public function marcarCerrado(int $id, string $estado): void
     {
@@ -231,7 +231,7 @@ class TicketRepository extends ServiceEntityRepository
     }
 
     /**
-     * Reopen write: status, closed_at = NULL, updated_at = NOW().
+     * Escritura de reapertura: status, closed_at = NULL, updated_at = NOW().
      */
     public function marcarReabierto(int $id, string $estado): void
     {
@@ -247,7 +247,7 @@ class TicketRepository extends ServiceEntityRepository
     }
 
     /**
-     * First agent reply without a status change:
+     * Primera respuesta del agente sin cambio de estado:
      * first_response_at = NOW(), updated_at = NOW().
      */
     public function marcarPrimeraRespuesta(int $id): void
@@ -262,8 +262,8 @@ class TicketRepository extends ServiceEntityRepository
     }
 
     /**
-     * Type of the ticket's most recent `ticket_events` row
-     * (by created_at, then id), or false when it has no events.
+     * Tipo de la fila más reciente de `ticket_events` del ticket
+     * (por created_at y luego por id), o false cuando no tiene eventos.
      */
     public function findUltimoTipoDeEvento(int $ticketId): string|false
     {
@@ -279,9 +279,9 @@ class TicketRepository extends ServiceEntityRepository
     }
 
     /**
-     * The ticket's `phone_number_id` column, or null when the ticket does not
-     * exist or the column is null. Read straight from the table, so it does
-     * not touch the managed entity.
+     * La columna `phone_number_id` del ticket, o null cuando el ticket no
+     * existe o la columna es null. Se lee directamente de la tabla, así que
+     * no toca la entidad gestionada.
      */
     public function findPhoneNumberId(int $id): ?string
     {
@@ -296,9 +296,9 @@ class TicketRepository extends ServiceEntityRepository
     }
 
     /**
-     * Ids of tickets in one of `$estados` whose last inbound message is
-     * older than `$threshold` (`Y-m-d H:i:s`), oldest first, at most `$limit`.
-     * Tickets with a null `last_inbound_message_at` never match.
+     * Ids de los tickets en alguno de `$estados` cuyo último mensaje entrante es
+     * anterior a `$threshold` (`Y-m-d H:i:s`), los más antiguos primero, como máximo `$limit`.
+     * Los tickets con `last_inbound_message_at` null nunca coinciden.
      *
      * @param string[] $estados
      * @return list<mixed>
@@ -319,9 +319,9 @@ class TicketRepository extends ServiceEntityRepository
     }
 
     /**
-     * One page of the inbox ticket list (`ListTicketsQuery`): the ticket, its
-     * contact, its assigned agent, and that agent's count of active tickets,
-     * newest `updated_at` first (ties by id, newest first).
+     * Una página de la lista de tickets de la bandeja (`ListTicketsQuery`): el ticket, su
+     * contacto, su agente asignado y la cantidad de tickets activos de ese agente,
+     * con el `updated_at` más reciente primero (los empates por id, el más nuevo primero).
      *
      * @return list<array<string, mixed>>
      */
@@ -350,7 +350,7 @@ class TicketRepository extends ServiceEntityRepository
     }
 
     /**
-     * Total number of tickets matching the list filters (no joins needed).
+     * Cantidad total de tickets que cumplen los filtros de la lista (no hacen falta joins).
      */
     public function countLista(FiltrosDeTicket $filtros): int
     {
@@ -364,9 +364,9 @@ class TicketRepository extends ServiceEntityRepository
     }
 
     /**
-     * Inbound messages newer than the ticket's `last_read_at` (or all of them
-     * when it is null), per conversation. Conversations without unread
-     * messages are absent from the result.
+     * Mensajes entrantes posteriores al `last_read_at` del ticket (o todos
+     * cuando es null), por conversación. Las conversaciones sin mensajes
+     * no leídos no aparecen en el resultado.
      *
      * @param int[] $conversacionIds
      * @return list<array{conversation_id: mixed, cnt: mixed}>
@@ -386,9 +386,9 @@ class TicketRepository extends ServiceEntityRepository
     }
 
     /**
-     * Whether the agent has a new, active or waiting ticket in the workspace
-     * that was never read or has an inbound message newer than its last read
-     * (`has_pending` in `GET /api/me/workspaces`).
+     * Indica si el agente tiene un ticket nuevo, activo o en espera en el espacio de trabajo
+     * que nunca se leyó o que tiene un mensaje entrante posterior a su última lectura
+     * (`has_pending` en `GET /api/me/workspaces`).
      */
     public function hasPendientesDeAgente(string $phoneNumberId, int $agenteId): bool
     {
@@ -409,9 +409,9 @@ class TicketRepository extends ServiceEntityRepository
     }
 
     /**
-     * The ticket detail row (`GetDetalleDeTicketQuery`): ticket, contact, the
-     * unread inbound count and the content of the latest message, or false
-     * when the ticket does not exist.
+     * La fila de detalle del ticket (`GetDetalleDeTicketQuery`): ticket, contacto, la
+     * cantidad de entrantes no leídos y el contenido del último mensaje, o false
+     * cuando el ticket no existe.
      *
      * @return array<string, mixed>|false
      */
@@ -436,8 +436,8 @@ class TicketRepository extends ServiceEntityRepository
     }
 
     /**
-     * The ticket's `conversation_id`: false when the ticket does not exist,
-     * null when the column is null.
+     * El `conversation_id` del ticket: false cuando el ticket no existe,
+     * null cuando la columna es null.
      */
     public function findConversacionId(int $id): int|false|null
     {
@@ -456,9 +456,9 @@ class TicketRepository extends ServiceEntityRepository
     }
 
     /**
-     * One keyset chunk of the CSV export (`ExportarTicketsCsvQuery`): tickets
-     * matching the list filters, created within [`$from`, `$to`]
-     * (`Y-m-d H:i:s`), with id greater than `$afterId`, by id ascending.
+     * Un bloque keyset de la exportación CSV (`ExportarTicketsCsvQuery`): tickets
+     * que cumplen los filtros de la lista, creados dentro de [`$from`, `$to`]
+     * (`Y-m-d H:i:s`), con id mayor que `$afterId`, por id ascendente.
      *
      * @return list<array<string, mixed>>
      */
@@ -492,9 +492,9 @@ class TicketRepository extends ServiceEntityRepository
     }
 
     /**
-     * Per contact, the highest id among its tickets that are neither closed
-     * nor resolved, optionally limited to one workspace (`phone_number_id`).
-     * Contacts without such a ticket are absent from the result.
+     * Por contacto, el id más alto entre sus tickets que no están cerrados
+     * ni resueltos, opcionalmente limitado a un espacio de trabajo (`phone_number_id`).
+     * Los contactos sin un ticket así no aparecen en el resultado.
      *
      * @param int[] $contactoIds
      * @return list<array{contact_id: mixed, ticket_id: mixed}>
@@ -517,9 +517,9 @@ class TicketRepository extends ServiceEntityRepository
     }
 
     /**
-     * Adds the list filters as WHERE clauses on a query over `tickets t`,
-     * in this order: assignment or mine, ownership scope, workspace, status,
-     * one EXISTS per tag (AND semantics), team.
+     * Agrega los filtros de la lista como cláusulas WHERE a una query sobre `tickets t`,
+     * en este orden: asignación o mine, alcance de responsabilidad, espacio de trabajo, estado,
+     * un EXISTS por etiqueta (semántica AND), equipo.
      */
     private function aplicarFiltrosDeLista(QueryBuilder $qb, FiltrosDeTicket $filtros): void
     {

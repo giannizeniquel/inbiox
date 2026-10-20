@@ -166,4 +166,4 @@ Detalle en [07](07-frontend.md#lógica-de-negocio-que-vive-en-el-frontend).
 | FSM del ticket | `MaquinaDeEstadosDeTicket.php`; frontend `status-actions.component.ts:21-27` (componente sin uso) y `ticket.store.ts:182-187` (`new → active` al asignar) | La copia del frontend no se usa; la transición implícita sí. |
 | Ticket resuelto/cerrado bloquea cambios de dueño | `TicketVoter` (asignación manual, 409 para todos) y `TicketResponsabilidadGuard` (respuesta, permite a privilegiados) | Distintos a propósito; documentado en cada lugar. |
 | Permiso para asignar | `TicketVoter::ASSIGN` y `ticket-list.component.ts:219-236` | Sí. |
-| `persistEventsToOutbox()` | 5 copias del armado del payload (la escritura ya es única: `OutboxWriter`) | **No** (formato del payload, eventos omitidos, `sequence`). |
+| `persistirEventosEnOutbox()` | 5 copias del armado del payload (la escritura ya es única: `OutboxWriter`) | **No** (formato del payload, eventos omitidos, `sequence`). |

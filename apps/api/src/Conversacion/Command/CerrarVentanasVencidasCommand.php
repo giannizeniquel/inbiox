@@ -14,10 +14,10 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
- * Scheduled closure of WhatsApp 24h conversation-window-expired tickets
- * (design.md Phase 6). Thin wrapper delegating to
- * `VencimientoDeVentanaService`, mirroring `OutboxPublishCommand`'s
- * shape — the loop-safe logic lives in the service, not here.
+ * Cierre programado de los tickets cuya ventana de conversación de 24 h de WhatsApp venció
+ * (design.md Phase 6). Envoltorio mínimo que delega en
+ * `VencimientoDeVentanaService`, con la misma forma que `OutboxPublishCommand`:
+ * la lógica segura para ejecutarse en bucle vive en el servicio, no aquí.
  */
 #[AsCommand(name: 'app:conversation-window:close-expired', description: 'Close tickets whose WhatsApp 24h conversation window has elapsed')]
 class CerrarVentanasVencidasCommand extends Command

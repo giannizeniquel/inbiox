@@ -13,13 +13,13 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
- * Single webhook endpoint for Meta WhatsApp Cloud API.
+ * Endpoint único de webhook para la WhatsApp Cloud API de Meta.
  *
- * GET  /webhook — Meta verification (hub.challenge)
- * POST /webhook — Event dispatch (messages, statuses)
+ * GET  /webhook — verificación de Meta (hub.challenge)
+ * POST /webhook — despacho de eventos (messages, statuses)
  *
- * Design: AD-1 — single /webhook route, dual HTTP verb dispatch.
- * Meta convention requires verification and event delivery to share the same URL.
+ * Diseño: AD-1 — una sola ruta /webhook, despacho según el verbo HTTP (GET o POST).
+ * La convención de Meta exige que la verificación y la entrega de eventos compartan la misma URL.
  */
 class WebhookController extends AbstractController
 {
@@ -32,7 +32,7 @@ class WebhookController extends AbstractController
     ) {}
 
     /**
-     * Entry point: dispatches to verify() (GET) or receive() (POST).
+     * Punto de entrada: despacha a verify() (GET) o receive() (POST).
      */
     #[Route('/webhook', name: 'app_webhook', methods: ['GET', 'POST'])]
     public function handle(Request $request): Response
@@ -45,13 +45,13 @@ class WebhookController extends AbstractController
     }
 
     /**
-     * GET /webhook — Meta subscription verification.
+     * GET /webhook — verificación de la suscripción de Meta.
      *
-     * Echoes hub.challenge as plain text when hub.verify_token matches.
-     * Returns 403 on mismatch, 400 on missing params.
+     * Devuelve hub.challenge como texto plano cuando hub.verify_token coincide.
+     * Devuelve 403 si no coincide y 400 si faltan parámetros.
      *
-     * Note: PHP's parse_str() converts dots in query param names to underscores,
-     * so we read hub.mode as hub_mode, hub.verify_token as hub_verify_token, etc.
+     * Nota: parse_str() de PHP convierte los puntos de los nombres de parámetros de la query en guiones bajos,
+     * así que hub.mode se lee como hub_mode, hub.verify_token como hub_verify_token, etc.
      */
     private function verify(Request $request): Response
     {
@@ -75,26 +75,26 @@ class WebhookController extends AbstractController
             );
         }
 
-        // Meta expects the raw challenge string as plain text, not JSON
+        // Meta espera el challenge crudo como texto plano, no JSON
         return new Response($challenge, Response::HTTP_OK, ['Content-Type' => 'text/plain']);
     }
 
     /**
-     * POST /webhook — Receive and dispatch Meta webhook events.
+     * POST /webhook — recibe y despacha los eventos de webhook de Meta.
      *
-     * 1. Verify X-Hub-Signature-256 HMAC (security gate)
-     * 2. Parse JSON body
-     * 3. Log raw payload for debugging
-     * 4. Route to handlers based on payload structure
+     * 1. Verifica el HMAC de X-Hub-Signature-256 (control de seguridad)
+     * 2. Parsea el cuerpo JSON
+     * 3. Registra el payload crudo para depuración
+     * 4. Enruta a los handlers según la estructura del payload
      *
-     * Always returns 200 to Meta (non-2xx triggers Meta retries).
+     * Siempre devuelve 200 a Meta (una respuesta distinta de 2xx provoca reintentos de Meta).
      */
     private function receive(Request $request): Response
     {
-        // Step 1: Read raw body BEFORE any parsing (HMAC must verify the raw payload)
+        // Paso 1: lee el cuerpo crudo ANTES de cualquier parseo (el HMAC debe verificar el payload crudo)
         $rawBody = $request->getContent();
 
-        // Step 2: Verify HMAC signature
+        // Paso 2: verifica la firma HMAC
         if (!$this->verifySignature($request, $rawBody)) {
             $this->logger->warning('Webhook received with invalid HMAC signature');
 
@@ -105,7 +105,7 @@ class WebhookController extends AbstractController
             );
         }
 
-        // Step 3: Parse JSON
+        // Paso 3: parsea el JSON
         $payload = json_decode($rawBody, true);
 
         if (json_last_error() !== JSON_ERROR_NONE || !is_array($payload)) {
@@ -118,36 +118,36 @@ class WebhookController extends AbstractController
             );
         }
 
-        // Step 4: Persist raw webhook payload BEFORE processing
-        // This ensures we have a record even if the processor crashes (T-02)
+        // Paso 4: persiste el payload crudo del webhook ANTES de procesarlo
+        // Así queda un registro aunque el procesador falle (T-02)
         try {
             $this->registrarPayloadWebhook->execute($payload);
         } catch (\Throwable $e) {
-            // Don't crash the webhook — log and continue
+            // No romper el webhook: se registra en el log y se continúa
             $this->logger->error('Failed to persist webhook payload', [
                 'error' => $e->getMessage(),
             ]);
         }
 
-        // Step 5: Dispatch to handlers
+        // Paso 5: despacha a los handlers
         try {
             $this->procesarPayloadWebhook->execute($payload);
         } catch (\Throwable $e) {
-            // Log but always return 200 — Meta retries on failure
+            // Se registra en el log, pero siempre se devuelve 200: Meta reintenta ante fallos
             $this->logger->error('Webhook dispatch error', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
         }
 
-        // Step 6: Always 200 OK
+        // Paso 6: siempre 200 OK
         return new Response('{"ok":true}', Response::HTTP_OK, ['Content-Type' => 'application/json']);
     }
 
     /**
-     * Verify X-Hub-Signature-256 header using SHA256 HMAC with app secret.
+     * Verifica el header X-Hub-Signature-256 con HMAC SHA256 y el app secret.
      *
-     * Uses hash_equals() for constant-time comparison to prevent timing attacks.
+     * Usa hash_equals() para comparar en tiempo constante y evitar ataques de timing.
      */
     private function verifySignature(Request $request, string $rawBody): bool
     {

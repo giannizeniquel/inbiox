@@ -5,19 +5,19 @@ declare(strict_types=1);
 namespace App\Ticket;
 
 /**
- * Pure predicate for the resolved/closed ownership guard (design.md D3-D5).
+ * Predicado puro para la guarda de responsabilidad de resolved/closed (design.md D3-D5).
  *
- * Extracted out of `ProcesarMensajeSalienteUseCase::executeTransactionWithRetry()`
- * so the guard's truth table (status x privileged x owner x agentId<=0) can
- * be unit-tested directly with zero mocks, instead of driving the whole
- * transactional use case through a heavy mock graph just to reach a single
- * `if` branch (strict-tdd Extract-Before-Mock rule). Behavior is identical
- * to the inlined contract in design.md.
+ * Extraído de `ProcesarMensajeSalienteUseCase::executeTransactionWithRetry()`
+ * para que la tabla de verdad de la guarda (estado x privilegiado x responsable x agentId<=0) pueda
+ * probarse unitariamente de forma directa sin mocks, en lugar de recorrer todo
+ * el caso de uso transaccional con un grafo pesado de mocks solo para llegar a una única
+ * rama `if` (regla Extract-Before-Mock de strict-tdd). El comportamiento es idéntico
+ * al contrato que estaba en línea en design.md.
  */
 final class TicketResponsabilidadGuard
 {
     /**
-     * A resolved/closed ticket freezes ownership for reply-driven changes.
+     * Un ticket resolved/closed congela la responsabilidad ante los cambios causados por respuestas.
      */
     public static function isResueltoOCerrado(string $estado): bool
     {
@@ -25,12 +25,12 @@ final class TicketResponsabilidadGuard
     }
 
     /**
-     * Whether an outbound reply from $agenteId must be BLOCKED (ConflictoDeEstadoException)
-     * because the ticket is resolved/closed, the sender is not privileged, and the
-     * sender is not the current owner.
+     * Indica si una respuesta saliente de $agenteId debe BLOQUEARSE (ConflictoDeEstadoException)
+     * porque el ticket está resolved/closed, el remitente no es privilegiado y el
+     * remitente no es el responsable actual.
      *
-     * `$agenteId <= 0` (system/no-agent callers) never blocks — preserves every
-     * existing `agentId: 0` call site.
+     * `$agenteId <= 0` (llamadas del sistema o sin agente) nunca bloquea — conserva todas
+     * las llamadas existentes con `agentId: 0`.
      */
     public static function bloqueaReasignacion(
         string $estado,

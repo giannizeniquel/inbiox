@@ -24,11 +24,11 @@ final class MercureJwtService
     private const TOPIC_TICKETS = 'tickets';
     private const TOPIC_BANDEJA_DE_AGENTE = 'agent/%d/inbox';
 
-    /** Agent availability changes — e.g., agent/5/availability */
+    /** Cambios de disponibilidad del agente — p. ej., agent/5/availability */
     public const TOPIC_DISPONIBILIDAD_DE_AGENTE = 'agent/%d/availability';
-    /** Agent shift create/delete — e.g., agent/5/shifts */
+    /** Alta/baja de turnos del agente — p. ej., agent/5/shifts */
     public const TOPIC_TURNOS_DE_AGENTE = 'agent/%d/shifts';
-    /** Broadcast topic for capacity bar (Sprint 10.5) */
+    /** Topic de difusión para la barra de capacidad (Sprint 10.5) */
     public const TOPIC_AGENTES = 'agents';
 
     public function __construct(
@@ -40,7 +40,7 @@ final class MercureJwtService
         if ($agenteId < 0) {
             throw new InvalidArgumentException('Invalid agent ID');
         }
-        // Allow system publisher (agentId = 0) with wildcard topic
+        // Permite el publicador del sistema (agentId = 0) con topic comodín
         if ($agenteId === 0) {
             return $this->generateSystemPublisherToken();
         }
@@ -53,15 +53,15 @@ final class MercureJwtService
         $now = new DateTimeImmutable();
         $expiresAt = $now->modify("+{$ttl} seconds");
 
-        // Build topics array — single topic for all ticket events, per-agent inbox,
-        // per-agent availability, per-agent shifts, and agents broadcast
+        // Arma el array de topics — un único topic para todos los eventos de tickets, inbox por agente,
+        // disponibilidad por agente, turnos por agente y difusión de agentes
         $topics = [self::TOPIC_TICKETS];
         $topics[] = sprintf(self::TOPIC_BANDEJA_DE_AGENTE, $agenteId);
         $topics[] = sprintf(self::TOPIC_DISPONIBILIDAD_DE_AGENTE, $agenteId);
         $topics[] = sprintf(self::TOPIC_TURNOS_DE_AGENTE, $agenteId);
         $topics[] = self::TOPIC_AGENTES;
 
-        // Create JWT using Lcobucci v4+ Configuration API
+        // Crea el JWT con la Configuration API de Lcobucci v4+
         $config = Configuration::forSymmetricSigner(
             new Sha256(),
             InMemory::plainText($secret)
@@ -80,7 +80,7 @@ final class MercureJwtService
     }
 
     /**
-     * Generate a system publisher token with wildcard publish permission.
+     * Genera un token de publicador del sistema con permiso de publicación comodín.
      */
     public function createSubscriberToken(array $topics): Token
     {
@@ -117,7 +117,7 @@ final class MercureJwtService
             InMemory::plainText($secret)
         );
 
-        // System publisher with full publish access
+        // Publicador del sistema con acceso completo de publicación
         $token = $config->builder()
             ->identifiedBy('system-publisher', true)
             ->issuedBy('inbiox-api')
@@ -170,11 +170,11 @@ final class MercureJwtService
     }
 
     /**
-     * Issue a Mercure JWT for a specific user (foundation for PR3 authorization).
+     * Emite un JWT de Mercure para un usuario concreto (base para la autorización de PR3).
      *
-     * Topics will be scoped by role:
-     * - ROLE_AGENT: agent-specific topics + tickets
-     * - ROLE_SUPERVISOR/ROLE_ADMIN: all + wildcard
+     * Los topics se acotarán por rol:
+     * - ROLE_AGENT: topics propios del agente + tickets
+     * - ROLE_SUPERVISOR/ROLE_ADMIN: todos + comodín
      */
     public function issueParaUsuario(UserInterface $usuario, ?Agente $agente = null): Token
     {
@@ -187,7 +187,7 @@ final class MercureJwtService
             $topics[] = \sprintf(self::TOPIC_TURNOS_DE_AGENTE, $agente->getId());
         }
 
-        // Supervisors and admins get wildcard access
+        // Supervisores y administradores obtienen acceso comodín
         if (\in_array('ROLE_SUPERVISOR', $roles, true) || \in_array('ROLE_ADMIN', $roles, true)) {
             $topics[] = '*';
         }

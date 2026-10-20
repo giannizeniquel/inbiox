@@ -7,10 +7,10 @@ namespace App\Conversacion;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * Raw webhook payload storage for debugging and auditing.
+ * Almacenamiento del payload crudo del webhook para depuración y auditoría.
  *
- * Payloads are persisted BEFORE processing to ensure we have a record
- * even if the processor crashes or the handler throws an exception.
+ * Los payloads se persisten ANTES de procesarlos para asegurar que haya un registro
+ * aunque el procesador falle o el handler lance una excepción.
  */
 #[ORM\Entity]
 #[ORM\Table(name: 'webhook_payloads')]

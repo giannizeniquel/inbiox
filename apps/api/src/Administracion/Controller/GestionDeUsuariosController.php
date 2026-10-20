@@ -18,9 +18,9 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * Admin User management.
+ * Administración de usuarios.
  *
- * All endpoints require ROLE_ADMIN.
+ * Todos los endpoints requieren ROLE_ADMIN.
  */
 #[IsGranted('ROLE_ADMIN')]
 final class GestionDeUsuariosController

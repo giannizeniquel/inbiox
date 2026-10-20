@@ -9,7 +9,7 @@ use App\Agente\Equipo;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * Replaces the team's agents with the given ids. Unknown ids are skipped.
+ * Reemplaza los agentes del equipo por los ids dados. Los ids desconocidos se omiten.
  */
 final class AsignarAgentesAEquipoUseCase
 {
@@ -19,10 +19,10 @@ final class AsignarAgentesAEquipoUseCase
     ) {}
 
     /**
-     * @param array<mixed> $data decoded request body
+     * @param array<mixed> $data cuerpo de la request decodificado
      *
-     * @throws \InvalidArgumentException when agentIds is invalid, or an agent
-     *                                   is outside the team's workspace
+     * @throws \InvalidArgumentException cuando agentIds es inválido o un agente
+     *                                   está fuera del espacio de trabajo del equipo
      */
     public function execute(Equipo $equipo, array $data): void
     {
@@ -32,10 +32,10 @@ final class AsignarAgentesAEquipoUseCase
             throw new \InvalidArgumentException('agentIds must be an array of integers');
         }
 
-        // Run in transaction for atomicity — Team::addAgent() throws
-        // \InvalidArgumentException (workspace-membership invariant,
-        // design.md D3) which rolls back the whole batch (hard reject,
-        // all-or-nothing), mirroring AsignarAgentesAEspacioDeTrabajoUseCase.
+        // Se ejecuta en una transacción por atomicidad: Team::addAgent() lanza
+        // \InvalidArgumentException (invariante de pertenencia al espacio de trabajo,
+        // design.md D3), lo que hace rollback de todo el lote (rechazo estricto,
+        // todo o nada), igual que AsignarAgentesAEspacioDeTrabajoUseCase.
         $this->entityManager->wrapInTransaction(function () use ($equipo, $agenteIds): void {
             foreach ($equipo->getAgentes() as $agenteExistente) {
                 $equipo->removeAgente($agenteExistente);

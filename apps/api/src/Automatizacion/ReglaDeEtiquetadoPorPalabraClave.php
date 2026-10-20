@@ -14,7 +14,7 @@ class ReglaDeEtiquetadoPorPalabraClave implements ReglaInterface
 
     public function supports(ContextoDeRegla $contexto): bool
     {
-        // Only supports inbound messages
+        // Solo admite mensajes entrantes
         if ($contexto->getTipoDeDisparador() !== 'inbound') {
             return false;
         }
@@ -24,7 +24,7 @@ class ReglaDeEtiquetadoPorPalabraClave implements ReglaInterface
             return false;
         }
 
-        // Case-insensitive substring match for "error"
+        // Coincidencia de subcadena sin distinguir mayúsculas para "error"
         $contenido = $mensaje->getContenido();
         return stripos($contenido, self::PALABRA_CLAVE) !== false;
     }

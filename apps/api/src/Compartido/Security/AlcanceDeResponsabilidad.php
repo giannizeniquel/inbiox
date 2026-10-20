@@ -8,22 +8,22 @@ use App\Administracion\Usuario;
 use Symfony\Bundle\SecurityBundle\Security;
 
 /**
- * Determines the ownership scope for the current authenticated user.
+ * Determina el alcance de responsabilidad del usuario autenticado actual.
  *
- * INTENTIONALLY A NO-OP TODAY — not a bug:
+ * INTENCIONALMENTE NO HACE NADA HOY — no es un bug:
  *
- * `getAgenteId()` always returns null, for every role including AGENT.
- * This is a confirmed product decision (see docs/04_sprints/sprint_16
- * (Production Readiness).md): reports/metrics are NOT restricted by
- * agent — every authenticated agent can see every other agent's metrics,
- * for now. Ticket/conversation data is still scoped by workspace (see
- * AlcanceDeEspacioDeTrabajo), just not by individual agent ownership.
+ * `getAgenteId()` siempre devuelve null, para todos los roles, incluido AGENT.
+ * Es una decisión de producto confirmada (ver docs/04_sprints/sprint_16
+ * (Production Readiness).md): los reportes/métricas NO se restringen por
+ * agente — todo agente autenticado puede ver las métricas de los demás agentes,
+ * por ahora. Los datos de tickets/conversaciones siguen acotados por espacio de trabajo (ver
+ * AlcanceDeEspacioDeTrabajo), pero no por el agente responsable individual.
  *
- * This class (and the `agent_id` WHERE-clause plumbing that consumes it
- * in ReporteRepository/ReporteService) is kept in place so that
- * per-agent restriction can be reintroduced later without re-plumbing
- * every query — do not "fix" `getAgenteId()` to return the current
- * agent's ID without an explicit product decision to do so.
+ * Esta clase (y el armado de la cláusula WHERE por `agent_id` que la consume
+ * en ReporteRepository/ReporteService) se mantiene para que
+ * la restricción por agente pueda reintroducirse más adelante sin rehacer
+ * cada query — no "arreglar" `getAgenteId()` para que devuelva el ID del agente
+ * actual sin una decisión de producto explícita en ese sentido.
  */
 final class AlcanceDeResponsabilidad
 {
@@ -32,12 +32,12 @@ final class AlcanceDeResponsabilidad
     ) {}
 
     /**
-     * Get the scoped agent ID for the current user.
+     * Obtiene el ID de agente que acota al usuario actual.
      *
-     * - ROLE_ADMIN / ROLE_SUPERVISOR: null (no scope — see everything)
-     * - ROLE_AGENT: null (agents see all tickets in their workspace;
-     *   segregation is handled by AlcanceDeEspacioDeTrabajo.phone_number_id)
-     * - No authenticated user: null
+     * - ROLE_ADMIN / ROLE_SUPERVISOR: null (sin alcance — ven todo)
+     * - ROLE_AGENT: null (los agentes ven todos los tickets de su espacio de trabajo;
+     *   la segregación la resuelve AlcanceDeEspacioDeTrabajo.phone_number_id)
+     * - Sin usuario autenticado: null
      */
     public function getAgenteId(): ?int
     {
@@ -47,10 +47,10 @@ final class AlcanceDeResponsabilidad
             return null;
         }
 
-        // Workspace-based model: all authenticated users see all tickets
-        // in their active workspace. Segregation by workspace is handled
-        // at the query level via AlcanceDeEspacioDeTrabajo (phone_number_id filter).
-        // Agent-level ownership is no longer enforced at the query level.
+        // Modelo basado en espacios de trabajo: todos los usuarios autenticados ven todos los tickets
+        // de su espacio de trabajo activo. La segregación por espacio de trabajo se resuelve
+        // a nivel de query mediante AlcanceDeEspacioDeTrabajo (filtro por phone_number_id).
+        // La responsabilidad por agente ya no se aplica a nivel de query.
         return null;
     }
 }

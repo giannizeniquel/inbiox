@@ -3,7 +3,7 @@
 namespace App\Compartido\Graph;
 
 /**
- * Thrown when the WhatsApp Graph API returns an error response.
+ * Se lanza cuando la Graph API de WhatsApp devuelve una respuesta de error.
  */
 class GraphApiException extends \RuntimeException
 {

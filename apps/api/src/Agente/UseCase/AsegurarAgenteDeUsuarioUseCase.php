@@ -10,8 +10,8 @@ use App\Agente\Repository\AgenteRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * Returns the user's agent, creating one (name = email) when the user has
- * none, e.g. an admin who sends a message or switches workspace.
+ * Devuelve el agente del usuario y crea uno (nombre = email) cuando el usuario
+ * no tiene ninguno, p. ej. un admin que envía un mensaje o cambia de espacio de trabajo.
  */
 final class AsegurarAgenteDeUsuarioUseCase
 {

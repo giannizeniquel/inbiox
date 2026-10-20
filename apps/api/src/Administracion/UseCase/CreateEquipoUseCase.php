@@ -19,10 +19,10 @@ final class CreateEquipoUseCase
     ) {}
 
     /**
-     * @param array<mixed> $data decoded request body
+     * @param array<mixed> $data cuerpo de la request decodificado
      *
-     * @throws \InvalidArgumentException when a field is missing or invalid, or the workspace does not exist
-     * @throws ConflictoDeEstadoException    when the workspace already has a team with that name
+     * @throws \InvalidArgumentException cuando falta un campo o es inválido, o el espacio de trabajo no existe
+     * @throws ConflictoDeEstadoException    cuando el espacio de trabajo ya tiene un equipo con ese nombre
      */
     public function execute(array $data): Equipo
     {
@@ -39,7 +39,7 @@ final class CreateEquipoUseCase
 
         $espacioDeTrabajo = $this->espacioDeTrabajoRepository->find($espacioDeTrabajoId);
 
-        // An unknown workspace is a 400, not a 404 (current behavior).
+        // Un espacio de trabajo desconocido es un 400, no un 404 (comportamiento actual).
         if (null === $espacioDeTrabajo) {
             throw new \InvalidArgumentException('Workspace not found');
         }

@@ -13,20 +13,20 @@ use League\Csv\EscapeFormula;
 use League\Csv\Writer;
 
 /**
- * Streams the filtered ticket list as CSV rows into a `League\Csv\Writer`.
+ * Emite en streaming la lista filtrada de tickets como filas CSV en un `League\Csv\Writer`.
  *
- * Reuses `FiltrosDeTicketBuilder` for the shared filters (same semantics as
- * `ListTicketsQuery`); `TicketRepository::findExportChunk()` adds a
- * `t.created_at` date-range bound and a keyset cursor
- * (`t.id > :afterId ORDER BY t.id ASC LIMIT 500`) so results
- * are walked in bounded-memory chunks with no gaps/duplicates — see
+ * Reutiliza `FiltrosDeTicketBuilder` para los filtros compartidos (misma semántica que
+ * `ListTicketsQuery`); `TicketRepository::findExportChunk()` agrega un límite
+ * de rango de fechas sobre `t.created_at` y un cursor keyset
+ * (`t.id > :afterId ORDER BY t.id ASC LIMIT 500`) para que los resultados
+ * se recorran en bloques de memoria acotada, sin huecos ni duplicados; ver
  * `design.md`, "keyset chunking, not an unbuffered PDO connection".
  */
 class ExportarTicketsCsvQuery
 {
     public const CHUNK_SIZE = 500;
 
-    /** Column order — MUST match the header row and the spec's column contract. */
+    /** Orden de columnas: DEBE coincidir con la fila de encabezado y con el contrato de columnas del spec. */
     public const COLUMNAS = [
         'ticket_id',
         'contact_name',
@@ -44,7 +44,7 @@ class ExportarTicketsCsvQuery
         'phone_number_id',
     ];
 
-    /** Only free-text columns get formula-injection escaping; phone is excluded on purpose. */
+    /** Solo las columnas de texto libre reciben escape contra inyección de fórmulas; el teléfono se excluye a propósito. */
     private const COLUMNAS_A_ESCAPAR = ['contact_name', 'assigned_agent', 'tags'];
 
     public function __construct(
@@ -54,13 +54,13 @@ class ExportarTicketsCsvQuery
     ) {}
 
     /**
-     * @param string|null $agenteId 'mine'-style agent id filter (unused directly; kept for parity with ListTicketsQuery's $filter/$agenteId pair)
-     * @param string|null $estado Comma-separated status filter
-     * @param string|null $etiqueta Comma-separated tag names (AND semantics, max 5)
-     * @param string|null $phoneNumberId Workspace scope
-     * @param int|null $equipoId Single-select team filter, composable with $etiqueta
+     * @param string|null $agenteId Filtro de id de agente al estilo 'mine' (no se usa directamente; se mantiene por paridad con el par $filter/$agenteId de ListTicketsQuery)
+     * @param string|null $estado Filtro de estado separado por comas
+     * @param string|null $etiqueta Nombres de etiquetas separados por comas (semántica AND, máximo 5)
+     * @param string|null $phoneNumberId Alcance de espacio de trabajo
+     * @param int|null $equipoId Filtro de equipo de selección única, combinable con $etiqueta
      *
-     * @return int total number of data rows written
+     * @return int cantidad total de filas de datos escritas
      */
     public function stream(
         Writer $writer,
@@ -135,11 +135,11 @@ class ExportarTicketsCsvQuery
     }
 
     /**
-     * Per-chunk correlated tag lookup, mirroring `ListTicketsQuery`'s existing
-     * chunked unread-count lookup pattern (design.md, Data Flow).
+     * Búsqueda correlacionada de etiquetas por bloque, que replica el patrón existente
+     * de búsqueda por bloques del conteo de no leídos de `ListTicketsQuery` (design.md, Data Flow).
      *
      * @param list<int> $ticketIds
-     * @return array<int, list<string>> ticket id => ordered tag names
+     * @return array<int, list<string>> id de ticket => nombres de etiquetas ordenados
      */
     private function fetchEtiquetasPorTicket(array $ticketIds): array
     {

@@ -21,16 +21,16 @@ class DescargaDeAdjuntoService
     ) {}
 
     /**
-     * Download media from Graph API and store it in object storage.
+     * Descarga el adjunto desde Graph API y lo guarda en el almacenamiento de objetos.
      *
-     * @param string $mediaId    WhatsApp media ID
-     * @param string $mimeType   MIME type of the media
-     * @param string $tenantId   Tenant prefix for the object key
-     * @param int    $ticketId   Ticket ID for the object key
-     * @param string $filename   Original filename for the extension
+     * @param string $mediaId    ID del adjunto en WhatsApp
+     * @param string $mimeType   Tipo MIME del adjunto
+     * @param string $tenantId   Prefijo del tenant para la clave del objeto
+     * @param int    $ticketId   ID del ticket para la clave del objeto
+     * @param string $filename   Nombre de archivo original, para la extensión
      *
      * @return array{key: string, size: int, mimeType: string, kind: string}|null
-     *         Null if download or storage fails
+     *         Null si falla la descarga o el almacenamiento
      */
     public function descargarYGuardar(
         string $mediaId,
@@ -39,8 +39,8 @@ class DescargaDeAdjuntoService
         int $ticketId,
         string $filename = 'file',
     ): ?array {
-        // Normalize MIME type: WhatsApp voice notes arrive as
-        // "audio/ogg; codecs=opus" but we want the bare "audio/ogg".
+        // Normaliza el tipo MIME: las notas de voz de WhatsApp llegan como
+        // "audio/ogg; codecs=opus", pero queremos el "audio/ogg" sin parámetros.
         $mimeType = strtolower(trim(explode(';', $mimeType)[0]));
 
         try {
@@ -56,7 +56,7 @@ class DescargaDeAdjuntoService
         $tamanio = strlen($binary);
         $tipo = TipoDeAdjunto::fromMime($mimeType);
 
-        // Validate size (skip validation if graph already sent it — we still enforce)
+        // Valida el tamaño (omitir la validación si graph ya lo envió; igual se aplica)
         try {
             $this->validadorDeAdjunto->validar($mimeType, $tamanio);
         } catch (\Throwable $e) {
@@ -69,7 +69,7 @@ class DescargaDeAdjuntoService
             return null;
         }
 
-        // Build object key: {tenant}/{ticket_id}/{uuid}.{ext}
+        // Arma la clave del objeto: {tenant}/{ticket_id}/{uuid}.{ext}
         $ext = pathinfo($filename, PATHINFO_EXTENSION) ?: 'bin';
         $uuid = Ulid::generate();
         $key = sprintf('%s/%d/%s.%s', $tenantId, $ticketId, $uuid, $ext);

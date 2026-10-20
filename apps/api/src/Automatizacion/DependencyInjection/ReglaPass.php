@@ -8,24 +8,24 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
 
 /**
- * Compiler pass to register all rules with EjecutorDeReglas.
- * Automatically discovers all services implementing ReglaInterface.
+ * Compiler pass que registra todas las reglas en EjecutorDeReglas.
+ * Descubre automáticamente todos los servicios que implementan ReglaInterface.
  */
 class ReglaPass implements CompilerPassInterface
 {
     public function process(ContainerBuilder $container): void
     {
-        // Get the EjecutorDeReglas definition
+        // Obtiene la definición de EjecutorDeReglas
         if (!$container->has('App\Automatizacion\EjecutorDeReglas')) {
             return;
         }
 
         $ejecutorDeReglasDefinition = $container->getDefinition('App\Automatizacion\EjecutorDeReglas');
 
-        // Get all service definitions
+        // Obtiene todas las definiciones de servicios
         $definitions = $container->getDefinitions();
 
-        // Rule classes we know implement ReglaInterface
+        // Clases de regla que sabemos que implementan ReglaInterface
         $clasesDeReglasConocidas = [
             'App\Automatizacion\ReglaDeReaperturaAutomatica',
             'App\Automatizacion\ReglaDeEtiquetadoPorPalabraClave',
@@ -41,7 +41,7 @@ class ReglaPass implements CompilerPassInterface
                 continue;
             }
 
-            // Check if it's one of our known rule classes
+            // Verifica si es una de nuestras clases de regla conocidas
             if (in_array($class, $clasesDeReglasConocidas, true)) {
                 $ejecutorDeReglasDefinition->addMethodCall('agregarRegla', [new Reference($id)]);
             }

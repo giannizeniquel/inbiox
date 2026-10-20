@@ -29,8 +29,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_AGENT')]
 class ProxyDeProveedorController extends AbstractController
 {
-    private const GRAPH_AUTH_ERROR = 401;   // Meta auth/oauth errors
-    private const GRAPH_RATE_LIMIT = 429;    // Too many requests
+    private const GRAPH_AUTH_ERROR = 401;   // Errores de auth/oauth de Meta
+    private const GRAPH_RATE_LIMIT = 429;    // Demasiadas solicitudes
 
     public function __construct(
         private readonly GraphClient $graphClient,
@@ -61,12 +61,12 @@ class ProxyDeProveedorController extends AbstractController
         $filename = $payload['filename'] ?? null;
         $tamanio = $payload['size'] ?? null;
 
-        // Resolve agent ID from authenticated user (degrades to null, never
-        // fails the send — design.md D4).
+        // Resuelve el ID del agente a partir del usuario autenticado (degrada a null, nunca
+        // hace fallar el envío; design.md D4).
         $agenteId = $this->getAgenteQueActuaId($usuario) ?? 0;
 
-        // Resolved/closed ownership guard (design.md D3): role_hierarchy makes
-        // ROLE_ADMIN inherit ROLE_SUPERVISOR, so this single check covers both.
+        // Guarda de responsable en tickets resueltos/cerrados (design.md D3): role_hierarchy hace que
+        // ROLE_ADMIN herede ROLE_SUPERVISOR, así que esta única verificación cubre ambos.
         $remitenteEsPrivilegiado = $this->isGranted('ROLE_SUPERVISOR');
 
         try {
@@ -124,9 +124,9 @@ class ProxyDeProveedorController extends AbstractController
 
         return new JsonResponse(
             [
-                // DB message ID — the frontend uses this to fetch the media URL
+                // ID del mensaje en la BD: el frontend lo usa para pedir la URL del adjunto
                 'messageId' => $result['messageId'],
-                // WhatsApp message ID (WAMID)
+                // ID del mensaje en WhatsApp (WAMID)
                 'externalId' => $result['externalId'],
                 'status' => 'sent',
             ],
@@ -135,12 +135,12 @@ class ProxyDeProveedorController extends AbstractController
     }
 
     /**
-     * Resolve the acting agent's id from the authenticated user, degrading
-     * gracefully (never throwing) rather than failing the caller's send.
+     * Resuelve el id del agente que actúa a partir del usuario autenticado, degradando
+     * sin errores (nunca lanza) en lugar de hacer fallar el envío de quien llama.
      *
-     * If the user doesn't have a linked Agent record (e.g. admin), create or
-     * find one so they can be assigned to tickets. Extracted from send()'s
-     * original inline fallback (design.md D4).
+     * Si el usuario no tiene un registro de Agent vinculado (p. ej. admin), crea o
+     * busca uno para que se le puedan asignar tickets. Extraído del fallback en línea
+     * original de send() (design.md D4).
      */
     private function getAgenteQueActuaId(?Usuario $usuario): ?int
     {
@@ -296,7 +296,7 @@ class ProxyDeProveedorController extends AbstractController
     }
 
     /**
-     * Map Graph API error code to HTTP status.
+     * Mapea el código de error de Graph API a un estado HTTP.
      */
     private function mapGraphErrorCode(int $code): int
     {
@@ -308,7 +308,7 @@ class ProxyDeProveedorController extends AbstractController
     }
 
     /**
-     * Map Graph API error code to Inbiox error type.
+     * Mapea el código de error de Graph API a un tipo de error de Inbiox.
      */
     private function mapGraphErrorType(int $code): string
     {

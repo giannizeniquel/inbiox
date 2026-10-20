@@ -7,10 +7,10 @@ namespace App\Disponibilidad;
 use App\Compartido\RecolectorDeEventos;
 
 /**
- * Marker domain event for agent availability changes.
+ * Evento de dominio marcador para cambios de disponibilidad de un agente.
  *
- * FQCN used by TipoDeEventoMapper to map to TipoDeEventoEnTiempoReal::DISPONIBILIDAD_DE_AGENTE_CAMBIADA.
- * Not collected via RecolectorDeEventos — EventoOutbox is created directly.
+ * FQCN que TipoDeEventoMapper usa para mapearlo a TipoDeEventoEnTiempoReal::DISPONIBILIDAD_DE_AGENTE_CAMBIADA.
+ * No se recolecta mediante RecolectorDeEventos: el EventoOutbox se crea directamente.
  */
 final class AgentAvailabilityChangedEvent
 {

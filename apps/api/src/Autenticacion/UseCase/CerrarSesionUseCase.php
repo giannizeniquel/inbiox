@@ -15,8 +15,8 @@ final class CerrarSesionUseCase
     ) {}
 
     /**
-     * Deletes the refresh token from the cookie and every refresh token of
-     * the authenticated user.
+     * Elimina el refresh token de la cookie y todos los refresh tokens del
+     * usuario autenticado.
      */
     public function execute(?string $refreshTokenString, ?Usuario $usuario): void
     {

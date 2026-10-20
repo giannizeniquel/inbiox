@@ -11,20 +11,20 @@ use App\Ticket\Repository\TicketRepository;
 use Psr\Log\LoggerInterface;
 
 /**
- * Scheduled batch closure for tickets whose WhatsApp 24h conversation window
- * has elapsed (design.md Phase 6, `App\Conversacion\Command\CerrarVentanasVencidasCommand`).
+ * Cierre programado por lotes de los tickets cuya ventana de conversación de 24 h de WhatsApp
+ * venció (design.md Phase 6, `App\Conversacion\Command\CerrarVentanasVencidasCommand`).
  *
- * No exemption for a `new`/never-worked ticket — Meta's rule is time-based,
- * not usage-based (proposal.md). `last_inbound_message_at IS NULL` never
- * closes (D8 fail-open: mass-close mitigation for pre-existing tickets with
- * no recorded inbound message).
+ * No hay excepción para un ticket `new`/nunca trabajado: la regla de Meta se basa en el tiempo,
+ * no en el uso (proposal.md). `last_inbound_message_at IS NULL` nunca
+ * cierra (D8 fail-open: mitigación del cierre masivo para tickets preexistentes sin
+ * mensaje entrante registrado).
  */
 final class VencimientoDeVentanaService
 {
     /**
-     * @var string[] Statuses eligible for window-expiry closure. `closed` is
-     *                excluded (already closed); this mirrors the widened
-     *                FSM's closing side (task 0.9).
+     * @var string[] Estados elegibles para el cierre por vencimiento de ventana. `closed` queda
+     *                excluido (ya está cerrado); esto refleja el lado de cierre de la
+     *                FSM ampliada (task 0.9).
      */
     private const ESTADOS_ELEGIBLES = [
         EstadoDeTicket::NUEVO->value,
@@ -42,13 +42,13 @@ final class VencimientoDeVentanaService
     }
 
     /**
-     * Close every ticket whose effective window (24h minus the safety
-     * margin) has elapsed. Returns the number of tickets that matched
-     * (dry-run) or were successfully closed (real run).
+     * Cierra todos los tickets cuya ventana efectiva (24 h menos el margen
+     * de seguridad) venció. Devuelve la cantidad de tickets que coincidieron
+     * (dry-run) o que se cerraron con éxito (ejecución real).
      *
-     * @param bool     $dryRun            When true, select and count only — write nothing.
-     * @param int      $limit             Max tickets processed in one batch.
-     * @param int|null $safetyMarginOverride Overrides the DI-bound default margin, if provided.
+     * @param bool     $dryRun            Si es true, solo selecciona y cuenta; no escribe nada.
+     * @param int      $limit             Máximo de tickets procesados en un lote.
+     * @param int|null $safetyMarginOverride Reemplaza el margen por defecto inyectado por DI, si se indica.
      */
     public function cerrarVencidos(bool $dryRun, int $limit, ?int $safetyMarginOverride = null): int
     {
@@ -73,7 +73,7 @@ final class VencimientoDeVentanaService
                 $this->cambiarEstadoDeTicketUseCase->cerrarPorVentanaVencida((int) $id);
                 $cantidadDeCerrados++;
             } catch (\Throwable $e) {
-                // One bad row must not abort the batch — log and continue.
+                // Una fila con error no debe abortar el lote: se registra en el log y se continúa.
                 $this->logger->error('ConversationWindowExpiryService: failed to close ticket {ticketId}: {message}', [
                     'ticketId' => $id,
                     'message' => $e->getMessage(),

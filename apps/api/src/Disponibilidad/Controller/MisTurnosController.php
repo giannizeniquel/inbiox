@@ -15,10 +15,10 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * The current agent's shifts.
+ * Los turnos del agente actual.
  *
- * GET /api/me/shifts — list current agent's shifts
- * PUT /api/me/shifts — replace all shifts
+ * GET /api/me/shifts — lista los turnos del agente actual
+ * PUT /api/me/shifts — reemplaza todos los turnos
  */
 #[IsGranted('IS_AUTHENTICATED_FULLY')]
 final class MisTurnosController
@@ -46,7 +46,7 @@ final class MisTurnosController
             ];
         }
 
-        // Sort by dayOfWeek then start
+        // Ordena por dayOfWeek y luego por start
         \usort($turnos, function (array $a, array $b) {
             return [$a['dayOfWeek'], $a['start']] <=> [$b['dayOfWeek'], $b['start']];
         });

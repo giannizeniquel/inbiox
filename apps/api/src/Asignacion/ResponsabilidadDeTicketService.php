@@ -14,14 +14,14 @@ use App\Ticket\EstadoDeTicket;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * SINGLE point of ownership change for tickets.
+ * ÚNICO punto de cambio de responsable de los tickets.
  *
- * NO other code may modify ticket.assigned_agent_id directly.
- * ALL ownership changes MUST go through registrarCambioDeResponsable().
+ * NINGÚN otro código puede modificar ticket.assigned_agent_id directamente.
+ * TODOS los cambios de responsable DEBEN pasar por registrarCambioDeResponsable().
  *
- * This is the audit gateway: every change creates an Asignacion row,
- * updates the ticket, and emits domain events via RecolectorDeEventos
- * (which PR4 connects to Mercure).
+ * Esta es la puerta de auditoría: cada cambio crea una fila de Asignacion,
+ * actualiza el ticket y emite eventos de dominio mediante RecolectorDeEventos
+ * (que PR4 conecta con Mercure).
  */
 final class ResponsabilidadDeTicketService
 {
@@ -31,16 +31,16 @@ final class ResponsabilidadDeTicketService
     ) {}
 
     /**
-     * Record a ticket ownership change with full audit trail.
+     * Registra un cambio de responsable de un ticket con auditoría completa.
      *
-     * @param Ticket  $ticket        The ticket whose ownership is changing
-     * @param ?Agente  $agente         The new owner (null for UNASSIGN)
-     * @param ?Agente  $agenteAnterior The previous owner (null for initial assignment)
-     * @param TipoDeAsignacion $tipo   The type of change
-     * @param string  $asignadoPor    'system' or user identifier
-     * @param ?string $notas         Optional notes
+     * @param Ticket  $ticket        El ticket cuyo responsable cambia
+     * @param ?Agente  $agente         El nuevo responsable (null para UNASSIGN)
+     * @param ?Agente  $agenteAnterior El responsable anterior (null en la asignación inicial)
+     * @param TipoDeAsignacion $tipo   El tipo de cambio
+     * @param string  $asignadoPor    'system' o el identificador del usuario
+     * @param ?string $notas         Notas opcionales
      *
-     * @return Asignacion The created assignment record
+     * @return Asignacion El registro de asignación creado
      */
     public function registrarCambioDeResponsable(
         Ticket $ticket,
@@ -50,7 +50,7 @@ final class ResponsabilidadDeTicketService
         string $asignadoPor,
         ?string $notas = null,
     ): Asignacion {
-        // 1. Create Asignacion audit row
+        // 1. Crea la fila de auditoría de Asignacion
         $asignacion = new Asignacion(
             ticket: $ticket,
             agente: $agente,
@@ -61,18 +61,18 @@ final class ResponsabilidadDeTicketService
         );
         $this->em->persist($asignacion);
 
-        // 2. Update ticket ownership (THE single point of change for assigned_agent_id)
+        // 2. Actualiza el responsable del ticket (EL único punto de cambio de assigned_agent_id)
         $ticket->setAgenteAsignadoId($agente?->getId());
         $ticket->setActualizadoAt(new \DateTimeImmutable());
 
-        // If ticket was NEW, set to ACTIVE on assignment
+        // Si el ticket estaba NEW, pasa a ACTIVE al asignarse
         $estadoCambiado = false;
         if ($ticket->getEstado() === EstadoDeTicket::NUEVO->value) {
             $ticket->setEstado(EstadoDeTicket::ACTIVO->value);
             $estadoCambiado = true;
         }
 
-        // 3. Collect domain events
+        // 3. Recolecta los eventos de dominio
         $now = new \DateTimeImmutable();
 
         $this->recolectorDeEventos->recolectar(new TicketUpdatedEvent(
@@ -85,7 +85,7 @@ final class ResponsabilidadDeTicketService
             ownerAgentId: $agente?->getId(),
         ));
 
-        // Inbox update for previous agent (lost a ticket)
+        // Actualización del inbox del agente anterior (perdió un ticket)
         if ($agenteAnterior !== null) {
             $this->recolectorDeEventos->recolectar(new InboxUpdatedEvent(
                 eventId: DomainEvent::generateEventId(),
@@ -96,7 +96,7 @@ final class ResponsabilidadDeTicketService
             ));
         }
 
-        // Inbox update for new agent (gained a ticket)
+        // Actualización del inbox del agente nuevo (ganó un ticket)
         if ($agente !== null) {
             $this->recolectorDeEventos->recolectar(new InboxUpdatedEvent(
                 eventId: DomainEvent::generateEventId(),

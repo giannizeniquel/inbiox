@@ -19,9 +19,9 @@ class AdjuntoStorageService
     ) {}
 
     /**
-     * Store content under the given key.
+     * Guarda el contenido bajo la clave dada.
      *
-     * @param string|resource $body Content to store
+     * @param string|resource $body Contenido a guardar
      */
     public function put(string $key, $body, string $mimeType = 'application/octet-stream'): void
     {
@@ -34,7 +34,7 @@ class AdjuntoStorageService
     }
 
     /**
-     * Retrieve content by key.
+     * Obtiene el contenido por clave.
      */
     public function get(string $key): string
     {
@@ -47,7 +47,7 @@ class AdjuntoStorageService
     }
 
     /**
-     * Check if an object exists.
+     * Verifica si un objeto existe.
      */
     public function exists(string $key): bool
     {
@@ -66,11 +66,11 @@ class AdjuntoStorageService
     }
 
     /**
-     * Generate a pre-signed URL for temporary access.
+     * Genera una URL prefirmada para acceso temporal.
      *
-     * Uses the public-endpoint client (if configured) so the URL hostname is
-     * reachable from the browser. The internal client's hostname (e.g.
-     * "minio:9000" inside Docker) is not resolvable outside the container.
+     * Usa el cliente del endpoint público (si está configurado) para que el hostname de la URL sea
+     * accesible desde el navegador. El hostname del cliente interno (p. ej.
+     * "minio:9000" dentro de Docker) no se resuelve fuera del contenedor.
      */
     public function temporaryUrl(string $key, int $ttlSeconds = 300): string
     {
@@ -87,7 +87,7 @@ class AdjuntoStorageService
     }
 
     /**
-     * Delete an object.
+     * Borra un objeto.
      */
     public function delete(string $key): void
     {

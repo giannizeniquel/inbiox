@@ -11,8 +11,8 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
 /**
- * Debug endpoints — only available in dev/test environment.
- * Returns 404 in production.
+ * Endpoints de depuración — solo disponibles en el entorno dev/test.
+ * Devuelve 404 en producción.
  */
 class DebugController extends AbstractController
 {
@@ -28,7 +28,7 @@ class DebugController extends AbstractController
         return \in_array($this->kernel->getEnvironment(), ['dev', 'test'], true);
     }
 
-    private function notFound(): JsonResponse
+    private function noEncontrado(): JsonResponse
     {
         return new JsonResponse(['error' => 'Not found'], 404);
     }
@@ -37,7 +37,7 @@ class DebugController extends AbstractController
     public function entrante(int $ticketId): JsonResponse
     {
         if (!$this->isDevOrTest()) {
-            return $this->notFound();
+            return $this->noEncontrado();
         }
 
         $textos = [
@@ -76,7 +76,7 @@ class DebugController extends AbstractController
     public function saliente(int $ticketId): JsonResponse
     {
         if (!$this->isDevOrTest()) {
-            return $this->notFound();
+            return $this->noEncontrado();
         }
 
         $responses = [
@@ -113,11 +113,11 @@ class DebugController extends AbstractController
     public function estado(int $ticketId): JsonResponse
     {
         if (!$this->isDevOrTest()) {
-            return $this->notFound();
+            return $this->noEncontrado();
         }
 
-        // Valid transitions that work from any state: waiting or resolved
-        // The FSM will reject invalid transitions
+        // Transiciones válidas que funcionan desde cualquier estado: waiting o resolved
+        // La FSM rechaza las transiciones inválidas
         $estadosValidos = ['waiting', 'resolved'];
         
         try {
@@ -141,7 +141,7 @@ class DebugController extends AbstractController
     public function asignar(int $ticketId): JsonResponse
     {
         if (!$this->isDevOrTest()) {
-            return $this->notFound();
+            return $this->noEncontrado();
         }
 
         $agenteIds = [1, 2, 3, 4, 5];

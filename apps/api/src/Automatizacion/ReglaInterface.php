@@ -5,22 +5,22 @@ namespace App\Automatizacion;
 interface ReglaInterface
 {
     /**
-     * Check if this rule supports the given context.
+     * Indica si esta regla admite el contexto dado.
      */
     public function supports(ContextoDeRegla $contexto): bool;
 
     /**
-     * Execute the rule's action.
+     * Ejecuta la acción de la regla.
      */
     public function execute(ContextoDeRegla $contexto): void;
 
     /**
-     * Get unique name for this rule.
+     * Obtiene el nombre único de esta regla.
      */
     public function getNombre(): string;
 
     /**
-     * Build execution key for idempotency check.
+     * Arma la clave de ejecución para la verificación de idempotencia.
      */
     public function armarClaveDeEjecucion(ContextoDeRegla $contexto): string;
 }

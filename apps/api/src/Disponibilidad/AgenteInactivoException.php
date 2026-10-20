@@ -7,18 +7,18 @@ namespace App\Disponibilidad;
 use App\Compartido\ConflictoDeEstadoException;
 
 /**
- * Exception thrown when a ticket assignment targets an agent that is not
- * currently Activo (per DisponibilidadDeAgenteService::isActiveNow()).
+ * Excepción lanzada cuando una asignación de ticket apunta a un agente que no está
+ * Activo en este momento (según DisponibilidadDeAgenteService::isActiveNow()).
  *
- * HARD BLOCK for every role (ROLE_AGENT, ROLE_SUPERVISOR, ROLE_ADMIN) — no
- * bypass. Thrown inside AsignarTicketUseCase's transaction, after the
- * pessimistic lock, before registrarCambioDeResponsable(): a rejection writes no
- * assignment row and emits no event; the transaction rolls back.
+ * BLOQUEO ESTRICTO para todos los roles (ROLE_AGENT, ROLE_SUPERVISOR, ROLE_ADMIN), sin
+ * excepciones. Se lanza dentro de la transacción de AsignarTicketUseCase, después del
+ * lock pesimista y antes de registrarCambioDeResponsable(): un rechazo no escribe
+ * ninguna fila de asignación ni emite eventos; la transacción hace rollback.
  *
- * Subclass of ConflictoDeEstadoException so existing generic 409 handling still
- * applies if a caller only catches the parent type, while TicketController
- * gets a machine-readable discriminator (AGENT_NOT_ACTIVE) via a
- * subclass-first catch arm.
+ * Subclase de ConflictoDeEstadoException para que el manejo genérico de 409 existente
+ * siga aplicando si quien llama solo captura el tipo padre, mientras que TicketController
+ * obtiene un discriminador legible por máquina (AGENT_NOT_ACTIVE) mediante un
+ * catch que captura primero la subclase.
  */
 class AgenteInactivoException extends ConflictoDeEstadoException
 {

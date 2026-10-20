@@ -8,10 +8,10 @@ use App\Compartido\RecolectorDeEventos;
 use Symfony\Component\Uid\Ulid;
 
 /**
- * Domain event for message status updates (delivered, read, failed, etc.).
+ * Evento de dominio para los cambios de estado de un mensaje (delivered, read, failed, etc.).
  *
- * Published via RecolectorDeEventos + Outbox → Mercure when a message's
- * deliveryStatus transitions to a new state via ProcesarActualizacionDeEstadoUseCase.
+ * Se publica vía RecolectorDeEventos + Outbox → Mercure cuando el deliveryStatus de
+ * un mensaje pasa a un nuevo estado vía ProcesarActualizacionDeEstadoUseCase.
  */
 final readonly class MessageUpdatedEvent extends DomainEvent
 {

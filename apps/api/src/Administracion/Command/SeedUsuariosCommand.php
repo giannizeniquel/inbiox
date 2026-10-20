@@ -1,7 +1,7 @@
 <?php
 /**
- * Seed command: creates 2 admins, 2 supervisors, 6 agents with workspace assignments.
- * Run: docker exec inbiox_php php bin/console app:seed-users
+ * Comando de seed: crea 2 administradores, 2 supervisores y 6 agentes con asignaciones a espacios de trabajo.
+ * Ejecución: docker exec inbiox_php php bin/console app:seed-users
  */
 
 namespace App\Administracion\Command;
@@ -30,7 +30,7 @@ final class SeedUsuariosCommand extends Command
     {
         $password = 'password123';
 
-        // Load existing workspaces
+        // Carga los espacios de trabajo existentes
         $espacioDeTrabajoRepo = $this->em->getRepository(EspacioDeTrabajo::class);
         $espaciosDeTrabajo = $espacioDeTrabajoRepo->findBy([], ['id' => 'ASC']);
         if (empty($espaciosDeTrabajo)) {
@@ -44,7 +44,7 @@ final class SeedUsuariosCommand extends Command
             $ws2->getNombreVisible(), $ws2->getPhoneNumberId(),
         ));
 
-        // ── 2 Admins (with Agent for workspace switching) ──
+        // ── 2 Admins (con Agente para cambiar de espacio de trabajo) ──
         $administradores = [
             ['email' => 'admin1@inbiox.local'],
             ['email' => 'admin2@inbiox.local'],
@@ -55,7 +55,7 @@ final class SeedUsuariosCommand extends Command
             $usuario->setPassword($this->hasher->hashPassword($usuario, $password));
             $usuario->setRoles(['ROLE_ADMIN']);
 
-            // Admin gets an Agent so workspace switcher works
+            // El admin recibe un Agente para que funcione el selector de espacio de trabajo
             $agente = new Agente($a['email']);
             $agente->setUsuario($usuario);
             $usuario->setAgente($agente);
@@ -68,7 +68,7 @@ final class SeedUsuariosCommand extends Command
             $output->writeln("Admin: {$a['email']} — active: {$ws1->getNombreVisible()}");
         }
 
-        // ── 2 Supervisores (with Agent for workspace switching) ──
+        // ── 2 Supervisores (con Agente para cambiar de espacio de trabajo) ──
         $supervisores = [
             ['email' => 'super1@inbiox.local'],
             ['email' => 'super2@inbiox.local'],
@@ -79,7 +79,7 @@ final class SeedUsuariosCommand extends Command
             $usuario->setPassword($this->hasher->hashPassword($usuario, $password));
             $usuario->setRoles(['ROLE_SUPERVISOR']);
 
-            // Supervisor gets an Agent so workspace switcher works
+            // El supervisor recibe un Agente para que funcione el selector de espacio de trabajo
             $agente = new Agente($s['email']);
             $agente->setUsuario($usuario);
             $usuario->setAgente($agente);

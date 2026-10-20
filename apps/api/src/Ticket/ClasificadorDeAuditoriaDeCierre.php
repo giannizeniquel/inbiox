@@ -7,20 +7,20 @@ namespace App\Ticket;
 use App\Administracion\Usuario;
 
 /**
- * Classifies a manual resolve/close action into the owner/override/unowned
- * audit outcome (design.md D2), and builds the namespaced actor reference
- * stored in `ticket_events.source` / `assignments.assigned_by` (design.md D5).
+ * Clasifica una acción manual de resolver/cerrar en el resultado de auditoría
+ * owner/override/unowned (design.md D2), y arma la referencia de actor con espacio de nombres
+ * guardada en `ticket_events.source` / `assignments.assigned_by` (design.md D5).
  *
- * Pure, dependency-free — no Doctrine, no HTTP.
+ * Pura, sin dependencias — sin Doctrine, sin HTTP.
  */
 final class ClasificadorDeAuditoriaDeCierre
 {
     /**
-     * @param string   $nuevoEstado       'resolved' | 'closed' (post-transition)
-     * @param int|null $responsableAnteriorId ticket.assigned_agent_id captured under
-     *                                  the use case's own `FOR UPDATE` lock (D4)
-     * @param int|null $agenteActuanteId   $usuario->getAgent()?->getId(), null for an
-     *                                  agentless admin/supervisor
+     * @param string   $nuevoEstado       'resolved' | 'closed' (después de la transición)
+     * @param int|null $responsableAnteriorId ticket.assigned_agent_id capturado bajo
+     *                                  el propio bloqueo `FOR UPDATE` del caso de uso (D4)
+     * @param int|null $agenteActuanteId   $usuario->getAgent()?->getId(), null para un
+     *                                  admin/supervisor sin agente
      */
     public function clasificar(string $nuevoEstado, ?int $responsableAnteriorId, ?int $agenteActuanteId): string
     {
@@ -38,7 +38,7 @@ final class ClasificadorDeAuditoriaDeCierre
     }
 
     /**
-     * Compact, namespaced actor reference for `EventoDeTicket.source` /
+     * Referencia de actor compacta y con espacio de nombres para `EventoDeTicket.source` /
      * `Asignacion.asignadoPor` (design.md D5).
      */
     public function referenciaDeActor(Usuario $usuario): string

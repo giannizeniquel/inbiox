@@ -19,7 +19,7 @@ final class MercureTokenController extends AbstractController
         private readonly MercureJwtService $jwtService,
     ) {}
 
-    // Route registered in config/routes.yaml (app_mercure_token)
+    // Ruta registrada en config/routes.yaml (app_mercure_token)
     #[Route('/api/mercure/token', name: 'app_mercure_token', methods: ['GET'])]
     public function getToken(#[CurrentUser] ?Usuario $usuario): JsonResponse
     {

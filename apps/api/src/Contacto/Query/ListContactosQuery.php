@@ -26,8 +26,8 @@ class ListContactosQuery
         $limit = min(100, max(1, $limit));
         $offset = ($page - 1) * $limit;
 
-        // Contacts are shared across workspaces — only conversations/tickets
-        // are segregated. No phone_number_id filter on the contact list.
+        // Los contactos se comparten entre espacios de trabajo — solo las conversaciones/tickets
+        // están segregados. No hay filtro por phone_number_id en la lista de contactos.
         $results = $this->contactoRepository->findPaginaDeLista($search, $estado, $canal, $responsableId, $email, $limit, $offset);
         $total = $this->contactoRepository->countLista($search, $estado, $canal, $responsableId, $email);
 
@@ -47,7 +47,7 @@ class ListContactosQuery
             );
         }, $results);
 
-        // Resolve activeTicketId in a second pass to avoid SQL parameter ordering issues
+        // Resuelve activeTicketId en una segunda pasada para evitar problemas con el orden de los parámetros SQL
         if (!empty($items)) {
             $contactoIds = array_map(fn($dto) => $dto->id, $items);
             $this->agregarTicketsActivos($items, $contactoIds, $phoneNumberId);
@@ -62,8 +62,8 @@ class ListContactosQuery
     }
 
     /**
-     * Resolve the active (non-closed) ticket ID for each contact.
-     * Done in a separate query after the contact page is known.
+     * Resuelve el ID del ticket activo (no cerrado) de cada contacto.
+     * Se hace en una query separada después de conocer la página de contactos.
      */
     private function agregarTicketsActivos(array $items, array $contactoIds, ?string $phoneNumberId): void
     {
@@ -71,13 +71,13 @@ class ListContactosQuery
 
         $rows = $this->ticketRepository->findUltimosTicketIdsAbiertosByContacto($contactoIds, $phoneNumberId);
 
-        // Build lookup: contact_id → ticket_id
+        // Arma el mapa de búsqueda: contact_id → ticket_id
         $mapaDeTickets = [];
         foreach ($rows as $row) {
             $mapaDeTickets[(int) $row['contact_id']] = (int) $row['ticket_id'];
         }
 
-        // Patch DTOs
+        // Completa los DTOs
         foreach ($items as $dto) {
             $dto->ticketActivoId = $mapaDeTickets[$dto->id] ?? null;
         }

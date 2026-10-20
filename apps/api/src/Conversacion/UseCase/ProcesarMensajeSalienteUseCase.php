@@ -39,10 +39,10 @@ use Doctrine\ORM\OptimisticLockException;
 use Symfony\Component\Uid\Ulid;
 
 /**
- * Handles outbound (agent) messages.
- * Transitions ticket status based on FSM rules.
- * Sets first_response_at on first agent reply.
- * Implements idempotency: duplicate messages are skipped.
+ * Atiende los mensajes salientes (del agente).
+ * Cambia el estado del ticket según las reglas de la FSM.
+ * Asigna first_response_at en la primera respuesta del agente.
+ * Implementa idempotencia: los mensajes duplicados se omiten.
  */
 class ProcesarMensajeSalienteUseCase
 {
@@ -62,14 +62,14 @@ class ProcesarMensajeSalienteUseCase
     ) {}
 
     /**
-     * Process outbound message from agent
-     * Implements idempotency: duplicate messages (same ticket + content) are skipped.
-     * Implements optimistic locking retry with exponential backoff.
+     * Procesa un mensaje saliente del agente
+     * Implementa idempotencia: los mensajes duplicados (mismo ticket + contenido) se omiten.
+     * Implementa reintentos ante el bloqueo optimista con backoff exponencial.
      *
      * @param int $ticketId
      * @param string $contenido
      * @param int $agenteId
-     * @param array|null $metadatosDeAdjunto Optional media metadata: {key, mimeType, filename, size, kind, providerId, caption}
+     * @param array|null $metadatosDeAdjunto Metadatos opcionales del adjunto: {key, mimeType, filename, size, kind, providerId, caption}
      * @return array
      */
     public function procesarMensajeSaliente(
@@ -79,15 +79,15 @@ class ProcesarMensajeSalienteUseCase
         ?array $metadatosDeAdjunto = null,
         bool $remitenteEsPrivilegiado = false,
     ): array {
-        // Generate deterministic event key: outbound:{ticketId}:{contentHash}
-        // Media messages have empty content (caption lives in media metadata), so
-        // hash the provider media ID (unique per upload) to avoid dedup collisions.
+        // Genera una clave de evento determinista: outbound:{ticketId}:{contentHash}
+        // Los mensajes con adjunto tienen contenido vacío (el caption vive en los metadatos
+        // del adjunto), así que se hashea el media ID del proveedor (único por subida) para evitar colisiones de deduplicación.
         $mediaId = $metadatosDeAdjunto['providerId'] ?? null;
         $hashSource = $mediaId !== null ? 'media:' . $mediaId : 'text:' . $contenido;
         $contentHash = md5($hashSource);
         $eventKey = sprintf('outbound:%d:%s', $ticketId, $contentHash);
 
-        // Check idempotency: return early if already processed (no retry needed)
+        // Verifica la idempotencia: retorna antes si ya se procesó (no hace falta reintentar)
         $existingEvent = $this->eventoProcesadoRepository->findByEventoId($eventKey);
         if ($existingEvent !== null) {
             return [
@@ -103,7 +103,7 @@ class ProcesarMensajeSalienteUseCase
             ];
         }
 
-        // Retry logic for optimistic locking
+        // Lógica de reintento para el bloqueo optimista
         $maxRetries = 3;
         $attempt = 0;
         $ticket = null;
@@ -114,10 +114,10 @@ class ProcesarMensajeSalienteUseCase
                 $result = $this->executeTransactionWithRetry($ticketId, $contenido, $eventKey, $agenteId, $ticket, $metadatosDeAdjunto, $remitenteEsPrivilegiado);
                 break;
             } catch (OptimisticLockException $e) {
-                // A rolled-back attempt must not leak its collected events
-                // (e.g. TicketAssigned) into the next attempt's flush —
-                // otherwise the retry re-collects the same events again,
-                // producing a phantom event with a duplicate seq
+                // Un intento revertido no debe filtrar los eventos que recolectó
+                // (p. ej. TicketAssigned) al flush del siguiente intento;
+                // si no, el reintento vuelve a recolectar los mismos eventos
+                // y produce un evento fantasma con un seq duplicado
                 // (design.md D6).
                 $this->recolectorDeEventos->limpiar();
 
@@ -129,23 +129,23 @@ class ProcesarMensajeSalienteUseCase
                     );
                 }
 
-                // Exponential backoff: 100ms, 200ms, 400ms
+                // Backoff exponencial: 100ms, 200ms, 400ms
                 $sleepMs = $attempt * $attempt * 100;
                 usleep($sleepMs * 1000);
 
-                // Refresh ticket state before retry
+                // Refresca el estado del ticket antes de reintentar
                 if ($ticket !== null) {
                     $this->em->refresh($ticket);
                 }
 
-                // Clear entity manager to avoid stale state
+                // Limpia el entity manager para evitar estado obsoleto
                 $this->em->clear();
             } catch (\Throwable $e) {
-                // Any other abort (e.g. ConflictoDeEstadoException,
-                // VentanaVencidaException) must also discard
-                // whatever this attempt collected before propagating —
-                // there is no retry for these, but the collector must not
-                // carry stale events into some later, unrelated call
+                // Cualquier otro aborto (p. ej. ConflictoDeEstadoException,
+                // VentanaVencidaException) también debe descartar
+                // lo que este intento haya recolectado antes de propagarse:
+                // estos no se reintentan, pero el recolector no debe
+                // arrastrar eventos obsoletos a una llamada posterior no relacionada
                 // (design.md D6).
                 $this->recolectorDeEventos->limpiar();
                 throw $e;
@@ -153,24 +153,24 @@ class ProcesarMensajeSalienteUseCase
         }
 
         if ($result === null) {
-            // Should never reach here, but satisfy static analysis
+            // Nunca debería llegar aquí, pero satisface el análisis estático
             throw new ConcurrencyException('Unexpected error in retry loop');
         }
 
-        // Persist events AFTER the transaction fully commits (moved OUT of
-        // the try block, matching AsignarTicketUseCase:118-121 /
-        // AsignarTicketAutomaticamenteUseCase:55-62): keeping the outbox flush inside
-        // the try let an outbox-flush OptimisticLockException re-execute
-        // the WHOLE transaction and re-collect duplicate events
+        // Persiste los eventos DESPUÉS de que la transacción termina de confirmarse (se sacó
+        // del bloque try, igual que AsignarTicketUseCase:118-121 /
+        // AsignarTicketAutomaticamenteUseCase:55-62): con el flush del outbox dentro
+        // del try, una OptimisticLockException en ese flush volvía a ejecutar
+        // TODA la transacción y recolectaba eventos duplicados
         // (design.md D6).
-        $this->persistEventsToOutbox();
+        $this->persistirEventosEnOutbox();
 
         return $result;
     }
 
     /**
-     * Runs one attempt of the outbound flow inside a transaction. $ticket is
-     * set as soon as the row is locked, so the retry loop can refresh it.
+     * Ejecuta un intento del flujo saliente dentro de una transacción. $ticket se
+     * asigna apenas se bloquea la fila, para que el bucle de reintentos pueda refrescarlo.
      */
     private function executeTransactionWithRetry(
         int $ticketId,
@@ -182,13 +182,13 @@ class ProcesarMensajeSalienteUseCase
         bool $remitenteEsPrivilegiado = false,
     ): array {
         return $this->em->getConnection()->transactional(function() use ($ticketId, $contenido, $eventKey, $agenteId, &$ticket, $metadatosDeAdjunto, $remitenteEsPrivilegiado) {
-            // Get ticket — pessimistic locking read as the FIRST statement of
-            // the transaction (design.md D1). Under MySQL REPEATABLE READ, a
-            // plain findById() opens a consistent-read snapshot BEFORE any
-            // lock is acquired; a later refresh() would still read that
-            // stale snapshot. A locking read here blocks until any
-            // conflicting transaction commits, then HINT_REFRESH hydrates
-            // from the latest-committed row.
+            // Obtiene el ticket: lectura con bloqueo pesimista como PRIMERA sentencia de
+            // la transacción (design.md D1). Con REPEATABLE READ de MySQL, un
+            // findById() simple abre un snapshot de lectura consistente ANTES de
+            // adquirir cualquier bloqueo; un refresh() posterior seguiría leyendo ese
+            // snapshot obsoleto. Una lectura con bloqueo aquí espera hasta que cualquier
+            // transacción en conflicto se confirme, y luego HINT_REFRESH hidrata
+            // desde la última fila confirmada.
             $ticket = $this->ticketRepo->findByIdForUpdate($ticketId);
             if (!$ticket) {
                 throw new \InvalidArgumentException('Ticket not found');
@@ -197,13 +197,13 @@ class ProcesarMensajeSalienteUseCase
             $omitirCambioDeResponsable = TicketResponsabilidadGuard::isResueltoOCerrado($ticket->getEstado());
             $this->verificarEnvio($ticket, $ticketId, $agenteId, $remitenteEsPrivilegiado);
 
-            // Get conversation
+            // Obtiene la conversación
             $conversacion = $ticket->getConversacion();
             if (!$conversacion) {
                 throw new \InvalidArgumentException('Ticket has no conversation');
             }
 
-            // Skipped on resolved/closed tickets — ownership is frozen there.
+            // Se omite en tickets resueltos/cerrados: allí el responsable queda congelado.
             if (!$omitirCambioDeResponsable) {
                 $this->tomarTicketParaAgenteQueResponde($ticket, $agenteId);
             }
@@ -212,12 +212,12 @@ class ProcesarMensajeSalienteUseCase
 
             [$estadoActual, $nuevoEstado, $transicion, $debeRegistrarPrimeraRespuesta] = $this->aplicarTransicionDeRespuesta($ticket, $ticketId);
 
-            // Update conversation timestamps
+            // Actualiza las marcas de tiempo de la conversación
             $conversacion->setUltimoMensajeAt($mensaje->getCreadoAt());
             $conversacion->setActualizadoAt(new \DateTimeImmutable());
             $ticket->marcarActualizado();
 
-            // Store processed event for idempotency
+            // Guarda el evento procesado para la idempotencia
             $resultData = [
                 'ticket_id' => $ticketId,
                 'message_id' => $mensaje->getId(),
@@ -234,10 +234,10 @@ class ProcesarMensajeSalienteUseCase
 
             $this->registrarMessageCreatedEvent($ticket, $ticketId, $mensaje, $contenido, $agenteId);
 
-            // Flush again to persist the bumped lastEventSeq (design.md D5).
+            // Vuelve a hacer flush para persistir el lastEventSeq incrementado (design.md D5).
             $this->em->flush();
 
-            // Execute automation rules (outbound trigger)
+            // Ejecuta las reglas de automatización (disparador saliente)
             $contextoDeRegla = new ContextoDeRegla($ticket, $mensaje, 'outbound');
             $this->ejecutorDeReglas->execute($contextoDeRegla);
 
@@ -255,19 +255,19 @@ class ProcesarMensajeSalienteUseCase
     }
 
     /**
-     * Rejects the send before anything is persisted.
+     * Rechaza el envío antes de persistir nada.
      *
-     * Resolved/closed ownership guard (design.md D3-D5, spec.md
-     * "Resolved/Closed Ticket Ownership Guard"): a non-owning, non-privileged
-     * agent may not claim/reassign a resolved/closed ticket by replying. It
-     * runs BEFORE the window-policy check — a 409 here is more informative
-     * than a misleading 422, and ownership on a closed ticket is
-     * stable/authoritative while the window is merely time-dependent.
+     * Guarda de responsable en tickets resueltos/cerrados (design.md D3-D5, spec.md
+     * "Resolved/Closed Ticket Ownership Guard"): un agente que no es el responsable ni
+     * tiene privilegios no puede reclamar/reasignar un ticket resuelto/cerrado respondiendo. Se
+     * ejecuta ANTES de la verificación de la política de ventana: un 409 aquí informa más
+     * que un 422 engañoso, y el responsable de un ticket cerrado es
+     * estable/autoritativo, mientras que la ventana solo depende del tiempo.
      *
-     * WhatsApp 24h conversation-window guard-before-persist (design.md D3/D4):
-     * free text is rejected once the effective window has elapsed, before any
-     * message row is persisted and before any FSM transition — never a
-     * phantom "sent" message.
+     * Guarda de la ventana de conversación de 24 h de WhatsApp antes de persistir (design.md D3/D4):
+     * el texto libre se rechaza una vez vencida la ventana efectiva, antes de que se
+     * persista cualquier fila de mensaje y antes de cualquier transición de la FSM: nunca
+     * un mensaje "sent" fantasma.
      */
     private function verificarEnvio(Ticket $ticket, int $ticketId, int $agenteId, bool $remitenteEsPrivilegiado): void
     {
@@ -285,8 +285,8 @@ class ProcesarMensajeSalienteUseCase
     }
 
     /**
-     * Assigns the ticket to the replying agent when someone else (or nobody)
-     * owns it. An unknown agent, or agent id 0, leaves the ticket as it is.
+     * Asigna el ticket al agente que responde cuando otro (o nadie) es su
+     * responsable. Un agente desconocido, o el id de agente 0, deja el ticket como está.
      */
     private function tomarTicketParaAgenteQueResponde(Ticket $ticket, int $agenteId): void
     {
@@ -318,13 +318,13 @@ class ProcesarMensajeSalienteUseCase
             notas: 'Auto-assigned on agent reply',
         );
 
-        // Flush the assignment + any status change made by ResponsabilidadDeTicketService
-        // (e.g. new → active) so the DB is consistent before we decide the
-        // FSM transition below.
+        // Hace flush de la asignación + cualquier cambio de estado hecho por ResponsabilidadDeTicketService
+        // (p. ej. new → active) para que la BD quede consistente antes de decidir la
+        // transición de la FSM de abajo.
         $this->em->flush();
         $this->em->refresh($ticket);
 
-        // When an agent replies and becomes the owner, mark as read
+        // Cuando un agente responde y pasa a ser el responsable, se marca como leído
         $ticket->setUltimaLecturaAt(new \DateTimeImmutable());
         $this->em->flush();
     }
@@ -338,7 +338,7 @@ class ProcesarMensajeSalienteUseCase
         $mensaje->setAgenteRemitenteId($agenteId > 0 ? $agenteId : null);
         $mensaje->setTipoDeRemitente(TipoDeRemitente::AGENTE);
 
-        // Attach media metadata if provided
+        // Adjunta los metadatos del adjunto si se enviaron
         if ($metadatosDeAdjunto !== null) {
             $mensaje->setAdjunto($metadatosDeAdjunto);
         }
@@ -349,10 +349,10 @@ class ProcesarMensajeSalienteUseCase
     }
 
     /**
-     * Moves the ticket after an agent reply (new → active, active → waiting,
-     * waiting stays) and sets first_response_at on the first reply.
+     * Mueve el ticket después de una respuesta del agente (new → active, active → waiting,
+     * waiting se mantiene) y asigna first_response_at en la primera respuesta.
      *
-     * @return array{0: string, 1: string, 2: ?string, 3: bool} previous status, new status, transition name, whether first response was set
+     * @return array{0: string, 1: string, 2: ?string, 3: bool} estado anterior, estado nuevo, nombre de la transición, si se asignó la primera respuesta
      */
     private function aplicarTransicionDeRespuesta(Ticket $ticket, int $ticketId): array
     {
@@ -362,20 +362,20 @@ class ProcesarMensajeSalienteUseCase
         $transicion = null;
 
         if ($estadoActual === EstadoDeTicket::NUEVO->value) {
-            // First agent response: new → active
+            // Primera respuesta del agente: new → active
             $nuevoEstado = EstadoDeTicket::ACTIVO->value;
             $transicion = 'new_to_active';
         } elseif ($estadoActual === EstadoDeTicket::ACTIVO->value) {
-            // Agent waiting for response: active → waiting
+            // El agente espera respuesta: active → waiting
             $nuevoEstado = EstadoDeTicket::EN_ESPERA->value;
             $transicion = 'active_to_waiting';
         } elseif ($estadoActual === EstadoDeTicket::EN_ESPERA->value) {
-            // Agent replies while waiting: stays waiting (customer might respond)
+            // El agente responde mientras espera: sigue en waiting (el cliente podría responder)
             $nuevoEstado = EstadoDeTicket::EN_ESPERA->value;
             $transicion = 'waiting_remains';
         }
 
-        // Execute transition if needed
+        // Ejecuta la transición si hace falta
         if ($transicion && $nuevoEstado !== $estadoActual) {
             $this->cambiarEstadoDeTicketUseCase->execute(
                 $ticketId,
@@ -384,7 +384,7 @@ class ProcesarMensajeSalienteUseCase
                 false
             );
         } else if ($debeRegistrarPrimeraRespuesta) {
-            // Just set first_response_at without status change
+            // Solo asigna first_response_at, sin cambiar el estado
             $this->ticketRepo->marcarPrimeraRespuesta($ticketId);
         }
 
@@ -392,9 +392,9 @@ class ProcesarMensajeSalienteUseCase
     }
 
     /**
-     * Collects MessageCreatedEvent for human-agent replies (design.md D5), so
-     * outbound messages are broadcast over Mercure. The message must already
-     * be flushed, because the event carries its id.
+     * Recolecta MessageCreatedEvent para las respuestas de agentes humanos (design.md D5), para
+     * que los mensajes salientes se difundan por Mercure. El mensaje ya debe
+     * tener flush, porque el evento lleva su id.
      */
     private function registrarMessageCreatedEvent(Ticket $ticket, int $ticketId, Mensaje $mensaje, string $contenido, int $agenteId): void
     {
@@ -414,10 +414,10 @@ class ProcesarMensajeSalienteUseCase
     }
 
     /**
-     * Persist collected domain events to outbox for Mercure real-time.
-     * After auto-assignment, events like TicketAssigned need to be published.
+     * Persiste los eventos de dominio recolectados en el outbox para el tiempo real de Mercure.
+     * Después de la autoasignación, hay que publicar eventos como TicketAssigned.
      */
-    private function persistEventsToOutbox(): void
+    private function persistirEventosEnOutbox(): void
     {
         $events = $this->recolectorDeEventos->getEventos();
         if (empty($events)) {
@@ -440,14 +440,14 @@ class ProcesarMensajeSalienteUseCase
                 $payload['status'] = $event->status;
                 if ($event->ownerAgentId !== null) {
                     $payload['assignee_id'] = $event->ownerAgentId;
-                    // Fetch agent name for the frontend
+                    // Obtiene el nombre del agente para el frontend
                     $agente = $this->agenteRepo->findById($event->ownerAgentId);
                     if ($agente !== null) {
                         $payload['assignee_name'] = $agente->getNombre();
                     }
                 }
             } elseif ($event instanceof InboxUpdatedEvent) {
-                // Skip inbox events for now (they don't have a wire format yet)
+                // Omite por ahora los eventos de inbox (todavía no tienen formato de transmisión)
                 continue;
             } elseif ($event instanceof MessageCreatedEvent) {
                 $payload['message_id'] = $event->messageId;
@@ -455,7 +455,7 @@ class ProcesarMensajeSalienteUseCase
                 $payload['content'] = $event->content;
                 $payload['sender_name'] = $event->senderName;
                 $payload['media'] = $event->media;
-                // Include phone_number_id for workspace-pending indicator
+                // Incluye phone_number_id para el indicador de pendientes del workspace
                 $phoneNumberId = $this->ticketRepo->findPhoneNumberId($event->ticketId);
                 if (!empty($phoneNumberId)) {
                     $payload['phone_number_id'] = $phoneNumberId;
