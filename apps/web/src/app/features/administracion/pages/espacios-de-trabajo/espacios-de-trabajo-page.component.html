@@ -43,7 +43,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (ws of workspaces(); track ws.id) {
+              @for (ws of espaciosDeTrabajo(); track ws.id) {
                 <tr [class.row--inactive]="!ws.is_active">
                   <td>{{ ws.id }}</td>
                   <td><code>{{ ws.phone_number_id }}</code></td>
@@ -57,7 +57,7 @@
                   <td>{{ ws.agent_count ?? '—' }}</td>
                    <td class="actions-cell">
                      <button class="btn btn--sm btn--outline" (click)="openEditForm(ws)" [attr.aria-label]="'Edit ' + ws.display_name">Edit</button>
-                     <button class="btn btn--sm btn--outline" (click)="openAgentModal(ws)" [attr.aria-label]="'Manage agents for ' + ws.display_name">Agents</button>
+                     <button class="btn btn--sm btn--outline" (click)="abrirAgenteModal(ws)" [attr.aria-label]="'Manage agents for ' + ws.display_name">Agents</button>
                      @if (ws.is_active) {
                        <button class="btn btn--sm btn--danger" (click)="confirmDelete(ws)" [attr.aria-label]="'Deactivate ' + ws.display_name">Deactivate</button>
                      }
@@ -87,12 +87,12 @@
       <!-- Create/Edit Modal -->
       @if (showForm()) {
         <div class="modal-overlay" (click)="closeForm()">
-          <div class="modal" role="dialog" aria-modal="true" [attr.aria-labelledby]="editingWorkspace() ? 'modal-title-edit' : 'modal-title-create'" (click)="$event.stopPropagation()">
+          <div class="modal" role="dialog" aria-modal="true" [attr.aria-labelledby]="espacioDeTrabajoEnEdicion() ? 'modal-title-edit' : 'modal-title-create'" (click)="$event.stopPropagation()">
             <div class="modal__header">
-              <h2 [id]="editingWorkspace() ? 'modal-title-edit' : 'modal-title-create'">{{ editingWorkspace() ? 'Edit Workspace' : 'Create Workspace' }}</h2>
+              <h2 [id]="espacioDeTrabajoEnEdicion() ? 'modal-title-edit' : 'modal-title-create'">{{ espacioDeTrabajoEnEdicion() ? 'Edit Workspace' : 'Create Workspace' }}</h2>
               <button class="modal__close" (click)="closeForm()" aria-label="Close dialog">&times;</button>
             </div>
-            <form [formGroup]="workspaceForm" (ngSubmit)="onSubmit()">
+            <form [formGroup]="espacioDeTrabajoForm" (ngSubmit)="onSubmit()">
               <div class="modal__body">
                 <div class="form-group">
                   <label class="form-label" for="ws-phone-number-id">Phone Number ID</label>
@@ -100,10 +100,10 @@
                          formControlName="phoneNumberId" placeholder="e.g. 1146240195247464"
                          [class.form-input--error]="hasFieldError('phoneNumberId')" />
                   @if (hasFieldError('phoneNumberId')) {
-                    @if (workspaceForm.controls.phoneNumberId.errors?.['required']) {
+                    @if (espacioDeTrabajoForm.controls.phoneNumberId.errors?.['required']) {
                       <p class="form-error">Phone Number ID is required</p>
                     }
-                    @if (workspaceForm.controls.phoneNumberId.errors?.['minlength']) {
+                    @if (espacioDeTrabajoForm.controls.phoneNumberId.errors?.['minlength']) {
                       <p class="form-error">Phone Number ID must be at least 2 characters</p>
                     }
                   }
@@ -115,16 +115,16 @@
                          formControlName="displayName" placeholder="e.g. Atención al Cliente"
                          [class.form-input--error]="hasFieldError('displayName')" />
                   @if (hasFieldError('displayName')) {
-                    @if (workspaceForm.controls.displayName.errors?.['required']) {
+                    @if (espacioDeTrabajoForm.controls.displayName.errors?.['required']) {
                       <p class="form-error">Display name is required</p>
                     }
-                    @if (workspaceForm.controls.displayName.errors?.['minlength']) {
+                    @if (espacioDeTrabajoForm.controls.displayName.errors?.['minlength']) {
                       <p class="form-error">Display name must be at least 2 characters</p>
                     }
                   }
                 </div>
 
-                @if (editingWorkspace()) {
+                @if (espacioDeTrabajoEnEdicion()) {
                   <div class="form-group">
                     <label class="form-label">
                       <input type="checkbox" formControlName="isActive" />
@@ -135,8 +135,8 @@
               </div>
               <div class="modal__footer">
                 <button type="button" class="btn btn--outline" (click)="closeForm()">Cancel</button>
-                <button type="submit" class="btn btn--primary" [disabled]="workspaceForm.invalid || saving()">
-                  {{ saving() ? 'Saving...' : (editingWorkspace() ? 'Save Changes' : 'Create Workspace') }}
+                <button type="submit" class="btn btn--primary" [disabled]="espacioDeTrabajoForm.invalid || saving()">
+                  {{ saving() ? 'Saving...' : (espacioDeTrabajoEnEdicion() ? 'Save Changes' : 'Create Workspace') }}
                 </button>
               </div>
             </form>
@@ -167,18 +167,18 @@
       }
 
       <!-- Agent Assignment Modal -->
-      @if (showAgentModal() && assigningWorkspace(); as ws) {
-        <div class="modal-overlay" (click)="closeAgentModal()">
+      @if (mostrarAgenteModal() && espacioDeTrabajoEnAsignacion(); as ws) {
+        <div class="modal-overlay" (click)="cerrarAgenteModal()">
           <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title-agents" (click)="$event.stopPropagation()">
             <div class="modal__header">
               <h2 id="modal-title-agents">Assign Agents — {{ ws.display_name }}</h2>
-              <button class="modal__close" (click)="closeAgentModal()" aria-label="Close dialog">&times;</button>
+              <button class="modal__close" (click)="cerrarAgenteModal()" aria-label="Close dialog">&times;</button>
             </div>
             <div class="modal__body">
-              @if (agentOptions().length === 0) {
+              @if (agenteOptions().length === 0) {
                 <p>Loading agents...</p>
               } @else {
-                @for (agent of agentOptions(); track agent.id) {
+                @for (agent of agenteOptions(); track agent.id) {
                   <div class="form-group" style="display:flex;align-items:center;gap:8px;padding:4px 0;">
                     <input type="checkbox" 
                            [id]="'agent-' + agent.id"
@@ -190,9 +190,9 @@
               }
             </div>
             <div class="modal__footer">
-              <button type="button" class="btn btn--outline" (click)="closeAgentModal()">Cancel</button>
-              <button type="button" class="btn btn--primary" (click)="saveAgents()" [disabled]="savingAgents()">
-                {{ savingAgents() ? 'Saving...' : 'Save' }}
+              <button type="button" class="btn btn--outline" (click)="cerrarAgenteModal()">Cancel</button>
+              <button type="button" class="btn btn--primary" (click)="guardarAgentes()" [disabled]="guardandoAgentes()">
+                {{ guardandoAgentes() ? 'Saving...' : 'Save' }}
               </button>
             </div>
           </div>

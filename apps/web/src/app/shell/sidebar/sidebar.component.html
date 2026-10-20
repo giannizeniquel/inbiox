@@ -8,9 +8,9 @@
     >
       <span
         class="sse-indicator__dot"
-        [class.sse-indicator__dot--online]="connectionStatus() === 'online'"
-        [class.sse-indicator__dot--reconnecting]="connectionStatus() === 'reconnecting'"
-        [class.sse-indicator__dot--offline]="connectionStatus() === 'offline'"
+        [class.sse-indicator__dot--online]="estadoDeConexion() === 'online'"
+        [class.sse-indicator__dot--reconnecting]="estadoDeConexion() === 'reconnecting'"
+        [class.sse-indicator__dot--offline]="estadoDeConexion() === 'offline'"
       ></span>
       <span class="sse-indicator__label">{{ connectionLabel() }}</span>
     </div>
@@ -32,7 +32,7 @@
           </svg>
         </span>
         <span class="sidebar-nav__label">Chats</span>
-        @if (hasUnread()) {
+        @if (hasNoLeidos()) {
           <span class="sidebar-nav__badge" title="Nuevos mensajes">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>

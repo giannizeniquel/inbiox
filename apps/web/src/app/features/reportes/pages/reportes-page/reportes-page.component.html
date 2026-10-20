@@ -6,38 +6,38 @@
       <div class="time-filter-buttons">
         <button
           class="time-filter-btn"
-          [class.time-filter-btn--active]="timeFilter() === 'today'"
-          (click)="setTimeFilter('today')"
+          [class.time-filter-btn--active]="filtroDeTiempo() === 'today'"
+          (click)="setFiltroDeTiempo('today')"
         >
           Hoy
         </button>
         <button
           class="time-filter-btn"
-          [class.time-filter-btn--active]="timeFilter() === '7d'"
-          (click)="setTimeFilter('7d')"
+          [class.time-filter-btn--active]="filtroDeTiempo() === '7d'"
+          (click)="setFiltroDeTiempo('7d')"
         >
           7 días
         </button>
         <button
           class="time-filter-btn"
-          [class.time-filter-btn--active]="timeFilter() === '30d'"
-          (click)="setTimeFilter('30d')"
+          [class.time-filter-btn--active]="filtroDeTiempo() === '30d'"
+          (click)="setFiltroDeTiempo('30d')"
         >
           30 días
         </button>
         <button
           class="time-filter-btn"
-          [class.time-filter-btn--active]="timeFilter() === 'custom'"
-          (click)="setTimeFilter('custom')"
+          [class.time-filter-btn--active]="filtroDeTiempo() === 'custom'"
+          (click)="setFiltroDeTiempo('custom')"
         >
           Personalizado
         </button>
       </div>
 
       <!-- Team filter (single-select, composable with the time filter above) -->
-      <app-filtro-de-equipo (teamChange)="onTeamFilterChange($event)" />
+      <app-filtro-de-equipo (equipoChange)="onFiltroDeEquipoChange($event)" />
 
-      @if (timeFilter() === 'custom') {
+      @if (filtroDeTiempo() === 'custom') {
         <div class="custom-date-picker">
           <input
             type="date"
@@ -52,7 +52,7 @@
             [value]="toDate()"
             (change)="toDate.set($any($event.target).value)"
           />
-          <button class="apply-btn" (click)="applyCustomFilter()">Aplicar</button>
+          <button class="apply-btn" (click)="aplicarFiltroPersonalizado()">Aplicar</button>
         </div>
       }
 
@@ -61,15 +61,15 @@
           class="export-csv-btn"
           type="button"
           [disabled]="exporting()"
-          (click)="exportCsv()"
+          (click)="exportarCsv()"
         >
           {{ exporting() ? 'Exportando...' : 'Exportar CSV' }}
         </button>
       }
     </div>
 
-    @if (exportError()) {
-      <p class="reports-page__export-error">{{ exportError() }}</p>
+    @if (errorDeExportacion()) {
+      <p class="reports-page__export-error">{{ errorDeExportacion() }}</p>
     }
   </header>
 
@@ -86,15 +86,15 @@
     <app-conteo-de-tickets-card
       [open]="openCount()"
       [closed]="closedCount()"
-      [loading]="countsLoading()"
+      [loading]="conteosLoading()"
     />
     <app-tendencia-de-volumen-card
-      [data]="volumeData()"
-      [loading]="volumeLoading()"
+      [data]="volumenData()"
+      [loading]="volumenLoading()"
     />
     <app-demora-de-respuesta-card
-      [data]="responseDelayData()"
-      [loading]="responseDelayLoading()"
+      [data]="demoraDeRespuestaData()"
+      [loading]="demoraDeRespuestaLoading()"
     />
   </section>
 
@@ -103,16 +103,16 @@
     <h2 class="section-group__title">Operación en tiempo real</h2>
     <div class="section-group__grid">
       <app-carga-de-agente-card
-        [data]="agentLoadData()"
-        [loading]="agentLoadLoading()"
+        [data]="cargaDeAgenteData()"
+        [loading]="cargaDeAgenteLoading()"
       />
       <app-sin-asignar-card
-        [data]="unassignedData()"
-        [loading]="unassignedLoading()"
+        [data]="sinAsignarData()"
+        [loading]="sinAsignarLoading()"
       />
       <app-agentes-disponibles-card
-        [data]="availableAgentsData()"
-        [loading]="availableAgentsLoading()"
+        [data]="agentesDisponiblesData()"
+        [loading]="agentesDisponiblesLoading()"
       />
     </div>
   </section>
@@ -121,8 +121,8 @@
   <section class="section-group">
     <h2 class="section-group__title">Tendencia de primera respuesta</h2>
     <app-tendencia-de-frt-card
-      [data]="frtTrendData()"
-      [loading]="frtTrendLoading()"
+      [data]="tendenciaDeFrtData()"
+      [loading]="tendenciaDeFrtLoading()"
     />
   </section>
 
@@ -130,20 +130,20 @@
   <section class="section-group">
     <h2 class="section-group__title">Detalle y patrones</h2>
     <app-mapa-de-calor-card
-      [data]="heatmapData()"
-      [loading]="heatmapLoading()"
+      [data]="mapaDeCalorData()"
+      [loading]="mapaDeCalorLoading()"
     />
   </section>
 
   <section class="section-group">
     <div class="section-group__grid">
       <app-contactos-recurrentes-card
-        [data]="recurringData()"
-        [loading]="recurringLoading()"
+        [data]="contactosRecurrentesData()"
+        [loading]="contactosRecurrentesLoading()"
       />
       <app-reabiertos-card
-        [data]="reopenedData()"
-        [loading]="reopenedLoading()"
+        [data]="reabiertosData()"
+        [loading]="reabiertosLoading()"
       />
     </div>
   </section>
@@ -152,8 +152,8 @@
   <section class="agents-section">
     <h2 class="agents-section__title">Rendimiento de agentes</h2>
     <app-rendimiento-de-agentes
-      [agents]="agentsData()"
-      [loading]="agentsLoading()"
+      [agentes]="agentesData()"
+      [loading]="agentesLoading()"
     />
   </section>
 </div>

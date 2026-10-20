@@ -33,7 +33,7 @@ export class ContactoFormComponent implements OnInit {
   readonly submitForm = output<{ phone: string; name: string | null; email: string | null }>();
 
   /** Expose phone input for autofocus from parent dialog */
-  readonly phoneInput = viewChild<ElementRef<HTMLInputElement>>('phoneInput');
+  readonly telefonoInput = viewChild<ElementRef<HTMLInputElement>>('phoneInput');
 
   form!: FormGroup;
 

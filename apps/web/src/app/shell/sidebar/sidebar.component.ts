@@ -22,13 +22,13 @@ export class SidebarComponent {
   protected readonly authStore = inject(AuthStore);
   private readonly ticketStore = inject(TicketStore);
 
-  connectionStatus = this.connectionStore.status;
+  estadoDeConexion = this.connectionStore.estado;
 
   /** Whether there are any unread messages in the inbox */
-  protected readonly hasUnread = computed(() => this.ticketStore.totalUnread() > 0);
+  protected readonly hasNoLeidos = computed(() => this.ticketStore.totalNoLeidos() > 0);
 
   connectionLabel(): string {
-    switch (this.connectionStore.status()) {
+    switch (this.connectionStore.estado()) {
       case 'online': return 'Conectado';
       case 'reconnecting': return 'Reconectando...';
       case 'offline': return 'Sin conexión';

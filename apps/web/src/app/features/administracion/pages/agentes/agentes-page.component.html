@@ -44,7 +44,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (agent of agents(); track agent.id) {
+              @for (agent of agentes(); track agent.id) {
                 <tr [class.row--inactive]="!agent.active">
                   <td>{{ agent.id }}</td>
                   <td>{{ agent.name }}</td>
@@ -65,14 +65,14 @@
                   <td class="actions-cell">
                     <button class="btn btn--sm btn--outline" (click)="openEditForm(agent)" [attr.aria-label]="'Edit ' + agent.name">Edit</button>
                     @if (agent.user_id) {
-                      <button class="btn btn--sm btn--outline" (click)="confirmUnlinkAgent(agent)" [attr.aria-label]="'Unlink user from ' + agent.name">Unlink</button>
+                      <button class="btn btn--sm btn--outline" (click)="confirmarDesvincularAgente(agent)" [attr.aria-label]="'Unlink user from ' + agent.name">Unlink</button>
                     } @else {
-                      <button class="btn btn--sm btn--outline" (click)="openLinkForm(agent)" [attr.aria-label]="'Link user to ' + agent.name">Link</button>
+                      <button class="btn btn--sm btn--outline" (click)="abrirVinculoForm(agent)" [attr.aria-label]="'Link user to ' + agent.name">Link</button>
                     }
                     @if (agent.active) {
                       <button class="btn btn--sm btn--danger" (click)="confirmDelete(agent)" [attr.aria-label]="'Deactivate ' + agent.name">Deactivate</button>
                     } @else {
-                      <button class="btn btn--sm btn--outline" (click)="reactivateAgent(agent)" [attr.aria-label]="'Reactivate ' + agent.name">Reactivate</button>
+                      <button class="btn btn--sm btn--outline" (click)="reactivarAgente(agent)" [attr.aria-label]="'Reactivate ' + agent.name">Reactivate</button>
                     }
                   </td>
                 </tr>
@@ -100,23 +100,23 @@
       <!-- Create/Edit Modal -->
       @if (showForm()) {
         <div class="modal-overlay" (click)="closeForm()">
-          <div class="modal" role="dialog" aria-modal="true" [attr.aria-labelledby]="editingAgent() ? 'modal-title-edit' : 'modal-title-create'" (click)="$event.stopPropagation()">
+          <div class="modal" role="dialog" aria-modal="true" [attr.aria-labelledby]="agenteEnEdicion() ? 'modal-title-edit' : 'modal-title-create'" (click)="$event.stopPropagation()">
             <div class="modal__header">
-              <h2 [id]="editingAgent() ? 'modal-title-edit' : 'modal-title-create'">{{ editingAgent() ? 'Edit Agent' : 'Create Agent' }}</h2>
+              <h2 [id]="agenteEnEdicion() ? 'modal-title-edit' : 'modal-title-create'">{{ agenteEnEdicion() ? 'Edit Agent' : 'Create Agent' }}</h2>
               <button class="modal__close" (click)="closeForm()" aria-label="Close dialog">&times;</button>
             </div>
-            <form [formGroup]="agentForm" (ngSubmit)="onAgentSubmit()">
+            <form [formGroup]="agenteForm" (ngSubmit)="onAgenteSubmit()">
               <div class="modal__body">
                 <div class="form-group">
                   <label class="form-label" for="agent-name">Name</label>
                   <input id="agent-name" type="text" class="form-input"
                          formControlName="name" placeholder="Agent name"
-                         [class.form-input--error]="hasAgentError('name')" />
-                  @if (hasAgentError('name')) {
-                    @if (agentForm.controls.name.errors?.['required']) {
+                         [class.form-input--error]="hasErrorDeAgente('name')" />
+                  @if (hasErrorDeAgente('name')) {
+                    @if (agenteForm.controls.name.errors?.['required']) {
                       <p class="form-error">Name is required</p>
                     }
-                    @if (agentForm.controls.name.errors?.['minlength']) {
+                    @if (agenteForm.controls.name.errors?.['minlength']) {
                       <p class="form-error">Name must be at least 2 characters</p>
                     }
                   }
@@ -131,7 +131,7 @@
                   </select>
                 </div>
 
-                @if (editingAgent()) {
+                @if (agenteEnEdicion()) {
                   <div class="form-group">
                     <label class="form-label">
                       <input type="checkbox" formControlName="active" />
@@ -142,8 +142,8 @@
               </div>
               <div class="modal__footer">
                 <button type="button" class="btn btn--outline" (click)="closeForm()">Cancel</button>
-                <button type="submit" class="btn btn--primary" [disabled]="agentForm.invalid || saving()">
-                  {{ saving() ? 'Saving...' : (editingAgent() ? 'Save Changes' : 'Create Agent') }}
+                <button type="submit" class="btn btn--primary" [disabled]="agenteForm.invalid || saving()">
+                  {{ saving() ? 'Saving...' : (agenteEnEdicion() ? 'Save Changes' : 'Create Agent') }}
                 </button>
               </div>
             </form>
@@ -152,35 +152,35 @@
       }
 
       <!-- Link User Modal -->
-      @if (showLinkForm(); as linkingAgent) {
-        <div class="modal-overlay" (click)="closeLinkForm()">
+      @if (mostrarVinculoForm(); as linkingAgent) {
+        <div class="modal-overlay" (click)="cerrarVinculoForm()">
           <div class="modal modal--sm" role="dialog" aria-modal="true" aria-labelledby="modal-title-link" (click)="$event.stopPropagation()">
             <div class="modal__header">
               <h2 id="modal-title-link">Link User to {{ linkingAgent.name }}</h2>
-              <button class="modal__close" (click)="closeLinkForm()" aria-label="Close dialog">&times;</button>
+              <button class="modal__close" (click)="cerrarVinculoForm()" aria-label="Close dialog">&times;</button>
             </div>
-            <form [formGroup]="linkForm" (ngSubmit)="onLinkSubmit()">
+            <form [formGroup]="vinculoForm" (ngSubmit)="onVinculoSubmit()">
               <div class="modal__body">
                 <div class="form-group">
                   <label class="form-label" for="link-user">Select User</label>
                   <select id="link-user" class="form-input" formControlName="userId"
-                          [class.form-input--error]="hasLinkError('userId')">
+                          [class.form-input--error]="hasErrorDeVinculo('userId')">
                     <option [ngValue]="null">— Select a user —</option>
-                    @for (user of unlinkedUsers(); track user.id) {
+                    @for (user of usuariosSinVincular(); track user.id) {
                       <option [ngValue]="user.id">{{ user.email }}</option>
                     }
                   </select>
-                  @if (hasLinkError('userId')) {
+                  @if (hasErrorDeVinculo('userId')) {
                     <p class="form-error">Please select a user</p>
                   }
-                  @if (unlinkedUsers().length === 0) {
+                  @if (usuariosSinVincular().length === 0) {
                     <p class="text-muted">No available users to link. All users are already linked.</p>
                   }
                 </div>
               </div>
               <div class="modal__footer">
-                <button type="button" class="btn btn--outline" (click)="closeLinkForm()">Cancel</button>
-                <button type="submit" class="btn btn--primary" [disabled]="linkForm.invalid || saving()">
+                <button type="button" class="btn btn--outline" (click)="cerrarVinculoForm()">Cancel</button>
+                <button type="submit" class="btn btn--primary" [disabled]="vinculoForm.invalid || saving()">
                   {{ saving() ? 'Linking...' : 'Link User' }}
                 </button>
               </div>
@@ -212,19 +212,19 @@
       }
 
       <!-- Unlink Confirmation Modal -->
-      @if (showUnlinkConfirm(); as agentToUnlink) {
-        <div class="modal-overlay" (click)="cancelUnlink()">
+      @if (mostrarConfirmacionDeDesvincular(); as agentToUnlink) {
+        <div class="modal-overlay" (click)="cancelarDesvincular()">
           <div class="modal modal--sm" role="alertdialog" aria-modal="true" aria-labelledby="modal-title-unlink" (click)="$event.stopPropagation()">
             <div class="modal__header">
               <h2 id="modal-title-unlink">Confirm Unlink</h2>
-              <button class="modal__close" (click)="cancelUnlink()" aria-label="Close dialog">&times;</button>
+              <button class="modal__close" (click)="cancelarDesvincular()" aria-label="Close dialog">&times;</button>
             </div>
             <div class="modal__body">
               <p>Unlink user <strong>{{ agentToUnlink.user_email }}</strong> from agent <strong>{{ agentToUnlink.name }}</strong>?</p>
             </div>
             <div class="modal__footer">
-              <button class="btn btn--outline" (click)="cancelUnlink()">Cancel</button>
-              <button class="btn btn--danger" (click)="executeUnlink()" [disabled]="saving()">
+              <button class="btn btn--outline" (click)="cancelarDesvincular()">Cancel</button>
+              <button class="btn btn--danger" (click)="executeDesvincular()" [disabled]="saving()">
                 {{ saving() ? 'Unlinking...' : 'Unlink' }}
               </button>
             </div>

@@ -30,11 +30,11 @@ interface AgentOption {
 })
 export class EspaciosDeTrabajoPageComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
-  private readonly workspaceApi = inject(EspacioDeTrabajoApiService);
+  private readonly espacioDeTrabajoApi = inject(EspacioDeTrabajoApiService);
   private readonly http = inject(HttpClient);
 
   // State
-  readonly workspaces = signal<EspacioDeTrabajoDTO[]>([]);
+  readonly espaciosDeTrabajo = signal<EspacioDeTrabajoDTO[]>([]);
   readonly loading = signal(true);
   readonly saving = signal(false);
   readonly error = signal<string | null>(null);
@@ -44,32 +44,32 @@ export class EspaciosDeTrabajoPageComponent implements OnInit {
 
   // Modal state
   readonly showForm = signal(false);
-  readonly editingWorkspace = signal<EspacioDeTrabajoDTO | null>(null);
+  readonly espacioDeTrabajoEnEdicion = signal<EspacioDeTrabajoDTO | null>(null);
   readonly showDeleteConfirm = signal<EspacioDeTrabajoDTO | null>(null);
 
   // Agent assignment state
-  readonly showAgentModal = signal(false);
-  readonly assigningWorkspace = signal<EspacioDeTrabajoDTO | null>(null);
-  readonly agentOptions = signal<AgentOption[]>([]);
-  readonly savingAgents = signal(false);
+  readonly mostrarAgenteModal = signal(false);
+  readonly espacioDeTrabajoEnAsignacion = signal<EspacioDeTrabajoDTO | null>(null);
+  readonly agenteOptions = signal<AgentOption[]>([]);
+  readonly guardandoAgentes = signal(false);
 
   // Forms
-  readonly workspaceForm = this.fb.nonNullable.group({
+  readonly espacioDeTrabajoForm = this.fb.nonNullable.group({
     phoneNumberId: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(36)]],
     displayName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(255)]],
     isActive: [true],
   });
 
   ngOnInit(): void {
-    this.loadWorkspaces();
+    this.cargarEspaciosDeTrabajo();
   }
 
-  loadWorkspaces(): void {
+  cargarEspaciosDeTrabajo(): void {
     this.loading.set(true);
     this.error.set(null);
-    this.workspaceApi.listAll(this.currentPage()).subscribe({
+    this.espacioDeTrabajoApi.listAll(this.currentPage()).subscribe({
       next: (res) => {
-        this.workspaces.set(res.items);
+        this.espaciosDeTrabajo.set(res.items);
         this.totalPages.set(res.totalPages);
         this.loading.set(false);
       },
@@ -82,18 +82,18 @@ export class EspaciosDeTrabajoPageComponent implements OnInit {
 
   goToPage(page: number): void {
     this.currentPage.set(page);
-    this.loadWorkspaces();
+    this.cargarEspaciosDeTrabajo();
   }
 
   openCreateForm(): void {
-    this.editingWorkspace.set(null);
-    this.workspaceForm.reset({ phoneNumberId: '', displayName: '', isActive: true });
+    this.espacioDeTrabajoEnEdicion.set(null);
+    this.espacioDeTrabajoForm.reset({ phoneNumberId: '', displayName: '', isActive: true });
     this.showForm.set(true);
   }
 
   openEditForm(ws: EspacioDeTrabajoDTO): void {
-    this.editingWorkspace.set(ws);
-    this.workspaceForm.reset({
+    this.espacioDeTrabajoEnEdicion.set(ws);
+    this.espacioDeTrabajoForm.reset({
       phoneNumberId: ws.phone_number_id,
       displayName: ws.display_name,
       isActive: ws.is_active,
@@ -103,35 +103,35 @@ export class EspaciosDeTrabajoPageComponent implements OnInit {
 
   closeForm(): void {
     this.showForm.set(false);
-    this.editingWorkspace.set(null);
+    this.espacioDeTrabajoEnEdicion.set(null);
   }
 
   hasFieldError(field: 'phoneNumberId' | 'displayName' | 'isActive'): boolean {
-    const control = this.workspaceForm.get(field);
+    const control = this.espacioDeTrabajoForm.get(field);
     return !!control && control.touched && control.invalid;
   }
 
   onSubmit(): void {
-    if (this.workspaceForm.invalid) {
-      this.workspaceForm.markAllAsTouched();
+    if (this.espacioDeTrabajoForm.invalid) {
+      this.espacioDeTrabajoForm.markAllAsTouched();
       return;
     }
 
-    const editing = this.editingWorkspace();
+    const editing = this.espacioDeTrabajoEnEdicion();
     if (editing) {
-      this.updateWorkspace(editing);
+      this.updateEspacioDeTrabajo(editing);
     } else {
-      this.createWorkspace();
+      this.createEspacioDeTrabajo();
     }
   }
 
-  private createWorkspace(): void {
-    const { phoneNumberId, displayName, isActive } = this.workspaceForm.getRawValue();
+  private createEspacioDeTrabajo(): void {
+    const { phoneNumberId, displayName, isActive } = this.espacioDeTrabajoForm.getRawValue();
 
     this.saving.set(true);
     this.error.set(null);
 
-    this.workspaceApi.create({
+    this.espacioDeTrabajoApi.create({
       phoneNumberId: phoneNumberId.trim(),
       displayName: displayName.trim(),
       isActive,
@@ -140,7 +140,7 @@ export class EspaciosDeTrabajoPageComponent implements OnInit {
         this.saving.set(false);
         this.success.set('Workspace created successfully');
         this.closeForm();
-        this.loadWorkspaces();
+        this.cargarEspaciosDeTrabajo();
       },
       error: (err) => {
         this.saving.set(false);
@@ -149,13 +149,13 @@ export class EspaciosDeTrabajoPageComponent implements OnInit {
     });
   }
 
-  private updateWorkspace(ws: EspacioDeTrabajoDTO): void {
-    const { phoneNumberId, displayName, isActive } = this.workspaceForm.getRawValue();
+  private updateEspacioDeTrabajo(ws: EspacioDeTrabajoDTO): void {
+    const { phoneNumberId, displayName, isActive } = this.espacioDeTrabajoForm.getRawValue();
 
     this.saving.set(true);
     this.error.set(null);
 
-    this.workspaceApi.update(ws.id, {
+    this.espacioDeTrabajoApi.update(ws.id, {
       phoneNumberId: phoneNumberId.trim(),
       displayName: displayName.trim(),
       isActive,
@@ -164,7 +164,7 @@ export class EspaciosDeTrabajoPageComponent implements OnInit {
         this.saving.set(false);
         this.success.set('Workspace updated successfully');
         this.closeForm();
-        this.loadWorkspaces();
+        this.cargarEspaciosDeTrabajo();
       },
       error: (err) => {
         this.saving.set(false);
@@ -188,12 +188,12 @@ export class EspaciosDeTrabajoPageComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
 
-    this.workspaceApi.deactivate(ws.id).subscribe({
+    this.espacioDeTrabajoApi.desactivar(ws.id).subscribe({
       next: () => {
         this.saving.set(false);
         this.success.set(`Workspace "${ws.display_name}" deactivated successfully`);
         this.showDeleteConfirm.set(null);
-        this.loadWorkspaces();
+        this.cargarEspaciosDeTrabajo();
       },
       error: (err) => {
         this.saving.set(false);
@@ -204,49 +204,49 @@ export class EspaciosDeTrabajoPageComponent implements OnInit {
 
   // ── Agent Assignment ──────────────────────────────────
 
-  openAgentModal(ws: EspacioDeTrabajoDTO): void {
-    this.assigningWorkspace.set(ws);
-    const assignedIds: number[] = (ws as any).agent_ids ?? [];
+  abrirAgenteModal(ws: EspacioDeTrabajoDTO): void {
+    this.espacioDeTrabajoEnAsignacion.set(ws);
+    const agenteAsignadoIds: number[] = (ws as any).agent_ids ?? [];
     
     this.http.get<any>(`${environment.apiUrl}/api/admin/agents?limit=100`).subscribe({
       next: (res) => {
-        const agents = res.data ?? [];
-        this.agentOptions.set(agents.map((a: any) => ({
+        const agentes = res.data ?? [];
+        this.agenteOptions.set(agentes.map((a: any) => ({
           id: a.id,
           name: a.name ?? `Agent ${a.id}`,
-          assigned: assignedIds.includes(a.id),
+          assigned: agenteAsignadoIds.includes(a.id),
         })));
       },
       error: () => {
         this.error.set('Failed to load agents');
       },
     });
-    this.showAgentModal.set(true);
+    this.mostrarAgenteModal.set(true);
   }
 
-  closeAgentModal(): void {
-    this.showAgentModal.set(false);
-    this.assigningWorkspace.set(null);
+  cerrarAgenteModal(): void {
+    this.mostrarAgenteModal.set(false);
+    this.espacioDeTrabajoEnAsignacion.set(null);
   }
 
-  saveAgents(): void {
-    const ws = this.assigningWorkspace();
+  guardarAgentes(): void {
+    const ws = this.espacioDeTrabajoEnAsignacion();
     if (!ws) return;
 
-    const selectedIds = this.agentOptions()
+    const selectedIds = this.agenteOptions()
       .filter(a => a.assigned)
       .map(a => a.id);
 
-    this.savingAgents.set(true);
-    this.workspaceApi.assignAgents(ws.id, selectedIds).subscribe({
+    this.guardandoAgentes.set(true);
+    this.espacioDeTrabajoApi.asignarAgentes(ws.id, selectedIds).subscribe({
       next: () => {
-        this.savingAgents.set(false);
+        this.guardandoAgentes.set(false);
         this.success.set('Agents assigned successfully');
-        this.closeAgentModal();
-        this.loadWorkspaces();
+        this.cerrarAgenteModal();
+        this.cargarEspaciosDeTrabajo();
       },
       error: (err) => {
-        this.savingAgents.set(false);
+        this.guardandoAgentes.set(false);
         this.error.set(err?.error?.error ?? 'Failed to assign agents');
       },
     });

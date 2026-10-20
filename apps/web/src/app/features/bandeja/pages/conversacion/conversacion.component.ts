@@ -55,13 +55,13 @@ import { ConversacionScrollController } from './conversacion-scroll.controller';
 export class ConversacionComponent {
   readonly vps = viewChild<CdkVirtualScrollViewport>('vps');
 
-  protected readonly conversationStore = inject(ConversacionStore);
+  protected readonly conversacionStore = inject(ConversacionStore);
   protected readonly ticketStore = inject(TicketStore);
   protected readonly uiStore = inject(UiStore);
   protected readonly scroll = inject(ConversacionScrollController);
   private readonly ticketApi = inject(TicketApiService);
-  private readonly messageSender = inject(EnvioDeMensajesService);
-  private readonly workflowApi = inject(FlujoDeTicketApiService);
+  private readonly envioDeMensajes = inject(EnvioDeMensajesService);
+  private readonly flujoDeTicketApi = inject(FlujoDeTicketApiService);
 
   constructor() {
     this.scroll.attach(this.vps);
@@ -74,16 +74,16 @@ export class ConversacionComponent {
   protected readonly actionMessage = signal<string | null>(null);
 
   /** True while a resolve request is in flight — keeps the action idempotent. */
-  protected readonly resolving = signal(false);
+  protected readonly resolviendo = signal(false);
 
   /** True when the "Participación" panel is expanded (lazy-fetches on open). */
-  protected readonly participationOpen = signal(false);
+  protected readonly participacionAbierta = signal(false);
 
   /** Emitted when user taps back button on mobile — closes conversation panel */
   protected readonly back = output<void>();
 
-  protected readonly messages = this.conversationStore.messages;
-  protected readonly loading = this.conversationStore.loading;
+  protected readonly mensajes = this.conversacionStore.mensajes;
+  protected readonly loading = this.conversacionStore.loading;
   protected readonly activeTicket = this.ticketStore.activeTicket;
 
   /**
@@ -97,29 +97,29 @@ export class ConversacionComponent {
    * composer's window-expired state flip back automatically on a new
    * inbound message with no polling and no new Mercure payload.
    */
-  protected readonly lastInboundMessageAt = computed<string | null>(() => {
+  protected readonly ultimoMensajeEntranteAt = computed<string | null>(() => {
     const restBaseline = this.activeTicket()?.timestamps.last_inbound_message_at ?? null;
 
-    let latestFromMessages: string | null = null;
-    const messages = this.messages();
-    for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].direction === 'inbound') {
-        latestFromMessages = messages[i].createdAt;
+    let ultimoDeMensajes: string | null = null;
+    const mensajes = this.mensajes();
+    for (let i = mensajes.length - 1; i >= 0; i--) {
+      if (mensajes[i].direction === 'inbound') {
+        ultimoDeMensajes = mensajes[i].createdAt;
         break;
       }
     }
 
-    if (!restBaseline) return latestFromMessages;
-    if (!latestFromMessages) return restBaseline;
+    if (!restBaseline) return ultimoDeMensajes;
+    if (!ultimoDeMensajes) return restBaseline;
 
-    return new Date(latestFromMessages) > new Date(restBaseline) ? latestFromMessages : restBaseline;
+    return new Date(ultimoDeMensajes) > new Date(restBaseline) ? ultimoDeMensajes : restBaseline;
   });
 
   trackById = (_: number, m: Mensaje): string => m.tempId ?? m.id;
   // React to UiStore notifications from SSE events
-  private readonly newMessagesEffect = effect(() => {
-    if (this.uiStore.hasNewMessages()) {
-      this.scroll.notifyNewMessages();
+  private readonly mensajesNuevosEffect = effect(() => {
+    if (this.uiStore.hasMensajesNuevos()) {
+      this.scroll.notificarMensajesNuevos();
       this.uiStore.markViewed();
     }
   });
@@ -130,16 +130,16 @@ export class ConversacionComponent {
   private readonly ticketResetEffect = effect(() => {
     void this.activeTicket();
     this.scroll.reset();
-    this.participationOpen.set(false);
+    this.participacionAbierta.set(false);
   });
 
   /** Mark ticket as read on the backend when the active ticket changes */
-  private readonly markReadEffect = effect(() => {
+  private readonly marcarLeidoEffect = effect(() => {
     const ticket = this.activeTicket();
     if (ticket) {
       const ticketId = Number(ticket.ticket_id);
       if (!isNaN(ticketId)) {
-        this.ticketApi.markRead(ticketId)
+        this.ticketApi.marcarLeido(ticketId)
           .subscribe({
             error: () => { /* fire-and-forget */ },
           });
@@ -169,10 +169,10 @@ export class ConversacionComponent {
     onCleanup(() => sub.unsubscribe());
   });
 
-  onRetry(tempId: string): void {
-    const message = this.messages().find((m: Mensaje) => m.tempId === tempId);
-    if (message) {
-      this.conversationStore.retryMessage(tempId);
+  onReintentar(tempId: string): void {
+    const mensaje = this.mensajes().find((m: Mensaje) => m.tempId === tempId);
+    if (mensaje) {
+      this.conversacionStore.reintentarMensaje(tempId);
     }
   }
 
@@ -183,26 +183,26 @@ export class ConversacionComponent {
    * A 403 is an expected outcome here, not a bug, so it gets its own message
    * instead of a generic failure.
    */
-  onResolveTicket(): void {
+  onResolverTicket(): void {
     const ticket = this.activeTicket();
-    if (!ticket || this.resolving()) return;
+    if (!ticket || this.resolviendo()) return;
 
-    this.resolving.set(true);
+    this.resolviendo.set(true);
     this.actionMessage.set(null);
 
-    this.workflowApi
-      .resolve(ticket.ticket_id)
+    this.flujoDeTicketApi
+      .resolver(ticket.ticket_id)
       .pipe(take(1))
       .subscribe({
         next: () => {
-          this.resolving.set(false);
+          this.resolviendo.set(false);
           // No local store write on purpose: the backend emits
           // `ticket.status_changed`, which TicketStore already applies via the
           // Mercure pipeline. Patching here too would duplicate the update path
           // and break the project's event-driven realtime convention.
         },
         error: (err: HttpErrorResponse) => {
-          this.resolving.set(false);
+          this.resolviendo.set(false);
           this.actionMessage.set(
             err.status === 403
               ? 'No tenés permiso para resolver esta conversación. Solo puede hacerlo un administrador, un supervisor o el agente asignado.'
@@ -218,23 +218,23 @@ export class ConversacionComponent {
   }
 
   /** Toggle the "Participación" panel — fetch is lazy (gated by `@if` in the template). */
-  onToggleParticipation(): void {
-    this.participationOpen.update((open) => !open);
+  onAlternarParticipacion(): void {
+    this.participacionAbierta.update((open) => !open);
   }
 
-  onSendMessage(event: { content: string; tempId: string }): void {
+  onEnviarMensaje(event: { content: string; tempId: string }): void {
     const ticket = this.activeTicket();
     if (!ticket) return;
 
-    this.messageSender.send(ticket.ticket_id, event.content, event.tempId);
+    this.envioDeMensajes.enviar(ticket.ticket_id, event.content, event.tempId);
     this.scroll.scrollToBottom();
   }
 
-  onSendFile(event: { content: string; tempId: string; file: File }): void {
+  onEnviarArchivo(event: { content: string; tempId: string; file: File }): void {
     const ticket = this.activeTicket();
     if (!ticket) return;
 
-    this.messageSender.sendWithMedia(ticket.ticket_id, event.content, event.file, event.tempId);
+    this.envioDeMensajes.enviarConAdjunto(ticket.ticket_id, event.content, event.file, event.tempId);
     this.scroll.scrollToBottom();
   }
 

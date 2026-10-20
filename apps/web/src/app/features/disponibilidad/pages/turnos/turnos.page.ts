@@ -83,9 +83,9 @@ export class TurnosPageComponent implements OnInit {
   readonly store = inject(DisponibilidadStore);
 
   ngOnInit(): void {
-    const agent = this.store.currentAgent();
-    if (agent !== null) {
-      this.store.loadShifts(agent.id);
+    const agente = this.store.agenteActual();
+    if (agente !== null) {
+      this.store.cargarTurnos(agente.id);
     }
   }
 
@@ -93,14 +93,14 @@ export class TurnosPageComponent implements OnInit {
     return DAY_NAMES[dayOfWeek] || `Day ${dayOfWeek}`;
   }
 
-  onCreateShift(dayOfWeek: string, startTime: string, endTime: string): void {
+  onCreateTurno(dayOfWeek: string, startTime: string, endTime: string): void {
     if (!startTime || !endTime) {
       return;
     }
-    this.store.createShift(parseInt(dayOfWeek, 10), startTime, endTime);
+    this.store.createTurno(parseInt(dayOfWeek, 10), startTime, endTime);
   }
 
-  onDeleteShift(shiftId: number): void {
-    this.store.deleteShift(shiftId);
+  onDeleteTurno(turnoId: number): void {
+    this.store.deleteTurno(turnoId);
   }
 }

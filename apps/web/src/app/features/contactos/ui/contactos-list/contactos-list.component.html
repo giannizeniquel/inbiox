@@ -5,13 +5,13 @@
   }
   <!-- Error state: show error -->
   @else if (store.error()) {
-    <app-contacto-error [errorMessage]="store.error()!" (retry)="onRetry()" />
+    <app-contacto-error [errorMessage]="store.error()!" (reintentar)="onReintentar()" />
   }
   <!-- Empty state: no contacts at all -->
-  @else if (screen.filteredContacts().length === 0) {
+  @else if (screen.contactosFiltrados().length === 0) {
     <app-contacto-empty
       [variant]="emptyVariant()"
-      (create)="onCreateContact()"
+      (create)="onCreateContacto()"
       (clear)="onClearSearch()"
     />
   }
@@ -19,21 +19,21 @@
   @else {
     <app-virtual-scroll-viewport
       appVirtualListCoordinator
-      [items]="screen.filteredContacts()"
-      [idOf]="idOfContact"
+      [items]="screen.contactosFiltrados()"
+      [idOf]="trackByContacto"
       [infiniteScrollThreshold]="200"
       [itemHeight]="72"
       [bufferSize]="5"
-      (itemActivated)="onContactSelect($event.id)"
-      (loadMore)="onLoadMore()"
+      (itemActivated)="onSeleccionarContacto($event.id)"
+      (cargarMas)="onCargarMas()"
       style="padding-bottom: 40px;"
       #vps
     >
       @for (contact of coordinator().visibleItems(); track contact.id) {
         <app-contacto-card
-          [contact]="contact"
-          [selected]="screen.selectedContactId() === contact.id"
-          (select)="onContactSelect($event)"
+          [contacto]="contact"
+          [selected]="screen.contactoSeleccionadoId() === contact.id"
+          (select)="onSeleccionarContacto($event)"
           [class.focused]="coordinator().isFocused(contact.id)"
           (mouseenter)="coordinator().onCardFocus($index)"
         />

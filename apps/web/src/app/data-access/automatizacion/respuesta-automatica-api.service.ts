@@ -25,7 +25,7 @@ export class RespuestaAutomaticaApiService {
   private readonly baseUrl = environment.apiUrl;
 
   /** PUT /api/me/auto-reply — update auto-reply settings */
-  updateAutoReply(payload: UpdateRespuestaAutomaticaPayload): Observable<RespuestaAutomaticaDeConfiguracion> {
+  updateRespuestaAutomatica(payload: UpdateRespuestaAutomaticaPayload): Observable<RespuestaAutomaticaDeConfiguracion> {
     return this.http.put<RespuestaAutomaticaDeConfiguracion>(
       `${this.baseUrl}/api/me/auto-reply`,
       payload,

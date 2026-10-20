@@ -5,34 +5,34 @@
         [searchTerm]="screen.searchTerm()"
         (searchChange)="onSearchChange($event)"
       />
-      <button type="button" class="btn-add" (click)="onAddContact()">
+      <button type="button" class="btn-add" (click)="onAgregarContacto()">
         + Agregar Contacto
       </button>
       @if (authStore.isAdmin() || authStore.isSupervisor()) {
-        <button type="button" class="btn-import" (click)="onImportContacts()">
+        <button type="button" class="btn-import" (click)="onImportarContactos()">
           Importar CSV
         </button>
       }
     </div>
     <app-filtros-de-contacto
-      [filters]="screen.filters()"
-      (filterChange)="onFilterChange($event)"
+      [filtros]="screen.filtros()"
+      (filtroChange)="onFiltroChange($event)"
     />
     <app-contactos-list
-      (select)="onContactSelect($event)"
-      (retryRequested)="onRetryRequested()"
-      (loadMore)="onLoadMore()"
-      [hasMore]="store.pagination().hasMore"
+      (select)="onSeleccionarContacto($event)"
+      (reintentoSolicitado)="onReintentoSolicitado()"
+      (cargarMas)="onCargarMas()"
+      [hasMore]="store.paginacion().hasMore"
       [loadingMore]="loadingMore()"
     />
   </div>
-  <div class="contacts-detail-panel" [class.visible]="screen.selectedContact() !== null">
+  <div class="contacts-detail-panel" [class.visible]="screen.contactoSeleccionado() !== null">
     <app-detalle-de-contacto
-      [contact]="screen.selectedContact()"
+      [contacto]="screen.contactoSeleccionado()"
       [loading]="store.loading()"
-      (openConversation)="onOpenConversation($event)"
-      (openTicket)="onOpenTicketFromTimeline($event)"
-      (editContact)="onEditContact($event)"
+      (abrirConversacion)="onAbrirConversacion($event)"
+      (openTicket)="onAbrirTicketDesdeLineaDeTiempo($event)"
+      (editarContacto)="onEditarContacto($event)"
     />
   </div>
 </div>
@@ -43,15 +43,15 @@
   />
 }
 
-@if (showEditDialog && editingContact) {
+@if (showEditDialog && contactoEnEdicion) {
   <app-contacto-edit-dialog
-    [contact]="editingContact"
+    [contacto]="contactoEnEdicion"
     (close)="onEditDialogClose($event)"
   />
 }
 
-@if (showImportDialog) {
+@if (mostrarImportacionDialog) {
   <app-importacion-de-contactos-dialog
-    (close)="onImportDialogClose($event)"
+    (close)="onCerrarImportacionDialog($event)"
   />
 }

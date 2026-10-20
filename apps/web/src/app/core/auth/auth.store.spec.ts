@@ -12,7 +12,7 @@ describe('AuthStore', () => {
   let mercureSpy: jasmine.SpyObj<MercureService>;
   let routerSpy: jasmine.SpyObj<Router>;
 
-  const mockUser: UsuarioDTO = {
+  const mockUsuario: UsuarioDTO = {
     id: 1,
     email: 'admin@inbiox.com',
     roles: ['ROLE_ADMIN', 'ROLE_USER'],
@@ -60,7 +60,7 @@ describe('AuthStore', () => {
   // ── Initial state ──
 
   it('should start unauthenticated', () => {
-    expect(store.currentUser()).toBeNull();
+    expect(store.usuarioActual()).toBeNull();
     expect(store.accessToken()).toBeNull();
     expect(store.isAuthenticated()).toBeFalse();
     expect(store.isAdmin()).toBeFalse();
@@ -78,7 +78,7 @@ describe('AuthStore', () => {
     store.login(email, password).subscribe({
       next: () => {
         expect(store.isAuthenticated()).toBeTrue();
-        expect(store.currentUser()).toEqual(mockUser);
+        expect(store.usuarioActual()).toEqual(mockUsuario);
         expect(store.accessToken()).toBe(mockLoginResponse.access_token);
         expect(store.isAdmin()).toBeTrue();
         expect(store.isLoading()).toBeFalse();
@@ -95,7 +95,7 @@ describe('AuthStore', () => {
     // Expect /me GET
     const meReq = httpMock.expectOne(`${environment.apiUrl}/api/auth/me`);
     expect(meReq.request.method).toBe('GET');
-    meReq.flush(mockUser);
+    meReq.flush(mockUsuario);
 
     // Expect mercure token GET
     const mercureReq = httpMock.expectOne(`${environment.apiUrl}/api/mercure/token`);
@@ -111,7 +111,7 @@ describe('AuthStore', () => {
     store.login('wrong@email.com', 'wrong').subscribe({
       error: () => {
         expect(store.isAuthenticated()).toBeFalse();
-        expect(store.currentUser()).toBeNull();
+        expect(store.usuarioActual()).toBeNull();
         expect(store.isLoading()).toBeFalse();
         expect(store.error()).toBeTruthy();
       },
@@ -130,7 +130,7 @@ describe('AuthStore', () => {
 
     const loginReq = httpMock.expectOne(`${environment.apiUrl}/api/auth/login`);
     loginReq.flush(mockLoginResponse);
-    httpMock.expectOne(`${environment.apiUrl}/api/auth/me`).flush(mockUser);
+    httpMock.expectOne(`${environment.apiUrl}/api/auth/me`).flush(mockUsuario);
     httpMock.expectOne(`${environment.apiUrl}/api/mercure/token`).flush(mockMercureToken);
   });
 
@@ -138,21 +138,21 @@ describe('AuthStore', () => {
 
   it('should clear state and disconnect Mercure on logout', () => {
     // First login
-    store.currentUser.set(mockUser);
+    store.usuarioActual.set(mockUsuario);
     store.accessToken.set(mockLoginResponse.access_token);
 
-    store.logout();
+    store.cerrarSesion();
 
     // Should call backend logout
-    const logoutReq = httpMock.expectOne(`${environment.apiUrl}/api/auth/logout`);
-    expect(logoutReq.request.method).toBe('POST');
-    logoutReq.flush(null);
+    const cerrarSesionReq = httpMock.expectOne(`${environment.apiUrl}/api/auth/logout`);
+    expect(cerrarSesionReq.request.method).toBe('POST');
+    cerrarSesionReq.flush(null);
 
     // Should disconnect mercure
     expect(mercureSpy.disconnect).toHaveBeenCalled();
 
     // Should clear state
-    expect(store.currentUser()).toBeNull();
+    expect(store.usuarioActual()).toBeNull();
     expect(store.accessToken()).toBeNull();
 
     // Should redirect to login
@@ -199,7 +199,7 @@ describe('AuthStore', () => {
   it('should check roles correctly', () => {
     expect(store.hasRole('ROLE_ADMIN')).toBeFalse();
 
-    store.currentUser.set(mockUser);
+    store.usuarioActual.set(mockUsuario);
 
     expect(store.hasRole('ROLE_ADMIN')).toBeTrue();
     expect(store.hasRole('ROLE_USER')).toBeTrue();
@@ -212,12 +212,12 @@ describe('AuthStore', () => {
     expect(store.isAdmin()).toBeFalse();
     expect(store.isSupervisor()).toBeFalse();
 
-    store.currentUser.set(mockUser);
+    store.usuarioActual.set(mockUsuario);
 
     expect(store.isAdmin()).toBeTrue();
     expect(store.isSupervisor()).toBeFalse();
 
-    store.currentUser.set({ ...mockUser, roles: ['ROLE_SUPERVISOR'] });
+    store.usuarioActual.set({ ...mockUsuario, roles: ['ROLE_SUPERVISOR'] });
     expect(store.isAdmin()).toBeFalse();
     expect(store.isSupervisor()).toBeTrue();
   });
@@ -225,25 +225,25 @@ describe('AuthStore', () => {
   // ── loadCurrentUser() ──
 
   it('should hydrate user from /me endpoint', () => {
-    let user: UsuarioDTO | null = null;
-    store.loadCurrentUser().subscribe(u => (user = u));
+    let usuario: UsuarioDTO | null = null;
+    store.cargarUsuarioActual().subscribe(u => (usuario = u));
 
     const meReq = httpMock.expectOne(`${environment.apiUrl}/api/auth/me`);
-    meReq.flush(mockUser);
+    meReq.flush(mockUsuario);
 
-    expect(user!).toEqual(mockUser);
-    expect(store.currentUser()).toEqual(mockUser);
+    expect(usuario!).toEqual(mockUsuario);
+    expect(store.usuarioActual()).toEqual(mockUsuario);
   });
 
   it('should return null on failed /me call', () => {
-    let user: UsuarioDTO | null = 'anything' as unknown as UsuarioDTO | null;
-    store.loadCurrentUser().subscribe(u => (user = u));
+    let usuario: UsuarioDTO | null = 'anything' as unknown as UsuarioDTO | null;
+    store.cargarUsuarioActual().subscribe(u => (usuario = u));
 
     const meReq = httpMock.expectOne(`${environment.apiUrl}/api/auth/me`);
     meReq.flush({}, { status: 401, statusText: 'Unauthorized' });
 
-    expect(user).toBeNull();
-    expect(store.currentUser()).toBeNull();
+    expect(usuario).toBeNull();
+    expect(store.usuarioActual()).toBeNull();
   });
 
   // ── initialize() ──
@@ -254,7 +254,7 @@ describe('AuthStore', () => {
   it('should initialize with valid refresh cookie', (done) => {
     store.initialize().then(() => {
       expect(store.isAuthenticated()).toBeTrue();
-      expect(store.currentUser()).toEqual(mockUser);
+      expect(store.usuarioActual()).toEqual(mockUsuario);
       expect(mercureSpy.setMercureToken).toHaveBeenCalledWith(mockMercureToken.token);
       expect(mercureSpy.connect).toHaveBeenCalled();
       done();
@@ -270,13 +270,13 @@ describe('AuthStore', () => {
 
     // Expect /me (called by initialize after refresh)
     const meReq = httpMock.expectOne(`${environment.apiUrl}/api/auth/me`);
-    meReq.flush(mockUser);
+    meReq.flush(mockUsuario);
   });
 
   it('should stay unauthenticated on initialize without valid cookie', (done) => {
     store.initialize().then(() => {
       expect(store.isAuthenticated()).toBeFalse();
-      expect(store.currentUser()).toBeNull();
+      expect(store.usuarioActual()).toBeNull();
       expect(mercureSpy.setMercureToken).not.toHaveBeenCalled();
       expect(mercureSpy.connect).not.toHaveBeenCalled();
       done();
@@ -305,6 +305,6 @@ describe('AuthStore', () => {
     // Mercure token fetched internally by refresh()
     httpMock.expectOne(`${environment.apiUrl}/api/mercure/token`).flush(mockMercureToken);
 
-    httpMock.expectOne(`${environment.apiUrl}/api/auth/me`).flush(mockUser);
+    httpMock.expectOne(`${environment.apiUrl}/api/auth/me`).flush(mockUsuario);
   });
 });

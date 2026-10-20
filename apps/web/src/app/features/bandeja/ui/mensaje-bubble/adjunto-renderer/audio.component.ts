@@ -39,18 +39,18 @@ import { UrlDeAdjuntoService } from '../../../../../data-access/conversacion/url
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdjuntoAudioComponent {
-  readonly attachment = input.required<Adjunto>();
-  readonly messageId = input.required<string>();
+  readonly adjunto = input.required<Adjunto>();
+  readonly mensajeId = input.required<string>();
 
-  private mediaUrlService = inject(UrlDeAdjuntoService);
+  private urlDeAdjuntoService = inject(UrlDeAdjuntoService);
 
   audioUrl = signal<string | null>(null);
   loading = signal(true);
 
   constructor() {
     effect((onCleanup) => {
-      const att = this.attachment();
-      const messageId = this.messageId();
+      const att = this.adjunto();
+      const mensajeId = this.mensajeId();
 
       if (att.localUrl) {
         this.audioUrl.set(att.localUrl);
@@ -61,7 +61,7 @@ export class AdjuntoAudioComponent {
       this.loading.set(true);
       this.audioUrl.set(null);
 
-      const sub = this.mediaUrlService.getMediaUrl(messageId).subscribe({
+      const sub = this.urlDeAdjuntoService.getUrlDeAdjunto(mensajeId).subscribe({
         next: (resp) => {
           this.audioUrl.set(resp.url);
           this.loading.set(false);

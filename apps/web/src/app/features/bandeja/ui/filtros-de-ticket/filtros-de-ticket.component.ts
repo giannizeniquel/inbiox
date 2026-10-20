@@ -16,7 +16,7 @@ interface Tab {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FiltrosDeTicketComponent {
-  readonly filterChange = output<FiltroDeTicket>();
+  readonly filtroChange = output<FiltroDeTicket>();
 
   readonly tabs: Tab[] = [
     { id: 'mine', label: 'Míos' },
@@ -27,15 +27,15 @@ export class FiltrosDeTicketComponent {
   constructor(private readonly ticketStore: TicketStore) {}
 
   activeTab(): FiltroDeTicket {
-    return this.ticketStore.filter();
+    return this.ticketStore.filtro();
   }
 
-  counts() {
-    return this.ticketStore.filterCounts();
+  conteos() {
+    return this.ticketStore.conteosDeFiltro();
   }
 
   selectTab(tabId: FiltroDeTicket): void {
-    this.ticketStore.setFilter(tabId);
-    this.filterChange.emit(tabId);
+    this.ticketStore.setFiltro(tabId);
+    this.filtroChange.emit(tabId);
   }
 }

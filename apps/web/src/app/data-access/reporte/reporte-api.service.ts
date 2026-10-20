@@ -165,19 +165,19 @@ export class ReporteApiService {
     });
   }
 
-  getTicketCounts(params?: FiltroDeTiempoParams): Observable<ConteosDeTicketsResponse> {
+  getConteosDeTickets(params?: FiltroDeTiempoParams): Observable<ConteosDeTicketsResponse> {
     return this.http.get<ConteosDeTicketsResponse>(`${this.baseUrl}/api/reports/counts`, {
       params: this.buildParams(params),
     });
   }
 
-  getVolumeTrend(params?: FiltroDeTiempoParams): Observable<TendenciaDeVolumenResponse> {
+  getTendenciaDeVolumen(params?: FiltroDeTiempoParams): Observable<TendenciaDeVolumenResponse> {
     return this.http.get<TendenciaDeVolumenResponse>(`${this.baseUrl}/api/reports/volume`, {
       params: this.buildParams(params),
     });
   }
 
-  getAgentMetrics(params?: FiltroDeTiempoParams): Observable<MetricasDeAgenteResponse> {
+  getMetricasDeAgente(params?: FiltroDeTiempoParams): Observable<MetricasDeAgenteResponse> {
     return this.http.get<MetricasDeAgenteResponse>(`${this.baseUrl}/api/reports/agents`, {
       params: this.buildParams(params),
     });
@@ -186,7 +186,7 @@ export class ReporteApiService {
   // ── Reporting v2 methods ──
 
   /** GET /api/reports/agent-load */
-  getAgentLoad(params?: CargaDeAgenteParams): Observable<CargaDeAgenteEntry[]> {
+  getCargaDeAgente(params?: CargaDeAgenteParams): Observable<CargaDeAgenteEntry[]> {
     let httpParams = new HttpParams();
     if (params?.agentId) {
       httpParams = httpParams.set('agent_id', String(params.agentId));
@@ -197,7 +197,7 @@ export class ReporteApiService {
   }
 
   /** GET /api/reports/unassigned */
-  getUnassigned(params?: SinAsignarParams): Observable<SinAsignarResponse> {
+  getSinAsignar(params?: SinAsignarParams): Observable<SinAsignarResponse> {
     let httpParams = this.buildParams(params);
     if (params?.phoneNumberId) {
       httpParams = httpParams.set('phone_number_id', params.phoneNumberId);
@@ -208,26 +208,26 @@ export class ReporteApiService {
   }
 
   /** GET /api/reports/available-agents */
-  getAvailableAgents(): Observable<AgenteDisponibleEntry[]> {
+  getAgentesDisponibles(): Observable<AgenteDisponibleEntry[]> {
     return this.http.get<AgenteDisponibleEntry[]>(`${this.baseUrl}/api/reports/available-agents`);
   }
 
   /** GET /api/reports/frt-trend */
-  getFrtTrend(params?: TendenciaDeFrtParams): Observable<TendenciaDeFrtPoint[]> {
+  getTendenciaDeFrt(params?: TendenciaDeFrtParams): Observable<TendenciaDeFrtPoint[]> {
     return this.http.get<TendenciaDeFrtPoint[]>(`${this.baseUrl}/api/reports/frt-trend`, {
       params: this.buildParams(params),
     });
   }
 
   /** GET /api/reports/heatmap */
-  getHeatmap(params?: MapaDeCalorParams): Observable<MapaDeCalorCell[]> {
+  getMapaDeCalor(params?: MapaDeCalorParams): Observable<MapaDeCalorCell[]> {
     return this.http.get<MapaDeCalorCell[]>(`${this.baseUrl}/api/reports/heatmap`, {
       params: this.buildParams(params),
     });
   }
 
   /** GET /api/reports/recurring-customers */
-  getRecurringCustomers(params?: ContactosRecurrentesParams): Observable<ContactoRecurrenteEntry[]> {
+  getContactosRecurrentes(params?: ContactosRecurrentesParams): Observable<ContactoRecurrenteEntry[]> {
     let httpParams = new HttpParams();
     if (params?.phoneNumberId) {
       httpParams = httpParams.set('phone_number_id', params.phoneNumberId);
@@ -241,7 +241,7 @@ export class ReporteApiService {
   }
 
   /** GET /api/reports/reopened */
-  getReopened(params?: FiltroDeTiempoParams): Observable<ReabiertoEntry[]> {
+  getReabiertos(params?: FiltroDeTiempoParams): Observable<ReabiertoEntry[]> {
     return this.http.get<ReabiertoEntry[]>(`${this.baseUrl}/api/reports/reopened`, {
       params: this.buildParams(params),
     });
@@ -255,7 +255,7 @@ export class ReporteApiService {
    * save; filters reuse the same `from`/`to` params as every other reports
    * endpoint.
    */
-  exportTicketsCsv(params?: FiltroDeTiempoParams): Observable<Blob> {
+  exportarTicketsCsv(params?: FiltroDeTiempoParams): Observable<Blob> {
     return this.http.get(`${this.baseUrl}/api/reports/export`, {
       params: this.buildParams(params),
       responseType: 'blob',
@@ -263,7 +263,7 @@ export class ReporteApiService {
   }
 
   /** GET /api/reports/response-delay */
-  getResponseDelay(params?: FiltroDeTiempoParams): Observable<ReporteDeDemoraDeRespuesta> {
+  getDemoraDeRespuesta(params?: FiltroDeTiempoParams): Observable<ReporteDeDemoraDeRespuesta> {
     return this.http.get<ReporteDeDemoraDeRespuesta>(`${this.baseUrl}/api/reports/response-delay`, {
       params: this.buildParams(params),
     });
@@ -274,7 +274,7 @@ export class ReporteApiService {
    * drill-down for the inbox "Participación" panel. Errors become a plain
    * `Error` carrying the backend's message (via `extractApiError`).
    */
-  getTicketParticipation(ticketId: number): Observable<ParticipacionDeTicket> {
+  getParticipacionDeTicket(ticketId: number): Observable<ParticipacionDeTicket> {
     return this.http
       .get<ParticipacionDeTicket>(`${this.baseUrl}/api/reports/tickets/${ticketId}/participation`)
       .pipe(

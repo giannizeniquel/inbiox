@@ -166,7 +166,7 @@ sequenceDiagram
 | Recolección de eventos | `Domain/Event/DomainEvent.php`, `Domain/Event/DefaultEventCollector.php` |
 | Escritura en outbox | Cada caso de uso tiene **su propia copia** de `persistEventsToOutbox()`: `HandleInboundMessageUseCase.php:107-156`, `HandleOutboundMessageUseCase.php:368-426`, `AssignTicketUseCase.php:143-180`, `AutoAssignTicketUseCase.php:216-252`, `HandleStatusUpdateUseCase.php:214-253`. Disponibilidad y turnos escriben `OutboxEvent` directo. `InboxController::markRead` inserta por SQL. |
 | Publicación | `Command/OutboxPublishCommand.php` → `Application/Service/OutboxPublisherService.php` |
-| Contrato | `Application/Realtime/RealtimeEventFactory.php`, `EventTypeMapper.php`, `TipoDeEventoEnTiempoReal.php` (`ticket.created`, `ticket.status_changed`, `ticket.assigned`, `message.added`, `message.updated`, `conversation.updated`, `agent.availability_changed`, `agent.shift_changed`) |
+| Contrato | `Application/Realtime/RealtimeEventFactory.php`, `EventTypeMapper.php`, `RealtimeEventType.php` (`ticket.created`, `ticket.status_changed`, `ticket.assigned`, `message.added`, `message.updated`, `conversation.updated`, `agent.availability_changed`, `agent.shift_changed`) |
 | Token de suscripción | `GET /api/mercure/token` → `MercureJwtService::issueForUser()`; el frontend lo pide pero **no lo usa**: el hub es anónimo y el resync se eliminó en la fase 4. |
 | Frontend | `core/tiempo-real/mercure.service.ts`, `core/tiempo-real/event-bus.service.ts`, `data-access/ticket/ticket-realtime.reducer.ts:9-99`, `data-access/conversacion/conversacion.store.ts:65-107` |
 

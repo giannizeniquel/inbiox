@@ -18,28 +18,28 @@ import { EquipoDTO } from '../../../../data-access/administracion/equipo.dto';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FiltroDeEquipoComponent implements OnInit {
-  private readonly teamApi = inject(ListaDeEquiposApiService);
+  private readonly equipoApi = inject(ListaDeEquiposApiService);
 
-  readonly teams = signal<EquipoDTO[]>([]);
-  readonly selectedTeamId = signal<number | null>(null);
+  readonly equipos = signal<EquipoDTO[]>([]);
+  readonly equipoSeleccionadoId = signal<number | null>(null);
 
   /** Emits the selected team id, or `null` when "all teams" is chosen */
-  readonly teamChange = output<number | null>();
+  readonly equipoChange = output<number | null>();
 
   ngOnInit(): void {
-    this.teamApi.listTeams().subscribe({
-      next: (teams) => this.teams.set(teams),
+    this.equipoApi.listarEquipos().subscribe({
+      next: (equipos) => this.equipos.set(equipos),
       error: (err) => {
         console.error('[TeamFilter] Failed to load teams:', err);
-        this.teams.set([]);
+        this.equipos.set([]);
       },
     });
   }
 
   onChange(event: Event): void {
     const value = (event.target as HTMLSelectElement).value;
-    const teamId = value === '' ? null : Number(value);
-    this.selectedTeamId.set(teamId);
-    this.teamChange.emit(teamId);
+    const equipoId = value === '' ? null : Number(value);
+    this.equipoSeleccionadoId.set(equipoId);
+    this.equipoChange.emit(equipoId);
   }
 }

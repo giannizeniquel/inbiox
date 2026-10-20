@@ -8,7 +8,7 @@ import { EspacioDeTrabajoStore } from '../../data-access/administracion/espacio-
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    @if (workspaces().length > 0) {
+    @if (espaciosDeTrabajo().length > 0) {
       <div class="workspace-switcher" [class.workspace-switcher--collapsed]="isCollapsed()">
         @if (isCollapsed()) {
           <!-- Collapsed: icon only -->
@@ -41,11 +41,11 @@ import { EspacioDeTrabajoStore } from '../../data-access/administracion/espacio-
 
             @if (dropdownOpen()) {
               <div class="workspace-switcher__dropdown">
-                @for (ws of workspaces(); track ws.id) {
+                @for (ws of espaciosDeTrabajo(); track ws.id) {
                   <button
                     class="workspace-switcher__dropdown-item"
-                    [class.workspace-switcher__dropdown-item--active]="ws.id === activeWorkspace()?.workspace_id"
-                    (click)="onSelectWorkspace(ws.id)"
+                    [class.workspace-switcher__dropdown-item--active]="ws.id === espacioDeTrabajoActivo()?.workspace_id"
+                    (click)="onSeleccionarEspacioDeTrabajo(ws.id)"
                     [title]="hasPending(ws.id) ? 'Nuevos mensajes' : ''"
                   >
                     <div class="workspace-switcher__dropdown-info">
@@ -289,16 +289,16 @@ export class EspacioDeTrabajoSwitcherComponent {
   /** Whether the sidebar is collapsed */
   readonly isCollapsed = input(false);
 
-  private readonly workspaceStore = inject(EspacioDeTrabajoStore);
+  private readonly espacioDeTrabajoStore = inject(EspacioDeTrabajoStore);
 
-  protected readonly workspaces = this.workspaceStore.workspaces;
-  protected readonly activeWorkspace = this.workspaceStore.activeWorkspace;
-  protected readonly loading = this.workspaceStore.loading;
+  protected readonly espaciosDeTrabajo = this.espacioDeTrabajoStore.espaciosDeTrabajo;
+  protected readonly espacioDeTrabajoActivo = this.espacioDeTrabajoStore.espacioDeTrabajoActivo;
+  protected readonly loading = this.espacioDeTrabajoStore.loading;
 
   readonly dropdownOpen = signal(false);
 
   protected readonly activeLabel = computed(() => {
-    const active = this.activeWorkspace();
+    const active = this.espacioDeTrabajoActivo();
     if (active?.display_name) {
       return active.display_name;
     }
@@ -307,17 +307,17 @@ export class EspacioDeTrabajoSwitcherComponent {
 
   /** Whether any non-active workspace has pending messages */
   protected readonly hasPendingInOther = computed(() => {
-    const active = this.activeWorkspace();
-    for (const ws of this.workspaces()) {
-      if (ws.id !== active?.workspace_id && this.workspaceStore.hasPending(ws.id)) {
+    const active = this.espacioDeTrabajoActivo();
+    for (const ws of this.espaciosDeTrabajo()) {
+      if (ws.id !== active?.workspace_id && this.espacioDeTrabajoStore.hasPending(ws.id)) {
         return true;
       }
     }
     return false;
   });
 
-  hasPending(workspaceId: number): boolean {
-    return this.workspaceStore.hasPending(workspaceId);
+  hasPending(espacioDeTrabajoId: number): boolean {
+    return this.espacioDeTrabajoStore.hasPending(espacioDeTrabajoId);
   }
 
   @HostListener('document:click', ['$event'])
@@ -332,10 +332,10 @@ export class EspacioDeTrabajoSwitcherComponent {
     this.dropdownOpen.update(v => !v);
   }
 
-  protected onSelectWorkspace(workspaceId: number): void {
+  protected onSeleccionarEspacioDeTrabajo(espacioDeTrabajoId: number): void {
     this.dropdownOpen.set(false);
-    if (workspaceId && workspaceId !== this.activeWorkspace()?.workspace_id) {
-      this.workspaceStore.setActiveWorkspace(workspaceId);
+    if (espacioDeTrabajoId && espacioDeTrabajoId !== this.espacioDeTrabajoActivo()?.workspace_id) {
+      this.espacioDeTrabajoStore.setEspacioDeTrabajoActivo(espacioDeTrabajoId);
     }
   }
 }

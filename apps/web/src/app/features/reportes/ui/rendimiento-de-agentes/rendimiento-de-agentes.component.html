@@ -4,7 +4,7 @@
         <div class="leaderboard__loading">
           <div class="skeleton-row" *ngFor="let i of [1,2,3,4,5]"></div>
         </div>
-      } @else if (agents.length === 0) {
+      } @else if (agentes.length === 0) {
         <div class="leaderboard__empty">
           <span>No hay datos de agentes para el período seleccionado</span>
         </div>
@@ -20,7 +20,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (agent of agents; track agent.agentId) {
+            @for (agent of agentes; track agent.agentId) {
               <tr>
                 <td class="agent-name">{{ agent.agentName }}</td>
                 <td class="align-right">{{ agent.assigned }}</td>

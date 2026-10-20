@@ -22,49 +22,49 @@ export interface FiltrosDeContacto {
  */
 @Injectable({ providedIn: 'root' })
 export class ContactosScreenStore {
-  private readonly contactsStore = inject(ContactosStore);
+  private readonly contactosStore = inject(ContactosStore);
 
   /** Currently selected contact */
-  readonly selectedContact = signal<ContactoUI | null>(null);
+  readonly contactoSeleccionado = signal<ContactoUI | null>(null);
 
   /** Selected contact ID (separate from selectedContact signal for routing) */
-  readonly selectedContactId = signal<string | null>(null);
+  readonly contactoSeleccionadoId = signal<string | null>(null);
 
   /** Contact filters */
-  readonly filters = signal<FiltrosDeContacto>({});
+  readonly filtros = signal<FiltrosDeContacto>({});
 
   /** Search term */
   readonly searchTerm = signal<string>('');
 
   /** Filtered contacts based on current filters + search term */
-  readonly filteredContacts = computed<ContactoUI[]>(() => {
-    const all = this.contactsStore.contacts();
-    const f = this.filters();
+  readonly contactosFiltrados = computed<ContactoUI[]>(() => {
+    const all = this.contactosStore.contactos();
+    const f = this.filtros();
     const search = this.searchTerm().toLowerCase().trim();
 
-    return all.filter(contact => {
+    return all.filter(contacto => {
       // Status filter
-      if (f.status && f.status !== 'all' && contact.status !== f.status) {
+      if (f.status && f.status !== 'all' && contacto.status !== f.status) {
         return false;
       }
 
       // Owner filter
       if (f.ownerId !== undefined && f.ownerId !== null) {
-        if (!contact.owner || contact.owner.id !== f.ownerId) {
+        if (!contacto.owner || contacto.owner.id !== f.ownerId) {
           return false;
         }
       }
 
       // Channel filter
-      if (f.channel && f.channel !== 'all' && contact.channel !== f.channel) {
+      if (f.channel && f.channel !== 'all' && contacto.channel !== f.channel) {
         return false;
       }
 
       // Search filter
       if (search) {
-        const name = (contact.name ?? '').toLowerCase();
-        const phone = contact.phone.toLowerCase();
-        if (!name.includes(search) && !phone.includes(search)) {
+        const name = (contacto.name ?? '').toLowerCase();
+        const telefono = contacto.phone.toLowerCase();
+        if (!name.includes(search) && !telefono.includes(search)) {
           return false;
         }
       }
@@ -75,24 +75,24 @@ export class ContactosScreenStore {
 
   /** Clear selection — removes both id and contact signals */
   clearSelection(): void {
-    this.selectedContactId.set(null);
-    this.selectedContact.set(null);
+    this.contactoSeleccionadoId.set(null);
+    this.contactoSeleccionado.set(null);
   }
 
   /** Set selected contact */
-  selectContact(contactId: string | null): void {
-    this.selectedContactId.set(contactId);
-    if (!contactId) {
-      this.selectedContact.set(null);
+  seleccionarContacto(contactoId: string | null): void {
+    this.contactoSeleccionadoId.set(contactoId);
+    if (!contactoId) {
+      this.contactoSeleccionado.set(null);
       return;
     }
-    const contact = this.contactsStore.contactById(contactId) ?? null;
-    this.selectedContact.set(contact);
+    const contacto = this.contactosStore.contactoById(contactoId) ?? null;
+    this.contactoSeleccionado.set(contacto);
   }
 
   /** Set filters */
-  setFilters(filters: FiltrosDeContacto): void {
-    this.filters.set(filters);
+  setFiltros(filtros: FiltrosDeContacto): void {
+    this.filtros.set(filtros);
   }
 
   /** Set search term */

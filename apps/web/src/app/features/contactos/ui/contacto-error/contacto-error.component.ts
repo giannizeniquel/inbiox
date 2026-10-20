@@ -23,9 +23,9 @@ export class ContactoErrorComponent {
   readonly errorMessage = input<string>('Error al cargar los contactos');
 
   /** Emit when user clicks retry */
-  readonly retry = output<void>();
+  readonly reintentar = output<void>();
 
-  onRetryClick(): void {
-    this.retry.emit();
+  onReintentarClick(): void {
+    this.reintentar.emit();
   }
 }

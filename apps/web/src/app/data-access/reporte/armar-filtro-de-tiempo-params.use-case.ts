@@ -12,26 +12,26 @@ export class FiltroDeTiempoInvalido extends Error {
 }
 
 /**
- * ConstruirFiltroDeTiempoParamsUseCase — computes date range parameters from a time filter.
+ * ArmarFiltroDeTiempoParamsUseCase — computes date range parameters from a time filter.
  *
  * Pure synchronous function: no Observable, no API calls.
  * Encapsulates the `today / 7d / 30d / custom` switch and date formatting.
  */
 @Injectable({ providedIn: 'root' })
-export class ConstruirFiltroDeTiempoParamsUseCase {
+export class ArmarFiltroDeTiempoParamsUseCase {
   /**
    * Build FiltroDeTiempoParams from a given filter selection and optional custom dates.
    *
-   * @param filter - The selected time filter preset
+   * @param filtro - The selected time filter preset
    * @param fromDate - Custom from date (YYYY-MM-DD), used when filter is 'custom'
    * @param toDate - Custom to date (YYYY-MM-DD), used when filter is 'custom'
    * @returns FiltroDeTiempoParams with fromDate and toDate (both YYYY-MM-DD strings)
    * @throws FiltroDeTiempoInvalido if 'custom' is selected without valid dates
    */
-  build(filter: FiltroDeTiempo, fromDate: string, toDate: string): FiltroDeTiempoParams {
+  build(filtro: FiltroDeTiempo, fromDate: string, toDate: string): FiltroDeTiempoParams {
     const today = new Date();
 
-    switch (filter) {
+    switch (filtro) {
       case 'today':
         return { fromDate: this.formatDate(today), toDate: this.formatDate(today) };
       case '7d': {
@@ -55,7 +55,7 @@ export class ConstruirFiltroDeTiempoParamsUseCase {
         return { fromDate, toDate };
       }
       default: {
-        throw new FiltroDeTiempoInvalido(`Unknown time filter: ${filter}`);
+        throw new FiltroDeTiempoInvalido(`Unknown time filter: ${filtro}`);
       }
     }
   }
@@ -71,6 +71,6 @@ export class ConstruirFiltroDeTiempoParamsUseCase {
 /**
  * Factory function for manual instantiation (testing).
  */
-export function createBuildTimeFilterParamsUseCase(): ConstruirFiltroDeTiempoParamsUseCase {
-  return new ConstruirFiltroDeTiempoParamsUseCase();
+export function createArmarFiltroDeTiempoParamsUseCase(): ArmarFiltroDeTiempoParamsUseCase {
+  return new ArmarFiltroDeTiempoParamsUseCase();
 }

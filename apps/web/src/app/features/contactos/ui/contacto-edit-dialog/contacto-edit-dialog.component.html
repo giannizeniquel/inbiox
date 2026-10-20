@@ -13,7 +13,7 @@
     <div class="dialog-body">
       <app-contacto-form
         #contactForm
-        [initialValue]="contact()"
+        [initialValue]="contacto()"
         (formChange)="onFormChange($event.dirty)"
         (submitForm)="onFormSubmit($event)"
       />

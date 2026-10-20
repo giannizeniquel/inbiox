@@ -4,9 +4,9 @@ import { ProveedorWhatsAppCloud, Mensaje } from './proveedor-whatsapp-cloud';
 
 describe('EnviarMensajeUseCase', () => {
   let useCase: EnviarMensajeUseCase;
-  let providerSpy: jasmine.SpyObj<ProveedorWhatsAppCloud>;
+  let proveedorSpy: jasmine.SpyObj<ProveedorWhatsAppCloud>;
 
-  const providerMessage: Mensaje = {
+  const mensajeDeProveedor: Mensaje = {
     id: 'provider-id-123',
     ticketId: 'ticket-1',
     content: 'Hello',
@@ -16,26 +16,26 @@ describe('EnviarMensajeUseCase', () => {
   };
 
   beforeEach(() => {
-    providerSpy = jasmine.createSpyObj('ProveedorWhatsAppCloud', ['sendMessage']);
-    useCase = new EnviarMensajeUseCase(providerSpy);
+    proveedorSpy = jasmine.createSpyObj('ProveedorWhatsAppCloud', ['enviarMensaje']);
+    useCase = new EnviarMensajeUseCase(proveedorSpy);
   });
 
   it('should call provider.sendMessage() with ticketId and content', (done) => {
-    providerSpy.sendMessage.and.returnValue(of(providerMessage));
+    proveedorSpy.enviarMensaje.and.returnValue(of(mensajeDeProveedor));
     useCase.execute({ ticketId: 'ticket-1', content: 'Hello' }).subscribe({
       next: () => {
-        expect(providerSpy.sendMessage).toHaveBeenCalledWith('ticket-1', 'Hello');
+        expect(proveedorSpy.enviarMensaje).toHaveBeenCalledWith('ticket-1', 'Hello');
         done();
       },
     });
   });
 
   it('should map provider response to EnviarMensajeOutput with tempId', (done) => {
-    providerSpy.sendMessage.and.returnValue(of(providerMessage));
+    proveedorSpy.enviarMensaje.and.returnValue(of(mensajeDeProveedor));
     useCase.execute({ ticketId: 'ticket-1', content: 'Hello', tempId: 'my-temp-id' }).subscribe({
       next: (output: EnviarMensajeOutput) => {
         expect(output.tempId).toBe('my-temp-id');
-        expect(output.message).toEqual(jasmine.objectContaining(providerMessage));
+        expect(output.message).toEqual(jasmine.objectContaining(mensajeDeProveedor));
         expect(output.message.tempId).toBe('my-temp-id');
         done();
       },
@@ -43,7 +43,7 @@ describe('EnviarMensajeUseCase', () => {
   });
 
   it('should generate a tempId when caller does not provide one', (done) => {
-    providerSpy.sendMessage.and.returnValue(of(providerMessage));
+    proveedorSpy.enviarMensaje.and.returnValue(of(mensajeDeProveedor));
     useCase.execute({ ticketId: 'ticket-1', content: 'Hello' }).subscribe({
       next: (output: EnviarMensajeOutput) => {
         expect(output.tempId).toBeTruthy();
@@ -54,7 +54,7 @@ describe('EnviarMensajeUseCase', () => {
   });
 
   it('should produce output with correct shape', (done) => {
-    providerSpy.sendMessage.and.returnValue(of(providerMessage));
+    proveedorSpy.enviarMensaje.and.returnValue(of(mensajeDeProveedor));
     useCase.execute({ ticketId: 'ticket-1', content: 'Hello', tempId: 'my-temp-id' }).subscribe({
       next: (output: EnviarMensajeOutput) => {
         expect(output.tempId).toBe('my-temp-id');
@@ -68,8 +68,8 @@ describe('EnviarMensajeUseCase', () => {
   });
 
   it('should fall back to tempId as id when provider returns empty id', (done) => {
-    const noIdMessage: Mensaje = { ...providerMessage, id: '' };
-    providerSpy.sendMessage.and.returnValue(of(noIdMessage));
+    const mensajeSinId: Mensaje = { ...mensajeDeProveedor, id: '' };
+    proveedorSpy.enviarMensaje.and.returnValue(of(mensajeSinId));
     useCase.execute({ ticketId: 'ticket-1', content: 'Hello', tempId: 'my-temp-id' }).subscribe({
       next: (output: EnviarMensajeOutput) => {
         expect(output.message.id).toBe('my-temp-id');
@@ -79,8 +79,8 @@ describe('EnviarMensajeUseCase', () => {
   });
 
   it('should throw EnvioDeMensajeFallido when provider returns deliveryStatus=failed', (done) => {
-    const failedMessage: Mensaje = { ...providerMessage, deliveryStatus: 'failed' };
-    providerSpy.sendMessage.and.returnValue(of(failedMessage));
+    const mensajeFallido: Mensaje = { ...mensajeDeProveedor, deliveryStatus: 'failed' };
+    proveedorSpy.enviarMensaje.and.returnValue(of(mensajeFallido));
     useCase.execute({ ticketId: 'ticket-1', content: 'Hello' }).subscribe({
       error: (err: EnvioDeMensajeFallido) => {
         expect(err).toBeInstanceOf(EnvioDeMensajeFallido);
@@ -90,7 +90,7 @@ describe('EnviarMensajeUseCase', () => {
   });
 
   it('should throw EnvioDeMensajeFallido when provider observable errors', (done) => {
-    providerSpy.sendMessage.and.returnValue(throwError(() => new Error('Network down')));
+    proveedorSpy.enviarMensaje.and.returnValue(throwError(() => new Error('Network down')));
     useCase.execute({ ticketId: 'ticket-1', content: 'Hello' }).subscribe({
       error: (err: EnvioDeMensajeFallido) => {
         expect(err).toBeInstanceOf(EnvioDeMensajeFallido);

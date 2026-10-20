@@ -50,7 +50,7 @@ export class ProveedorWhatsAppCloud {
    * `messageId` is the DB ID (used for media URL fetch); `externalId` is the WAMID.
    * EnvioDeMensajesService handles optimistic→confirm reconciliation.
    */
-  sendMessage(ticketId: string, content: string): Observable<Mensaje> {
+  enviarMensaje(ticketId: string, content: string): Observable<Mensaje> {
     return this.http.post<{ messageId: number | null; externalId: string | null; status: string }>(
       '/api/provider/send',
       { ticketId, content }
@@ -73,22 +73,22 @@ export class ProveedorWhatsAppCloud {
    * POST /api/provider/send { ticketId, content, mediaId, mimeType, caption, mediaKey, filename, size }
    * Response: Message
    */
-  sendMediaMessage(
+  enviarMensajeConAdjunto(
     ticketId: string,
-    mediaId: string,
+    adjuntoId: string,
     mimeType: string,
     caption?: string,
-    mediaKey?: string,
+    adjuntoKey?: string,
     filename?: string,
     size?: number,
   ): Observable<Mensaje> {
     return this.http.post<{ messageId: number | null; externalId: string | null; status: string }>('/api/provider/send', {
       ticketId,
       content: caption || '',
-      mediaId,
+      mediaId: adjuntoId,
       mimeType,
       caption,
-      mediaKey,
+      mediaKey: adjuntoKey,
       filename,
       size,
     }).pipe(

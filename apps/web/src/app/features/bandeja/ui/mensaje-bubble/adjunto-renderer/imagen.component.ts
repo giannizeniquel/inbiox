@@ -9,7 +9,7 @@ import { UrlDeAdjuntoService } from '../../../../../data-access/conversacion/url
     @if (imageUrl()) {
       <img
         [src]="imageUrl()!"
-        [alt]="attachment().filename"
+        [alt]="adjunto().filename"
         class="media-image"
         loading="lazy"
         (error)="onImageError()"
@@ -41,10 +41,10 @@ import { UrlDeAdjuntoService } from '../../../../../data-access/conversacion/url
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdjuntoImagenComponent {
-  readonly attachment = input.required<Adjunto>();
-  readonly messageId = input.required<string>();
+  readonly adjunto = input.required<Adjunto>();
+  readonly mensajeId = input.required<string>();
 
-  private mediaUrlService = inject(UrlDeAdjuntoService);
+  private urlDeAdjuntoService = inject(UrlDeAdjuntoService);
 
   imageUrl = signal<string | null>(null);
   loading = signal(true);
@@ -54,8 +54,8 @@ export class AdjuntoImagenComponent {
     // recycles DOM nodes when scrolling, so ngOnInit (runs once) would
     // keep showing a stale image from a previous message.
     effect((onCleanup) => {
-      const att = this.attachment();
-      const messageId = this.messageId();
+      const att = this.adjunto();
+      const mensajeId = this.mensajeId();
 
       // Optimistic preview: use local blob URL directly (no backend call)
       if (att.localUrl) {
@@ -67,7 +67,7 @@ export class AdjuntoImagenComponent {
       this.loading.set(true);
       this.imageUrl.set(null);
 
-      const sub = this.mediaUrlService.getMediaUrl(messageId).subscribe({
+      const sub = this.urlDeAdjuntoService.getUrlDeAdjunto(mensajeId).subscribe({
         next: (resp) => {
           this.imageUrl.set(resp.url);
           this.loading.set(false);

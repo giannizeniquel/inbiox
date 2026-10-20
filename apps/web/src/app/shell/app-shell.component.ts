@@ -13,7 +13,7 @@ import { TicketStore } from '../data-access/ticket/ticket.store';
 import { ConversacionStore } from '../data-access/conversacion/conversacion.store';
 import { TicketApiService } from '../data-access/ticket/ticket-api.service';
 import { MensajeApiService, GetMensajesResponse } from '../data-access/conversacion/mensaje-api.service';
-import { mapApiMessagesToCanonical } from '../data-access/conversacion/mensaje-mapper.util';
+import { mapearMensajesDeApiACanonicos } from '../data-access/conversacion/mensaje-mapper.util';
 
 @Component({
   selector: 'app-shell',
@@ -52,11 +52,11 @@ export class AppShellComponent implements OnDestroy {
 
   private readonly _resizeHandler = this.syncResponsiveState.bind(this);
 
-  private readonly workspaceStore = inject(EspacioDeTrabajoStore);
+  private readonly espacioDeTrabajoStore = inject(EspacioDeTrabajoStore);
   private readonly ticketStore = inject(TicketStore);
-  private readonly conversationStore = inject(ConversacionStore);
+  private readonly conversacionStore = inject(ConversacionStore);
   private readonly ticketApi = inject(TicketApiService);
-  private readonly messageApi = inject(MensajeApiService);
+  private readonly mensajeApi = inject(MensajeApiService);
   private readonly route = inject(ActivatedRoute);
 
   constructor() {
@@ -78,12 +78,12 @@ export class AppShellComponent implements OnDestroy {
     }
 
     // Initialize workspace state
-    this.workspaceStore.loadMyWorkspaces();
-    this.workspaceStore.loadActiveWorkspace();
+    this.espacioDeTrabajoStore.cargarMisEspaciosDeTrabajo();
+    this.espacioDeTrabajoStore.cargarEspacioDeTrabajoActivo();
 
     // Auto-select first workspace if agent has assignments but no active workspace
     // Uses setTimeout to wait for both loadMyWorkspaces and loadActiveWorkspace to complete
-    setTimeout(() => this.workspaceStore.autoSelectFirstIfNeeded(), 500);
+    setTimeout(() => this.espacioDeTrabajoStore.autoSeleccionarPrimeroSiHaceFalta(), 500);
 
     // Handle ?ticketId=X deep-link from contacts/timeline
     // Don't use take(1) — need to respond to every navigation
@@ -97,7 +97,7 @@ export class AppShellComponent implements OnDestroy {
             next: (ticket) => {
               this.ticketStore.addOrUpdateTicket(ticket);
               this.ticketStore.setActiveTicket(ticket.ticket_id);
-              this.loadMessages(ticket.ticket_id);
+              this.cargarMensajes(ticket.ticket_id);
             },
             error: () => {},
           });
@@ -113,7 +113,7 @@ export class AppShellComponent implements OnDestroy {
   }
 
   /** Check if current route is inbox */
-  isInboxRoute(): boolean {
+  isRutaDeBandeja(): boolean {
     const route = this.currentRoute();
     return route === 'inbox' || route.startsWith('inbox?');
   }
@@ -122,7 +122,7 @@ export class AppShellComponent implements OnDestroy {
     this.isSidebarOpen.update(v => !v);
   }
 
-  onConversationBack(): void {
+  onVolverDeConversacion(): void {
     // Handle back from conversation in mobile
   }
 
@@ -133,17 +133,17 @@ export class AppShellComponent implements OnDestroy {
     this.isSidebarCollapsed.set(width >= this._mobileBreakpoint && width < 1200);
   }
 
-  private loadMessages(ticketId: string): void {
-    this.conversationStore.reset();
-    this.conversationStore.setLoading(true);
-    this.messageApi.getMessages(ticketId, 20, 0).pipe(take(1)).subscribe({
+  private cargarMensajes(ticketId: string): void {
+    this.conversacionStore.reset();
+    this.conversacionStore.setLoading(true);
+    this.mensajeApi.getMensajes(ticketId, 20, 0).pipe(take(1)).subscribe({
       next: (resp: GetMensajesResponse) => {
-        this.conversationStore.loadMessages(mapApiMessagesToCanonical(resp, ticketId));
-        this.conversationStore.setHasMore(resp.meta.has_more);
-        this.conversationStore.setLoading(false);
+        this.conversacionStore.cargarMensajes(mapearMensajesDeApiACanonicos(resp, ticketId));
+        this.conversacionStore.setHasMore(resp.meta.has_more);
+        this.conversacionStore.setLoading(false);
       },
       error: () => {
-        this.conversationStore.setLoading(false);
+        this.conversacionStore.setLoading(false);
       },
     });
   }

@@ -19,7 +19,7 @@ describe('ExportarTicketsCsvUseCase', () => {
   const mockBlob = new Blob(['ticket_id,contact_name\n1,John'], { type: 'text/csv' });
 
   beforeEach(() => {
-    apiSpy = jasmine.createSpyObj('ReporteApiService', ['exportTicketsCsv']);
+    apiSpy = jasmine.createSpyObj('ReporteApiService', ['exportarTicketsCsv']);
 
     anchorSpy = jasmine.createSpyObj('HTMLAnchorElement', ['click'], {
       href: '',
@@ -42,18 +42,18 @@ describe('ExportarTicketsCsvUseCase', () => {
   });
 
   it('calls the export endpoint with the given params', (done) => {
-    apiSpy.exportTicketsCsv.and.returnValue(of(mockBlob));
+    apiSpy.exportarTicketsCsv.and.returnValue(of(mockBlob));
     spyOn(URL, 'createObjectURL').and.returnValue('blob:mock-url');
     spyOn(URL, 'revokeObjectURL');
 
     useCase.execute(params).subscribe(() => {
-      expect(apiSpy.exportTicketsCsv).toHaveBeenCalledWith(params);
+      expect(apiSpy.exportarTicketsCsv).toHaveBeenCalledWith(params);
       done();
     });
   });
 
   it('triggers an anchor download with a filename derived from the date range', (done) => {
-    apiSpy.exportTicketsCsv.and.returnValue(of(mockBlob));
+    apiSpy.exportarTicketsCsv.and.returnValue(of(mockBlob));
     spyOn(URL, 'createObjectURL').and.returnValue('blob:mock-url');
     spyOn(URL, 'revokeObjectURL');
 
@@ -70,7 +70,7 @@ describe('ExportarTicketsCsvUseCase', () => {
   });
 
   it('falls back to "all" in the filename when no date params are given', (done) => {
-    apiSpy.exportTicketsCsv.and.returnValue(of(mockBlob));
+    apiSpy.exportarTicketsCsv.and.returnValue(of(mockBlob));
     spyOn(URL, 'createObjectURL').and.returnValue('blob:mock-url');
     spyOn(URL, 'revokeObjectURL');
 

@@ -18,7 +18,7 @@ function makeTicket(overrides: Partial<Ticket> = {}): Ticket {
   };
 }
 
-function makeAgent(overrides: Partial<DisponibilidadDeAgenteDTO> = {}): DisponibilidadDeAgenteDTO {
+function armarAgente(overrides: Partial<DisponibilidadDeAgenteDTO> = {}): DisponibilidadDeAgenteDTO {
   return {
     id: 1,
     name: 'Agent 1',
@@ -42,8 +42,8 @@ describe('TicketCardComponent', () => {
     fixture = TestBed.createComponent(TicketCardComponent);
     fixture.componentRef.setInput('ticket', inputs.ticket ?? makeTicket());
     fixture.componentRef.setInput('isActive', inputs.isActive ?? false);
-    fixture.componentRef.setInput('availableAgents', inputs.availableAgents ?? []);
-    fixture.componentRef.setInput('canAssign', inputs.canAssign ?? true);
+    fixture.componentRef.setInput('agentesDisponibles', inputs.availableAgents ?? []);
+    fixture.componentRef.setInput('puedeAsignar', inputs.canAssign ?? true);
     fixture.detectChanges();
     component = fixture.componentInstance;
   }
@@ -64,8 +64,8 @@ describe('TicketCardComponent', () => {
     it('is visible when the roster has zero Activo agents (all Inactivo)', async () => {
       await createComponent({
         availableAgents: [
-          makeAgent({ id: 1, is_active_now: false }),
-          makeAgent({ id: 2, is_active_now: false }),
+          armarAgente({ id: 1, is_active_now: false }),
+          armarAgente({ id: 2, is_active_now: false }),
         ],
         canAssign: true,
       });
@@ -75,7 +75,7 @@ describe('TicketCardComponent', () => {
 
     it('is hidden when the ticket is not assignable, regardless of roster', async () => {
       await createComponent({
-        availableAgents: [makeAgent({ is_active_now: true })],
+        availableAgents: [armarAgente({ is_active_now: true })],
         canAssign: false,
       });
 
@@ -85,7 +85,7 @@ describe('TicketCardComponent', () => {
     it('is hidden when the ticket status is not assignable (resolved)', async () => {
       await createComponent({
         ticket: makeTicket({ status: EstadoDeTicket.Resuelto }),
-        availableAgents: [makeAgent({ is_active_now: true })],
+        availableAgents: [armarAgente({ is_active_now: true })],
         canAssign: true,
       });
 
@@ -95,18 +95,18 @@ describe('TicketCardComponent', () => {
 
   describe('activeAgents() / inactiveAgents() grouping', () => {
     it('splits the roster into Activo and Inactivo groups', async () => {
-      const activo = makeAgent({ id: 1, is_active_now: true });
-      const inactivo = makeAgent({ id: 2, is_active_now: false });
+      const activo = armarAgente({ id: 1, is_active_now: true });
+      const inactivo = armarAgente({ id: 2, is_active_now: false });
 
       await createComponent({ availableAgents: [inactivo, activo] });
 
-      expect(component.activeAgents()).toEqual([activo]);
-      expect(component.inactiveAgents()).toEqual([inactivo]);
+      expect(component.agentesActivos()).toEqual([activo]);
+      expect(component.agentesInactivos()).toEqual([inactivo]);
     });
 
     it('renders Activo group before Inactivo group in the dropdown DOM', async () => {
-      const activo = makeAgent({ id: 1, name: 'Activo Agent', is_active_now: true });
-      const inactivo = makeAgent({ id: 2, name: 'Inactivo Agent', is_active_now: false });
+      const activo = armarAgente({ id: 1, name: 'Activo Agent', is_active_now: true });
+      const inactivo = armarAgente({ id: 2, name: 'Inactivo Agent', is_active_now: false });
 
       await createComponent({ availableAgents: [inactivo, activo] });
       component.toggleDropdown(new MouseEvent('click'));
@@ -122,31 +122,31 @@ describe('TicketCardComponent', () => {
 
   describe('selectAgent() — Inactivo rows are not selectable', () => {
     it('emits assign when selecting an Activo agent', async () => {
-      const activo = makeAgent({ id: 1, is_active_now: true });
+      const activo = armarAgente({ id: 1, is_active_now: true });
       await createComponent({ availableAgents: [activo] });
 
       let emitted: { ticketId: string; agentId: number } | undefined;
-      component.assign.subscribe((e) => (emitted = e));
+      component.asignar.subscribe((e) => (emitted = e));
 
-      component.selectAgent(activo, new MouseEvent('click'));
+      component.seleccionarAgente(activo, new MouseEvent('click'));
 
       expect(emitted).toEqual({ ticketId: 't-1', agentId: 1 });
     });
 
     it('does NOT emit assign when selecting an Inactivo agent', async () => {
-      const inactivo = makeAgent({ id: 2, is_active_now: false });
+      const inactivo = armarAgente({ id: 2, is_active_now: false });
       await createComponent({ availableAgents: [inactivo] });
 
       let emitted: { ticketId: string; agentId: number } | undefined;
-      component.assign.subscribe((e) => (emitted = e));
+      component.asignar.subscribe((e) => (emitted = e));
 
-      component.selectAgent(inactivo, new MouseEvent('click'));
+      component.seleccionarAgente(inactivo, new MouseEvent('click'));
 
       expect(emitted).toBeUndefined();
     });
 
     it('marks the Inactivo row as disabled in the DOM', async () => {
-      const inactivo = makeAgent({ id: 2, name: 'Inactivo Agent', is_active_now: false });
+      const inactivo = armarAgente({ id: 2, name: 'Inactivo Agent', is_active_now: false });
       await createComponent({ availableAgents: [inactivo] });
       component.toggleDropdown(new MouseEvent('click'));
       fixture.detectChanges();

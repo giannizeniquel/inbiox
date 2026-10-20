@@ -20,13 +20,13 @@ import { FiltrosDeContacto } from '../../contactos-screen.store';
 })
 export class FiltrosDeContactoComponent {
   /** Current active filters from parent */
-  readonly filters = input<FiltrosDeContacto>({});
+  readonly filtros = input<FiltrosDeContacto>({});
 
   /** Emits partial filter change when user toggles a chip */
-  readonly filterChange = output<Partial<FiltrosDeContacto>>();
+  readonly filtroChange = output<Partial<FiltrosDeContacto>>();
 
   /** Status filter options */
-  readonly statusOptions = [
+  readonly estadoOptions = [
     { value: 'all' as const, label: 'Todos' },
     { value: 'active' as const, label: 'Activos' },
     { value: 'inactive' as const, label: 'Inactivos' },
@@ -40,22 +40,22 @@ export class FiltrosDeContactoComponent {
   ];
 
   /** Get current status value or default 'all' */
-  currentStatus(): 'active' | 'inactive' | 'all' {
-    return this.filters().status ?? 'all';
+  estadoActual(): 'active' | 'inactive' | 'all' {
+    return this.filtros().status ?? 'all';
   }
 
   /** Get current channel value or default 'all' */
   currentChannel(): 'whatsapp' | 'other' | 'all' {
-    return this.filters().channel ?? 'all';
+    return this.filtros().channel ?? 'all';
   }
 
   /** Handle status chip click */
-  onStatusChange(status: 'active' | 'inactive' | 'all'): void {
-    this.filterChange.emit({ status });
+  onEstadoChange(estado: 'active' | 'inactive' | 'all'): void {
+    this.filtroChange.emit({ status: estado });
   }
 
   /** Handle channel chip click */
   onChannelChange(channel: 'whatsapp' | 'other' | 'all'): void {
-    this.filterChange.emit({ channel });
+    this.filtroChange.emit({ channel });
   }
 }

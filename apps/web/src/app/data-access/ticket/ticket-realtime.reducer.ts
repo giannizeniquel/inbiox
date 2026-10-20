@@ -6,7 +6,7 @@ import { EventoEnTiempoReal, TipoDeEventoEnTiempoReal,
   TicketAssignedPayload } from '../../core/tiempo-real/evento-en-tiempo-real.model';
 
 /** Apply one ticket-related realtime event (from the EventBus) to the ticket list and the workspace pending flags. */
-export function applyTicketEvent(event: EventoEnTiempoReal, store: TicketStore, workspaceStore: EspacioDeTrabajoStore): void {
+export function applyTicketEvent(event: EventoEnTiempoReal, store: TicketStore, espacioDeTrabajoStore: EspacioDeTrabajoStore): void {
   switch (event.eventType) {
     case TipoDeEventoEnTiempoReal.MessageAdded: {
       const p = event.payload as MessageAddedPayload;
@@ -21,18 +21,18 @@ export function applyTicketEvent(event: EventoEnTiempoReal, store: TicketStore, 
       ) {
         const current = store.tickets().find(t => String(t.ticket_id) === String(p.ticketId));
         if (current) {
-          store.updateUnreadCount(String(p.ticketId), (current.metrics?.unread_count ?? 0) + 1);
+          store.updateConteoDeNoLeidos(String(p.ticketId), (current.metrics?.unread_count ?? 0) + 1);
         }
       }
       // Workspace pending indicator: if inbound message from a different workspace
       if (p.direction === 'inbound' && p.phoneNumberId) {
-        const activePhone = workspaceStore.activePhoneNumberId();
+        const activePhone = espacioDeTrabajoStore.activePhoneNumberId();
         if (activePhone && activePhone !== p.phoneNumberId) {
-          const ws = workspaceStore.workspaces().find(
+          const ws = espacioDeTrabajoStore.espaciosDeTrabajo().find(
             w => w.phone_number_id === p.phoneNumberId
           );
           if (ws) {
-            workspaceStore.setPending(ws.id, true);
+            espacioDeTrabajoStore.setPending(ws.id, true);
           }
         }
       }
@@ -74,17 +74,17 @@ export function applyTicketEvent(event: EventoEnTiempoReal, store: TicketStore, 
       if (existing) {
         // Only overwrite owner name when Mercure provides a real name.
         // Otherwise keep the name from optimistic update (or existing owner).
-        const ownerName = p.assigneeName ?? existing.owner?.name ?? `Agent #${p.assigneeId}`;
+        const nombreDeResponsable = p.assigneeName ?? existing.owner?.name ?? `Agent #${p.assigneeId}`;
         // Implicit status transition: unassigned (new) → active on assignment
-        const wasUnassigned = existing.status === EstadoDeTicket.Nuevo || existing.owner === null;
+        const estabaSinAsignar = existing.status === EstadoDeTicket.Nuevo || existing.owner === null;
         store.addOrUpdateTicket({
           ...existing,
-          owner: { id: p.assigneeId, name: ownerName },
-          status: wasUnassigned ? EstadoDeTicket.Activo : existing.status,
+          owner: { id: p.assigneeId, name: nombreDeResponsable },
+          status: estabaSinAsignar ? EstadoDeTicket.Activo : existing.status,
         });
       }
       // When a ticket is reassigned, clear the unread badge for the new owner
-      store.markAsRead(String(event.ticketId));
+      store.marcarComoLeido(String(event.ticketId));
       break;
     }
 
@@ -92,7 +92,7 @@ export function applyTicketEvent(event: EventoEnTiempoReal, store: TicketStore, 
       // Another user marked this ticket as read — clear our badge
       const ticketId = event.ticketId ? String(event.ticketId) : null;
       if (ticketId) {
-        store.markAsRead(ticketId);
+        store.marcarComoLeido(ticketId);
       }
       break;
     }

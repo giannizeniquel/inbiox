@@ -35,7 +35,7 @@ export interface EnviarMensajeOutput {
  * EnvioDeMensajeFallido — exception thrown when provider rejects the message.
  */
 export class EnvioDeMensajeFallido extends Error {
-  constructor(message: string, public readonly providerError?: unknown) {
+  constructor(message: string, public readonly errorDeProveedor?: unknown) {
     super(message);
     this.name = 'EnvioDeMensajeFallido';
   }
@@ -57,10 +57,10 @@ export class EnvioDeMensajeFallido extends Error {
  */
 @Injectable({ providedIn: 'root' })
 export class EnviarMensajeUseCase {
-  private readonly provider: ProveedorWhatsAppCloud;
+  private readonly proveedor: ProveedorWhatsAppCloud;
 
-  constructor(provider: ProveedorWhatsAppCloud) {
-    this.provider = provider;
+  constructor(proveedor: ProveedorWhatsAppCloud) {
+    this.proveedor = proveedor;
   }
 
   /**
@@ -80,8 +80,8 @@ export class EnviarMensajeUseCase {
     const tempId = input.tempId ?? generateTempId();
 
     // Route to sendMediaMessage if media is attached
-    const sendObservable = input.mediaId
-      ? this.provider.sendMediaMessage(
+    const envioObservable = input.mediaId
+      ? this.proveedor.enviarMensajeConAdjunto(
           input.ticketId,
           input.mediaId,
           input.mimeType ?? 'application/octet-stream',
@@ -90,16 +90,16 @@ export class EnviarMensajeUseCase {
           input.filename,
           input.size,
         )
-      : this.provider.sendMessage(input.ticketId, input.content);
+      : this.proveedor.enviarMensaje(input.ticketId, input.content);
 
-    return sendObservable.pipe(
-      map((message: Mensaje) => {
+    return envioObservable.pipe(
+      map((mensaje: Mensaje) => {
         // Reconciliation: attach caller tempId to provider response
         const reconciled: Mensaje = {
-          ...message,
+          ...mensaje,
           tempId,
           // Keep provider-assigned id as primary, fall back to tempId
-          id: message.id || tempId,
+          id: mensaje.id || tempId,
         };
 
         console.log('[EnviarMensajeUseCase] Message sent:', {

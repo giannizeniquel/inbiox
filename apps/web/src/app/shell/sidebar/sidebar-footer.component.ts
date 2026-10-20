@@ -15,7 +15,7 @@ export class SidebarFooterComponent {
   private readonly themeStore = inject(ThemeStore);
   protected readonly authStore = inject(AuthStore);
 
-  currentUser = this.authStore.currentUser;
+  usuarioActual = this.authStore.usuarioActual;
 
   isDark(): boolean {
     return this.themeStore.isDark();
@@ -25,7 +25,7 @@ export class SidebarFooterComponent {
     this.themeStore.toggle();
   }
 
-  logout(): void {
-    this.authStore.logout();
+  cerrarSesion(): void {
+    this.authStore.cerrarSesion();
   }
 }

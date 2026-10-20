@@ -19,7 +19,7 @@ export interface MetricaDeAgente {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RendimientoDeAgentesComponent {
-  @Input({ required: true }) agents: MetricaDeAgente[] = [];
+  @Input({ required: true }) agentes: MetricaDeAgente[] = [];
   @Input() loading: boolean = false;
 
   formatResponseTime(minutes: number): string {

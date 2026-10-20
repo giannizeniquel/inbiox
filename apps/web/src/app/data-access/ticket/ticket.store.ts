@@ -36,26 +36,26 @@ export class TicketStore {
   readonly activeTicket = signal<Ticket | null>(null);
 
   /** Active filter tab */
-  readonly filter = signal<FiltroDeTicket>('mine');
+  readonly filtro = signal<FiltroDeTicket>('mine');
 
   /**
    * Single-select team filter (team-area-entity, Slice 3). Server-side
    * filter — independent of and composable with `filter` above — forwarded
    * as a query param to `GET /api/tickets`. `null` = no team scope.
    */
-  readonly selectedTeamId = signal<number | null>(null);
+  readonly equipoSeleccionadoId = signal<number | null>(null);
 
   /** Loading state */
   readonly loading = signal<boolean>(false);
 
   /** Assignment errors with auto-dismiss timestamps */
-  readonly assignmentErrors = signal<Map<number, AssignmentError>>(new Map());
+  readonly erroresDeAsignacion = signal<Map<number, AssignmentError>>(new Map());
 
   private readonly authStore = inject(AuthStore);
-  private readonly workspaceStore = inject(EspacioDeTrabajoStore);
+  private readonly espacioDeTrabajoStore = inject(EspacioDeTrabajoStore);
 
   /** Current logged-in agent's ID (null if admin without agent) */
-  private readonly currentAgentId = computed(() => this.authStore.currentUser()?.agent_id ?? null);
+  private readonly agenteActualId = computed(() => this.authStore.usuarioActual()?.agent_id ?? null);
 
   constructor() {
     this.initEventBus();
@@ -79,17 +79,17 @@ export class TicketStore {
         || e.eventType === TipoDeEventoEnTiempoReal.TicketRead
       ),
       takeUntilDestroyed(destroyRef),
-    ).subscribe(e => applyTicketEvent(e, this, this.workspaceStore));
+    ).subscribe(e => applyTicketEvent(e, this, this.espacioDeTrabajoStore));
   }
 
   /** Filtered tickets based on current filter */
   readonly filteredTickets = computed<Ticket[]>(() => {
     const all = this.tickets();
-    const f = this.filter();
+    const f = this.filtro();
 
     switch (f) {
       case 'mine':
-        return all.filter(t => t.owner?.id === this.currentAgentId());
+        return all.filter(t => t.owner?.id === this.agenteActualId());
       case 'waiting':
         return all.filter(t => t.owner === null); // unassigned tickets
       case 'internal':
@@ -100,14 +100,14 @@ export class TicketStore {
   });
 
   /** Count for each filter tab */
-  readonly filterCounts = computed(() => ({
-    mine: this.tickets().filter(t => t.owner?.id === this.currentAgentId()).length,
+  readonly conteosDeFiltro = computed(() => ({
+    mine: this.tickets().filter(t => t.owner?.id === this.agenteActualId()).length,
     waiting: this.tickets().filter(t => t.owner === null).length,
     internal: this.tickets().length,
   }));
 
   /** Total unread count across all tickets */
-  readonly totalUnread = computed(() =>
+  readonly totalNoLeidos = computed(() =>
     this.tickets().reduce((sum, t) => sum + (t.metrics?.unread_count ?? 0), 0)
   );
 
@@ -117,17 +117,17 @@ export class TicketStore {
   }
 
   /** Set the active filter */
-  setFilter(filter: FiltroDeTicket): void {
-    this.filter.set(filter);
+  setFiltro(filtro: FiltroDeTicket): void {
+    this.filtro.set(filtro);
   }
 
   /** Set the active team filter (null clears it) */
-  setTeamId(teamId: number | null): void {
-    this.selectedTeamId.set(teamId);
+  setEquipoId(equipoId: number | null): void {
+    this.equipoSeleccionadoId.set(equipoId);
   }
 
   /** Load tickets, enforcing a max cap of 1000 */
-  loadTickets(tickets: Ticket[]): void {
+  cargarTickets(tickets: Ticket[]): void {
     const capped = tickets.slice(0, MAX_TICKETS);
     this.tickets.set(capped);
   }
@@ -163,7 +163,7 @@ export class TicketStore {
   }
 
   /** Update unread count for a specific ticket */
-  updateUnreadCount(ticketId: string, count: number): void {
+  updateConteoDeNoLeidos(ticketId: string, count: number): void {
     this.tickets.update(tickets =>
       tickets.map(t => String(t.ticket_id) === String(ticketId)
         ? { ...t, metrics: { ...t.metrics, unread_count: count } }
@@ -173,7 +173,7 @@ export class TicketStore {
   }
 
   /** Mark a ticket as read */
-  markAsRead(ticketId: string): void {
+  marcarComoLeido(ticketId: string): void {
     this.tickets.update(tickets =>
       tickets.map(t => String(t.ticket_id) === String(ticketId)
         ? { ...t, metrics: { ...t.metrics, unread_count: 0 } }
@@ -186,21 +186,21 @@ export class TicketStore {
   reset(): void {
     this.tickets.set([]);
     this.activeTicket.set(null);
-    this.filter.set('mine');
-    this.selectedTeamId.set(null);
+    this.filtro.set('mine');
+    this.equipoSeleccionadoId.set(null);
     this.loading.set(false);
-    this.assignmentErrors.set(new Map());
+    this.erroresDeAsignacion.set(new Map());
   }
 
   /**
    * Optimistic assignment: immediately update the ticket owner in the store.
    *
    * @param ticketId The ticket ID to assign
-   * @param agentId The agent ID to assign to
-   * @param agentName The agent name for display
+   * @param agenteId The agent ID to assign to
+   * @param nombreDeAgente The agent name for display
    * @returns The previous owner (for rollback)
    */
-  optimisticAssign(ticketId: string, agentId: number, agentName: string): TicketOwner | null {
+  asignarOptimista(ticketId: string, agenteId: number, nombreDeAgente: string): TicketOwner | null {
     // Find and update the ticket
     const current = this.tickets();
     const index = current.findIndex(t => String(t.ticket_id) === String(ticketId));
@@ -209,31 +209,31 @@ export class TicketStore {
     }
 
     const ticket = current[index];
-    const previousOwner = ticket.owner;
+    const responsableAnterior = ticket.owner;
 
     // Update ticket owner optimistically
     this.addOrUpdateTicket({
       ...ticket,
-      owner: { id: agentId, name: agentName },
+      owner: { id: agenteId, name: nombreDeAgente },
     });
 
-    return previousOwner;
+    return responsableAnterior;
   }
 
   /**
    * Rollback optimistic assignment: restore the previous owner.
    *
    * @param ticketId The ticket ID to rollback
-   * @param previousOwner The previous owner to restore
+   * @param responsableAnterior The previous owner to restore
    */
-  rollbackAssign(ticketId: string, previousOwner: TicketOwner | null): void {
+  revertirAsignacion(ticketId: string, responsableAnterior: TicketOwner | null): void {
     // Restore previous owner
     const current = this.tickets();
     const index = current.findIndex(t => String(t.ticket_id) === String(ticketId));
     if (index >= 0) {
       this.addOrUpdateTicket({
         ...current[index],
-        owner: previousOwner,
+        owner: responsableAnterior,
       });
     }
   }
@@ -244,11 +244,11 @@ export class TicketStore {
    * @param ticketId The ticket ID that failed
    * @param message The error message
    */
-  assignmentError(ticketId: string, message: string): void {
+  errorDeAsignacion(ticketId: string, message: string): void {
     const ticketIdNum = parseInt(ticketId, 10);
     const until = Date.now() + 5000; // 5 seconds
 
-    this.assignmentErrors.update(errors => {
+    this.erroresDeAsignacion.update(errors => {
       const newMap = new Map(errors);
       newMap.set(ticketIdNum, { message, until });
       return newMap;
@@ -256,7 +256,7 @@ export class TicketStore {
 
     // Auto-dismiss after 5 seconds
     setTimeout(() => {
-      this.assignmentErrors.update(errors => {
+      this.erroresDeAsignacion.update(errors => {
         const newMap = new Map(errors);
         const error = newMap.get(ticketIdNum);
         if (error && error.until <= Date.now()) {

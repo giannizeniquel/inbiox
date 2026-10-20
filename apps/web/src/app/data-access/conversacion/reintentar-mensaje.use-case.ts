@@ -48,7 +48,7 @@ export class MensajeNoEncontrado extends Error {
  */
 @Injectable({ providedIn: 'root' })
 export class ReintentarMensajeUseCase {
-  private readonly provider: ProveedorWhatsAppCloud;
+  private readonly proveedor: ProveedorWhatsAppCloud;
 
   /** Retry config for retry attempts (max 1 retry, 1s backoff) */
   private readonly retryConfig: RetryConfig = {
@@ -56,8 +56,8 @@ export class ReintentarMensajeUseCase {
     initialDelayMs: 1000,
   };
 
-  constructor(provider: ProveedorWhatsAppCloud) {
-    this.provider = provider;
+  constructor(proveedor: ProveedorWhatsAppCloud) {
+    this.proveedor = proveedor;
   }
 
   /**
@@ -86,14 +86,14 @@ export class ReintentarMensajeUseCase {
 
     // Retry with same tempId for idempotency, using retryWithBackoff
     return retryWithBackoff(
-      this.provider.sendMessage(ticketId, originalContent),
+      this.proveedor.enviarMensaje(ticketId, originalContent),
       this.retryConfig
     ).pipe(
-      map((message: Mensaje) => {
+      map((mensaje: Mensaje) => {
         const reconciled: Mensaje = {
-          ...message,
+          ...mensaje,
           tempId, // Keep same tempId for idempotency
-          id: message.id || tempId,
+          id: mensaje.id || tempId,
         };
 
         console.log('[ReintentarMensajeUseCase] Message retried:', {

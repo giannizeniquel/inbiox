@@ -14,7 +14,7 @@ describe('ParticipacionDeTicketComponent', () => {
   let apiSpy: jasmine.SpyObj<ReporteApiService>;
 
   beforeEach(async () => {
-    apiSpy = jasmine.createSpyObj('ReporteApiService', ['getTicketParticipation']);
+    apiSpy = jasmine.createSpyObj('ReporteApiService', ['getParticipacionDeTicket']);
 
     await TestBed.configureTestingModule({
       imports: [ParticipacionDeTicketComponent],
@@ -25,7 +25,7 @@ describe('ParticipacionDeTicketComponent', () => {
   });
 
   it('lists participants with message counts and average delay; automatic activity is count-only', () => {
-    const participation: ParticipacionDeTicket = {
+    const participacion: ParticipacionDeTicket = {
       ticket_id: 42,
       data_available_from: '2026-01-01T00:00:00Z',
       partial_data: false,
@@ -37,7 +37,7 @@ describe('ParticipacionDeTicketComponent', () => {
       unanswered_inbound_count: 0,
       pairs: [],
     };
-    apiSpy.getTicketParticipation.and.returnValue(of(participation));
+    apiSpy.getParticipacionDeTicket.and.returnValue(of(participacion));
 
     fixture.componentRef.setInput('ticketId', 42);
     fixture.detectChanges();
@@ -51,7 +51,7 @@ describe('ParticipacionDeTicketComponent', () => {
   });
 
   it('shows "sin datos de atribución" instead of "0" when partial_data is true', () => {
-    const participation: ParticipacionDeTicket = {
+    const participacion: ParticipacionDeTicket = {
       ticket_id: 42,
       data_available_from: '2026-02-01T00:00:00Z',
       partial_data: true,
@@ -60,7 +60,7 @@ describe('ParticipacionDeTicketComponent', () => {
       unanswered_inbound_count: 0,
       pairs: [],
     };
-    apiSpy.getTicketParticipation.and.returnValue(of(participation));
+    apiSpy.getParticipacionDeTicket.and.returnValue(of(participacion));
 
     fixture.componentRef.setInput('ticketId', 42);
     fixture.detectChanges();
@@ -70,7 +70,7 @@ describe('ParticipacionDeTicketComponent', () => {
   });
 
   it('refetches when ticketId changes', () => {
-    apiSpy.getTicketParticipation.and.returnValue(of({
+    apiSpy.getParticipacionDeTicket.and.returnValue(of({
       ticket_id: 1,
       data_available_from: null,
       partial_data: false,
@@ -82,10 +82,10 @@ describe('ParticipacionDeTicketComponent', () => {
 
     fixture.componentRef.setInput('ticketId', 1);
     fixture.detectChanges();
-    expect(apiSpy.getTicketParticipation).toHaveBeenCalledWith(1);
+    expect(apiSpy.getParticipacionDeTicket).toHaveBeenCalledWith(1);
 
     fixture.componentRef.setInput('ticketId', 2);
     fixture.detectChanges();
-    expect(apiSpy.getTicketParticipation).toHaveBeenCalledWith(2);
+    expect(apiSpy.getParticipacionDeTicket).toHaveBeenCalledWith(2);
   });
 });

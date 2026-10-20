@@ -11,10 +11,10 @@ export class FlujoDeTicketApiService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiUrl;
 
-  transition(ticketId: string, newStatus: EstadoDeTicket): Observable<Ticket> {
+  transition(ticketId: string, nuevoEstado: EstadoDeTicket): Observable<Ticket> {
     return this.http
       .post<Ticket>(`${this.baseUrl}/api/tickets/${ticketId}/transition`, {
-        status: newStatus
+        status: nuevoEstado
       })
       .pipe(catchError(createHttpErrorHandler('WorkflowApi')));
   }
@@ -29,7 +29,7 @@ export class FlujoDeTicketApiService {
    * other failure in order to show the right message, so the raw
    * `HttpErrorResponse` is propagated instead.
    */
-  resolve(ticketId: string): Observable<Ticket> {
+  resolver(ticketId: string): Observable<Ticket> {
     return this.http.post<Ticket>(
       `${this.baseUrl}/api/tickets/${ticketId}/resolve`,
       {}

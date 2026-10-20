@@ -6,7 +6,7 @@
         <div class="loading">Loading...</div>
       }
 
-      @if (store.shifts().length > 0) {
+      @if (store.turnos().length > 0) {
         <div class="shift-list">
           <h3>Current Shifts</h3>
           <table>
@@ -19,13 +19,13 @@
               </tr>
             </thead>
             <tbody>
-              @for (shift of store.shifts(); track shift.id) {
+              @for (shift of store.turnos(); track shift.id) {
                 <tr>
                   <td>{{ getDayName(shift.dayOfWeek) }}</td>
                   <td>{{ shift.startTime }}</td>
                   <td>{{ shift.endTime }}</td>
                   <td>
-                    <button class="btn-danger btn-small" (click)="onDeleteShift(shift.id)">
+                    <button class="btn-danger btn-small" (click)="onDeleteTurno(shift.id)">
                       Delete
                     </button>
                   </td>
@@ -36,7 +36,7 @@
         </div>
       }
 
-      @if (store.shifts().length === 0 && !store.loading()) {
+      @if (store.turnos().length === 0 && !store.loading()) {
         <div class="empty">
           No shifts defined. Create one below.
         </div>
@@ -67,7 +67,7 @@
           <input type="time" #endTimeInput />
         </label>
 
-        <button (click)="onCreateShift(daySelect.value, startTimeInput.value, endTimeInput.value)">
+        <button (click)="onCreateTurno(daySelect.value, startTimeInput.value, endTimeInput.value)">
           Create Shift
         </button>
       </div>

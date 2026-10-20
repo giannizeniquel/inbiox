@@ -33,8 +33,8 @@ export class AgentesPageComponent implements OnInit {
   private readonly adminApi = inject(AdministracionApiService);
 
   // State
-  readonly agents = signal<AgenteDeGestionDTO[]>([]);
-  readonly unlinkedUsers = signal<UsuarioDeGestionDTO[]>([]);
+  readonly agentes = signal<AgenteDeGestionDTO[]>([]);
+  readonly usuariosSinVincular = signal<UsuarioDeGestionDTO[]>([]);
   readonly loading = signal(true);
   readonly saving = signal(false);
   readonly error = signal<string | null>(null);
@@ -48,38 +48,38 @@ export class AgentesPageComponent implements OnInit {
       : AgentesPageComponent.FALLBACK_TIMEZONES;
 
   readonly timezoneOptions = computed(() => {
-    const current = this.editingAgent()?.timezone;
+    const current = this.agenteEnEdicion()?.timezone;
     return current && !this.timezones.includes(current) ? [current, ...this.timezones] : this.timezones;
   });
 
   // Modal state
   readonly showForm = signal(false);
-  readonly editingAgent = signal<AgenteDeGestionDTO | null>(null);
-  readonly showLinkForm = signal<AgenteDeGestionDTO | null>(null);
+  readonly agenteEnEdicion = signal<AgenteDeGestionDTO | null>(null);
+  readonly mostrarVinculoForm = signal<AgenteDeGestionDTO | null>(null);
   readonly showDeleteConfirm = signal<AgenteDeGestionDTO | null>(null);
-  readonly showUnlinkConfirm = signal<AgenteDeGestionDTO | null>(null);
+  readonly mostrarConfirmacionDeDesvincular = signal<AgenteDeGestionDTO | null>(null);
 
   // Forms
-  readonly agentForm = this.fb.nonNullable.group({
+  readonly agenteForm = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
     active: [true],
     timezone: ['UTC', [Validators.required]],
   });
 
-  readonly linkForm = this.fb.group({
+  readonly vinculoForm = this.fb.group({
     userId: [null as number | null, [Validators.required]],
   });
 
   ngOnInit(): void {
-    this.loadAgents();
+    this.cargarAgentes();
   }
 
-  loadAgents(): void {
+  cargarAgentes(): void {
     this.loading.set(true);
     this.error.set(null);
-    this.adminApi.listAgents(this.currentPage()).subscribe({
+    this.adminApi.listarAgentes(this.currentPage()).subscribe({
       next: (res) => {
-        this.agents.set(res.items);
+        this.agentes.set(res.items);
         this.totalPages.set(res.totalPages);
         this.loading.set(false);
       },
@@ -90,10 +90,10 @@ export class AgentesPageComponent implements OnInit {
     });
   }
 
-  loadUnlinkedUsers(): void {
-    this.adminApi.listUsersAvailableForLinking().subscribe({
+  cargarUsuariosSinVincular(): void {
+    this.adminApi.listarUsuariosDisponiblesParaVincular().subscribe({
       next: (res) => {
-        this.unlinkedUsers.set(res.users);
+        this.usuariosSinVincular.set(res.users);
       },
       error: (err) => {
         this.error.set(err.message ?? 'Failed to load users for linking');
@@ -103,84 +103,84 @@ export class AgentesPageComponent implements OnInit {
 
   goToPage(page: number): void {
     this.currentPage.set(page);
-    this.loadAgents();
+    this.cargarAgentes();
   }
 
   openCreateForm(): void {
-    this.editingAgent.set(null);
-    this.agentForm.reset({ name: '', active: true, timezone: 'UTC' });
+    this.agenteEnEdicion.set(null);
+    this.agenteForm.reset({ name: '', active: true, timezone: 'UTC' });
     this.showForm.set(true);
   }
 
-  openEditForm(agent: AgenteDeGestionDTO): void {
-    this.editingAgent.set(agent);
-    this.agentForm.reset({ name: agent.name, active: agent.active, timezone: agent.timezone });
+  openEditForm(agente: AgenteDeGestionDTO): void {
+    this.agenteEnEdicion.set(agente);
+    this.agenteForm.reset({ name: agente.name, active: agente.active, timezone: agente.timezone });
     this.showForm.set(true);
   }
 
   closeForm(): void {
     this.showForm.set(false);
-    this.editingAgent.set(null);
+    this.agenteEnEdicion.set(null);
   }
 
-  openLinkForm(agent: AgenteDeGestionDTO): void {
-    this.linkForm.reset({ userId: null });
-    this.showLinkForm.set(agent);
-    this.loadUnlinkedUsers();
+  abrirVinculoForm(agente: AgenteDeGestionDTO): void {
+    this.vinculoForm.reset({ userId: null });
+    this.mostrarVinculoForm.set(agente);
+    this.cargarUsuariosSinVincular();
   }
 
-  closeLinkForm(): void {
-    this.showLinkForm.set(null);
+  cerrarVinculoForm(): void {
+    this.mostrarVinculoForm.set(null);
   }
 
-  hasAgentError(field: 'name' | 'active' | 'timezone'): boolean {
-    const control = this.agentForm.get(field);
+  hasErrorDeAgente(field: 'name' | 'active' | 'timezone'): boolean {
+    const control = this.agenteForm.get(field);
     return !!control && control.touched && control.invalid;
   }
 
-  hasLinkError(field: 'userId'): boolean {
-    const control = this.linkForm.get(field);
+  hasErrorDeVinculo(field: 'userId'): boolean {
+    const control = this.vinculoForm.get(field);
     return !!control && control.touched && control.invalid;
   }
 
-  onAgentSubmit(): void {
-    if (this.agentForm.invalid) {
-      this.agentForm.markAllAsTouched();
+  onAgenteSubmit(): void {
+    if (this.agenteForm.invalid) {
+      this.agenteForm.markAllAsTouched();
       return;
     }
 
-    const editing = this.editingAgent();
+    const editing = this.agenteEnEdicion();
     if (editing) {
-      this.updateAgent(editing);
+      this.updateAgente(editing);
     } else {
-      this.createAgent();
+      this.createAgente();
     }
   }
 
-  onLinkSubmit(): void {
-    if (this.linkForm.invalid) {
-      this.linkForm.markAllAsTouched();
+  onVinculoSubmit(): void {
+    if (this.vinculoForm.invalid) {
+      this.vinculoForm.markAllAsTouched();
       return;
     }
 
-    const agent = this.showLinkForm();
-    if (!agent) return;
+    const agente = this.mostrarVinculoForm();
+    if (!agente) return;
 
-    this.executeLink(agent);
+    this.executeVincular(agente);
   }
 
-  private createAgent(): void {
-    const { name, timezone } = this.agentForm.getRawValue();
+  private createAgente(): void {
+    const { name, timezone } = this.agenteForm.getRawValue();
 
     this.saving.set(true);
     this.error.set(null);
 
-    this.adminApi.createAgent({ name: name.trim(), timezone }).subscribe({
+    this.adminApi.createAgente({ name: name.trim(), timezone }).subscribe({
       next: () => {
         this.saving.set(false);
         this.success.set('Agent created successfully');
         this.closeForm();
-        this.loadAgents();
+        this.cargarAgentes();
       },
       error: (err) => {
         this.saving.set(false);
@@ -189,14 +189,14 @@ export class AgentesPageComponent implements OnInit {
     });
   }
 
-  private updateAgent(agent: AgenteDeGestionDTO): void {
-    const { name, active, timezone } = this.agentForm.getRawValue();
+  private updateAgente(agente: AgenteDeGestionDTO): void {
+    const { name, active, timezone } = this.agenteForm.getRawValue();
 
     this.saving.set(true);
     this.error.set(null);
 
-    this.adminApi.updateAgent({
-      id: agent.id,
+    this.adminApi.updateAgente({
+      id: agente.id,
       name: name.trim(),
       active,
       timezone,
@@ -205,7 +205,7 @@ export class AgentesPageComponent implements OnInit {
         this.saving.set(false);
         this.success.set('Agent updated successfully');
         this.closeForm();
-        this.loadAgents();
+        this.cargarAgentes();
       },
       error: (err) => {
         this.saving.set(false);
@@ -214,18 +214,18 @@ export class AgentesPageComponent implements OnInit {
     });
   }
 
-  private executeLink(agent: AgenteDeGestionDTO): void {
-    const { userId } = this.linkForm.getRawValue();
+  private executeVincular(agente: AgenteDeGestionDTO): void {
+    const { userId } = this.vinculoForm.getRawValue();
 
     this.saving.set(true);
     this.error.set(null);
 
-    this.adminApi.linkUser(agent.id, userId!).subscribe({
+    this.adminApi.vincularUsuario(agente.id, userId!).subscribe({
       next: () => {
         this.saving.set(false);
-        this.success.set(`User linked to "${agent.name}" successfully`);
-        this.closeLinkForm();
-        this.loadAgents();
+        this.success.set(`User linked to "${agente.name}" successfully`);
+        this.cerrarVinculoForm();
+        this.cargarAgentes();
       },
       error: (err) => {
         this.saving.set(false);
@@ -234,27 +234,27 @@ export class AgentesPageComponent implements OnInit {
     });
   }
 
-  confirmUnlinkAgent(agent: AgenteDeGestionDTO): void {
-    this.showUnlinkConfirm.set(agent);
+  confirmarDesvincularAgente(agente: AgenteDeGestionDTO): void {
+    this.mostrarConfirmacionDeDesvincular.set(agente);
   }
 
-  cancelUnlink(): void {
-    this.showUnlinkConfirm.set(null);
+  cancelarDesvincular(): void {
+    this.mostrarConfirmacionDeDesvincular.set(null);
   }
 
-  executeUnlink(): void {
-    const agent = this.showUnlinkConfirm();
-    if (!agent) return;
+  executeDesvincular(): void {
+    const agente = this.mostrarConfirmacionDeDesvincular();
+    if (!agente) return;
 
     this.saving.set(true);
     this.error.set(null);
 
-    this.adminApi.unlinkUser(agent.id).subscribe({
+    this.adminApi.desvincularUsuario(agente.id).subscribe({
       next: () => {
         this.saving.set(false);
-        this.success.set(`User unlinked from "${agent.name}" successfully`);
-        this.showUnlinkConfirm.set(null);
-        this.loadAgents();
+        this.success.set(`User unlinked from "${agente.name}" successfully`);
+        this.mostrarConfirmacionDeDesvincular.set(null);
+        this.cargarAgentes();
       },
       error: (err) => {
         this.saving.set(false);
@@ -263,8 +263,8 @@ export class AgentesPageComponent implements OnInit {
     });
   }
 
-  confirmDelete(agent: AgenteDeGestionDTO): void {
-    this.showDeleteConfirm.set(agent);
+  confirmDelete(agente: AgenteDeGestionDTO): void {
+    this.showDeleteConfirm.set(agente);
   }
 
   cancelDelete(): void {
@@ -272,18 +272,18 @@ export class AgentesPageComponent implements OnInit {
   }
 
   executeDelete(): void {
-    const agent = this.showDeleteConfirm();
-    if (!agent) return;
+    const agente = this.showDeleteConfirm();
+    if (!agente) return;
 
     this.saving.set(true);
     this.error.set(null);
 
-    this.adminApi.deactivateAgent(agent.id).subscribe({
+    this.adminApi.desactivarAgente(agente.id).subscribe({
       next: () => {
         this.saving.set(false);
-        this.success.set(`Agent "${agent.name}" deactivated successfully`);
+        this.success.set(`Agent "${agente.name}" deactivated successfully`);
         this.showDeleteConfirm.set(null);
-        this.loadAgents();
+        this.cargarAgentes();
       },
       error: (err) => {
         this.saving.set(false);
@@ -292,15 +292,15 @@ export class AgentesPageComponent implements OnInit {
     });
   }
 
-  reactivateAgent(agent: AgenteDeGestionDTO): void {
+  reactivarAgente(agente: AgenteDeGestionDTO): void {
     this.saving.set(true);
     this.error.set(null);
 
-    this.adminApi.reactivateAgent(agent.id).subscribe({
+    this.adminApi.reactivarAgente(agente.id).subscribe({
       next: () => {
         this.saving.set(false);
-        this.success.set(`Agent "${agent.name}" reactivated successfully`);
-        this.loadAgents();
+        this.success.set(`Agent "${agente.name}" reactivated successfully`);
+        this.cargarAgentes();
       },
       error: (err) => {
         this.saving.set(false);

@@ -40,13 +40,13 @@ interface AgentOption {
 })
 export class EquiposPageComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
-  private readonly teamApi = inject(EquipoApiService);
-  private readonly workspaceApi = inject(EspacioDeTrabajoApiService);
+  private readonly equipoApi = inject(EquipoApiService);
+  private readonly espacioDeTrabajoApi = inject(EspacioDeTrabajoApiService);
   private readonly http = inject(HttpClient);
 
   // State
-  readonly teams = signal<EquipoDTO[]>([]);
-  readonly workspaces = signal<EspacioDeTrabajoDTO[]>([]);
+  readonly equipos = signal<EquipoDTO[]>([]);
+  readonly espaciosDeTrabajo = signal<EspacioDeTrabajoDTO[]>([]);
   readonly loading = signal(true);
   readonly saving = signal(false);
   readonly error = signal<string | null>(null);
@@ -56,47 +56,47 @@ export class EquiposPageComponent implements OnInit {
 
   // Modal state
   readonly showForm = signal(false);
-  readonly editingTeam = signal<EquipoDTO | null>(null);
+  readonly equipoEnEdicion = signal<EquipoDTO | null>(null);
   readonly showDeleteConfirm = signal<EquipoDTO | null>(null);
 
   // Agent assignment state
-  readonly showAgentModal = signal(false);
-  readonly assigningTeam = signal<EquipoDTO | null>(null);
-  readonly agentOptions = signal<AgentOption[]>([]);
-  readonly savingAgents = signal(false);
+  readonly mostrarAgenteModal = signal(false);
+  readonly equipoEnAsignacion = signal<EquipoDTO | null>(null);
+  readonly agenteOptions = signal<AgentOption[]>([]);
+  readonly guardandoAgentes = signal(false);
 
   // Forms
-  readonly teamForm = this.fb.nonNullable.group({
+  readonly equipoForm = this.fb.nonNullable.group({
     workspaceId: this.fb.control<number | null>(null, Validators.required),
     name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(255)]],
     isActive: [true],
   });
 
   ngOnInit(): void {
-    this.loadWorkspaces();
-    this.loadTeams();
+    this.cargarEspaciosDeTrabajo();
+    this.cargarEquipos();
   }
 
-  private loadWorkspaces(): void {
-    this.workspaceApi.listAll(1, 100).subscribe({
-      next: (res) => this.workspaces.set(res.items),
+  private cargarEspaciosDeTrabajo(): void {
+    this.espacioDeTrabajoApi.listAll(1, 100).subscribe({
+      next: (res) => this.espaciosDeTrabajo.set(res.items),
       error: () => {
         // Non-fatal: workspace names fall back to their id in the table/form.
       },
     });
   }
 
-  workspaceName(workspaceId: number): string {
-    const ws = this.workspaces().find((w) => w.id === workspaceId);
-    return ws ? ws.display_name : `Workspace ${workspaceId}`;
+  nombreDeEspacioDeTrabajo(espacioDeTrabajoId: number): string {
+    const ws = this.espaciosDeTrabajo().find((w) => w.id === espacioDeTrabajoId);
+    return ws ? ws.display_name : `Workspace ${espacioDeTrabajoId}`;
   }
 
-  loadTeams(): void {
+  cargarEquipos(): void {
     this.loading.set(true);
     this.error.set(null);
-    this.teamApi.listAll(this.currentPage()).subscribe({
+    this.equipoApi.listAll(this.currentPage()).subscribe({
       next: (res) => {
-        this.teams.set(res.items);
+        this.equipos.set(res.items);
         this.totalPages.set(res.totalPages);
         this.loading.set(false);
       },
@@ -109,60 +109,60 @@ export class EquiposPageComponent implements OnInit {
 
   goToPage(page: number): void {
     this.currentPage.set(page);
-    this.loadTeams();
+    this.cargarEquipos();
   }
 
   openCreateForm(): void {
-    this.editingTeam.set(null);
-    this.teamForm.reset({ workspaceId: null, name: '', isActive: true });
-    this.teamForm.controls.workspaceId.enable();
+    this.equipoEnEdicion.set(null);
+    this.equipoForm.reset({ workspaceId: null, name: '', isActive: true });
+    this.equipoForm.controls.workspaceId.enable();
     this.showForm.set(true);
   }
 
-  openEditForm(team: EquipoDTO): void {
-    this.editingTeam.set(team);
-    this.teamForm.reset({
-      workspaceId: team.workspace_id,
-      name: team.name,
-      isActive: team.is_active,
+  openEditForm(equipo: EquipoDTO): void {
+    this.equipoEnEdicion.set(equipo);
+    this.equipoForm.reset({
+      workspaceId: equipo.workspace_id,
+      name: equipo.name,
+      isActive: equipo.is_active,
     });
     // workspaceId is immutable after creation — backend update() never accepts it.
-    this.teamForm.controls.workspaceId.disable();
+    this.equipoForm.controls.workspaceId.disable();
     this.showForm.set(true);
   }
 
   closeForm(): void {
     this.showForm.set(false);
-    this.editingTeam.set(null);
+    this.equipoEnEdicion.set(null);
   }
 
   hasFieldError(field: 'workspaceId' | 'name' | 'isActive'): boolean {
-    const control = this.teamForm.get(field);
+    const control = this.equipoForm.get(field);
     return !!control && control.touched && control.invalid;
   }
 
   onSubmit(): void {
-    if (this.teamForm.invalid) {
-      this.teamForm.markAllAsTouched();
+    if (this.equipoForm.invalid) {
+      this.equipoForm.markAllAsTouched();
       return;
     }
 
-    const editing = this.editingTeam();
+    const editing = this.equipoEnEdicion();
     if (editing) {
-      this.updateTeam(editing);
+      this.updateEquipo(editing);
     } else {
-      this.createTeam();
+      this.createEquipo();
     }
   }
 
-  private createTeam(): void {
-    const { workspaceId, name, isActive } = this.teamForm.getRawValue();
+  private createEquipo(): void {
+    const { workspaceId, name, isActive } = this.equipoForm.getRawValue();
     if (workspaceId === null) return;
 
     this.saving.set(true);
     this.error.set(null);
 
-    this.teamApi.create({
+    this.equipoApi.create({
       workspaceId,
       name: name.trim(),
       isActive,
@@ -171,7 +171,7 @@ export class EquiposPageComponent implements OnInit {
         this.saving.set(false);
         this.success.set('Team created successfully');
         this.closeForm();
-        this.loadTeams();
+        this.cargarEquipos();
       },
       error: (err) => {
         this.saving.set(false);
@@ -180,13 +180,13 @@ export class EquiposPageComponent implements OnInit {
     });
   }
 
-  private updateTeam(team: EquipoDTO): void {
-    const { name, isActive } = this.teamForm.getRawValue();
+  private updateEquipo(equipo: EquipoDTO): void {
+    const { name, isActive } = this.equipoForm.getRawValue();
 
     this.saving.set(true);
     this.error.set(null);
 
-    this.teamApi.update(team.id, {
+    this.equipoApi.update(equipo.id, {
       name: name.trim(),
       isActive,
     }).subscribe({
@@ -194,7 +194,7 @@ export class EquiposPageComponent implements OnInit {
         this.saving.set(false);
         this.success.set('Team updated successfully');
         this.closeForm();
-        this.loadTeams();
+        this.cargarEquipos();
       },
       error: (err) => {
         this.saving.set(false);
@@ -203,8 +203,8 @@ export class EquiposPageComponent implements OnInit {
     });
   }
 
-  confirmDelete(team: EquipoDTO): void {
-    this.showDeleteConfirm.set(team);
+  confirmDelete(equipo: EquipoDTO): void {
+    this.showDeleteConfirm.set(equipo);
   }
 
   cancelDelete(): void {
@@ -212,18 +212,18 @@ export class EquiposPageComponent implements OnInit {
   }
 
   executeDelete(): void {
-    const team = this.showDeleteConfirm();
-    if (!team) return;
+    const equipo = this.showDeleteConfirm();
+    if (!equipo) return;
 
     this.saving.set(true);
     this.error.set(null);
 
-    this.teamApi.deactivate(team.id).subscribe({
+    this.equipoApi.desactivar(equipo.id).subscribe({
       next: () => {
         this.saving.set(false);
-        this.success.set(`Team "${team.name}" deactivated successfully`);
+        this.success.set(`Team "${equipo.name}" deactivated successfully`);
         this.showDeleteConfirm.set(null);
-        this.loadTeams();
+        this.cargarEquipos();
       },
       error: (err) => {
         this.saving.set(false);
@@ -234,49 +234,49 @@ export class EquiposPageComponent implements OnInit {
 
   // ── Agent Assignment ──────────────────────────────────
 
-  openAgentModal(team: EquipoDTO): void {
-    this.assigningTeam.set(team);
-    const assignedIds: number[] = team.agent_ids ?? [];
+  abrirAgenteModal(equipo: EquipoDTO): void {
+    this.equipoEnAsignacion.set(equipo);
+    const agenteAsignadoIds: number[] = equipo.agent_ids ?? [];
 
     this.http.get<any>(`${environment.apiUrl}/api/admin/agents?limit=100`).subscribe({
       next: (res) => {
-        const agents = res.data ?? [];
-        this.agentOptions.set(agents.map((a: any) => ({
+        const agentes = res.data ?? [];
+        this.agenteOptions.set(agentes.map((a: any) => ({
           id: a.id,
           name: a.name ?? `Agent ${a.id}`,
-          assigned: assignedIds.includes(a.id),
+          assigned: agenteAsignadoIds.includes(a.id),
         })));
       },
       error: () => {
         this.error.set('Failed to load agents');
       },
     });
-    this.showAgentModal.set(true);
+    this.mostrarAgenteModal.set(true);
   }
 
-  closeAgentModal(): void {
-    this.showAgentModal.set(false);
-    this.assigningTeam.set(null);
+  cerrarAgenteModal(): void {
+    this.mostrarAgenteModal.set(false);
+    this.equipoEnAsignacion.set(null);
   }
 
-  saveAgents(): void {
-    const team = this.assigningTeam();
-    if (!team) return;
+  guardarAgentes(): void {
+    const equipo = this.equipoEnAsignacion();
+    if (!equipo) return;
 
-    const selectedIds = this.agentOptions()
+    const selectedIds = this.agenteOptions()
       .filter(a => a.assigned)
       .map(a => a.id);
 
-    this.savingAgents.set(true);
-    this.teamApi.assignAgents(team.id, selectedIds).subscribe({
+    this.guardandoAgentes.set(true);
+    this.equipoApi.asignarAgentes(equipo.id, selectedIds).subscribe({
       next: () => {
-        this.savingAgents.set(false);
+        this.guardandoAgentes.set(false);
         this.success.set('Agents assigned successfully');
-        this.closeAgentModal();
-        this.loadTeams();
+        this.cerrarAgenteModal();
+        this.cargarEquipos();
       },
       error: (err) => {
-        this.savingAgents.set(false);
+        this.guardandoAgentes.set(false);
         // Surface the backend's hard-reject reason (design D3: workspace-
         // membership invariant, e.g. "Agent 5 does not belong to workspace
         // 2 of team \"Support\"") rather than a generic fallback, so the

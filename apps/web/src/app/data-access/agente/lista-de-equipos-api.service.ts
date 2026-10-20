@@ -23,7 +23,7 @@ export class ListaDeEquiposApiService {
   private readonly baseUrl = environment.apiUrl;
 
   /** GET /api/teams */
-  listTeams(): Observable<EquipoDTO[]> {
+  listarEquipos(): Observable<EquipoDTO[]> {
     return this.http.get<EquipoDTO[]>(`${this.baseUrl}/api/teams`).pipe(
       catchError(createHttpErrorHandler('TeamApi'))
     );

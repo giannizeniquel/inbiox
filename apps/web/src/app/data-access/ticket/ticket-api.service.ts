@@ -13,14 +13,14 @@ export class TicketApiService {
   private readonly baseUrl = environment.apiUrl;
 
   /**
-   * @param teamId Optional single-select team filter — forwarded to
+   * @param equipoId Optional single-select team filter — forwarded to
    *               `GET /api/tickets?teamId=...` (team-area-entity, Slice 3).
    *               Composable with any future server-side filter params.
    */
-  getTickets(teamId?: number | null): Observable<Ticket[]> {
+  getTickets(equipoId?: number | null): Observable<Ticket[]> {
     let params = new HttpParams();
-    if (teamId !== null && teamId !== undefined) {
-      params = params.set('teamId', String(teamId));
+    if (equipoId !== null && equipoId !== undefined) {
+      params = params.set('teamId', String(equipoId));
     }
 
     const call = this.http.get<{ data: Ticket[]; meta: { total: number; page: number } }>(
@@ -41,7 +41,7 @@ export class TicketApiService {
   }
 
   /** `PUT /api/tickets/{id}/mark-read`: single attempt, no retry; the caller decides how to handle errors. */
-  markRead(ticketId: number): Observable<unknown> {
+  marcarLeido(ticketId: number): Observable<unknown> {
     return this.http.put(`${this.baseUrl}/api/tickets/${ticketId}/mark-read`, {});
   }
 }

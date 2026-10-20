@@ -17,10 +17,10 @@ export class EspacioDeTrabajoStore {
   private readonly api = inject(EspacioDeTrabajoApiService);
 
   /** List of workspaces the current agent is assigned to */
-  readonly workspaces = signal<EspacioDeTrabajoDTO[]>([]);
+  readonly espaciosDeTrabajo = signal<EspacioDeTrabajoDTO[]>([]);
 
   /** Currently active workspace preference */
-  readonly activeWorkspace = signal<PreferenciaDeEspacioDeTrabajoResponse | null>(null);
+  readonly espacioDeTrabajoActivo = signal<PreferenciaDeEspacioDeTrabajoResponse | null>(null);
 
   /** Loading state */
   readonly loading = signal(false);
@@ -30,33 +30,33 @@ export class EspacioDeTrabajoStore {
 
   /** Computed: active phone number ID for query filtering */
   readonly activePhoneNumberId = computed<string | null>(() =>
-    this.activeWorkspace()?.phone_number_id ?? null
+    this.espacioDeTrabajoActivo()?.phone_number_id ?? null
   );
 
   /** Workspace IDs that have pending (unread) messages */
-  readonly pendingWorkspaceIds = signal<Set<number>>(new Set());
+  readonly espacioDeTrabajoPendienteIds = signal<Set<number>>(new Set());
 
   /** Computed: whether there are multiple workspaces to switch between */
-  readonly hasMultipleWorkspaces = computed(() => this.workspaces().length > 1);
+  readonly hasVariosEspaciosDeTrabajo = computed(() => this.espaciosDeTrabajo().length > 1);
 
   /**
    * Load the agent's assigned workspaces and active workspace preference.
    */
-  loadMyWorkspaces(): void {
+  cargarMisEspaciosDeTrabajo(): void {
     this.loading.set(true);
     this.error.set(null);
 
-    this.api.listMyWorkspaces().subscribe({
-      next: (workspaces) => {
-        this.workspaces.set(workspaces);
+    this.api.listarMisEspaciosDeTrabajo().subscribe({
+      next: (espaciosDeTrabajo) => {
+        this.espaciosDeTrabajo.set(espaciosDeTrabajo);
         // Seed pending state from API
         const pending = new Set<number>();
-        for (const ws of workspaces) {
+        for (const ws of espaciosDeTrabajo) {
           if (ws.has_pending) {
             pending.add(ws.id);
           }
         }
-        this.pendingWorkspaceIds.set(pending);
+        this.espacioDeTrabajoPendienteIds.set(pending);
         this.loading.set(false);
       },
       error: (err) => {
@@ -69,14 +69,14 @@ export class EspacioDeTrabajoStore {
   /**
    * Load the current active workspace preference.
    */
-  loadActiveWorkspace(): void {
-    this.api.getActiveWorkspace().subscribe({
+  cargarEspacioDeTrabajoActivo(): void {
+    this.api.getEspacioDeTrabajoActivo().subscribe({
       next: (pref) => {
-        this.activeWorkspace.set(pref);
+        this.espacioDeTrabajoActivo.set(pref);
       },
       error: () => {
         // 404 means no active workspace set — not an error
-        this.activeWorkspace.set({
+        this.espacioDeTrabajoActivo.set({
           workspace_id: null,
           phone_number_id: null,
           display_name: null,
@@ -90,11 +90,11 @@ export class EspacioDeTrabajoStore {
    * Persists preference via API, then reloads the page so all data
    * (inbox, contacts, reports, timeline) refreshes with the new workspace scope.
    */
-  setActiveWorkspace(workspaceId: number): void {
+  setEspacioDeTrabajoActivo(espacioDeTrabajoId: number): void {
     this.loading.set(true);
     this.error.set(null);
 
-    this.api.setActiveWorkspace(workspaceId).subscribe({
+    this.api.setEspacioDeTrabajoActivo(espacioDeTrabajoId).subscribe({
       next: () => {
         // Full reload ensures everything (tickets, contacts, reports,
         // timeline, SSE subscription) reflects the new workspace.
@@ -111,39 +111,39 @@ export class EspacioDeTrabajoStore {
    * Auto-select the first workspace if user has workspaces but no active one.
    * Should be called after both loadMyWorkspaces() and loadActiveWorkspace().
    */
-  autoSelectFirstIfNeeded(): void {
-    const active = this.activeWorkspace();
-    const ws = this.workspaces();
+  autoSeleccionarPrimeroSiHaceFalta(): void {
+    const active = this.espacioDeTrabajoActivo();
+    const ws = this.espaciosDeTrabajo();
 
     if (active?.workspace_id === null && ws.length > 0) {
-      this.setActiveWorkspace(ws[0].id);
+      this.setEspacioDeTrabajoActivo(ws[0].id);
     }
   }
 
   /** Reset store state */
   reset(): void {
-    this.workspaces.set([]);
-    this.activeWorkspace.set(null);
+    this.espaciosDeTrabajo.set([]);
+    this.espacioDeTrabajoActivo.set(null);
     this.loading.set(false);
     this.error.set(null);
-    this.pendingWorkspaceIds.set(new Set());
+    this.espacioDeTrabajoPendienteIds.set(new Set());
   }
 
   /** Set pending state for a workspace */
-  setPending(workspaceId: number, pending: boolean): void {
-    this.pendingWorkspaceIds.update(set => {
+  setPending(espacioDeTrabajoId: number, pending: boolean): void {
+    this.espacioDeTrabajoPendienteIds.update(set => {
       const next = new Set(set);
       if (pending) {
-        next.add(workspaceId);
+        next.add(espacioDeTrabajoId);
       } else {
-        next.delete(workspaceId);
+        next.delete(espacioDeTrabajoId);
       }
       return next;
     });
   }
 
   /** Check if a workspace has pending messages */
-  hasPending(workspaceId: number): boolean {
-    return this.pendingWorkspaceIds().has(workspaceId);
+  hasPending(espacioDeTrabajoId: number): boolean {
+    return this.espacioDeTrabajoPendienteIds().has(espacioDeTrabajoId);
   }
 }

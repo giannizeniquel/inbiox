@@ -19,7 +19,7 @@ describe('LineaDeTiempoDeContactoStore', () => {
   }
 
   beforeEach(() => {
-    apiSpy = jasmine.createSpyObj<ContactoApiService>('ContactoApiService', ['getTimeline']);
+    apiSpy = jasmine.createSpyObj<ContactoApiService>('ContactoApiService', ['getLineaDeTiempo']);
 
     TestBed.configureTestingModule({
       providers: [
@@ -45,9 +45,9 @@ describe('LineaDeTiempoDeContactoStore', () => {
 
   it('should load timeline and replace events', () => {
     const events = [mockEvent({ type: 'message.received' }), mockEvent({ type: 'ticket.created' })];
-    apiSpy.getTimeline.and.returnValue(of(mockResponse(events, true, '2026-01-01T00:00:00Z')));
+    apiSpy.getLineaDeTiempo.and.returnValue(of(mockResponse(events, true, '2026-01-01T00:00:00Z')));
 
-    store.loadTimeline(1);
+    store.cargarLineaDeTiempo(1);
 
     expect(store.events().length).toBe(2);
     expect(store.events()[0].type).toBe('message.received');
@@ -58,9 +58,9 @@ describe('LineaDeTiempoDeContactoStore', () => {
   });
 
   it('should set error on load failure', () => {
-    apiSpy.getTimeline.and.returnValue(throwError(() => new Error('Network error')));
+    apiSpy.getLineaDeTiempo.and.returnValue(throwError(() => new Error('Network error')));
 
-    store.loadTimeline(1);
+    store.cargarLineaDeTiempo(1);
 
     expect(store.error()).toContain('Network error');
     expect(store.loading()).toBeFalse();
@@ -71,15 +71,15 @@ describe('LineaDeTiempoDeContactoStore', () => {
 
   it('should append events when loading older', () => {
     const initialEvents = [mockEvent({ type: 'message.received', occurredAt: '2026-01-02T00:00:00Z' })];
-    apiSpy.getTimeline.and.returnValues(
+    apiSpy.getLineaDeTiempo.and.returnValues(
       of(mockResponse(initialEvents, true, '2026-01-02T00:00:00Z')),
       of(mockResponse([mockEvent({ type: 'ticket.created', occurredAt: '2026-01-01T00:00:00Z' })], false, null)),
     );
 
-    store.loadTimeline(1);
+    store.cargarLineaDeTiempo(1);
     expect(store.events().length).toBe(1);
 
-    store.loadOlder(1);
+    store.cargarAnteriores(1);
 
     expect(store.events().length).toBe(2);
     expect(store.events()[0].type).toBe('message.received');
@@ -89,24 +89,24 @@ describe('LineaDeTiempoDeContactoStore', () => {
   });
 
   it('should not load older when hasMore is false', () => {
-    apiSpy.getTimeline.and.returnValue(of(mockResponse([], false, null)));
-    store.loadTimeline(1);
+    apiSpy.getLineaDeTiempo.and.returnValue(of(mockResponse([], false, null)));
+    store.cargarLineaDeTiempo(1);
 
-    apiSpy.getTimeline.calls.reset();
+    apiSpy.getLineaDeTiempo.calls.reset();
 
-    store.loadOlder(1);
+    store.cargarAnteriores(1);
 
-    expect(apiSpy.getTimeline).not.toHaveBeenCalled();
+    expect(apiSpy.getLineaDeTiempo).not.toHaveBeenCalled();
   });
 
   it('should set error on loadOlder failure', () => {
-    apiSpy.getTimeline.and.returnValues(
+    apiSpy.getLineaDeTiempo.and.returnValues(
       of(mockResponse([mockEvent()], true, '2026-01-01T00:00:00Z')),
       throwError(() => new Error('Server error')),
     );
 
-    store.loadTimeline(1);
-    store.loadOlder(1);
+    store.cargarLineaDeTiempo(1);
+    store.cargarAnteriores(1);
 
     expect(store.error()).toContain('Server error');
     expect(store.loading()).toBeFalse();
@@ -115,9 +115,9 @@ describe('LineaDeTiempoDeContactoStore', () => {
   // ── reset() ──
 
   it('should clear all state on reset', () => {
-    apiSpy.getTimeline.and.returnValue(of(mockResponse([mockEvent()])));
+    apiSpy.getLineaDeTiempo.and.returnValue(of(mockResponse([mockEvent()])));
 
-    store.loadTimeline(1);
+    store.cargarLineaDeTiempo(1);
     expect(store.events().length).toBe(1);
 
     store.reset();

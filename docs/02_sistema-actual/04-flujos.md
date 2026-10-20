@@ -101,7 +101,7 @@ flowchart TD
 
 ## F2. Respuesta del agente
 
-**Entrada:** Composer → `EnvioDeMensajesService.send()` → `EnviarMensajeUseCase` → `ProveedorWhatsAppCloud.sendMessage()` → `POST /api/provider/send` → `Controller/ProviderProxyController::send` (`routes.yaml:185-188`), `ROLE_AGENT`.
+**Entrada:** Composer → `EnvioDeMensajesService.send()` → `EnviarMensajeUseCase` → `ProveedorWhatsAppCloud.enviarMensaje()` → `POST /api/provider/send` → `Controller/ProviderProxyController::send` (`routes.yaml:185-188`), `ROLE_AGENT`.
 
 | # | Paso | Dónde | Regla |
 |---|---|---|---|
@@ -200,7 +200,7 @@ stateDiagram-v2
 
 ## F5. Asignación manual
 
-**Entrada:** desplegable de la tarjeta del ticket → `TicketListComponent.onAssign()` → `POST /api/tickets/{id}/assign` `{agentId, assignedBy, notes}` → `Controller/TicketController::assign` (`:35-75`).
+**Entrada:** desplegable de la tarjeta del ticket → `TicketListComponent.onAsignar()` → `POST /api/tickets/{id}/assign` `{agentId, assignedBy, notes}` → `Controller/TicketController::assign` (`:35-75`).
 
 | # | Paso | Dónde | Regla |
 |---|---|---|---|
@@ -439,7 +439,7 @@ Un mensaje `failed` no afecta el estado del ticket.
 | 2 | `GET /api/tickets[?teamId=N]` **sin `page`/`limit`** → el backend devuelve 20. | `data-access/ticket/ticket-api.service.ts:20-34`; `Controller/InboxController.php:44-45`; `Application/Query/ListTicketsQuery.php` |
 | 3 | Pestañas Míos / Sin asignar / Todos y contadores: en el navegador sobre lo cargado. | `data-access/ticket/ticket.store.ts:86-107` |
 | 4 | Abrir ticket: `GET /api/tickets/{id}/messages?limit=20&offset=0` (mensajes de toda la conversación); scroll hacia arriba pide más. | `ticket-list.component.ts:178-194`; `conversacion-scroll.controller.ts:180-213`; `Application/Query/GetTicketMessagesQuery.php:23-53` |
-| 5 | Marcar leído: `PUT /api/tickets/{id}/mark-read` (`TicketApiService.markRead`). Solo tiene efecto si el usuario es el dueño; emite `ticket.read`. | `conversacion.component.ts:137-150`; `InboxController.php:168-214` |
+| 5 | Marcar leído: `PUT /api/tickets/{id}/mark-read` (`TicketApiService.marcarLeido`). Solo tiene efecto si el usuario es el dueño; emite `ticket.read`. | `conversacion.component.ts:137-150`; `InboxController.php:168-214` |
 | 6 | No leídos: +1 por `message.added` entrante si no es el ticket abierto; 0 con `ticket.read` o `ticket.assigned`. | `ticket-realtime.reducer.ts:11-26, 86-97` |
 | 7 | Deep link `/inbox?ticketId=X` (desde Contactos): `GET /api/tickets/{id}` + mensajes. | `shell/app-shell.component.ts:90-106` |
 

@@ -34,7 +34,7 @@ describe('ConfiguracionStore', () => {
       businessHours: [],
     };
 
-    store.loadSettings();
+    store.cargarConfiguracion();
 
     const req = httpMock.expectOne(`${environment.apiUrl}/api/me/settings`);
     expect(req.request.method).toBe('GET');
@@ -42,15 +42,15 @@ describe('ConfiguracionStore', () => {
 
     expect(store.loading()).toBe(false);
     expect(store.error()).toBeNull();
-    expect(store.profile()).toEqual(mockResponse.profile);
-    expect(store.notifications()).toEqual(mockResponse.notifications);
-    expect(store.autoReply()).toEqual(mockResponse.autoReply);
-    expect(store.workspace()).toBeNull();
+    expect(store.perfil()).toEqual(mockResponse.profile);
+    expect(store.notificaciones()).toEqual(mockResponse.notifications);
+    expect(store.respuestaAutomatica()).toEqual(mockResponse.autoReply);
+    expect(store.espacioDeTrabajo()).toBeNull();
     expect(store.businessHours()).toEqual([]);
   });
 
   it('sets loading to true during load and false after', () => {
-    store.loadSettings();
+    store.cargarConfiguracion();
     expect(store.loading()).toBe(true);
 
     const req = httpMock.expectOne(`${environment.apiUrl}/api/me/settings`);
@@ -60,7 +60,7 @@ describe('ConfiguracionStore', () => {
   });
 
   it('sets error on load failure', () => {
-    store.loadSettings();
+    store.cargarConfiguracion();
 
     const req = httpMock.expectOne(`${environment.apiUrl}/api/me/settings`);
     req.error(new ProgressEvent('Network error'));
@@ -72,7 +72,7 @@ describe('ConfiguracionStore', () => {
   it('saveNotifications updates notifications signal and clears saving', () => {
     const mockResponse = { sound: false, desktop: true };
 
-    store.saveNotifications({ sound: false });
+    store.guardarNotificaciones({ sound: false });
 
     expect(store.saving()).toBe(true);
 
@@ -81,11 +81,11 @@ describe('ConfiguracionStore', () => {
     req.flush(mockResponse);
 
     expect(store.saving()).toBe(false);
-    expect(store.notifications()).toEqual(mockResponse);
+    expect(store.notificaciones()).toEqual(mockResponse);
   });
 
   it('saveNotifications sets error on failure and clears saving', () => {
-    store.saveNotifications({ sound: false });
+    store.guardarNotificaciones({ sound: false });
 
     const req = httpMock.expectOne(`${environment.apiUrl}/api/me/notifications`);
     req.error(new ProgressEvent('Server error'));

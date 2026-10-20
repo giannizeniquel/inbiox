@@ -30,8 +30,8 @@ export class UrlDeAdjuntoService {
    * Get a pre-signed URL for a message's media attachment.
    * Returns cached URL if still valid, otherwise fetches a new one.
    */
-  getMediaUrl(messageId: string): Observable<UrlDeAdjuntoResponse> {
-    const cached = this.cache.get(messageId);
+  getUrlDeAdjunto(mensajeId: string): Observable<UrlDeAdjuntoResponse> {
+    const cached = this.cache.get(mensajeId);
     const now = new Date();
 
     // Return cached if valid (with grace period)
@@ -39,9 +39,9 @@ export class UrlDeAdjuntoService {
       return of({ url: cached.url, expiresAt: cached.expiresAt.toISOString() });
     }
 
-    return this.fetchUrl(messageId).pipe(
+    return this.fetchUrl(mensajeId).pipe(
       tap((response) => {
-        this.cache.set(messageId, {
+        this.cache.set(mensajeId, {
           url: response.url,
           expiresAt: new Date(response.expiresAt),
         });
@@ -49,10 +49,10 @@ export class UrlDeAdjuntoService {
       catchError((error) => {
         // On 403, clear cache and retry once
         if (error.status === 403) {
-          this.cache.delete(messageId);
-          return this.fetchUrl(messageId).pipe(
+          this.cache.delete(mensajeId);
+          return this.fetchUrl(mensajeId).pipe(
             tap((response) => {
-              this.cache.set(messageId, {
+              this.cache.set(mensajeId, {
                 url: response.url,
                 expiresAt: new Date(response.expiresAt),
               });
@@ -67,17 +67,17 @@ export class UrlDeAdjuntoService {
   /**
    * Clear cached URL for a message (e.g. on logout).
    */
-  clearCache(messageId?: string): void {
-    if (messageId) {
-      this.cache.delete(messageId);
+  clearCache(mensajeId?: string): void {
+    if (mensajeId) {
+      this.cache.delete(mensajeId);
     } else {
       this.cache.clear();
     }
   }
 
-  private fetchUrl(messageId: string): Observable<UrlDeAdjuntoResponse> {
+  private fetchUrl(mensajeId: string): Observable<UrlDeAdjuntoResponse> {
     return this.http.get<UrlDeAdjuntoResponse>(
-      `${environment.apiUrl}/api/messages/${messageId}/media`
+      `${environment.apiUrl}/api/messages/${mensajeId}/media`
     );
   }
 }

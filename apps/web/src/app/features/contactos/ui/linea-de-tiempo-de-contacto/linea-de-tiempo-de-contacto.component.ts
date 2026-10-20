@@ -32,17 +32,17 @@ export class LineaDeTiempoDeContactoComponent {
   readonly store = inject(LineaDeTiempoDeContactoStore);
 
   /** Contact ID to load timeline for (string from ContactoUI) */
-  readonly contactId = input.required<string>();
+  readonly contactoId = input.required<string>();
 
   /** Emitted when user clicks a timeline event that references a ticket */
   readonly openTicket = output<string>();
 
   constructor() {
     effect(() => {
-      const id = Number(this.contactId());
+      const id = Number(this.contactoId());
       if (!isNaN(id)) {
         this.store.reset();
-        this.store.loadTimeline(id);
+        this.store.cargarLineaDeTiempo(id);
       }
     });
   }
@@ -57,9 +57,9 @@ export class LineaDeTiempoDeContactoComponent {
     // Load older events when user scrolls near the bottom (oldest items are at the end)
     const threshold = 5;
     if (range.endIndex >= eventCount - threshold && this.store.hasMore() && !this.store.loading()) {
-      const id = Number(this.contactId());
+      const id = Number(this.contactoId());
       if (!isNaN(id)) {
-        this.store.loadOlder(id);
+        this.store.cargarAnteriores(id);
       }
     }
   }

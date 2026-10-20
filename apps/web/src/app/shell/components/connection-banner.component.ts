@@ -13,5 +13,5 @@ import { ConnectionStore } from '../../core/tiempo-real/connection.store';
 export class ConnectionBannerComponent {
   private connectionStore = inject(ConnectionStore);
 
-  status = this.connectionStore.status;
+  estado = this.connectionStore.estado;
 }

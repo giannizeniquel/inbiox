@@ -5,7 +5,7 @@ import { TipoDeEventoEnTiempoReal, MessageAddedPayload } from '../../core/tiempo
 describe('ConversacionStore', () => {
   let store: ConversacionStore;
 
-  function makeMessage(overrides: Partial<Mensaje> = {}): Mensaje {
+  function armarMensaje(overrides: Partial<Mensaje> = {}): Mensaje {
     return {
       id: 'msg-1',
       ticketId: 'ticket-1',
@@ -25,7 +25,7 @@ describe('ConversacionStore', () => {
   // ── Initial state ──
 
   it('should start with empty messages, not loading, hasMore=true', () => {
-    expect(store.messages()).toEqual([]);
+    expect(store.mensajes()).toEqual([]);
     expect(store.loading()).toBeFalse();
     expect(store.hasMore()).toBeTrue();
   });
@@ -33,28 +33,28 @@ describe('ConversacionStore', () => {
   // ── addMessage() ──
 
   it('should add a message', () => {
-    const msg = makeMessage();
-    store.addMessage(msg);
-    expect(store.messages().length).toBe(1);
-    expect(store.messages()[0]).toEqual(msg);
+    const msg = armarMensaje();
+    store.mensaje(msg);
+    expect(store.mensajes().length).toBe(1);
+    expect(store.mensajes()[0]).toEqual(msg);
   });
 
   it('should enforce MAX_MESSAGES cap of 200', () => {
     const msgs = Array.from({ length: 210 }, (_, i) =>
-      makeMessage({ id: `msg-${i}`, createdAt: `2024-01-01T00:${String(i).padStart(2, '0')}:00Z` })
+      armarMensaje({ id: `msg-${i}`, createdAt: `2024-01-01T00:${String(i).padStart(2, '0')}:00Z` })
     );
-    msgs.forEach(m => store.addMessage(m));
+    msgs.forEach(m => store.mensaje(m));
 
-    expect(store.messages().length).toBe(200);
+    expect(store.mensajes().length).toBe(200);
     // Should keep the newest 200 (sliced from end)
-    expect(store.messages()[0].id).toBe('msg-10');
-    expect(store.messages()[199].id).toBe('msg-209');
+    expect(store.mensajes()[0].id).toBe('msg-10');
+    expect(store.mensajes()[199].id).toBe('msg-209');
   });
 
   // ── addOptimisticMessage() ──
 
   it('should create optimistic message with deliveryStatus=sending, tempId, and cache it', () => {
-    const optimistic = store.addOptimisticMessage('temp-1', 'Hi there', 'ticket-1');
+    const optimistic = store.agregarMensajeOptimista('temp-1', 'Hi there', 'ticket-1');
 
     expect(optimistic.id).toBe('temp-1');
     expect(optimistic.tempId).toBe('temp-1');
@@ -66,36 +66,36 @@ describe('ConversacionStore', () => {
     expect(optimistic.createdAt).toBeTruthy();
 
     // Should be in the messages list
-    expect(store.messages().length).toBe(1);
-    expect(store.messages()[0].tempId).toBe('temp-1');
+    expect(store.mensajes().length).toBe(1);
+    expect(store.mensajes()[0].tempId).toBe('temp-1');
 
     // Should be cached for retry
-    expect(store.getCachedMessage('temp-1')).toEqual({ content: 'Hi there', ticketId: 'ticket-1' });
+    expect(store.getMensajeEnCache('temp-1')).toEqual({ content: 'Hi there', ticketId: 'ticket-1' });
   });
 
   // ── updateMessageStatus() ──
 
   it('should update deliveryStatus by id', () => {
-    store.addMessage(makeMessage({ id: 'msg-1', deliveryStatus: 'sending' }));
+    store.mensaje(armarMensaje({ id: 'msg-1', deliveryStatus: 'sending' }));
 
-    store.updateMessageStatus('msg-1', 'sent');
+    store.updateEstadoDeMensaje('msg-1', 'sent');
 
-    expect(store.messages()[0].deliveryStatus).toBe('sent');
+    expect(store.mensajes()[0].deliveryStatus).toBe('sent');
   });
 
   it('should update deliveryStatus by tempId', () => {
-    store.addMessage(makeMessage({ id: 'msg-1', tempId: 'temp-1', deliveryStatus: 'sending' }));
+    store.mensaje(armarMensaje({ id: 'msg-1', tempId: 'temp-1', deliveryStatus: 'sending' }));
 
-    store.updateMessageStatus('temp-1', 'delivered');
+    store.updateEstadoDeMensaje('temp-1', 'delivered');
 
-    expect(store.messages()[0].deliveryStatus).toBe('delivered');
+    expect(store.mensajes()[0].deliveryStatus).toBe('delivered');
   });
 
   // ── confirmMessage() ──
 
   it('should replace optimistic with confirmed, keep tempId, clear cache', () => {
-    store.addOptimisticMessage('temp-1', 'Hello', 'ticket-1');
-    expect(store.getCachedMessage('temp-1')).toBeTruthy();
+    store.agregarMensajeOptimista('temp-1', 'Hello', 'ticket-1');
+    expect(store.getMensajeEnCache('temp-1')).toBeTruthy();
 
     const confirmed: Mensaje = {
       id: 'server-id-123',
@@ -108,124 +108,124 @@ describe('ConversacionStore', () => {
       externalId: 'ext-123',
     };
 
-    store.confirmMessage('temp-1', confirmed);
+    store.confirmarMensaje('temp-1', confirmed);
 
-    const msg = store.messages()[0];
+    const msg = store.mensajes()[0];
     expect(msg.id).toBe('server-id-123');
     expect(msg.tempId).toBe('temp-1'); // tempId preserved
     expect(msg.deliveryStatus).toBe('sent');
     expect(msg.externalId).toBe('ext-123');
 
     // Cache should be cleared
-    expect(store.getCachedMessage('temp-1')).toBeUndefined();
+    expect(store.getMensajeEnCache('temp-1')).toBeUndefined();
   });
 
   // ── removeMessage() ──
 
   it('should remove by id', () => {
-    store.addMessage(makeMessage({ id: 'msg-1' }));
-    store.addMessage(makeMessage({ id: 'msg-2' }));
+    store.mensaje(armarMensaje({ id: 'msg-1' }));
+    store.mensaje(armarMensaje({ id: 'msg-2' }));
 
-    store.removeMessage('msg-1');
+    store.quitarMensaje('msg-1');
 
-    expect(store.messages().length).toBe(1);
-    expect(store.messages()[0].id).toBe('msg-2');
+    expect(store.mensajes().length).toBe(1);
+    expect(store.mensajes()[0].id).toBe('msg-2');
   });
 
   it('should remove by tempId and clear cache', () => {
-    store.addOptimisticMessage('temp-1', 'Hello', 'ticket-1');
-    expect(store.messages().length).toBe(1);
-    expect(store.getCachedMessage('temp-1')).toBeTruthy();
+    store.agregarMensajeOptimista('temp-1', 'Hello', 'ticket-1');
+    expect(store.mensajes().length).toBe(1);
+    expect(store.getMensajeEnCache('temp-1')).toBeTruthy();
 
-    store.removeMessage('temp-1');
+    store.quitarMensaje('temp-1');
 
-    expect(store.messages().length).toBe(0);
-    expect(store.getCachedMessage('temp-1')).toBeUndefined();
+    expect(store.mensajes().length).toBe(0);
+    expect(store.getMensajeEnCache('temp-1')).toBeUndefined();
   });
 
   // ── retryMessage() ──
 
   it('should reset status to sending and return cached payload', () => {
-    store.addOptimisticMessage('temp-1', 'Hello', 'ticket-1');
-    store.updateMessageStatus('temp-1', 'failed');
-    expect(store.messages()[0].deliveryStatus).toBe('failed');
+    store.agregarMensajeOptimista('temp-1', 'Hello', 'ticket-1');
+    store.updateEstadoDeMensaje('temp-1', 'failed');
+    expect(store.mensajes()[0].deliveryStatus).toBe('failed');
 
-    const cached = store.retryMessage('temp-1');
+    const cached = store.reintentarMensaje('temp-1');
 
     expect(cached).toEqual({ content: 'Hello', ticketId: 'ticket-1' });
-    expect(store.messages()[0].deliveryStatus).toBe('sending');
+    expect(store.mensajes()[0].deliveryStatus).toBe('sending');
   });
 
   it('should return null if no cached payload exists', () => {
-    const cached = store.retryMessage('nonexistent');
+    const cached = store.reintentarMensaje('nonexistent');
     expect(cached).toBeNull();
   });
 
   // ── loadMessages() ──
 
   it('should replace all messages (default)', () => {
-    store.addMessage(makeMessage({ id: 'old-1' }));
+    store.mensaje(armarMensaje({ id: 'old-1' }));
 
     const newMsgs = [
-      makeMessage({ id: 'new-1' }),
-      makeMessage({ id: 'new-2' }),
+      armarMensaje({ id: 'new-1' }),
+      armarMensaje({ id: 'new-2' }),
     ];
-    store.loadMessages(newMsgs);
+    store.cargarMensajes(newMsgs);
 
-    expect(store.messages().length).toBe(2);
-    expect(store.messages()[0].id).toBe('new-1');
+    expect(store.mensajes().length).toBe(2);
+    expect(store.mensajes()[0].id).toBe('new-1');
   });
 
   it('should cap at 200 when replacing', () => {
     const msgs = Array.from({ length: 250 }, (_, i) =>
-      makeMessage({ id: `msg-${i}` })
+      armarMensaje({ id: `msg-${i}` })
     );
-    store.loadMessages(msgs);
+    store.cargarMensajes(msgs);
 
-    expect(store.messages().length).toBe(200);
+    expect(store.mensajes().length).toBe(200);
     // Keeps the last 200 (newest)
-    expect(store.messages()[0].id).toBe('msg-50');
+    expect(store.mensajes()[0].id).toBe('msg-50');
   });
 
   it('should append when append=true', () => {
-    store.loadMessages([makeMessage({ id: 'msg-1' })]);
+    store.cargarMensajes([armarMensaje({ id: 'msg-1' })]);
 
-    store.loadMessages([makeMessage({ id: 'msg-2' })], true);
+    store.cargarMensajes([armarMensaje({ id: 'msg-2' })], true);
 
-    expect(store.messages().length).toBe(2);
-    expect(store.messages()[0].id).toBe('msg-1');
-    expect(store.messages()[1].id).toBe('msg-2');
+    expect(store.mensajes().length).toBe(2);
+    expect(store.mensajes()[0].id).toBe('msg-1');
+    expect(store.mensajes()[1].id).toBe('msg-2');
   });
 
   // ── prependMessages() ──
 
   it('should add older messages at start', () => {
-    store.loadMessages([makeMessage({ id: 'new-1' })]);
+    store.cargarMensajes([armarMensaje({ id: 'new-1' })]);
 
-    store.prependMessages([makeMessage({ id: 'old-1' }), makeMessage({ id: 'old-2' })]);
+    store.agregarMensajesAlInicio([armarMensaje({ id: 'old-1' }), armarMensaje({ id: 'old-2' })]);
 
-    expect(store.messages().length).toBe(3);
-    expect(store.messages()[0].id).toBe('old-1');
-    expect(store.messages()[1].id).toBe('old-2');
-    expect(store.messages()[2].id).toBe('new-1');
+    expect(store.mensajes().length).toBe(3);
+    expect(store.mensajes()[0].id).toBe('old-1');
+    expect(store.mensajes()[1].id).toBe('old-2');
+    expect(store.mensajes()[2].id).toBe('new-1');
   });
 
   it('should cap at 200 trimming from newest (end)', () => {
     const current = Array.from({ length: 190 }, (_, i) =>
-      makeMessage({ id: `current-${i}` })
+      armarMensaje({ id: `current-${i}` })
     );
-    store.loadMessages(current);
+    store.cargarMensajes(current);
 
     const older = Array.from({ length: 30 }, (_, i) =>
-      makeMessage({ id: `older-${i}` })
+      armarMensaje({ id: `older-${i}` })
     );
-    store.prependMessages(older);
+    store.agregarMensajesAlInicio(older);
 
-    expect(store.messages().length).toBe(200);
+    expect(store.mensajes().length).toBe(200);
     // Older messages at the start
-    expect(store.messages()[0].id).toBe('older-0');
+    expect(store.mensajes()[0].id).toBe('older-0');
     // Newest trimmed from end
-    expect(store.messages()[199].id).toBe('current-169');
+    expect(store.mensajes()[199].id).toBe('current-169');
   });
 
   // ── setLoading() / setHasMore() ──
@@ -251,12 +251,12 @@ describe('ConversacionStore', () => {
   // ── findById() ──
 
   it('should find by id', () => {
-    store.addMessage(makeMessage({ id: 'msg-1' }));
+    store.mensaje(armarMensaje({ id: 'msg-1' }));
     expect(store.findById('msg-1')?.id).toBe('msg-1');
   });
 
   it('should find by tempId', () => {
-    store.addMessage(makeMessage({ id: 'msg-1', tempId: 'temp-1' }));
+    store.mensaje(armarMensaje({ id: 'msg-1', tempId: 'temp-1' }));
     expect(store.findById('temp-1')?.id).toBe('msg-1');
   });
 
@@ -267,25 +267,25 @@ describe('ConversacionStore', () => {
   // ── reset() ──
 
   it('should clear everything including cache', () => {
-    store.addOptimisticMessage('temp-1', 'Hello', 'ticket-1');
+    store.agregarMensajeOptimista('temp-1', 'Hello', 'ticket-1');
     store.setLoading(true);
     store.setHasMore(false);
 
     store.reset();
 
-    expect(store.messages()).toEqual([]);
+    expect(store.mensajes()).toEqual([]);
     expect(store.loading()).toBeFalse();
     expect(store.hasMore()).toBeTrue();
-    expect(store.getCachedMessage('temp-1')).toBeUndefined();
+    expect(store.getMensajeEnCache('temp-1')).toBeUndefined();
   });
 
   // ── hasMessage() ──
 
   it('should check existence by tempId', () => {
-    store.addOptimisticMessage('temp-1', 'Hello', 'ticket-1');
+    store.agregarMensajeOptimista('temp-1', 'Hello', 'ticket-1');
 
-    expect(store.hasMessage('temp-1')).toBeTrue();
-    expect(store.hasMessage('nonexistent')).toBeFalse();
+    expect(store.hasMensaje('temp-1')).toBeTrue();
+    expect(store.hasMensaje('nonexistent')).toBeFalse();
   });
 
   // ── onRealtimeEvent(MessageAdded) dedup guard (message-agent-attribution, design.md D6) ──
@@ -293,7 +293,7 @@ describe('ConversacionStore', () => {
   // optimistic confirmMessage() may already hold this server id before the
   // echo arrives — the echo must be a no-op, never a second bubble.
 
-  function makeMessageAddedEvent(overrides: Partial<MessageAddedPayload> = {}) {
+  function armarEventoDeMensajeAgregado(overrides: Partial<MessageAddedPayload> = {}) {
     return {
       eventId: 'evt-1',
       eventType: TipoDeEventoEnTiempoReal.MessageAdded,
@@ -315,13 +315,13 @@ describe('ConversacionStore', () => {
     (store as unknown as { ticketStore: { activeTicket(): unknown } }).ticketStore = {
       activeTicket: () => ({ ticket_id: 'ticket-1' }),
     };
-    store.addMessage(makeMessage({ id: '501' }));
+    store.mensaje(armarMensaje({ id: '501' }));
 
     (store as unknown as { onRealtimeEvent(e: unknown): void }).onRealtimeEvent(
-      makeMessageAddedEvent()
+      armarEventoDeMensajeAgregado()
     );
 
-    expect(store.messages().length).toBe(1);
+    expect(store.mensajes().length).toBe(1);
   });
 
   it('should add a MessageAdded event for a message id not yet present', () => {
@@ -330,21 +330,21 @@ describe('ConversacionStore', () => {
     };
 
     (store as unknown as { onRealtimeEvent(e: unknown): void }).onRealtimeEvent(
-      makeMessageAddedEvent()
+      armarEventoDeMensajeAgregado()
     );
 
-    expect(store.messages().length).toBe(1);
-    expect(store.messages()[0].id).toBe('501');
+    expect(store.mensajes().length).toBe(1);
+    expect(store.mensajes()[0].id).toBe('501');
   });
 
   // ── confirmMessage() echo-arrives-first race guard (design.md D6) ──
 
   it('should drop a duplicate entry sharing the confirmed server id from an earlier echo', () => {
     // Echo arrived first and was appended directly (no tempId).
-    store.addMessage(makeMessage({ id: 'server-id-123', tempId: undefined }));
+    store.mensaje(armarMensaje({ id: 'server-id-123', tempId: undefined }));
     // Optimistic entry for the same logical send, still pending confirmation.
-    store.addOptimisticMessage('temp-1', 'Hello', 'ticket-1');
-    expect(store.messages().length).toBe(2);
+    store.agregarMensajeOptimista('temp-1', 'Hello', 'ticket-1');
+    expect(store.mensajes().length).toBe(2);
 
     const confirmed: Mensaje = {
       id: 'server-id-123',
@@ -356,12 +356,12 @@ describe('ConversacionStore', () => {
       createdAt: '2024-01-01T00:01:00Z',
     };
 
-    store.confirmMessage('temp-1', confirmed);
+    store.confirmarMensaje('temp-1', confirmed);
 
     // Only the reconciled optimistic entry remains — the earlier echo's
     // duplicate row (tempId !== 'temp-1') is dropped.
-    expect(store.messages().length).toBe(1);
-    expect(store.messages()[0].id).toBe('server-id-123');
-    expect(store.messages()[0].tempId).toBe('temp-1');
+    expect(store.mensajes().length).toBe(1);
+    expect(store.mensajes()[0].id).toBe('server-id-123');
+    expect(store.mensajes()[0].tempId).toBe('temp-1');
   });
 });

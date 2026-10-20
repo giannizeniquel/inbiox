@@ -60,30 +60,30 @@ export class DisponibilidadApiService {
   /**
    * GET /agents/{id}/availability — read-only availability status.
    */
-  getAvailability(agentId: number): Observable<DisponibilidadDeAgenteResponse> {
+  getDisponibilidad(agenteId: number): Observable<DisponibilidadDeAgenteResponse> {
     return this.http.get<DisponibilidadDeAgenteResponse>(
-      `${this.baseUrl}/agents/${agentId}/availability`
+      `${this.baseUrl}/agents/${agenteId}/availability`
     );
   }
 
   /**
    * POST /agents/{id}/availability — set availability override with optional TTL.
    *
-   * @param agentId - Agent ID
-   * @param isAvailable - Override value
+   * @param agenteId - Agent ID
+   * @param isDisponible - Override value
    * @param ttlMinutes - Optional TTL in minutes (null = persistent)
    */
-  setAvailability(
-    agentId: number,
-    isAvailable: boolean,
+  setDisponibilidad(
+    agenteId: number,
+    isDisponible: boolean,
     ttlMinutes?: number
   ): Observable<void> {
-    const body: Record<string, unknown> = { is_available: isAvailable };
+    const body: Record<string, unknown> = { is_available: isDisponible };
     if (ttlMinutes !== undefined && ttlMinutes !== null) {
       body['ttl_minutes'] = ttlMinutes;
     }
     return this.http.post<void>(
-      `${this.baseUrl}/agents/${agentId}/availability`,
+      `${this.baseUrl}/agents/${agenteId}/availability`,
       body
     );
   }
@@ -91,23 +91,23 @@ export class DisponibilidadApiService {
   /**
    * DELETE /agents/{id}/availability — clear availability override.
    */
-  clearAvailability(agentId: number): Observable<void> {
+  limpiarDisponibilidad(agenteId: number): Observable<void> {
     return this.http.delete<void>(
-      `${this.baseUrl}/agents/${agentId}/availability`
+      `${this.baseUrl}/agents/${agenteId}/availability`
     );
   }
 
   /**
    * POST /agents/{id}/shifts — create a weekly shift.
    */
-  createShift(
-    agentId: number,
+  createTurno(
+    agenteId: number,
     dayOfWeek: number,
     startTime: string,
     endTime: string
   ): Observable<TurnoDeAgenteResponse> {
     return this.http.post<TurnoDeAgenteResponse>(
-      `${this.baseUrl}/agents/${agentId}/shifts`,
+      `${this.baseUrl}/agents/${agenteId}/shifts`,
       {
         day_of_week: dayOfWeek,
         start_time: startTime,
@@ -119,29 +119,29 @@ export class DisponibilidadApiService {
   /**
    * DELETE /agents/{id}/shifts/{shiftId} — delete a shift.
    */
-  deleteShift(agentId: number, shiftId: number): Observable<void> {
+  deleteTurno(agenteId: number, turnoId: number): Observable<void> {
     return this.http.delete<void>(
-      `${this.baseUrl}/agents/${agentId}/shifts/${shiftId}`
+      `${this.baseUrl}/agents/${agenteId}/shifts/${turnoId}`
     );
   }
 
   /** GET /api/me/shifts — list agent's current shifts */
-  getShifts(): Observable<TurnoDTO[]> {
+  getTurnos(): Observable<TurnoDTO[]> {
     return this.http.get<TurnoDTO[]>(`${this.baseUrl}/api/me/shifts`);
   }
 
   /** PUT /api/me/shifts — replace ALL shifts */
-  replaceShifts(shifts: TurnoInput[]): Observable<TurnoDTO[]> {
+  reemplazarTurnos(turnos: TurnoInput[]): Observable<TurnoDTO[]> {
     return this.http.put<TurnoDTO[]>(
       `${this.baseUrl}/api/me/shifts`,
-      { shifts },
+      { shifts: turnos },
     );
   }
 
   /** GET /api/workspaces/{id}/available-agents — get agents available for assignment */
-  getAvailableAgents(workspaceId: number): Observable<DisponibilidadDeAgenteDTO[]> {
+  getAgentesDisponibles(espacioDeTrabajoId: number): Observable<DisponibilidadDeAgenteDTO[]> {
     return this.http.get<DisponibilidadDeAgenteDTO[]>(
-      `${this.baseUrl}/api/workspaces/${workspaceId}/available-agents`
+      `${this.baseUrl}/api/workspaces/${espacioDeTrabajoId}/available-agents`
     );
   }
 }

@@ -21,13 +21,13 @@
         </app-sidebar>
 
         <!-- Main Content Area -->
-        @if (isInboxRoute()) {
+        @if (isRutaDeBandeja()) {
           <!-- Inbox Layout: 3-column -->
           <section class="ticket-list-panel" role="region" aria-label="Lista de tickets">
             <app-ticket-list />
           </section>
           <section class="conversation-panel" role="region" aria-label="Conversación" style="height: calc(100vh - 48px);">
-            <app-conversacion-container (back)="onConversationBack()" style="height: 100%;" />
+            <app-conversacion-container (back)="onVolverDeConversacion()" style="height: 100%;" />
           </section>
         } @else {
           <!-- Other Routes: Full width router-outlet -->

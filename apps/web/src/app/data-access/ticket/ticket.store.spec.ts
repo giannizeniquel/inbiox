@@ -31,7 +31,7 @@ describe('TicketStore', () => {
   it('should start with empty tickets, mine filter, and not loading', () => {
     expect(store.tickets()).toEqual([]);
     expect(store.activeTicket()).toBeNull();
-    expect(store.filter()).toBe('mine');
+    expect(store.filtro()).toBe('mine');
     expect(store.loading()).toBeFalse();
   });
 
@@ -39,7 +39,7 @@ describe('TicketStore', () => {
 
   it('should load tickets', () => {
     const tickets = [makeTicket({ ticket_id: 't1', id: 't1' }), makeTicket({ ticket_id: 't2', id: 't2' })];
-    store.loadTickets(tickets);
+    store.cargarTickets(tickets);
     expect(store.tickets()).toEqual(tickets);
   });
 
@@ -47,7 +47,7 @@ describe('TicketStore', () => {
     const tickets = Array.from({ length: 1200 }, (_, i) =>
       makeTicket({ ticket_id: `t-${i}`, id: `t-${i}` })
     );
-    store.loadTickets(tickets);
+    store.cargarTickets(tickets);
     expect(store.tickets().length).toBe(1000);
     expect(store.tickets()[0].ticket_id).toBe('t-0');
     expect(store.tickets()[999].ticket_id).toBe('t-999');
@@ -57,7 +57,7 @@ describe('TicketStore', () => {
 
   it('should add a new ticket at the start', () => {
     const existing = makeTicket({ ticket_id: 't1', id: 't1' });
-    store.loadTickets([existing]);
+    store.cargarTickets([existing]);
 
     const newTicket = makeTicket({ ticket_id: 't2', id: 't2' });
     store.addOrUpdateTicket(newTicket);
@@ -69,7 +69,7 @@ describe('TicketStore', () => {
 
   it('should update an existing ticket by ticket_id', () => {
     const original = makeTicket({ ticket_id: 't1', id: 't1', status: EstadoDeTicket.Nuevo });
-    store.loadTickets([original]);
+    store.cargarTickets([original]);
 
     const updated = makeTicket({ ticket_id: 't1', id: 't1', status: EstadoDeTicket.Activo });
     store.addOrUpdateTicket(updated);
@@ -82,14 +82,14 @@ describe('TicketStore', () => {
 
   it('should set active ticket by id', () => {
     const ticket = makeTicket({ ticket_id: 't1', id: 't1' });
-    store.loadTickets([ticket]);
+    store.cargarTickets([ticket]);
 
     store.setActiveTicket('t1');
     expect(store.activeTicket()).toEqual(ticket);
   });
 
   it('should set activeTicket to null when id is not found', () => {
-    store.loadTickets([makeTicket({ ticket_id: 't1', id: 't1' })]);
+    store.cargarTickets([makeTicket({ ticket_id: 't1', id: 't1' })]);
 
     store.setActiveTicket('nonexistent');
     expect(store.activeTicket()).toBeNull();
@@ -97,7 +97,7 @@ describe('TicketStore', () => {
 
   it('should clear active ticket when null is passed', () => {
     const ticket = makeTicket({ ticket_id: 't1', id: 't1' });
-    store.loadTickets([ticket]);
+    store.cargarTickets([ticket]);
     store.setActiveTicket('t1');
     expect(store.activeTicket()).toBeTruthy();
 
@@ -108,16 +108,16 @@ describe('TicketStore', () => {
   // ── setFilter() ──
 
   it('should switch between filter tabs', () => {
-    expect(store.filter()).toBe('mine');
+    expect(store.filtro()).toBe('mine');
 
-    store.setFilter('waiting');
-    expect(store.filter()).toBe('waiting');
+    store.setFiltro('waiting');
+    expect(store.filtro()).toBe('waiting');
 
-    store.setFilter('internal');
-    expect(store.filter()).toBe('internal');
+    store.setFiltro('internal');
+    expect(store.filtro()).toBe('internal');
 
-    store.setFilter('mine');
-    expect(store.filter()).toBe('mine');
+    store.setFiltro('mine');
+    expect(store.filtro()).toBe('mine');
   });
 
   // ── filteredTickets computed ──
@@ -125,18 +125,18 @@ describe('TicketStore', () => {
   it('should filter "mine" — tickets with owner !== null', () => {
     const owned = makeTicket({ ticket_id: 't1', id: 't1', owner: { id: 1, name: 'Agent' } });
     const unowned = makeTicket({ ticket_id: 't2', id: 't2', owner: null });
-    store.loadTickets([owned, unowned]);
-    store.setFilter('mine');
+    store.cargarTickets([owned, unowned]);
+    store.setFiltro('mine');
 
     expect(store.filteredTickets().length).toBe(1);
     expect(store.filteredTickets()[0].ticket_id).toBe('t1');
   });
 
   it('should filter "waiting" — tickets with no owner (unassigned)', () => {
-    const unassigned = makeTicket({ ticket_id: 't1', id: 't1', owner: null });
-    const assigned = makeTicket({ ticket_id: 't2', id: 't2', owner: { id: 1, name: 'Agent' } });
-    store.loadTickets([unassigned, assigned]);
-    store.setFilter('waiting');
+    const sinAsignar = makeTicket({ ticket_id: 't1', id: 't1', owner: null });
+    const asignado = makeTicket({ ticket_id: 't2', id: 't2', owner: { id: 1, name: 'Agent' } });
+    store.cargarTickets([sinAsignar, asignado]);
+    store.setFiltro('waiting');
 
     expect(store.filteredTickets().length).toBe(1);
     expect(store.filteredTickets()[0].ticket_id).toBe('t1');
@@ -144,9 +144,9 @@ describe('TicketStore', () => {
 
   it('should filter "internal" — all tickets', () => {
     const newT = makeTicket({ ticket_id: 't1', id: 't1', status: EstadoDeTicket.Nuevo });
-    const resolvedT = makeTicket({ ticket_id: 't2', id: 't2', status: EstadoDeTicket.Resuelto });
-    store.loadTickets([newT, resolvedT]);
-    store.setFilter('internal');
+    const ticketResuelto = makeTicket({ ticket_id: 't2', id: 't2', status: EstadoDeTicket.Resuelto });
+    store.cargarTickets([newT, ticketResuelto]);
+    store.setFiltro('internal');
 
     expect(store.filteredTickets().length).toBe(2);
   });
@@ -160,12 +160,12 @@ describe('TicketStore', () => {
       makeTicket({ ticket_id: 't3', id: 't3', owner: null, status: EstadoDeTicket.Nuevo }),
       makeTicket({ ticket_id: 't4', id: 't4', owner: { id: 2, name: 'B' }, status: EstadoDeTicket.Resuelto }),
     ];
-    store.loadTickets(tickets);
+    store.cargarTickets(tickets);
 
-    const counts = store.filterCounts();
-    expect(counts.mine).toBe(2);      // t1, t4 have owner
-    expect(counts.waiting).toBe(2);   // t2, t3 have no owner (unassigned)
-    expect(counts.internal).toBe(4);  // all tickets
+    const conteos = store.conteosDeFiltro();
+    expect(conteos.mine).toBe(2);      // t1, t4 have owner
+    expect(conteos.waiting).toBe(2);   // t2, t3 have no owner (unassigned)
+    expect(conteos.internal).toBe(4);  // all tickets
   });
 
   // ── totalUnread computed ──
@@ -176,9 +176,9 @@ describe('TicketStore', () => {
       makeTicket({ ticket_id: 't2', id: 't2', metrics: { unread_count: 5 } }),
       makeTicket({ ticket_id: 't3', id: 't3', metrics: { unread_count: 0 } }),
     ];
-    store.loadTickets(tickets);
+    store.cargarTickets(tickets);
 
-    expect(store.totalUnread()).toBe(8);
+    expect(store.totalNoLeidos()).toBe(8);
   });
 
   it('should handle tickets with missing metrics gracefully', () => {
@@ -186,20 +186,20 @@ describe('TicketStore', () => {
       makeTicket({ ticket_id: 't1', id: 't1', metrics: { unread_count: 2 } }),
       makeTicket({ ticket_id: 't2', id: 't2', metrics: undefined as unknown as { unread_count: number } }),
     ];
-    store.loadTickets(tickets);
+    store.cargarTickets(tickets);
 
-    expect(store.totalUnread()).toBe(2);
+    expect(store.totalNoLeidos()).toBe(2);
   });
 
   // ── updateUnreadCount() ──
 
   it('should update unread count for a specific ticket', () => {
-    store.loadTickets([
+    store.cargarTickets([
       makeTicket({ ticket_id: 't1', id: 't1', metrics: { unread_count: 0 } }),
       makeTicket({ ticket_id: 't2', id: 't2', metrics: { unread_count: 5 } }),
     ]);
 
-    store.updateUnreadCount('t1', 7);
+    store.updateConteoDeNoLeidos('t1', 7);
 
     expect(store.tickets()[0].metrics.unread_count).toBe(7);
     expect(store.tickets()[1].metrics.unread_count).toBe(5);
@@ -208,22 +208,22 @@ describe('TicketStore', () => {
   // ── markAsRead() ──
 
   it('should zero the unread count for a ticket', () => {
-    store.loadTickets([
+    store.cargarTickets([
       makeTicket({ ticket_id: 't1', id: 't1', metrics: { unread_count: 5 } }),
     ]);
 
-    store.markAsRead('t1');
+    store.marcarComoLeido('t1');
 
     expect(store.tickets()[0].metrics.unread_count).toBe(0);
   });
 
   it('should not affect other tickets when marking as read', () => {
-    store.loadTickets([
+    store.cargarTickets([
       makeTicket({ ticket_id: 't1', id: 't1', metrics: { unread_count: 5 } }),
       makeTicket({ ticket_id: 't2', id: 't2', metrics: { unread_count: 3 } }),
     ]);
 
-    store.markAsRead('t1');
+    store.marcarComoLeido('t1');
 
     expect(store.tickets()[0].metrics.unread_count).toBe(0);
     expect(store.tickets()[1].metrics.unread_count).toBe(3);
@@ -232,16 +232,16 @@ describe('TicketStore', () => {
   // ── reset() ──
 
   it('should clear everything', () => {
-    store.loadTickets([makeTicket({ ticket_id: 't1', id: 't1' })]);
+    store.cargarTickets([makeTicket({ ticket_id: 't1', id: 't1' })]);
     store.setActiveTicket('t1');
-    store.setFilter('waiting');
+    store.setFiltro('waiting');
     store.setLoading(true);
 
     store.reset();
 
     expect(store.tickets()).toEqual([]);
     expect(store.activeTicket()).toBeNull();
-    expect(store.filter()).toBe('mine');
+    expect(store.filtro()).toBe('mine');
     expect(store.loading()).toBeFalse();
   });
 
@@ -261,38 +261,38 @@ describe('TicketStore', () => {
 
   it('should optimistically update ticket owner', () => {
     const ticket = makeTicket({ ticket_id: 't1', id: 't1', owner: { id: 1, name: 'Agent A' } });
-    store.loadTickets([ticket]);
+    store.cargarTickets([ticket]);
 
-    const previousOwner = store.optimisticAssign('t1', 2, 'Agent B');
+    const responsableAnterior = store.asignarOptimista('t1', 2, 'Agent B');
 
-    expect(previousOwner).toEqual({ id: 1, name: 'Agent A' });
+    expect(responsableAnterior).toEqual({ id: 1, name: 'Agent A' });
     expect(store.tickets()[0].owner).toEqual({ id: 2, name: 'Agent B' });
   });
 
   it('should return null when ticket not found', () => {
-    const previousOwner = store.optimisticAssign('nonexistent', 2, 'Agent B');
+    const responsableAnterior = store.asignarOptimista('nonexistent', 2, 'Agent B');
 
-    expect(previousOwner).toBeNull();
+    expect(responsableAnterior).toBeNull();
   });
 
   // ── rollbackAssign() ──
 
   it('should rollback to previous owner', () => {
     const ticket = makeTicket({ ticket_id: 't1', id: 't1', owner: { id: 1, name: 'Agent A' } });
-    store.loadTickets([ticket]);
+    store.cargarTickets([ticket]);
 
-    store.optimisticAssign('t1', 2, 'Agent B');
-    store.rollbackAssign('t1', { id: 1, name: 'Agent A' });
+    store.asignarOptimista('t1', 2, 'Agent B');
+    store.revertirAsignacion('t1', { id: 1, name: 'Agent A' });
 
     expect(store.tickets()[0].owner).toEqual({ id: 1, name: 'Agent A' });
   });
 
   it('should handle rollback with null previous owner', () => {
     const ticket = makeTicket({ ticket_id: 't1', id: 't1', owner: null });
-    store.loadTickets([ticket]);
+    store.cargarTickets([ticket]);
 
-    store.optimisticAssign('t1', 2, 'Agent B');
-    store.rollbackAssign('t1', null);
+    store.asignarOptimista('t1', 2, 'Agent B');
+    store.revertirAsignacion('t1', null);
 
     expect(store.tickets()[0].owner).toBeNull();
   });
@@ -300,9 +300,9 @@ describe('TicketStore', () => {
   // ── assignmentError() ──
 
   it('should record assignment error', () => {
-    store.assignmentError('t1', 'Assignment failed');
+    store.errorDeAsignacion('t1', 'Assignment failed');
 
-    const errors = store.assignmentErrors();
+    const errors = store.erroresDeAsignacion();
     expect(errors.has(1)).toBeTrue();
     expect(errors.get(1)?.message).toBe('Assignment failed');
     expect(errors.get(1)?.until).toBeGreaterThan(Date.now());
@@ -310,13 +310,13 @@ describe('TicketStore', () => {
 
   it('should auto-dismiss error after 5 seconds', (done) => {
     jasmine.clock().install();
-    store.assignmentError('t1', 'Assignment failed');
+    store.errorDeAsignacion('t1', 'Assignment failed');
 
-    expect(store.assignmentErrors().has(1)).toBeTrue();
+    expect(store.erroresDeAsignacion().has(1)).toBeTrue();
 
     jasmine.clock().tick(5001);
 
-    expect(store.assignmentErrors().has(1)).toBeFalse();
+    expect(store.erroresDeAsignacion().has(1)).toBeFalse();
 
     jasmine.clock().uninstall();
     done();
@@ -326,13 +326,13 @@ describe('TicketStore', () => {
 
   it('should clear assignment state on reset', () => {
     const ticket = makeTicket({ ticket_id: 't1', id: 't1' });
-    store.loadTickets([ticket]);
-    store.optimisticAssign('t1', 2, 'Agent B');
-    store.assignmentError('t1', 'Error');
+    store.cargarTickets([ticket]);
+    store.asignarOptimista('t1', 2, 'Agent B');
+    store.errorDeAsignacion('t1', 'Error');
 
     store.reset();
 
-    expect(store.assignmentErrors().size).toBe(0);
+    expect(store.erroresDeAsignacion().size).toBe(0);
   });
 
   // ── applyTicketEvent(MessageAdded) direction guard (message-agent-attribution, design.md D6) ──
@@ -341,7 +341,7 @@ describe('TicketStore', () => {
   // the unread badge; only genuine inbound (contact) messages should.
 
   // Test tickets use string ids ('t1'), so the payload is cast to the wire type.
-  function makeMessageAddedEvent(direction: 'inbound' | 'outbound', ticketId = 't1'): EventoEnTiempoReal {
+  function armarEventoDeMensajeAgregado(direccion: 'inbound' | 'outbound', ticketId = 't1'): EventoEnTiempoReal {
     return {
       eventId: 'evt-1',
       eventType: TipoDeEventoEnTiempoReal.MessageAdded,
@@ -350,7 +350,7 @@ describe('TicketStore', () => {
         messageId: 1,
         ticketId,
         content: 'Hi',
-        direction,
+        direction: direccion,
         senderName: null,
         createdAt: '2024-01-01T00:00:00Z',
         externalId: null,
@@ -359,19 +359,19 @@ describe('TicketStore', () => {
   }
 
   it('should skip the unread bump for an outbound MessageAdded on a non-active ticket', () => {
-    store.loadTickets([makeTicket({ ticket_id: 't1', id: 't1', metrics: { unread_count: 0 } })]);
+    store.cargarTickets([makeTicket({ ticket_id: 't1', id: 't1', metrics: { unread_count: 0 } })]);
     store.setActiveTicket(null); // no active ticket — t1 is not active
 
-    applyTicketEvent(makeMessageAddedEvent('outbound'), store, {} as EspacioDeTrabajoStore);
+    applyTicketEvent(armarEventoDeMensajeAgregado('outbound'), store, {} as EspacioDeTrabajoStore);
 
     expect(store.tickets()[0].metrics.unread_count).toBe(0);
   });
 
   it('should bump unread for an inbound MessageAdded on a non-active ticket', () => {
-    store.loadTickets([makeTicket({ ticket_id: 't1', id: 't1', metrics: { unread_count: 0 } })]);
+    store.cargarTickets([makeTicket({ ticket_id: 't1', id: 't1', metrics: { unread_count: 0 } })]);
     store.setActiveTicket(null);
 
-    applyTicketEvent(makeMessageAddedEvent('inbound'), store, {} as EspacioDeTrabajoStore);
+    applyTicketEvent(armarEventoDeMensajeAgregado('inbound'), store, {} as EspacioDeTrabajoStore);
 
     expect(store.tickets()[0].metrics.unread_count).toBe(1);
   });

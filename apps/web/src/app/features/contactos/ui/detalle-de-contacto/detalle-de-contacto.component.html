@@ -10,7 +10,7 @@
     </div>
   }
   <!-- No contact selected -->
-  @else if (!contact()) {
+  @else if (!contacto()) {
     <div class="contact-detail__placeholder">
       <svg class="contact-detail__placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
         <path d="M15 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM9 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM5 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
@@ -25,24 +25,24 @@
         {{ initials() }}
       </div>
       <div class="contact-detail__identity">
-        <h2 class="contact-detail__name">{{ contact()!.name ?? contact()!.phone }}</h2>
-        <p class="contact-detail__phone">{{ contact()!.phone }}</p>
+        <h2 class="contact-detail__name">{{ contacto()!.name ?? contacto()!.phone }}</h2>
+        <p class="contact-detail__phone">{{ contacto()!.phone }}</p>
         <div class="contact-detail__badges">
-          <span class="badge badge--channel" [attr.data-channel]="contact()!.channel">
+          <span class="badge badge--channel" [attr.data-channel]="contacto()!.channel">
             {{ channelLabel() }}
           </span>
-          <span class="badge badge--status" [attr.data-status]="contact()!.status">
-            {{ statusLabel() }}
+          <span class="badge badge--status" [attr.data-status]="contacto()!.status">
+            {{ estadoLabel() }}
           </span>
         </div>
       </div>
     </div>
 
     <div class="contact-detail__info">
-      @if (contact()!.owner) {
+      @if (contacto()!.owner) {
         <div class="info-row">
           <span class="info-label">Asignado a</span>
-          <span class="info-value">{{ contact()!.owner!.name }}</span>
+          <span class="info-value">{{ contacto()!.owner!.name }}</span>
         </div>
       }
       <div class="info-row">
@@ -52,9 +52,9 @@
       
     </div>
 
-    @if (contact()!.tags.length > 0) {
+    @if (contacto()!.tags.length > 0) {
       <div class="contact-detail__tags">
-        @for (tag of contact()!.tags; track tag) {
+        @for (tag of contacto()!.tags; track tag) {
           <span class="tag">{{ tag }}</span>
         }
       </div>
@@ -63,14 +63,14 @@
     <div class="contact-detail__actions">
       <button
         class="btn btn--primary"
-        (click)="onOpenConversation()"
+        (click)="onAbrirConversacion()"
         type="button"
       >
         Abrir conversación
       </button>
       <button
         class="btn btn--secondary"
-        (click)="onEditContact()"
+        (click)="onEditarContacto()"
         type="button"
       >
         Editar
@@ -78,7 +78,7 @@
     </div>
 
     <app-linea-de-tiempo-de-contacto
-      [contactId]="contact()!.id"
+      [contactoId]="contacto()!.id"
       (openTicket)="onOpenTicket($event)"
     />
   }

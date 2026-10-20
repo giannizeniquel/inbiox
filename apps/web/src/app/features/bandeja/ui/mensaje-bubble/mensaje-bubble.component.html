@@ -9,44 +9,44 @@
   (keydown.enter)="onFailedClick()"
   (keydown.space)="onFailedClick()"
 >
-  @switch (messageType()) {
+  @switch (tipoDeMensaje()) {
     @case ('system') {
-      <span class="message-bubble__system-text">{{ message().content }}</span>
+      <span class="message-bubble__system-text">{{ mensaje().content }}</span>
     }
     @default {
       <!-- Media rendering -->
-      @if (hasMedia()) {
+      @if (hasAdjunto()) {
         <div class="message-bubble__media">
-          @switch (message().media!.kind) {
+          @switch (mensaje().media!.kind) {
             @case ('image') {
-              <app-adjunto-imagen [attachment]="message().media!" [messageId]="message().id" />
+              <app-adjunto-imagen [adjunto]="mensaje().media!" [mensajeId]="mensaje().id" />
             }
             @case ('video') {
-              <app-adjunto-video [attachment]="message().media!" [messageId]="message().id" />
+              <app-adjunto-video [adjunto]="mensaje().media!" [mensajeId]="mensaje().id" />
             }
             @case ('audio') {
-              <app-adjunto-audio [attachment]="message().media!" [messageId]="message().id" />
+              <app-adjunto-audio [adjunto]="mensaje().media!" [mensajeId]="mensaje().id" />
             }
             @case ('document') {
-              <app-adjunto-documento [attachment]="message().media!" [messageId]="message().id" [pending]="message().deliveryStatus === 'sending'" />
+              <app-adjunto-documento [adjunto]="mensaje().media!" [mensajeId]="mensaje().id" [pending]="mensaje().deliveryStatus === 'sending'" />
             }
           }
-          @if (message().media!.caption) {
-            <p class="message-bubble__caption">{{ message().media!.caption }}</p>
+          @if (mensaje().media!.caption) {
+            <p class="message-bubble__caption">{{ mensaje().media!.caption }}</p>
           }
         </div>
       }
 
       <!-- Text content — only for pure-text messages (media messages use caption) -->
-      @if (!hasMedia() && message().content) {
-        <p class="message-bubble__text">{{ message().content }}</p>
+      @if (!hasAdjunto() && mensaje().content) {
+        <p class="message-bubble__text">{{ mensaje().content }}</p>
       }
 
       <span class="message-bubble__meta">
         <span class="message-bubble__time">{{ timeDisplay() }}</span>
-        @if (messageType() === 'agent') {
-          <span class="message-bubble__status" [ngClass]="'status-' + message().deliveryStatus">
-            {{ statusIcon() }}
+        @if (tipoDeMensaje() === 'agent') {
+          <span class="message-bubble__status" [ngClass]="'status-' + mensaje().deliveryStatus">
+            {{ estadoIcon() }}
           </span>
         }
       </span>

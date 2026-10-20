@@ -10,8 +10,8 @@ describe('GetReportsDashboardUseCase', () => {
 
   const mockFrt = { avg_frt_minutes: 5.5 };
   const mockRt = { avg_rt_minutes: 42.3 };
-  const mockCounts = { new: 10, active: 5, waiting: 3, resolved: 20, closed: 8 };
-  const mockVolume = {
+  const mockConteos = { new: 10, active: 5, waiting: 3, resolved: 20, closed: 8 };
+  const mockVolumen = {
     data: [
       { date: '2024-01-01', tickets_created: 5 },
       { date: '2024-01-02', tickets_created: 8 },
@@ -19,7 +19,7 @@ describe('GetReportsDashboardUseCase', () => {
     total: 13,
     trend: 10,
   };
-  const mockAgents = {
+  const mockAgentes = {
     agents: [
       { agent_id: 1, tickets_assigned: 10, avg_frt_minutes: 3.2, tickets_resolved: 8 },
       { agent_id: 2, tickets_assigned: 5, avg_frt_minutes: 6.1, tickets_resolved: 4 },
@@ -30,46 +30,46 @@ describe('GetReportsDashboardUseCase', () => {
     apiSpy = jasmine.createSpyObj('ReporteApiService', [
       'getFirstResponseTime',
       'getResolutionTime',
-      'getTicketCounts',
-      'getVolumeTrend',
-      'getAgentMetrics',
-      'getAgentLoad',
-      'getUnassigned',
-      'getFrtTrend',
-      'getResponseDelay',
-      'getAvailableAgents',
-      'getHeatmap',
-      'getRecurringCustomers',
-      'getReopened',
+      'getConteosDeTickets',
+      'getTendenciaDeVolumen',
+      'getMetricasDeAgente',
+      'getCargaDeAgente',
+      'getSinAsignar',
+      'getTendenciaDeFrt',
+      'getDemoraDeRespuesta',
+      'getAgentesDisponibles',
+      'getMapaDeCalor',
+      'getContactosRecurrentes',
+      'getReabiertos',
     ]);
     useCase = new GetReportsDashboardUseCase(apiSpy);
   });
 
   /** Wires up every stream past Group A so a full execute() completes. */
   function mockGroupsBAndC(): void {
-    apiSpy.getAgentLoad.and.returnValue(of([]));
-    apiSpy.getUnassigned.and.returnValue(of({ count: 0, tickets: [] }));
-    apiSpy.getFrtTrend.and.returnValue(of([]));
-    apiSpy.getAvailableAgents.and.returnValue(of([]));
-    apiSpy.getHeatmap.and.returnValue(of([]));
-    apiSpy.getRecurringCustomers.and.returnValue(of([]));
-    apiSpy.getReopened.and.returnValue(of([]));
+    apiSpy.getCargaDeAgente.and.returnValue(of([]));
+    apiSpy.getSinAsignar.and.returnValue(of({ count: 0, tickets: [] }));
+    apiSpy.getTendenciaDeFrt.and.returnValue(of([]));
+    apiSpy.getAgentesDisponibles.and.returnValue(of([]));
+    apiSpy.getMapaDeCalor.and.returnValue(of([]));
+    apiSpy.getContactosRecurrentes.and.returnValue(of([]));
+    apiSpy.getReabiertos.and.returnValue(of([]));
   }
 
   it('should call all 5 API methods with params', (done) => {
     apiSpy.getFirstResponseTime.and.returnValue(of(mockFrt));
     apiSpy.getResolutionTime.and.returnValue(of(mockRt));
-    apiSpy.getTicketCounts.and.returnValue(of(mockCounts));
-    apiSpy.getVolumeTrend.and.returnValue(of(mockVolume));
-    apiSpy.getAgentMetrics.and.returnValue(of(mockAgents));
+    apiSpy.getConteosDeTickets.and.returnValue(of(mockConteos));
+    apiSpy.getTendenciaDeVolumen.and.returnValue(of(mockVolumen));
+    apiSpy.getMetricasDeAgente.and.returnValue(of(mockAgentes));
 
     useCase.execute(input).subscribe({
       next: () => {
         expect(apiSpy.getFirstResponseTime).toHaveBeenCalledWith(input.params);
         expect(apiSpy.getResolutionTime).toHaveBeenCalledWith(input.params);
-        expect(apiSpy.getTicketCounts).toHaveBeenCalledWith(input.params);
-        expect(apiSpy.getVolumeTrend).toHaveBeenCalledWith(input.params);
-        expect(apiSpy.getAgentMetrics).toHaveBeenCalledWith(input.params);
+        expect(apiSpy.getConteosDeTickets).toHaveBeenCalledWith(input.params);
+        expect(apiSpy.getTendenciaDeVolumen).toHaveBeenCalledWith(input.params);
+        expect(apiSpy.getMetricasDeAgente).toHaveBeenCalledWith(input.params);
         done();
       },
     });
@@ -78,9 +78,9 @@ describe('GetReportsDashboardUseCase', () => {
   it('should map responses to ReportsDashboardData shape on success', (done) => {
     apiSpy.getFirstResponseTime.and.returnValue(of(mockFrt));
     apiSpy.getResolutionTime.and.returnValue(of(mockRt));
-    apiSpy.getTicketCounts.and.returnValue(of(mockCounts));
-    apiSpy.getVolumeTrend.and.returnValue(of(mockVolume));
-    apiSpy.getAgentMetrics.and.returnValue(of(mockAgents));
+    apiSpy.getConteosDeTickets.and.returnValue(of(mockConteos));
+    apiSpy.getTendenciaDeVolumen.and.returnValue(of(mockVolumen));
+    apiSpy.getMetricasDeAgente.and.returnValue(of(mockAgentes));
 
     useCase.execute(input).subscribe({
       next: (data: ReportsDashboardData) => {
@@ -104,9 +104,9 @@ describe('GetReportsDashboardUseCase', () => {
   it('should compute loadPercentage as tickets_assigned * 20 capped at 100', (done) => {
     apiSpy.getFirstResponseTime.and.returnValue(of(mockFrt));
     apiSpy.getResolutionTime.and.returnValue(of(mockRt));
-    apiSpy.getTicketCounts.and.returnValue(of(mockCounts));
-    apiSpy.getVolumeTrend.and.returnValue(of(mockVolume));
-    apiSpy.getAgentMetrics.and.returnValue(of(mockAgents));
+    apiSpy.getConteosDeTickets.and.returnValue(of(mockConteos));
+    apiSpy.getTendenciaDeVolumen.and.returnValue(of(mockVolumen));
+    apiSpy.getMetricasDeAgente.and.returnValue(of(mockAgentes));
 
     useCase.execute(input).subscribe({
       next: (data: ReportsDashboardData) => {
@@ -123,9 +123,9 @@ describe('GetReportsDashboardUseCase', () => {
     // FRT stream fails — should default to 0
     apiSpy.getFirstResponseTime.and.returnValue(throwError(() => new Error('FRT error')));
     apiSpy.getResolutionTime.and.returnValue(of(mockRt));
-    apiSpy.getTicketCounts.and.returnValue(of(mockCounts));
-    apiSpy.getVolumeTrend.and.returnValue(of(mockVolume));
-    apiSpy.getAgentMetrics.and.returnValue(of(mockAgents));
+    apiSpy.getConteosDeTickets.and.returnValue(of(mockConteos));
+    apiSpy.getTendenciaDeVolumen.and.returnValue(of(mockVolumen));
+    apiSpy.getMetricasDeAgente.and.returnValue(of(mockAgentes));
 
     useCase.execute(input).subscribe({
       next: (data: ReportsDashboardData) => {
@@ -140,9 +140,9 @@ describe('GetReportsDashboardUseCase', () => {
   it('should return empty arrays for volume and agents when those streams fail', (done) => {
     apiSpy.getFirstResponseTime.and.returnValue(of(mockFrt));
     apiSpy.getResolutionTime.and.returnValue(of(mockRt));
-    apiSpy.getTicketCounts.and.returnValue(of(mockCounts));
-    apiSpy.getVolumeTrend.and.returnValue(throwError(() => new Error('Volume error')));
-    apiSpy.getAgentMetrics.and.returnValue(throwError(() => new Error('Agents error')));
+    apiSpy.getConteosDeTickets.and.returnValue(of(mockConteos));
+    apiSpy.getTendenciaDeVolumen.and.returnValue(throwError(() => new Error('Volume error')));
+    apiSpy.getMetricasDeAgente.and.returnValue(throwError(() => new Error('Agents error')));
 
     useCase.execute(input).subscribe({
       next: (data: ReportsDashboardData) => {
@@ -157,11 +157,11 @@ describe('GetReportsDashboardUseCase', () => {
   it('should degrade responseDelay to null on failure — never a zeroed object', (done) => {
     apiSpy.getFirstResponseTime.and.returnValue(of(mockFrt));
     apiSpy.getResolutionTime.and.returnValue(of(mockRt));
-    apiSpy.getTicketCounts.and.returnValue(of(mockCounts));
-    apiSpy.getVolumeTrend.and.returnValue(of(mockVolume));
-    apiSpy.getAgentMetrics.and.returnValue(of(mockAgents));
+    apiSpy.getConteosDeTickets.and.returnValue(of(mockConteos));
+    apiSpy.getTendenciaDeVolumen.and.returnValue(of(mockVolumen));
+    apiSpy.getMetricasDeAgente.and.returnValue(of(mockAgentes));
     mockGroupsBAndC();
-    apiSpy.getResponseDelay.and.returnValue(throwError(() => new Error('Response delay error')));
+    apiSpy.getDemoraDeRespuesta.and.returnValue(throwError(() => new Error('Response delay error')));
 
     useCase.execute(input).subscribe({
       next: (data: ReportsDashboardData) => {
@@ -172,7 +172,7 @@ describe('GetReportsDashboardUseCase', () => {
   });
 
   it('should pass through the responseDelay report when the call succeeds', (done) => {
-    const mockResponseDelay = {
+    const mockDemoraDeRespuesta = {
       data_available_from: '2026-01-01T00:00:00Z',
       partial_data: false,
       aggregate: { avg_delay_seconds: 120, sample_count: 5, unanswered_inbound_count: 1 },
@@ -181,15 +181,15 @@ describe('GetReportsDashboardUseCase', () => {
 
     apiSpy.getFirstResponseTime.and.returnValue(of(mockFrt));
     apiSpy.getResolutionTime.and.returnValue(of(mockRt));
-    apiSpy.getTicketCounts.and.returnValue(of(mockCounts));
-    apiSpy.getVolumeTrend.and.returnValue(of(mockVolume));
-    apiSpy.getAgentMetrics.and.returnValue(of(mockAgents));
+    apiSpy.getConteosDeTickets.and.returnValue(of(mockConteos));
+    apiSpy.getTendenciaDeVolumen.and.returnValue(of(mockVolumen));
+    apiSpy.getMetricasDeAgente.and.returnValue(of(mockAgentes));
     mockGroupsBAndC();
-    apiSpy.getResponseDelay.and.returnValue(of(mockResponseDelay));
+    apiSpy.getDemoraDeRespuesta.and.returnValue(of(mockDemoraDeRespuesta));
 
     useCase.execute(input).subscribe({
       next: (data: ReportsDashboardData) => {
-        expect(data.responseDelay).toEqual(mockResponseDelay);
+        expect(data.responseDelay).toEqual(mockDemoraDeRespuesta);
         done();
       },
     });

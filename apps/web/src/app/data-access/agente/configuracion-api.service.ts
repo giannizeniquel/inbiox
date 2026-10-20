@@ -25,12 +25,12 @@ export class ConfiguracionApiService {
   private readonly baseUrl = environment.apiUrl;
 
   /** GET /api/me/settings — all settings sections in one round-trip */
-  getSettings(): Observable<ConfiguracionResponse> {
+  getConfiguracion(): Observable<ConfiguracionResponse> {
     return this.http.get<ConfiguracionResponse>(`${this.baseUrl}/api/me/settings`);
   }
 
   /** PUT /api/me/profile — update signature */
-  updateProfile(payload: UpdatePerfilPayload): Observable<ConfiguracionResponse['profile']> {
+  updatePerfil(payload: UpdatePerfilPayload): Observable<ConfiguracionResponse['profile']> {
     return this.http.put<ConfiguracionResponse['profile']>(
       `${this.baseUrl}/api/me/profile`,
       payload,
@@ -38,7 +38,7 @@ export class ConfiguracionApiService {
   }
 
   /** PUT /api/me/notifications — update notification preferences */
-  updateNotifications(payload: UpdateNotificacionesPayload): Observable<ConfiguracionResponse['notifications']> {
+  updateNotificaciones(payload: UpdateNotificacionesPayload): Observable<ConfiguracionResponse['notifications']> {
     return this.http.put<ConfiguracionResponse['notifications']>(
       `${this.baseUrl}/api/me/notifications`,
       payload,

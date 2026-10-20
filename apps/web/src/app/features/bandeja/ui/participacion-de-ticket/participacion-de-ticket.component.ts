@@ -117,7 +117,7 @@ import { ParticipacionDeTicket } from '../../../../data-access/reporte/demora-de
   `],
 })
 export class ParticipacionDeTicketComponent {
-  private readonly reportsApi = inject(ReporteApiService);
+  private readonly reporteApi = inject(ReporteApiService);
 
   readonly ticketId = input.required<number>();
 
@@ -130,7 +130,7 @@ export class ParticipacionDeTicketComponent {
     this.loading.set(true);
     this.error.set(null);
 
-    this.reportsApi.getTicketParticipation(id).subscribe({
+    this.reporteApi.getParticipacionDeTicket(id).subscribe({
       next: (result) => {
         this.data.set(result);
         this.loading.set(false);

@@ -32,15 +32,15 @@ import { DisponibilidadApiService, TurnoDTO, TurnoInput } from '../disponibilida
 @Injectable({ providedIn: 'root' })
 export class ConfiguracionStore {
   private readonly api = inject(ConfiguracionApiService);
-  private readonly autoReplyApi = inject(RespuestaAutomaticaApiService);
-  private readonly agentApi = inject(DisponibilidadApiService);
+  private readonly respuestaAutomaticaApi = inject(RespuestaAutomaticaApiService);
+  private readonly disponibilidadApi = inject(DisponibilidadApiService);
 
   // ── Settings section signals ──
 
-  readonly profile = signal<PerfilDeConfiguracion | null>(null);
-  readonly notifications = signal<NotificacionesDeConfiguracion | null>(null);
-  readonly autoReply = signal<RespuestaAutomaticaDeConfiguracion | null>(null);
-  readonly workspace = signal<EspacioDeTrabajoDeConfiguracion | null>(null);
+  readonly perfil = signal<PerfilDeConfiguracion | null>(null);
+  readonly notificaciones = signal<NotificacionesDeConfiguracion | null>(null);
+  readonly respuestaAutomatica = signal<RespuestaAutomaticaDeConfiguracion | null>(null);
+  readonly espacioDeTrabajo = signal<EspacioDeTrabajoDeConfiguracion | null>(null);
   readonly businessHours = signal<TurnoDTO[]>([]);
 
   // ── UI state signals ──
@@ -53,17 +53,17 @@ export class ConfiguracionStore {
    * Load all settings from the API.
    * GET /api/me/settings → hydrate all section signals.
    */
-  loadSettings(): void {
+  cargarConfiguracion(): void {
     this.loading.set(true);
     this.error.set(null);
 
-    this.api.getSettings().subscribe({
-      next: (settings) => {
-        this.profile.set(settings.profile);
-        this.notifications.set(settings.notifications);
-        this.autoReply.set(settings.autoReply);
-        this.workspace.set(settings.workspace);
-        this.businessHours.set(settings.businessHours);
+    this.api.getConfiguracion().subscribe({
+      next: (configuracion) => {
+        this.perfil.set(configuracion.profile);
+        this.notificaciones.set(configuracion.notifications);
+        this.respuestaAutomatica.set(configuracion.autoReply);
+        this.espacioDeTrabajo.set(configuracion.workspace);
+        this.businessHours.set(configuracion.businessHours);
         this.loading.set(false);
       },
       error: (err) => {
@@ -77,13 +77,13 @@ export class ConfiguracionStore {
    * Update profile (signature).
    * PUT /api/me/profile
    */
-  saveProfile(payload: UpdatePerfilPayload): void {
+  guardarPerfil(payload: UpdatePerfilPayload): void {
     this.saving.set(true);
     this.error.set(null);
 
-    this.api.updateProfile(payload).subscribe({
-      next: (profile) => {
-        this.profile.set(profile);
+    this.api.updatePerfil(payload).subscribe({
+      next: (perfil) => {
+        this.perfil.set(perfil);
         this.saving.set(false);
       },
       error: (err) => {
@@ -97,13 +97,13 @@ export class ConfiguracionStore {
    * Update notification preferences.
    * PUT /api/me/notifications
    */
-  saveNotifications(payload: UpdateNotificacionesPayload): void {
+  guardarNotificaciones(payload: UpdateNotificacionesPayload): void {
     this.saving.set(true);
     this.error.set(null);
 
-    this.api.updateNotifications(payload).subscribe({
-      next: (notifications) => {
-        this.notifications.set(notifications);
+    this.api.updateNotificaciones(payload).subscribe({
+      next: (notificaciones) => {
+        this.notificaciones.set(notificaciones);
         this.saving.set(false);
       },
       error: (err) => {
@@ -117,13 +117,13 @@ export class ConfiguracionStore {
    * Update auto-reply settings.
    * PUT /api/me/auto-reply
    */
-  saveAutoReply(payload: UpdateRespuestaAutomaticaPayload): void {
+  guardarRespuestaAutomatica(payload: UpdateRespuestaAutomaticaPayload): void {
     this.saving.set(true);
     this.error.set(null);
 
-    this.autoReplyApi.updateAutoReply(payload).subscribe({
-      next: (autoReply) => {
-        this.autoReply.set(autoReply);
+    this.respuestaAutomaticaApi.updateRespuestaAutomatica(payload).subscribe({
+      next: (respuestaAutomatica) => {
+        this.respuestaAutomatica.set(respuestaAutomatica);
         this.saving.set(false);
       },
       error: (err) => {
@@ -137,11 +137,11 @@ export class ConfiguracionStore {
    * Replace all shifts.
    * PUT /api/me/shifts
    */
-  saveShifts(shifts: TurnoInput[]): void {
+  guardarTurnos(turnos: TurnoInput[]): void {
     this.saving.set(true);
     this.error.set(null);
 
-    this.agentApi.replaceShifts(shifts).subscribe({
+    this.disponibilidadApi.reemplazarTurnos(turnos).subscribe({
       next: (result) => {
         this.businessHours.set(result);
         this.saving.set(false);
@@ -155,10 +155,10 @@ export class ConfiguracionStore {
 
   /** Reset all state to defaults */
   reset(): void {
-    this.profile.set(null);
-    this.notifications.set(null);
-    this.autoReply.set(null);
-    this.workspace.set(null);
+    this.perfil.set(null);
+    this.notificaciones.set(null);
+    this.respuestaAutomatica.set(null);
+    this.espacioDeTrabajo.set(null);
     this.businessHours.set([]);
     this.loading.set(false);
     this.saving.set(false);

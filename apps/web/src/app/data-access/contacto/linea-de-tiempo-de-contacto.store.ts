@@ -30,11 +30,11 @@ export class LineaDeTiempoDeContactoStore {
   /**
    * Load timeline for a contact. Replaces existing events (fresh load).
    */
-  loadTimeline(contactId: number): void {
+  cargarLineaDeTiempo(contactoId: number): void {
     this.loading.set(true);
     this.error.set(null);
 
-    this.api.getTimeline(contactId, undefined, 20).subscribe({
+    this.api.getLineaDeTiempo(contactoId, undefined, 20).subscribe({
       next: (response) => {
         this.events.set(response.events);
         this.cursor.set(response.cursor);
@@ -52,13 +52,13 @@ export class LineaDeTiempoDeContactoStore {
    * Load older events using the current cursor position.
    * Appends to existing events.
    */
-  loadOlder(contactId: number): void {
+  cargarAnteriores(contactoId: number): void {
     const currentCursor = this.cursor();
     if (!currentCursor || !this.hasMore() || this.loading()) return;
 
     this.loading.set(true);
 
-    this.api.getTimeline(contactId, currentCursor, 20).subscribe({
+    this.api.getLineaDeTiempo(contactoId, currentCursor, 20).subscribe({
       next: (response) => {
         this.events.update((existing) => [...existing, ...response.events]);
         this.cursor.set(response.cursor);

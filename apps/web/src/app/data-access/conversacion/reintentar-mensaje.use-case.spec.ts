@@ -9,9 +9,9 @@ import { ProveedorWhatsAppCloud, Mensaje } from './proveedor-whatsapp-cloud';
 
 describe('ReintentarMensajeUseCase', () => {
   let useCase: ReintentarMensajeUseCase;
-  let providerSpy: jasmine.SpyObj<ProveedorWhatsAppCloud>;
+  let proveedorSpy: jasmine.SpyObj<ProveedorWhatsAppCloud>;
 
-  const providerMessage: Mensaje = {
+  const mensajeDeProveedor: Mensaje = {
     id: 'provider-id-456',
     ticketId: 'ticket-1',
     content: 'Retried message',
@@ -27,22 +27,22 @@ describe('ReintentarMensajeUseCase', () => {
   };
 
   beforeEach(() => {
-    providerSpy = jasmine.createSpyObj('ProveedorWhatsAppCloud', ['sendMessage']);
-    useCase = new ReintentarMensajeUseCase(providerSpy);
+    proveedorSpy = jasmine.createSpyObj('ProveedorWhatsAppCloud', ['enviarMensaje']);
+    useCase = new ReintentarMensajeUseCase(proveedorSpy);
   });
 
   it('should call provider.sendMessage() with ticketId and originalContent', (done) => {
-    providerSpy.sendMessage.and.returnValue(of(providerMessage));
+    proveedorSpy.enviarMensaje.and.returnValue(of(mensajeDeProveedor));
     useCase.execute(validInput).subscribe({
       next: () => {
-        expect(providerSpy.sendMessage).toHaveBeenCalledWith('ticket-1', 'Retried message');
+        expect(proveedorSpy.enviarMensaje).toHaveBeenCalledWith('ticket-1', 'Retried message');
         done();
       },
     });
   });
 
   it('should return ReintentarMensajeOutput with correct shape', (done) => {
-    providerSpy.sendMessage.and.returnValue(of(providerMessage));
+    proveedorSpy.enviarMensaje.and.returnValue(of(mensajeDeProveedor));
     useCase.execute(validInput).subscribe({
       next: (output: ReintentarMensajeOutput) => {
         expect(output.tempId).toBe('temp-1');
@@ -61,7 +61,7 @@ describe('ReintentarMensajeUseCase', () => {
   });
 
   it('should keep the same tempId for idempotency', (done) => {
-    providerSpy.sendMessage.and.returnValue(of(providerMessage));
+    proveedorSpy.enviarMensaje.and.returnValue(of(mensajeDeProveedor));
     useCase.execute(validInput).subscribe({
       next: (output: ReintentarMensajeOutput) => {
         expect(output.tempId).toBe('temp-1');
@@ -72,8 +72,8 @@ describe('ReintentarMensajeUseCase', () => {
   });
 
   it('should fall back to tempId as id when provider returns empty id', (done) => {
-    const noIdMessage: Mensaje = { ...providerMessage, id: '' };
-    providerSpy.sendMessage.and.returnValue(of(noIdMessage));
+    const mensajeSinId: Mensaje = { ...mensajeDeProveedor, id: '' };
+    proveedorSpy.enviarMensaje.and.returnValue(of(mensajeSinId));
     useCase.execute(validInput).subscribe({
       next: (output: ReintentarMensajeOutput) => {
         expect(output.message.id).toBe('temp-1');
@@ -83,12 +83,12 @@ describe('ReintentarMensajeUseCase', () => {
   });
 
   it('should set error field when deliveryStatus is failed', (done) => {
-    const failedMessage: Mensaje = {
-      ...providerMessage,
+    const mensajeFallido: Mensaje = {
+      ...mensajeDeProveedor,
       deliveryStatus: 'failed',
       failedReason: 'Channel unavailable',
     };
-    providerSpy.sendMessage.and.returnValue(of(failedMessage));
+    proveedorSpy.enviarMensaje.and.returnValue(of(mensajeFallido));
     useCase.execute(validInput).subscribe({
       next: (output: ReintentarMensajeOutput) => {
         expect(output.success).toBeFalse();
@@ -120,7 +120,7 @@ describe('ReintentarMensajeUseCase', () => {
   // FIXME: retryWithBackoff uses RxJS timer() which doesn't cooperate with fakeAsync.
   // This test needs a real async approach or integration test.
   xit('should propagate error after all retry attempts fail', fakeAsync(() => {
-    providerSpy.sendMessage.and.callFake(() => throwError(() => new Error('Network down')));
+    proveedorSpy.enviarMensaje.and.callFake(() => throwError(() => new Error('Network down')));
 
     let caughtError: unknown;
     useCase.execute(validInput).subscribe({
@@ -131,6 +131,6 @@ describe('ReintentarMensajeUseCase', () => {
 
     expect(caughtError).toBeTruthy();
     expect((caughtError as Error).message).toBe('Network down');
-    expect(providerSpy.sendMessage).toHaveBeenCalledTimes(2);
+    expect(proveedorSpy.enviarMensaje).toHaveBeenCalledTimes(2);
   }));
 });

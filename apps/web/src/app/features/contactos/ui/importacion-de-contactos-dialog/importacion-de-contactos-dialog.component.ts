@@ -42,7 +42,7 @@ const ROW_ERROR_REASONS: Record<string, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ImportacionDeContactosDialogComponent {
-  private readonly contactsApi = inject(ContactoApiService);
+  private readonly contactoApi = inject(ContactoApiService);
 
   /** Emits the import result on close (null if cancelled before any submit) */
   readonly close = output<ResultadoDeImportacionDeContactos | null>();
@@ -73,7 +73,7 @@ export class ImportacionDeContactosDialogComponent {
     this.loading.set(true);
     this.errorMessage.set(null);
 
-    this.contactsApi.importContacts(file).subscribe({
+    this.contactoApi.importarContactos(file).subscribe({
       next: (result) => {
         this.loading.set(false);
         this.result.set(result);

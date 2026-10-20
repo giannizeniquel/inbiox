@@ -3,7 +3,7 @@ import { NgClass } from '@angular/common';
 import { Ticket, EstadoDeTicket } from '../../../../data-access/ticket/ticket.model';
 import { DisponibilidadDeAgenteDTO } from '../../../../data-access/disponibilidad/disponibilidad-de-agente.dto';
 
-const STATUS_LABELS: Record<EstadoDeTicket, string> = {
+const ESTADO_LABELS: Record<EstadoDeTicket, string> = {
   [EstadoDeTicket.Nuevo]: 'Nuevo',
   [EstadoDeTicket.Activo]: 'Activo',
   [EstadoDeTicket.EnEspera]: 'En espera',
@@ -24,11 +24,11 @@ export class TicketCardComponent implements OnDestroy {
 
   readonly ticket = input.required<Ticket>();
   readonly isActive = input<boolean>(false);
-  readonly availableAgents = input<DisponibilidadDeAgenteDTO[]>([]);
-  readonly canAssign = input<boolean>(false);
+  readonly agentesDisponibles = input<DisponibilidadDeAgenteDTO[]>([]);
+  readonly puedeAsignar = input<boolean>(false);
 
   readonly select = output<string>(); // emits ticketId
-  readonly assign = output<{ ticketId: string; agentId: number }>(); // emits assignment
+  readonly asignar = output<{ ticketId: string; agentId: number }>(); // emits assignment
 
   /** Dropdown open state */
   readonly dropdownOpen = signal(false);
@@ -38,7 +38,7 @@ export class TicketCardComponent implements OnDestroy {
   readonly dropdownLeft = signal(0);
 
   /** Error badge from parent */
-  readonly assignmentError = input<string | null>(null);
+  readonly errorDeAsignacion = input<string | null>(null);
 
   /**
    * Whether the assign-dropdown trigger should be shown.
@@ -55,21 +55,21 @@ export class TicketCardComponent implements OnDestroy {
       EstadoDeTicket.Activo,
       EstadoDeTicket.EnEspera,
     ];
-    return this.canAssign() && assignableStatuses.includes(t.status);
+    return this.puedeAsignar() && assignableStatuses.includes(t.status);
   });
 
   /** Activo agents (is_active_now = true), rendered first in the dropdown. */
-  readonly activeAgents = computed(() =>
-    this.availableAgents().filter((a) => a.is_active_now),
+  readonly agentesActivos = computed(() =>
+    this.agentesDisponibles().filter((a) => a.is_active_now),
   );
 
   /** Inactivo agents (is_active_now = false), rendered after the Activo group. */
-  readonly inactiveAgents = computed(() =>
-    this.availableAgents().filter((a) => !a.is_active_now),
+  readonly agentesInactivos = computed(() =>
+    this.agentesDisponibles().filter((a) => !a.is_active_now),
   );
 
-  statusLabel(): string {
-    return STATUS_LABELS[this.ticket().status];
+  estadoLabel(): string {
+    return ESTADO_LABELS[this.ticket().status];
   }
 
   initials(): string {
@@ -87,8 +87,8 @@ export class TicketCardComponent implements OnDestroy {
     const timestamps = this.ticket().timestamps;
     if (!timestamps?.updated_at) return '';
     
-    const sent = new Date(timestamps.updated_at).getTime();
-    const diff = now - sent;
+    const enviado = new Date(timestamps.updated_at).getTime();
+    const diff = now - enviado;
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
@@ -97,19 +97,19 @@ export class TicketCardComponent implements OnDestroy {
     if (minutes < 60) return `${minutes}m`;
     if (hours < 24) return `${hours}h`;
     if (days < 7) return `${days}d`;
-    return new Date(sent).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+    return new Date(enviado).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
   }
 
-  contactName(): string {
+  nombreDeContacto(): string {
     return this.ticket().contact?.name ?? this.ticket().contact?.phone ?? 'Unknown';
   }
 
   ariaLabel(): string {
     const t = this.ticket();
-    const contactName = this.contactName();
-    const status = t.status === EstadoDeTicket.EnEspera ? 'en espera' : t.status;
-    const unread = t.metrics?.unread_count ?? 0;
-    return `Ticket de ${contactName}, ${status}, ${unread} mensajes sin leer`;
+    const nombreDeContacto = this.nombreDeContacto();
+    const estado = t.status === EstadoDeTicket.EnEspera ? 'en espera' : t.status;
+    const noLeidos = t.metrics?.unread_count ?? 0;
+    return `Ticket de ${nombreDeContacto}, ${estado}, ${noLeidos} mensajes sin leer`;
   }
 
   onSelect(): void {
@@ -135,17 +135,17 @@ export class TicketCardComponent implements OnDestroy {
     this.dropdownOpen.set(true);
   }
 
-  selectAgent(agent: DisponibilidadDeAgenteDTO, event: Event): void {
+  seleccionarAgente(agente: DisponibilidadDeAgenteDTO, event: Event): void {
     event.stopPropagation();
     event.preventDefault();
 
     // Inactivo agents are not selectable — mirrors the backend's hard block
     // (AgentNotActiveException) so the UI never emits a doomed assign call.
-    if (!agent.is_active_now) {
+    if (!agente.is_active_now) {
       return;
     }
 
-    this.assign.emit({ ticketId: this.ticket().ticket_id, agentId: agent.id });
+    this.asignar.emit({ ticketId: this.ticket().ticket_id, agentId: agente.id });
     this.closeDropdown();
   }
 

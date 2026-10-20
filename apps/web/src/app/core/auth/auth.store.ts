@@ -20,7 +20,7 @@ export class AuthStore {
   // ── State signals ──
 
   /** Current authenticated user, or null if not authenticated */
-  readonly currentUser = signal<UsuarioDTO | null>(null);
+  readonly usuarioActual = signal<UsuarioDTO | null>(null);
 
   /** Current access token (JWT), or null */
   readonly accessToken = signal<string | null>(null);
@@ -34,21 +34,21 @@ export class AuthStore {
   // ── Computed signals ──
 
   /** True when a user is currently authenticated */
-  readonly isAuthenticated = computed(() => this.currentUser() !== null);
+  readonly isAuthenticated = computed(() => this.usuarioActual() !== null);
 
   /** True if the current user has ROLE_ADMIN */
   readonly isAdmin = computed(() =>
-    this.currentUser()?.roles.includes('ROLE_ADMIN') ?? false
+    this.usuarioActual()?.roles.includes('ROLE_ADMIN') ?? false
   );
 
   /** True if the current user has ROLE_SUPERVISOR */
   readonly isSupervisor = computed(() =>
-    this.currentUser()?.roles.includes('ROLE_SUPERVISOR') ?? false
+    this.usuarioActual()?.roles.includes('ROLE_SUPERVISOR') ?? false
   );
 
   /** Check if the current user has a specific role */
   hasRole(role: string): boolean {
-    return this.currentUser()?.roles.includes(role) ?? false;
+    return this.usuarioActual()?.roles.includes(role) ?? false;
   }
 
   // ── Auth operations ──
@@ -68,8 +68,8 @@ export class AuthStore {
       }),
       // 2. Fetch current user info
       switchMap(() => this.authApi.me()),
-      tap((user: UsuarioDTO) => {
-        this.currentUser.set(user);
+      tap((usuario: UsuarioDTO) => {
+        this.usuarioActual.set(usuario);
       }),
       // 3. Get mercure subscriber token and connect SSE
       switchMap(() => this.authApi.getMercureToken().pipe(
@@ -94,7 +94,7 @@ export class AuthStore {
         this.isLoading.set(false);
         this.error.set(error.message || 'Authentication failed');
         this.accessToken.set(null);
-        this.currentUser.set(null);
+        this.usuarioActual.set(null);
         return throwError(() => error);
       })
     );
@@ -133,9 +133,9 @@ export class AuthStore {
   /**
    * Logout: calls API, disconnects Mercure, clears state, navigates to /login.
    */
-  logout(): void {
+  cerrarSesion(): void {
     // Fire-and-forget logout (don't block on API call)
-    this.authApi.logout().pipe(
+    this.authApi.cerrarSesion().pipe(
       catchError(err => {
         console.warn('[AuthStore] Logout API call failed:', err);
         return of(void 0);
@@ -151,10 +151,10 @@ export class AuthStore {
    * Load current user from /api/auth/me.
    * Used to hydrate state on page reload after a successful refresh.
    */
-  loadCurrentUser(): Observable<UsuarioDTO | null> {
+  cargarUsuarioActual(): Observable<UsuarioDTO | null> {
     return this.authApi.me().pipe(
-      tap((user: UsuarioDTO) => {
-        this.currentUser.set(user);
+      tap((usuario: UsuarioDTO) => {
+        this.usuarioActual.set(usuario);
       }),
       catchError(err => {
         console.warn('[AuthStore] Failed to load current user:', err);
@@ -182,9 +182,9 @@ export class AuthStore {
           }
           // Valid refresh — hydrate user and connect SSE
           // Mercure token was already fetched by refresh()
-          return this.loadCurrentUser().pipe(
-            tap(user => {
-              if (user) {
+          return this.cargarUsuarioActual().pipe(
+            tap(usuario => {
+              if (usuario) {
                 this.mercure.connect();
               }
             })
@@ -205,7 +205,7 @@ export class AuthStore {
 
   /** Reset all state signals to defaults */
   private clearState(): void {
-    this.currentUser.set(null);
+    this.usuarioActual.set(null);
     this.accessToken.set(null);
     this.isLoading.set(false);
     this.error.set(null);

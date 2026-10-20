@@ -4,7 +4,7 @@ import { take } from 'rxjs/operators';
 import { ConversacionStore } from '../../../../data-access/conversacion/conversacion.store';
 import { TicketStore } from '../../../../data-access/ticket/ticket.store';
 import { MensajeApiService, GetMensajesResponse } from '../../../../data-access/conversacion/mensaje-api.service';
-import { mapApiMessagesToCanonical } from '../../../../data-access/conversacion/mensaje-mapper.util';
+import { mapearMensajesDeApiACanonicos } from '../../../../data-access/conversacion/mensaje-mapper.util';
 
 /**
  * Scroll state machine for the conversation viewport.
@@ -30,7 +30,7 @@ interface ScrollAnchor {
 }
 
 /** Threshold (px) from the top at which scroll-up pagination triggers. */
-const PAGINATION_THRESHOLD = 200;
+const UMBRAL_DE_PAGINACION = 200;
 
 /**
  * Scroll, pagination and "new messages" state of the conversation viewport.
@@ -40,17 +40,17 @@ const PAGINATION_THRESHOLD = 200;
  */
 @Injectable()
 export class ConversacionScrollController {
-  private readonly conversationStore = inject(ConversacionStore);
+  private readonly conversacionStore = inject(ConversacionStore);
   private readonly ticketStore = inject(TicketStore);
-  private readonly messageApi = inject(MensajeApiService);
+  private readonly mensajeApi = inject(MensajeApiService);
 
   private vps: Signal<CdkVirtualScrollViewport | undefined> = signal(undefined);
 
   readonly isAtBottom = signal(true);
-  readonly newMessagesCount = signal(0);
+  readonly conteoDeMensajesNuevos = signal(0);
 
   /** Auto-scroll to bottom once per ticket (tracked flag reset on ticket switch) */
-  private initialLoadDone = false;
+  private cargaInicialHecha = false;
 
   /**
    * How many older messages have been loaded from the API (offset tracking).
@@ -66,7 +66,7 @@ export class ConversacionScrollController {
    * the programmatic scroll-back does not immediately re-trigger pagination;
    * re-armed once the user scrolls back down past the threshold.
    */
-  private readonly paginationArmed = signal(true);
+  private readonly paginacionArmada = signal(true);
 
   /** Spinner is visible during the whole older-messages load + anchor restore. */
   readonly loadingOlder = computed(() =>
@@ -81,21 +81,21 @@ export class ConversacionScrollController {
   /** Back to the initial state for a newly selected ticket. Writes only, so it adds no effect dependency. */
   reset(): void {
     this.oldestLoadedOffset.set(0);
-    this.initialLoadDone = false;
+    this.cargaInicialHecha = false;
     this.scrollState.set('idle');
-    this.paginationArmed.set(true);
+    this.paginacionArmada.set(true);
     this.isAtBottom.set(false);
-    this.newMessagesCount.set(0);
+    this.conteoDeMensajesNuevos.set(0);
   }
 
   /** Scroll to the bottom once per ticket, after the first load renders the viewport. */
   runInitialScroll(): void {
     const vp = this.vps();
-    const isLoading = this.conversationStore.loading();
-    if (!vp || isLoading || this.initialLoadDone) return;
+    const isLoading = this.conversacionStore.loading();
+    if (!vp || isLoading || this.cargaInicialHecha) return;
 
-    this.initialLoadDone = true;
-    if (this.conversationStore.messages().length > 0) {
+    this.cargaInicialHecha = true;
+    if (this.conversacionStore.mensajes().length > 0) {
       requestAnimationFrame(() => {
         this.scrollToBottom();
         // Autosize measures items asynchronously and images load, shifting the
@@ -120,23 +120,23 @@ export class ConversacionScrollController {
 
     // Hysteresis: re-arm pagination once the user scrolls back down past the
     // threshold, so a restore that leaves us near the top does not loop.
-    if (top >= PAGINATION_THRESHOLD) {
-      this.paginationArmed.set(true);
+    if (top >= UMBRAL_DE_PAGINACION) {
+      this.paginacionArmada.set(true);
     }
 
     if (
       this.scrollState() === 'idle'
-      && this.paginationArmed()
-      && top < PAGINATION_THRESHOLD
-      && this.conversationStore.hasMore()
+      && this.paginacionArmada()
+      && top < UMBRAL_DE_PAGINACION
+      && this.conversacionStore.hasMore()
     ) {
-      this.loadOlderMessages(vp);
+      this.cargarMensajesAnteriores(vp);
     }
 
     const bottom = vp.measureScrollOffset('bottom');
     this.isAtBottom.set(bottom === 0);
     if (bottom === 0) {
-      this.newMessagesCount.set(0);
+      this.conteoDeMensajesNuevos.set(0);
     }
   }
 
@@ -146,7 +146,7 @@ export class ConversacionScrollController {
     this.scrollState.set('programmatic-scroll');
     vp.scrollTo({ bottom: 0, behavior: 'auto' });
     this.isAtBottom.set(true);
-    this.newMessagesCount.set(0);
+    this.conteoDeMensajesNuevos.set(0);
     // Re-arm once the programmatic scroll has settled (next frame).
     requestAnimationFrame(() => {
       if (this.scrollState() === 'programmatic-scroll') {
@@ -159,16 +159,16 @@ export class ConversacionScrollController {
    * Called when new messages arrive (e.g., via Mercure SSE).
    * If user is not at bottom, show the "new messages" indicator.
    */
-  notifyNewMessages(): void {
+  notificarMensajesNuevos(): void {
     const vp = this.vps();
     if (!vp) return;
     if (vp.measureScrollOffset('bottom') === 0) {
       vp.scrollTo({ bottom: 0, behavior: 'auto' });
       this.isAtBottom.set(true);
-      this.newMessagesCount.set(0);
+      this.conteoDeMensajesNuevos.set(0);
     } else {
       this.isAtBottom.set(false);
-      this.newMessagesCount.update((c) => c + 1);
+      this.conteoDeMensajesNuevos.update((c) => c + 1);
     }
   }
 
@@ -177,19 +177,19 @@ export class ConversacionScrollController {
    * Preserves the user's visual context by capturing a scroll anchor (the first
    * visible message + its offset) and restoring it after the new page renders.
    */
-  private loadOlderMessages(vp: CdkVirtualScrollViewport): void {
+  private cargarMensajesAnteriores(vp: CdkVirtualScrollViewport): void {
     const ticket = this.ticketStore.activeTicket();
     if (!ticket) return;
 
     this.scrollState.set('loading-older');
-    this.paginationArmed.set(false);
+    this.paginacionArmada.set(false);
     const anchor = this.captureAnchor(vp);
 
-    this.messageApi.getMessages(ticket.ticket_id, 20, this.oldestLoadedOffset()).pipe(take(1)).subscribe({
+    this.mensajeApi.getMensajes(ticket.ticket_id, 20, this.oldestLoadedOffset()).pipe(take(1)).subscribe({
       next: (resp: GetMensajesResponse) => {
-        const added = mapApiMessagesToCanonical(resp, ticket.ticket_id);
-        this.conversationStore.prependMessages(added);
-        this.conversationStore.setHasMore(resp.meta.has_more);
+        const added = mapearMensajesDeApiACanonicos(resp, ticket.ticket_id);
+        this.conversacionStore.agregarMensajesAlInicio(added);
+        this.conversacionStore.setHasMore(resp.meta.has_more);
         this.oldestLoadedOffset.set(this.oldestLoadedOffset() + resp.data.length);
 
         if (anchor) {
@@ -225,9 +225,9 @@ export class ConversacionScrollController {
       const rect = bubble.getBoundingClientRect();
       // First bubble whose top edge is at or below the viewport top.
       if (rect.top >= viewportTop) {
-        const messageId = bubble.getAttribute('data-message-id');
-        if (messageId) {
-          return { messageId, offsetFromViewportTop: rect.top - viewportTop };
+        const mensajeId = bubble.getAttribute('data-message-id');
+        if (mensajeId) {
+          return { messageId: mensajeId, offsetFromViewportTop: rect.top - viewportTop };
         }
       }
     }

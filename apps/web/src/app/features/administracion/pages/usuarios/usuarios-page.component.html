@@ -43,7 +43,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (user of users(); track user.id) {
+              @for (user of usuarios(); track user.id) {
                 <tr [class.row--inactive]="!user.is_active">
                   <td>{{ user.id }}</td>
                   <td>{{ user.email }}</td>
@@ -72,7 +72,7 @@
                     @if (user.is_active) {
                       <button class="btn btn--sm btn--danger" (click)="confirmDelete(user)" [attr.aria-label]="'Deactivate ' + user.email">Deactivate</button>
                     } @else {
-                      <button class="btn btn--sm btn--outline" (click)="reactivateUser(user)" [attr.aria-label]="'Reactivate ' + user.email">Reactivate</button>
+                      <button class="btn btn--sm btn--outline" (click)="reactivarUsuario(user)" [attr.aria-label]="'Reactivate ' + user.email">Reactivate</button>
                     }
                   </td>
                 </tr>
@@ -100,23 +100,23 @@
       <!-- Create/Edit Modal -->
       @if (showForm()) {
         <div class="modal-overlay" (click)="closeForm()">
-          <div class="modal" role="dialog" aria-modal="true" [attr.aria-labelledby]="editingUser() ? 'modal-title-edit' : 'modal-title-create'" (click)="$event.stopPropagation()">
+          <div class="modal" role="dialog" aria-modal="true" [attr.aria-labelledby]="usuarioEnEdicion() ? 'modal-title-edit' : 'modal-title-create'" (click)="$event.stopPropagation()">
             <div class="modal__header">
-              <h2 [id]="editingUser() ? 'modal-title-edit' : 'modal-title-create'">{{ editingUser() ? 'Edit User' : 'Create User' }}</h2>
+              <h2 [id]="usuarioEnEdicion() ? 'modal-title-edit' : 'modal-title-create'">{{ usuarioEnEdicion() ? 'Edit User' : 'Create User' }}</h2>
               <button class="modal__close" (click)="closeForm()" aria-label="Close dialog">&times;</button>
             </div>
-            <form [formGroup]="userForm" (ngSubmit)="onUserSubmit()">
+            <form [formGroup]="usuarioForm" (ngSubmit)="onUsuarioSubmit()">
               <div class="modal__body">
                 <div class="form-group">
                   <label class="form-label" for="user-email">Email</label>
                   <input id="user-email" type="email" class="form-input"
                          formControlName="email" placeholder="user@example.com"
-                         [class.form-input--error]="hasUserError('email')" />
-                  @if (hasUserError('email')) {
-                    @if (userForm.controls.email.errors?.['required']) {
+                         [class.form-input--error]="hasErrorDeUsuario('email')" />
+                  @if (hasErrorDeUsuario('email')) {
+                    @if (usuarioForm.controls.email.errors?.['required']) {
                       <p class="form-error">Email is required</p>
                     }
-                    @if (userForm.controls.email.errors?.['email']) {
+                    @if (usuarioForm.controls.email.errors?.['email']) {
                       <p class="form-error">Enter a valid email address</p>
                     }
                   }
@@ -124,17 +124,17 @@
 
                 <div class="form-group">
                   <label class="form-label" for="user-password">
-                    {{ editingUser() ? 'New Password (leave empty to keep)' : 'Password' }}
+                    {{ usuarioEnEdicion() ? 'New Password (leave empty to keep)' : 'Password' }}
                   </label>
                   <input id="user-password" type="password" class="form-input"
                          formControlName="password"
-                         [placeholder]="editingUser() ? 'Leave empty to keep current' : 'Enter password'"
-                         [class.form-input--error]="hasUserError('password')" />
-                  @if (hasUserError('password')) {
-                    @if (userForm.controls.password.errors?.['required']) {
+                         [placeholder]="usuarioEnEdicion() ? 'Leave empty to keep current' : 'Enter password'"
+                         [class.form-input--error]="hasErrorDeUsuario('password')" />
+                  @if (hasErrorDeUsuario('password')) {
+                    @if (usuarioForm.controls.password.errors?.['required']) {
                       <p class="form-error">Password is required</p>
                     }
-                    @if (userForm.controls.password.errors?.['minlength']) {
+                    @if (usuarioForm.controls.password.errors?.['minlength']) {
                       <p class="form-error">Password must be at least 8 characters</p>
                     }
                   }
@@ -144,32 +144,32 @@
                   <label class="form-label">Roles</label>
                   <div class="checkbox-group">
                     <label class="checkbox-label">
-                      <input type="checkbox" [checked]="userForm.controls.roles.value.includes('ROLE_ADMIN')"
+                      <input type="checkbox" [checked]="usuarioForm.controls.roles.value.includes('ROLE_ADMIN')"
                              (change)="toggleRole('ROLE_ADMIN')" />
                       Admin
                     </label>
                     <label class="checkbox-label">
-                      <input type="checkbox" [checked]="userForm.controls.roles.value.includes('ROLE_SUPERVISOR')"
+                      <input type="checkbox" [checked]="usuarioForm.controls.roles.value.includes('ROLE_SUPERVISOR')"
                              (change)="toggleRole('ROLE_SUPERVISOR')" />
                       Supervisor
                     </label>
                     <label class="checkbox-label">
-                      <input type="checkbox" [checked]="userForm.controls.roles.value.includes('ROLE_AGENT')"
+                      <input type="checkbox" [checked]="usuarioForm.controls.roles.value.includes('ROLE_AGENT')"
                              (change)="toggleRole('ROLE_AGENT')" />
                       Agent
                     </label>
                   </div>
-                  @if (hasUserRolesError()) {
+                  @if (hasErrorDeRolesDeUsuario()) {
                     <p class="form-error">At least one role must be selected</p>
                   }
                 </div>
 
-                @if (!editingUser()) {
+                @if (!usuarioEnEdicion()) {
                   <div class="form-group">
                     <label class="form-label" for="user-agent">Link Agent (optional)</label>
                     <select id="user-agent" class="form-input" formControlName="agent_id">
                       <option [ngValue]="null">— No agent —</option>
-                      @for (agent of availableAgents(); track agent.id) {
+                      @for (agent of agentesDisponibles(); track agent.id) {
                         <option [ngValue]="agent.id">{{ agent.name }}</option>
                       }
                     </select>
@@ -178,8 +178,8 @@
               </div>
               <div class="modal__footer">
                 <button type="button" class="btn btn--outline" (click)="closeForm()">Cancel</button>
-                <button type="submit" class="btn btn--primary" [disabled]="userForm.invalid || saving()">
-                  {{ saving() ? 'Saving...' : (editingUser() ? 'Save Changes' : 'Create User') }}
+                <button type="submit" class="btn btn--primary" [disabled]="usuarioForm.invalid || saving()">
+                  {{ saving() ? 'Saving...' : (usuarioEnEdicion() ? 'Save Changes' : 'Create User') }}
                 </button>
               </div>
             </form>

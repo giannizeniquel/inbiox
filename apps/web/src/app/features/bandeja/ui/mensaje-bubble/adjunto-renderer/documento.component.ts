@@ -11,26 +11,26 @@ import { FileTypeIconComponent } from '../../file-type-icon/file-type-icon.compo
     @if (docUrl()) {
       <a
         [href]="docUrl()!"
-        [download]="attachment().filename"
+        [download]="adjunto().filename"
         class="media-document"
         target="_blank"
         rel="noopener noreferrer"
       >
         <span class="media-document__icon">
-          <app-file-type-icon [mimeType]="attachment().mimeType" [size]="28" />
+          <app-file-type-icon [mimeType]="adjunto().mimeType" [size]="28" />
         </span>
         <span class="media-document__info">
-          <span class="media-document__name">{{ attachment().filename }}</span>
+          <span class="media-document__name">{{ adjunto().filename }}</span>
           <span class="media-document__size">{{ fileSizeDisplay() }}</span>
         </span>
       </a>
     } @else {
       <div class="media-document media-document--pending">
         <span class="media-document__icon">
-          <app-file-type-icon [mimeType]="attachment().mimeType" [size]="28" />
+          <app-file-type-icon [mimeType]="adjunto().mimeType" [size]="28" />
         </span>
         <span class="media-document__info">
-          <span class="media-document__name">{{ attachment().filename }}</span>
+          <span class="media-document__name">{{ adjunto().filename }}</span>
           <span class="media-document__size">{{ fileSizeDisplay() }}</span>
         </span>
       </div>
@@ -88,18 +88,18 @@ import { FileTypeIconComponent } from '../../file-type-icon/file-type-icon.compo
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdjuntoDocumentoComponent {
-  readonly attachment = input.required<Adjunto>();
-  readonly messageId = input.required<string>();
+  readonly adjunto = input.required<Adjunto>();
+  readonly mensajeId = input.required<string>();
   /** True while the message is still optimistic (no real DB ID yet) */
   readonly pending = input<boolean>(false);
 
-  private mediaUrlService = inject(UrlDeAdjuntoService);
+  private urlDeAdjuntoService = inject(UrlDeAdjuntoService);
 
   docUrl = signal<string | null>(null);
 
   constructor() {
     effect((onCleanup) => {
-      const messageId = this.messageId();
+      const mensajeId = this.mensajeId();
       const pending = this.pending();
 
       this.docUrl.set(null);
@@ -110,7 +110,7 @@ export class AdjuntoDocumentoComponent {
         return;
       }
 
-      const sub = this.mediaUrlService.getMediaUrl(messageId).subscribe({
+      const sub = this.urlDeAdjuntoService.getUrlDeAdjunto(mensajeId).subscribe({
         next: (resp) => {
           this.docUrl.set(resp.url);
         },
@@ -124,7 +124,7 @@ export class AdjuntoDocumentoComponent {
   }
 
   fileSizeDisplay(): string {
-    const bytes = this.attachment().size;
+    const bytes = this.adjunto().size;
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;

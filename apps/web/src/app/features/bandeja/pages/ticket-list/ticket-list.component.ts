@@ -21,7 +21,7 @@ import { DisponibilidadApiService } from '../../../../data-access/disponibilidad
 import { AsignacionApiService } from '../../../../data-access/asignacion/asignacion-api.service';
 import { Ticket } from '../../../../data-access/ticket/ticket.model';
 import { DisponibilidadDeAgenteDTO } from '../../../../data-access/disponibilidad/disponibilidad-de-agente.dto';
-import { mapApiMessagesToCanonical } from '../../../../data-access/conversacion/mensaje-mapper.util';
+import { mapearMensajesDeApiACanonicos } from '../../../../data-access/conversacion/mensaje-mapper.util';
 import { TicketCardComponent } from '../../ui/ticket-card/ticket-card.component';
 import { TicketSearchComponent } from '../../ui/ticket-search/ticket-search.component';
 import { FiltrosDeTicketComponent } from '../../ui/filtros-de-ticket/filtros-de-ticket.component';
@@ -48,13 +48,13 @@ import { EventBusService } from '../../../../core/tiempo-real/event-bus.service'
 })
 export class TicketListComponent implements OnInit {
   protected readonly ticketStore = inject(TicketStore);
-  protected readonly conversationStore = inject(ConversacionStore);
+  protected readonly conversacionStore = inject(ConversacionStore);
   private readonly ticketApi = inject(TicketApiService);
-  private readonly messageApi = inject(MensajeApiService);
-  private readonly agentApi = inject(DisponibilidadApiService);
-  private readonly assignmentApi = inject(AsignacionApiService);
+  private readonly mensajeApi = inject(MensajeApiService);
+  private readonly disponibilidadApi = inject(DisponibilidadApiService);
+  private readonly asignacionApi = inject(AsignacionApiService);
   private readonly authStore = inject(AuthStore);
-  private readonly workspaceStore = inject(EspacioDeTrabajoStore);
+  private readonly espacioDeTrabajoStore = inject(EspacioDeTrabajoStore);
   private readonly eventBus = inject(EventBusService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -65,10 +65,10 @@ export class TicketListComponent implements OnInit {
   protected readonly idOfTicket = (ticket: Ticket): string => ticket.ticket_id;
 
   /** Available agents for the current workspace */
-  readonly availableAgents = signal<DisponibilidadDeAgenteDTO[]>([]);
+  readonly agentesDisponibles = signal<DisponibilidadDeAgenteDTO[]>([]);
 
   /** Agent name lookup map for error messages */
-  private agentNameMap = signal<Map<number, string>>(new Map());
+  private nombreDeAgenteMap = signal<Map<number, string>>(new Map());
 
   // Signals from store
   readonly tickets = computed(() => this.ticketStore.filteredTickets());
@@ -83,29 +83,29 @@ export class TicketListComponent implements OnInit {
     // effect() must be in injection context (constructor/field initializer),
     // not inside ngOnInit.
     effect(() => {
-      const ws = this.workspaceStore.activeWorkspace();
+      const ws = this.espacioDeTrabajoStore.espacioDeTrabajoActivo();
       const wsId = ws?.workspace_id;
 
       if (wsId) {
-        this.loadAvailableAgents(wsId);
+        this.cargarAgentesDisponibles(wsId);
       } else {
         // No workspace yet or workspace with null id — clear agents
-        this.availableAgents.set([]);
+        this.agentesDisponibles.set([]);
       }
     });
   }
 
   ngOnInit(): void {
-    this.loadTickets();
+    this.cargarTickets();
     this.setupMercureRefresh();
   }
 
-  private loadTickets(): void {
+  private cargarTickets(): void {
     this.ticketStore.setLoading(true);
 
-    this.ticketApi.getTickets(this.ticketStore.selectedTeamId()).subscribe({
+    this.ticketApi.getTickets(this.ticketStore.equipoSeleccionadoId()).subscribe({
       next: (tickets) => {
-        this.ticketStore.loadTickets(tickets);
+        this.ticketStore.cargarTickets(tickets);
         this.ticketStore.setLoading(false);
       },
       error: (err) => {
@@ -118,34 +118,34 @@ export class TicketListComponent implements OnInit {
   /**
    * Load available agents for a workspace.
    *
-   * @param workspaceId Optional workspace ID. If not provided, uses active workspace.
+   * @param espacioDeTrabajoId Optional workspace ID. If not provided, uses active workspace.
    */
-  private loadAvailableAgents(workspaceId?: number): void {
-    const wsId = workspaceId ?? this.workspaceStore.activeWorkspace()?.workspace_id;
+  private cargarAgentesDisponibles(espacioDeTrabajoId?: number): void {
+    const wsId = espacioDeTrabajoId ?? this.espacioDeTrabajoStore.espacioDeTrabajoActivo()?.workspace_id;
     if (!wsId) {
-      this.availableAgents.set([]);
+      this.agentesDisponibles.set([]);
       return;
     }
 
-    this.agentApi.getAvailableAgents(wsId).subscribe({
-      next: (agents) => {
+    this.disponibilidadApi.getAgentesDisponibles(wsId).subscribe({
+      next: (agentes) => {
         // Filter out the current user — no one can assign to themselves via dropdown
-        const currentAgentId = this.authStore.currentUser()?.agent_id;
-        const filtered = currentAgentId
-          ? agents.filter(a => a.id !== currentAgentId)
-          : agents;
+        const agenteActualId = this.authStore.usuarioActual()?.agent_id;
+        const filtered = agenteActualId
+          ? agentes.filter(a => a.id !== agenteActualId)
+          : agentes;
 
-        this.availableAgents.set(filtered);
+        this.agentesDisponibles.set(filtered);
         // Build agent name lookup map
         const nameMap = new Map<number, string>();
-        for (const agent of filtered) {
-          nameMap.set(agent.id, agent.name);
+        for (const agente of filtered) {
+          nameMap.set(agente.id, agente.name);
         }
-        this.agentNameMap.set(nameMap);
+        this.nombreDeAgenteMap.set(nameMap);
       },
       error: (err) => {
         console.error('[TicketList] Failed to load available agents:', err);
-        this.availableAgents.set([]);
+        this.agentesDisponibles.set([]);
       },
     });
   }
@@ -159,42 +159,42 @@ export class TicketListComponent implements OnInit {
       filter(e => e.eventType === TipoDeEventoEnTiempoReal.TicketAssigned),
       takeUntilDestroyed(this.destroyRef),
     ).subscribe(() => {
-      this.debouncedRefreshAgents();
+      this.debouncedRefrescarAgentes();
     });
   }
 
   /**
    * Debounced refresh of available agents (10s debounce).
    */
-  private debouncedRefreshAgents(): void {
+  private debouncedRefrescarAgentes(): void {
     if (this.refreshDebounceTimer) {
       clearTimeout(this.refreshDebounceTimer);
     }
     this.refreshDebounceTimer = setTimeout(() => {
-      this.loadAvailableAgents();
+      this.cargarAgentesDisponibles();
     }, 10000);
   }
 
   selectTicket(ticket: Ticket): void {
     this.ticketStore.setActiveTicket(ticket.ticket_id);
-    this.conversationStore.reset();
-    this.conversationStore.setLoading(true);
+    this.conversacionStore.reset();
+    this.conversacionStore.setLoading(true);
 
-    this.messageApi.getMessages(ticket.ticket_id, 20, 0).pipe(take(1)).subscribe({
+    this.mensajeApi.getMensajes(ticket.ticket_id, 20, 0).pipe(take(1)).subscribe({
       next: (resp: GetMensajesResponse) => {
-        this.conversationStore.loadMessages(mapApiMessagesToCanonical(resp, ticket.ticket_id));
-        this.conversationStore.setHasMore(resp.meta.has_more);
-        this.conversationStore.setLoading(false);
+        this.conversacionStore.cargarMensajes(mapearMensajesDeApiACanonicos(resp, ticket.ticket_id));
+        this.conversacionStore.setHasMore(resp.meta.has_more);
+        this.conversacionStore.setLoading(false);
       },
       error: (err) => {
         console.error('[TicketList] Failed to load messages:', err);
-        this.conversationStore.setLoading(false);
+        this.conversacionStore.setLoading(false);
       },
     });
   }
 
-  onFilterChange(filter: 'mine' | 'waiting' | 'internal'): void {
-    this.ticketStore.setFilter(filter);
+  onFiltroChange(filtro: 'mine' | 'waiting' | 'internal'): void {
+    this.ticketStore.setFiltro(filtro);
   }
 
   /**
@@ -203,9 +203,9 @@ export class TicketListComponent implements OnInit {
    * the team filter is server-side — it re-fetches the ticket list scoped
    * to the selected team, composable with any other query-time filter.
    */
-  onTeamFilterChange(teamId: number | null): void {
-    this.ticketStore.setTeamId(teamId);
-    this.loadTickets();
+  onFiltroDeEquipoChange(equipoId: number | null): void {
+    this.ticketStore.setEquipoId(equipoId);
+    this.cargarTickets();
   }
 
   /** Handle ticket search query from TicketSearchComponent */
@@ -218,19 +218,19 @@ export class TicketListComponent implements OnInit {
    * Determine whether the current user can assign this ticket.
    * Admin/supervisor can always assign. Agent can only assign own tickets.
    */
-  canAssignTicket(ticket: Ticket): boolean {
-    const user = this.authStore.currentUser();
-    if (!user) return false;
+  puedeAsignarTicket(ticket: Ticket): boolean {
+    const usuario = this.authStore.usuarioActual();
+    if (!usuario) return false;
 
     // Admin or supervisor: always allowed
-    const roles = user.roles ?? [];
+    const roles = usuario.roles ?? [];
     if (roles.includes('ROLE_ADMIN') || roles.includes('ROLE_SUPERVISOR')) {
       return true;
     }
 
     // Agent: must own the ticket
-    const agentId = user.agent_id;
-    if (agentId && ticket.owner?.id === agentId) {
+    const agenteId = usuario.agent_id;
+    if (agenteId && ticket.owner?.id === agenteId) {
       return true;
     }
 
@@ -241,35 +241,35 @@ export class TicketListComponent implements OnInit {
    * Handle assignment from TicketCardComponent.
    * Performs optimistic update, then API call, then rollback on error.
    */
-  onAssign(event: { ticketId: string; agentId: number }): void {
+  onAsignar(event: { ticketId: string; agentId: number }): void {
     const { ticketId, agentId } = event;
 
     // Find agent name for display
-    const agent = this.availableAgents().find(a => a.id === agentId);
-    const agentName = agent?.name ?? `Agent #${agentId}`;
+    const agente = this.agentesDisponibles().find(a => a.id === agentId);
+    const nombreDeAgente = agente?.name ?? `Agent #${agentId}`;
 
     // Get current user for assignedBy
-    const currentUser = this.authStore.currentUser();
-    const assignedBy = currentUser?.email ?? currentUser?.agent_name ?? 'Unknown';
+    const usuarioActual = this.authStore.usuarioActual();
+    const asignadoPor = usuarioActual?.email ?? usuarioActual?.agent_name ?? 'Unknown';
 
     // Optimistic update
-    const previousOwner = this.ticketStore.optimisticAssign(ticketId, agentId, agentName);
+    const responsableAnterior = this.ticketStore.asignarOptimista(ticketId, agentId, nombreDeAgente);
 
     // API call
     // On success the TicketAssigned event reconciles the canonical owner.
-    this.assignmentApi.assignTicket(ticketId, agentId, assignedBy).subscribe({
+    this.asignacionApi.asignarTicket(ticketId, agentId, asignadoPor).subscribe({
       error: (err) => {
         // Error: rollback optimistic update
-        this.ticketStore.rollbackAssign(ticketId, previousOwner);
+        this.ticketStore.revertirAsignacion(ticketId, responsableAnterior);
         // Show error badge for 5s
         const errorMessage = err?.error?.error ?? 'Error al asignar ticket';
-        this.ticketStore.assignmentError(ticketId, errorMessage);
+        this.ticketStore.errorDeAsignacion(ticketId, errorMessage);
 
         // Race condition: the target agent's shift/override may have changed
         // between dropdown-load and assign-click. Reload the roster so the
         // agent re-renders under Inactivo instead of leaving a stale dropdown.
         if (err?.status === 409 && err?.error?.type === 'AGENT_NOT_ACTIVE') {
-          this.loadAvailableAgents();
+          this.cargarAgentesDisponibles();
         }
       },
     });

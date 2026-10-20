@@ -66,18 +66,18 @@ export class DisponibilidadPageComponent implements OnInit {
   readonly store = inject(DisponibilidadStore);
 
   ngOnInit(): void {
-    const agent = this.store.currentAgent();
-    if (agent !== null) {
-      this.store.loadAvailability(agent.id);
+    const agente = this.store.agenteActual();
+    if (agente !== null) {
+      this.store.cargarDisponibilidad(agente.id);
     }
   }
 
-  onSetOverride(isAvailable: boolean, ttlValue: string): void {
+  onSetDisponibilidadManual(isDisponible: boolean, ttlValue: string): void {
     const ttl = ttlValue ? parseInt(ttlValue, 10) : undefined;
-    this.store.setAvailability(isAvailable, ttl);
+    this.store.setDisponibilidad(isDisponible, ttl);
   }
 
-  onClearOverride(): void {
-    this.store.clearAvailability();
+  onLimpiarDisponibilidadManual(): void {
+    this.store.limpiarDisponibilidad();
   }
 }

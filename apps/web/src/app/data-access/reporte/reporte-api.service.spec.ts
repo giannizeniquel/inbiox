@@ -20,7 +20,7 @@ describe('ReporteApiService', () => {
   afterEach(() => httpMock.verify());
 
   describe('getTicketParticipation', () => {
-    const mockParticipation: ParticipacionDeTicket = {
+    const mockParticipacion: ParticipacionDeTicket = {
       ticket_id: 42,
       data_available_from: '2026-01-01T00:00:00Z',
       partial_data: false,
@@ -37,20 +37,20 @@ describe('ReporteApiService', () => {
     const urlFor = (id: number) => `${environment.apiUrl}/api/reports/tickets/${id}/participation`;
 
     it('GETs the participation of the given ticket and returns it', (done) => {
-      service.getTicketParticipation(42).subscribe({
+      service.getParticipacionDeTicket(42).subscribe({
         next: (result) => {
-          expect(result).toEqual(mockParticipation);
+          expect(result).toEqual(mockParticipacion);
           done();
         },
       });
 
       const req = httpMock.expectOne(urlFor(42));
       expect(req.request.method).toBe('GET');
-      req.flush(mockParticipation);
+      req.flush(mockParticipacion);
     });
 
     it('maps API errors via extractApiError into an Error with the backend message', (done) => {
-      service.getTicketParticipation(999).subscribe({
+      service.getParticipacionDeTicket(999).subscribe({
         error: (err) => {
           expect(err).toBeInstanceOf(Error);
           expect(err.message).toBe('Ticket not found');
@@ -64,7 +64,7 @@ describe('ReporteApiService', () => {
     });
 
     it('falls back to a generic message when the error has no envelope', (done) => {
-      service.getTicketParticipation(1).subscribe({
+      service.getParticipacionDeTicket(1).subscribe({
         error: (err) => {
           expect(err).toBeInstanceOf(Error);
           expect(err.message).toBe('No se pudo cargar la participación del ticket');

@@ -23,23 +23,23 @@ import { LineaDeTiempoDeContactoComponent } from '../linea-de-tiempo-de-contacto
 })
 export class DetalleDeContactoComponent {
   /** The selected contact to display */
-  readonly contact = input<ContactoUI | null>(null);
+  readonly contacto = input<ContactoUI | null>(null);
 
   /** Loading state — shows skeleton */
   readonly loading = input<boolean>(false);
 
   /** Emitted when user clicks "Abrir conversación" */
-  readonly openConversation = output<string>();
+  readonly abrirConversacion = output<string>();
 
   /** Emitted when user clicks "Editar" */
-  readonly editContact = output<string>();
+  readonly editarContacto = output<string>();
 
   /** Emitted when user clicks a timeline event that references a ticket */
   readonly openTicket = output<string>();
 
   /** Compute initials from name */
   initials(): string {
-    const name = this.contact()?.name ?? '';
+    const name = this.contacto()?.name ?? '';
     if (!name) return '?';
     return name
       .split(' ')
@@ -51,7 +51,7 @@ export class DetalleDeContactoComponent {
 
   /** Format last interaction as relative time */
   relativeTime(): string {
-    const last = this.contact()?.lastInteraction;
+    const last = this.contacto()?.lastInteraction;
     if (!last) return 'Sin interacción';
     const diff = Date.now() - new Date(last).getTime();
     const minutes = Math.floor(diff / 60000);
@@ -66,25 +66,25 @@ export class DetalleDeContactoComponent {
 
   /** Channel badge label */
   channelLabel(): string {
-    return this.contact()?.channel === 'whatsapp' ? 'WhatsApp' : 'Otro';
+    return this.contacto()?.channel === 'whatsapp' ? 'WhatsApp' : 'Otro';
   }
 
   /** Status label */
-  statusLabel(): string {
-    return this.contact()?.status === 'active' ? 'Activo' : 'Inactivo';
+  estadoLabel(): string {
+    return this.contacto()?.status === 'active' ? 'Activo' : 'Inactivo';
   }
 
-  onOpenConversation(): void {
-    const id = this.contact()?.id;
-    if (id) this.openConversation.emit(id);
+  onAbrirConversacion(): void {
+    const id = this.contacto()?.id;
+    if (id) this.abrirConversacion.emit(id);
   }
 
   onOpenTicket(ticketId: string): void {
     this.openTicket.emit(ticketId);
   }
 
-  onEditContact(): void {
-    const id = this.contact()?.id;
-    if (id) this.editContact.emit(id);
+  onEditarContacto(): void {
+    const id = this.contacto()?.id;
+    if (id) this.editarContacto.emit(id);
   }
 }

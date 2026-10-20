@@ -12,7 +12,7 @@ import {
 } from './contacto-transport.dto';
 import { EventoDeLineaDeTiempoResponse } from './linea-de-tiempo-transport.dto';
 import { ContactoUI } from './contacto-ui.model';
-import { mapDetailToUIContact, mapListItemToUIContact } from './mappers';
+import { mapearDetalleAContactoUI, mapListItemToUIContact } from './mappers';
 
 /** Input of ContactoApiService.getContacts */
 export interface GetContactosInput {
@@ -78,7 +78,7 @@ export class ContactoApiService {
   /**
    * Build query params for list endpoint
    */
-  private buildListParams(page: number, limit: number, search?: string, filters?: {
+  private buildListParams(page: number, limit: number, search?: string, filtros?: {
     status?: string;
     channel?: string;
     ownerId?: number;
@@ -90,14 +90,14 @@ export class ContactoApiService {
     if (search) {
       params = params.set('search', search);
     }
-    if (filters?.status) {
-      params = params.set('status', filters.status);
+    if (filtros?.status) {
+      params = params.set('status', filtros.status);
     }
-    if (filters?.channel) {
-      params = params.set('channel', filters.channel);
+    if (filtros?.channel) {
+      params = params.set('channel', filtros.channel);
     }
-    if (filters?.ownerId !== undefined && filters?.ownerId !== null) {
-      params = params.set('ownerId', filters.ownerId.toString());
+    if (filtros?.ownerId !== undefined && filtros?.ownerId !== null) {
+      params = params.set('ownerId', filtros.ownerId.toString());
     }
 
     return params;
@@ -106,7 +106,7 @@ export class ContactoApiService {
   /**
    * Map backend response to frontend DTO
    */
-  private mapToContactListItem(item: any): ContactoDeListaDTO {
+  private mapearAContactoDeLista(item: any): ContactoDeListaDTO {
     return {
       id: String(item.id),
       phone: item.phone || '',
@@ -128,7 +128,7 @@ export class ContactoApiService {
    * GET /api/contacts - Paginated list, mapped to ContactoUI.
    * Errors keep the original message when it is an Error; otherwise a generic one.
    */
-  getContacts(input: GetContactosInput = {}): Observable<GetContactosOutput> {
+  getContactos(input: GetContactosInput = {}): Observable<GetContactosOutput> {
     const page = input.page ?? 1;
     const limit = input.limit ?? 20;
 
@@ -137,7 +137,7 @@ export class ContactoApiService {
     }).pipe(
       // Map response to frontend format
       map((response: any) => ({
-        data: (response.data || []).map((item: any) => this.mapToContactListItem(item)),
+        data: (response.data || []).map((item: any) => this.mapearAContactoDeLista(item)),
         meta: {
           total: response.meta?.total || 0,
           page: response.meta?.page || 1,
@@ -162,10 +162,10 @@ export class ContactoApiService {
   /**
    * GET /api/contacts/{id} - Contact detail
    */
-  getContact(id: string): Observable<DetalleDeContactoDTO> {
+  getContacto(id: string): Observable<DetalleDeContactoDTO> {
     return this.http.get<any>(`${this.baseUrl}/api/contacts/${id}`).pipe(
       map((response: any) => ({
-        ...this.mapToContactListItem(response),
+        ...this.mapearAContactoDeLista(response),
         createdAt: response.timestamps?.created_at || new Date().toISOString(),
         recentTickets: [], // Not available in backend yet
         email: response.email || null,
@@ -176,7 +176,7 @@ export class ContactoApiService {
   /**
    * POST /api/contacts - Create contact (phone required; fields trimmed), mapped to ContactoUI.
    */
-  createContact(input: CreateContactoInput): Observable<ContactoUI> {
+  createContacto(input: CreateContactoInput): Observable<ContactoUI> {
     if (!input.phone || input.phone.trim().length === 0) {
       return throwError(() => new Error('Phone is required'));
     }
@@ -189,12 +189,12 @@ export class ContactoApiService {
 
     return this.http.post<any>(`${this.baseUrl}/api/contacts`, request).pipe(
       map((response: any): DetalleDeContactoDTO => ({
-        ...this.mapToContactListItem(response),
+        ...this.mapearAContactoDeLista(response),
         createdAt: response.timestamps?.created_at || new Date().toISOString(),
         recentTickets: [],
         email: response.email || null,
       })),
-      map(dto => mapDetailToUIContact(dto)),
+      map(dto => mapearDetalleAContactoUI(dto)),
       catchError(err => {
         console.error('[ContactoApiService] Failed to create contact:', err);
         return throwError(() => new Error(
@@ -208,7 +208,7 @@ export class ContactoApiService {
    * POST /api/contacts/import - Bulk CSV contact import (ROLE_SUPERVISOR only).
    * Do not set Content-Type manually — the browser must add the multipart boundary.
    */
-  importContacts(file: File): Observable<ResultadoDeImportacionDeContactos> {
+  importarContactos(file: File): Observable<ResultadoDeImportacionDeContactos> {
     const form = new FormData();
     form.append('file', file);
     return this.http.post<ResultadoDeImportacionDeContactos>(`${this.baseUrl}/api/contacts/import`, form);
@@ -217,7 +217,7 @@ export class ContactoApiService {
   /**
    * PUT /api/contacts/{id} - Update contact (id required; fields trimmed), mapped to ContactoUI.
    */
-  updateContact(input: UpdateContactoInput): Observable<ContactoUI> {
+  updateContacto(input: UpdateContactoInput): Observable<ContactoUI> {
     if (!input.id) {
       return throwError(() => new Error('Contact ID is required'));
     }
@@ -230,12 +230,12 @@ export class ContactoApiService {
 
     return this.http.put<any>(`${this.baseUrl}/api/contacts/${input.id}`, request).pipe(
       map((response: any): DetalleDeContactoDTO => ({
-        ...this.mapToContactListItem(response),
+        ...this.mapearAContactoDeLista(response),
         createdAt: response.timestamps?.created_at || new Date().toISOString(),
         recentTickets: [],
         email: response.email || null,
       })),
-      map(dto => mapDetailToUIContact(dto)),
+      map(dto => mapearDetalleAContactoUI(dto)),
       catchError(err => {
         console.error('[ContactoApiService] Failed to update contact:', err);
         return throwError(() => new Error(
@@ -248,13 +248,13 @@ export class ContactoApiService {
   /**
    * GET /api/contacts/{id}/timeline - Contact timeline events
    */
-  getTimeline(contactId: number, before?: string, limit = 20): Observable<EventoDeLineaDeTiempoResponse> {
+  getLineaDeTiempo(contactoId: number, before?: string, limit = 20): Observable<EventoDeLineaDeTiempoResponse> {
     let params = new HttpParams().set('limit', limit.toString());
     if (before) {
       params = params.set('before', before);
     }
     return this.http.get<EventoDeLineaDeTiempoResponse>(
-      `${this.baseUrl}/api/contacts/${contactId}/timeline`,
+      `${this.baseUrl}/api/contacts/${contactoId}/timeline`,
       { params }
     );
   }

@@ -49,7 +49,7 @@ Roles: `AuthStore.isAdmin()` / `isSupervisor()` (no jerárquicos; no existe `isA
 | Campana de notificaciones, botón "Ayuda" | `topbar.component.html:61-69`; `shell/sidebar/sidebar-footer.component.html:4-13` | — | **Decorativos.** |
 | Indicador de conexión | `shell/sidebar/sidebar.component.ts:30-37` | — | Dice "Conectado" también en `permanent_failure`. |
 | Banner de conexión | `shell/connection-banner/` | — | "Reconectando…" / "Sin conexión"; sin botón de reintento. |
-| Selector de workspace | `EspacioDeTrabajoSwitcherComponent` → `EspacioDeTrabajoStore.setActiveWorkspace()` (`data-access/administracion/espacio-de-trabajo.store.ts:93-108`) | `GET /api/me/workspaces`, `GET/PUT /api/me/workspace` | Recarga la página completa. Marca "pendiente" en otros workspaces con `has_pending` y con eventos entrantes de otro `phoneNumberId`. |
+| Selector de workspace | `EspacioDeTrabajoSwitcherComponent` → `EspacioDeTrabajoStore.setEspacioDeTrabajoActivo()` (`data-access/administracion/espacio-de-trabajo.store.ts:93-108`) | `GET /api/me/workspaces`, `GET/PUT /api/me/workspace` | Recarga la página completa. Marca "pendiente" en otros workspaces con `has_pending` y con eventos entrantes de otro `phoneNumberId`. |
 | Autoselección inicial de workspace | `shell/app-shell.component.ts:84-86` | — | `setTimeout(…, 500)` asumiendo que dos peticiones terminaron: posible condición de carrera. |
 | Deep link `/inbox?ticketId=X` | `app-shell.component.ts:90-106` | `GET /api/tickets/{id}`, mensajes | |
 
@@ -59,13 +59,13 @@ Contenedor: `features/bandeja/pages/ticket-list/ticket-list.component.ts`. Store
 
 | Acción | Código | Endpoint | ¿Servidor o navegador? |
 |---|---|---|---|
-| Cargar lista | `loadTickets()` (`:101-114`) → `TicketApiService.getTickets()` → `TicketStore.loadTickets()` | `GET /api/tickets[?teamId=N]` | Servidor, **sin `page`/`limit` → solo 20** |
-| Pestañas Míos / Sin asignar / Todos + contadores | `FiltrosDeTicketComponent` → `TicketStore.filter` / `filteredTickets` / `filterCounts` (`ticket.store.ts:86-107`) | — | **Navegador** (sobre los 20) |
-| Filtro por equipo | `FiltroDeEquipoComponent` → `onTeamFilterChange` | `GET /api/teams`, luego `GET /api/tickets?teamId=N` | **Servidor** |
+| Cargar lista | `cargarTickets()` (`:101-114`) → `TicketApiService.getTickets()` → `TicketStore.cargarTickets()` | `GET /api/tickets[?teamId=N]` | Servidor, **sin `page`/`limit` → solo 20** |
+| Pestañas Míos / Sin asignar / Todos + contadores | `FiltrosDeTicketComponent` → `TicketStore.filter` / `filteredTickets` / `conteosDeFiltro` (`ticket.store.ts:86-107`) | — | **Navegador** (sobre los 20) |
+| Filtro por equipo | `FiltroDeEquipoComponent` → `onFiltroDeEquipoChange` | `GET /api/teams`, luego `GET /api/tickets?teamId=N` | **Servidor** |
 | Buscar | `TicketSearchComponent` → `onSearch()` hace `console.log` (`:209-213`) | — | **No implementado** |
 | Abrir ticket | `selectTicket()` (`:176-192`) | `GET /api/tickets/{id}/messages?limit=20&offset=0` | — |
-| Desplegable de asignación | `TicketCardComponent` (`ticket-card.component.ts:51-59, 138-150`), visible si `canAssignTicket()` y estado `new`/`active`/`waiting` | `GET /api/workspaces/{wsId}/available-agents`; se refresca 10 s después de un `ticket.assigned` | — |
-| Asignar | `onAssign()` (`:244-276`): optimista → API → rollback + error 5 s | `POST /api/tickets/{id}/assign` | — |
+| Desplegable de asignación | `TicketCardComponent` (`ticket-card.component.ts:51-59, 138-150`), visible si `puedeAsignarTicket()` y estado `new`/`active`/`waiting` | `GET /api/workspaces/{wsId}/available-agents`; se refresca 10 s después de un `ticket.assigned` | — |
+| Asignar | `onAsignar()` (`:244-276`): optimista → API → rollback + error 5 s | `POST /api/tickets/{id}/assign` | — |
 
 - Un usuario sin agente (admin sin vincular) ve la pestaña "Míos" vacía.
 - Un `message.added` no reordena la lista ni actualiza el último mensaje.
@@ -79,15 +79,15 @@ Contenedor: `features/bandeja/pages/conversacion/conversacion.component.ts` (scr
 | Elemento / acción | Código | Endpoint | Nota |
 |---|---|---|---|
 | Cabecera (contacto, dueño, estado, `#id`) | `ConversacionHeaderComponent` | — | El link a la ficha usa `ticket.contact.id`, que en el listado es el id de la conversación ([R14](00-estado-y-pendientes.md#r14-bugs-del-frontend-con-impacto-directo)). |
-| Botón "RESOLVER" | `onResolveTicket()` (`:186-213`); deshabilitado en `resolved`/`closed` | `POST /api/tickets/{id}/resolve` | 403 → "Solo puede hacerlo un administrador, un supervisor o el agente asignado". |
+| Botón "RESOLVER" | `onResolverTicket()` (`:186-213`); deshabilitado en `resolved`/`closed` | `POST /api/tickets/{id}/resolve` | 403 → "Solo puede hacerlo un administrador, un supervisor o el agente asignado". |
 | Botón "Participación" | `ParticipacionDeTicketComponent` → `GetTicketParticipationUseCase` | `GET /api/reports/tickets/{id}/participation` | Sprint 18. |
-| Marcar como leído al abrir | `markReadEffect` → `TicketApiService.markRead` (`:137-150`; `data-access/ticket/ticket-api.service.ts:44-47`) | `PUT /api/tickets/{id}/mark-read` | El badge se limpia al recibir `ticket.read`. |
-| Historial hacia arriba | `loadOlderMessages()` (`conversacion-scroll.controller.ts:180-213`) | `GET /api/tickets/{id}/messages?limit=20&offset=N` | La primera página "anterior" repite offset 0 (se deduplica). |
+| Marcar como leído al abrir | `marcarLeidoEffect` → `TicketApiService.marcarLeido` (`:137-150`; `data-access/ticket/ticket-api.service.ts:44-47`) | `PUT /api/tickets/{id}/mark-read` | El badge se limpia al recibir `ticket.read`. |
+| Historial hacia arriba | `cargarMensajesAnteriores()` (`conversacion-scroll.controller.ts:180-213`) | `GET /api/tickets/{id}/messages?limit=20&offset=N` | La primera página "anterior" repite offset 0 (se deduplica). |
 | Burbujas y adjuntos | `MensajeBubbleComponent` + renderers | `GET /api/messages/{id}/media` | Heurística de "sistema" por corchetes. |
-| Enviar texto (Enter) | `ComposerComponent.send()` → `onSendMessage()` → `EnvioDeMensajesService.send()` → `EnviarMensajeUseCase` → `ProveedorWhatsAppCloud.sendMessage()` | `POST /api/provider/send` (ruta relativa, sin `environment.apiUrl`) | Reintenta el POST 2 veces ante error. |
-| Adjuntar | `EnvioDeMensajesService.sendWithMedia()` valida tipo/tamaño (5/16/16/100 MB) | `POST {apiUrl}/api/provider/media/upload` → `POST /api/provider/send` | |
+| Enviar texto (Enter) | `ComposerComponent.send()` → `onEnviarMensaje()` → `EnvioDeMensajesService.send()` → `EnviarMensajeUseCase` → `ProveedorWhatsAppCloud.enviarMensaje()` | `POST /api/provider/send` (ruta relativa, sin `environment.apiUrl`) | Reintenta el POST 2 veces ante error. |
+| Adjuntar | `EnvioDeMensajesService.enviarConAdjunto()` valida tipo/tamaño (5/16/16/100 MB) | `POST {apiUrl}/api/provider/media/upload` → `POST /api/provider/send` | |
 | Bloqueo por ventana de 24 h | `composer.component.ts:70-76` | — | Reemplaza el composer por un aviso que sugiere "usá una plantilla aprobada", pero no hay forma de enviarla. |
-| Reintentar fallido | `onRetry()` (`:172-177`) solo cambia el estado a `sending` | — | **Roto**: `EnvioDeMensajesService.retry()` no se llama nunca. |
+| Reintentar fallido | `onReintentar()` (`:172-177`) solo cambia el estado a `sending` | — | **Roto**: `EnvioDeMensajesService.retry()` no se llama nunca. |
 | Emoji | — | — | Deshabilitado. |
 
 ## Contactos
@@ -97,7 +97,7 @@ Contenedor: `features/bandeja/pages/conversacion/conversacion.component.ts` (scr
 | Acción | Código | Endpoint | Servidor / navegador | Rol |
 |---|---|---|---|---|
 | Listar (20 por página, "cargar más") | `GetContactsUseCase` (`contactos-page.component.ts:171-195`) | `GET /api/contacts?page&limit` | Servidor | Todos |
-| Buscar, filtrar por estado/canal | `ContactosScreenStore.filteredContacts` (`features/contactos/contactos-screen.store.ts:40-74`) | — | **Navegador** (solo lo cargado) | Todos |
+| Buscar, filtrar por estado/canal | `ContactosScreenStore.contactosFiltrados` (`features/contactos/contactos-screen.store.ts:40-74`) | — | **Navegador** (solo lo cargado) | Todos |
 | Detalle | `DetalleDeContactoComponent`; si no está en caché, API directa | `GET /api/contacts/{id}` | — | Todos |
 | Línea de tiempo | `LineaDeTiempoDeContactoComponent` → `LineaDeTiempoDeContactoStore` (hace HTTP) | `GET /api/contacts/{id}/timeline?before&limit=20` | Servidor | Todos |
 | Abrir ticket desde el contacto | navega a `/inbox?ticketId=…`; sin ticket activo, solo a `/inbox` (`TODO`) | — | — | Todos |
@@ -147,7 +147,7 @@ El store (`data-access/agente/configuracion.store.ts`) hace HTTP sin esperar el 
 
 - No existe un interruptor de disponibilidad en la UI.
 - `data-access/disponibilidad/disponibilidad-api.service.ts:64-125` llama `${apiUrl}/agents/{id}/…` **sin `/api`**: esas URLs no existen y además el interceptor no agrega el token.
-- Las páginas ignoran `:agentId` y leen `DisponibilidadStore.currentAgent()`, que nadie asigna (siempre `null`). `DisponibilidadStore.loadShifts()` no hace nada.
+- Las páginas ignoran `:agentId` y leen `DisponibilidadStore.agenteActual()`, que nadie asigna (siempre `null`). `DisponibilidadStore.cargarTurnos()` no hace nada.
 - Resultado: ambas páginas no funcionan. Los turnos solo se gestionan desde `/settings`.
 
 ---

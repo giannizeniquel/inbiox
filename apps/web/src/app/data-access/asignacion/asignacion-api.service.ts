@@ -22,15 +22,15 @@ export class AsignacionApiService {
    *
    * POST /api/tickets/{id}/assign
    */
-  assignTicket(
+  asignarTicket(
     ticketId: string,
-    agentId: number,
-    assignedBy: string,
+    agenteId: number,
+    asignadoPor: string,
     notes?: string
   ): Observable<Ticket> {
     return this.http.post<Ticket>(
       `${this.baseUrl}/api/tickets/${ticketId}/assign`,
-      { agentId, assignedBy, notes }
+      { agentId: agenteId, assignedBy: asignadoPor, notes }
     ).pipe(
       catchError(createHttpErrorHandler('TicketApi'))
     );

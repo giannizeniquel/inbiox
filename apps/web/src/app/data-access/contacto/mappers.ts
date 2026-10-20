@@ -39,7 +39,7 @@ export function mapListItemToUIContact(dto: ContactoDeListaDTO): ContactoUI {
 /**
  * Map DetalleDeContactoDTO (API detail) → ContactoUI
  */
-export function mapDetailToUIContact(dto: DetalleDeContactoDTO): ContactoUI {
+export function mapearDetalleAContactoUI(dto: DetalleDeContactoDTO): ContactoUI {
   return {
     id: dto.id,
     phone: dto.phone,
@@ -60,7 +60,7 @@ export function mapDetailToUIContact(dto: DetalleDeContactoDTO): ContactoUI {
 /**
  * Map TransportContactDTO → ContactoDominio (canonical entity fields only)
  */
-export function mapDTOToDomainContact(dto: ContactoDeListaDTO | DetalleDeContactoDTO): ContactoDominio {
+export function mapearDTOAContactoDominio(dto: ContactoDeListaDTO | DetalleDeContactoDTO): ContactoDominio {
   return {
     id: dto.id,
     phone: dto.phone,
@@ -74,12 +74,12 @@ export function mapDTOToDomainContact(dto: ContactoDeListaDTO | DetalleDeContact
 /**
  * Map ContactoUI → ContactoDominio (drop operational fields)
  */
-export function mapUIContactToDomain(contact: ContactoUI): ContactoDominio {
+export function mapUIContactToDomain(contacto: ContactoUI): ContactoDominio {
   return {
-    id: contact.id,
-    phone: contact.phone,
-    name: contact.name,
-    email: contact.email,
+    id: contacto.id,
+    phone: contacto.phone,
+    name: contacto.name,
+    email: contacto.email,
     createdAt: new Date().toISOString(), // Not in ContactoUI — use current
     updatedAt: new Date().toISOString(),
   };
@@ -88,7 +88,7 @@ export function mapUIContactToDomain(contact: ContactoUI): ContactoDominio {
 /**
  * Batch map for list operations.
  */
-export function mapContactListToUI(
+export function mapearListaDeContactosAUI(
   items: ContactoDeListaDTO[]
 ): ContactoUI[] {
   return items.map(mapListItemToUIContact);

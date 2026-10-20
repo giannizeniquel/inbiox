@@ -18,19 +18,19 @@ export class TopbarComponent {
   readonly menuToggle = output<void>();
 
   /** Whether there are unread notifications (for badge) */
-  readonly hasNotifications = signal(false);
+  readonly hasNotificaciones = signal(false);
 
   /** Dropdown open state */
   readonly dropdownOpen = signal(false);
 
   /** Display name: agent name for agents, email for admin/supervisor */
   readonly displayName = computed(() => {
-    const user = this.authStore.currentUser();
-    if (!user) return '';
-    const isAgent = user.roles.includes('ROLE_AGENT')
-      && !user.roles.includes('ROLE_ADMIN')
-      && !user.roles.includes('ROLE_SUPERVISOR');
-    return isAgent ? (user.agent_name ?? user.email) : user.email;
+    const usuario = this.authStore.usuarioActual();
+    if (!usuario) return '';
+    const isAgente = usuario.roles.includes('ROLE_AGENT')
+      && !usuario.roles.includes('ROLE_ADMIN')
+      && !usuario.roles.includes('ROLE_SUPERVISOR');
+    return isAgente ? (usuario.agent_name ?? usuario.email) : usuario.email;
   });
 
   /** Mobile breakpoint: 768px */
@@ -60,8 +60,8 @@ export class TopbarComponent {
     this.dropdownOpen.set(false);
   }
 
-  logout(): void {
+  cerrarSesion(): void {
     this.dropdownOpen.set(false);
-    this.authStore.logout();
+    this.authStore.cerrarSesion();
   }
 }

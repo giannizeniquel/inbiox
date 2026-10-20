@@ -21,7 +21,7 @@ import { ContactoUI } from '../../../../data-access/contacto/contacto-ui.model';
 })
 export class ContactoCardComponent {
   /** The contact to display */
-  readonly contact = input.required<ContactoUI>();
+  readonly contacto = input.required<ContactoUI>();
 
   /** Whether this card is selected */
   readonly selected = input<boolean>(false);
@@ -31,7 +31,7 @@ export class ContactoCardComponent {
 
   /** Compute initials from name */
   initials(): string {
-    const name = this.contact().name ?? '';
+    const name = this.contacto().name ?? '';
     return name
       .split(' ')
       .slice(0, 2)
@@ -42,7 +42,7 @@ export class ContactoCardComponent {
 
   /** Format last interaction as relative time */
   relativeTime(): string {
-    const last = this.contact().lastInteraction;
+    const last = this.contacto().lastInteraction;
     if (!last) return '';
     const diff = Date.now() - new Date(last).getTime();
     const minutes = Math.floor(diff / 60000);
@@ -56,12 +56,12 @@ export class ContactoCardComponent {
   }
 
   /** Truncate message preview to 40 chars */
-  messagePreview(): string {
+  mensajePreview(): string {
     // For mock, use phone as preview. Real data would have lastMessage field.
-    return this.contact().phone;
+    return this.contacto().phone;
   }
 
   onClick(): void {
-    this.select.emit(this.contact().id);
+    this.select.emit(this.contacto().id);
   }
 }

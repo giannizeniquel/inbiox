@@ -4,7 +4,7 @@ import { generateTempId } from '../../../../data-access/conversacion/temp-id.uti
 import { AdjuntoPreviewModalComponent } from '../adjunto-preview-modal/adjunto-preview-modal.component';
 
 /** WhatsApp's literal conversation-window duration (Sprint 16 Fase 3). */
-const WINDOW_HOURS = 24;
+const HORAS_DE_VENTANA = 24;
 
 /** How often the local clock ticks to re-evaluate window expiry (ms). */
 const CLOCK_TICK_INTERVAL_MS = 60_000;
@@ -31,8 +31,8 @@ const CLOCK_TICK_INTERVAL_MS = 60_000;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ComposerComponent {
-  readonly sendMessage = output<{ content: string; tempId: string }>();
-  readonly sendWithFile = output<{ content: string; tempId: string; file: File }>();
+  readonly enviarMensaje = output<{ content: string; tempId: string }>();
+  readonly enviarConArchivo = output<{ content: string; tempId: string; file: File }>();
 
   readonly inputEl = viewChild<ElementRef<HTMLTextAreaElement>>('inputEl');
   readonly text = signal('');
@@ -47,7 +47,7 @@ export class ComposerComponent {
    * means "no known inbound message yet" — advisory-only, never blocks
    * sending (D8: the UI must never falsely lock an agent out).
    */
-  readonly lastInboundMessageAt = input<string | null>(null);
+  readonly ultimoMensajeEntranteAt = input<string | null>(null);
 
   /**
    * Local clock, ticked every 60s so `windowExpired` re-evaluates without a
@@ -67,11 +67,11 @@ export class ComposerComponent {
    * margin — the UI is advisory, the backend is authoritative (design.md:
    * "Accepted UI/backend skew"). `null` last-inbound never expires (D8).
    */
-  readonly windowExpired = computed<boolean>(() => {
-    const lastInbound = this.lastInboundMessageAt();
-    if (!lastInbound) return false;
+  readonly ventanaVencida = computed<boolean>(() => {
+    const ultimoEntrante = this.ultimoMensajeEntranteAt();
+    if (!ultimoEntrante) return false;
 
-    const expiresAtMs = new Date(lastInbound).getTime() + WINDOW_HOURS * 60 * 60 * 1000;
+    const expiresAtMs = new Date(ultimoEntrante).getTime() + HORAS_DE_VENTANA * 60 * 60 * 1000;
     return this.now() >= expiresAtMs;
   });
 
@@ -82,7 +82,7 @@ export class ComposerComponent {
   onKeyDown(event: KeyboardEvent): void {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
-      this.send();
+      this.enviar();
     }
   }
 
@@ -129,8 +129,8 @@ export class ComposerComponent {
     this.selectedFile.set(null);
   }
 
-  send(): void {
-    if (this.windowExpired()) return;
+  enviar(): void {
+    if (this.ventanaVencida()) return;
 
     const content = this.text().trim();
     const file = this.selectedFile();
@@ -153,9 +153,9 @@ export class ComposerComponent {
     });
 
     if (file) {
-      this.sendWithFile.emit({ content, tempId, file });
+      this.enviarConArchivo.emit({ content, tempId, file });
     } else {
-      this.sendMessage.emit({ content, tempId });
+      this.enviarMensaje.emit({ content, tempId });
     }
   }
 }

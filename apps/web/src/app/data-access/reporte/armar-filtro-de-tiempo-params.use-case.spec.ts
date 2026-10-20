@@ -1,11 +1,11 @@
-import { ConstruirFiltroDeTiempoParamsUseCase, FiltroDeTiempoInvalido } from './construir-filtro-de-tiempo-params.use-case';
+import { ArmarFiltroDeTiempoParamsUseCase, FiltroDeTiempoInvalido } from './armar-filtro-de-tiempo-params.use-case';
 import { FiltroDeTiempo } from './reporte.params';
 
-describe('ConstruirFiltroDeTiempoParamsUseCase', () => {
-  let useCase: ConstruirFiltroDeTiempoParamsUseCase;
+describe('ArmarFiltroDeTiempoParamsUseCase', () => {
+  let useCase: ArmarFiltroDeTiempoParamsUseCase;
 
   beforeEach(() => {
-    useCase = new ConstruirFiltroDeTiempoParamsUseCase();
+    useCase = new ArmarFiltroDeTiempoParamsUseCase();
   });
 
   const toDateString = (d: Date): string => d.toISOString().split('T')[0];

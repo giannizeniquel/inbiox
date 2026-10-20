@@ -24,7 +24,7 @@ import { VirtualListCoordinatorDirective } from '../../../../shared/directives/v
  * - Virtual scroll for performance
  * - States: loading (skeleton), empty (ContactEmpty), error (ContactError), data (ContactCard list)
  * - Keyboard nav: arrow keys + Enter to select (handled by VirtualListCoordinatorDirective)
- * - Infinite scroll: directive emits `loadMore` when within 200px threshold
+ * - Infinite scroll: directive emits `cargarMas` when within 200px threshold
  * - Input: filteredContacts signal, loading signal
  * - Output: select(contactId) event
  * - OnPush, inline styles
@@ -52,16 +52,16 @@ export class ContactosListComponent {
   protected readonly coordinator = viewChild.required(VirtualListCoordinatorDirective<ContactoUI>);
 
   /** Resolver that maps a contact to its unique id string */
-  protected readonly idOfContact = (contact: ContactoUI): string => contact.id;
+  protected readonly trackByContacto = (contacto: ContactoUI): string => contacto.id;
 
   /** Emit when user selects a contact */
   readonly select = output<string>();
 
   /** Emit when user requests retry from error state */
-  readonly retryRequested = output<void>();
+  readonly reintentoSolicitado = output<void>();
 
   /** Emit when next page should be loaded */
-  readonly loadMore = output<void>();
+  readonly cargarMas = output<void>();
 
   /** Show load-more sentinel when hasMore is true */
   readonly hasMore = input<boolean>(false);
@@ -75,19 +75,19 @@ export class ContactosListComponent {
   );
 
   /** Emit selection event */
-  onContactSelect(contactId: string): void {
-    this.select.emit(contactId);
+  onSeleccionarContacto(contactoId: string): void {
+    this.select.emit(contactoId);
   }
 
   /** Handle retry click from error state */
-  onRetry(): void {
-    this.retryRequested.emit();
+  onReintentar(): void {
+    this.reintentoSolicitado.emit();
     this.coordinator().resetFocus();
   }
 
-  /** Handle load-more — forwarded from the directive's loadMore output */
-  onLoadMore(): void {
-    this.loadMore.emit();
+  /** Handle load-more — forwarded from the directive's cargarMas output */
+  onCargarMas(): void {
+    this.cargarMas.emit();
   }
 
   /** Handle clear search click from empty state (search variant) */
@@ -96,7 +96,7 @@ export class ContactosListComponent {
   }
 
   /** Handle create contact click from empty state */
-  onCreateContact(): void {
+  onCreateContacto(): void {
     this.coordinator().resetFocus();
   }
 }

@@ -30,13 +30,13 @@ export interface ResultadoDeEnvio {
  */
 @Injectable({ providedIn: 'root' })
 export class EnvioDeMensajesService {
-  private sendUseCase = inject(EnviarMensajeUseCase);
-  private retryUseCase = inject(ReintentarMensajeUseCase);
-  private conversationStore = inject(ConversacionStore);
+  private enviarMensajeUseCase = inject(EnviarMensajeUseCase);
+  private reintentarMensajeUseCase = inject(ReintentarMensajeUseCase);
+  private conversacionStore = inject(ConversacionStore);
   private http = inject(HttpClient);
 
-  private readonly sendResults = new Subject<ResultadoDeEnvio>();
-  readonly onSendResult$ = this.sendResults.asObservable();
+  private readonly resultadosDeEnvio = new Subject<ResultadoDeEnvio>();
+  readonly onResultadoDeEnvio$ = this.resultadosDeEnvio.asObservable();
 
   /** Retry config: max 2 retries (3 total attempts), backoff 1s → 2s, capped at 5s */
   private readonly retryConfig: RetryConfig = {
@@ -62,26 +62,26 @@ export class EnvioDeMensajesService {
    * @param existingTempId - Optional pre-generated tempId (e.g., from ComposerComponent)
    * @returns tempId of the optimistic message
    */
-  send(ticketId: string, content: string, existingTempId?: string): string {
+  enviar(ticketId: string, content: string, existingTempId?: string): string {
     const tempId = existingTempId ?? generateTempId();
 
     // Add optimistic message to store (optimistic UI)
-    this.conversationStore.addOptimisticMessage(tempId, content, ticketId);
+    this.conversacionStore.agregarMensajeOptimista(tempId, content, ticketId);
 
     // Route through EnviarMensajeUseCase → ProveedorWhatsAppCloud with RxJS retry
     retryWithBackoff(
-      this.sendUseCase.execute({ ticketId, content, tempId }),
+      this.enviarMensajeUseCase.execute({ ticketId, content, tempId }),
       this.retryConfig
     ).subscribe({
       next: (output) => {
         // Success: reconcile optimistic → confirmed
-        this.conversationStore.confirmMessage(tempId, toCanonical(output.message, ticketId, tempId, content));
-        this.sendResults.next({ tempId, success: true });
+        this.conversacionStore.confirmarMensaje(tempId, toCanonical(output.message, ticketId, tempId, content));
+        this.resultadosDeEnvio.next({ tempId, success: true });
       },
       error: () => {
         // All retries exhausted — update to failed
-        this.conversationStore.updateMessageStatus(tempId, 'failed');
-        this.sendResults.next({
+        this.conversacionStore.updateEstadoDeMensaje(tempId, 'failed');
+        this.resultadosDeEnvio.next({
           tempId,
           success: false,
           error: 'Send failed after retries',
@@ -102,18 +102,18 @@ export class EnvioDeMensajesService {
    * @param existingTempId - Optional pre-generated tempId
    * @returns tempId of the optimistic message
    */
-  sendWithMedia(ticketId: string, content: string, file: File, existingTempId?: string): string {
+  enviarConAdjunto(ticketId: string, content: string, file: File, existingTempId?: string): string {
     const tempId = existingTempId ?? generateTempId();
 
     // Build optimistic media metadata (with local blob URL for immediate preview)
-    const optimisticMedia = this.buildOptimisticMedia(file, content);
+    const adjuntoOptimista = this.armarAdjuntoOptimista(file, content);
 
     // Client-side pre-flight validation
     const validationError = this.validateFile(file);
     if (validationError) {
-      this.conversationStore.addOptimisticMessage(tempId, content, ticketId, optimisticMedia);
-      this.conversationStore.updateMessageStatus(tempId, 'failed');
-      this.sendResults.next({
+      this.conversacionStore.agregarMensajeOptimista(tempId, content, ticketId, adjuntoOptimista);
+      this.conversacionStore.updateEstadoDeMensaje(tempId, 'failed');
+      this.resultadosDeEnvio.next({
         tempId,
         success: false,
         error: validationError,
@@ -122,7 +122,7 @@ export class EnvioDeMensajesService {
     }
 
     // Add optimistic message to store (with media for immediate preview)
-    this.conversationStore.addOptimisticMessage(tempId, content, ticketId, optimisticMedia);
+    this.conversacionStore.agregarMensajeOptimista(tempId, content, ticketId, adjuntoOptimista);
 
     // Upload file to server
     const formData = new FormData();
@@ -133,14 +133,14 @@ export class EnvioDeMensajesService {
       `${environment.apiUrl}/api/provider/media/upload`,
       formData
     ).pipe(
-      switchMap((uploadResult) => {
+      switchMap((resultadoDeSubida) => {
         // Now send the message with media
-        return this.sendUseCase.execute({
+        return this.enviarMensajeUseCase.execute({
           ticketId,
           content,
           tempId,
-          mediaId: uploadResult.mediaId,
-          mediaKey: uploadResult.key ?? undefined,
+          mediaId: resultadoDeSubida.mediaId,
+          mediaKey: resultadoDeSubida.key ?? undefined,
           mimeType: file.type,
           caption: content,
           filename: file.name,
@@ -159,13 +159,13 @@ export class EnvioDeMensajesService {
       })
     ).subscribe({
       next: (output) => {
-        this.conversationStore.confirmMessage(tempId, toCanonical(output.message, ticketId, tempId, content));
-        this.sendResults.next({ tempId, success: true });
+        this.conversacionStore.confirmarMensaje(tempId, toCanonical(output.message, ticketId, tempId, content));
+        this.resultadosDeEnvio.next({ tempId, success: true });
       },
       error: (err: unknown) => {
         console.error('[TipoDeRemitente] sendWithMedia failed:', err);
-        this.conversationStore.updateMessageStatus(tempId, 'failed');
-        this.sendResults.next({
+        this.conversacionStore.updateEstadoDeMensaje(tempId, 'failed');
+        this.resultadosDeEnvio.next({
           tempId,
           success: false,
           error: err instanceof Error ? err.message : 'Send failed',
@@ -182,28 +182,28 @@ export class EnvioDeMensajesService {
    *
    * @param tempId - The temporary ID of the failed message
    */
-  retry(tempId: string): void {
-    const cached = this.conversationStore.getCachedMessage(tempId);
+  reintentar(tempId: string): void {
+    const cached = this.conversacionStore.getMensajeEnCache(tempId);
     if (!cached) {
       console.warn('[TipoDeRemitente] Cannot retry: no cached payload', tempId);
       return;
     }
 
-    this.conversationStore.updateMessageStatus(tempId, 'sending');
+    this.conversacionStore.updateEstadoDeMensaje(tempId, 'sending');
 
-    this.retryUseCase.execute({
+    this.reintentarMensajeUseCase.execute({
       tempId,
       originalContent: cached.content,
       ticketId: cached.ticketId,
     }).subscribe({
       next: (output) => {
-        this.conversationStore.confirmMessage(tempId, toCanonical(output.message, cached.ticketId, tempId, cached.content));
-        this.sendResults.next({ tempId, success: true });
+        this.conversacionStore.confirmarMensaje(tempId, toCanonical(output.message, cached.ticketId, tempId, cached.content));
+        this.resultadosDeEnvio.next({ tempId, success: true });
       },
       error: (err: unknown) => {
         console.error('[TipoDeRemitente] Retry failed:', err);
-        this.conversationStore.updateMessageStatus(tempId, 'failed');
-        this.sendResults.next({
+        this.conversacionStore.updateEstadoDeMensaje(tempId, 'failed');
+        this.resultadosDeEnvio.next({
           tempId,
           success: false,
           error: 'Retry failed',
@@ -217,7 +217,7 @@ export class EnvioDeMensajesService {
    * @param tempId - The temporary ID of the message to remove
    */
   removeFailed(tempId: string): void {
-    this.conversationStore.removeMessage(tempId);
+    this.conversacionStore.quitarMensaje(tempId);
   }
 
   /**
@@ -264,7 +264,7 @@ export class EnvioDeMensajesService {
    * Uses a local blob URL for image/video/audio so the file renders
    * before the server confirms (no pre-signed URL yet).
    */
-  private buildOptimisticMedia(file: File, caption: string) {
+  private armarAdjuntoOptimista(file: File, caption: string) {
     const kind = this.getFileKind(file.type) as 'image' | 'video' | 'audio' | 'document';
     const localUrl = kind !== 'document' ? URL.createObjectURL(file) : undefined;
 

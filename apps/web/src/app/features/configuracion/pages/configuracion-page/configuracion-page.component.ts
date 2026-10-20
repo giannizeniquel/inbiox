@@ -47,22 +47,22 @@ export class ConfiguracionPageComponent implements OnInit {
   ];
 
   // Success/error messages per tab
-  readonly profileSuccess = signal<string | null>(null);
-  readonly notificationsSuccess = signal<string | null>(null);
-  readonly autoReplySuccess = signal<string | null>(null);
+  readonly perfilSuccess = signal<string | null>(null);
+  readonly notificacionesSuccess = signal<string | null>(null);
+  readonly respuestaAutomaticaSuccess = signal<string | null>(null);
   readonly businessHoursSuccess = signal<string | null>(null);
 
   // Forms
-  readonly profileForm = this.fb.group({
+  readonly perfilForm = this.fb.group({
     signature: ['', [Validators.maxLength(4096)]],
   });
 
-  readonly notificationsForm = this.fb.nonNullable.group({
+  readonly notificacionesForm = this.fb.nonNullable.group({
     sound: [true],
     desktop: [true],
   });
 
-  readonly autoReplyForm = this.fb.nonNullable.group({
+  readonly respuestaAutomaticaForm = this.fb.nonNullable.group({
     enabled: [false],
     message: [''],
   });
@@ -72,7 +72,7 @@ export class ConfiguracionPageComponent implements OnInit {
   readonly endTime = signal('18:00');
 
   ngOnInit(): void {
-    this.store.loadSettings();
+    this.store.cargarConfiguracion();
   }
 
   /**
@@ -81,24 +81,24 @@ export class ConfiguracionPageComponent implements OnInit {
    */
   private readonly _formSync = effect(() => {
     // Profile
-    const p = this.store.profile();
+    const p = this.store.perfil();
     if (p) {
-      this.profileForm.patchValue({ signature: p.signature ?? '' }, { emitEvent: false });
+      this.perfilForm.patchValue({ signature: p.signature ?? '' }, { emitEvent: false });
     }
 
     // Notifications
-    const n = this.store.notifications();
+    const n = this.store.notificaciones();
     if (n) {
-      this.notificationsForm.patchValue(
+      this.notificacionesForm.patchValue(
         { sound: n.sound, desktop: n.desktop },
         { emitEvent: false },
       );
     }
 
     // Auto-Reply
-    const a = this.store.autoReply();
+    const a = this.store.respuestaAutomatica();
     if (a) {
-      this.autoReplyForm.patchValue(
+      this.respuestaAutomaticaForm.patchValue(
         { enabled: a.enabled, message: a.message ?? '' },
         { emitEvent: false },
       );
@@ -115,65 +115,65 @@ export class ConfiguracionPageComponent implements OnInit {
   }
 
   clearMessages(): void {
-    this.profileSuccess.set(null);
-    this.notificationsSuccess.set(null);
-    this.autoReplySuccess.set(null);
+    this.perfilSuccess.set(null);
+    this.notificacionesSuccess.set(null);
+    this.respuestaAutomaticaSuccess.set(null);
     this.businessHoursSuccess.set(null);
   }
 
   // ── Profile ──
 
-  onProfileSubmit(): void {
-    if (this.profileForm.invalid) return;
+  onPerfilSubmit(): void {
+    if (this.perfilForm.invalid) return;
 
-    const signature: string | null = this.profileForm.value.signature ?? null;
-    this.store.saveProfile({ signature });
-    this.profileSuccess.set('Perfil actualizado correctamente');
+    const signature: string | null = this.perfilForm.value.signature ?? null;
+    this.store.guardarPerfil({ signature });
+    this.perfilSuccess.set('Perfil actualizado correctamente');
   }
 
   // ── Notifications ──
 
-  onNotificationsSubmit(): void {
-    const formVal = this.notificationsForm.getRawValue();
-    this.store.saveNotifications({
+  onNotificacionesSubmit(): void {
+    const formVal = this.notificacionesForm.getRawValue();
+    this.store.guardarNotificaciones({
       sound: formVal.sound,
       desktop: formVal.desktop,
     });
-    this.notificationsSuccess.set('Notificaciones actualizadas');
+    this.notificacionesSuccess.set('Notificaciones actualizadas');
   }
 
   onDesktopToggle(): void {
-    const currentVal = this.notificationsForm.get('desktop')?.value;
+    const currentVal = this.notificacionesForm.get('desktop')?.value;
     if (currentVal && 'Notification' in window) {
       if (Notification.permission === 'default') {
         Notification.requestPermission().then((permission) => {
           if (permission === 'denied') {
-            this.notificationsForm.patchValue({ desktop: false });
+            this.notificacionesForm.patchValue({ desktop: false });
           }
         });
       } else if (Notification.permission === 'denied') {
-        this.notificationsForm.patchValue({ desktop: false });
+        this.notificacionesForm.patchValue({ desktop: false });
       }
     }
   }
 
   // ── Auto-Reply ──
 
-  onAutoReplySubmit(): void {
-    const formVal = this.autoReplyForm.getRawValue();
+  onRespuestaAutomaticaSubmit(): void {
+    const formVal = this.respuestaAutomaticaForm.getRawValue();
     const message: string | null = formVal.enabled ? (formVal.message || null) : null;
-    this.store.saveAutoReply({
+    this.store.guardarRespuestaAutomatica({
       enabled: formVal.enabled,
       message,
     });
-    this.autoReplySuccess.set('Respuesta automática actualizada');
+    this.respuestaAutomaticaSuccess.set('Respuesta automática actualizada');
   }
 
   // ── Business Hours (Shifts) ──
 
-  onAddShift(): void {
+  onAgregarTurno(): void {
     const current = this.store.businessHours();
-    this.store.saveShifts([
+    this.store.guardarTurnos([
       ...current,
       {
         dayOfWeek: this.dayOfWeek(),
@@ -184,10 +184,10 @@ export class ConfiguracionPageComponent implements OnInit {
     this.businessHoursSuccess.set('Horario actualizado');
   }
 
-  removeShift(index: number): void {
+  quitarTurno(index: number): void {
     const current = this.store.businessHours();
     const updated = current.filter((_, i) => i !== index);
-    this.store.saveShifts(updated);
+    this.store.guardarTurnos(updated);
     this.businessHoursSuccess.set('Horario actualizado');
   }
 }

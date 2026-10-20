@@ -25,7 +25,7 @@ import { ContactoUI } from '../../../../data-access/contacto/contacto-ui.model';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ContactoCreateDialogComponent implements AfterViewInit {
-  private readonly contactsApi = inject(ContactoApiService);
+  private readonly contactoApi = inject(ContactoApiService);
 
   /** Reference to the form component for accessing phone input */
   private readonly formComponent = viewChild<ContactoFormComponent>('contactForm');
@@ -33,7 +33,7 @@ export class ContactoCreateDialogComponent implements AfterViewInit {
   ngAfterViewInit(): void {
     // Focus first input when dialog opens
     setTimeout(() => {
-      this.formComponent()?.phoneInput()?.nativeElement.focus();
+      this.formComponent()?.telefonoInput()?.nativeElement.focus();
     }, 0);
   }
 
@@ -82,10 +82,10 @@ export class ContactoCreateDialogComponent implements AfterViewInit {
       email: data.email ?? undefined,
     };
 
-    this.contactsApi.createContact(input).subscribe({
-      next: (contact) => {
+    this.contactoApi.createContacto(input).subscribe({
+      next: (contacto) => {
         this.loading = false;
-        this.close.emit(contact);
+        this.close.emit(contacto);
       },
       error: (err: Error) => {
         this.loading = false;

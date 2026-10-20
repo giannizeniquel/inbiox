@@ -26,10 +26,10 @@ import { ContactoUI } from '../../../../data-access/contacto/contacto-ui.model';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ContactoEditDialogComponent implements AfterViewInit {
-  private readonly contactsApi = inject(ContactoApiService);
+  private readonly contactoApi = inject(ContactoApiService);
 
   /** The contact to edit (required) */
-  readonly contact = input.required<ContactoUI>();
+  readonly contacto = input.required<ContactoUI>();
 
   /** Reference to the form component for accessing phone input */
   private readonly formComponent = viewChild<ContactoFormComponent>('contactForm');
@@ -37,7 +37,7 @@ export class ContactoEditDialogComponent implements AfterViewInit {
   ngAfterViewInit(): void {
     // Focus first input when dialog opens
     setTimeout(() => {
-      this.formComponent()?.phoneInput()?.nativeElement.focus();
+      this.formComponent()?.telefonoInput()?.nativeElement.focus();
     }, 0);
   }
 
@@ -69,7 +69,7 @@ export class ContactoEditDialogComponent implements AfterViewInit {
     if (this.loading) return;
 
     this.submit({
-      id: this.contact().id,
+      id: this.contacto().id,
       name: formValue.name,
       email: formValue.email,
     });
@@ -86,10 +86,10 @@ export class ContactoEditDialogComponent implements AfterViewInit {
       email: data.email ?? undefined,
     };
 
-    this.contactsApi.updateContact(input).subscribe({
-      next: (contact) => {
+    this.contactoApi.updateContacto(input).subscribe({
+      next: (contacto) => {
         this.loading = false;
-        this.close.emit(contact);
+        this.close.emit(contacto);
       },
       error: (err: Error) => {
         this.loading = false;

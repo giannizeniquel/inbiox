@@ -98,47 +98,47 @@ export class GetReportsDashboardUseCase {
       rt: this.api.getResolutionTime(input.params).pipe(
         catchError(() => of({ avg_rt_minutes: 0 })),
       ),
-      counts: this.api.getTicketCounts(input.params).pipe(
+      counts: this.api.getConteosDeTickets(input.params).pipe(
         catchError(() => of({ new: 0, active: 0, waiting: 0, resolved: 0, closed: 0 })),
       ),
-      volume: this.api.getVolumeTrend(input.params).pipe(
+      volume: this.api.getTendenciaDeVolumen(input.params).pipe(
         catchError(() => of({ data: [], total: 0, trend: 0 })),
       ),
-      agents: this.api.getAgentMetrics(input.params).pipe(
+      agents: this.api.getMetricasDeAgente(input.params).pipe(
         catchError(() => of({ agents: [] })),
       ),
     }).pipe(
       switchMap((groupA) => {
         // ── Group B: Operational (agentLoad, unassigned, frtTrend) ──
         return forkJoin({
-          agentLoad: this.api.getAgentLoad().pipe(
+          agentLoad: this.api.getCargaDeAgente().pipe(
             catchError(() => of([] as CargaDeAgenteEntry[])),
           ),
-          unassigned: this.api.getUnassigned(input.params).pipe(
+          unassigned: this.api.getSinAsignar(input.params).pipe(
             catchError(() => of({ count: 0, tickets: [] })),
           ),
-          frtTrend: this.api.getFrtTrend(input.params).pipe(
+          frtTrend: this.api.getTendenciaDeFrt(input.params).pipe(
             catchError(() => of([] as TendenciaDeFrtPoint[])),
           ),
           // Degrades to null on failure — NEVER a zeroed object, so the UI
           // can tell "no data yet" apart from "0 seconds average delay".
-          responseDelay: this.api.getResponseDelay(input.params).pipe(
+          responseDelay: this.api.getDemoraDeRespuesta(input.params).pipe(
             catchError(() => of(null as ReporteDeDemoraDeRespuesta | null)),
           ),
         }).pipe(
           switchMap((groupB) => {
             // ── Group C: Detail (availableAgents, heatmap, recurring, reopened) ──
             return forkJoin({
-              availableAgents: this.api.getAvailableAgents().pipe(
+              availableAgents: this.api.getAgentesDisponibles().pipe(
                 catchError(() => of([] as AgenteDisponibleEntry[])),
               ),
-              heatmap: this.api.getHeatmap(input.params).pipe(
+              heatmap: this.api.getMapaDeCalor(input.params).pipe(
                 catchError(() => of([] as MapaDeCalorCell[])),
               ),
-              recurring: this.api.getRecurringCustomers().pipe(
+              recurring: this.api.getContactosRecurrentes().pipe(
                 catchError(() => of([] as ContactoRecurrenteEntry[])),
               ),
-              reopened: this.api.getReopened(input.params).pipe(
+              reopened: this.api.getReabiertos(input.params).pipe(
                 catchError(() => of([] as ReabiertoEntry[])),
               ),
             }).pipe(
@@ -153,13 +153,13 @@ export class GetReportsDashboardUseCase {
                   date: item.date,
                   count: item.tickets_created || 0,
                 })),
-                agents: (groupA.agents.agents || []).map((agent) => ({
-                  agentId: String(agent.agent_id),
-                  agentName: `Agent ${agent.agent_id}`,
-                  assigned: agent.tickets_assigned || 0,
-                  avgResponseMinutes: agent.avg_frt_minutes || 0,
-                  resolved: agent.tickets_resolved || 0,
-                  loadPercentage: Math.min(100, (agent.tickets_assigned || 0) * 20),
+                agents: (groupA.agents.agents || []).map((agente) => ({
+                  agentId: String(agente.agent_id),
+                  agentName: `Agent ${agente.agent_id}`,
+                  assigned: agente.tickets_assigned || 0,
+                  avgResponseMinutes: agente.avg_frt_minutes || 0,
+                  resolved: agente.tickets_resolved || 0,
+                  loadPercentage: Math.min(100, (agente.tickets_assigned || 0) * 20),
                 })),
                 agentLoad: groupB.agentLoad,
                 unassigned: groupB.unassigned,

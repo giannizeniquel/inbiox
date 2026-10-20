@@ -19,55 +19,55 @@ export interface DatosDeAgente {
 @Injectable({ providedIn: 'root' })
 export class DisponibilidadStore {
   /** All loaded agents (basic info) */
-  readonly agents = signal<DatosDeAgente[]>([]);
+  readonly agentes = signal<DatosDeAgente[]>([]);
 
   /** Currently selected agent for views */
-  readonly currentAgent = signal<DatosDeAgente | null>(null);
+  readonly agenteActual = signal<DatosDeAgente | null>(null);
 
   /** Current availability state for the selected agent */
-  readonly availability = signal<DisponibilidadDeAgenteResponse | null>(null);
+  readonly disponibilidad = signal<DisponibilidadDeAgenteResponse | null>(null);
 
   /** Current shifts for the selected agent */
-  readonly shifts = signal<TurnoDeAgenteResponse[]>([]);
+  readonly turnos = signal<TurnoDeAgenteResponse[]>([]);
 
   /** Loading indicator */
   readonly loading = signal<boolean>(false);
 
-  constructor(private readonly agentService: DisponibilidadApiService) {}
+  constructor(private readonly disponibilidadApi: DisponibilidadApiService) {}
 
   /**
    * Load agents list.
    */
-  loadAgents(agents: DatosDeAgente[]): void {
-    this.agents.set(agents);
+  cargarAgentes(agentes: DatosDeAgente[]): void {
+    this.agentes.set(agentes);
   }
 
   /**
    * Set the current agent being viewed/managed.
    */
-  setCurrentAgent(agent: DatosDeAgente | null): void {
-    this.currentAgent.set(agent);
-    if (agent !== null) {
-      this.loadAvailability(agent.id);
-      this.loadShifts(agent.id);
+  setAgenteActual(agente: DatosDeAgente | null): void {
+    this.agenteActual.set(agente);
+    if (agente !== null) {
+      this.cargarDisponibilidad(agente.id);
+      this.cargarTurnos(agente.id);
     } else {
-      this.availability.set(null);
-      this.shifts.set([]);
+      this.disponibilidad.set(null);
+      this.turnos.set([]);
     }
   }
 
   /**
    * Load availability for a specific agent.
    */
-  loadAvailability(agentId: number): void {
+  cargarDisponibilidad(agenteId: number): void {
     this.loading.set(true);
-    this.agentService.getAvailability(agentId).pipe(take(1)).subscribe({
+    this.disponibilidadApi.getDisponibilidad(agenteId).pipe(take(1)).subscribe({
       next: (result) => {
-        this.availability.set(result);
+        this.disponibilidad.set(result);
         this.loading.set(false);
       },
       error: () => {
-        this.availability.set(null);
+        this.disponibilidad.set(null);
         this.loading.set(false);
       },
     });
@@ -76,14 +76,14 @@ export class DisponibilidadStore {
   /**
    * Set availability override.
    */
-  setAvailability(isAvailable: boolean, ttlMinutes?: number): void {
-    const agent = this.currentAgent();
-    if (agent === null) return;
+  setDisponibilidad(isDisponible: boolean, ttlMinutes?: number): void {
+    const agente = this.agenteActual();
+    if (agente === null) return;
 
     this.loading.set(true);
-    this.agentService.setAvailability(agent.id, isAvailable, ttlMinutes).pipe(take(1)).subscribe({
+    this.disponibilidadApi.setDisponibilidad(agente.id, isDisponible, ttlMinutes).pipe(take(1)).subscribe({
       next: () => {
-        this.loadAvailability(agent.id);
+        this.cargarDisponibilidad(agente.id);
       },
       error: () => {
         this.loading.set(false);
@@ -94,14 +94,14 @@ export class DisponibilidadStore {
   /**
    * Clear availability override.
    */
-  clearAvailability(): void {
-    const agent = this.currentAgent();
-    if (agent === null) return;
+  limpiarDisponibilidad(): void {
+    const agente = this.agenteActual();
+    if (agente === null) return;
 
     this.loading.set(true);
-    this.agentService.clearAvailability(agent.id).pipe(take(1)).subscribe({
+    this.disponibilidadApi.limpiarDisponibilidad(agente.id).pipe(take(1)).subscribe({
       next: () => {
-        this.loadAvailability(agent.id);
+        this.cargarDisponibilidad(agente.id);
       },
       error: () => {
         this.loading.set(false);
@@ -116,21 +116,21 @@ export class DisponibilidadStore {
    * Currently shifts can be created/deleted but not listed on page load.
    * When the endpoint is available, wire it up here.
    */
-  loadShifts(_agentId: number): void {
+  cargarTurnos(_agenteId: number): void {
     // No-op — backend lacks GET /agents/{id}/shifts endpoint
   }
 
   /**
    * Create a new shift.
    */
-  createShift(dayOfWeek: number, startTime: string, endTime: string): void {
-    const agent = this.currentAgent();
-    if (agent === null) return;
+  createTurno(dayOfWeek: number, startTime: string, endTime: string): void {
+    const agente = this.agenteActual();
+    if (agente === null) return;
 
     this.loading.set(true);
-    this.agentService.createShift(agent.id, dayOfWeek, startTime, endTime).pipe(take(1)).subscribe({
-      next: (shift) => {
-        this.shifts.update((current) => [...current, shift]);
+    this.disponibilidadApi.createTurno(agente.id, dayOfWeek, startTime, endTime).pipe(take(1)).subscribe({
+      next: (turno) => {
+        this.turnos.update((current) => [...current, turno]);
         this.loading.set(false);
       },
       error: () => {
@@ -142,15 +142,15 @@ export class DisponibilidadStore {
   /**
    * Delete a shift.
    */
-  deleteShift(shiftId: number): void {
-    const agent = this.currentAgent();
-    if (agent === null) return;
+  deleteTurno(turnoId: number): void {
+    const agente = this.agenteActual();
+    if (agente === null) return;
 
     this.loading.set(true);
-    this.agentService.deleteShift(agent.id, shiftId).pipe(take(1)).subscribe({
+    this.disponibilidadApi.deleteTurno(agente.id, turnoId).pipe(take(1)).subscribe({
       next: () => {
-        this.shifts.update((current) =>
-          current.filter((s) => s.id !== shiftId)
+        this.turnos.update((current) =>
+          current.filter((s) => s.id !== turnoId)
         );
         this.loading.set(false);
       },
@@ -164,10 +164,10 @@ export class DisponibilidadStore {
    * Reset store state.
    */
   reset(): void {
-    this.agents.set([]);
-    this.currentAgent.set(null);
-    this.availability.set(null);
-    this.shifts.set([]);
+    this.agentes.set([]);
+    this.agenteActual.set(null);
+    this.disponibilidad.set(null);
+    this.turnos.set([]);
     this.loading.set(false);
   }
 }

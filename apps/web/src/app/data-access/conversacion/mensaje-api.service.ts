@@ -17,7 +17,7 @@ export class MensajeApiService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiUrl;
 
-  getMessages(ticketId: string, limit = 20, offset = 0): Observable<GetMensajesResponse> {
+  getMensajes(ticketId: string, limit = 20, offset = 0): Observable<GetMensajesResponse> {
     const params: Record<string, string> = {
       limit: limit.toString(),
       offset: offset.toString(),

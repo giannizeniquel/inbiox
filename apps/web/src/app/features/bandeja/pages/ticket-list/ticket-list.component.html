@@ -5,10 +5,10 @@
   aria-label="Lista de tickets"
 >
   <!-- Filters -->
-  <app-filtros-de-ticket (filterChange)="onFilterChange($event)" />
+  <app-filtros-de-ticket (filtroChange)="onFiltroChange($event)" />
 
   <!-- Team filter (single-select, composable with the tab filter above) -->
-  <app-filtro-de-equipo (teamChange)="onTeamFilterChange($event)" />
+  <app-filtro-de-equipo (equipoChange)="onFiltroDeEquipoChange($event)" />
 
   <!-- Search -->
   <app-ticket-search (search)="onSearch($event)" />
@@ -37,12 +37,12 @@
         <app-ticket-card
           [ticket]="ticket"
           [isActive]="selectedTicketId() === ticket.ticket_id"
-          [availableAgents]="availableAgents()"
-          [canAssign]="canAssignTicket(ticket)"
-          [assignmentError]="ticketStore.assignmentErrors().get(+ticket.ticket_id)?.message ?? null"
+          [agentesDisponibles]="agentesDisponibles()"
+          [puedeAsignar]="puedeAsignarTicket(ticket)"
+          [errorDeAsignacion]="ticketStore.erroresDeAsignacion().get(+ticket.ticket_id)?.message ?? null"
           [class.focused]="coordinator().isFocused(ticket.ticket_id)"
           (select)="selectTicket(ticket)"
-          (assign)="onAssign($event)"
+          (asignar)="onAsignar($event)"
           (mouseenter)="coordinator().onCardFocus($index)"
         />
       }

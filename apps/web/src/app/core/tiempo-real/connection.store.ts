@@ -14,7 +14,7 @@ import { EventBusService } from './event-bus.service';
  */
 @Injectable({ providedIn: 'root' })
 export class ConnectionStore {
-  readonly status = signal<'online' | 'reconnecting' | 'offline' | 'permanent_failure'>('offline');
+  readonly estado = signal<'online' | 'reconnecting' | 'offline' | 'permanent_failure'>('offline');
 
   /** Counter for processed realtime events (T2.3 idempotency verification) */
   readonly eventCount = signal(0);
@@ -52,20 +52,20 @@ export class ConnectionStore {
   }
 
   setOnline(): void {
-    this.status.set('online');
+    this.estado.set('online');
   }
 
   setReconnecting(): void {
-    this.status.set('reconnecting');
+    this.estado.set('reconnecting');
   }
 
   setOffline(): void {
-    this.status.set('offline');
+    this.estado.set('offline');
   }
 
   /** Set permanent failure state — circuit breaker tripped, auto-retry stopped */
   setPermanentFailure(): void {
-    this.status.set('permanent_failure');
+    this.estado.set('permanent_failure');
   }
 
   /** Record the timestamp of the last received event */

@@ -29,17 +29,17 @@ type MessageType = 'agent' | 'client' | 'system';
   host: {
     // Expose the message id on the host so scroll anchoring can locate a
     // specific message after pagination.
-    '[attr.data-message-id]': 'message().id',
+    '[attr.data-message-id]': 'mensaje().id',
   },
 })
 export class MensajeBubbleComponent {
-  readonly message = input.required<Mensaje>();
+  readonly mensaje = input.required<Mensaje>();
   protected readonly isOptimistic = input<boolean>(false);
 
-  readonly retry = output<string>(); // emits tempId
+  readonly reintentar = output<string>(); // emits tempId
 
-  messageType = computed<MessageType>(() => {
-    const m = this.message();
+  tipoDeMensaje = computed<MessageType>(() => {
+    const m = this.mensaje();
     // System messages have explicit direction or bracketed content pattern
     if (m.direction === 'system' || m.direction === 'inbound' && m.content.startsWith('[') && m.content.endsWith(']')) {
       return 'system';
@@ -48,15 +48,15 @@ export class MensajeBubbleComponent {
   });
 
   bubbleClasses = computed(() => ({
-    'message-bubble--agent': this.messageType() === 'agent',
-    'message-bubble--client': this.messageType() === 'client',
-    'message-bubble--system': this.messageType() === 'system',
-    'message-bubble--failed': this.message().deliveryStatus === 'failed',
-    'message-bubble--sending': this.message().deliveryStatus === 'sending',
+    'message-bubble--agent': this.tipoDeMensaje() === 'agent',
+    'message-bubble--client': this.tipoDeMensaje() === 'client',
+    'message-bubble--system': this.tipoDeMensaje() === 'system',
+    'message-bubble--failed': this.mensaje().deliveryStatus === 'failed',
+    'message-bubble--sending': this.mensaje().deliveryStatus === 'sending',
   }));
 
-  hasMedia = computed(() => {
-    const m = this.message();
+  hasAdjunto = computed(() => {
+    const m = this.mensaje();
     return m.media !== null && m.media !== undefined;
   });
 
@@ -66,17 +66,17 @@ export class MensajeBubbleComponent {
    * keyboard when there is actually something to retry.
    */
   protected readonly isRetriable = computed(() => {
-    const m = this.message();
+    const m = this.mensaje();
     return m.deliveryStatus === 'failed' && !!m.tempId;
   });
 
   timeDisplay(): string {
-    const date = new Date(this.message().createdAt);
+    const date = new Date(this.mensaje().createdAt);
     return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
   }
 
-  statusIcon(): string {
-    switch (this.message().deliveryStatus) {
+  estadoIcon(): string {
+    switch (this.mensaje().deliveryStatus) {
       case 'sending': return '⏳';
       case 'sent': return '✓';
       case 'delivered': return '✓✓';
@@ -87,8 +87,8 @@ export class MensajeBubbleComponent {
   }
 
   onFailedClick(): void {
-    if (this.message().deliveryStatus === 'failed' && this.message().tempId) {
-      this.retry.emit(this.message().tempId!);
+    if (this.mensaje().deliveryStatus === 'failed' && this.mensaje().tempId) {
+      this.reintentar.emit(this.mensaje().tempId!);
     }
   }
 }

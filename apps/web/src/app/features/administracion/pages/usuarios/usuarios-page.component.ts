@@ -28,8 +28,8 @@ export class UsuariosPageComponent implements OnInit {
   private readonly adminApi = inject(AdministracionApiService);
 
   // State
-  readonly users = signal<UsuarioDeGestionDTO[]>([]);
-  readonly availableAgents = signal<AgenteDeGestionDTO[]>([]);
+  readonly usuarios = signal<UsuarioDeGestionDTO[]>([]);
+  readonly agentesDisponibles = signal<AgenteDeGestionDTO[]>([]);
   readonly loading = signal(true);
   readonly saving = signal(false);
   readonly error = signal<string | null>(null);
@@ -37,11 +37,11 @@ export class UsuariosPageComponent implements OnInit {
   readonly currentPage = signal(1);
   readonly totalPages = signal(1);
   readonly showForm = signal(false);
-  readonly editingUser = signal<UsuarioDeGestionDTO | null>(null);
+  readonly usuarioEnEdicion = signal<UsuarioDeGestionDTO | null>(null);
   readonly showDeleteConfirm = signal<UsuarioDeGestionDTO | null>(null);
 
   // Forms
-  readonly userForm = this.fb.nonNullable.group({
+  readonly usuarioForm = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(8)]],
     roles: [['ROLE_AGENT'] as string[], [atLeastOneRoleValidator()]],
@@ -49,16 +49,16 @@ export class UsuariosPageComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.loadUsers();
-    this.loadAvailableAgents();
+    this.cargarUsuarios();
+    this.cargarAgentesDisponibles();
   }
 
-  loadUsers(): void {
+  cargarUsuarios(): void {
     this.loading.set(true);
     this.error.set(null);
-    this.adminApi.listUsers(this.currentPage()).subscribe({
+    this.adminApi.listarUsuarios(this.currentPage()).subscribe({
       next: (res) => {
-        this.users.set(res.items);
+        this.usuarios.set(res.items);
         this.totalPages.set(res.totalPages);
         this.loading.set(false);
       },
@@ -69,10 +69,10 @@ export class UsuariosPageComponent implements OnInit {
     });
   }
 
-  loadAvailableAgents(): void {
-    this.adminApi.listAgentsAvailableForLinking().subscribe({
-      next: (agents) => {
-        this.availableAgents.set(agents);
+  cargarAgentesDisponibles(): void {
+    this.adminApi.listarAgentesDisponiblesParaVincular().subscribe({
+      next: (agentes) => {
+        this.agentesDisponibles.set(agentes);
       },
       // Silently fail — agents list is optional for user creation
     });
@@ -80,75 +80,75 @@ export class UsuariosPageComponent implements OnInit {
 
   goToPage(page: number): void {
     this.currentPage.set(page);
-    this.loadUsers();
+    this.cargarUsuarios();
   }
 
   openCreateForm(): void {
-    this.editingUser.set(null);
-    this.userForm.reset({ email: '', password: '', roles: ['ROLE_AGENT'], agent_id: null });
-    this.userForm.controls.password.setValidators([Validators.required, Validators.minLength(8)]);
-    this.userForm.controls.password.updateValueAndValidity();
+    this.usuarioEnEdicion.set(null);
+    this.usuarioForm.reset({ email: '', password: '', roles: ['ROLE_AGENT'], agent_id: null });
+    this.usuarioForm.controls.password.setValidators([Validators.required, Validators.minLength(8)]);
+    this.usuarioForm.controls.password.updateValueAndValidity();
     this.showForm.set(true);
   }
 
-  openEditForm(user: UsuarioDeGestionDTO): void {
-    this.editingUser.set(user);
-    this.userForm.reset({
-      email: user.email,
+  openEditForm(usuario: UsuarioDeGestionDTO): void {
+    this.usuarioEnEdicion.set(usuario);
+    this.usuarioForm.reset({
+      email: usuario.email,
       password: '',
-      roles: [...user.roles.filter(r => r !== 'ROLE_USER')],
+      roles: [...usuario.roles.filter(r => r !== 'ROLE_USER')],
       agent_id: null,
     });
-    this.userForm.controls.password.setValidators([Validators.minLength(8)]);
-    this.userForm.controls.password.updateValueAndValidity();
+    this.usuarioForm.controls.password.setValidators([Validators.minLength(8)]);
+    this.usuarioForm.controls.password.updateValueAndValidity();
     this.showForm.set(true);
   }
 
   closeForm(): void {
     this.showForm.set(false);
-    this.editingUser.set(null);
+    this.usuarioEnEdicion.set(null);
   }
 
   toggleRole(role: string): void {
-    const current = this.userForm.controls.roles.value;
+    const current = this.usuarioForm.controls.roles.value;
     const idx = current.indexOf(role);
     const next = idx >= 0
       ? current.filter(r => r !== role)
       : [...current, role];
-    this.userForm.controls.roles.setValue(next);
+    this.usuarioForm.controls.roles.setValue(next);
   }
 
-  hasUserError(field: 'email' | 'password' | 'agent_id'): boolean {
-    const control = this.userForm.get(field);
+  hasErrorDeUsuario(field: 'email' | 'password' | 'agent_id'): boolean {
+    const control = this.usuarioForm.get(field);
     return !!control && control.touched && control.invalid;
   }
 
-  hasUserRolesError(): boolean {
-    const control = this.userForm.controls.roles;
+  hasErrorDeRolesDeUsuario(): boolean {
+    const control = this.usuarioForm.controls.roles;
     return control.touched && !!control.errors?.['atLeastOneRole'];
   }
 
-  onUserSubmit(): void {
-    if (this.userForm.invalid) {
-      this.userForm.markAllAsTouched();
+  onUsuarioSubmit(): void {
+    if (this.usuarioForm.invalid) {
+      this.usuarioForm.markAllAsTouched();
       return;
     }
 
-    const editing = this.editingUser();
+    const editing = this.usuarioEnEdicion();
     if (editing) {
-      this.updateUser(editing);
+      this.updateUsuario(editing);
     } else {
-      this.createUser();
+      this.createUsuario();
     }
   }
 
-  private createUser(): void {
-    const { email, password, roles, agent_id } = this.userForm.getRawValue();
+  private createUsuario(): void {
+    const { email, password, roles, agent_id } = this.usuarioForm.getRawValue();
 
     this.saving.set(true);
     this.error.set(null);
 
-    this.adminApi.createUser({
+    this.adminApi.createUsuario({
       email,
       password,
       roles,
@@ -158,7 +158,7 @@ export class UsuariosPageComponent implements OnInit {
         this.saving.set(false);
         this.success.set('User created successfully');
         this.closeForm();
-        this.loadUsers();
+        this.cargarUsuarios();
       },
       error: (err) => {
         this.saving.set(false);
@@ -167,14 +167,14 @@ export class UsuariosPageComponent implements OnInit {
     });
   }
 
-  private updateUser(user: UsuarioDeGestionDTO): void {
-    const { email, password, roles } = this.userForm.getRawValue();
+  private updateUsuario(usuario: UsuarioDeGestionDTO): void {
+    const { email, password, roles } = this.usuarioForm.getRawValue();
 
     this.saving.set(true);
     this.error.set(null);
 
-    this.adminApi.updateUser({
-      id: user.id,
+    this.adminApi.updateUsuario({
+      id: usuario.id,
       email,
       password,
       roles,
@@ -183,7 +183,7 @@ export class UsuariosPageComponent implements OnInit {
         this.saving.set(false);
         this.success.set('User updated successfully');
         this.closeForm();
-        this.loadUsers();
+        this.cargarUsuarios();
       },
       error: (err) => {
         this.saving.set(false);
@@ -192,8 +192,8 @@ export class UsuariosPageComponent implements OnInit {
     });
   }
 
-  confirmDelete(user: UsuarioDeGestionDTO): void {
-    this.showDeleteConfirm.set(user);
+  confirmDelete(usuario: UsuarioDeGestionDTO): void {
+    this.showDeleteConfirm.set(usuario);
   }
 
   cancelDelete(): void {
@@ -201,18 +201,18 @@ export class UsuariosPageComponent implements OnInit {
   }
 
   executeDelete(): void {
-    const user = this.showDeleteConfirm();
-    if (!user) return;
+    const usuario = this.showDeleteConfirm();
+    if (!usuario) return;
 
     this.saving.set(true);
     this.error.set(null);
 
-    this.adminApi.deactivateUser(user.id).subscribe({
+    this.adminApi.desactivarUsuario(usuario.id).subscribe({
       next: () => {
         this.saving.set(false);
-        this.success.set(`User "${user.email}" deactivated successfully`);
+        this.success.set(`User "${usuario.email}" deactivated successfully`);
         this.showDeleteConfirm.set(null);
-        this.loadUsers();
+        this.cargarUsuarios();
       },
       error: (err) => {
         this.saving.set(false);
@@ -221,15 +221,15 @@ export class UsuariosPageComponent implements OnInit {
     });
   }
 
-  reactivateUser(user: UsuarioDeGestionDTO): void {
+  reactivarUsuario(usuario: UsuarioDeGestionDTO): void {
     this.saving.set(true);
     this.error.set(null);
 
-    this.adminApi.reactivateUser(user.id).subscribe({
+    this.adminApi.reactivarUsuario(usuario.id).subscribe({
       next: () => {
         this.saving.set(false);
-        this.success.set(`User "${user.email}" reactivated successfully`);
-        this.loadUsers();
+        this.success.set(`User "${usuario.email}" reactivated successfully`);
+        this.cargarUsuarios();
       },
       error: (err) => {
         this.saving.set(false);

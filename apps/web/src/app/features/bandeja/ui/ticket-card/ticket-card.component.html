@@ -19,7 +19,7 @@
   <!-- Main content -->
   <div class="ticket-card__body">
     <div class="ticket-card__row ticket-card__row--top">
-      <span class="ticket-card__name">{{ contactName() }}</span>
+      <span class="ticket-card__name">{{ nombreDeContacto() }}</span>
       <span class="ticket-card__time">{{ relativeTime() }}</span>
     </div>
 
@@ -27,7 +27,7 @@
       <div class="ticket-card__meta">
         <!-- Status chip -->
         <span class="ticket-card__status-chip" [ngClass]="'status-' + ticket().status">
-          {{ statusLabel() }}
+          {{ estadoLabel() }}
         </span>
 
         <!-- Priority -->
@@ -69,9 +69,9 @@
     }
 
     <!-- Assignment error badge -->
-    @if (assignmentError()) {
+    @if (errorDeAsignacion()) {
       <div class="ticket-card__error-badge">
-        {{ assignmentError() }}
+        {{ errorDeAsignacion() }}
       </div>
     }
   </div>
@@ -86,20 +86,20 @@
     role="listbox"
     [attr.aria-label]="'Seleccionar agente'"
   >
-    @if (availableAgents().length === 0) {
+    @if (agentesDisponibles().length === 0) {
       <div class="ticket-card__dropdown-empty">
         Sin agentes disponibles
       </div>
     } @else {
-      @if (activeAgents().length > 0) {
+      @if (agentesActivos().length > 0) {
         <div class="ticket-card__dropdown-group-header">Activo</div>
-        @for (agent of activeAgents(); track agent.id) {
+        @for (agent of agentesActivos(); track agent.id) {
           <button
             class="ticket-card__dropdown-item"
             role="option"
             [attr.aria-selected]="ticket().owner?.id === agent.id"
-            (click)="selectAgent(agent, $event)"
-            (keydown.enter)="selectAgent(agent, $event)"
+            (click)="seleccionarAgente(agent, $event)"
+            (keydown.enter)="seleccionarAgente(agent, $event)"
           >
             <span class="ticket-card__dropdown-name">{{ agent.name }}</span>
             <span class="ticket-card__dropdown-capacity">
@@ -111,17 +111,17 @@
         }
       }
 
-      @if (inactiveAgents().length > 0) {
+      @if (agentesInactivos().length > 0) {
         <div class="ticket-card__dropdown-group-header">Inactivo</div>
-        @for (agent of inactiveAgents(); track agent.id) {
+        @for (agent of agentesInactivos(); track agent.id) {
           <button
             class="ticket-card__dropdown-item ticket-card__dropdown-item--disabled"
             role="option"
             [attr.aria-selected]="ticket().owner?.id === agent.id"
             [attr.aria-disabled]="true"
             [disabled]="true"
-            (click)="selectAgent(agent, $event)"
-            (keydown.enter)="selectAgent(agent, $event)"
+            (click)="seleccionarAgente(agent, $event)"
+            (keydown.enter)="seleccionarAgente(agent, $event)"
           >
             <span class="ticket-card__dropdown-name">{{ agent.name }}</span>
             <span class="ticket-card__dropdown-capacity">

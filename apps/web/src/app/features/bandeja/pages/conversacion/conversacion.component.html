@@ -14,15 +14,15 @@
       </button>
       <app-conversacion-header
         [ticket]="activeTicket()!"
-        [resolving]="resolving()"
-        [participationOpen]="participationOpen()"
-        (resolve)="onResolveTicket()"
-        (toggleParticipation)="onToggleParticipation()"
+        [resolviendo]="resolviendo()"
+        [participacionAbierta]="participacionAbierta()"
+        (resolver)="onResolverTicket()"
+        (alternarParticipacion)="onAlternarParticipacion()"
       />
     </div>
 
     <!-- "Participación" panel — collapsible, lazy-fetches only while open -->
-    @if (participationOpen()) {
+    @if (participacionAbierta()) {
       <app-participacion-de-ticket [ticketId]="+activeTicket()!.ticket_id" />
     }
 
@@ -56,9 +56,9 @@
           <app-loading-spinner class="older-messages-spinner" />
         }
         <app-mensaje-bubble
-          *cdkVirtualFor="let msg of messages(); trackBy: trackById"
-          [message]="msg"
-          (retry)="onRetry($event)"
+          *cdkVirtualFor="let msg of mensajes(); trackBy: trackById"
+          [mensaje]="msg"
+          (reintentar)="onReintentar($event)"
         />
       </cdk-virtual-scroll-viewport>
     }
@@ -66,15 +66,15 @@
     <!-- Scroll-to-bottom button — visible whenever user is not at the bottom -->
     <app-mensajes-nuevos-indicator
       [visible]="!scroll.isAtBottom()"
-      [count]="scroll.newMessagesCount()"
+      [count]="scroll.conteoDeMensajesNuevos()"
       (click)="scroll.scrollToBottom()"
     />
 
     <!-- Sticky composer: 56px -->
     <app-composer
-      [lastInboundMessageAt]="lastInboundMessageAt()"
-      (sendMessage)="onSendMessage($event)"
-      (sendWithFile)="onSendFile($event)"
+      [ultimoMensajeEntranteAt]="ultimoMensajeEntranteAt()"
+      (enviarMensaje)="onEnviarMensaje($event)"
+      (enviarConArchivo)="onEnviarArchivo($event)"
     />
   } @else {
     <!-- No chat selected -->

@@ -8,12 +8,12 @@ import { GetMensajesResponse } from './mensaje-api.service';
  * Used by both TicketListComponent (initial load) and ConversacionComponent (pagination).
  * Centralized here to avoid duplicated inline mapping.
  */
-export function mapApiMessageToCanonical(
+export function mapearMensajeDeApiACanonico(
   m: MensajeDto,
   ticketId: string
 ): Mensaje {
-  const direction = m.direction as 'inbound' | 'outbound' | 'system';
-  const media: Adjunto | undefined = m.media
+  const direccion = m.direction as 'inbound' | 'outbound' | 'system';
+  const adjunto: Adjunto | undefined = m.media
     ? {
         key: m.media.key,
         mimeType: m.media.mimeType,
@@ -29,20 +29,20 @@ export function mapApiMessageToCanonical(
     id: String(m.message_id),
     ticketId,
     content: m.content,
-    direction,
-    sender: direction === 'inbound' ? 'customer' : 'agent',
+    direction: direccion,
+    sender: direccion === 'inbound' ? 'customer' : 'agent',
     deliveryStatus: (m.deliveryStatus || 'sent') as Mensaje['deliveryStatus'],
     createdAt: m.created_at || new Date().toISOString(),
-    media,
+    media: adjunto,
   };
 }
 
 /**
  * Extracts messages from a GetMensajesResponse and maps them to canonical Message.
  */
-export function mapApiMessagesToCanonical(
+export function mapearMensajesDeApiACanonicos(
   resp: GetMensajesResponse,
   ticketId: string
 ): Mensaje[] {
-  return resp.data.map((m) => mapApiMessageToCanonical(m, ticketId));
+  return resp.data.map((m) => mapearMensajeDeApiACanonico(m, ticketId));
 }

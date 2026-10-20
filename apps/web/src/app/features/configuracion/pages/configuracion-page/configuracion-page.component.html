@@ -38,12 +38,12 @@
           <!-- ═══ Profile Tab ═══ -->
           <section class="settings-section" role="tabpanel">
             <h2>Perfil</h2>
-            @if (store.profile(); as profile) {
+            @if (store.perfil(); as profile) {
               <p class="form-help-text">
                 <strong>{{ profile.name }}</strong> &mdash; {{ profile.email }}
               </p>
             }
-            <form [formGroup]="profileForm" (ngSubmit)="onProfileSubmit()">
+            <form [formGroup]="perfilForm" (ngSubmit)="onPerfilSubmit()">
               <div class="form-group">
                 <label class="form-label" for="signature">Firma</label>
                 <textarea
@@ -56,14 +56,14 @@
                 ></textarea>
               </div>
 
-              @if (profileSuccess(); as msg) {
+              @if (perfilSuccess(); as msg) {
                 <div class="alert alert--success">{{ msg }}</div>
               }
 
               <button
                 type="submit"
                 class="btn btn--primary"
-                [disabled]="store.saving() || profileForm.pristine"
+                [disabled]="store.saving() || perfilForm.pristine"
               >
                 {{ store.saving() ? 'Guardando…' : 'Guardar perfil' }}
               </button>
@@ -75,7 +75,7 @@
           <!-- ═══ Notifications Tab ═══ -->
           <section class="settings-section" role="tabpanel">
             <h2>Notificaciones</h2>
-            <form [formGroup]="notificationsForm" (ngSubmit)="onNotificationsSubmit()">
+            <form [formGroup]="notificacionesForm" (ngSubmit)="onNotificacionesSubmit()">
               <div class="form-group">
                 <label class="form-label--checkbox">
                   <input type="checkbox" formControlName="sound" />
@@ -94,14 +94,14 @@
                 </label>
               </div>
 
-              @if (notificationsSuccess(); as msg) {
+              @if (notificacionesSuccess(); as msg) {
                 <div class="alert alert--success">{{ msg }}</div>
               }
 
               <button
                 type="submit"
                 class="btn btn--primary"
-                [disabled]="store.saving() || notificationsForm.pristine"
+                [disabled]="store.saving() || notificacionesForm.pristine"
               >
                 {{ store.saving() ? 'Guardando…' : 'Guardar notificaciones' }}
               </button>
@@ -141,7 +141,7 @@
                           <button
                             type="button"
                             class="btn btn--danger btn--sm"
-                            (click)="removeShift($index)"
+                            (click)="quitarTurno($index)"
                             [disabled]="store.saving()"
                           >
                             Eliminar
@@ -201,7 +201,7 @@
               <button
                 type="button"
                 class="btn btn--primary"
-                (click)="onAddShift()"
+                (click)="onAgregarTurno()"
                 [disabled]="store.saving()"
               >
                 Agregar turno
@@ -209,7 +209,7 @@
             </div>
 
             <p class="form-help-text">
-              <a [routerLink]="'/agents/' + (store.workspace()?.id ?? '') + '/shifts'" class="link">Gestionar horarios</a>
+              <a [routerLink]="'/agents/' + (store.espacioDeTrabajo()?.id ?? '') + '/shifts'" class="link">Gestionar horarios</a>
               (solo administradores)
             </p>
           </section>
@@ -223,7 +223,7 @@
               Se envía automáticamente cuando recibís un mensaje y estás fuera de tu
               horario laboral (o marcado como no disponible).
             </p>
-            <form [formGroup]="autoReplyForm" (ngSubmit)="onAutoReplySubmit()">
+            <form [formGroup]="respuestaAutomaticaForm" (ngSubmit)="onRespuestaAutomaticaSubmit()">
               <div class="form-group">
                 <label class="form-label--checkbox">
                   <input type="checkbox" formControlName="enabled" />
@@ -239,19 +239,19 @@
                   formControlName="message"
                   rows="4"
                   maxlength="4096"
-                  [disabled]="!autoReplyForm.get('enabled')?.value"
+                  [disabled]="!respuestaAutomaticaForm.get('enabled')?.value"
                   placeholder="Ej: Gracias por contactarnos. Te responderemos a la brevedad."
                 ></textarea>
               </div>
 
-              @if (autoReplySuccess(); as msg) {
+              @if (respuestaAutomaticaSuccess(); as msg) {
                 <div class="alert alert--success">{{ msg }}</div>
               }
 
               <button
                 type="submit"
                 class="btn btn--primary"
-                [disabled]="store.saving() || autoReplyForm.pristine"
+                [disabled]="store.saving() || respuestaAutomaticaForm.pristine"
               >
                 {{ store.saving() ? 'Guardando…' : 'Guardar respuesta automática' }}
               </button>
@@ -264,7 +264,7 @@
           <section class="settings-section" role="tabpanel">
             <h2>Workspace activo</h2>
 
-            @if (store.workspace(); as ws) {
+            @if (store.espacioDeTrabajo(); as ws) {
               <div class="form-group">
                 <label class="form-label">ID</label>
                 <p class="form-help-text">{{ ws.id }}</p>

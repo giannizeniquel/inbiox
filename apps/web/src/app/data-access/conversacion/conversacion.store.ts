@@ -23,7 +23,7 @@ import { TicketStore } from '../ticket/ticket.store';
 @Injectable({ providedIn: 'root' })
 export class ConversacionStore {
   /** Messages in the active conversation */
-  readonly messages = signal<Mensaje[]>([]);
+  readonly mensajes = signal<Mensaje[]>([]);
 
   /** Loading state (for initial load / pagination) */
   readonly loading = signal<boolean>(false);
@@ -52,7 +52,7 @@ export class ConversacionStore {
           || e.eventType === TipoDeEventoEnTiempoReal.MessageUpdated
         ),
         takeUntilDestroyed(destroyRef),
-      ).subscribe(e => this.onRealtimeEvent(e));
+      ).subscribe(e => this.onEventoEnTiempoReal(e));
     } catch {
       // Running outside DI context (e.g., unit tests)
     }
@@ -62,7 +62,7 @@ export class ConversacionStore {
    * Handle realtime events dispatched via EventBus.
    * Logic mirrors MercureService.handleEvent() for conversation-related types.
    */
-  private onRealtimeEvent(event: EventoEnTiempoReal): void {
+  private onEventoEnTiempoReal(event: EventoEnTiempoReal): void {
     switch (event.eventType) {
       case TipoDeEventoEnTiempoReal.MessageAdded: {
         const p = event.payload as MessageAddedPayload;
@@ -77,10 +77,10 @@ export class ConversacionStore {
         // also broadcasts via Mercure, so the sender's own optimistic
         // confirmMessage() may already have this id before the echo
         // arrives (or vice versa) — never insert the same server id twice.
-        if (this.messages().some(m => m.id === String(p.messageId))) {
+        if (this.mensajes().some(m => m.id === String(p.messageId))) {
           return;
         }
-        const message: Mensaje = {
+        const mensaje: Mensaje = {
           id: String(p.messageId),
           ticketId: String(p.ticketId),
           content: p.content,
@@ -91,13 +91,13 @@ export class ConversacionStore {
           externalId: p.externalId ?? undefined,
           media: p.media ?? undefined,
         };
-        this.addMessage(message);
+        this.mensaje(mensaje);
         break;
       }
 
       case TipoDeEventoEnTiempoReal.MessageUpdated: {
         const p = event.payload as MessageUpdatedPayload;
-        this.updateMessageStatus(
+        this.updateEstadoDeMensaje(
           String(p.messageId),
           (p.status ?? 'read') as Mensaje['deliveryStatus'],
         );
@@ -110,11 +110,11 @@ export class ConversacionStore {
    * Message cache for retry operations.
    * Stores original payloads by tempId.
    */
-  private messageCache = new Map<string, { content: string; ticketId: string }>();
+  private mensajeCache = new Map<string, { content: string; ticketId: string }>();
 
   /** Add a message (optimistic or from server) */
-  addMessage(message: Mensaje): void {
-    this.messages.update(msgs => [...msgs, message]);
+  mensaje(mensaje: Mensaje): void {
+    this.mensajes.update(msgs => [...msgs, mensaje]);
   }
 
   /**
@@ -126,11 +126,11 @@ export class ConversacionStore {
    * @param ticketId - Ticket ID
    * @returns The created optimistic message
    */
-  addOptimisticMessage(
+  agregarMensajeOptimista(
     tempId: string,
     content: string,
     ticketId: string,
-    media?: Mensaje['media'],
+    adjunto?: Mensaje['media'],
   ): Mensaje {
     const optimistic: Mensaje = {
       id: tempId,
@@ -141,12 +141,12 @@ export class ConversacionStore {
       sender: 'agent',
       deliveryStatus: 'sending',
       createdAt: new Date().toISOString(),
-      media,
+      media: adjunto,
     };
-    this.addMessage(optimistic);
+    this.mensaje(optimistic);
 
     // Cache for retry
-    this.messageCache.set(tempId, { content, ticketId });
+    this.mensajeCache.set(tempId, { content, ticketId });
 
     return optimistic;
   }
@@ -154,15 +154,15 @@ export class ConversacionStore {
   /**
    * Update delivery status of a message (by id or tempId).
    */
-  updateMessageStatus(
+  updateEstadoDeMensaje(
     idOrTempId: string,
-    status: Mensaje['deliveryStatus'],
+    estado: Mensaje['deliveryStatus'],
   ): void {
-    this.messages.update(msgs =>
+    this.mensajes.update(msgs =>
       msgs.map(m => {
         const matchId = m.id === idOrTempId || (m.tempId ?? m.id) === idOrTempId;
         if (matchId) {
-          return { ...m, deliveryStatus: status };
+          return { ...m, deliveryStatus: estado };
         }
         return m;
       })
@@ -173,8 +173,8 @@ export class ConversacionStore {
    * Replace an optimistic message with the server-confirmed one.
    * Reconciles tempId to provider-assigned id.
    */
-  confirmMessage(tempId: string, confirmed: Mensaje): void {
-    this.messages.update(msgs =>
+  confirmarMensaje(tempId: string, confirmed: Mensaje): void {
+    this.mensajes.update(msgs =>
       msgs
         .map(m => {
           if (m.tempId === tempId) {
@@ -195,27 +195,27 @@ export class ConversacionStore {
         .filter(m => !(m.id === confirmed.id && m.tempId !== tempId))
     );
     // Clear from cache on confirmation
-    this.messageCache.delete(tempId);
+    this.mensajeCache.delete(tempId);
   }
 
   /**
    * Remove a failed message by id.
    */
-  removeMessage(idOrTempId: string): void {
-    this.messages.update(msgs =>
+  quitarMensaje(idOrTempId: string): void {
+    this.mensajes.update(msgs =>
       msgs.filter(m => m.id !== idOrTempId && (m.tempId ?? m.id) !== idOrTempId)
     );
-    this.messageCache.delete(idOrTempId);
+    this.mensajeCache.delete(idOrTempId);
   }
 
   /**
    * Retry a failed message by resetting its status to 'sending'.
    * Returns the cached payload for retry.
    */
-  retryMessage(tempId: string): { content: string; ticketId: string } | null {
-    const cached = this.messageCache.get(tempId);
+  reintentarMensaje(tempId: string): { content: string; ticketId: string } | null {
+    const cached = this.mensajeCache.get(tempId);
     if (cached) {
-      this.updateMessageStatus(tempId, 'sending');
+      this.updateEstadoDeMensaje(tempId, 'sending');
       return cached;
     }
     return null;
@@ -224,34 +224,34 @@ export class ConversacionStore {
   /**
    * Get cached message payload by tempId.
    */
-  getCachedMessage(tempId: string): { content: string; ticketId: string } | undefined {
-    return this.messageCache.get(tempId);
+  getMensajeEnCache(tempId: string): { content: string; ticketId: string } | undefined {
+    return this.mensajeCache.get(tempId);
   }
 
   /**
    * Clear cached message payload.
    */
   clearCache(tempId: string): void {
-    this.messageCache.delete(tempId);
+    this.mensajeCache.delete(tempId);
   }
 
   /**
    * Check if a message exists by tempId.
    */
-  hasMessage(tempId: string): boolean {
-    return this.messages().some(m => m.tempId === tempId);
+  hasMensaje(tempId: string): boolean {
+    return this.mensajes().some(m => m.tempId === tempId);
   }
 
   /**
    * Load messages for a chat (initial load or pagination).
    */
-  loadMessages(messages: Mensaje[], append = false): void {
+  cargarMensajes(mensajes: Mensaje[], append = false): void {
     if (append) {
-      const existingIds = new Set(this.messages().map(m => m.id));
-      const newMessages = messages.filter(m => !existingIds.has(m.id));
-      this.messages.update(msgs => [...msgs, ...newMessages]);
+      const existingIds = new Set(this.mensajes().map(m => m.id));
+      const mensajesNuevos = mensajes.filter(m => !existingIds.has(m.id));
+      this.mensajes.update(msgs => [...msgs, ...mensajesNuevos]);
     } else {
-      this.messages.set(messages);
+      this.mensajes.set(mensajes);
     }
   }
 
@@ -259,11 +259,11 @@ export class ConversacionStore {
    * Prepend older messages at the start of the array.
    * Used for scroll-up pagination — adds older entries before current ones.
    */
-  prependMessages(messages: Mensaje[]): void {
-    this.messages.update(msgs => {
+  agregarMensajesAlInicio(mensajes: Mensaje[]): void {
+    this.mensajes.update(msgs => {
       const existingIds = new Set(msgs.map(m => m.id));
-      const newMessages = messages.filter(m => !existingIds.has(m.id));
-      return [...newMessages, ...msgs];
+      const mensajesNuevos = mensajes.filter(m => !existingIds.has(m.id));
+      return [...mensajesNuevos, ...msgs];
     });
   }
 
@@ -281,14 +281,14 @@ export class ConversacionStore {
    * Find message by tempId or id.
    */
   findById(idOrTempId: string): Mensaje | undefined {
-    return this.messages().find(m => m.id === idOrTempId || (m.tempId ?? m.id) === idOrTempId);
+    return this.mensajes().find(m => m.id === idOrTempId || (m.tempId ?? m.id) === idOrTempId);
   }
 
   /** Reset store (clears messages, loading, hasMore, cache) */
   reset(): void {
-    this.messages.set([]);
+    this.mensajes.set([]);
     this.loading.set(false);
     this.hasMore.set(true);
-    this.messageCache.clear();
+    this.mensajeCache.clear();
   }
 }

@@ -53,20 +53,20 @@ export class EquipoApiService {
   }
 
   /** DELETE /api/admin/teams/{id} — soft delete (deactivate) */
-  deactivate(id: number): Observable<void> {
+  desactivar(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/api/admin/teams/${id}`).pipe(
       rethrowApiError('Failed to deactivate team'),
     );
   }
 
   /** PUT /api/admin/teams/{id}/agents — bulk-replace team roster */
-  assignAgents(id: number, agentIds: number[]): Observable<{
+  asignarAgentes(id: number, agenteIds: number[]): Observable<{
     team_id: number;
     agent_ids: number[];
   }> {
     return this.http.put<{ team_id: number; agent_ids: number[] }>(
       `${this.baseUrl}/api/admin/teams/${id}/agents`,
-      { agentIds }
+      { agentIds: agenteIds }
     );
   }
 }

@@ -18,16 +18,16 @@ import { FiltroDeTiempoParams } from './reporte.params';
  */
 @Injectable({ providedIn: 'root' })
 export class ExportarTicketsCsvUseCase {
-  private readonly reportsApi = inject(ReporteApiService);
+  private readonly reporteApi = inject(ReporteApiService);
   private readonly document = inject(DOCUMENT);
 
   execute(params?: FiltroDeTiempoParams): Observable<Blob> {
-    return this.reportsApi.exportTicketsCsv(params).pipe(
-      tap((blob) => this.triggerDownload(blob, params)),
+    return this.reporteApi.exportarTicketsCsv(params).pipe(
+      tap((blob) => this.dispararDescarga(blob, params)),
     );
   }
 
-  private triggerDownload(blob: Blob, params?: FiltroDeTiempoParams): void {
+  private dispararDescarga(blob: Blob, params?: FiltroDeTiempoParams): void {
     const url = this.document.defaultView
       ? this.document.defaultView.URL.createObjectURL(blob)
       : URL.createObjectURL(blob);

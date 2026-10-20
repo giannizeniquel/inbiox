@@ -111,7 +111,7 @@ export const authInterceptor: HttpInterceptorFn = (
         switchMap((refreshed: boolean) => {
           if (!refreshed) {
             // Refresh failed — log out and redirect
-            authStore.logout();
+            authStore.cerrarSesion();
             router.navigate(['/login']);
             return throwError(() => error);
           }

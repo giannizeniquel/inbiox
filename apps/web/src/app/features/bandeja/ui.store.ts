@@ -10,7 +10,7 @@ import { TicketStore } from '../../data-access/ticket/ticket.store';
  */
 @Injectable({ providedIn: 'root' })
 export class UiStore {
-  readonly hasNewMessages = signal<boolean>(false);
+  readonly hasMensajesNuevos = signal<boolean>(false);
   readonly isAtBottom = signal<boolean>(true);
 
   private readonly ticketStore = inject(TicketStore);
@@ -39,29 +39,29 @@ export class UiStore {
           return !!active && String(active.ticket_id) === String(p.ticketId);
         }),
         takeUntilDestroyed(destroyRef),
-      ).subscribe(() => this.notifyNewMessages());
+      ).subscribe(() => this.notificarMensajesNuevos());
     } catch {
       // Running outside DI context (e.g., unit tests)
     }
   }
 
-  notifyNewMessages(): void {
-    this.hasNewMessages.set(true);
+  notificarMensajesNuevos(): void {
+    this.hasMensajesNuevos.set(true);
   }
 
   scrollToBottom(): void {
     this.isAtBottom.set(true);
-    this.hasNewMessages.set(false);
+    this.hasMensajesNuevos.set(false);
   }
 
   markViewed(): void {
-    this.hasNewMessages.set(false);
+    this.hasMensajesNuevos.set(false);
   }
 
   setIsAtBottom(value: boolean): void {
     this.isAtBottom.set(value);
     if (value) {
-      this.hasNewMessages.set(false);
+      this.hasMensajesNuevos.set(false);
     }
   }
 }

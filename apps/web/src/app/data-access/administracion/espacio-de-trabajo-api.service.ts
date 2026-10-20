@@ -34,22 +34,22 @@ export class EspacioDeTrabajoApiService {
   // ── Agent-facing endpoints ────────────────────────────
 
   /** GET /api/me/workspace — active workspace preference */
-  getActiveWorkspace(): Observable<PreferenciaDeEspacioDeTrabajoResponse> {
+  getEspacioDeTrabajoActivo(): Observable<PreferenciaDeEspacioDeTrabajoResponse> {
     return this.http.get<PreferenciaDeEspacioDeTrabajoResponse>(
       `${this.baseUrl}/api/me/workspace`
     );
   }
 
   /** PUT /api/me/workspace — set active workspace */
-  setActiveWorkspace(workspaceId: number): Observable<PreferenciaDeEspacioDeTrabajoResponse> {
+  setEspacioDeTrabajoActivo(espacioDeTrabajoId: number): Observable<PreferenciaDeEspacioDeTrabajoResponse> {
     return this.http.put<PreferenciaDeEspacioDeTrabajoResponse>(
       `${this.baseUrl}/api/me/workspace`,
-      { workspaceId }
+      { workspaceId: espacioDeTrabajoId }
     );
   }
 
   /** GET /api/me/workspaces — get agent's assigned workspaces */
-  listMyWorkspaces(): Observable<EspacioDeTrabajoDTO[]> {
+  listarMisEspaciosDeTrabajo(): Observable<EspacioDeTrabajoDTO[]> {
     return this.http.get<EspacioDeTrabajoDTO[]>(
       `${this.baseUrl}/api/me/workspaces`
     );
@@ -99,20 +99,20 @@ export class EspacioDeTrabajoApiService {
   }
 
   /** DELETE /api/admin/workspaces/{id} — soft delete */
-  deactivate(id: number): Observable<void> {
+  desactivar(id: number): Observable<void> {
     return this.http.delete<void>(
       `${this.baseUrl}/api/admin/workspaces/${id}`
     ).pipe(rethrowApiError('Failed to deactivate workspace'));
   }
 
   /** PUT /api/admin/workspaces/{id}/agents — assign agents */
-  assignAgents(id: number, agentIds: number[]): Observable<{
+  asignarAgentes(id: number, agenteIds: number[]): Observable<{
     workspace_id: number;
     agent_ids: number[];
   }> {
     return this.http.put<{ workspace_id: number; agent_ids: number[] }>(
       `${this.baseUrl}/api/admin/workspaces/${id}/agents`,
-      { agentIds }
+      { agentIds: agenteIds }
     );
   }
 }

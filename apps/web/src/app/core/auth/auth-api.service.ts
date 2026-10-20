@@ -55,7 +55,7 @@ export class AuthApiService {
   }
 
   /** POST /api/auth/logout — clears refresh cookie */
-  logout(): Observable<void> {
+  cerrarSesion(): Observable<void> {
     return this.http.post<void>(
       `${this.baseUrl}/api/auth/logout`,
       {},
