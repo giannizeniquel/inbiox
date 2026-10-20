@@ -181,7 +181,7 @@ The `POST …/disponibilidad` response (`agenteId, disponible, disponibilidadMan
 
 Consumers (compiler): `features/disponibilidad/pages/disponibilidad/disponibilidad.page.html:13-23,56`, `features/disponibilidad/pages/turnos/turnos.page.html:24-26`, `features/configuracion/pages/configuracion-page/*` (`TurnoDTO` through `horarioDeAtencion`), `data-access/agente/configuracion.store.ts`.
 
-**`disponibilidad-de-agente.dto.ts`** (`DisponibilidadDeAgenteDTO`, 7-13): `id` =, `name`:9 → `nombre`, `is_active_now`:10 → `activoAhora`†, `active_ticket_count`:11 → `cantidadDeTicketsActivos`†, `max_active_tickets`:12 → `maxTicketsActivos`†. Consumers: `features/bandeja/ui/ticket-card/ticket-card.component.ts:63,68,144`, `.html:106,128`, `features/bandeja/pages/ticket-list/ticket-list.component.ts:249` (`agente?.name`); spec 12 + 1 + 1.
+**`disponibilidad-de-agente.dto.ts`** (`DisponibilidadDeAgenteDTO`, 7-13): `id` =, `name`:9 → `nombre`, `is_active_now`:10 → `activoAhora`†, `active_ticket_count`:11 → `cantidadDeTicketsActivos`†, `max_active_tickets`:12 → `maximoDeTicketsActivos`†. Consumers: `features/bandeja/ui/ticket-card/ticket-card.component.ts:63,68,144`, `.html:106,128`, `features/bandeja/pages/ticket-list/ticket-list.component.ts:249` (`agente?.name`); spec 12 + 1 + 1.
 
 ### A.8 `data-access/reporte` (contract A.10)
 
@@ -231,7 +231,7 @@ The same response interfaces are declared twice: `reporte-api.service.ts:62-120`
 | `contact`:14 → `contacto`; inner `id` =, `phone` → `telefono`, `name` → `nombre` | `conversacion-header.component.ts` (3), `ticket-card.component.ts` (2) |
 | `last_message`:19 → `ultimoMensaje` | 4 / 2 |
 | `owner`:20 → `responsable`; inner `id` =, `name` → `nombre` (list also sends `enTurno`†, `cargaActual`†, `capacidadMaxima`†; the front does not read them) | `ticket.store.ts` (5), `ticket-realtime.reducer.ts` (2), `ticket-card.component.html` (2), `conversacion-header.component.html` (2), `ticket-list.component.ts` (1) |
-| `metrics`:24 → `metricas`; `unread_count`:25 → `cantidadNoLeidos`† | `unread_count` 10 / 22 |
+| `metrics`:24 → `metricas`; `unread_count`:25 → `cantidadDeNoLeidos`† | `unread_count` 10 / 22 |
 | `timestamps`:27 → `fechas`; `opened_at` → `abiertoAt`†, `updated_at` → `actualizadoAt`, `last_inbound_message_at` → `ultimoMensajeEntranteAt`† | `conversacion.component.ts` (2), `ticket-card.component.ts` (1), reducer (1) |
 | `id`:35 (front alias, not on the wire; can be dropped) | — |
 
@@ -695,10 +695,10 @@ All come from the contract's section 2 rows marked "(nuevo, a confirmar)" and ar
 | `enTurno`, `activoAhora`, `hayPendientes` | A.7, A.8 `AgenteDisponibleEntry`, A.1 `EspacioDeTrabajoDTO` |
 | `cargaActual`, `capacidadMaxima` | A.7 availability, A.8 `CargaDeAgenteEntry` |
 | `abiertoAt`, `reabiertoAt`, `respuestaAt`, `inicioDeRachaAt`, `ultimoTicketAt`, `ultimoMensajeEntranteAt` | A.9 `Ticket.fechas`, A.8 reports and participation pairs |
-| `cantidadNoLeidos`, `cantidadDeTickets`, `cantidadDeAgentes`, `cantidadDeMensajes`, `cantidadDeMuestras` | A.9 `Ticket.metricas`, A.8, A.1 `EquipoDTO`/`EspacioDeTrabajoDTO` |
+| `cantidadDeNoLeidos`, `cantidadDeTickets`, `cantidadDeAgentes`, `cantidadDeMensajes`, `cantidadDeMuestras` | A.9 `Ticket.metricas`, A.8, A.1 `EquipoDTO`/`EspacioDeTrabajoDTO` |
 | `cantidadDeMensajesAutomaticos`, `cantidadDeEntrantesSinResponder` | A.8 response delay and participation |
 | `ticketsCreados`, `ticketsAsignados`, `ticketsResueltos`, `ticketsActivos` | A.8 volume, agents, agent load, available agents |
-| `cantidadDeTicketsActivos`, `maxTicketsActivos`, `porcentajeDeCarga` | A.7 `DisponibilidadDeAgenteDTO`, A.8 `CargaDeAgenteEntry` |
+| `cantidadDeTicketsActivos`, `maximoDeTicketsActivos`, `porcentajeDeCarga` | A.7 `DisponibilidadDeAgenteDTO`, A.8 `CargaDeAgenteEntry` |
 | `demoraSegundos`, `demoraPromedioSegundos` | A.8 response delay and participation |
 | `global`, `porAgente`, `participantes` | A.8 response delay and participation |
 | `frtPromedioSegundos`, `frtPromedioMinutos`, `rtPromedioMinutos` (FRT/RT with avg) | A.8 `frt`, `rt`, agents, FRT trend |
