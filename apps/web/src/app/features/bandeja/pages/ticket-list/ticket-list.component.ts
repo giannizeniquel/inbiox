@@ -12,24 +12,24 @@ import { CommonModule } from '@angular/common';
 import { filter, take } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TicketStore } from '../../../../data-access/ticket/ticket.store';
-import { ConversationStore } from '../../../../data-access/conversacion/conversation.store';
+import { ConversacionStore } from '../../../../data-access/conversacion/conversacion.store';
 import { AuthStore } from '../../../../core/auth/auth.store';
-import { WorkspaceStore } from '../../../../data-access/administracion/workspace.store';
+import { EspacioDeTrabajoStore } from '../../../../data-access/administracion/espacio-de-trabajo.store';
 import { TicketApiService } from '../../../../data-access/ticket/ticket-api.service';
-import { MessageApiService, GetMessagesResponse } from '../../../../data-access/conversacion/message-api.service';
-import { AgentService } from '../../../../data-access/disponibilidad/agent.service';
-import { AssignmentApiService } from '../../../../data-access/asignacion/assignment-api.service';
+import { MensajeApiService, GetMensajesResponse } from '../../../../data-access/conversacion/mensaje-api.service';
+import { DisponibilidadApiService } from '../../../../data-access/disponibilidad/disponibilidad-api.service';
+import { AsignacionApiService } from '../../../../data-access/asignacion/asignacion-api.service';
 import { Ticket } from '../../../../data-access/ticket/ticket.model';
-import { AgentAvailabilityDTO } from '../../../../data-access/disponibilidad/agent-availability.dto';
-import { mapApiMessagesToCanonical } from '../../../../data-access/conversacion/message-mapper.util';
+import { DisponibilidadDeAgenteDTO } from '../../../../data-access/disponibilidad/disponibilidad-de-agente.dto';
+import { mapApiMessagesToCanonical } from '../../../../data-access/conversacion/mensaje-mapper.util';
 import { TicketCardComponent } from '../../ui/ticket-card/ticket-card.component';
-import { TicketSearchComponent } from '../../ui/chat-search/ticket-search.component';
-import { TicketFiltersComponent } from '../../ui/chat-filters/ticket-filters.component';
-import { TeamFilterComponent } from '../../ui/team-filter/team-filter.component';
+import { TicketSearchComponent } from '../../ui/ticket-search/ticket-search.component';
+import { FiltrosDeTicketComponent } from '../../ui/filtros-de-ticket/filtros-de-ticket.component';
+import { FiltroDeEquipoComponent } from '../../ui/filtro-de-equipo/filtro-de-equipo.component';
 import { VirtualScrollViewportComponent } from '../../../../shared/components/virtual-scroll-viewport/virtual-scroll-viewport.component';
 import { VirtualListCoordinatorDirective } from '../../../../shared/directives/virtual-list-coordinator.directive';
-import { RealtimeEvent, RealtimeEventType, TicketAssignedPayload } from '../../../../core/realtime/realtime-event.model';
-import { EventBusService } from '../../../../core/realtime/event-bus.service';
+import { EventoEnTiempoReal, TipoDeEventoEnTiempoReal, TicketAssignedPayload } from '../../../../core/tiempo-real/evento-en-tiempo-real.model';
+import { EventBusService } from '../../../../core/tiempo-real/event-bus.service';
 
 @Component({
   selector: 'app-ticket-list',
@@ -38,8 +38,8 @@ import { EventBusService } from '../../../../core/realtime/event-bus.service';
     CommonModule,
     TicketCardComponent,
     TicketSearchComponent,
-    TicketFiltersComponent,
-    TeamFilterComponent,
+    FiltrosDeTicketComponent,
+    FiltroDeEquipoComponent,
     VirtualScrollViewportComponent,
     VirtualListCoordinatorDirective,
   ],
@@ -48,13 +48,13 @@ import { EventBusService } from '../../../../core/realtime/event-bus.service';
 })
 export class TicketListComponent implements OnInit {
   protected readonly ticketStore = inject(TicketStore);
-  protected readonly conversationStore = inject(ConversationStore);
+  protected readonly conversationStore = inject(ConversacionStore);
   private readonly ticketApi = inject(TicketApiService);
-  private readonly messageApi = inject(MessageApiService);
-  private readonly agentApi = inject(AgentService);
-  private readonly assignmentApi = inject(AssignmentApiService);
+  private readonly messageApi = inject(MensajeApiService);
+  private readonly agentApi = inject(DisponibilidadApiService);
+  private readonly assignmentApi = inject(AsignacionApiService);
   private readonly authStore = inject(AuthStore);
-  private readonly workspaceStore = inject(WorkspaceStore);
+  private readonly workspaceStore = inject(EspacioDeTrabajoStore);
   private readonly eventBus = inject(EventBusService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -65,7 +65,7 @@ export class TicketListComponent implements OnInit {
   protected readonly idOfTicket = (ticket: Ticket): string => ticket.ticket_id;
 
   /** Available agents for the current workspace */
-  readonly availableAgents = signal<AgentAvailabilityDTO[]>([]);
+  readonly availableAgents = signal<DisponibilidadDeAgenteDTO[]>([]);
 
   /** Agent name lookup map for error messages */
   private agentNameMap = signal<Map<number, string>>(new Map());
@@ -156,7 +156,7 @@ export class TicketListComponent implements OnInit {
    */
   private setupMercureRefresh(): void {
     this.eventBus.events$.pipe(
-      filter(e => e.eventType === RealtimeEventType.TicketAssigned),
+      filter(e => e.eventType === TipoDeEventoEnTiempoReal.TicketAssigned),
       takeUntilDestroyed(this.destroyRef),
     ).subscribe(() => {
       this.debouncedRefreshAgents();
@@ -181,7 +181,7 @@ export class TicketListComponent implements OnInit {
     this.conversationStore.setLoading(true);
 
     this.messageApi.getMessages(ticket.ticket_id, 20, 0).pipe(take(1)).subscribe({
-      next: (resp: GetMessagesResponse) => {
+      next: (resp: GetMensajesResponse) => {
         this.conversationStore.loadMessages(mapApiMessagesToCanonical(resp, ticket.ticket_id));
         this.conversationStore.setHasMore(resp.meta.has_more);
         this.conversationStore.setLoading(false);

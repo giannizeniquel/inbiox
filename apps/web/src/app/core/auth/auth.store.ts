@@ -2,8 +2,8 @@ import { Injectable, signal, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, map, switchMap, tap } from 'rxjs/operators';
-import { AuthApiService, UserDTO, LoginResponse } from './auth-api.service';
-import { MercureService } from '../realtime/mercure.service';
+import { AuthApiService, UsuarioDTO, LoginResponse } from './auth-api.service';
+import { MercureService } from '../tiempo-real/mercure.service';
 
 /**
  * AuthStore — Signals-based authentication state.
@@ -20,7 +20,7 @@ export class AuthStore {
   // ── State signals ──
 
   /** Current authenticated user, or null if not authenticated */
-  readonly currentUser = signal<UserDTO | null>(null);
+  readonly currentUser = signal<UsuarioDTO | null>(null);
 
   /** Current access token (JWT), or null */
   readonly accessToken = signal<string | null>(null);
@@ -68,7 +68,7 @@ export class AuthStore {
       }),
       // 2. Fetch current user info
       switchMap(() => this.authApi.me()),
-      tap((user: UserDTO) => {
+      tap((user: UsuarioDTO) => {
         this.currentUser.set(user);
       }),
       // 3. Get mercure subscriber token and connect SSE
@@ -151,9 +151,9 @@ export class AuthStore {
    * Load current user from /api/auth/me.
    * Used to hydrate state on page reload after a successful refresh.
    */
-  loadCurrentUser(): Observable<UserDTO | null> {
+  loadCurrentUser(): Observable<UsuarioDTO | null> {
     return this.authApi.me().pipe(
-      tap((user: UserDTO) => {
+      tap((user: UsuarioDTO) => {
         this.currentUser.set(user);
       }),
       catchError(err => {

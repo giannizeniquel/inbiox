@@ -4,21 +4,21 @@
  * Per spec: mapping functions are pure, testable in isolation,
  * and live at the feature boundary (models/mappers.ts).
  *
- * Components receive UIContact, never raw DTOs.
- * Use cases handle DTO→UIContact mapping.
+ * Components receive ContactoUI, never raw DTOs.
+ * Use cases handle DTO→ContactoUI mapping.
  */
 
-import { DomainContact } from './contact.model';
-import { UIContact } from './contact-ui.model';
+import { ContactoDominio } from './contacto.model';
+import { ContactoUI } from './contacto-ui.model';
 import {
-  ContactListItemDTO,
-  ContactDetailDTO,
-} from './contact-transport.dto';
+  ContactoDeListaDTO,
+  DetalleDeContactoDTO,
+} from './contacto-transport.dto';
 
 /**
- * Map ContactListItemDTO (API list) → UIContact
+ * Map ContactoDeListaDTO (API list) → ContactoUI
  */
-export function mapListItemToUIContact(dto: ContactListItemDTO): UIContact {
+export function mapListItemToUIContact(dto: ContactoDeListaDTO): ContactoUI {
   return {
     id: dto.id,
     phone: dto.phone,
@@ -37,9 +37,9 @@ export function mapListItemToUIContact(dto: ContactListItemDTO): UIContact {
 }
 
 /**
- * Map ContactDetailDTO (API detail) → UIContact
+ * Map DetalleDeContactoDTO (API detail) → ContactoUI
  */
-export function mapDetailToUIContact(dto: ContactDetailDTO): UIContact {
+export function mapDetailToUIContact(dto: DetalleDeContactoDTO): ContactoUI {
   return {
     id: dto.id,
     phone: dto.phone,
@@ -58,29 +58,29 @@ export function mapDetailToUIContact(dto: ContactDetailDTO): UIContact {
 }
 
 /**
- * Map TransportContactDTO → DomainContact (canonical entity fields only)
+ * Map TransportContactDTO → ContactoDominio (canonical entity fields only)
  */
-export function mapDTOToDomainContact(dto: ContactListItemDTO | ContactDetailDTO): DomainContact {
+export function mapDTOToDomainContact(dto: ContactoDeListaDTO | DetalleDeContactoDTO): ContactoDominio {
   return {
     id: dto.id,
     phone: dto.phone,
     name: dto.name,
     email: dto.email,
-    createdAt: 'createdAt' in dto ? (dto as ContactDetailDTO).createdAt : new Date().toISOString(),
+    createdAt: 'createdAt' in dto ? (dto as DetalleDeContactoDTO).createdAt : new Date().toISOString(),
     updatedAt: dto.updatedAt,
   };
 }
 
 /**
- * Map UIContact → DomainContact (drop operational fields)
+ * Map ContactoUI → ContactoDominio (drop operational fields)
  */
-export function mapUIContactToDomain(contact: UIContact): DomainContact {
+export function mapUIContactToDomain(contact: ContactoUI): ContactoDominio {
   return {
     id: contact.id,
     phone: contact.phone,
     name: contact.name,
     email: contact.email,
-    createdAt: new Date().toISOString(), // Not in UIContact — use current
+    createdAt: new Date().toISOString(), // Not in ContactoUI — use current
     updatedAt: new Date().toISOString(),
   };
 }
@@ -89,7 +89,7 @@ export function mapUIContactToDomain(contact: UIContact): DomainContact {
  * Batch map for list operations.
  */
 export function mapContactListToUI(
-  items: ContactListItemDTO[]
-): UIContact[] {
+  items: ContactoDeListaDTO[]
+): ContactoUI[] {
   return items.map(mapListItemToUIContact);
 }

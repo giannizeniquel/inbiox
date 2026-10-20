@@ -1,15 +1,15 @@
-export enum TicketStatus {
-  New = 'new',
-  Active = 'active',
-  Waiting = 'waiting',
-  Resolved = 'resolved',
-  Closed = 'closed'
+export enum EstadoDeTicket {
+  Nuevo = 'new',
+  Activo = 'active',
+  EnEspera = 'waiting',
+  Resuelto = 'resolved',
+  Cerrado = 'closed'
 }
 
 export interface Ticket {
   // Backend fields
   ticket_id: string;
-  status: TicketStatus;
+  status: EstadoDeTicket;
   priority: string;
   contact: {
     id: number;

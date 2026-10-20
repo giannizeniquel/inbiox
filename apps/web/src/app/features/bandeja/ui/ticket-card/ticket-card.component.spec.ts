@@ -1,13 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TicketCardComponent } from './ticket-card.component';
-import { Ticket, TicketStatus } from '../../../../data-access/ticket/ticket.model';
-import { AgentAvailabilityDTO } from '../../../../data-access/disponibilidad/agent-availability.dto';
+import { Ticket, EstadoDeTicket } from '../../../../data-access/ticket/ticket.model';
+import { DisponibilidadDeAgenteDTO } from '../../../../data-access/disponibilidad/disponibilidad-de-agente.dto';
 
 function makeTicket(overrides: Partial<Ticket> = {}): Ticket {
   return {
     ticket_id: 't-1',
     id: 't-1',
-    status: TicketStatus.New,
+    status: EstadoDeTicket.Nuevo,
     priority: 'normal',
     contact: { id: 1, phone: '+1234567890', name: 'John Doe' },
     last_message: 'Hello',
@@ -18,7 +18,7 @@ function makeTicket(overrides: Partial<Ticket> = {}): Ticket {
   };
 }
 
-function makeAgent(overrides: Partial<AgentAvailabilityDTO> = {}): AgentAvailabilityDTO {
+function makeAgent(overrides: Partial<DisponibilidadDeAgenteDTO> = {}): DisponibilidadDeAgenteDTO {
   return {
     id: 1,
     name: 'Agent 1',
@@ -36,7 +36,7 @@ describe('TicketCardComponent', () => {
   async function createComponent(inputs: {
     ticket?: Ticket;
     isActive?: boolean;
-    availableAgents?: AgentAvailabilityDTO[];
+    availableAgents?: DisponibilidadDeAgenteDTO[];
     canAssign?: boolean;
   } = {}): Promise<void> {
     fixture = TestBed.createComponent(TicketCardComponent);
@@ -84,7 +84,7 @@ describe('TicketCardComponent', () => {
 
     it('is hidden when the ticket status is not assignable (resolved)', async () => {
       await createComponent({
-        ticket: makeTicket({ status: TicketStatus.Resolved }),
+        ticket: makeTicket({ status: EstadoDeTicket.Resuelto }),
         availableAgents: [makeAgent({ is_active_now: true })],
         canAssign: true,
       });

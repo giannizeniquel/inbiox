@@ -1,0 +1,50 @@
+<div class="dialog-overlay" (click)="onCancel()" role="presentation">
+  <div
+    class="dialog-content"
+    (click)="$event.stopPropagation()"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="create-dialog-title"
+  >
+    <div class="dialog-header">
+      <h2 id="create-dialog-title" class="dialog-title">Crear Contacto</h2>
+    </div>
+
+    <div class="dialog-body">
+      <app-contacto-form
+        #contactForm
+        (formChange)="onFormChange($event.dirty)"
+        (submitForm)="onFormSubmit($event)"
+      />
+    </div>
+
+    @if (errorMessage) {
+      <div class="dialog-error">
+        {{ errorMessage }}
+      </div>
+    }
+
+    <div class="dialog-actions">
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="onSave()"
+        [disabled]="loading"
+        aria-label="Guardar contacto"
+      >
+        @if (loading) {
+          <span class="spinner" aria-hidden="true"></span>
+        }
+        Guardar
+      </button>
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="onCancel()"
+        [disabled]="loading"
+      >
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>

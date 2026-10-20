@@ -1,14 +1,14 @@
 import { Component, ChangeDetectionStrategy, input, output, computed, signal, ElementRef, inject, HostListener, OnDestroy } from '@angular/core';
 import { NgClass } from '@angular/common';
-import { Ticket, TicketStatus } from '../../../../data-access/ticket/ticket.model';
-import { AgentAvailabilityDTO } from '../../../../data-access/disponibilidad/agent-availability.dto';
+import { Ticket, EstadoDeTicket } from '../../../../data-access/ticket/ticket.model';
+import { DisponibilidadDeAgenteDTO } from '../../../../data-access/disponibilidad/disponibilidad-de-agente.dto';
 
-const STATUS_LABELS: Record<TicketStatus, string> = {
-  [TicketStatus.New]: 'Nuevo',
-  [TicketStatus.Active]: 'Activo',
-  [TicketStatus.Waiting]: 'En espera',
-  [TicketStatus.Resolved]: 'Resuelto',
-  [TicketStatus.Closed]: 'Cerrado',
+const STATUS_LABELS: Record<EstadoDeTicket, string> = {
+  [EstadoDeTicket.Nuevo]: 'Nuevo',
+  [EstadoDeTicket.Activo]: 'Activo',
+  [EstadoDeTicket.EnEspera]: 'En espera',
+  [EstadoDeTicket.Resuelto]: 'Resuelto',
+  [EstadoDeTicket.Cerrado]: 'Cerrado',
 };
 
 @Component({
@@ -24,7 +24,7 @@ export class TicketCardComponent implements OnDestroy {
 
   readonly ticket = input.required<Ticket>();
   readonly isActive = input<boolean>(false);
-  readonly availableAgents = input<AgentAvailabilityDTO[]>([]);
+  readonly availableAgents = input<DisponibilidadDeAgenteDTO[]>([]);
   readonly canAssign = input<boolean>(false);
 
   readonly select = output<string>(); // emits ticketId
@@ -50,10 +50,10 @@ export class TicketCardComponent implements OnDestroy {
    */
   readonly showDropdown = computed(() => {
     const t = this.ticket();
-    const assignableStatuses: TicketStatus[] = [
-      TicketStatus.New,
-      TicketStatus.Active,
-      TicketStatus.Waiting,
+    const assignableStatuses: EstadoDeTicket[] = [
+      EstadoDeTicket.Nuevo,
+      EstadoDeTicket.Activo,
+      EstadoDeTicket.EnEspera,
     ];
     return this.canAssign() && assignableStatuses.includes(t.status);
   });
@@ -107,7 +107,7 @@ export class TicketCardComponent implements OnDestroy {
   ariaLabel(): string {
     const t = this.ticket();
     const contactName = this.contactName();
-    const status = t.status === TicketStatus.Waiting ? 'en espera' : t.status;
+    const status = t.status === EstadoDeTicket.EnEspera ? 'en espera' : t.status;
     const unread = t.metrics?.unread_count ?? 0;
     return `Ticket de ${contactName}, ${status}, ${unread} mensajes sin leer`;
   }
@@ -135,7 +135,7 @@ export class TicketCardComponent implements OnDestroy {
     this.dropdownOpen.set(true);
   }
 
-  selectAgent(agent: AgentAvailabilityDTO, event: Event): void {
+  selectAgent(agent: DisponibilidadDeAgenteDTO, event: Event): void {
     event.stopPropagation();
     event.preventDefault();
 

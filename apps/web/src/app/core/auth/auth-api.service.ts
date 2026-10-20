@@ -11,7 +11,7 @@ export interface LoginResponse {
 }
 
 /** Shape of the /api/auth/me response */
-export interface UserDTO {
+export interface UsuarioDTO {
   id: number;
   email: string;
   roles: string[];
@@ -64,8 +64,8 @@ export class AuthApiService {
   }
 
   /** GET /api/auth/me — requires Bearer token (added by interceptor) */
-  me(): Observable<UserDTO> {
-    return this.http.get<UserDTO>(`${this.baseUrl}/api/auth/me`);
+  me(): Observable<UsuarioDTO> {
+    return this.http.get<UsuarioDTO>(`${this.baseUrl}/api/auth/me`);
   }
 
   /** GET /api/mercure/token — requires Bearer token (added by interceptor) */

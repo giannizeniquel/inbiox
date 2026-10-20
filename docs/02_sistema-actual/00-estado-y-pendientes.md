@@ -90,7 +90,7 @@ Pregunta clave en cada grupo: ¿el test está mal, o revela un problema del cód
 |---|---|
 | Specs | 31 archivos `.spec.ts`, ~265 casos |
 | Estado | **No verificado.** Karma necesita Chrome y en este entorno WSL2 no está instalado. |
-| Zonas sin tests | `MercureService`, `ConversationComponent`, `TicketListComponent`, `MessageSenderService`, guards, `WorkspaceStore`, páginas de admin. Los bugs más graves del frontend caen ahí. |
+| Zonas sin tests | `MercureService`, `ConversacionComponent`, `TicketListComponent`, `EnvioDeMensajesService`, guards, `EspacioDeTrabajoStore`, páginas de admin. Los bugs más graves del frontend caen ahí. |
 
 ### Build
 
@@ -192,11 +192,11 @@ Resolver, cerrar, transicionar y el cierre por ventana **no publican eventos**; 
 | Bug | Archivo |
 |---|---|
 | La bandeja solo carga **20 tickets** (no envía `page`/`limit`; no hay paginación). Las pestañas "Míos / Sin asignar / Todos" filtran sobre esos 20. | `apps/web/src/app/data-access/ticket/ticket-api.service.ts:20-34` |
-| El botón "reintentar" de un mensaje fallido no reenvía nada (queda en "⏳"). | `features/bandeja/pages/conversation/conversation.component.ts:172-177` |
-| El envío reintenta automáticamente un POST no idempotente (riesgo de duplicados en WhatsApp). | `data-access/conversacion/message-sender.service.ts:42-46,72-75` |
-| Las páginas `/agents/:agentId/availability` y `/shifts` llaman URLs sin `/api` y no funcionan. | `data-access/disponibilidad/agent.service.ts:64-125` |
+| El botón "reintentar" de un mensaje fallido no reenvía nada (queda en "⏳"). | `features/bandeja/pages/conversacion/conversacion.component.ts:172-177` |
+| El envío reintenta automáticamente un POST no idempotente (riesgo de duplicados en WhatsApp). | `data-access/conversacion/envio-de-mensajes.service.ts:42-46,72-75` |
+| Las páginas `/agents/:agentId/availability` y `/shifts` llaman URLs sin `/api` y no funcionan. | `data-access/disponibilidad/disponibilidad-api.service.ts:64-125` |
 | El link "Ver ficha" del contacto puede abrir otro contacto: en el listado, `contact.id` es el id de la **conversación**. | `apps/api/src/Application/Query/ListTicketsQuery.php:164` |
-| Supervisores ven botones que el backend reserva a admin (vincular usuario-agente) y no pueden crear equipos (el selector de workspace queda vacío). | `features/administracion/pages/agents/agents-page.component.html:67-71`, `features/administracion/pages/teams/teams-page.component.ts:80-87` |
+| Supervisores ven botones que el backend reserva a admin (vincular usuario-agente) y no pueden crear equipos (el selector de workspace queda vacío). | `features/administracion/pages/agentes/agentes-page.component.html:67-71`, `features/administracion/pages/equipos/equipos-page.component.ts:80-87` |
 
 ### R15. Cierre automático por ventana es opcional
 

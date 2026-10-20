@@ -113,7 +113,7 @@ Formato pedido por el método: qué es · por qué parece existir · ¿respaldad
 | `DebugController::outbound` | Mal nombrado (genera un mensaje entrante). | `DebugController.php:94` |
 | `simulate.js`, `scripts/*.js`, descripción del `package.json` raíz | Obsoletos (rutas sin `/api`, sin JWT, topics viejos); la descripción del `package.json` es texto pegado por error. | raíz del repo |
 | Frontend: código sin uso (borrado en la fase 1 de la limpieza) | ver [07](07-frontend.md#código-sin-uso-en-el-frontend) | |
-| Frontend: heurística de corchetes y `loadPercentage × 20` | **Propósito no confirmado** (no hay productor de mensajes entre corchetes; no hay respaldo para capacidad 5). | `message-bubble.component.ts:44`; `get-reports-dashboard.use-case.ts:162` |
+| Frontend: heurística de corchetes y `loadPercentage × 20` | **Propósito no confirmado** (no hay productor de mensajes entre corchetes; no hay respaldo para capacidad 5). | `mensaje-bubble.component.ts:44`; `get-reports-dashboard.use-case.ts:162` |
 
 ## Salud estructural de la suite de tests
 
@@ -124,7 +124,7 @@ Formato pedido por el método: qué es · por qué parece existir · ¿respaldad
 | Tests nombrados por sprint (`Sprint09B*`, `Sprint10*`, `Sprint14*`). | Describen entregas históricas; son los que más se desactualizan. |
 | Tests de seguridad que usan ADMIN. | No detectan fallas de autorización de roles menores (p. ej. [R3](00-estado-y-pendientes.md#r3-cualquier-agente-modifica-disponibilidad-y-turnos-de-cualquier-agente)). |
 | Tests de Sprint 17 con datos que producción no genera. | Ocultaron C-1. |
-| Deprecación PHP en `Application/DTO/TimelineEventDTO.php:13-14` (parámetro opcional antes de uno obligatorio) y 12 deprecaciones de PHPUnit. | Inocuas hoy. |
+| Deprecación PHP en `Application/DTO/EventoDeLineaDeTiempoDTO.php:13-14` (parámetro opcional antes de uno obligatorio) y 12 deprecaciones de PHPUnit. | Inocuas hoy. |
 | Frontend: 31 specs sin poder ejecutarse en este entorno; las zonas más frágiles no tienen specs. | Estado real desconocido. |
 
 Clasificación detallada de los 45 fallos en [00](00-estado-y-pendientes.md#los-45-fallos-agrupados-por-causa-raíz).

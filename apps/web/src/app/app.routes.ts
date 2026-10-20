@@ -29,56 +29,56 @@ export const routes: Routes = [
       {
         path: 'contacts',
         loadComponent: () =>
-          import('./features/contactos/pages/contacts-page/contacts-page.component').then(m => m.ContactsPageComponent),
+          import('./features/contactos/pages/contactos-page/contactos-page.component').then(m => m.ContactosPageComponent),
       },
       {
         path: 'contacts/:contactId',
         loadComponent: () =>
-          import('./features/contactos/pages/contacts-page/contacts-page.component').then(m => m.ContactsPageComponent),
+          import('./features/contactos/pages/contactos-page/contactos-page.component').then(m => m.ContactosPageComponent),
       },
       {
         path: 'reports',
         loadComponent: () =>
-          import('./features/reportes/pages/reports-page/reports-page.component').then(m => m.ReportsPageComponent),
+          import('./features/reportes/pages/reportes-page/reportes-page.component').then(m => m.ReportesPageComponent),
       },
       {
         path: 'agents/:agentId/availability',
         loadComponent: () =>
-          import('./features/disponibilidad/pages/availability/availability.page').then(m => m.AvailabilityPageComponent),
+          import('./features/disponibilidad/pages/disponibilidad/disponibilidad.page').then(m => m.DisponibilidadPageComponent),
       },
       {
         path: 'agents/:agentId/shifts',
         loadComponent: () =>
-          import('./features/disponibilidad/pages/shifts/shifts.page').then(m => m.ShiftsPageComponent),
+          import('./features/disponibilidad/pages/turnos/turnos.page').then(m => m.TurnosPageComponent),
       },
       {
         path: 'admin/users',
         canActivate: [roleGuard('ROLE_ADMIN')],
         loadComponent: () =>
-          import('./features/administracion/pages/users/users-page.component').then(m => m.UsersPageComponent),
+          import('./features/administracion/pages/usuarios/usuarios-page.component').then(m => m.UsuariosPageComponent),
       },
       {
         path: 'admin/agents',
         canActivate: [roleGuard('ROLE_SUPERVISOR')],
         loadComponent: () =>
-          import('./features/administracion/pages/agents/agents-page.component').then(m => m.AgentsPageComponent),
+          import('./features/administracion/pages/agentes/agentes-page.component').then(m => m.AgentesPageComponent),
       },
       {
         path: 'admin/workspaces',
         canActivate: [roleGuard('ROLE_ADMIN')],
         loadComponent: () =>
-          import('./features/administracion/pages/workspaces/workspaces-page.component').then(m => m.WorkspacesPageComponent),
+          import('./features/administracion/pages/espacios-de-trabajo/espacios-de-trabajo-page.component').then(m => m.EspaciosDeTrabajoPageComponent),
       },
       {
         path: 'admin/teams',
         canActivate: [roleGuard('ROLE_SUPERVISOR')],
         loadComponent: () =>
-          import('./features/administracion/pages/teams/teams-page.component').then(m => m.TeamsPageComponent),
+          import('./features/administracion/pages/equipos/equipos-page.component').then(m => m.EquiposPageComponent),
       },
       {
         path: 'settings',
         loadComponent: () =>
-          import('./features/configuracion/pages/settings-page/settings-page.component').then(m => m.SettingsPageComponent),
+          import('./features/configuracion/pages/configuracion-page/configuracion-page.component').then(m => m.ConfiguracionPageComponent),
       },
       {
         path: '**',

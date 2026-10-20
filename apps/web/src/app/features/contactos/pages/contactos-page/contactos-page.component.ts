@@ -1,0 +1,282 @@
+import { Component, ChangeDetectionStrategy, inject, OnInit, OnDestroy, signal } from '@angular/core';
+import { Subscription } from 'rxjs';
+import { ActivatedRoute, Router } from '@angular/router';
+import { ContactoApiService, ResultadoDeImportacionDeContactos } from '../../../../data-access/contacto/contacto-api.service';
+import { AuthStore } from '../../../../core/auth/auth.store';
+import { ContactosStore } from '../../../../data-access/contacto/contactos.store';
+import { ContactoUI } from '../../../../data-access/contacto/contacto-ui.model';
+import { FiltrosDeContacto, ContactosScreenStore } from '../../contactos-screen.store';
+import { ContactosListComponent } from '../../ui/contactos-list/contactos-list.component';
+import { DetalleDeContactoComponent } from '../../ui/detalle-de-contacto/detalle-de-contacto.component';
+import { ContactoSearchComponent } from '../../ui/contacto-search/contacto-search.component';
+import { FiltrosDeContactoComponent } from '../../ui/filtros-de-contacto/filtros-de-contacto.component';
+import { ContactoCreateDialogComponent } from '../../ui/contacto-create-dialog/contacto-create-dialog.component';
+import { ContactoEditDialogComponent } from '../../ui/contacto-edit-dialog/contacto-edit-dialog.component';
+import { ImportacionDeContactosDialogComponent } from '../../ui/importacion-de-contactos-dialog/importacion-de-contactos-dialog.component';
+
+/** Guard flag to prevent URL sync feedback loops */
+let updatingFromUrl = false;
+
+/**
+ * ContactosPageComponent — smart container for the contacts feature.
+ *
+ * Per spec:
+ * - Two-column layout (list + detail) on desktop (>1024px)
+ * - Single panel on mobile
+ * - Loads contacts on init via ContactoApiService.getContacts
+ * - NO realtime in Fase 2A (deterministic only)
+ * - Supports /contacts/:contactId deep links
+ * - Create/Edit dialogs for CRUD operations
+ */
+@Component({
+  selector: 'app-contactos-page',
+  standalone: true,
+  imports: [
+    ContactosListComponent,
+    DetalleDeContactoComponent,
+    ContactoSearchComponent,
+    FiltrosDeContactoComponent,
+    ContactoCreateDialogComponent,
+    ContactoEditDialogComponent,
+    ImportacionDeContactosDialogComponent,
+  ],
+  templateUrl: './contactos-page.component.html',
+  styleUrl: './contactos-page.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class ContactosPageComponent implements OnInit, OnDestroy {
+  protected readonly store = inject(ContactosStore);
+  protected readonly screen = inject(ContactosScreenStore);
+  private readonly contactsApi = inject(ContactoApiService);
+  protected readonly authStore = inject(AuthStore);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private routeSubscription?: Subscription;
+
+  /** Dialog visibility state */
+  showCreateDialog = false;
+  showEditDialog = false;
+  showImportDialog = false;
+  editingContact: ContactoUI | null = null;
+
+  /** Separate loading flag for load-more (does not trigger skeleton swap) */
+  readonly loadingMore = signal(false);
+
+  ngOnInit(): void {
+    this.loadContacts();
+
+    // Handle deep link and browser back/forward buttons
+    this.routeSubscription = this.route.paramMap.subscribe(params => {
+      const contactId = params.get('contactId');
+      if (contactId) {
+        // Check if contact is already in the cached list
+        const cached = this.store.contactById(contactId);
+        if (cached) {
+          this.screen.selectContact(contactId);
+        } else {
+          // Fetch from API if not cached
+          this.contactsApi.getContact(contactId).subscribe({
+            next: (dto) => {
+              const uiContact: ContactoUI = {
+                id: dto.id.toString(),
+                phone: dto.phone,
+                name: dto.name,
+                email: dto.email,
+                status: dto.status,
+                channel: dto.channel,
+                lastInteraction: dto.lastInteraction,
+                unreadCount: dto.unreadCount,
+                activeTicketId: dto.activeTicketId,
+                tags: dto.tags,
+                owner: dto.ownerId != null
+                  ? { id: dto.ownerId, name: dto.ownerName ?? '' }
+                  : null,
+              };
+              this.store.addContact(uiContact);
+              this.screen.selectContact(contactId);
+            },
+            error: () => {
+              this.screen.clearSelection();
+            },
+          });
+        }
+      } else {
+        this.screen.clearSelection();
+      }
+    });
+
+    // Sync from URL on first load (initial navigation only)
+    const q = this.route.snapshot.queryParams['q'];
+    const status = this.route.snapshot.queryParams['status'];
+    const channel = this.route.snapshot.queryParams['channel'];
+    if (q !== undefined || status !== undefined || channel !== undefined) {
+      if (q !== undefined) this.screen.setSearchTerm(q);
+      const filters: FiltrosDeContacto = {};
+      if (status !== undefined) filters.status = status as 'active' | 'inactive' | 'all';
+      if (channel !== undefined) filters.channel = channel as 'whatsapp' | 'other' | 'all';
+      if (Object.keys(filters).length > 0) this.screen.setFilters(filters);
+    }
+
+    // Sync URL → store when query params change (browser back/forward)
+    this.route.queryParams.subscribe(params => {
+      updatingFromUrl = true;
+      const q = params['q'];
+      const status = params['status'];
+      const channel = params['channel'];
+      if (q !== undefined) this.screen.setSearchTerm(q);
+      const filters: FiltrosDeContacto = {};
+      if (status !== undefined) filters.status = status as 'active' | 'inactive' | 'all';
+      if (channel !== undefined) filters.channel = channel as 'whatsapp' | 'other' | 'all';
+      if (Object.keys(filters).length > 0) this.screen.setFilters(filters);
+      updatingFromUrl = false;
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.routeSubscription?.unsubscribe();
+  }
+
+  onContactSelect(contactId: string): void {
+    this.screen.selectContact(contactId);
+    // Update URL to /contacts/:contactId
+    this.router.navigate(['/contacts', contactId], { replaceUrl: true });
+  }
+
+  onSearchChange(term: string): void {
+    this.screen.setSearchTerm(term);
+    if (!updatingFromUrl) {
+      this.router.navigate([], {
+        queryParams: { q: term || null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+    }
+  }
+
+  onFilterChange(change: Partial<FiltrosDeContacto>): void {
+    const current = this.screen.filters();
+    this.screen.setFilters({ ...current, ...change });
+    if (!updatingFromUrl) {
+      this.router.navigate([], {
+        queryParams: {
+          status: change.status ?? this.screen.filters().status ?? null,
+          channel: change.channel ?? this.screen.filters().channel ?? null,
+        },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+    }
+  }
+
+  onLoadMore(): void {
+    const nextPage = this.store.pagination().page + 1;
+    this.loadingMore.set(true);
+
+    this.contactsApi.getContacts({ page: nextPage, limit: 20 }).subscribe({
+      next: (output) => {
+        // Append new contacts to existing list
+        this.store.contacts.update(list => {
+          const existingIds = new Set(list.map(c => c.id));
+          const newContacts = output.contacts.filter(c => !existingIds.has(c.id));
+          return [...list, ...newContacts];
+        });
+        this.store.setPagination({
+          page: output.page,
+          total: output.total,
+          hasMore: output.hasMore,
+        });
+        this.loadingMore.set(false);
+      },
+      error: (err: Error) => {
+        this.store.setError(err.message);
+        this.loadingMore.set(false);
+      },
+    });
+  }
+
+  onOpenConversation(contactId: string): void {
+    console.log('[ContactsPage] Open conversation for:', contactId);
+    const contact = this.store.contactById(contactId);
+    if (contact?.activeTicketId) {
+      console.log('[ContactsPage] Has active ticket:', contact.activeTicketId);
+      // Navigate to inbox with ticket — for now, just log
+      this.router.navigate(['/inbox'], { queryParams: { ticketId: contact.activeTicketId } });
+    } else {
+      console.log('[ContactsPage] No active ticket — open new conversation');
+      this.router.navigate(['/inbox']);
+    }
+  }
+
+  onEditContact(contactId: string): void {
+    const contact = this.store.contactById(contactId);
+    if (contact) {
+      this.editingContact = contact;
+      this.showEditDialog = true;
+    }
+  }
+
+  onOpenTicketFromTimeline(ticketId: string): void {
+    this.router.navigate(['/inbox'], { queryParams: { ticketId } });
+  }
+
+  /** Handle create dialog close */
+  onCreateDialogClose(contact: ContactoUI | null): void {
+    this.showCreateDialog = false;
+    if (contact) {
+      // Add new contact to store
+      this.store.addContact(contact);
+    }
+  }
+
+  /** Handle edit dialog close */
+  onEditDialogClose(contact: ContactoUI | null): void {
+    this.showEditDialog = false;
+    this.editingContact = null;
+    if (contact) {
+      // Update contact in store
+      this.store.updateContact(contact);
+    }
+  }
+
+  /** Open create dialog */
+  onAddContact(): void {
+    this.showCreateDialog = true;
+  }
+
+  /** Open the CSV import dialog (ROLE_SUPERVISOR only — trigger is hidden otherwise) */
+  onImportContacts(): void {
+    this.showImportDialog = true;
+  }
+
+  /** Handle import dialog close — reload the list when at least one row was imported */
+  onImportDialogClose(result: ResultadoDeImportacionDeContactos | null): void {
+    this.showImportDialog = false;
+    if (result && result.imported > 0) {
+      this.loadContacts();
+    }
+  }
+
+  onRetryRequested(): void {
+    this.loadContacts();
+  }
+
+  private loadContacts() {
+    this.store.setLoading(true);
+    this.store.setError(null);
+
+    return this.contactsApi.getContacts({ page: 1, limit: 20 }).subscribe({
+      next: (output) => {
+        this.store.loadContacts(output.contacts, {
+          page: output.page,
+          total: output.total,
+          hasMore: output.hasMore,
+        });
+        this.store.setLoading(false);
+      },
+      error: (err: Error) => {
+        this.store.setError(err.message);
+        this.store.setLoading(false);
+      },
+    });
+  }
+}

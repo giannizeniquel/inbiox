@@ -3,10 +3,10 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs';
 import { Ticket } from './ticket.model';
 import { applyTicketEvent } from './ticket-realtime.reducer';
-import { RealtimeEventType } from '../../core/realtime/realtime-event.model';
-import { EventBusService } from '../../core/realtime/event-bus.service';
+import { TipoDeEventoEnTiempoReal } from '../../core/tiempo-real/evento-en-tiempo-real.model';
+import { EventBusService } from '../../core/tiempo-real/event-bus.service';
 import { AuthStore } from '../../core/auth/auth.store';
-import { WorkspaceStore } from '../administracion/workspace.store';
+import { EspacioDeTrabajoStore } from '../administracion/espacio-de-trabajo.store';
 
 /** Owner information for assignment */
 interface TicketOwner {
@@ -22,7 +22,7 @@ interface AssignmentError {
 
 const MAX_TICKETS = 1000;
 
-export type TicketFilter = 'mine' | 'waiting' | 'internal';
+export type FiltroDeTicket = 'mine' | 'waiting' | 'internal';
 
 /**
  * TicketStore — manages ticket list state via Angular signals.
@@ -36,7 +36,7 @@ export class TicketStore {
   readonly activeTicket = signal<Ticket | null>(null);
 
   /** Active filter tab */
-  readonly filter = signal<TicketFilter>('mine');
+  readonly filter = signal<FiltroDeTicket>('mine');
 
   /**
    * Single-select team filter (team-area-entity, Slice 3). Server-side
@@ -52,7 +52,7 @@ export class TicketStore {
   readonly assignmentErrors = signal<Map<number, AssignmentError>>(new Map());
 
   private readonly authStore = inject(AuthStore);
-  private readonly workspaceStore = inject(WorkspaceStore);
+  private readonly workspaceStore = inject(EspacioDeTrabajoStore);
 
   /** Current logged-in agent's ID (null if admin without agent) */
   private readonly currentAgentId = computed(() => this.authStore.currentUser()?.agent_id ?? null);
@@ -72,11 +72,11 @@ export class TicketStore {
 
     eventBus.events$.pipe(
       filter(e =>
-        e.eventType === RealtimeEventType.TicketCreated
-        || e.eventType === RealtimeEventType.TicketStatusChanged
-        || e.eventType === RealtimeEventType.TicketAssigned
-        || e.eventType === RealtimeEventType.MessageAdded
-        || e.eventType === RealtimeEventType.TicketRead
+        e.eventType === TipoDeEventoEnTiempoReal.TicketCreated
+        || e.eventType === TipoDeEventoEnTiempoReal.TicketStatusChanged
+        || e.eventType === TipoDeEventoEnTiempoReal.TicketAssigned
+        || e.eventType === TipoDeEventoEnTiempoReal.MessageAdded
+        || e.eventType === TipoDeEventoEnTiempoReal.TicketRead
       ),
       takeUntilDestroyed(destroyRef),
     ).subscribe(e => applyTicketEvent(e, this, this.workspaceStore));
@@ -117,7 +117,7 @@ export class TicketStore {
   }
 
   /** Set the active filter */
-  setFilter(filter: TicketFilter): void {
+  setFilter(filter: FiltroDeTicket): void {
     this.filter.set(filter);
   }
 

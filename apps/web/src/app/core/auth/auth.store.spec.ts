@@ -2,8 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { Router } from '@angular/router';
 import { AuthStore } from './auth.store';
-import { AuthApiService, LoginResponse, UserDTO, MercureTokenResponse } from './auth-api.service';
-import { MercureService } from '../realtime/mercure.service';
+import { AuthApiService, LoginResponse, UsuarioDTO, MercureTokenResponse } from './auth-api.service';
+import { MercureService } from '../tiempo-real/mercure.service';
 import { environment } from '../../../environments/environment';
 
 describe('AuthStore', () => {
@@ -12,7 +12,7 @@ describe('AuthStore', () => {
   let mercureSpy: jasmine.SpyObj<MercureService>;
   let routerSpy: jasmine.SpyObj<Router>;
 
-  const mockUser: UserDTO = {
+  const mockUser: UsuarioDTO = {
     id: 1,
     email: 'admin@inbiox.com',
     roles: ['ROLE_ADMIN', 'ROLE_USER'],
@@ -225,7 +225,7 @@ describe('AuthStore', () => {
   // ── loadCurrentUser() ──
 
   it('should hydrate user from /me endpoint', () => {
-    let user: UserDTO | null = null;
+    let user: UsuarioDTO | null = null;
     store.loadCurrentUser().subscribe(u => (user = u));
 
     const meReq = httpMock.expectOne(`${environment.apiUrl}/api/auth/me`);
@@ -236,7 +236,7 @@ describe('AuthStore', () => {
   });
 
   it('should return null on failed /me call', () => {
-    let user: UserDTO | null = 'anything' as unknown as UserDTO | null;
+    let user: UsuarioDTO | null = 'anything' as unknown as UsuarioDTO | null;
     store.loadCurrentUser().subscribe(u => (user = u));
 
     const meReq = httpMock.expectOne(`${environment.apiUrl}/api/auth/me`);

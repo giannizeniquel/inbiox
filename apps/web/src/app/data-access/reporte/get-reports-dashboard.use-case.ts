@@ -1,25 +1,25 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, throwError, forkJoin, of } from 'rxjs';
 import { map, catchError, switchMap } from 'rxjs/operators';
-import { ReportsApiService } from './reports-api.service';
-import { TimeFilterParams } from './reports.params';
+import { ReporteApiService } from './reporte-api.service';
+import { FiltroDeTiempoParams } from './reporte.params';
 import { extractApiError } from '../../core/http/extract-api-error';
 import {
-  AgentLoadEntry,
-  UnassignedResponse,
-  AvailableAgentEntry,
-  FrtTrendPoint,
-  HeatmapCell,
-  RecurringEntry,
-  ReopenedEntry,
-} from './reports.models';
-import { ResponseDelayReport } from './response-delay.dto';
+  CargaDeAgenteEntry,
+  SinAsignarResponse,
+  AgenteDisponibleEntry,
+  TendenciaDeFrtPoint,
+  MapaDeCalorCell,
+  ContactoRecurrenteEntry,
+  ReabiertoEntry,
+} from './reporte.models';
+import { ReporteDeDemoraDeRespuesta } from './demora-de-respuesta.dto';
 
 /**
  * GetReportsDashboardInput — parameters for fetching the reports dashboard.
  */
 export interface GetReportsDashboardInput {
-  params: TimeFilterParams;
+  params: FiltroDeTiempoParams;
 }
 
 /**
@@ -30,32 +30,32 @@ export interface ReportsDashboardData {
   frt: { value: number };
   rt: { value: number };
   counts: { open: number; closed: number };
-  volume: VolumeDataPoint[];
-  agents: AgentMetricData[];
+  volume: VolumenDataPoint[];
+  agents: MetricaDeAgenteData[];
   // ── Group B: Operational ──
-  agentLoad: AgentLoadEntry[];
-  unassigned: UnassignedResponse;
-  frtTrend: FrtTrendPoint[];
-  responseDelay: ResponseDelayReport | null;
+  agentLoad: CargaDeAgenteEntry[];
+  unassigned: SinAsignarResponse;
+  frtTrend: TendenciaDeFrtPoint[];
+  responseDelay: ReporteDeDemoraDeRespuesta | null;
   // ── Group C: Detail ──
-  availableAgents: AvailableAgentEntry[];
-  heatmap: HeatmapCell[];
-  recurring: RecurringEntry[];
-  reopened: ReopenedEntry[];
+  availableAgents: AgenteDisponibleEntry[];
+  heatmap: MapaDeCalorCell[];
+  recurring: ContactoRecurrenteEntry[];
+  reopened: ReabiertoEntry[];
 }
 
 /**
- * VolumeDataPoint — a single day's volume data.
+ * VolumenDataPoint — a single day's volume data.
  */
-export interface VolumeDataPoint {
+export interface VolumenDataPoint {
   date: string;
   count: number;
 }
 
 /**
- * AgentMetricData — agent performance metrics for the leaderboard.
+ * MetricaDeAgenteData — agent performance metrics for the leaderboard.
  */
-export interface AgentMetricData {
+export interface MetricaDeAgenteData {
   agentId: string;
   agentName: string;
   assigned: number;
@@ -87,7 +87,7 @@ export class ReportsFetchFailed extends Error {
  */
 @Injectable({ providedIn: 'root' })
 export class GetReportsDashboardUseCase {
-  constructor(private readonly api: ReportsApiService = inject(ReportsApiService)) {}
+  constructor(private readonly api: ReporteApiService = inject(ReporteApiService)) {}
 
   execute(input: GetReportsDashboardInput): Observable<ReportsDashboardData> {
     // ── Group A: KPIs (frt, rt, counts, volume, agents) ──
@@ -112,34 +112,34 @@ export class GetReportsDashboardUseCase {
         // ── Group B: Operational (agentLoad, unassigned, frtTrend) ──
         return forkJoin({
           agentLoad: this.api.getAgentLoad().pipe(
-            catchError(() => of([] as AgentLoadEntry[])),
+            catchError(() => of([] as CargaDeAgenteEntry[])),
           ),
           unassigned: this.api.getUnassigned(input.params).pipe(
             catchError(() => of({ count: 0, tickets: [] })),
           ),
           frtTrend: this.api.getFrtTrend(input.params).pipe(
-            catchError(() => of([] as FrtTrendPoint[])),
+            catchError(() => of([] as TendenciaDeFrtPoint[])),
           ),
           // Degrades to null on failure — NEVER a zeroed object, so the UI
           // can tell "no data yet" apart from "0 seconds average delay".
           responseDelay: this.api.getResponseDelay(input.params).pipe(
-            catchError(() => of(null as ResponseDelayReport | null)),
+            catchError(() => of(null as ReporteDeDemoraDeRespuesta | null)),
           ),
         }).pipe(
           switchMap((groupB) => {
             // ── Group C: Detail (availableAgents, heatmap, recurring, reopened) ──
             return forkJoin({
               availableAgents: this.api.getAvailableAgents().pipe(
-                catchError(() => of([] as AvailableAgentEntry[])),
+                catchError(() => of([] as AgenteDisponibleEntry[])),
               ),
               heatmap: this.api.getHeatmap(input.params).pipe(
-                catchError(() => of([] as HeatmapCell[])),
+                catchError(() => of([] as MapaDeCalorCell[])),
               ),
               recurring: this.api.getRecurringCustomers().pipe(
-                catchError(() => of([] as RecurringEntry[])),
+                catchError(() => of([] as ContactoRecurrenteEntry[])),
               ),
               reopened: this.api.getReopened(input.params).pipe(
-                catchError(() => of([] as ReopenedEntry[])),
+                catchError(() => of([] as ReabiertoEntry[])),
               ),
             }).pipe(
               map((groupC) => ({
@@ -186,7 +186,7 @@ export class GetReportsDashboardUseCase {
  * Factory function for manual instantiation (testing).
  */
 export function createGetReportsDashboardUseCase(
-  api?: ReportsApiService,
+  api?: ReporteApiService,
 ): GetReportsDashboardUseCase {
   return new GetReportsDashboardUseCase(api);
 }

@@ -107,7 +107,7 @@ Tablas técnicas sin relaciones de negocio (no incluidas en el diagrama): `outbo
 
 | Enum | Archivo | Valores | Notas |
 |---|---|---|---|
-| `TicketStatus` | `Domain/Ticket/TicketStatus.php` | `new`, `active`, `waiting`, `resolved`, `closed` | `Ticket::setStatus()` acepta cualquier texto. Transiciones en [04 § F4](04-flujos.md#f4-transiciones-de-estado-del-ticket). |
+| `EstadoDeTicket` | `Domain/Ticket/EstadoDeTicket.php` | `new`, `active`, `waiting`, `resolved`, `closed` | `Ticket::setStatus()` acepta cualquier texto. Transiciones en [04 § F4](04-flujos.md#f4-transiciones-de-estado-del-ticket). |
 | `ConversationStatus` | `Domain/Conversation/ConversationStatus.php` | `open`, `closed` | `closed` nunca se usa. |
 | `MessageDirection` | `Domain/Message/MessageDirection.php` | `inbound`, `outbound` | Los casos de uso escriben el texto literal, no el enum. |
 | `MessageSenderType` | `Domain/Message/MessageSenderType.php` | `agent`, `automatic`, `contact` | Spec `message-attribution`. El frontend todavía no lo usa. |

@@ -7,13 +7,13 @@ import { SidebarComponent } from './sidebar/sidebar.component';
 import { SidebarFooterComponent } from './sidebar/sidebar-footer.component';
 import { ConnectionBannerComponent } from './components/connection-banner.component';
 import { TicketListComponent } from '../features/bandeja/pages/ticket-list/ticket-list.component';
-import { ConversationComponent } from '../features/bandeja/pages/conversation/conversation.component';
-import { WorkspaceStore } from '../data-access/administracion/workspace.store';
+import { ConversacionComponent } from '../features/bandeja/pages/conversacion/conversacion.component';
+import { EspacioDeTrabajoStore } from '../data-access/administracion/espacio-de-trabajo.store';
 import { TicketStore } from '../data-access/ticket/ticket.store';
-import { ConversationStore } from '../data-access/conversacion/conversation.store';
+import { ConversacionStore } from '../data-access/conversacion/conversacion.store';
 import { TicketApiService } from '../data-access/ticket/ticket-api.service';
-import { MessageApiService, GetMessagesResponse } from '../data-access/conversacion/message-api.service';
-import { mapApiMessagesToCanonical } from '../data-access/conversacion/message-mapper.util';
+import { MensajeApiService, GetMensajesResponse } from '../data-access/conversacion/mensaje-api.service';
+import { mapApiMessagesToCanonical } from '../data-access/conversacion/mensaje-mapper.util';
 
 @Component({
   selector: 'app-shell',
@@ -26,7 +26,7 @@ import { mapApiMessagesToCanonical } from '../data-access/conversacion/message-m
     SidebarFooterComponent,
     ConnectionBannerComponent,
     TicketListComponent,
-    ConversationComponent,
+    ConversacionComponent,
   ],
   templateUrl: './app-shell.component.html',
   styleUrl: './app-shell.component.scss',
@@ -52,11 +52,11 @@ export class AppShellComponent implements OnDestroy {
 
   private readonly _resizeHandler = this.syncResponsiveState.bind(this);
 
-  private readonly workspaceStore = inject(WorkspaceStore);
+  private readonly workspaceStore = inject(EspacioDeTrabajoStore);
   private readonly ticketStore = inject(TicketStore);
-  private readonly conversationStore = inject(ConversationStore);
+  private readonly conversationStore = inject(ConversacionStore);
   private readonly ticketApi = inject(TicketApiService);
-  private readonly messageApi = inject(MessageApiService);
+  private readonly messageApi = inject(MensajeApiService);
   private readonly route = inject(ActivatedRoute);
 
   constructor() {
@@ -137,7 +137,7 @@ export class AppShellComponent implements OnDestroy {
     this.conversationStore.reset();
     this.conversationStore.setLoading(true);
     this.messageApi.getMessages(ticketId, 20, 0).pipe(take(1)).subscribe({
-      next: (resp: GetMessagesResponse) => {
+      next: (resp: GetMensajesResponse) => {
         this.conversationStore.loadMessages(mapApiMessagesToCanonical(resp, ticketId));
         this.conversationStore.setHasMore(resp.meta.has_more);
         this.conversationStore.setLoading(false);

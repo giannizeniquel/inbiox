@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ConnectionStore } from '../../core/realtime/connection.store';
+import { ConnectionStore } from '../../core/tiempo-real/connection.store';
 
 @Component({
   selector: 'app-connection-banner',

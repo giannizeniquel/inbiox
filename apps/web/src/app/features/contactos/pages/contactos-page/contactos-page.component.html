@@ -1,0 +1,57 @@
+<div class="contacts-page">
+  <div class="contacts-list-panel">
+    <div class="contacts-header">
+      <app-contacto-search
+        [searchTerm]="screen.searchTerm()"
+        (searchChange)="onSearchChange($event)"
+      />
+      <button type="button" class="btn-add" (click)="onAddContact()">
+        + Agregar Contacto
+      </button>
+      @if (authStore.isAdmin() || authStore.isSupervisor()) {
+        <button type="button" class="btn-import" (click)="onImportContacts()">
+          Importar CSV
+        </button>
+      }
+    </div>
+    <app-filtros-de-contacto
+      [filters]="screen.filters()"
+      (filterChange)="onFilterChange($event)"
+    />
+    <app-contactos-list
+      (select)="onContactSelect($event)"
+      (retryRequested)="onRetryRequested()"
+      (loadMore)="onLoadMore()"
+      [hasMore]="store.pagination().hasMore"
+      [loadingMore]="loadingMore()"
+    />
+  </div>
+  <div class="contacts-detail-panel" [class.visible]="screen.selectedContact() !== null">
+    <app-detalle-de-contacto
+      [contact]="screen.selectedContact()"
+      [loading]="store.loading()"
+      (openConversation)="onOpenConversation($event)"
+      (openTicket)="onOpenTicketFromTimeline($event)"
+      (editContact)="onEditContact($event)"
+    />
+  </div>
+</div>
+
+@if (showCreateDialog) {
+  <app-contacto-create-dialog
+    (close)="onCreateDialogClose($event)"
+  />
+}
+
+@if (showEditDialog && editingContact) {
+  <app-contacto-edit-dialog
+    [contact]="editingContact"
+    (close)="onEditDialogClose($event)"
+  />
+}
+
+@if (showImportDialog) {
+  <app-importacion-de-contactos-dialog
+    (close)="onImportDialogClose($event)"
+  />
+}

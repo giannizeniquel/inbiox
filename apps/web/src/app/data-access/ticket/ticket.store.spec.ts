@@ -1,7 +1,7 @@
-import { TicketStore, TicketFilter } from './ticket.store';
-import { Ticket, TicketStatus } from './ticket.model';
-import { RealtimeEvent, RealtimeEventType } from '../../core/realtime/realtime-event.model';
-import { WorkspaceStore } from '../administracion/workspace.store';
+import { TicketStore, FiltroDeTicket } from './ticket.store';
+import { Ticket, EstadoDeTicket } from './ticket.model';
+import { EventoEnTiempoReal, TipoDeEventoEnTiempoReal } from '../../core/tiempo-real/evento-en-tiempo-real.model';
+import { EspacioDeTrabajoStore } from '../administracion/espacio-de-trabajo.store';
 import { applyTicketEvent } from './ticket-realtime.reducer';
 
 describe('TicketStore', () => {
@@ -11,7 +11,7 @@ describe('TicketStore', () => {
     return {
       ticket_id: 'ticket-1',
       id: 'ticket-1',
-      status: TicketStatus.Active,
+      status: EstadoDeTicket.Activo,
       priority: 'medium',
       contact: { id: 1, phone: '+5491112345678', name: 'Test User' },
       last_message: 'Hello',
@@ -68,14 +68,14 @@ describe('TicketStore', () => {
   });
 
   it('should update an existing ticket by ticket_id', () => {
-    const original = makeTicket({ ticket_id: 't1', id: 't1', status: TicketStatus.New });
+    const original = makeTicket({ ticket_id: 't1', id: 't1', status: EstadoDeTicket.Nuevo });
     store.loadTickets([original]);
 
-    const updated = makeTicket({ ticket_id: 't1', id: 't1', status: TicketStatus.Active });
+    const updated = makeTicket({ ticket_id: 't1', id: 't1', status: EstadoDeTicket.Activo });
     store.addOrUpdateTicket(updated);
 
     expect(store.tickets().length).toBe(1);
-    expect(store.tickets()[0].status).toBe(TicketStatus.Active);
+    expect(store.tickets()[0].status).toBe(EstadoDeTicket.Activo);
   });
 
   // ── setActiveTicket() ──
@@ -143,8 +143,8 @@ describe('TicketStore', () => {
   });
 
   it('should filter "internal" — all tickets', () => {
-    const newT = makeTicket({ ticket_id: 't1', id: 't1', status: TicketStatus.New });
-    const resolvedT = makeTicket({ ticket_id: 't2', id: 't2', status: TicketStatus.Resolved });
+    const newT = makeTicket({ ticket_id: 't1', id: 't1', status: EstadoDeTicket.Nuevo });
+    const resolvedT = makeTicket({ ticket_id: 't2', id: 't2', status: EstadoDeTicket.Resuelto });
     store.loadTickets([newT, resolvedT]);
     store.setFilter('internal');
 
@@ -155,10 +155,10 @@ describe('TicketStore', () => {
 
   it('should return counts per filter tab', () => {
     const tickets = [
-      makeTicket({ ticket_id: 't1', id: 't1', owner: { id: 1, name: 'A' }, status: TicketStatus.Active }),
-      makeTicket({ ticket_id: 't2', id: 't2', owner: null, status: TicketStatus.Waiting }),
-      makeTicket({ ticket_id: 't3', id: 't3', owner: null, status: TicketStatus.New }),
-      makeTicket({ ticket_id: 't4', id: 't4', owner: { id: 2, name: 'B' }, status: TicketStatus.Resolved }),
+      makeTicket({ ticket_id: 't1', id: 't1', owner: { id: 1, name: 'A' }, status: EstadoDeTicket.Activo }),
+      makeTicket({ ticket_id: 't2', id: 't2', owner: null, status: EstadoDeTicket.EnEspera }),
+      makeTicket({ ticket_id: 't3', id: 't3', owner: null, status: EstadoDeTicket.Nuevo }),
+      makeTicket({ ticket_id: 't4', id: 't4', owner: { id: 2, name: 'B' }, status: EstadoDeTicket.Resuelto }),
     ];
     store.loadTickets(tickets);
 
@@ -341,10 +341,10 @@ describe('TicketStore', () => {
   // the unread badge; only genuine inbound (contact) messages should.
 
   // Test tickets use string ids ('t1'), so the payload is cast to the wire type.
-  function makeMessageAddedEvent(direction: 'inbound' | 'outbound', ticketId = 't1'): RealtimeEvent {
+  function makeMessageAddedEvent(direction: 'inbound' | 'outbound', ticketId = 't1'): EventoEnTiempoReal {
     return {
       eventId: 'evt-1',
-      eventType: RealtimeEventType.MessageAdded,
+      eventType: TipoDeEventoEnTiempoReal.MessageAdded,
       ticketId,
       payload: {
         messageId: 1,
@@ -355,14 +355,14 @@ describe('TicketStore', () => {
         createdAt: '2024-01-01T00:00:00Z',
         externalId: null,
       },
-    } as unknown as RealtimeEvent;
+    } as unknown as EventoEnTiempoReal;
   }
 
   it('should skip the unread bump for an outbound MessageAdded on a non-active ticket', () => {
     store.loadTickets([makeTicket({ ticket_id: 't1', id: 't1', metrics: { unread_count: 0 } })]);
     store.setActiveTicket(null); // no active ticket — t1 is not active
 
-    applyTicketEvent(makeMessageAddedEvent('outbound'), store, {} as WorkspaceStore);
+    applyTicketEvent(makeMessageAddedEvent('outbound'), store, {} as EspacioDeTrabajoStore);
 
     expect(store.tickets()[0].metrics.unread_count).toBe(0);
   });
@@ -371,7 +371,7 @@ describe('TicketStore', () => {
     store.loadTickets([makeTicket({ ticket_id: 't1', id: 't1', metrics: { unread_count: 0 } })]);
     store.setActiveTicket(null);
 
-    applyTicketEvent(makeMessageAddedEvent('inbound'), store, {} as WorkspaceStore);
+    applyTicketEvent(makeMessageAddedEvent('inbound'), store, {} as EspacioDeTrabajoStore);
 
     expect(store.tickets()[0].metrics.unread_count).toBe(1);
   });

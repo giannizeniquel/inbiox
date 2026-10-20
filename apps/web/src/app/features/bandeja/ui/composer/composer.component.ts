@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy, DestroyRef, inject, output, signal, ElementRef, viewChild, input, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { generateTempId } from '../../../../data-access/conversacion/temp-id.util';
-import { MediaPreviewModalComponent } from '../media-preview-modal/media-preview-modal.component';
+import { AdjuntoPreviewModalComponent } from '../adjunto-preview-modal/adjunto-preview-modal.component';
 
 /** WhatsApp's literal conversation-window duration (Sprint 16 Fase 3). */
 const WINDOW_HOURS = 24;
@@ -19,13 +19,13 @@ const CLOCK_TICK_INTERVAL_MS = 60_000;
  * - Submit on Enter, Shift+Enter for newline
  * - aria-label="Escribe un mensaje"
  *
- * Optimistic message creation is delegated to MessageSenderService (parent container).
+ * Optimistic message creation is delegated to EnvioDeMensajesService (parent container).
  * This component only emits sendMessage with content + tempId.
  */
 @Component({
   selector: 'app-composer',
   standalone: true,
-  imports: [FormsModule, MediaPreviewModalComponent],
+  imports: [FormsModule, AdjuntoPreviewModalComponent],
   templateUrl: './composer.component.html',
   styleUrl: './composer.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

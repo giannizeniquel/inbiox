@@ -1,0 +1,83 @@
+<div class="conversation-container">
+  @if (activeTicket()) {
+    <!-- Sticky header: 64px — with back button for mobile -->
+    <div class="conversation-container__header">
+      <button
+        class="conversation-container__back-btn"
+        type="button"
+        aria-label="Volver a la lista"
+        (click)="onBack()"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+      <app-conversacion-header
+        [ticket]="activeTicket()!"
+        [resolving]="resolving()"
+        [participationOpen]="participationOpen()"
+        (resolve)="onResolveTicket()"
+        (toggleParticipation)="onToggleParticipation()"
+      />
+    </div>
+
+    <!-- "Participación" panel — collapsible, lazy-fetches only while open -->
+    @if (participationOpen()) {
+      <app-participacion-de-ticket [ticketId]="+activeTicket()!.ticket_id" />
+    }
+
+    <!-- Result of a workflow action the agent triggered (e.g. resolve) -->
+    @if (actionMessage()) {
+      <app-banner-warning>
+        {{ actionMessage() }}
+        <button
+          type="button"
+          class="conversation-container__dismiss-btn"
+          aria-label="Cerrar aviso"
+          (click)="onDismissActionMessage()"
+        >
+          &times;
+        </button>
+      </app-banner-warning>
+    }
+
+    <!-- Virtual-scroll message area -->
+    @if (loading()) {
+      <app-conversacion-loading />
+    } @else {
+      <cdk-virtual-scroll-viewport
+        #vps
+        autosize
+        minBufferPx="3000"
+        maxBufferPx="4000"
+        class="conversation-vp"
+      >
+        @if (scroll.loadingOlder()) {
+          <app-loading-spinner class="older-messages-spinner" />
+        }
+        <app-mensaje-bubble
+          *cdkVirtualFor="let msg of messages(); trackBy: trackById"
+          [message]="msg"
+          (retry)="onRetry($event)"
+        />
+      </cdk-virtual-scroll-viewport>
+    }
+
+    <!-- Scroll-to-bottom button — visible whenever user is not at the bottom -->
+    <app-mensajes-nuevos-indicator
+      [visible]="!scroll.isAtBottom()"
+      [count]="scroll.newMessagesCount()"
+      (click)="scroll.scrollToBottom()"
+    />
+
+    <!-- Sticky composer: 56px -->
+    <app-composer
+      [lastInboundMessageAt]="lastInboundMessageAt()"
+      (sendMessage)="onSendMessage($event)"
+      (sendWithFile)="onSendFile($event)"
+    />
+  } @else {
+    <!-- No chat selected -->
+    <app-conversacion-empty />
+  }
+</div>

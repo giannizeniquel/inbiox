@@ -1,10 +1,10 @@
 import { of, throwError } from 'rxjs';
 import { GetReportsDashboardUseCase, GetReportsDashboardInput, ReportsDashboardData, ReportsFetchFailed } from './get-reports-dashboard.use-case';
-import { ReportsApiService } from './reports-api.service';
+import { ReporteApiService } from './reporte-api.service';
 
 describe('GetReportsDashboardUseCase', () => {
   let useCase: GetReportsDashboardUseCase;
-  let apiSpy: jasmine.SpyObj<ReportsApiService>;
+  let apiSpy: jasmine.SpyObj<ReporteApiService>;
 
   const input: GetReportsDashboardInput = { params: { fromDate: '2024-01-01', toDate: '2024-01-31' } };
 
@@ -27,7 +27,7 @@ describe('GetReportsDashboardUseCase', () => {
   };
 
   beforeEach(() => {
-    apiSpy = jasmine.createSpyObj('ReportsApiService', [
+    apiSpy = jasmine.createSpyObj('ReporteApiService', [
       'getFirstResponseTime',
       'getResolutionTime',
       'getTicketCounts',

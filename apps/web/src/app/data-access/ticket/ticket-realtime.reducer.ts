@@ -1,14 +1,14 @@
 import type { TicketStore } from './ticket.store';
-import type { WorkspaceStore } from '../administracion/workspace.store';
-import { TicketStatus } from './ticket.model';
-import { RealtimeEvent, RealtimeEventType,
+import type { EspacioDeTrabajoStore } from '../administracion/espacio-de-trabajo.store';
+import { EstadoDeTicket } from './ticket.model';
+import { EventoEnTiempoReal, TipoDeEventoEnTiempoReal,
   MessageAddedPayload, TicketCreatedPayload, TicketStatusChangedPayload,
-  TicketAssignedPayload } from '../../core/realtime/realtime-event.model';
+  TicketAssignedPayload } from '../../core/tiempo-real/evento-en-tiempo-real.model';
 
 /** Apply one ticket-related realtime event (from the EventBus) to the ticket list and the workspace pending flags. */
-export function applyTicketEvent(event: RealtimeEvent, store: TicketStore, workspaceStore: WorkspaceStore): void {
+export function applyTicketEvent(event: EventoEnTiempoReal, store: TicketStore, workspaceStore: EspacioDeTrabajoStore): void {
   switch (event.eventType) {
-    case RealtimeEventType.MessageAdded: {
+    case TipoDeEventoEnTiempoReal.MessageAdded: {
       const p = event.payload as MessageAddedPayload;
       // Increment unread if not active ticket — inbound only (message-agent-
       // attribution, design.md D6): outbound messages now broadcast too
@@ -39,12 +39,12 @@ export function applyTicketEvent(event: RealtimeEvent, store: TicketStore, works
       break;
     }
 
-    case RealtimeEventType.TicketCreated: {
+    case TipoDeEventoEnTiempoReal.TicketCreated: {
       const p = event.payload as TicketCreatedPayload;
       store.addOrUpdateTicket({
         ticket_id: String(p.ticketId),
         id: String(p.ticketId),
-        status: p.status as TicketStatus,
+        status: p.status as EstadoDeTicket,
         priority: String(p.priority),
         contact: null,
         last_message: null,
@@ -55,20 +55,20 @@ export function applyTicketEvent(event: RealtimeEvent, store: TicketStore, works
       break;
     }
 
-    case RealtimeEventType.TicketStatusChanged: {
+    case TipoDeEventoEnTiempoReal.TicketStatusChanged: {
       const p = event.payload as TicketStatusChangedPayload;
       const existing = store.tickets().find(t => String(t.ticket_id) === String(p.ticketId));
       if (existing) {
         store.addOrUpdateTicket({
           ...existing,
-          status: p.newStatus as TicketStatus,
+          status: p.newStatus as EstadoDeTicket,
           timestamps: { ...existing.timestamps, updated_at: p.changedAt },
         });
       }
       break;
     }
 
-    case RealtimeEventType.TicketAssigned: {
+    case TipoDeEventoEnTiempoReal.TicketAssigned: {
       const p = event.payload as TicketAssignedPayload;
       const existing = store.tickets().find(t => String(t.ticket_id) === String(p.ticketId));
       if (existing) {
@@ -76,11 +76,11 @@ export function applyTicketEvent(event: RealtimeEvent, store: TicketStore, works
         // Otherwise keep the name from optimistic update (or existing owner).
         const ownerName = p.assigneeName ?? existing.owner?.name ?? `Agent #${p.assigneeId}`;
         // Implicit status transition: unassigned (new) → active on assignment
-        const wasUnassigned = existing.status === TicketStatus.New || existing.owner === null;
+        const wasUnassigned = existing.status === EstadoDeTicket.Nuevo || existing.owner === null;
         store.addOrUpdateTicket({
           ...existing,
           owner: { id: p.assigneeId, name: ownerName },
-          status: wasUnassigned ? TicketStatus.Active : existing.status,
+          status: wasUnassigned ? EstadoDeTicket.Activo : existing.status,
         });
       }
       // When a ticket is reassigned, clear the unread badge for the new owner
@@ -88,7 +88,7 @@ export function applyTicketEvent(event: RealtimeEvent, store: TicketStore, works
       break;
     }
 
-    case RealtimeEventType.TicketRead: {
+    case TipoDeEventoEnTiempoReal.TicketRead: {
       // Another user marked this ticket as read — clear our badge
       const ticketId = event.ticketId ? String(event.ticketId) : null;
       if (ticketId) {
