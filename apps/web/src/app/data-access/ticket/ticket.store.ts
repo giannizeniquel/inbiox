@@ -55,7 +55,7 @@ export class TicketStore {
   private readonly espacioDeTrabajoStore = inject(EspacioDeTrabajoStore);
 
   /** Current logged-in agent's ID (null if admin without agent) */
-  private readonly agenteActualId = computed(() => this.authStore.usuarioActual()?.agent_id ?? null);
+  private readonly agenteActualId = computed(() => this.authStore.usuarioActual()?.agenteId ?? null);
 
   constructor() {
     this.initEventBus();

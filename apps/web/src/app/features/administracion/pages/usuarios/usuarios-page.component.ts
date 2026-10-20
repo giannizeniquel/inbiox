@@ -7,7 +7,7 @@ import { atLeastOneRoleValidator } from '../../../../shared/validators';
 /**
  * UsersPage — Admin user management.
  *
- * Allows ROLE_ADMIN to view, create, edit, and soft-delete users.
+ * Allows ROLE_ADMINISTRADOR to view, create, edit, and soft-delete users.
  * Features: paginated table, create form, edit modal, soft-delete with confirmation.
  *
  * API calls go through AdministracionApiService; this component holds only signals,
@@ -44,7 +44,7 @@ export class UsuariosPageComponent implements OnInit {
   readonly usuarioForm = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(8)]],
-    roles: [['ROLE_AGENT'] as string[], [atLeastOneRoleValidator()]],
+    roles: [['ROLE_AGENTE'] as string[], [atLeastOneRoleValidator()]],
     agent_id: [null as number | null],
   });
 
@@ -85,7 +85,7 @@ export class UsuariosPageComponent implements OnInit {
 
   openCreateForm(): void {
     this.usuarioEnEdicion.set(null);
-    this.usuarioForm.reset({ email: '', password: '', roles: ['ROLE_AGENT'], agent_id: null });
+    this.usuarioForm.reset({ email: '', password: '', roles: ['ROLE_AGENTE'], agent_id: null });
     this.usuarioForm.controls.password.setValidators([Validators.required, Validators.minLength(8)]);
     this.usuarioForm.controls.password.updateValueAndValidity();
     this.showForm.set(true);

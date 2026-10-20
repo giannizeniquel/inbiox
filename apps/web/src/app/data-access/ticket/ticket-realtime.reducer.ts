@@ -29,7 +29,7 @@ export function applyTicketEvent(event: EventoEnTiempoReal, store: TicketStore, 
         const activePhone = espacioDeTrabajoStore.activePhoneNumberId();
         if (activePhone && activePhone !== p.phoneNumberId) {
           const ws = espacioDeTrabajoStore.espaciosDeTrabajo().find(
-            w => w.phone_number_id === p.phoneNumberId
+            w => w.phoneNumberId === p.phoneNumberId
           );
           if (ws) {
             espacioDeTrabajoStore.setPending(ws.id, true);

@@ -36,9 +36,9 @@ export class AuthStore {
   /** True when a user is currently authenticated */
   readonly isAuthenticated = computed(() => this.usuarioActual() !== null);
 
-  /** True if the current user has ROLE_ADMIN */
+  /** True if the current user has ROLE_ADMINISTRADOR */
   readonly isAdmin = computed(() =>
-    this.usuarioActual()?.roles.includes('ROLE_ADMIN') ?? false
+    this.usuarioActual()?.roles.includes('ROLE_ADMINISTRADOR') ?? false
   );
 
   /** True if the current user has ROLE_SUPERVISOR */

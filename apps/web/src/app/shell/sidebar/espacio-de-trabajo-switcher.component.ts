@@ -44,13 +44,13 @@ import { EspacioDeTrabajoStore } from '../../data-access/administracion/espacio-
                 @for (ws of espaciosDeTrabajo(); track ws.id) {
                   <button
                     class="workspace-switcher__dropdown-item"
-                    [class.workspace-switcher__dropdown-item--active]="ws.id === espacioDeTrabajoActivo()?.workspace_id"
+                    [class.workspace-switcher__dropdown-item--active]="ws.id === espacioDeTrabajoActivo()?.espacioDeTrabajoId"
                     (click)="onSeleccionarEspacioDeTrabajo(ws.id)"
                     [title]="hasPending(ws.id) ? 'Nuevos mensajes' : ''"
                   >
                     <div class="workspace-switcher__dropdown-info">
-                      <span class="workspace-switcher__dropdown-name">{{ ws.display_name }}</span>
-                      <span class="workspace-switcher__dropdown-phone">{{ ws.phone_number_id }}</span>
+                      <span class="workspace-switcher__dropdown-name">{{ ws.nombreVisible }}</span>
+                      <span class="workspace-switcher__dropdown-phone">{{ ws.phoneNumberId }}</span>
                     </div>
                     @if (hasPending(ws.id)) {
                       <svg class="workspace-switcher__envelope" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -299,8 +299,8 @@ export class EspacioDeTrabajoSwitcherComponent {
 
   protected readonly activeLabel = computed(() => {
     const active = this.espacioDeTrabajoActivo();
-    if (active?.display_name) {
-      return active.display_name;
+    if (active?.nombreVisible) {
+      return active.nombreVisible;
     }
     return 'Workspace';
   });
@@ -309,7 +309,7 @@ export class EspacioDeTrabajoSwitcherComponent {
   protected readonly hasPendingInOther = computed(() => {
     const active = this.espacioDeTrabajoActivo();
     for (const ws of this.espaciosDeTrabajo()) {
-      if (ws.id !== active?.workspace_id && this.espacioDeTrabajoStore.hasPending(ws.id)) {
+      if (ws.id !== active?.espacioDeTrabajoId && this.espacioDeTrabajoStore.hasPending(ws.id)) {
         return true;
       }
     }
@@ -334,7 +334,7 @@ export class EspacioDeTrabajoSwitcherComponent {
 
   protected onSeleccionarEspacioDeTrabajo(espacioDeTrabajoId: number): void {
     this.dropdownOpen.set(false);
-    if (espacioDeTrabajoId && espacioDeTrabajoId !== this.espacioDeTrabajoActivo()?.workspace_id) {
+    if (espacioDeTrabajoId && espacioDeTrabajoId !== this.espacioDeTrabajoActivo()?.espacioDeTrabajoId) {
       this.espacioDeTrabajoStore.setEspacioDeTrabajoActivo(espacioDeTrabajoId);
     }
   }

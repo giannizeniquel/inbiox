@@ -5,7 +5,7 @@ import { EquipoDTO } from '../../../../data-access/administracion/equipo.dto';
 /**
  * FiltroDeEquipoComponent — single-select team filter dropdown (team-area-entity,
  * Slice 3). Fetches the requester's workspace-scoped teams from
- * `GET /api/teams` (built in Slice 1) and emits the selected team id (or
+ * `GET /api/equipos` (built in Slice 1) and emits the selected team id (or
  * `null` for "all teams"). Independent of and composable with any other
  * ticket filter — this component owns no cross-filter state itself.
  */

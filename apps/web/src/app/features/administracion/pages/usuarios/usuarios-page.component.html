@@ -44,16 +44,16 @@
             </thead>
             <tbody>
               @for (user of usuarios(); track user.id) {
-                <tr [class.row--inactive]="!user.is_active">
+                <tr [class.row--inactive]="!user.activo">
                   <td>{{ user.id }}</td>
                   <td>{{ user.email }}</td>
                   <td>
                     <span class="badge-list">
                       @for (role of user.roles; track role) {
                         @if (role !== 'ROLE_USER') {
-                          <span class="badge" [class.badge--admin]="role === 'ROLE_ADMIN'"
+                          <span class="badge" [class.badge--admin]="role === 'ROLE_ADMINISTRADOR'"
                                 [class.badge--supervisor]="role === 'ROLE_SUPERVISOR'"
-                                [class.badge--agent]="role === 'ROLE_AGENT'">
+                                [class.badge--agent]="role === 'ROLE_AGENTE'">
                             {{ role.replace('ROLE_', '') }}
                           </span>
                         }
@@ -61,15 +61,15 @@
                     </span>
                   </td>
                   <td>
-                    <span class="status-dot" [class.status-dot--active]="user.is_active"
-                          [class.status-dot--inactive]="!user.is_active">
+                    <span class="status-dot" [class.status-dot--active]="user.activo"
+                          [class.status-dot--inactive]="!user.activo">
                     </span>
-                    {{ user.is_active ? 'Active' : 'Inactive' }}
+                    {{ user.activo ? 'Active' : 'Inactive' }}
                   </td>
-                  <td>{{ user.agent_name ?? '—' }}</td>
+                  <td>{{ user.agenteNombre ?? '—' }}</td>
                   <td class="actions-cell">
                     <button class="btn btn--sm btn--outline" (click)="openEditForm(user)" [attr.aria-label]="'Edit ' + user.email">Edit</button>
-                    @if (user.is_active) {
+                    @if (user.activo) {
                       <button class="btn btn--sm btn--danger" (click)="confirmDelete(user)" [attr.aria-label]="'Deactivate ' + user.email">Deactivate</button>
                     } @else {
                       <button class="btn btn--sm btn--outline" (click)="reactivarUsuario(user)" [attr.aria-label]="'Reactivate ' + user.email">Reactivate</button>
@@ -144,8 +144,8 @@
                   <label class="form-label">Roles</label>
                   <div class="checkbox-group">
                     <label class="checkbox-label">
-                      <input type="checkbox" [checked]="usuarioForm.controls.roles.value.includes('ROLE_ADMIN')"
-                             (change)="toggleRole('ROLE_ADMIN')" />
+                      <input type="checkbox" [checked]="usuarioForm.controls.roles.value.includes('ROLE_ADMINISTRADOR')"
+                             (change)="toggleRole('ROLE_ADMINISTRADOR')" />
                       Admin
                     </label>
                     <label class="checkbox-label">
@@ -154,8 +154,8 @@
                       Supervisor
                     </label>
                     <label class="checkbox-label">
-                      <input type="checkbox" [checked]="usuarioForm.controls.roles.value.includes('ROLE_AGENT')"
-                             (change)="toggleRole('ROLE_AGENT')" />
+                      <input type="checkbox" [checked]="usuarioForm.controls.roles.value.includes('ROLE_AGENTE')"
+                             (change)="toggleRole('ROLE_AGENTE')" />
                       Agent
                     </label>
                   </div>
@@ -170,7 +170,7 @@
                     <select id="user-agent" class="form-input" formControlName="agent_id">
                       <option [ngValue]="null">— No agent —</option>
                       @for (agent of agentesDisponibles(); track agent.id) {
-                        <option [ngValue]="agent.id">{{ agent.name }}</option>
+                        <option [ngValue]="agent.id">{{ agent.nombre }}</option>
                       }
                     </select>
                   </div>

@@ -15,10 +15,10 @@ describe('AuthStore', () => {
   const mockUsuario: UsuarioDTO = {
     id: 1,
     email: 'admin@inbiox.com',
-    roles: ['ROLE_ADMIN', 'ROLE_USER'],
-    agent_id: 1,
-    agent_name: 'Admin Agent',
-    is_active: true,
+    roles: ['ROLE_ADMINISTRADOR', 'ROLE_USER'],
+    agenteId: 1,
+    agenteNombre: 'Admin Agent',
+    activo: true,
   };
 
   const mockLoginResponse: LoginResponse = {
@@ -197,11 +197,11 @@ describe('AuthStore', () => {
   // ── hasRole() ──
 
   it('should check roles correctly', () => {
-    expect(store.hasRole('ROLE_ADMIN')).toBeFalse();
+    expect(store.hasRole('ROLE_ADMINISTRADOR')).toBeFalse();
 
     store.usuarioActual.set(mockUsuario);
 
-    expect(store.hasRole('ROLE_ADMIN')).toBeTrue();
+    expect(store.hasRole('ROLE_ADMINISTRADOR')).toBeTrue();
     expect(store.hasRole('ROLE_USER')).toBeTrue();
     expect(store.hasRole('ROLE_SUPERVISOR')).toBeFalse();
   });

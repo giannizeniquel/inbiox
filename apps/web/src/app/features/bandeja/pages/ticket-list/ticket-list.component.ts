@@ -84,7 +84,7 @@ export class TicketListComponent implements OnInit {
     // not inside ngOnInit.
     effect(() => {
       const ws = this.espacioDeTrabajoStore.espacioDeTrabajoActivo();
-      const wsId = ws?.workspace_id;
+      const wsId = ws?.espacioDeTrabajoId;
 
       if (wsId) {
         this.cargarAgentesDisponibles(wsId);
@@ -121,7 +121,7 @@ export class TicketListComponent implements OnInit {
    * @param espacioDeTrabajoId Optional workspace ID. If not provided, uses active workspace.
    */
   private cargarAgentesDisponibles(espacioDeTrabajoId?: number): void {
-    const wsId = espacioDeTrabajoId ?? this.espacioDeTrabajoStore.espacioDeTrabajoActivo()?.workspace_id;
+    const wsId = espacioDeTrabajoId ?? this.espacioDeTrabajoStore.espacioDeTrabajoActivo()?.espacioDeTrabajoId;
     if (!wsId) {
       this.agentesDisponibles.set([]);
       return;
@@ -130,7 +130,7 @@ export class TicketListComponent implements OnInit {
     this.disponibilidadApi.getAgentesDisponibles(wsId).subscribe({
       next: (agentes) => {
         // Filter out the current user — no one can assign to themselves via dropdown
-        const agenteActualId = this.authStore.usuarioActual()?.agent_id;
+        const agenteActualId = this.authStore.usuarioActual()?.agenteId;
         const filtered = agenteActualId
           ? agentes.filter(a => a.id !== agenteActualId)
           : agentes;
@@ -224,12 +224,12 @@ export class TicketListComponent implements OnInit {
 
     // Admin or supervisor: always allowed
     const roles = usuario.roles ?? [];
-    if (roles.includes('ROLE_ADMIN') || roles.includes('ROLE_SUPERVISOR')) {
+    if (roles.includes('ROLE_ADMINISTRADOR') || roles.includes('ROLE_SUPERVISOR')) {
       return true;
     }
 
     // Agent: must own the ticket
-    const agenteId = usuario.agent_id;
+    const agenteId = usuario.agenteId;
     if (agenteId && ticket.responsable?.id === agenteId) {
       return true;
     }
@@ -250,7 +250,7 @@ export class TicketListComponent implements OnInit {
 
     // Get current user for assignedBy
     const usuarioActual = this.authStore.usuarioActual();
-    const asignadoPor = usuarioActual?.email ?? usuarioActual?.agent_name ?? 'Unknown';
+    const asignadoPor = usuarioActual?.email ?? usuarioActual?.agenteNombre ?? 'Unknown';
 
     // Optimistic update
     const responsableAnterior = this.ticketStore.asignarOptimista(ticketId, agentId, nombreDeAgente);

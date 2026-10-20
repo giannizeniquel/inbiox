@@ -15,7 +15,7 @@ interface AgentOption {
 /**
  * WorkspacesPage — Admin workspace management.
  *
- * Allows ROLE_ADMIN to view, create, edit, and soft-delete workspaces.
+ * Allows ROLE_ADMINISTRADOR to view, create, edit, and soft-delete workspaces.
  * Features: paginated table, create form, edit modal, soft-delete.
  */
 @Component({
@@ -94,9 +94,9 @@ export class EspaciosDeTrabajoPageComponent implements OnInit {
   openEditForm(ws: EspacioDeTrabajoDTO): void {
     this.espacioDeTrabajoEnEdicion.set(ws);
     this.espacioDeTrabajoForm.reset({
-      phoneNumberId: ws.phone_number_id,
-      displayName: ws.display_name,
-      isActive: ws.is_active,
+      phoneNumberId: ws.phoneNumberId,
+      displayName: ws.nombreVisible,
+      isActive: ws.activo,
     });
     this.showForm.set(true);
   }
@@ -133,8 +133,8 @@ export class EspaciosDeTrabajoPageComponent implements OnInit {
 
     this.espacioDeTrabajoApi.create({
       phoneNumberId: phoneNumberId.trim(),
-      displayName: displayName.trim(),
-      isActive,
+      nombreVisible: displayName.trim(),
+      activo: isActive,
     }).subscribe({
       next: () => {
         this.saving.set(false);
@@ -157,8 +157,8 @@ export class EspaciosDeTrabajoPageComponent implements OnInit {
 
     this.espacioDeTrabajoApi.update(ws.id, {
       phoneNumberId: phoneNumberId.trim(),
-      displayName: displayName.trim(),
-      isActive,
+      nombreVisible: displayName.trim(),
+      activo: isActive,
     }).subscribe({
       next: () => {
         this.saving.set(false);
@@ -191,7 +191,7 @@ export class EspaciosDeTrabajoPageComponent implements OnInit {
     this.espacioDeTrabajoApi.desactivar(ws.id).subscribe({
       next: () => {
         this.saving.set(false);
-        this.success.set(`Workspace "${ws.display_name}" deactivated successfully`);
+        this.success.set(`Workspace "${ws.nombreVisible}" deactivated successfully`);
         this.showDeleteConfirm.set(null);
         this.cargarEspaciosDeTrabajo();
       },
@@ -206,14 +206,14 @@ export class EspaciosDeTrabajoPageComponent implements OnInit {
 
   abrirAgenteModal(ws: EspacioDeTrabajoDTO): void {
     this.espacioDeTrabajoEnAsignacion.set(ws);
-    const agenteAsignadoIds: number[] = (ws as any).agent_ids ?? [];
+    const agenteAsignadoIds: number[] = (ws as any).agenteIds ?? [];
     
-    this.http.get<any>(`${environment.apiUrl}/api/admin/agents?limit=100`).subscribe({
+    this.http.get<any>(`${environment.apiUrl}/api/administracion/agentes?limit=100`).subscribe({
       next: (res) => {
         const agentes = res.data ?? [];
         this.agenteOptions.set(agentes.map((a: any) => ({
           id: a.id,
-          name: a.name ?? `Agent ${a.id}`,
+          name: a.nombre ?? `Agent ${a.id}`,
           assigned: agenteAsignadoIds.includes(a.id),
         })));
       },

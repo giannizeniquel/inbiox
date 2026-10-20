@@ -18,17 +18,17 @@ export interface DisponibilidadDeAgenteResponse {
   } | null;
 }
 
-/** One weekly shift of the current agent (`/api/me/shifts`, `businessHours` in settings). */
+/** One weekly shift of the current agent (`/api/mi/turnos`, `businessHours` in settings). */
 export interface TurnoDTO {
-  dayOfWeek: number;
-  start: string;
-  end: string;
+  diaDeLaSemana: number;
+  inicio: string;
+  fin: string;
 }
 
 export interface TurnoInput {
-  dayOfWeek: number;
-  start: string;
-  end: string;
+  diaDeLaSemana: number;
+  inicio: string;
+  fin: string;
 }
 
 export interface TurnoDeAgenteResponse {
@@ -48,8 +48,8 @@ export interface TurnoDeAgenteResponse {
  * - DELETE /agents/{id}/availability  (clear override)
  * - POST   /agents/{id}/shifts        (create shift)
  * - DELETE /agents/{id}/shifts/{shiftId}
- * - GET    /api/me/shifts             (current agent's shifts)
- * - PUT    /api/me/shifts             (replace all of the current agent's shifts)
+ * - GET    /api/mi/turnos             (current agent's shifts)
+ * - PUT    /api/mi/turnos             (replace all of the current agent's shifts)
  * - GET    /api/workspaces/{id}/available-agents
  */
 @Injectable({ providedIn: 'root' })
@@ -125,16 +125,16 @@ export class DisponibilidadApiService {
     );
   }
 
-  /** GET /api/me/shifts — list agent's current shifts */
+  /** GET /api/mi/turnos — list agent's current shifts */
   getTurnos(): Observable<TurnoDTO[]> {
-    return this.http.get<TurnoDTO[]>(`${this.baseUrl}/api/me/shifts`);
+    return this.http.get<TurnoDTO[]>(`${this.baseUrl}/api/mi/turnos`);
   }
 
-  /** PUT /api/me/shifts — replace ALL shifts */
+  /** PUT /api/mi/turnos — replace ALL shifts */
   reemplazarTurnos(turnos: TurnoInput[]): Observable<TurnoDTO[]> {
     return this.http.put<TurnoDTO[]>(
-      `${this.baseUrl}/api/me/shifts`,
-      { shifts: turnos },
+      `${this.baseUrl}/api/mi/turnos`,
+      { turnos },
     );
   }
 

@@ -9,23 +9,23 @@ export interface UsuarioDeGestionDTO {
   id: number;
   email: string;
   roles: string[];
-  is_active: boolean;
-  agent_id: number | null;
-  agent_name: string | null;
-  created_at: string;
-  updated_at: string | null;
+  activo: boolean;
+  agenteId: number | null;
+  agenteNombre: string | null;
+  creadoAt: string;
+  actualizadoAt: string | null;
 }
 
 export interface AgenteDeGestionDTO {
   id: number;
-  name: string;
-  active: boolean;
-  is_available: boolean;
-  timezone: string;
-  user_id: number | null;
-  user_email: string | null;
-  created_at: string;
-  updated_at: string;
+  nombre: string;
+  activo: boolean;
+  disponible: boolean;
+  zonaHoraria: string;
+  usuarioId: number | null;
+  usuarioEmail: string | null;
+  creadoAt: string;
+  actualizadoAt: string;
 }
 
 export interface PaginatedResponse<T> {
@@ -34,43 +34,43 @@ export interface PaginatedResponse<T> {
     page: number;
     limit: number;
     total: number;
-    has_next: boolean;
+    haySiguiente: boolean;
   };
 }
 
 export interface VincularUsuarioResponse {
   id: number;
-  user_id: number;
-  user_email: string;
+  usuarioId: number;
+  usuarioEmail: string;
 }
 
 export interface CreateUsuarioPayload {
   email: string;
   password: string;
   roles?: string[];
-  agent_id?: number | null;
+  agenteId?: number | null;
 }
 
 export interface UpdateUsuarioPayload {
   email?: string;
   password?: string;
   roles?: string[];
-  is_active?: boolean;
+  activo?: boolean;
 }
 
 export interface CreateAgentePayload {
-  name: string;
-  timezone?: string;
+  nombre: string;
+  zonaHoraria?: string;
 }
 
 export interface UpdateAgentePayload {
-  name?: string;
-  active?: boolean;
-  timezone?: string;
+  nombre?: string;
+  activo?: boolean;
+  zonaHoraria?: string;
 }
 
 export interface VincularUsuarioPayload {
-  user_id: number;
+  usuarioId: number;
 }
 
 /** One page of an admin list, as the admin pages consume it. */
@@ -126,7 +126,7 @@ export function rethrowApiError<T>(fallback: string): OperatorFunction<T, T> {
 /**
  * AdministracionApiService — REST client for admin management endpoints.
  *
- * All endpoints require appropriate roles (ROLE_ADMIN or ROLE_SUPERVISOR).
+ * All endpoints require appropriate roles (ROLE_ADMINISTRADOR or ROLE_SUPERVISOR).
  * Auth is handled by the AuthInterceptor automatically.
  *
  * Methods return the shapes the admin pages consume and fail with a plain
@@ -137,9 +137,9 @@ export class AdministracionApiService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiUrl;
 
-  // ── User Management (ROLE_ADMIN) ──────────────────────────
+  // ── User Management (ROLE_ADMINISTRADOR) ──────────────────────────
 
-  /** GET /api/admin/users — one page of users */
+  /** GET /api/administracion/usuarios — one page of users */
   listarUsuarios(page: number, limit = 20): Observable<Page<UsuarioDeGestionDTO>> {
     return this.fetchUsuarios(page, limit).pipe(
       map(toPage),
@@ -147,25 +147,25 @@ export class AdministracionApiService {
     );
   }
 
-  /** GET /api/admin/users (page 1, limit 200) — active users not yet linked to an agent */
+  /** GET /api/administracion/usuarios (page 1, limit 200) — active users not yet linked to an agent */
   listarUsuariosDisponiblesParaVincular(): Observable<{ users: UsuarioDeGestionDTO[] }> {
     return this.fetchUsuarios(1, 200).pipe(
       map((res) => ({
-        users: res.data.filter((u) => u.is_active && !u.agent_id),
+        users: res.data.filter((u) => u.activo && !u.agenteId),
       })),
       rethrowApiError('Failed to load users for linking'),
     );
   }
 
-  /** GET /api/admin/users/{id} — single user */
+  /** GET /api/administracion/usuarios/{id} — single user */
   getUsuario(id: number): Observable<UsuarioDeGestionDTO> {
-    return this.http.get<UsuarioDeGestionDTO>(`${this.baseUrl}/api/admin/users/${id}`);
+    return this.http.get<UsuarioDeGestionDTO>(`${this.baseUrl}/api/administracion/usuarios/${id}`);
   }
 
   /**
-   * POST /api/admin/users — create user.
+   * POST /api/administracion/usuarios — create user.
    *
-   * Email and password are required; empty roles default to ['ROLE_AGENT'].
+   * Email and password are required; empty roles default to ['ROLE_AGENTE'].
    */
   createUsuario(input: CreateUsuarioInput): Observable<{ user: UsuarioDeGestionDTO }> {
     if (!input.email || !input.password) {
@@ -175,26 +175,26 @@ export class AdministracionApiService {
     const payload: CreateUsuarioPayload = {
       email: input.email,
       password: input.password,
-      roles: input.roles.length > 0 ? input.roles : ['ROLE_AGENT'],
-      agent_id: input.agentId,
+      roles: input.roles.length > 0 ? input.roles : ['ROLE_AGENTE'],
+      agenteId: input.agentId,
     };
 
-    return this.http.post<UsuarioDeGestionDTO>(`${this.baseUrl}/api/admin/users`, payload).pipe(
+    return this.http.post<UsuarioDeGestionDTO>(`${this.baseUrl}/api/administracion/usuarios`, payload).pipe(
       map((usuario) => ({ user: usuario })),
       rethrowApiError('Failed to create user'),
     );
   }
 
   /**
-   * PUT /api/admin/users/{id} — update user.
+   * PUT /api/administracion/usuarios/{id} — update user.
    *
    * Email is always sent; password only when non-empty (empty = keep current);
-   * empty roles default to ['ROLE_AGENT'].
+   * empty roles default to ['ROLE_AGENTE'].
    */
   updateUsuario(input: UpdateUsuarioInput): Observable<{ user: UsuarioDeGestionDTO }> {
     const payload: UpdateUsuarioPayload = {
       email: input.email,
-      roles: input.roles.length > 0 ? input.roles : ['ROLE_AGENT'],
+      roles: input.roles.length > 0 ? input.roles : ['ROLE_AGENTE'],
     };
 
     if (input.password) {
@@ -207,17 +207,17 @@ export class AdministracionApiService {
     );
   }
 
-  /** DELETE /api/admin/users/{id} — soft delete (is_active = false) */
+  /** DELETE /api/administracion/usuarios/{id} — soft delete (is_active = false) */
   desactivarUsuario(id: number): Observable<{ id: number }> {
-    return this.http.delete<void>(`${this.baseUrl}/api/admin/users/${id}`).pipe(
+    return this.http.delete<void>(`${this.baseUrl}/api/administracion/usuarios/${id}`).pipe(
       map(() => ({ id })),
       rethrowApiError('Failed to deactivate user'),
     );
   }
 
-  /** PUT /api/admin/users/{id} with is_active = true */
+  /** PUT /api/administracion/usuarios/{id} with is_active = true */
   reactivarUsuario(id: number): Observable<{ id: number }> {
-    return this.putUsuario(id, { is_active: true }).pipe(
+    return this.putUsuario(id, { activo: true }).pipe(
       map(() => ({ id })),
       rethrowApiError('Failed to reactivate user'),
     );
@@ -225,7 +225,7 @@ export class AdministracionApiService {
 
   // ── Agent Management (ROLE_SUPERVISOR) ─────────────────────
 
-  /** GET /api/admin/agents — one page of agents */
+  /** GET /api/administracion/agentes — one page of agents */
   listarAgentes(page: number, limit = 20): Observable<Page<AgenteDeGestionDTO>> {
     return this.fetchAgentes(page, limit).pipe(
       map(toPage),
@@ -234,24 +234,24 @@ export class AdministracionApiService {
   }
 
   /**
-   * GET /api/admin/agents (page 1, limit 100) — active agents without a user,
+   * GET /api/administracion/agentes (page 1, limit 100) — active agents without a user,
    * for the user-creation dropdown. Errors yield an empty list: the agent is
    * optional when creating a user.
    */
   listarAgentesDisponiblesParaVincular(): Observable<AgenteDeGestionDTO[]> {
     return this.fetchAgentes(1, 100).pipe(
-      map((res) => res.data.filter((a) => a.active && !a.user_id)),
+      map((res) => res.data.filter((a) => a.activo && !a.usuarioId)),
       catchError(() => of([])),
     );
   }
 
-  /** GET /api/admin/agents/{id} — single agent */
+  /** GET /api/administracion/agentes/{id} — single agent */
   getAgente(id: number): Observable<AgenteDeGestionDTO> {
-    return this.http.get<AgenteDeGestionDTO>(`${this.baseUrl}/api/admin/agents/${id}`);
+    return this.http.get<AgenteDeGestionDTO>(`${this.baseUrl}/api/administracion/agentes/${id}`);
   }
 
   /**
-   * POST /api/admin/agents — create agent.
+   * POST /api/administracion/agentes — create agent.
    *
    * The name is trimmed and required; timezone is sent only when set.
    */
@@ -263,58 +263,58 @@ export class AdministracionApiService {
     }
 
     const payload: CreateAgentePayload = input.timezone
-      ? { name: trimmed, timezone: input.timezone }
-      : { name: trimmed };
+      ? { nombre: trimmed, zonaHoraria: input.timezone }
+      : { nombre: trimmed };
 
-    return this.http.post<AgenteDeGestionDTO>(`${this.baseUrl}/api/admin/agents`, payload).pipe(
+    return this.http.post<AgenteDeGestionDTO>(`${this.baseUrl}/api/administracion/agentes`, payload).pipe(
       map((agente) => ({ agent: agente })),
       rethrowApiError('Failed to create agent'),
     );
   }
 
-  /** PUT /api/admin/agents/{id} — update agent; always sends name (trimmed), active and timezone */
+  /** PUT /api/administracion/agentes/{id} — update agent; always sends name (trimmed), active and timezone */
   updateAgente(input: UpdateAgenteInput): Observable<{ agent: AgenteDeGestionDTO }> {
     return this.putAgente(input.id, {
-      name: input.name.trim(),
-      active: input.active,
-      timezone: input.timezone,
+      nombre: input.name.trim(),
+      activo: input.active,
+      zonaHoraria: input.timezone,
     }).pipe(
       map((agente) => ({ agent: agente })),
       rethrowApiError('Failed to update agent'),
     );
   }
 
-  /** DELETE /api/admin/agents/{id} — soft delete (active = false) */
+  /** DELETE /api/administracion/agentes/{id} — soft delete (active = false) */
   desactivarAgente(id: number): Observable<{ id: number }> {
-    return this.http.delete<void>(`${this.baseUrl}/api/admin/agents/${id}`).pipe(
+    return this.http.delete<void>(`${this.baseUrl}/api/administracion/agentes/${id}`).pipe(
       map(() => ({ id })),
       rethrowApiError('Failed to deactivate agent'),
     );
   }
 
-  /** PUT /api/admin/agents/{id} with active = true */
+  /** PUT /api/administracion/agentes/{id} with active = true */
   reactivarAgente(id: number): Observable<{ id: number }> {
-    return this.putAgente(id, { active: true }).pipe(
+    return this.putAgente(id, { activo: true }).pipe(
       map(() => ({ id })),
       rethrowApiError('Failed to reactivate agent'),
     );
   }
 
-  // ── Agent-User Linking (ROLE_ADMIN) ────────────────────────
+  // ── Agent-User Linking (ROLE_ADMINISTRADOR) ────────────────────────
 
-  /** POST /api/admin/agents/{id}/link-user — link user to agent */
+  /** POST /api/administracion/agentes/{id}/vincular-usuario — link user to agent */
   vincularUsuario(agenteId: number, usuarioId: number): Observable<VincularUsuarioResponse> {
-    const payload: VincularUsuarioPayload = { user_id: usuarioId };
+    const payload: VincularUsuarioPayload = { usuarioId: usuarioId };
     return this.http.post<VincularUsuarioResponse>(
-      `${this.baseUrl}/api/admin/agents/${agenteId}/link-user`,
+      `${this.baseUrl}/api/administracion/agentes/${agenteId}/vincular-usuario`,
       payload
     ).pipe(rethrowApiError('Failed to link user'));
   }
 
-  /** DELETE /api/admin/agents/{id}/link-user — unlink user from agent */
+  /** DELETE /api/administracion/agentes/{id}/vincular-usuario — unlink user from agent */
   desvincularUsuario(agenteId: number): Observable<void> {
     return this.http.delete<void>(
-      `${this.baseUrl}/api/admin/agents/${agenteId}/link-user`
+      `${this.baseUrl}/api/administracion/agentes/${agenteId}/vincular-usuario`
     ).pipe(rethrowApiError('Failed to unlink user'));
   }
 
@@ -325,7 +325,7 @@ export class AdministracionApiService {
       .set('page', page)
       .set('limit', limit);
     return this.http.get<PaginatedResponse<UsuarioDeGestionDTO>>(
-      `${this.baseUrl}/api/admin/users`,
+      `${this.baseUrl}/api/administracion/usuarios`,
       { params }
     );
   }
@@ -335,16 +335,16 @@ export class AdministracionApiService {
       .set('page', page)
       .set('limit', limit);
     return this.http.get<PaginatedResponse<AgenteDeGestionDTO>>(
-      `${this.baseUrl}/api/admin/agents`,
+      `${this.baseUrl}/api/administracion/agentes`,
       { params }
     );
   }
 
   private putUsuario(id: number, payload: UpdateUsuarioPayload): Observable<UsuarioDeGestionDTO> {
-    return this.http.put<UsuarioDeGestionDTO>(`${this.baseUrl}/api/admin/users/${id}`, payload);
+    return this.http.put<UsuarioDeGestionDTO>(`${this.baseUrl}/api/administracion/usuarios/${id}`, payload);
   }
 
   private putAgente(id: number, payload: UpdateAgentePayload): Observable<AgenteDeGestionDTO> {
-    return this.http.put<AgenteDeGestionDTO>(`${this.baseUrl}/api/admin/agents/${id}`, payload);
+    return this.http.put<AgenteDeGestionDTO>(`${this.baseUrl}/api/administracion/agentes/${id}`, payload);
   }
 }

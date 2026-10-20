@@ -10,16 +10,16 @@ import { Page, PaginatedResponse, rethrowApiError, toPage } from './administraci
  * EspacioDeTrabajoApiService — HTTP client for workspace endpoints.
  *
  * Agent-facing:
- * - GET  /api/me/workspace — active workspace preference
- * - PUT  /api/me/workspace — set active workspace
- * - GET  /api/me/workspaces — agent's assigned workspaces
+ * - GET  /api/mi/espacio-de-trabajo — active workspace preference
+ * - PUT  /api/mi/espacio-de-trabajo — set active workspace
+ * - GET  /api/mi/espacios-de-trabajo — agent's assigned workspaces
  *
  * Admin:
- * - GET    /api/admin/workspaces — paginated list
- * - POST   /api/admin/workspaces — create
- * - PUT    /api/admin/workspaces/{id} — update
- * - DELETE /api/admin/workspaces/{id} — soft delete
- * - PUT    /api/admin/workspaces/{id}/agents — assign agents
+ * - GET    /api/administracion/espacios-de-trabajo — paginated list
+ * - POST   /api/administracion/espacios-de-trabajo — create
+ * - PUT    /api/administracion/espacios-de-trabajo/{id} — update
+ * - DELETE /api/administracion/espacios-de-trabajo/{id} — soft delete
+ * - PUT    /api/administracion/espacios-de-trabajo/{id}/agentes — assign agents
  *
  * `GET /api/workspaces/{id}/available-agents` lives in `DisponibilidadApiService` (disponibilidad).
  *
@@ -33,37 +33,37 @@ export class EspacioDeTrabajoApiService {
 
   // ── Agent-facing endpoints ────────────────────────────
 
-  /** GET /api/me/workspace — active workspace preference */
+  /** GET /api/mi/espacio-de-trabajo — active workspace preference */
   getEspacioDeTrabajoActivo(): Observable<PreferenciaDeEspacioDeTrabajoResponse> {
     return this.http.get<PreferenciaDeEspacioDeTrabajoResponse>(
-      `${this.baseUrl}/api/me/workspace`
+      `${this.baseUrl}/api/mi/espacio-de-trabajo`
     );
   }
 
-  /** PUT /api/me/workspace — set active workspace */
+  /** PUT /api/mi/espacio-de-trabajo — set active workspace */
   setEspacioDeTrabajoActivo(espacioDeTrabajoId: number): Observable<PreferenciaDeEspacioDeTrabajoResponse> {
     return this.http.put<PreferenciaDeEspacioDeTrabajoResponse>(
-      `${this.baseUrl}/api/me/workspace`,
-      { workspaceId: espacioDeTrabajoId }
+      `${this.baseUrl}/api/mi/espacio-de-trabajo`,
+      { espacioDeTrabajoId }
     );
   }
 
-  /** GET /api/me/workspaces — get agent's assigned workspaces */
+  /** GET /api/mi/espacios-de-trabajo — get agent's assigned workspaces */
   listarMisEspaciosDeTrabajo(): Observable<EspacioDeTrabajoDTO[]> {
     return this.http.get<EspacioDeTrabajoDTO[]>(
-      `${this.baseUrl}/api/me/workspaces`
+      `${this.baseUrl}/api/mi/espacios-de-trabajo`
     );
   }
 
   // ── Admin endpoints ───────────────────────────────────
 
-  /** GET /api/admin/workspaces — one page of workspaces */
+  /** GET /api/administracion/espacios-de-trabajo — one page of workspaces */
   listAll(page: number, limit = 20): Observable<Page<EspacioDeTrabajoDTO>> {
     const params = new HttpParams()
       .set('page', page)
       .set('limit', limit);
     return this.http.get<PaginatedResponse<EspacioDeTrabajoDTO>>(
-      `${this.baseUrl}/api/admin/workspaces`,
+      `${this.baseUrl}/api/administracion/espacios-de-trabajo`,
       { params }
     ).pipe(
       map(toPage),
@@ -71,48 +71,48 @@ export class EspacioDeTrabajoApiService {
     );
   }
 
-  /** POST /api/admin/workspaces — create workspace */
+  /** POST /api/administracion/espacios-de-trabajo — create workspace */
   create(payload: {
     phoneNumberId: string;
-    displayName: string;
-    isActive?: boolean;
+    nombreVisible: string;
+    activo?: boolean;
   }): Observable<EspacioDeTrabajoDTO> {
     return this.http.post<EspacioDeTrabajoDTO>(
-      `${this.baseUrl}/api/admin/workspaces`,
+      `${this.baseUrl}/api/administracion/espacios-de-trabajo`,
       payload
     ).pipe(rethrowApiError('Failed to create workspace'));
   }
 
-  /** PUT /api/admin/workspaces/{id} — update workspace */
+  /** PUT /api/administracion/espacios-de-trabajo/{id} — update workspace */
   update(
     id: number,
     payload: Partial<{
       phoneNumberId: string;
-      displayName: string;
-      isActive: boolean;
+      nombreVisible: string;
+      activo: boolean;
     }>
   ): Observable<EspacioDeTrabajoDTO> {
     return this.http.put<EspacioDeTrabajoDTO>(
-      `${this.baseUrl}/api/admin/workspaces/${id}`,
+      `${this.baseUrl}/api/administracion/espacios-de-trabajo/${id}`,
       payload
     ).pipe(rethrowApiError('Failed to update workspace'));
   }
 
-  /** DELETE /api/admin/workspaces/{id} — soft delete */
+  /** DELETE /api/administracion/espacios-de-trabajo/{id} — soft delete */
   desactivar(id: number): Observable<void> {
     return this.http.delete<void>(
-      `${this.baseUrl}/api/admin/workspaces/${id}`
+      `${this.baseUrl}/api/administracion/espacios-de-trabajo/${id}`
     ).pipe(rethrowApiError('Failed to deactivate workspace'));
   }
 
-  /** PUT /api/admin/workspaces/{id}/agents — assign agents */
+  /** PUT /api/administracion/espacios-de-trabajo/{id}/agentes — assign agents */
   asignarAgentes(id: number, agenteIds: number[]): Observable<{
-    workspace_id: number;
-    agent_ids: number[];
+    espacioDeTrabajoId: number;
+    agenteIds: number[];
   }> {
-    return this.http.put<{ workspace_id: number; agent_ids: number[] }>(
-      `${this.baseUrl}/api/admin/workspaces/${id}/agents`,
-      { agentIds: agenteIds }
+    return this.http.put<{ espacioDeTrabajoId: number; agenteIds: number[] }>(
+      `${this.baseUrl}/api/administracion/espacios-de-trabajo/${id}/agentes`,
+      { agenteIds }
     );
   }
 }

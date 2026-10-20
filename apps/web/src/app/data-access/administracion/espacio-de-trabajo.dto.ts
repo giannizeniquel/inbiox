@@ -1,17 +1,17 @@
 export interface EspacioDeTrabajoDTO {
   id: number;
-  phone_number_id: string;
-  display_name: string;
-  is_active: boolean;
-  agent_count?: number;
-  agent_ids?: number[];
-  has_pending?: boolean;
-  created_at: string;
-  updated_at: string;
+  phoneNumberId: string;
+  nombreVisible: string;
+  activo: boolean;
+  cantidadDeAgentes?: number;
+  agenteIds?: number[];
+  hayPendientes?: boolean;
+  creadoAt: string;
+  actualizadoAt: string;
 }
 
 export interface PreferenciaDeEspacioDeTrabajoResponse {
-  workspace_id: number | null;
-  phone_number_id: string | null;
-  display_name: string | null;
+  espacioDeTrabajoId: number | null;
+  phoneNumberId: string | null;
+  nombreVisible: string | null;
 }

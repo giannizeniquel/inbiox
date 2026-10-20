@@ -27,10 +27,10 @@ export class TopbarComponent {
   readonly displayName = computed(() => {
     const usuario = this.authStore.usuarioActual();
     if (!usuario) return '';
-    const isAgente = usuario.roles.includes('ROLE_AGENT')
-      && !usuario.roles.includes('ROLE_ADMIN')
+    const isAgente = usuario.roles.includes('ROLE_AGENTE')
+      && !usuario.roles.includes('ROLE_ADMINISTRADOR')
       && !usuario.roles.includes('ROLE_SUPERVISOR');
-    return isAgente ? (usuario.agent_name ?? usuario.email) : usuario.email;
+    return isAgente ? (usuario.agenteNombre ?? usuario.email) : usuario.email;
   });
 
   /** Mobile breakpoint: 768px */

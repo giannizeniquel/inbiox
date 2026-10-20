@@ -13,36 +13,36 @@ import { environment } from '../../../environments/environment';
 describe('AdministracionApiService', () => {
   let service: AdministracionApiService;
   let httpMock: HttpTestingController;
-  const base = `${environment.apiUrl}/api/admin`;
+  const base = `${environment.apiUrl}/api/administracion`;
 
   const agente = (overrides: Partial<AgenteDeGestionDTO> = {}): AgenteDeGestionDTO => ({
     id: 1,
-    name: 'Agent Bob',
-    active: true,
-    is_available: true,
-    timezone: 'UTC',
-    user_id: null,
-    user_email: null,
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z',
+    nombre: 'Agent Bob',
+    activo: true,
+    disponible: true,
+    zonaHoraria: 'UTC',
+    usuarioId: null,
+    usuarioEmail: null,
+    creadoAt: '2024-01-01T00:00:00Z',
+    actualizadoAt: '2024-01-01T00:00:00Z',
     ...overrides,
   });
 
   const usuario = (overrides: Partial<UsuarioDeGestionDTO> = {}): UsuarioDeGestionDTO => ({
     id: 10,
     email: 'newuser@example.com',
-    roles: ['ROLE_AGENT'],
-    is_active: true,
-    agent_id: null,
-    agent_name: null,
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z',
+    roles: ['ROLE_AGENTE'],
+    activo: true,
+    agenteId: null,
+    agenteNombre: null,
+    creadoAt: '2024-01-01T00:00:00Z',
+    actualizadoAt: '2024-01-01T00:00:00Z',
     ...overrides,
   });
 
   const page = <T>(data: T[], total: number, limit = 20, pageNo = 1): PaginatedResponse<T> => ({
     data,
-    meta: { page: pageNo, limit, total, has_next: pageNo * limit < total },
+    meta: { page: pageNo, limit, total, haySiguiente: pageNo * limit < total },
   });
 
   /** Responds with the backend's error envelope `{ error: message }`. */
@@ -69,26 +69,26 @@ describe('AdministracionApiService', () => {
   describe('listUsers()', () => {
     it('should request the given page and limit', () => {
       service.listarUsuarios(1, 20).subscribe();
-      const req = httpMock.expectOne((r) => r.url === `${base}/users`);
+      const req = httpMock.expectOne((r) => r.url === `${base}/usuarios`);
       expect(req.request.params.get('page')).toBe('1');
       expect(req.request.params.get('limit')).toBe('20');
       req.flush(page([usuario()], 1));
     });
 
     it('should map the response to items, total and totalPages', (done) => {
-      const u = usuario({ id: 1, agent_id: 3, agent_name: 'Agent A' });
+      const u = usuario({ id: 1, agenteId: 3, agenteNombre: 'Agent A' });
       service.listarUsuarios(2).subscribe((out) => {
         expect(out.items).toEqual([u]);
         expect(out.total).toBe(55);
         expect(out.totalPages).toBe(3); // ceil(55/20) = 3
         done();
       });
-      httpMock.expectOne((r) => r.url === `${base}/users`).flush(page([u], 55, 20, 2));
+      httpMock.expectOne((r) => r.url === `${base}/usuarios`).flush(page([u], 55, 20, 2));
     });
 
     it('should default limit to 20 when not provided', () => {
       service.listarUsuarios(3).subscribe();
-      const req = httpMock.expectOne((r) => r.url === `${base}/users`);
+      const req = httpMock.expectOne((r) => r.url === `${base}/usuarios`);
       expect(req.request.params.get('page')).toBe('3');
       expect(req.request.params.get('limit')).toBe('20');
       req.flush(page([], 0));
@@ -101,7 +101,7 @@ describe('AdministracionApiService', () => {
         expect(out.items).toEqual([]);
         done();
       });
-      httpMock.expectOne((r) => r.url === `${base}/users`).flush(page([], 0));
+      httpMock.expectOne((r) => r.url === `${base}/usuarios`).flush(page([], 0));
     });
 
     it('should fail with the backend message', (done) => {
@@ -111,18 +111,18 @@ describe('AdministracionApiService', () => {
           done();
         },
       });
-      failWith(`${base}/users`, 'GET', 'Network error');
+      failWith(`${base}/usuarios`, 'GET', 'Network error');
     });
   });
 
   describe('listUsersAvailableForLinking()', () => {
-    const usuarioConAgente = usuario({ id: 1, email: 'already-linked@example.com', agent_id: 5, agent_name: 'Agent A' });
+    const usuarioConAgente = usuario({ id: 1, email: 'already-linked@example.com', agenteId: 5, agenteNombre: 'Agent A' });
     const usuarioDisponible = usuario({ id: 2, email: 'available@example.com' });
-    const usuarioInactivo = usuario({ id: 3, email: 'inactive@example.com', is_active: false });
+    const usuarioInactivo = usuario({ id: 3, email: 'inactive@example.com', activo: false });
 
     it('should request page 1 with limit 200', () => {
       service.listarUsuariosDisponiblesParaVincular().subscribe();
-      const req = httpMock.expectOne((r) => r.url === `${base}/users`);
+      const req = httpMock.expectOne((r) => r.url === `${base}/usuarios`);
       expect(req.request.params.get('page')).toBe('1');
       expect(req.request.params.get('limit')).toBe('200');
       req.flush(page([usuarioDisponible], 1, 200));
@@ -136,7 +136,7 @@ describe('AdministracionApiService', () => {
         done();
       });
       httpMock
-        .expectOne((r) => r.url === `${base}/users`)
+        .expectOne((r) => r.url === `${base}/usuarios`)
         .flush(page([usuarioConAgente, usuarioDisponible, usuarioInactivo], 3, 200));
     });
 
@@ -145,7 +145,7 @@ describe('AdministracionApiService', () => {
         expect(out.users).toHaveSize(0);
         done();
       });
-      httpMock.expectOne((r) => r.url === `${base}/users`).flush(page([usuarioConAgente], 1, 200));
+      httpMock.expectOne((r) => r.url === `${base}/usuarios`).flush(page([usuarioConAgente], 1, 200));
     });
 
     it('should fail with the backend message', (done) => {
@@ -155,135 +155,135 @@ describe('AdministracionApiService', () => {
           done();
         },
       });
-      failWith(`${base}/users`, 'GET', 'Network error');
+      failWith(`${base}/usuarios`, 'GET', 'Network error');
     });
   });
 
   describe('createUser()', () => {
     it('should post email, password, roles and agent_id', () => {
-      service.createUsuario({ email: 'newuser@example.com', password: 'secret123', roles: ['ROLE_AGENT'], agentId: null }).subscribe();
-      const req = httpMock.expectOne(`${base}/users`);
+      service.createUsuario({ email: 'newuser@example.com', password: 'secret123', roles: ['ROLE_AGENTE'], agentId: null }).subscribe();
+      const req = httpMock.expectOne(`${base}/usuarios`);
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toEqual({
         email: 'newuser@example.com',
         password: 'secret123',
-        roles: ['ROLE_AGENT'],
-        agent_id: null,
+        roles: ['ROLE_AGENTE'],
+        agenteId: null,
       });
       req.flush(usuario());
     });
 
-    it('should default roles to ROLE_AGENT when an empty array is provided', () => {
+    it('should default roles to ROLE_AGENTE when an empty array is provided', () => {
       service.createUsuario({ email: 'newuser@example.com', password: 'secret123', roles: [], agentId: 5 }).subscribe();
-      const req = httpMock.expectOne(`${base}/users`);
+      const req = httpMock.expectOne(`${base}/usuarios`);
       expect(req.request.body).toEqual({
         email: 'newuser@example.com',
         password: 'secret123',
-        roles: ['ROLE_AGENT'],
-        agent_id: 5,
+        roles: ['ROLE_AGENTE'],
+        agenteId: 5,
       });
       req.flush(usuario());
     });
 
     it('should return { user } with the created user', (done) => {
       const created = usuario();
-      service.createUsuario({ email: 'newuser@example.com', password: 'secret123', roles: ['ROLE_AGENT'], agentId: null }).subscribe((out) => {
+      service.createUsuario({ email: 'newuser@example.com', password: 'secret123', roles: ['ROLE_AGENTE'], agentId: null }).subscribe((out) => {
         expect(out.user).toEqual(created);
         done();
       });
-      httpMock.expectOne(`${base}/users`).flush(created);
+      httpMock.expectOne(`${base}/usuarios`).flush(created);
     });
 
     it('should fail without a request when email is empty', (done) => {
-      service.createUsuario({ email: '', password: 'secret123', roles: ['ROLE_AGENT'], agentId: null }).subscribe({
+      service.createUsuario({ email: '', password: 'secret123', roles: ['ROLE_AGENTE'], agentId: null }).subscribe({
         error: (err: Error) => {
           expect(err.message).toBe('Email and password are required');
           done();
         },
       });
-      httpMock.expectNone(`${base}/users`);
+      httpMock.expectNone(`${base}/usuarios`);
     });
 
     it('should fail without a request when password is empty', (done) => {
-      service.createUsuario({ email: 'user@example.com', password: '', roles: ['ROLE_AGENT'], agentId: null }).subscribe({
+      service.createUsuario({ email: 'user@example.com', password: '', roles: ['ROLE_AGENTE'], agentId: null }).subscribe({
         error: (err: Error) => {
           expect(err.message).toBe('Email and password are required');
           done();
         },
       });
-      httpMock.expectNone(`${base}/users`);
+      httpMock.expectNone(`${base}/usuarios`);
     });
 
     it('should fail with the backend message on duplicate email', (done) => {
-      service.createUsuario({ email: 'existing@example.com', password: 'secret123', roles: ['ROLE_AGENT'], agentId: null }).subscribe({
+      service.createUsuario({ email: 'existing@example.com', password: 'secret123', roles: ['ROLE_AGENTE'], agentId: null }).subscribe({
         error: (err: Error) => {
           expect(err.message).toBe('Email already exists');
           done();
         },
       });
-      failWith(`${base}/users`, 'POST', 'Email already exists');
+      failWith(`${base}/usuarios`, 'POST', 'Email already exists');
     });
   });
 
   describe('updateUser()', () => {
-    const updated = usuario({ id: 5, email: 'updated@example.com', roles: ['ROLE_AGENT', 'ROLE_SUPERVISOR'] });
+    const updated = usuario({ id: 5, email: 'updated@example.com', roles: ['ROLE_AGENTE', 'ROLE_SUPERVISOR'] });
 
     it('should put email and roles, always including email', () => {
-      service.updateUsuario({ id: 5, email: 'updated@example.com', password: '', roles: ['ROLE_AGENT'] }).subscribe();
-      const req = httpMock.expectOne(`${base}/users/5`);
+      service.updateUsuario({ id: 5, email: 'updated@example.com', password: '', roles: ['ROLE_AGENTE'] }).subscribe();
+      const req = httpMock.expectOne(`${base}/usuarios/5`);
       expect(req.request.method).toBe('PUT');
-      expect(req.request.body).toEqual({ email: 'updated@example.com', roles: ['ROLE_AGENT'] });
+      expect(req.request.body).toEqual({ email: 'updated@example.com', roles: ['ROLE_AGENTE'] });
       req.flush(updated);
     });
 
     it('should include password only when non-empty', () => {
-      service.updateUsuario({ id: 5, email: 'updated@example.com', password: 'newpass123', roles: ['ROLE_AGENT'] }).subscribe();
-      const req = httpMock.expectOne(`${base}/users/5`);
+      service.updateUsuario({ id: 5, email: 'updated@example.com', password: 'newpass123', roles: ['ROLE_AGENTE'] }).subscribe();
+      const req = httpMock.expectOne(`${base}/usuarios/5`);
       expect(req.request.body).toEqual({
         email: 'updated@example.com',
         password: 'newpass123',
-        roles: ['ROLE_AGENT'],
+        roles: ['ROLE_AGENTE'],
       });
       req.flush(updated);
     });
 
     it('should not include password when it is an empty string', () => {
-      service.updateUsuario({ id: 5, email: 'updated@example.com', password: '', roles: ['ROLE_AGENT'] }).subscribe();
-      const req = httpMock.expectOne(`${base}/users/5`);
+      service.updateUsuario({ id: 5, email: 'updated@example.com', password: '', roles: ['ROLE_AGENTE'] }).subscribe();
+      const req = httpMock.expectOne(`${base}/usuarios/5`);
       expect(Object.keys(req.request.body)).not.toContain('password');
       req.flush(updated);
     });
 
-    it('should default roles to ROLE_AGENT when an empty array is provided', () => {
+    it('should default roles to ROLE_AGENTE when an empty array is provided', () => {
       service.updateUsuario({ id: 5, email: 'updated@example.com', password: '', roles: [] }).subscribe();
-      const req = httpMock.expectOne(`${base}/users/5`);
-      expect(req.request.body).toEqual({ email: 'updated@example.com', roles: ['ROLE_AGENT'] });
+      const req = httpMock.expectOne(`${base}/usuarios/5`);
+      expect(req.request.body).toEqual({ email: 'updated@example.com', roles: ['ROLE_AGENTE'] });
       req.flush(updated);
     });
 
     it('should return { user } with the updated user', (done) => {
-      service.updateUsuario({ id: 5, email: 'updated@example.com', password: '', roles: ['ROLE_AGENT'] }).subscribe((out) => {
+      service.updateUsuario({ id: 5, email: 'updated@example.com', password: '', roles: ['ROLE_AGENTE'] }).subscribe((out) => {
         expect(out.user).toEqual(updated);
         done();
       });
-      httpMock.expectOne(`${base}/users/5`).flush(updated);
+      httpMock.expectOne(`${base}/usuarios/5`).flush(updated);
     });
 
     it('should fail with the backend message on not-found', (done) => {
-      service.updateUsuario({ id: 999, email: 'ghost@example.com', password: '', roles: ['ROLE_AGENT'] }).subscribe({
+      service.updateUsuario({ id: 999, email: 'ghost@example.com', password: '', roles: ['ROLE_AGENTE'] }).subscribe({
         error: (err: Error) => {
           expect(err.message).toBe('User not found');
           done();
         },
       });
-      failWith(`${base}/users/999`, 'PUT', 'User not found');
+      failWith(`${base}/usuarios/999`, 'PUT', 'User not found');
     });
   });
 
   describe('deactivateUser()', () => {
     it('should send DELETE for the user id', () => {
       service.desactivarUsuario(8).subscribe();
-      const req = httpMock.expectOne(`${base}/users/8`);
+      const req = httpMock.expectOne(`${base}/usuarios/8`);
       expect(req.request.method).toBe('DELETE');
       req.flush(null);
     });
@@ -293,7 +293,7 @@ describe('AdministracionApiService', () => {
         expect(out.id).toBe(8);
         done();
       });
-      httpMock.expectOne(`${base}/users/8`).flush(null);
+      httpMock.expectOne(`${base}/usuarios/8`).flush(null);
     });
 
     it('should fail with the backend message', (done) => {
@@ -303,16 +303,16 @@ describe('AdministracionApiService', () => {
           done();
         },
       });
-      failWith(`${base}/users/8`, 'DELETE', 'Network error');
+      failWith(`${base}/usuarios/8`, 'DELETE', 'Network error');
     });
   });
 
   describe('reactivateUser()', () => {
     it('should put is_active=true for the user id', () => {
       service.reactivarUsuario(4).subscribe();
-      const req = httpMock.expectOne(`${base}/users/4`);
+      const req = httpMock.expectOne(`${base}/usuarios/4`);
       expect(req.request.method).toBe('PUT');
-      expect(req.request.body).toEqual({ is_active: true });
+      expect(req.request.body).toEqual({ activo: true });
       req.flush(usuario({ id: 4 }));
     });
 
@@ -321,7 +321,7 @@ describe('AdministracionApiService', () => {
         expect(out.id).toBe(4);
         done();
       });
-      httpMock.expectOne(`${base}/users/4`).flush(usuario({ id: 4 }));
+      httpMock.expectOne(`${base}/usuarios/4`).flush(usuario({ id: 4 }));
     });
 
     it('should fail with the backend message', (done) => {
@@ -331,18 +331,18 @@ describe('AdministracionApiService', () => {
           done();
         },
       });
-      failWith(`${base}/users/999`, 'PUT', 'User not found');
+      failWith(`${base}/usuarios/999`, 'PUT', 'User not found');
     });
   });
 
   // ── Agents ────────────────────────────────────────────────
 
   describe('listAgents()', () => {
-    const a = agente({ name: 'Agent Alice', user_id: 10, user_email: 'alice@example.com' });
+    const a = agente({ nombre: 'Agent Alice', usuarioId: 10, usuarioEmail: 'alice@example.com' });
 
     it('should request the given page and limit', () => {
       service.listarAgentes(1, 20).subscribe();
-      const req = httpMock.expectOne((r) => r.url === `${base}/agents`);
+      const req = httpMock.expectOne((r) => r.url === `${base}/agentes`);
       expect(req.request.params.get('page')).toBe('1');
       expect(req.request.params.get('limit')).toBe('20');
       req.flush(page([a], 1));
@@ -355,12 +355,12 @@ describe('AdministracionApiService', () => {
         expect(out.totalPages).toBe(3); // ceil(45/20) = 3
         done();
       });
-      httpMock.expectOne((r) => r.url === `${base}/agents`).flush(page([a], 45));
+      httpMock.expectOne((r) => r.url === `${base}/agentes`).flush(page([a], 45));
     });
 
     it('should default limit to 20 when not provided', () => {
       service.listarAgentes(2).subscribe();
-      const req = httpMock.expectOne((r) => r.url === `${base}/agents`);
+      const req = httpMock.expectOne((r) => r.url === `${base}/agentes`);
       expect(req.request.params.get('page')).toBe('2');
       expect(req.request.params.get('limit')).toBe('20');
       req.flush(page([], 0));
@@ -373,7 +373,7 @@ describe('AdministracionApiService', () => {
         expect(out.items).toEqual([]);
         done();
       });
-      httpMock.expectOne((r) => r.url === `${base}/agents`).flush(page([], 0));
+      httpMock.expectOne((r) => r.url === `${base}/agentes`).flush(page([], 0));
     });
 
     it('should fail with the backend message', (done) => {
@@ -383,16 +383,16 @@ describe('AdministracionApiService', () => {
           done();
         },
       });
-      failWith(`${base}/agents`, 'GET', 'Network error');
+      failWith(`${base}/agentes`, 'GET', 'Network error');
     });
   });
 
   describe('createAgent()', () => {
     it('should post the trimmed name', () => {
       service.createAgente({ name: '  Agent Bob  ' }).subscribe();
-      const req = httpMock.expectOne(`${base}/agents`);
+      const req = httpMock.expectOne(`${base}/agentes`);
       expect(req.request.method).toBe('POST');
-      expect(req.request.body).toEqual({ name: 'Agent Bob' });
+      expect(req.request.body).toEqual({ nombre: 'Agent Bob' });
       req.flush(agente());
     });
 
@@ -402,7 +402,7 @@ describe('AdministracionApiService', () => {
         expect(out.agent).toEqual(created);
         done();
       });
-      httpMock.expectOne(`${base}/agents`).flush(created);
+      httpMock.expectOne(`${base}/agentes`).flush(created);
     });
 
     it('should fail without a request when the name is empty', (done) => {
@@ -412,7 +412,7 @@ describe('AdministracionApiService', () => {
           done();
         },
       });
-      httpMock.expectNone(`${base}/agents`);
+      httpMock.expectNone(`${base}/agentes`);
     });
 
     it('should fail without a request when the name is only whitespace', (done) => {
@@ -422,7 +422,7 @@ describe('AdministracionApiService', () => {
           done();
         },
       });
-      httpMock.expectNone(`${base}/agents`);
+      httpMock.expectNone(`${base}/agentes`);
     });
 
     it('should fail with the backend message', (done) => {
@@ -432,40 +432,40 @@ describe('AdministracionApiService', () => {
           done();
         },
       });
-      failWith(`${base}/agents`, 'POST', 'Duplicate agent name');
+      failWith(`${base}/agentes`, 'POST', 'Duplicate agent name');
     });
 
     it('should accept a valid non-empty name', (done) => {
       service.createAgente({ name: 'ValidAgentName' }).subscribe((out) => {
-        expect(out.agent.name).toBe('Agent Bob');
+        expect(out.agent.nombre).toBe('Agent Bob');
         done();
       });
-      httpMock.expectOne(`${base}/agents`).flush(agente());
+      httpMock.expectOne(`${base}/agentes`).flush(agente());
     });
 
     it('should pass timezone through to the payload when provided', () => {
       service.createAgente({ name: 'Agent Bob', timezone: 'America/Sao_Paulo' }).subscribe();
-      const req = httpMock.expectOne(`${base}/agents`);
-      expect(req.request.body).toEqual({ name: 'Agent Bob', timezone: 'America/Sao_Paulo' });
+      const req = httpMock.expectOne(`${base}/agentes`);
+      expect(req.request.body).toEqual({ nombre: 'Agent Bob', zonaHoraria: 'America/Sao_Paulo' });
       req.flush(agente());
     });
 
     it('should omit timezone from the payload when not provided', () => {
       service.createAgente({ name: 'Agent Bob' }).subscribe();
-      const req = httpMock.expectOne(`${base}/agents`);
-      expect(req.request.body).toEqual({ name: 'Agent Bob' });
+      const req = httpMock.expectOne(`${base}/agentes`);
+      expect(req.request.body).toEqual({ nombre: 'Agent Bob' });
       req.flush(agente());
     });
   });
 
   describe('updateAgent()', () => {
-    const updated = agente({ id: 5, name: 'Updated Agent' });
+    const updated = agente({ id: 5, nombre: 'Updated Agent' });
 
     it('should put the trimmed name, active and timezone', () => {
       service.updateAgente({ id: 5, name: '  Updated Agent  ', active: true, timezone: 'UTC' }).subscribe();
-      const req = httpMock.expectOne(`${base}/agents/5`);
+      const req = httpMock.expectOne(`${base}/agentes/5`);
       expect(req.request.method).toBe('PUT');
-      expect(req.request.body).toEqual({ name: 'Updated Agent', active: true, timezone: 'UTC' });
+      expect(req.request.body).toEqual({ nombre: 'Updated Agent', activo: true, zonaHoraria: 'UTC' });
       req.flush(updated);
     });
 
@@ -474,13 +474,13 @@ describe('AdministracionApiService', () => {
         expect(out.agent).toEqual(updated);
         done();
       });
-      httpMock.expectOne(`${base}/agents/5`).flush(updated);
+      httpMock.expectOne(`${base}/agentes/5`).flush(updated);
     });
 
     it('should send active=false when deactivating', () => {
       service.updateAgente({ id: 5, name: 'Updated Agent', active: false, timezone: 'UTC' }).subscribe();
-      const req = httpMock.expectOne(`${base}/agents/5`);
-      expect(req.request.body).toEqual({ name: 'Updated Agent', active: false, timezone: 'UTC' });
+      const req = httpMock.expectOne(`${base}/agentes/5`);
+      expect(req.request.body).toEqual({ nombre: 'Updated Agent', activo: false, zonaHoraria: 'UTC' });
       req.flush({ ...updated, active: false });
     });
 
@@ -491,13 +491,13 @@ describe('AdministracionApiService', () => {
           done();
         },
       });
-      failWith(`${base}/agents/999`, 'PUT', 'Agent not found');
+      failWith(`${base}/agentes/999`, 'PUT', 'Agent not found');
     });
 
     it('should pass a non-UTC timezone through to the payload', () => {
       service.updateAgente({ id: 5, name: 'Updated Agent', active: true, timezone: 'Europe/Lisbon' }).subscribe();
-      const req = httpMock.expectOne(`${base}/agents/5`);
-      expect(req.request.body).toEqual({ name: 'Updated Agent', active: true, timezone: 'Europe/Lisbon' });
+      const req = httpMock.expectOne(`${base}/agentes/5`);
+      expect(req.request.body).toEqual({ nombre: 'Updated Agent', activo: true, zonaHoraria: 'Europe/Lisbon' });
       req.flush(updated);
     });
   });
@@ -505,7 +505,7 @@ describe('AdministracionApiService', () => {
   describe('deactivateAgent()', () => {
     it('should send DELETE for the agent id', () => {
       service.desactivarAgente(7).subscribe();
-      const req = httpMock.expectOne(`${base}/agents/7`);
+      const req = httpMock.expectOne(`${base}/agentes/7`);
       expect(req.request.method).toBe('DELETE');
       req.flush(null);
     });
@@ -515,7 +515,7 @@ describe('AdministracionApiService', () => {
         expect(out.id).toBe(7);
         done();
       });
-      httpMock.expectOne(`${base}/agents/7`).flush(null);
+      httpMock.expectOne(`${base}/agentes/7`).flush(null);
     });
 
     it('should fail with the backend message', (done) => {
@@ -525,16 +525,16 @@ describe('AdministracionApiService', () => {
           done();
         },
       });
-      failWith(`${base}/agents/7`, 'DELETE', 'Network error');
+      failWith(`${base}/agentes/7`, 'DELETE', 'Network error');
     });
   });
 
   describe('reactivateAgent()', () => {
     it('should put active=true for the agent id', () => {
       service.reactivarAgente(3).subscribe();
-      const req = httpMock.expectOne(`${base}/agents/3`);
+      const req = httpMock.expectOne(`${base}/agentes/3`);
       expect(req.request.method).toBe('PUT');
-      expect(req.request.body).toEqual({ active: true });
+      expect(req.request.body).toEqual({ activo: true });
       req.flush(agente({ id: 3 }));
     });
 
@@ -543,7 +543,7 @@ describe('AdministracionApiService', () => {
         expect(out.id).toBe(3);
         done();
       });
-      httpMock.expectOne(`${base}/agents/3`).flush(agente({ id: 3 }));
+      httpMock.expectOne(`${base}/agentes/3`).flush(agente({ id: 3 }));
     });
 
     it('should fail with the backend message', (done) => {
@@ -553,20 +553,20 @@ describe('AdministracionApiService', () => {
           done();
         },
       });
-      failWith(`${base}/agents/999`, 'PUT', 'Agent not found');
+      failWith(`${base}/agentes/999`, 'PUT', 'Agent not found');
     });
   });
 
   // ── Linking ───────────────────────────────────────────────
 
   describe('linkUser()', () => {
-    const vinculoResponse: VincularUsuarioResponse = { id: 1, user_id: 10, user_email: 'user@example.com' };
+    const vinculoResponse: VincularUsuarioResponse = { id: 1, usuarioId: 10, usuarioEmail: 'user@example.com' };
 
     it('should post user_id to the agent link endpoint', () => {
       service.vincularUsuario(5, 10).subscribe();
-      const req = httpMock.expectOne(`${base}/agents/5/link-user`);
+      const req = httpMock.expectOne(`${base}/agentes/5/vincular-usuario`);
       expect(req.request.method).toBe('POST');
-      expect(req.request.body).toEqual({ user_id: 10 });
+      expect(req.request.body).toEqual({ usuarioId: 10 });
       req.flush(vinculoResponse);
     });
 
@@ -575,7 +575,7 @@ describe('AdministracionApiService', () => {
         expect(res).toEqual(vinculoResponse);
         done();
       });
-      httpMock.expectOne(`${base}/agents/5/link-user`).flush(vinculoResponse);
+      httpMock.expectOne(`${base}/agentes/5/vincular-usuario`).flush(vinculoResponse);
     });
 
     it('should fail with the backend message', (done) => {
@@ -585,14 +585,14 @@ describe('AdministracionApiService', () => {
           done();
         },
       });
-      failWith(`${base}/agents/5/link-user`, 'POST', 'Link conflict');
+      failWith(`${base}/agentes/5/vincular-usuario`, 'POST', 'Link conflict');
     });
   });
 
   describe('unlinkUser()', () => {
     it('should send DELETE to the agent link endpoint', () => {
       service.desvincularUsuario(5).subscribe();
-      const req = httpMock.expectOne(`${base}/agents/5/link-user`);
+      const req = httpMock.expectOne(`${base}/agentes/5/vincular-usuario`);
       expect(req.request.method).toBe('DELETE');
       req.flush(null);
     });
@@ -602,7 +602,7 @@ describe('AdministracionApiService', () => {
         expect(res).toBeNull();
         done();
       });
-      httpMock.expectOne(`${base}/agents/5/link-user`).flush(null);
+      httpMock.expectOne(`${base}/agentes/5/vincular-usuario`).flush(null);
     });
 
     it('should fail with the backend message', (done) => {
@@ -612,7 +612,7 @@ describe('AdministracionApiService', () => {
           done();
         },
       });
-      failWith(`${base}/agents/5/link-user`, 'DELETE', 'Not linked');
+      failWith(`${base}/agentes/5/vincular-usuario`, 'DELETE', 'Not linked');
     });
   });
 });

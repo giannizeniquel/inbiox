@@ -2,35 +2,35 @@ import { RespuestaAutomaticaDeConfiguracion } from '../automatizacion/respuesta-
 import { TurnoDTO } from '../disponibilidad/disponibilidad-api.service';
 
 export interface PerfilDeConfiguracion {
-  name: string;
+  nombre: string;
   email: string;
-  signature: string | null;
+  firma: string | null;
 }
 
 export interface NotificacionesDeConfiguracion {
-  sound: boolean;
-  desktop: boolean;
+  sonido: boolean;
+  escritorio: boolean;
 }
 
 export interface EspacioDeTrabajoDeConfiguracion {
   id: number;
-  displayName: string;
+  nombreVisible: string;
   phoneNumberId: string;
 }
 
 export interface ConfiguracionResponse {
-  profile: PerfilDeConfiguracion;
-  notifications: NotificacionesDeConfiguracion;
-  autoReply: RespuestaAutomaticaDeConfiguracion;
-  workspace: EspacioDeTrabajoDeConfiguracion | null;
-  businessHours: TurnoDTO[];
+  perfil: PerfilDeConfiguracion;
+  notificaciones: NotificacionesDeConfiguracion;
+  respuestaAutomatica: RespuestaAutomaticaDeConfiguracion;
+  espacioDeTrabajo: EspacioDeTrabajoDeConfiguracion | null;
+  horarioDeAtencion: TurnoDTO[];
 }
 
 export interface UpdatePerfilPayload {
-  signature: string | null;
+  firma: string | null;
 }
 
 export interface UpdateNotificacionesPayload {
-  sound?: boolean;
-  desktop?: boolean;
+  sonido?: boolean;
+  escritorio?: boolean;
 }

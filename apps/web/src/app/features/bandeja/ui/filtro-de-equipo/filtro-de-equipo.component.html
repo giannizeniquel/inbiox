@@ -6,6 +6,6 @@
 >
   <option value="">Todos los equipos</option>
   @for (team of equipos(); track team.id) {
-    <option [value]="team.id">{{ team.name }}</option>
+    <option [value]="team.id">{{ team.nombre }}</option>
   }
 </select>

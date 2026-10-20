@@ -8,13 +8,13 @@ import { Page, PaginatedResponse, rethrowApiError, toPage } from './administraci
 
 /**
  * EquipoApiService — HTTP client for the admin team endpoints (Tier 2 #7).
- * The non-admin `GET /api/teams` listing lives in `ListaDeEquiposApiService` (agente).
+ * The non-admin `GET /api/equipos` listing lives in `ListaDeEquiposApiService` (agente).
  *
- * - GET    /api/admin/teams — paginated list
- * - POST   /api/admin/teams — create
- * - PUT    /api/admin/teams/{id} — update
- * - DELETE /api/admin/teams/{id} — soft delete
- * - PUT    /api/admin/teams/{id}/agents — assign agents
+ * - GET    /api/administracion/equipos — paginated list
+ * - POST   /api/administracion/equipos — create
+ * - PUT    /api/administracion/equipos/{id} — update
+ * - DELETE /api/administracion/equipos/{id} — soft delete
+ * - PUT    /api/administracion/equipos/{id}/agentes — assign agents
  *
  * The list/create/update/deactivate admin methods fail with a plain `Error`
  * carrying the backend's message (see `rethrowApiError`).
@@ -24,13 +24,13 @@ export class EquipoApiService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiUrl;
 
-  /** GET /api/admin/teams — one page of teams */
+  /** GET /api/administracion/equipos — one page of teams */
   listAll(page: number, limit = 20): Observable<Page<EquipoDTO>> {
     const params = new HttpParams()
       .set('page', page)
       .set('limit', limit);
     return this.http.get<PaginatedResponse<EquipoDTO>>(
-      `${this.baseUrl}/api/admin/teams`,
+      `${this.baseUrl}/api/administracion/equipos`,
       { params }
     ).pipe(
       map(toPage),
@@ -38,35 +38,35 @@ export class EquipoApiService {
     );
   }
 
-  /** POST /api/admin/teams — create team */
+  /** POST /api/administracion/equipos — create team */
   create(payload: CreateEquipoRequest): Observable<EquipoDTO> {
-    return this.http.post<EquipoDTO>(`${this.baseUrl}/api/admin/teams`, payload).pipe(
+    return this.http.post<EquipoDTO>(`${this.baseUrl}/api/administracion/equipos`, payload).pipe(
       rethrowApiError('Failed to create team'),
     );
   }
 
-  /** PUT /api/admin/teams/{id} — update team */
+  /** PUT /api/administracion/equipos/{id} — update team */
   update(id: number, payload: UpdateEquipoRequest): Observable<EquipoDTO> {
-    return this.http.put<EquipoDTO>(`${this.baseUrl}/api/admin/teams/${id}`, payload).pipe(
+    return this.http.put<EquipoDTO>(`${this.baseUrl}/api/administracion/equipos/${id}`, payload).pipe(
       rethrowApiError('Failed to update team'),
     );
   }
 
-  /** DELETE /api/admin/teams/{id} — soft delete (deactivate) */
+  /** DELETE /api/administracion/equipos/{id} — soft delete (deactivate) */
   desactivar(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/api/admin/teams/${id}`).pipe(
+    return this.http.delete<void>(`${this.baseUrl}/api/administracion/equipos/${id}`).pipe(
       rethrowApiError('Failed to deactivate team'),
     );
   }
 
-  /** PUT /api/admin/teams/{id}/agents — bulk-replace team roster */
+  /** PUT /api/administracion/equipos/{id}/agentes — bulk-replace team roster */
   asignarAgentes(id: number, agenteIds: number[]): Observable<{
-    team_id: number;
-    agent_ids: number[];
+    equipoId: number;
+    agenteIds: number[];
   }> {
-    return this.http.put<{ team_id: number; agent_ids: number[] }>(
-      `${this.baseUrl}/api/admin/teams/${id}/agents`,
-      { agentIds: agenteIds }
+    return this.http.put<{ equipoId: number; agenteIds: number[] }>(
+      `${this.baseUrl}/api/administracion/equipos/${id}/agentes`,
+      { agenteIds }
     );
   }
 }

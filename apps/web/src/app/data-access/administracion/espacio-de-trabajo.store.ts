@@ -30,7 +30,7 @@ export class EspacioDeTrabajoStore {
 
   /** Computed: active phone number ID for query filtering */
   readonly activePhoneNumberId = computed<string | null>(() =>
-    this.espacioDeTrabajoActivo()?.phone_number_id ?? null
+    this.espacioDeTrabajoActivo()?.phoneNumberId ?? null
   );
 
   /** Workspace IDs that have pending (unread) messages */
@@ -52,7 +52,7 @@ export class EspacioDeTrabajoStore {
         // Seed pending state from API
         const pending = new Set<number>();
         for (const ws of espaciosDeTrabajo) {
-          if (ws.has_pending) {
+          if (ws.hayPendientes) {
             pending.add(ws.id);
           }
         }
@@ -77,9 +77,9 @@ export class EspacioDeTrabajoStore {
       error: () => {
         // 404 means no active workspace set — not an error
         this.espacioDeTrabajoActivo.set({
-          workspace_id: null,
-          phone_number_id: null,
-          display_name: null,
+          espacioDeTrabajoId: null,
+          phoneNumberId: null,
+          nombreVisible: null,
         });
       },
     });
@@ -115,7 +115,7 @@ export class EspacioDeTrabajoStore {
     const active = this.espacioDeTrabajoActivo();
     const ws = this.espaciosDeTrabajo();
 
-    if (active?.workspace_id === null && ws.length > 0) {
+    if (active?.espacioDeTrabajoId === null && ws.length > 0) {
       this.setEspacioDeTrabajoActivo(ws[0].id);
     }
   }

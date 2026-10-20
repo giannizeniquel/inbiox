@@ -44,22 +44,22 @@
             </thead>
             <tbody>
               @for (ws of espaciosDeTrabajo(); track ws.id) {
-                <tr [class.row--inactive]="!ws.is_active">
+                <tr [class.row--inactive]="!ws.activo">
                   <td>{{ ws.id }}</td>
-                  <td><code>{{ ws.phone_number_id }}</code></td>
-                  <td>{{ ws.display_name }}</td>
+                  <td><code>{{ ws.phoneNumberId }}</code></td>
+                  <td>{{ ws.nombreVisible }}</td>
                   <td>
-                    <span class="status-dot" [class.status-dot--active]="ws.is_active"
-                          [class.status-dot--inactive]="!ws.is_active">
+                    <span class="status-dot" [class.status-dot--active]="ws.activo"
+                          [class.status-dot--inactive]="!ws.activo">
                     </span>
-                    {{ ws.is_active ? 'Active' : 'Inactive' }}
+                    {{ ws.activo ? 'Active' : 'Inactive' }}
                   </td>
-                  <td>{{ ws.agent_count ?? '—' }}</td>
+                  <td>{{ ws.cantidadDeAgentes ?? '—' }}</td>
                    <td class="actions-cell">
-                     <button class="btn btn--sm btn--outline" (click)="openEditForm(ws)" [attr.aria-label]="'Edit ' + ws.display_name">Edit</button>
-                     <button class="btn btn--sm btn--outline" (click)="abrirAgenteModal(ws)" [attr.aria-label]="'Manage agents for ' + ws.display_name">Agents</button>
-                     @if (ws.is_active) {
-                       <button class="btn btn--sm btn--danger" (click)="confirmDelete(ws)" [attr.aria-label]="'Deactivate ' + ws.display_name">Deactivate</button>
+                     <button class="btn btn--sm btn--outline" (click)="openEditForm(ws)" [attr.aria-label]="'Edit ' + ws.nombreVisible">Edit</button>
+                     <button class="btn btn--sm btn--outline" (click)="abrirAgenteModal(ws)" [attr.aria-label]="'Manage agents for ' + ws.nombreVisible">Agents</button>
+                     @if (ws.activo) {
+                       <button class="btn btn--sm btn--danger" (click)="confirmDelete(ws)" [attr.aria-label]="'Deactivate ' + ws.nombreVisible">Deactivate</button>
                      }
                   </td>
                 </tr>
@@ -153,7 +153,7 @@
               <button class="modal__close" (click)="cancelDelete()" aria-label="Close dialog">&times;</button>
             </div>
             <div class="modal__body">
-              <p>Are you sure you want to deactivate <strong>{{ wsToDelete.display_name }}</strong>?</p>
+              <p>Are you sure you want to deactivate <strong>{{ wsToDelete.nombreVisible }}</strong>?</p>
               <p class="text-warning">The workspace will stop being available for assignment. Existing data is preserved.</p>
             </div>
             <div class="modal__footer">
@@ -171,7 +171,7 @@
         <div class="modal-overlay" (click)="cerrarAgenteModal()">
           <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title-agents" (click)="$event.stopPropagation()">
             <div class="modal__header">
-              <h2 id="modal-title-agents">Assign Agents — {{ ws.display_name }}</h2>
+              <h2 id="modal-title-agents">Assign Agents — {{ ws.nombreVisible }}</h2>
               <button class="modal__close" (click)="cerrarAgenteModal()" aria-label="Close dialog">&times;</button>
             </div>
             <div class="modal__body">

@@ -20,12 +20,12 @@ import { DisponibilidadApiService, TurnoDTO, TurnoInput } from '../disponibilida
  * Provides:
  * - profile, notifications, autoReply, workspace, businessHours signals
  * - loading, saving, error state signals
- * - loadSettings(): GET /api/me/settings → hydrate all signals
+ * - loadSettings(): GET /api/mi/configuracion → hydrate all signals
  * - saveProfile / saveNotifications / saveAutoReply / saveShifts
  *
  * Saves go through ConfiguracionApiService (profile, notifications),
- * RespuestaAutomaticaApiService (PUT /api/me/auto-reply) and DisponibilidadApiService
- * (PUT /api/me/shifts).
+ * RespuestaAutomaticaApiService (PUT /api/mi/respuesta-automatica) and DisponibilidadApiService
+ * (PUT /api/mi/turnos).
  *
  * Follows the EspacioDeTrabajoStore pattern (signals + injected API).
  */
@@ -51,7 +51,7 @@ export class ConfiguracionStore {
 
   /**
    * Load all settings from the API.
-   * GET /api/me/settings → hydrate all section signals.
+   * GET /api/mi/configuracion → hydrate all section signals.
    */
   cargarConfiguracion(): void {
     this.loading.set(true);
@@ -59,11 +59,11 @@ export class ConfiguracionStore {
 
     this.api.getConfiguracion().subscribe({
       next: (configuracion) => {
-        this.perfil.set(configuracion.profile);
-        this.notificaciones.set(configuracion.notifications);
-        this.respuestaAutomatica.set(configuracion.autoReply);
-        this.espacioDeTrabajo.set(configuracion.workspace);
-        this.businessHours.set(configuracion.businessHours);
+        this.perfil.set(configuracion.perfil);
+        this.notificaciones.set(configuracion.notificaciones);
+        this.respuestaAutomatica.set(configuracion.respuestaAutomatica);
+        this.espacioDeTrabajo.set(configuracion.espacioDeTrabajo);
+        this.businessHours.set(configuracion.horarioDeAtencion);
         this.loading.set(false);
       },
       error: (err) => {
@@ -75,7 +75,7 @@ export class ConfiguracionStore {
 
   /**
    * Update profile (signature).
-   * PUT /api/me/profile
+   * PUT /api/mi/perfil
    */
   guardarPerfil(payload: UpdatePerfilPayload): void {
     this.saving.set(true);
@@ -95,7 +95,7 @@ export class ConfiguracionStore {
 
   /**
    * Update notification preferences.
-   * PUT /api/me/notifications
+   * PUT /api/mi/notificaciones
    */
   guardarNotificaciones(payload: UpdateNotificacionesPayload): void {
     this.saving.set(true);
@@ -115,7 +115,7 @@ export class ConfiguracionStore {
 
   /**
    * Update auto-reply settings.
-   * PUT /api/me/auto-reply
+   * PUT /api/mi/respuesta-automatica
    */
   guardarRespuestaAutomatica(payload: UpdateRespuestaAutomaticaPayload): void {
     this.saving.set(true);
@@ -135,7 +135,7 @@ export class ConfiguracionStore {
 
   /**
    * Replace all shifts.
-   * PUT /api/me/shifts
+   * PUT /api/mi/turnos
    */
   guardarTurnos(turnos: TurnoInput[]): void {
     this.saving.set(true);

@@ -7,7 +7,7 @@ import { AgenteDeGestionDTO, AdministracionApiService, UsuarioDeGestionDTO } fro
  * AgentsPage — Supervisor agent management.
  *
  * Allows ROLE_SUPERVISOR to view, create, edit, and soft-delete agents.
- * ROLE_ADMIN can also link/unlink users to agents.
+ * ROLE_ADMINISTRADOR can also link/unlink users to agents.
  * Features: paginated table, create form, edit modal, link/unlink user, soft-delete.
  *
  * API calls go through AdministracionApiService; this component holds only signals,
@@ -48,7 +48,7 @@ export class AgentesPageComponent implements OnInit {
       : AgentesPageComponent.FALLBACK_TIMEZONES;
 
   readonly timezoneOptions = computed(() => {
-    const current = this.agenteEnEdicion()?.timezone;
+    const current = this.agenteEnEdicion()?.zonaHoraria;
     return current && !this.timezones.includes(current) ? [current, ...this.timezones] : this.timezones;
   });
 
@@ -114,7 +114,7 @@ export class AgentesPageComponent implements OnInit {
 
   openEditForm(agente: AgenteDeGestionDTO): void {
     this.agenteEnEdicion.set(agente);
-    this.agenteForm.reset({ name: agente.name, active: agente.active, timezone: agente.timezone });
+    this.agenteForm.reset({ name: agente.nombre, active: agente.activo, timezone: agente.zonaHoraria });
     this.showForm.set(true);
   }
 
@@ -223,7 +223,7 @@ export class AgentesPageComponent implements OnInit {
     this.adminApi.vincularUsuario(agente.id, userId!).subscribe({
       next: () => {
         this.saving.set(false);
-        this.success.set(`User linked to "${agente.name}" successfully`);
+        this.success.set(`User linked to "${agente.nombre}" successfully`);
         this.cerrarVinculoForm();
         this.cargarAgentes();
       },
@@ -252,7 +252,7 @@ export class AgentesPageComponent implements OnInit {
     this.adminApi.desvincularUsuario(agente.id).subscribe({
       next: () => {
         this.saving.set(false);
-        this.success.set(`User unlinked from "${agente.name}" successfully`);
+        this.success.set(`User unlinked from "${agente.nombre}" successfully`);
         this.mostrarConfirmacionDeDesvincular.set(null);
         this.cargarAgentes();
       },
@@ -281,7 +281,7 @@ export class AgentesPageComponent implements OnInit {
     this.adminApi.desactivarAgente(agente.id).subscribe({
       next: () => {
         this.saving.set(false);
-        this.success.set(`Agent "${agente.name}" deactivated successfully`);
+        this.success.set(`Agent "${agente.nombre}" deactivated successfully`);
         this.showDeleteConfirm.set(null);
         this.cargarAgentes();
       },
@@ -299,7 +299,7 @@ export class AgentesPageComponent implements OnInit {
     this.adminApi.reactivarAgente(agente.id).subscribe({
       next: () => {
         this.saving.set(false);
-        this.success.set(`Agent "${agente.name}" reactivated successfully`);
+        this.success.set(`Agent "${agente.nombre}" reactivated successfully`);
         this.cargarAgentes();
       },
       error: (err) => {

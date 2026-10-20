@@ -15,9 +15,9 @@ export interface UsuarioDTO {
   id: number;
   email: string;
   roles: string[];
-  agent_id: number | null;
-  agent_name: string | null;
-  is_active: boolean;
+  agenteId: number | null;
+  agenteNombre: string | null;
+  activo: boolean;
 }
 
 /** Shape of the Mercure token response */

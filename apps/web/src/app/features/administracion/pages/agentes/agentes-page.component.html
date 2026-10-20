@@ -45,34 +45,34 @@
             </thead>
             <tbody>
               @for (agent of agentes(); track agent.id) {
-                <tr [class.row--inactive]="!agent.active">
+                <tr [class.row--inactive]="!agent.activo">
                   <td>{{ agent.id }}</td>
-                  <td>{{ agent.name }}</td>
-                  <td>{{ agent.timezone }}</td>
+                  <td>{{ agent.nombre }}</td>
+                  <td>{{ agent.zonaHoraria }}</td>
                   <td>
-                    <span class="status-dot" [class.status-dot--active]="agent.active"
-                          [class.status-dot--inactive]="!agent.active">
+                    <span class="status-dot" [class.status-dot--active]="agent.activo"
+                          [class.status-dot--inactive]="!agent.activo">
                     </span>
-                    {{ agent.active ? 'Active' : 'Inactive' }}
+                    {{ agent.activo ? 'Active' : 'Inactive' }}
                   </td>
                   <td>
-                    <span class="status-dot" [class.status-dot--active]="agent.is_available"
-                          [class.status-dot--inactive]="!agent.is_available">
+                    <span class="status-dot" [class.status-dot--active]="agent.disponible"
+                          [class.status-dot--inactive]="!agent.disponible">
                     </span>
-                    {{ agent.is_available ? 'Available' : 'Unavailable' }}
+                    {{ agent.disponible ? 'Available' : 'Unavailable' }}
                   </td>
-                  <td>{{ agent.user_email ?? '—' }}</td>
+                  <td>{{ agent.usuarioEmail ?? '—' }}</td>
                   <td class="actions-cell">
-                    <button class="btn btn--sm btn--outline" (click)="openEditForm(agent)" [attr.aria-label]="'Edit ' + agent.name">Edit</button>
-                    @if (agent.user_id) {
-                      <button class="btn btn--sm btn--outline" (click)="confirmarDesvincularAgente(agent)" [attr.aria-label]="'Unlink user from ' + agent.name">Unlink</button>
+                    <button class="btn btn--sm btn--outline" (click)="openEditForm(agent)" [attr.aria-label]="'Edit ' + agent.nombre">Edit</button>
+                    @if (agent.usuarioId) {
+                      <button class="btn btn--sm btn--outline" (click)="confirmarDesvincularAgente(agent)" [attr.aria-label]="'Unlink user from ' + agent.nombre">Unlink</button>
                     } @else {
-                      <button class="btn btn--sm btn--outline" (click)="abrirVinculoForm(agent)" [attr.aria-label]="'Link user to ' + agent.name">Link</button>
+                      <button class="btn btn--sm btn--outline" (click)="abrirVinculoForm(agent)" [attr.aria-label]="'Link user to ' + agent.nombre">Link</button>
                     }
-                    @if (agent.active) {
-                      <button class="btn btn--sm btn--danger" (click)="confirmDelete(agent)" [attr.aria-label]="'Deactivate ' + agent.name">Deactivate</button>
+                    @if (agent.activo) {
+                      <button class="btn btn--sm btn--danger" (click)="confirmDelete(agent)" [attr.aria-label]="'Deactivate ' + agent.nombre">Deactivate</button>
                     } @else {
-                      <button class="btn btn--sm btn--outline" (click)="reactivarAgente(agent)" [attr.aria-label]="'Reactivate ' + agent.name">Reactivate</button>
+                      <button class="btn btn--sm btn--outline" (click)="reactivarAgente(agent)" [attr.aria-label]="'Reactivate ' + agent.nombre">Reactivate</button>
                     }
                   </td>
                 </tr>
@@ -156,7 +156,7 @@
         <div class="modal-overlay" (click)="cerrarVinculoForm()">
           <div class="modal modal--sm" role="dialog" aria-modal="true" aria-labelledby="modal-title-link" (click)="$event.stopPropagation()">
             <div class="modal__header">
-              <h2 id="modal-title-link">Link User to {{ linkingAgent.name }}</h2>
+              <h2 id="modal-title-link">Link User to {{ linkingAgent.nombre }}</h2>
               <button class="modal__close" (click)="cerrarVinculoForm()" aria-label="Close dialog">&times;</button>
             </div>
             <form [formGroup]="vinculoForm" (ngSubmit)="onVinculoSubmit()">
@@ -198,7 +198,7 @@
               <button class="modal__close" (click)="cancelDelete()" aria-label="Close dialog">&times;</button>
             </div>
             <div class="modal__body">
-              <p>Are you sure you want to deactivate <strong>{{ agentToDelete.name }}</strong>?</p>
+              <p>Are you sure you want to deactivate <strong>{{ agentToDelete.nombre }}</strong>?</p>
               <p class="text-warning">The agent will stop receiving new assignments. Existing data is preserved.</p>
             </div>
             <div class="modal__footer">
@@ -220,7 +220,7 @@
               <button class="modal__close" (click)="cancelarDesvincular()" aria-label="Close dialog">&times;</button>
             </div>
             <div class="modal__body">
-              <p>Unlink user <strong>{{ agentToUnlink.user_email }}</strong> from agent <strong>{{ agentToUnlink.name }}</strong>?</p>
+              <p>Unlink user <strong>{{ agentToUnlink.usuarioEmail }}</strong> from agent <strong>{{ agentToUnlink.nombre }}</strong>?</p>
             </div>
             <div class="modal__footer">
               <button class="btn btn--outline" (click)="cancelarDesvincular()">Cancel</button>

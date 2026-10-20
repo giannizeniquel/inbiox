@@ -83,14 +83,14 @@ export class ConfiguracionPageComponent implements OnInit {
     // Profile
     const p = this.store.perfil();
     if (p) {
-      this.perfilForm.patchValue({ signature: p.signature ?? '' }, { emitEvent: false });
+      this.perfilForm.patchValue({ signature: p.firma ?? '' }, { emitEvent: false });
     }
 
     // Notifications
     const n = this.store.notificaciones();
     if (n) {
       this.notificacionesForm.patchValue(
-        { sound: n.sound, desktop: n.desktop },
+        { sound: n.sonido, desktop: n.escritorio },
         { emitEvent: false },
       );
     }
@@ -99,7 +99,7 @@ export class ConfiguracionPageComponent implements OnInit {
     const a = this.store.respuestaAutomatica();
     if (a) {
       this.respuestaAutomaticaForm.patchValue(
-        { enabled: a.enabled, message: a.message ?? '' },
+        { enabled: a.habilitada, message: a.texto ?? '' },
         { emitEvent: false },
       );
     }
@@ -127,7 +127,7 @@ export class ConfiguracionPageComponent implements OnInit {
     if (this.perfilForm.invalid) return;
 
     const signature: string | null = this.perfilForm.value.signature ?? null;
-    this.store.guardarPerfil({ signature });
+    this.store.guardarPerfil({ firma: signature });
     this.perfilSuccess.set('Perfil actualizado correctamente');
   }
 
@@ -136,8 +136,8 @@ export class ConfiguracionPageComponent implements OnInit {
   onNotificacionesSubmit(): void {
     const formVal = this.notificacionesForm.getRawValue();
     this.store.guardarNotificaciones({
-      sound: formVal.sound,
-      desktop: formVal.desktop,
+      sonido: formVal.sound,
+      escritorio: formVal.desktop,
     });
     this.notificacionesSuccess.set('Notificaciones actualizadas');
   }
@@ -163,8 +163,8 @@ export class ConfiguracionPageComponent implements OnInit {
     const formVal = this.respuestaAutomaticaForm.getRawValue();
     const message: string | null = formVal.enabled ? (formVal.message || null) : null;
     this.store.guardarRespuestaAutomatica({
-      enabled: formVal.enabled,
-      message,
+      habilitada: formVal.enabled,
+      texto: message,
     });
     this.respuestaAutomaticaSuccess.set('Respuesta automática actualizada');
   }
@@ -176,9 +176,9 @@ export class ConfiguracionPageComponent implements OnInit {
     this.store.guardarTurnos([
       ...current,
       {
-        dayOfWeek: this.dayOfWeek(),
-        start: this.startTime(),
-        end: this.endTime(),
+        diaDeLaSemana: this.dayOfWeek(),
+        inicio: this.startTime(),
+        fin: this.endTime(),
       },
     ]);
     this.businessHoursSuccess.set('Horario actualizado');

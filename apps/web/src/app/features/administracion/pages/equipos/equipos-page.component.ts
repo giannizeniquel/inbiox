@@ -24,7 +24,7 @@ interface AgentOption {
  * `Admin/TeamController::update` never accepts `workspaceId`), so the form
  * disables that field once editing.
  *
- * ROLE_SUPERVISOR (not stricter ROLE_ADMIN-only) — mirrors the backend
+ * ROLE_SUPERVISOR (not stricter ROLE_ADMINISTRADOR-only) — mirrors the backend
  * `Admin/TeamController`'s `#[IsGranted('ROLE_SUPERVISOR')]` gate per spec
  * ("Team CRUD (Admin/Supervisor)... mirrors Agent CRUD access").
  */
@@ -88,7 +88,7 @@ export class EquiposPageComponent implements OnInit {
 
   nombreDeEspacioDeTrabajo(espacioDeTrabajoId: number): string {
     const ws = this.espaciosDeTrabajo().find((w) => w.id === espacioDeTrabajoId);
-    return ws ? ws.display_name : `Workspace ${espacioDeTrabajoId}`;
+    return ws ? ws.nombreVisible : `Workspace ${espacioDeTrabajoId}`;
   }
 
   cargarEquipos(): void {
@@ -122,9 +122,9 @@ export class EquiposPageComponent implements OnInit {
   openEditForm(equipo: EquipoDTO): void {
     this.equipoEnEdicion.set(equipo);
     this.equipoForm.reset({
-      workspaceId: equipo.workspace_id,
-      name: equipo.name,
-      isActive: equipo.is_active,
+      workspaceId: equipo.espacioDeTrabajoId,
+      name: equipo.nombre,
+      isActive: equipo.activo,
     });
     // workspaceId is immutable after creation — backend update() never accepts it.
     this.equipoForm.controls.workspaceId.disable();
@@ -163,9 +163,9 @@ export class EquiposPageComponent implements OnInit {
     this.error.set(null);
 
     this.equipoApi.create({
-      workspaceId,
-      name: name.trim(),
-      isActive,
+      espacioDeTrabajoId: workspaceId,
+      nombre: name.trim(),
+      activo: isActive,
     }).subscribe({
       next: () => {
         this.saving.set(false);
@@ -187,8 +187,8 @@ export class EquiposPageComponent implements OnInit {
     this.error.set(null);
 
     this.equipoApi.update(equipo.id, {
-      name: name.trim(),
-      isActive,
+      nombre: name.trim(),
+      activo: isActive,
     }).subscribe({
       next: () => {
         this.saving.set(false);
@@ -221,7 +221,7 @@ export class EquiposPageComponent implements OnInit {
     this.equipoApi.desactivar(equipo.id).subscribe({
       next: () => {
         this.saving.set(false);
-        this.success.set(`Team "${equipo.name}" deactivated successfully`);
+        this.success.set(`Team "${equipo.nombre}" deactivated successfully`);
         this.showDeleteConfirm.set(null);
         this.cargarEquipos();
       },
@@ -236,14 +236,14 @@ export class EquiposPageComponent implements OnInit {
 
   abrirAgenteModal(equipo: EquipoDTO): void {
     this.equipoEnAsignacion.set(equipo);
-    const agenteAsignadoIds: number[] = equipo.agent_ids ?? [];
+    const agenteAsignadoIds: number[] = equipo.agenteIds ?? [];
 
-    this.http.get<any>(`${environment.apiUrl}/api/admin/agents?limit=100`).subscribe({
+    this.http.get<any>(`${environment.apiUrl}/api/administracion/agentes?limit=100`).subscribe({
       next: (res) => {
         const agentes = res.data ?? [];
         this.agenteOptions.set(agentes.map((a: any) => ({
           id: a.id,
-          name: a.name ?? `Agent ${a.id}`,
+          name: a.nombre ?? `Agent ${a.id}`,
           assigned: agenteAsignadoIds.includes(a.id),
         })));
       },

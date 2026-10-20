@@ -17,9 +17,9 @@
 | `/reportes` | `ReportesPageComponent` | — | Autenticado (también agentes) | "Informes" |
 | `/agentes/:agenteId/disponibilidad` | `DisponibilidadPageComponent` | — | Autenticado | Ninguno (**rota**) |
 | `/agentes/:agenteId/turnos` | `TurnosPageComponent` | — | Autenticado | `/configuracion` (enlace con el id del workspace; **rota**) |
-| `/administracion/usuarios` | `UsuariosPageComponent` | `roleGuard('ROLE_ADMIN')` | Admin | "Usuarios" |
+| `/administracion/usuarios` | `UsuariosPageComponent` | `roleGuard('ROLE_ADMINISTRADOR')` | Admin | "Usuarios" |
 | `/administracion/agentes` | `AgentesPageComponent` | `roleGuard('ROLE_SUPERVISOR')` | Supervisor, admin | "Agentes" |
-| `/administracion/espacios-de-trabajo` | `EspaciosDeTrabajoPageComponent` | `roleGuard('ROLE_ADMIN')` | Admin | "Workspaces" |
+| `/administracion/espacios-de-trabajo` | `EspaciosDeTrabajoPageComponent` | `roleGuard('ROLE_ADMINISTRADOR')` | Admin | "Workspaces" |
 | `/administracion/equipos` | `EquiposPageComponent` | `roleGuard('ROLE_SUPERVISOR')` | Supervisor, admin | "Equipos" |
 | `/configuracion` | `ConfiguracionPageComponent` | — | Autenticado | "Configuración" |
 | `**` | redirect `/bandeja` | — | — | — |
@@ -50,7 +50,7 @@ Roles: `AuthStore.isAdmin()` / `isSupervisor()` (no jerárquicos; no existe `isA
 | Campana de notificaciones, botón "Ayuda" | `topbar.component.html:61-69`; `shell/sidebar/sidebar-footer.component.html:4-13` | — | **Decorativos.** |
 | Indicador de conexión | `shell/sidebar/sidebar.component.ts:30-37` | — | Dice "Conectado" también en `permanent_failure`. |
 | Banner de conexión | `shell/connection-banner/` | — | "Reconectando…" / "Sin conexión"; sin botón de reintento. |
-| Selector de workspace | `EspacioDeTrabajoSwitcherComponent` → `EspacioDeTrabajoStore.setEspacioDeTrabajoActivo()` (`data-access/administracion/espacio-de-trabajo.store.ts:93-108`) | `GET /api/me/workspaces`, `GET/PUT /api/me/workspace` | Recarga la página completa. Marca "pendiente" en otros workspaces con `has_pending` y con eventos entrantes de otro `phoneNumberId`. |
+| Selector de workspace | `EspacioDeTrabajoSwitcherComponent` → `EspacioDeTrabajoStore.setEspacioDeTrabajoActivo()` (`data-access/administracion/espacio-de-trabajo.store.ts:93-108`) | `GET /api/mi/espacios-de-trabajo`, `GET/PUT /api/mi/espacio-de-trabajo` | Recarga la página completa. Marca "pendiente" en otros workspaces con `hayPendientes` y con eventos entrantes de otro `phoneNumberId`. |
 | Autoselección inicial de workspace | `shell/app-shell.component.ts:84-86` | — | `setTimeout(…, 500)` asumiendo que dos peticiones terminaron: posible condición de carrera. |
 | Deep link `/inbox?ticketId=X` | `app-shell.component.ts:90-106` | `GET /api/tickets/{id}`, mensajes | |
 
@@ -62,7 +62,7 @@ Contenedor: `features/bandeja/pages/ticket-list/ticket-list.component.ts`. Store
 |---|---|---|---|
 | Cargar lista | `cargarTickets()` (`:101-114`) → `TicketApiService.getTickets()` → `TicketStore.cargarTickets()` | `GET /api/tickets[?equipoId=N]` | Servidor, **sin `page`/`limit` → solo 20** |
 | Pestañas Míos / Sin asignar / Todos + contadores | `FiltrosDeTicketComponent` → `TicketStore.filter` / `filteredTickets` / `conteosDeFiltro` (`ticket.store.ts:86-107`) | — | **Navegador** (sobre los 20) |
-| Filtro por equipo | `FiltroDeEquipoComponent` → `onFiltroDeEquipoChange` | `GET /api/teams`, luego `GET /api/tickets?equipoId=N` | **Servidor** |
+| Filtro por equipo | `FiltroDeEquipoComponent` → `onFiltroDeEquipoChange` | `GET /api/equipos`, luego `GET /api/tickets?equipoId=N` | **Servidor** |
 | Buscar | `TicketSearchComponent` → `onSearch()` hace `console.log` (`:209-213`) | — | **No implementado** |
 | Abrir ticket | `selectTicket()` (`:176-192`) | `GET /api/tickets/{id}/mensajes?limit=20&offset=0` | — |
 | Desplegable de asignación | `TicketCardComponent` (`ticket-card.component.ts:51-59, 138-150`), visible si `puedeAsignarTicket()` y estado `nuevo`/`activo`/`en_espera` | `GET /api/workspaces/{wsId}/available-agents`; se refresca 10 s después de un `ticket.asignado` | — |
@@ -125,10 +125,10 @@ Lógica inventada: nombres `Agent {id}` y `loadPercentage = asignados × 20` (`:
 
 | Pantalla | Acciones | Servicio | Endpoints | Rol frontend / backend |
 |---|---|---|---|---|
-| Usuarios | listar, crear (roles + agente opcional), editar, desactivar, reactivar | `AdministracionApiService` (`data-access/administracion/administracion-api.service.ts`) | `/api/admin/users[/{id}]` | Admin / Admin |
-| Agentes | listar, crear, editar (incl. zona horaria con `Intl.supportedValuesOf('timeZone')`), desactivar, reactivar, vincular usuario | `AdministracionApiService` | `/api/admin/agents[/{id}]`, `/link-user`, `GET /api/admin/users` | Supervisor+ / Supervisor (vincular: **Admin**) |
-| Workspaces | listar, crear, editar, desactivar, asignar agentes | `EspacioDeTrabajoApiService` | `/api/admin/workspaces[/{id}]`, `/agents`, `GET /api/admin/agents?limit=100` | Admin / Admin |
-| Equipos | listar, crear (workspace fijo después), editar, desactivar, asignar agentes | `EquipoApiService` | `/api/admin/teams[/{id}]`, `/agents`, `GET /api/admin/workspaces` (**Admin**), `GET /api/admin/agents?limit=100` | Supervisor+ / Supervisor |
+| Usuarios | listar, crear (roles + agente opcional), editar, desactivar, reactivar | `AdministracionApiService` (`data-access/administracion/administracion-api.service.ts`) | `/api/administracion/usuarios[/{id}]` | Admin / Admin |
+| Agentes | listar, crear, editar (incl. zona horaria con `Intl.supportedValuesOf('timeZone')`), desactivar, reactivar, vincular usuario | `AdministracionApiService` | `/api/administracion/agentes[/{id}]`, `/vincular-usuario`, `GET /api/administracion/usuarios` | Supervisor+ / Supervisor (vincular: **Admin**) |
+| Workspaces | listar, crear, editar, desactivar, asignar agentes | `EspacioDeTrabajoApiService` | `/api/administracion/espacios-de-trabajo[/{id}]`, `/agentes`, `GET /api/administracion/agentes?limit=100` | Admin / Admin |
+| Equipos | listar, crear (workspace fijo después), editar, desactivar, asignar agentes | `EquipoApiService` | `/api/administracion/equipos[/{id}]`, `/agentes`, `GET /api/administracion/espacios-de-trabajo` (**Admin**), `GET /api/administracion/agentes?limit=100` | Supervisor+ / Supervisor |
 
 Con más de 100 agentes, los modales no muestran el resto.
 
@@ -136,11 +136,11 @@ Con más de 100 agentes, los modales no muestran el resto.
 
 | Pestaña | Endpoint | Nota |
 |---|---|---|
-| Perfil (firma) | `PUT /api/me/profile` | |
-| Notificaciones (sonido, escritorio) | `PUT /api/me/notifications` | Se guardan, pero **nada las usa** (no hay `Notification` ni audio). |
-| Horario laboral | `PUT /api/me/shifts` (reemplaza todos) | Funciona. Es el único camino operativo para turnos. |
-| Respuesta automática | `PUT /api/me/auto-reply` | |
-| Workspace | de `GET /api/me/settings` | Solo lectura; enlace roto "Gestionar horarios". |
+| Perfil (firma) | `PUT /api/mi/perfil` | |
+| Notificaciones (sonido, escritorio) | `PUT /api/mi/notificaciones` | Se guardan, pero **nada las usa** (no hay `Notification` ni audio). |
+| Horario laboral | `PUT /api/mi/turnos` (reemplaza todos) | Funciona. Es el único camino operativo para turnos. |
+| Respuesta automática | `PUT /api/mi/respuesta-automatica` | |
+| Workspace | de `GET /api/mi/configuracion` | Solo lectura; enlace roto "Gestionar horarios". |
 
 El store (`data-access/agente/configuracion.store.ts`) hace HTTP sin esperar el resultado: el mensaje de éxito aparece aunque el backend falle.
 
@@ -187,7 +187,7 @@ Limitaciones: no hay detección de huecos ni resync (ese código nunca se ejecut
 | Ventana de 24 h | `composer.component.ts:7, 70-76` | Duplica R-W1 con el reloj del navegador; el backend manda. |
 | Quién puede asignar; no asignarse a uno mismo; estados asignables; agentes inactivos no elegibles | `ticket-list.component.ts:132-137, 221-238`; `ticket-card.component.ts:51-59, 142-146` | Duplica el voter y el guard "Activo"; "no asignarse a uno mismo" solo existe aquí. |
 | Validación de archivos | `envio-de-mensajes.service.ts:49-54, 227-253` | Duplica `MediaValidator`; los límites pueden divergir. |
-| Roles por defecto `ROLE_AGENT` | `administracion-api.service.ts:178`, `:197` | Solo frontend. |
+| Roles por defecto `ROLE_AGENTE` | `administracion-api.service.ts:178`, `:197` | Solo frontend. |
 | `loadPercentage`, nombres `Agent {id}` | `get-reports-dashboard.use-case.ts:158-162` | **Inventados.** |
 | Abiertos / cerrados agregados | `get-reports-dashboard.use-case.ts:148-151` | Coincide con el backend. |
 
@@ -202,7 +202,7 @@ Limitaciones: no hay detección de huecos ni resync (ese código nunca se ejecut
 | Contactos | Búsqueda, estado, canal | Navegador (sobre lo cargado) |
 | Contactos | Paginación | Servidor |
 | Informes | Fechas, equipo | Servidor (salvo carga, disponibles y recurrentes) |
-| Todo | Workspace | Servidor, implícito por `PUT /api/me/workspace` |
+| Todo | Workspace | Servidor, implícito por `PUT /api/mi/espacio-de-trabajo` |
 
 ## Código sin uso en el frontend
 

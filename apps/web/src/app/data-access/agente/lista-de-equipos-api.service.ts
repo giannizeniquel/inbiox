@@ -10,21 +10,21 @@ import { createHttpErrorHandler } from '../../core/http/http-error.util';
  * ListaDeEquiposApiService — HTTP client for the non-admin team listing.
  *
  * Endpoints:
- * - GET /api/teams — workspace-scoped listing for the inbox/reports team
+ * - GET /api/equipos — workspace-scoped listing for the inbox/reports team
  *   filter dropdowns. Includes deactivated teams — per spec, a deactivated
  *   team must remain selectable for historical filtering even though it's
  *   hidden from admin "new assignment" pickers.
  *
- * Team CRUD (`/api/admin/teams`) lives in `EquipoApiService` (administracion).
+ * Team CRUD (`/api/administracion/equipos`) lives in `EquipoApiService` (administracion).
  */
 @Injectable({ providedIn: 'root' })
 export class ListaDeEquiposApiService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiUrl;
 
-  /** GET /api/teams */
+  /** GET /api/equipos */
   listarEquipos(): Observable<EquipoDTO[]> {
-    return this.http.get<EquipoDTO[]>(`${this.baseUrl}/api/teams`).pipe(
+    return this.http.get<EquipoDTO[]>(`${this.baseUrl}/api/equipos`).pipe(
       catchError(createHttpErrorHandler('TeamApi'))
     );
   }

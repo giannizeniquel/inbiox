@@ -25,26 +25,26 @@ describe('ConfiguracionStore', () => {
     httpMock.verify();
   });
 
-  it('loads settings via GET /api/me/settings and hydrates signals', () => {
+  it('loads settings via GET /api/mi/configuracion and hydrates signals', () => {
     const mockResponse = {
-      profile: { name: 'Ana', email: 'ana@test.com', signature: null },
-      notifications: { sound: true, desktop: true },
-      autoReply: { enabled: false, message: null },
-      workspace: null,
-      businessHours: [],
+      perfil: { nombre: 'Ana', email: 'ana@test.com', firma: null },
+      notificaciones: { sonido: true, escritorio: true },
+      respuestaAutomatica: { habilitada: false, texto: null },
+      espacioDeTrabajo: null,
+      horarioDeAtencion: [],
     };
 
     store.cargarConfiguracion();
 
-    const req = httpMock.expectOne(`${environment.apiUrl}/api/me/settings`);
+    const req = httpMock.expectOne(`${environment.apiUrl}/api/mi/configuracion`);
     expect(req.request.method).toBe('GET');
     req.flush(mockResponse);
 
     expect(store.loading()).toBe(false);
     expect(store.error()).toBeNull();
-    expect(store.perfil()).toEqual(mockResponse.profile);
-    expect(store.notificaciones()).toEqual(mockResponse.notifications);
-    expect(store.respuestaAutomatica()).toEqual(mockResponse.autoReply);
+    expect(store.perfil()).toEqual(mockResponse.perfil);
+    expect(store.notificaciones()).toEqual(mockResponse.notificaciones);
+    expect(store.respuestaAutomatica()).toEqual(mockResponse.respuestaAutomatica);
     expect(store.espacioDeTrabajo()).toBeNull();
     expect(store.businessHours()).toEqual([]);
   });
@@ -53,8 +53,8 @@ describe('ConfiguracionStore', () => {
     store.cargarConfiguracion();
     expect(store.loading()).toBe(true);
 
-    const req = httpMock.expectOne(`${environment.apiUrl}/api/me/settings`);
-    req.flush({ profile: {}, notifications: {}, autoReply: {}, workspace: null, businessHours: [] });
+    const req = httpMock.expectOne(`${environment.apiUrl}/api/mi/configuracion`);
+    req.flush({ perfil: {}, notificaciones: {}, respuestaAutomatica: {}, espacioDeTrabajo: null, horarioDeAtencion: [] });
 
     expect(store.loading()).toBe(false);
   });
@@ -62,7 +62,7 @@ describe('ConfiguracionStore', () => {
   it('sets error on load failure', () => {
     store.cargarConfiguracion();
 
-    const req = httpMock.expectOne(`${environment.apiUrl}/api/me/settings`);
+    const req = httpMock.expectOne(`${environment.apiUrl}/api/mi/configuracion`);
     req.error(new ProgressEvent('Network error'));
 
     expect(store.loading()).toBe(false);
@@ -70,13 +70,13 @@ describe('ConfiguracionStore', () => {
   });
 
   it('saveNotifications updates notifications signal and clears saving', () => {
-    const mockResponse = { sound: false, desktop: true };
+    const mockResponse = { sonido: false, escritorio: true };
 
-    store.guardarNotificaciones({ sound: false });
+    store.guardarNotificaciones({ sonido: false });
 
     expect(store.saving()).toBe(true);
 
-    const req = httpMock.expectOne(`${environment.apiUrl}/api/me/notifications`);
+    const req = httpMock.expectOne(`${environment.apiUrl}/api/mi/notificaciones`);
     expect(req.request.method).toBe('PUT');
     req.flush(mockResponse);
 
@@ -85,9 +85,9 @@ describe('ConfiguracionStore', () => {
   });
 
   it('saveNotifications sets error on failure and clears saving', () => {
-    store.guardarNotificaciones({ sound: false });
+    store.guardarNotificaciones({ sonido: false });
 
-    const req = httpMock.expectOne(`${environment.apiUrl}/api/me/notifications`);
+    const req = httpMock.expectOne(`${environment.apiUrl}/api/mi/notificaciones`);
     req.error(new ProgressEvent('Server error'));
 
     expect(store.saving()).toBe(false);

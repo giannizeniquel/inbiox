@@ -53,7 +53,7 @@ export const routes: Routes = [
       },
       {
         path: 'administracion/usuarios',
-        canActivate: [roleGuard('ROLE_ADMIN')],
+        canActivate: [roleGuard('ROLE_ADMINISTRADOR')],
         loadComponent: () =>
           import('./features/administracion/pages/usuarios/usuarios-page.component').then(m => m.UsuariosPageComponent),
       },
@@ -65,7 +65,7 @@ export const routes: Routes = [
       },
       {
         path: 'administracion/espacios-de-trabajo',
-        canActivate: [roleGuard('ROLE_ADMIN')],
+        canActivate: [roleGuard('ROLE_ADMINISTRADOR')],
         loadComponent: () =>
           import('./features/administracion/pages/espacios-de-trabajo/espacios-de-trabajo-page.component').then(m => m.EspaciosDeTrabajoPageComponent),
       },

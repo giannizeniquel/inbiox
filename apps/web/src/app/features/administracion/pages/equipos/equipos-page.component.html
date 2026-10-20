@@ -44,22 +44,22 @@
             </thead>
             <tbody>
               @for (team of equipos(); track team.id) {
-                <tr [class.row--inactive]="!team.is_active">
+                <tr [class.row--inactive]="!team.activo">
                   <td>{{ team.id }}</td>
-                  <td>{{ nombreDeEspacioDeTrabajo(team.workspace_id) }}</td>
-                  <td>{{ team.name }}</td>
+                  <td>{{ nombreDeEspacioDeTrabajo(team.espacioDeTrabajoId) }}</td>
+                  <td>{{ team.nombre }}</td>
                   <td>
-                    <span class="status-dot" [class.status-dot--active]="team.is_active"
-                          [class.status-dot--inactive]="!team.is_active">
+                    <span class="status-dot" [class.status-dot--active]="team.activo"
+                          [class.status-dot--inactive]="!team.activo">
                     </span>
-                    {{ team.is_active ? 'Active' : 'Inactive' }}
+                    {{ team.activo ? 'Active' : 'Inactive' }}
                   </td>
-                  <td>{{ team.agent_count ?? '—' }}</td>
+                  <td>{{ team.cantidadDeAgentes ?? '—' }}</td>
                    <td class="actions-cell">
-                     <button class="btn btn--sm btn--outline" (click)="openEditForm(team)" [attr.aria-label]="'Edit ' + team.name">Edit</button>
-                     <button class="btn btn--sm btn--outline" (click)="abrirAgenteModal(team)" [attr.aria-label]="'Manage agents for ' + team.name">Agents</button>
-                     @if (team.is_active) {
-                       <button class="btn btn--sm btn--danger" (click)="confirmDelete(team)" [attr.aria-label]="'Deactivate ' + team.name">Deactivate</button>
+                     <button class="btn btn--sm btn--outline" (click)="openEditForm(team)" [attr.aria-label]="'Edit ' + team.nombre">Edit</button>
+                     <button class="btn btn--sm btn--outline" (click)="abrirAgenteModal(team)" [attr.aria-label]="'Manage agents for ' + team.nombre">Agents</button>
+                     @if (team.activo) {
+                       <button class="btn btn--sm btn--danger" (click)="confirmDelete(team)" [attr.aria-label]="'Deactivate ' + team.nombre">Deactivate</button>
                      }
                   </td>
                 </tr>
@@ -101,7 +101,7 @@
                           [class.form-input--error]="hasFieldError('workspaceId')">
                     <option [ngValue]="null" disabled>Select a workspace…</option>
                     @for (ws of espaciosDeTrabajo(); track ws.id) {
-                      <option [ngValue]="ws.id">{{ ws.display_name }}</option>
+                      <option [ngValue]="ws.id">{{ ws.nombreVisible }}</option>
                     }
                   </select>
                   @if (equipoEnEdicion()) {
@@ -158,7 +158,7 @@
               <button class="modal__close" (click)="cancelDelete()" aria-label="Close dialog">&times;</button>
             </div>
             <div class="modal__body">
-              <p>Are you sure you want to deactivate <strong>{{ teamToDelete.name }}</strong>?</p>
+              <p>Are you sure you want to deactivate <strong>{{ teamToDelete.nombre }}</strong>?</p>
               <p class="text-warning">The team will stop being available for new ticket assignment. Existing tickets keep their team attribution.</p>
             </div>
             <div class="modal__footer">
@@ -176,11 +176,11 @@
         <div class="modal-overlay" (click)="cerrarAgenteModal()">
           <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title-agents" (click)="$event.stopPropagation()">
             <div class="modal__header">
-              <h2 id="modal-title-agents">Assign Agents — {{ team.name }}</h2>
+              <h2 id="modal-title-agents">Assign Agents — {{ team.nombre }}</h2>
               <button class="modal__close" (click)="cerrarAgenteModal()" aria-label="Close dialog">&times;</button>
             </div>
             <div class="modal__body">
-              <p class="text-warning">Only agents already assigned to the team's workspace ({{ nombreDeEspacioDeTrabajo(team.workspace_id) }}) can be added.</p>
+              <p class="text-warning">Only agents already assigned to the team's workspace ({{ nombreDeEspacioDeTrabajo(team.espacioDeTrabajoId) }}) can be added.</p>
               @if (agenteOptions().length === 0) {
                 <p>Loading agents...</p>
               } @else {
