@@ -88,7 +88,10 @@ apps/web/src/app/
    - Si dos pantallas necesitan lo mismo, va a `data-access` cuando habla con la API, o a `shared` cuando es UI genérica.
 2. **El estado de UI propio de una pantalla vive en `features/<pantalla>`** (por ejemplo, el ticket seleccionado o los filtros abiertos). En `data-access` solo va el estado que viene de la API.
 3. **Los DTOs y modelos de la API van únicamente en `data-access/<modulo>`.**
-4. **Hasta que exista el contrato nuevo de la API, solo se renombran carpetas.** Las variables y los campos que reflejan el JSON se renombran junto con el contrato (fase 5 del backend).
+4. **Antes del contrato nuevo de la API se renombran carpetas, archivos, clases, tipos y selectores con el glosario.** Esos nombres no viajan por la red, así que el contrato no los vuelve a tocar.
+   - Lo que refleja el contrato se renombra junto con él (fase 5 del backend): los campos del JSON y las propiedades que los espejan, los valores de enums que viajan por la red, los tipos de evento de Mercure, los strings de roles, las rutas `/api/...` y las URLs del router (el usuario puede tenerlas en favoritos).
+   - Si un selector o un nombre se busca como string (por ejemplo `'app-message-bubble'` en `conversation-scroll.controller.ts`), el string cambia en el mismo commit.
+   - Un término que el glosario no define queda como está hasta que el glosario lo decida.
 
 ### Proceso
 
@@ -186,10 +189,39 @@ Se guardan en la base y viajan en la API.
 | load / capacity | `carga` / `capacidad` |
 | participation / episode / attribution | `participacion` / `episodio` / `atribucion` |
 | keyword | `palabraClave` |
+| settings / profile / notifications / preferences | `configuracion` / `perfil` / `notificaciones` / `preferencias` |
+| management (pantallas de administración) | `gestion` (`GestionDeAgentesController`) |
+| link / unlink (usuario con agente) | `vinculo` / `vincular` / `desvincular` |
+| deactivate | `desactivar` |
+| detail / list item | `detalle` / `deLista` (`DetalleDeTicketDTO`, `TicketDeListaDTO`) |
+| filters / pagination / metadata | `filtros` / `paginacion` / `metadatos` |
+| scope | `alcance` (`AlcanceDeResponsabilidad`) |
+| realtime | `tiempoReal` (`EventoEnTiempoReal`) |
+| provider | `proveedor` |
+| inbound / outbound (como adjetivo) | `entrante` / `saliente` |
+| expiry / expired | `vencimiento` / `vencida` |
+| reopening / tagging | `reapertura` / `etiquetado` |
+| logout / session | `cerrarSesion` / `sesion` |
+| upload / download | `subir` / `descarga` |
+| phone / recipient | `telefono` / `destinatario` |
+| workflow (transiciones de estado del ticket) | `flujo` (`FlujoDeTicketController`) |
+| available agents | `agentesDisponibles` |
+| export | `exportar` |
+| heatmap | `mapaDeCalor` |
+| recurring contacts | `contactosRecurrentes` |
+| reopened | `reabiertos` |
+| unassigned | `sinAsignar` |
+| response delay | `demoraDeRespuesta` |
+| trend / volume / counts | `tendencia` / `volumen` / `conteos` |
+| agent performance / leaderboard | `rendimientoDeAgentes` |
+| attribution cutoff | `corteDeAtribucion` |
+| FRT / RT (first response time / resolution time) | siglas, quedan como están: `getFrt`, `tendenciaDeFrt` |
 
 **Jerga técnica que queda en inglés:** webhook, outbox, token, payload, refresh token, query builder, sequence (del outbox), phone number id (identificador de la API de Meta).
 
-**Prefijos de métodos:** los prefijos técnicos `get`, `set`, `is`, `has`, `find`, `count`, `create`, `update` y `delete` quedan en inglés, como el resto de la jerga técnica; el resto del nombre sigue el vocabulario de negocio en español. Ejemplos: `getCargaDeAgente`, `findByResponsable`, `asignar`, `resolver`.
+**Prefijos de métodos:** los prefijos técnicos `get`, `set`, `is`, `has`, `find`, `count`, `create`, `update` y `delete` quedan en inglés, como el resto de la jerga técnica; el resto del nombre sigue el vocabulario de negocio en español. Ejemplos: `getCargaDeAgente`, `findByResponsable`, `asignar`, `resolver`. Los adders de colecciones de Doctrine siguen la convención del framework: `addEquipo`, `removeEquipo`.
+
+**Fechas:** participio en español con el sufijo `At`: `creadoAt`, `actualizadoAt`, `asignadoAt`, `resueltoAt`, `cerradoAt`, `procesadoAt`, `publicadoAt`, `recibidoAt`, `ejecutadoAt`, `primeraRespuestaAt`, `ultimoMensajeAt`, `ultimaLecturaAt`. Las columnas guardadas no cambian (`created_at`).
 
 ## Lo que se descartó y por qué
 
