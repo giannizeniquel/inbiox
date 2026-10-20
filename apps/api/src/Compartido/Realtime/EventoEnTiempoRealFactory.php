@@ -32,7 +32,7 @@ final readonly class EventoEnTiempoRealFactory
             'timestamp' => $stored['occurred_at'] ?? $evento->getCreadoAt()->format(\DateTimeInterface::RFC3339),
             'eventType' => $enumValue->value,
             'ticketId'  => (string) $evento->getAggregateId(),
-            'payload'   => $this->construirPayload($enumValue, $stored, (int) $evento->getAggregateId()),
+            'payload'   => $this->armarPayload($enumValue, $stored, (int) $evento->getAggregateId()),
         ];
     }
 
@@ -55,7 +55,7 @@ final readonly class EventoEnTiempoRealFactory
     /**
      * Arma la sección tipada del payload según el tipo de evento.
      */
-    private function construirPayload(TipoDeEventoEnTiempoReal $type, array $s, int $ticketId): array
+    private function armarPayload(TipoDeEventoEnTiempoReal $type, array $s, int $ticketId): array
     {
         return match ($type) {
             TipoDeEventoEnTiempoReal::TICKET_CREADO => [

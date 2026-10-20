@@ -224,6 +224,42 @@ Se guardan en la base y viajan en la API.
 
 **Prefijos de métodos:** los prefijos técnicos `get`, `set`, `is`, `has`, `find`, `count`, `create`, `update` y `delete` quedan en inglés, como el resto de la jerga técnica; el resto del nombre sigue el vocabulario de negocio en español. Ejemplos: `getCargaDeAgente`, `findByResponsable`, `asignar`, `resolver`. Los adders de colecciones de Doctrine siguen la convención del framework: `addEquipo`, `removeEquipo`.
 
+**Ids:** `<entidad>Id`, con el adjetivo antes de `Id`: `agenteId`, `equipoId`, `responsableActualId`, `equipoSeleccionadoId`. Nunca `idDe…`.
+
+**Verbos comunes** (front y back usan los mismos):
+
+| Inglés | Español |
+|---|---|
+| load | `cargar` |
+| retry | `reintentar` |
+| send | `enviar` |
+| open / close | `abrir` / `cerrar` |
+| list | `listar` |
+| save | `guardar` |
+| map | `mapear` |
+| add / prepend | `agregar` / `agregarAlInicio` |
+| remove | `quitar` |
+| clear | `limpiar` |
+| toggle | `alternar` |
+| select | `seleccionar` |
+| edit | `editar` |
+| confirm / cancel / dismiss | `confirmar` / `cancelar` / `descartar` |
+| mark | `marcar` |
+| notify | `notificar` |
+| replace | `reemplazar` |
+| apply | `aplicar` |
+| build / make | `armar` |
+| trigger | `disparar` |
+| rollback | `revertir` |
+| reactivate | `reactivar` |
+| can… (booleanos) | `puede…` (`puedeTransicionar`) |
+
+Los verbos de negocio están en la tabla de conceptos (`asignar`, `resolver`, `desactivar`, `importar`, `exportar`, `vincular`, `cerrarSesion`).
+
+**Quedan en inglés por técnicos:** además de los prefijos de métodos, `fetch`, `handle`, `execute`, `put` y `patch`; en Angular, `on*`, `ng*`, `trackBy`, el sufijo `$`, el sufijo `Effect` y `debounced`.
+
+**Adjetivos comunes:** selected → `seleccionado`, current → `actual`, active → `activo`, new → `nuevo`, last → `ultimo`, pending → `pendiente`, available → `disponible`, older → `anterior`, editing → `enEdicion`.
+
 **Palabras de tipo de componente (frontend):** quedan en inglés, como `Component`, `Store` o `DTO`, porque nombran un patrón de UI y no un concepto de negocio: `Card`, `Dialog`, `Modal`, `Empty`, `Header`, `Loading`, `Bubble`, `Indicator`, `Form`, `Search`, `Skeleton`, `Page`. El nombre se arma con el término de negocio en español y el tipo en inglés: `ContactoCardComponent`, `MensajeBubbleComponent` (`app-mensaje-bubble`), `ConversacionHeaderComponent`, `TendenciaDeFrtCardComponent`. Los sufijos técnicos de tipos (`Response`, `Payload`, `Params`, `Entry`) siguen la misma regla.
 
 **Fechas:** participio en español con el sufijo `At`: `creadoAt`, `actualizadoAt`, `asignadoAt`, `resueltoAt`, `cerradoAt`, `procesadoAt`, `publicadoAt`, `recibidoAt`, `ejecutadoAt`, `primeraRespuestaAt`, `ultimoMensajeAt`, `ultimaLecturaAt`. Las columnas guardadas no cambian (`created_at`).
