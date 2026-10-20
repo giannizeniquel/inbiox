@@ -8,7 +8,7 @@ use App\Reporte\Query\ExportarTicketsCsvQuery;
 use App\Ticket\Query\FiltrosDeTicketBuilder;
 use App\Compartido\Security\AlcanceDeResponsabilidad;
 use App\Compartido\Security\AlcanceDeEspacioDeTrabajo;
-use App\Reporte\Query\ListarAgentesDisponiblesQuery;
+use App\Reporte\Query\ListAgentesDisponiblesQuery;
 use App\Reporte\Query\ReporteService;
 use League\Csv\Bom;
 use League\Csv\Writer;
@@ -38,7 +38,7 @@ class ReporteController
 
     public function __construct(
         private ReporteService $reporteService,
-        private ListarAgentesDisponiblesQuery $listarAgentesDisponibles,
+        private ListAgentesDisponiblesQuery $listarAgentesDisponibles,
         private AlcanceDeResponsabilidad $alcanceDeResponsabilidad,
         private AlcanceDeEspacioDeTrabajo $alcanceDeEspacioDeTrabajo,
         private ExportarTicketsCsvQuery $exportarTicketsCsvQuery,
