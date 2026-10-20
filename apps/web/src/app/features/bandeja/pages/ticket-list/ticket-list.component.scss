@@ -73,27 +73,27 @@
   text-transform: uppercase;
   font-weight: 500;
 
-  &[data-status='new'] {
+  &[data-status='nuevo'] {
     background: color-mix(in srgb, var(--status-new) 15%, transparent);
     color: var(--status-new);
   }
 
-  &[data-status='active'] {
+  &[data-status='activo'] {
     background: color-mix(in srgb, var(--status-active) 15%, transparent);
     color: var(--status-active);
   }
 
-  &[data-status='waiting'] {
+  &[data-status='en_espera'] {
     background: color-mix(in srgb, var(--status-waiting) 15%, transparent);
     color: var(--status-waiting);
   }
 
-  &[data-status='resolved'] {
+  &[data-status='resuelto'] {
     background: color-mix(in srgb, var(--status-resolved) 15%, transparent);
     color: var(--status-resolved);
   }
 
-  &[data-status='closed'] {
+  &[data-status='cerrado'] {
     background: color-mix(in srgb, var(--status-closed) 15%, transparent);
     color: var(--status-closed);
   }

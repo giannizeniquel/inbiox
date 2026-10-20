@@ -60,18 +60,18 @@ Contenedor: `features/bandeja/pages/ticket-list/ticket-list.component.ts`. Store
 
 | Acción | Código | Endpoint | ¿Servidor o navegador? |
 |---|---|---|---|
-| Cargar lista | `cargarTickets()` (`:101-114`) → `TicketApiService.getTickets()` → `TicketStore.cargarTickets()` | `GET /api/tickets[?teamId=N]` | Servidor, **sin `page`/`limit` → solo 20** |
+| Cargar lista | `cargarTickets()` (`:101-114`) → `TicketApiService.getTickets()` → `TicketStore.cargarTickets()` | `GET /api/tickets[?equipoId=N]` | Servidor, **sin `page`/`limit` → solo 20** |
 | Pestañas Míos / Sin asignar / Todos + contadores | `FiltrosDeTicketComponent` → `TicketStore.filter` / `filteredTickets` / `conteosDeFiltro` (`ticket.store.ts:86-107`) | — | **Navegador** (sobre los 20) |
-| Filtro por equipo | `FiltroDeEquipoComponent` → `onFiltroDeEquipoChange` | `GET /api/teams`, luego `GET /api/tickets?teamId=N` | **Servidor** |
+| Filtro por equipo | `FiltroDeEquipoComponent` → `onFiltroDeEquipoChange` | `GET /api/teams`, luego `GET /api/tickets?equipoId=N` | **Servidor** |
 | Buscar | `TicketSearchComponent` → `onSearch()` hace `console.log` (`:209-213`) | — | **No implementado** |
 | Abrir ticket | `selectTicket()` (`:176-192`) | `GET /api/tickets/{id}/mensajes?limit=20&offset=0` | — |
-| Desplegable de asignación | `TicketCardComponent` (`ticket-card.component.ts:51-59, 138-150`), visible si `puedeAsignarTicket()` y estado `new`/`active`/`waiting` | `GET /api/workspaces/{wsId}/available-agents`; se refresca 10 s después de un `ticket.asignado` | — |
-| Asignar | `onAsignar()` (`:244-276`): optimista → API → rollback + error 5 s | `POST /api/tickets/{id}/assign` | — |
+| Desplegable de asignación | `TicketCardComponent` (`ticket-card.component.ts:51-59, 138-150`), visible si `puedeAsignarTicket()` y estado `nuevo`/`activo`/`en_espera` | `GET /api/workspaces/{wsId}/available-agents`; se refresca 10 s después de un `ticket.asignado` | — |
+| Asignar | `onAsignar()` (`:244-276`): optimista → API → rollback + error 5 s | `POST /api/tickets/{id}/asignar` | — |
 
 - Un usuario sin agente (admin sin vincular) ve la pestaña "Míos" vacía.
 - Un `mensaje.agregado` no reordena la lista ni actualiza el último mensaje.
 - El modelo `Ticket` del frontend no tiene equipo ni etiquetas; no hay UI para `PUT /api/tickets/{id}/team` ni para el filtro `tag`.
-- Filtros que el backend acepta y el frontend no usa: `page`, `limit`, `filter`, `agent_id`, `status`, `search`, `sort`, `tag`.
+- Filtros que el backend acepta y el frontend no usa: `page`, `limit`, `filtro`, `agenteId`, `estado`, `busqueda`, `orden`, `etiqueta`.
 
 ## Conversación y composer
 
@@ -80,9 +80,9 @@ Contenedor: `features/bandeja/pages/conversacion/conversacion.component.ts` (scr
 | Elemento / acción | Código | Endpoint | Nota |
 |---|---|---|---|
 | Cabecera (contacto, dueño, estado, `#id`) | `ConversacionHeaderComponent` | — | El link a la ficha usa `ticket.contact.id`, que en el listado es el id de la conversación ([R14](00-estado-y-pendientes.md#r14-bugs-del-frontend-con-impacto-directo)). |
-| Botón "RESOLVER" | `onResolverTicket()` (`:186-213`); deshabilitado en `resolved`/`closed` | `POST /api/tickets/{id}/resolve` | 403 → "Solo puede hacerlo un administrador, un supervisor o el agente asignado". |
+| Botón "RESOLVER" | `onResolverTicket()` (`:186-213`); deshabilitado en `resuelto`/`cerrado` | `POST /api/tickets/{id}/resolver` | 403 → "Solo puede hacerlo un administrador, un supervisor o el agente asignado". |
 | Botón "Participación" | `ParticipacionDeTicketComponent` → `GetTicketParticipationUseCase` | `GET /api/reports/tickets/{id}/participation` | Sprint 18. |
-| Marcar como leído al abrir | `marcarLeidoEffect` → `TicketApiService.marcarLeido` (`:137-150`; `data-access/ticket/ticket-api.service.ts:44-47`) | `PUT /api/tickets/{id}/mark-read` | El badge se limpia al recibir `ticket.leido`. |
+| Marcar como leído al abrir | `marcarLeidoEffect` → `TicketApiService.marcarLeido` (`:137-150`; `data-access/ticket/ticket-api.service.ts:44-47`) | `PUT /api/tickets/{id}/marcar-leido` | El badge se limpia al recibir `ticket.leido`. |
 | Historial hacia arriba | `cargarMensajesAnteriores()` (`conversacion-scroll.controller.ts:180-213`) | `GET /api/tickets/{id}/mensajes?limit=20&offset=N` | La primera página "anterior" repite offset 0 (se deduplica). |
 | Burbujas y adjuntos | `MensajeBubbleComponent` + renderers | `GET /api/mensajes/{id}/adjunto` | Heurística de "sistema" por corchetes. |
 | Enviar texto (Enter) | `ComposerComponent.send()` → `onEnviarMensaje()` → `EnvioDeMensajesService.send()` → `EnviarMensajeUseCase` → `ProveedorWhatsAppCloud.enviarMensaje()` | `POST /api/proveedor/enviar` (ruta relativa, sin `environment.apiUrl`) | Reintenta el POST 2 veces ante error. |
@@ -166,7 +166,7 @@ El store (`data-access/agente/configuracion.store.ts`) hace HTTP sin esperar el 
 |---|---|---|
 | `ticket.creado` | Agrega un ticket mínimo al inicio, **sin filtrar por workspace ni equipo**. | — |
 | `ticket.estado_cambiado` | Actualiza estado si el ticket está cargado. | — |
-| `ticket.asignado` | Actualiza dueño, **fuerza `new → active`**, pone no leídos en 0. | — |
+| `ticket.asignado` | Actualiza dueño, **fuerza `nuevo → activo`**, pone no leídos en 0. | — |
 | `mensaje.agregado` | +1 no leído si es entrante y no es el ticket abierto; marca workspace pendiente si es de otro número. | Agrega el mensaje solo si es el ticket abierto (con guarda de duplicados). |
 | `mensaje.actualizado` | — | Actualiza estado de entrega (`null` → `leido`). |
 | `ticket.leido` | No leídos = 0. | — |
@@ -182,7 +182,7 @@ Limitaciones: no hay detección de huecos ni resync (ese código nunca se ejecut
 | Mensaje "sistema" si es entrante y el texto está entre `[` y `]` | `features/bandeja/ui/mensaje-bubble/mensaje-bubble.component.ts:44` | **Inventada**; ignora `sender_type`. Un cliente que escribe `[hola]` se ve como sistema; las auto-respuestas se ven como del agente. |
 | Remitente: entrante = cliente, resto = agente | `data-access/conversacion/mensaje-mapper.util.ts:33` | Ignora `sender_type` y `sender_agent_id`. |
 | Filtros Míos / Sin asignar / Todos | `ticket.store.ts:86-107` | Duplica filtros que el backend tiene (`filter`, `agent_id`). |
-| `new → active` al asignar | `ticket-realtime.reducer.ts:79-83` | Duplica R-T4. |
+| `nuevo → activo` al asignar | `ticket-realtime.reducer.ts:79-83` | Duplica R-T4. |
 | FSM de tickets | `status-actions.component.ts:21-27` | Componente sin uso. |
 | Ventana de 24 h | `composer.component.ts:7, 70-76` | Duplica R-W1 con el reloj del navegador; el backend manda. |
 | Quién puede asignar; no asignarse a uno mismo; estados asignables; agentes inactivos no elegibles | `ticket-list.component.ts:132-137, 221-238`; `ticket-card.component.ts:51-59, 142-146` | Duplica el voter y el guard "Activo"; "no asignarse a uno mismo" solo existe aquí. |
@@ -195,7 +195,7 @@ Limitaciones: no hay detección de huecos ni resync (ese código nunca se ejecut
 
 | Pantalla | Filtro | Dónde |
 |---|---|---|
-| Bandeja | Equipo (`teamId`) | Servidor |
+| Bandeja | Equipo (`equipoId`) | Servidor |
 | Bandeja | Míos / Sin asignar / Todos | Navegador |
 | Bandeja | Búsqueda | No implementada |
 | Bandeja | Etiqueta, estado, orden, paginación | No conectados (el backend los soporta) |

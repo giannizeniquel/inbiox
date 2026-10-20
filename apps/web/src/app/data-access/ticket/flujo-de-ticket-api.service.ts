@@ -13,8 +13,8 @@ export class FlujoDeTicketApiService {
 
   transition(ticketId: string, nuevoEstado: EstadoDeTicket): Observable<Ticket> {
     return this.http
-      .post<Ticket>(`${this.baseUrl}/api/tickets/${ticketId}/transition`, {
-        status: nuevoEstado
+      .post<Ticket>(`${this.baseUrl}/api/tickets/${ticketId}/transicionar`, {
+        estado: nuevoEstado
       })
       .pipe(catchError(createHttpErrorHandler('WorkflowApi')));
   }
@@ -31,7 +31,7 @@ export class FlujoDeTicketApiService {
    */
   resolver(ticketId: string): Observable<Ticket> {
     return this.http.post<Ticket>(
-      `${this.baseUrl}/api/tickets/${ticketId}/resolve`,
+      `${this.baseUrl}/api/tickets/${ticketId}/resolver`,
       {}
     );
   }
@@ -42,7 +42,7 @@ export class FlujoDeTicketApiService {
    */
   close(ticketId: string): Observable<Ticket> {
     return this.http.post<Ticket>(
-      `${this.baseUrl}/api/tickets/${ticketId}/close`,
+      `${this.baseUrl}/api/tickets/${ticketId}/cerrar`,
       {}
     );
   }

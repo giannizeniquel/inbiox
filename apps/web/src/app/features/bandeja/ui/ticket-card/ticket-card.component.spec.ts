@@ -5,15 +5,15 @@ import { DisponibilidadDeAgenteDTO } from '../../../../data-access/disponibilida
 
 function makeTicket(overrides: Partial<Ticket> = {}): Ticket {
   return {
-    ticket_id: 't-1',
+    ticketId: 't-1',
     id: 't-1',
-    status: EstadoDeTicket.Nuevo,
-    priority: 'normal',
-    contact: { id: 1, phone: '+1234567890', name: 'John Doe' },
-    last_message: 'Hello',
-    owner: null,
-    metrics: { unread_count: 0 },
-    timestamps: { opened_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
+    estado: EstadoDeTicket.Nuevo,
+    prioridad: 'normal',
+    contacto: { id: 1, telefono: '+1234567890', nombre: 'John Doe' },
+    ultimoMensaje: 'Hello',
+    responsable: null,
+    metricas: { cantidadDeNoLeidos: 0 },
+    fechas: { abiertoAt: '2026-01-01T00:00:00Z', actualizadoAt: '2026-01-01T00:00:00Z' },
     ...overrides,
   };
 }
@@ -84,7 +84,7 @@ describe('TicketCardComponent', () => {
 
     it('is hidden when the ticket status is not assignable (resolved)', async () => {
       await createComponent({
-        ticket: makeTicket({ status: EstadoDeTicket.Resuelto }),
+        ticket: makeTicket({ estado: EstadoDeTicket.Resuelto }),
         agentesDisponibles: [armarAgente({ is_active_now: true })],
         puedeAsignar: true,
       });

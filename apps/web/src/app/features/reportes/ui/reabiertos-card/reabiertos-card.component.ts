@@ -107,11 +107,11 @@ import { ReabiertoEntry } from '../../../../data-access/reporte/reporte.models';
       font-weight: 500;
     }
 
-    .status--new { background: #dbeafe; color: #1d4ed8; }
-    .status--active { background: #dcfce7; color: #16a34a; }
-    .status--waiting { background: #fef3c7; color: #d97706; }
-    .status--resolved { background: #f3e8ff; color: #9333ea; }
-    .status--closed { background: #f3f4f6; color: #6b7280; }
+    .status--nuevo { background: #dbeafe; color: #1d4ed8; }
+    .status--activo { background: #dcfce7; color: #16a34a; }
+    .status--en_espera { background: #fef3c7; color: #d97706; }
+    .status--resuelto { background: #f3e8ff; color: #9333ea; }
+    .status--cerrado { background: #f3f4f6; color: #6b7280; }
   `],
 })
 export class ReabiertosCardComponent {

@@ -313,7 +313,7 @@ describe('ConversacionStore', () => {
 
   it('should ignore a MessageAdded echo whose id is already in messages()', () => {
     (store as unknown as { ticketStore: { activeTicket(): unknown } }).ticketStore = {
-      activeTicket: () => ({ ticket_id: 'ticket-1' }),
+      activeTicket: () => ({ ticketId: 'ticket-1' }),
     };
     store.agregarMensaje(armarMensaje({ id: '501' }));
 
@@ -326,7 +326,7 @@ describe('ConversacionStore', () => {
 
   it('should add a MessageAdded event for a message id not yet present', () => {
     (store as unknown as { ticketStore: { activeTicket(): unknown } }).ticketStore = {
-      activeTicket: () => ({ ticket_id: 'ticket-1' }),
+      activeTicket: () => ({ ticketId: 'ticket-1' }),
     };
 
     (store as unknown as { onRealtimeEvent(e: unknown): void }).onRealtimeEvent(

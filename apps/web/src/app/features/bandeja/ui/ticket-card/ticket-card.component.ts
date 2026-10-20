@@ -55,7 +55,7 @@ export class TicketCardComponent implements OnDestroy {
       EstadoDeTicket.Activo,
       EstadoDeTicket.EnEspera,
     ];
-    return this.puedeAsignar() && assignableStatuses.includes(t.status);
+    return this.puedeAsignar() && assignableStatuses.includes(t.estado);
   });
 
   /** Activo agents (is_active_now = true), rendered first in the dropdown. */
@@ -69,11 +69,11 @@ export class TicketCardComponent implements OnDestroy {
   );
 
   estadoLabel(): string {
-    return ESTADO_LABELS[this.ticket().status];
+    return ESTADO_LABELS[this.ticket().estado];
   }
 
   initials(): string {
-    const name = this.ticket().contact?.name ?? 'Unknown';
+    const name = this.ticket().contacto?.nombre ?? 'Unknown';
     return name
       .split(' ')
       .slice(0, 2)
@@ -84,10 +84,10 @@ export class TicketCardComponent implements OnDestroy {
 
   relativeTime(): string {
     const now = Date.now();
-    const timestamps = this.ticket().timestamps;
-    if (!timestamps?.updated_at) return '';
+    const timestamps = this.ticket().fechas;
+    if (!timestamps?.actualizadoAt) return '';
     
-    const enviado = new Date(timestamps.updated_at).getTime();
+    const enviado = new Date(timestamps.actualizadoAt).getTime();
     const diff = now - enviado;
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
@@ -101,20 +101,20 @@ export class TicketCardComponent implements OnDestroy {
   }
 
   nombreDeContacto(): string {
-    return this.ticket().contact?.name ?? this.ticket().contact?.phone ?? 'Unknown';
+    return this.ticket().contacto?.nombre ?? this.ticket().contacto?.telefono ?? 'Unknown';
   }
 
   ariaLabel(): string {
     const t = this.ticket();
     const nombreDeContacto = this.nombreDeContacto();
-    const estado = t.status === EstadoDeTicket.EnEspera ? 'en espera' : t.status;
-    const noLeidos = t.metrics?.unread_count ?? 0;
+    const estado = t.estado === EstadoDeTicket.EnEspera ? 'en espera' : t.estado;
+    const noLeidos = t.metricas?.cantidadDeNoLeidos ?? 0;
     return `Ticket de ${nombreDeContacto}, ${estado}, ${noLeidos} mensajes sin leer`;
   }
 
   onSelect(): void {
     if (!this.dropdownOpen()) {
-      this.select.emit(this.ticket().ticket_id);
+      this.select.emit(this.ticket().ticketId);
     }
   }
 
@@ -145,7 +145,7 @@ export class TicketCardComponent implements OnDestroy {
       return;
     }
 
-    this.asignar.emit({ ticketId: this.ticket().ticket_id, agentId: agente.id });
+    this.asignar.emit({ ticketId: this.ticket().ticketId, agentId: agente.id });
     this.closeDropdown();
   }
 

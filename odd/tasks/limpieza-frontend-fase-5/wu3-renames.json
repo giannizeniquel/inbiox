@@ -1,0 +1,17 @@
+[
+["data-access/ticket/ticket.model.ts","Ticket","ticket_id","ticketId"],
+["data-access/ticket/ticket.model.ts","Ticket","status","estado"],
+["data-access/ticket/ticket.model.ts","Ticket","priority","prioridad"],
+["data-access/ticket/ticket.model.ts","Ticket","contact.phone","telefono"],
+["data-access/ticket/ticket.model.ts","Ticket","contact.name","nombre"],
+["data-access/ticket/ticket.model.ts","Ticket","contact","contacto"],
+["data-access/ticket/ticket.model.ts","Ticket","last_message","ultimoMensaje"],
+["data-access/ticket/ticket.model.ts","Ticket","owner.name","nombre"],
+["data-access/ticket/ticket.model.ts","Ticket","owner","responsable"],
+["data-access/ticket/ticket.model.ts","Ticket","metrics.unread_count","cantidadDeNoLeidos"],
+["data-access/ticket/ticket.model.ts","Ticket","metrics","metricas"],
+["data-access/ticket/ticket.model.ts","Ticket","timestamps.opened_at","abiertoAt"],
+["data-access/ticket/ticket.model.ts","Ticket","timestamps.updated_at","actualizadoAt"],
+["data-access/ticket/ticket.model.ts","Ticket","timestamps.last_inbound_message_at","ultimoMensajeEntranteAt"],
+["data-access/ticket/ticket.model.ts","Ticket","timestamps","fechas"]
+]

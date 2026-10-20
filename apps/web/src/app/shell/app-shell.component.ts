@@ -96,8 +96,8 @@ export class AppShellComponent implements OnDestroy {
           this.ticketApi.getTicket(ticketId).subscribe({
             next: (ticket) => {
               this.ticketStore.addOrUpdateTicket(ticket);
-              this.ticketStore.setActiveTicket(ticket.ticket_id);
-              this.cargarMensajes(ticket.ticket_id);
+              this.ticketStore.setActiveTicket(ticket.ticketId);
+              this.cargarMensajes(ticket.ticketId);
             },
             error: () => {},
           });

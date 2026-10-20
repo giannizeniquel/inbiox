@@ -100,9 +100,9 @@ import { SinAsignarResponse } from '../../../../data-access/reporte/reporte.mode
     }
 
     .priority--urgent { background: #fef2f2; color: #dc2626; }
-    .priority--high { background: #fff7ed; color: #ea580c; }
-    .priority--medium { background: #eff6ff; color: #2563eb; }
-    .priority--low { background: #f0fdf4; color: #16a34a; }
+    .priority--alta { background: #fff7ed; color: #ea580c; }
+    .priority--media { background: #eff6ff; color: #2563eb; }
+    .priority--baja { background: #f0fdf4; color: #16a34a; }
   `],
 })
 export class SinAsignarCardComponent {

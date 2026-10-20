@@ -122,23 +122,23 @@
   font-weight: 600;
   flex-shrink: 0;
 
-  &.status-new {
+  &.status-nuevo {
     background: rgba(156, 163, 175, 0.15);
     color: var(--status-new);
   }
-  &.status-active {
+  &.status-activo {
     background: rgba(59, 91, 219, 0.12);
     color: var(--status-active);
   }
-  &.status-waiting {
+  &.status-en_espera {
     background: rgba(245, 158, 11, 0.12);
     color: var(--status-waiting);
   }
-  &.status-resolved {
+  &.status-resuelto {
     background: rgba(34, 197, 94, 0.12);
     color: var(--status-resolved);
   }
-  &.status-closed {
+  &.status-cerrado {
     background: rgba(75, 85, 99, 0.12);
     color: var(--status-closed);
   }

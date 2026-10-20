@@ -36,7 +36,7 @@ export class UiStore {
           // "new messages" indicator in the currently open chat.
           const p = e.payload as MensajeAgregadoPayload;
           const active = this.ticketStore.activeTicket();
-          return !!active && String(active.ticket_id) === String(p.ticketId);
+          return !!active && String(active.ticketId) === String(p.ticketId);
         }),
         takeUntilDestroyed(destroyRef),
       ).subscribe(() => this.notificarMensajesNuevos());

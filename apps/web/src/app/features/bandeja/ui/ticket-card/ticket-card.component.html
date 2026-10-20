@@ -1,7 +1,7 @@
 <div
   class="ticket-card"
   [ngClass]="{
-    'is-unread': (ticket().metrics?.unread_count ?? 0) > 0,
+    'is-unread': (ticket().metricas?.cantidadDeNoLeidos ?? 0) > 0,
     'is-active': isActive()
   }"
   tabIndex="0"
@@ -26,20 +26,20 @@
     <div class="ticket-card__row ticket-card__row--bottom">
       <div class="ticket-card__meta">
         <!-- Status chip -->
-        <span class="ticket-card__status-chip" [ngClass]="'status-' + ticket().status">
+        <span class="ticket-card__status-chip" [ngClass]="'status-' + ticket().estado">
           {{ estadoLabel() }}
         </span>
 
         <!-- Priority -->
-        @if (ticket().priority) {
-          <span class="ticket-card__priority">{{ ticket().priority }}</span>
+        @if (ticket().prioridad) {
+          <span class="ticket-card__priority">{{ ticket().prioridad }}</span>
         }
       </div>
 
       <div class="ticket-card__actions">
         <!-- Unread badge -->
-        @if ((ticket().metrics?.unread_count ?? 0) > 0) {
-          <span class="ticket-card__unread">{{ ticket().metrics?.unread_count }}</span>
+        @if ((ticket().metricas?.cantidadDeNoLeidos ?? 0) > 0) {
+          <span class="ticket-card__unread">{{ ticket().metricas?.cantidadDeNoLeidos }}</span>
         }
 
         <!-- Assign button (dropdown trigger) -->
@@ -62,9 +62,9 @@
     </div>
 
     <!-- Last message preview -->
-    @if (ticket().last_message) {
+    @if (ticket().ultimoMensaje) {
       <div class="ticket-card__preview">
-        {{ ticket().last_message }}
+        {{ ticket().ultimoMensaje }}
       </div>
     }
 
@@ -97,7 +97,7 @@
           <button
             class="ticket-card__dropdown-item"
             role="option"
-            [attr.aria-selected]="ticket().owner?.id === agent.id"
+            [attr.aria-selected]="ticket().responsable?.id === agent.id"
             (click)="seleccionarAgente(agent, $event)"
             (keydown.enter)="seleccionarAgente(agent, $event)"
           >
@@ -117,7 +117,7 @@
           <button
             class="ticket-card__dropdown-item ticket-card__dropdown-item--disabled"
             role="option"
-            [attr.aria-selected]="ticket().owner?.id === agent.id"
+            [attr.aria-selected]="ticket().responsable?.id === agent.id"
             [attr.aria-disabled]="true"
             [disabled]="true"
             (click)="seleccionarAgente(agent, $event)"

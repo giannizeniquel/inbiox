@@ -70,7 +70,7 @@ export class ConversacionStore {
         // Prevents a message from another contact's conversation from leaking
         // into the currently open chat.
         const active = this.ticketStore.activeTicket();
-        if (!active || String(active.ticket_id) !== String(p.ticketId)) {
+        if (!active || String(active.ticketId) !== String(p.ticketId)) {
           return;
         }
         // Idempotent insert guard (design.md D6): a human-agent reply now

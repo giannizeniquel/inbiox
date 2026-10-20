@@ -1,35 +1,35 @@
 export enum EstadoDeTicket {
-  Nuevo = 'new',
-  Activo = 'active',
-  EnEspera = 'waiting',
-  Resuelto = 'resolved',
-  Cerrado = 'closed'
+  Nuevo = 'nuevo',
+  Activo = 'activo',
+  EnEspera = 'en_espera',
+  Resuelto = 'resuelto',
+  Cerrado = 'cerrado'
 }
 
 export interface Ticket {
   // Backend fields
-  ticket_id: string;
-  status: EstadoDeTicket;
-  priority: string;
-  contact: {
+  ticketId: string;
+  estado: EstadoDeTicket;
+  prioridad: string;
+  contacto: {
     id: number;
-    phone: string;
-    name: string | null;
+    telefono: string;
+    nombre: string | null;
   } | null;
-  last_message: string | null;
-  owner: {
+  ultimoMensaje: string | null;
+  responsable: {
     id: number;
-    name: string;
+    nombre: string;
   } | null;
-  metrics: {
-    unread_count: number;
+  metricas: {
+    cantidadDeNoLeidos: number;
   };
-  timestamps: {
-    opened_at: string;
-    updated_at: string;
+  fechas: {
+    abiertoAt: string;
+    actualizadoAt: string;
     // WhatsApp 24h conversation-window compliance (Sprint 16 Fase 3).
     // Optional: keeps ticket.store.ts's existing object literals compiling.
-    last_inbound_message_at?: string | null;
+    ultimoMensajeEntranteAt?: string | null;
   };
   // Alias for compatibility
   id: string;

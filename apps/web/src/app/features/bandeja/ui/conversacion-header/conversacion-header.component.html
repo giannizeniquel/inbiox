@@ -21,21 +21,21 @@
       </div>
 
       <div class="conversation-header__meta">
-        @if (ticket().owner) {
+        @if (ticket().responsable) {
           <span class="conversation-header__assigned">
-            Asignado: {{ ticket().owner!.name }}
+            Asignado: {{ ticket().responsable!.nombre }}
           </span>
           <span class="conversation-header__dot">·</span>
         }
 
-        <span class="conversation-header__fsm" [ngClass]="'status-' + ticket().status">
+        <span class="conversation-header__fsm" [ngClass]="'status-' + ticket().estado">
           {{ estadoLabel() }}
         </span>
 
         <span class="conversation-header__dot">·</span>
 
         <span class="conversation-header__ticket-id">
-          #{{ ticket().ticket_id }}
+          #{{ ticket().ticketId }}
         </span>
       </div>
     </div>

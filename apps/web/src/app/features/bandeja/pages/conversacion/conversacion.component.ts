@@ -98,7 +98,7 @@ export class ConversacionComponent {
    * inbound message with no polling and no new Mercure payload.
    */
   protected readonly ultimoMensajeEntranteAt = computed<string | null>(() => {
-    const restBaseline = this.activeTicket()?.timestamps.last_inbound_message_at ?? null;
+    const restBaseline = this.activeTicket()?.fechas.ultimoMensajeEntranteAt ?? null;
 
     let ultimoDeMensajes: string | null = null;
     const mensajes = this.mensajes();
@@ -137,7 +137,7 @@ export class ConversacionComponent {
   private readonly marcarLeidoEffect = effect(() => {
     const ticket = this.activeTicket();
     if (ticket) {
-      const ticketId = Number(ticket.ticket_id);
+      const ticketId = Number(ticket.ticketId);
       if (!isNaN(ticketId)) {
         this.ticketApi.marcarLeido(ticketId)
           .subscribe({
@@ -191,7 +191,7 @@ export class ConversacionComponent {
     this.actionMessage.set(null);
 
     this.flujoDeTicketApi
-      .resolver(ticket.ticket_id)
+      .resolver(ticket.ticketId)
       .pipe(take(1))
       .subscribe({
         next: () => {
@@ -226,7 +226,7 @@ export class ConversacionComponent {
     const ticket = this.activeTicket();
     if (!ticket) return;
 
-    this.envioDeMensajes.enviar(ticket.ticket_id, event.content, event.tempId);
+    this.envioDeMensajes.enviar(ticket.ticketId, event.content, event.tempId);
     this.scroll.scrollToBottom();
   }
 
@@ -234,7 +234,7 @@ export class ConversacionComponent {
     const ticket = this.activeTicket();
     if (!ticket) return;
 
-    this.envioDeMensajes.enviarConAdjunto(ticket.ticket_id, event.content, event.file, event.tempId);
+    this.envioDeMensajes.enviarConAdjunto(ticket.ticketId, event.content, event.file, event.tempId);
     this.scroll.scrollToBottom();
   }
 

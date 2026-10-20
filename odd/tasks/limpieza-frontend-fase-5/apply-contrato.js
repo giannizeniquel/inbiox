@@ -1,73 +1,14 @@
-// Contract stage 2, WU2 (realtime + conversacion): rename wire properties, enum members and payload types
-// with the TS language service. Values, URLs, templates and string keys are edited by hand (contrato-map.md A.6, A.10, B.11).
-// Usage (from the repo root): node odd/tasks/limpieza-frontend-fase-5/apply-wu2.js apps/web [--write]
+// Contract stage 2: rename wire properties, enum members and types with the TS language service, from a per-unit
+// list (wu2-renames.json, wu3-renames.json…). Values, URLs, templates and string keys are edited by hand (contrato-map.md).
+// Usage (from the repo root): node odd/tasks/limpieza-frontend-fase-5/apply-contrato.js apps/web <unit-renames.json> [--write]
 const path = require('path'), fs = require('fs');
 const web = path.resolve(process.argv[2]);
 const write = process.argv.includes('--write');
 const ts = require(web + '/node_modules/typescript');
 const app = web + '/src/app';
 
-const RT = 'core/tiempo-real/evento-en-tiempo-real.model.ts';
-const MM = 'data-access/conversacion/mensaje.model.ts';
 // [file, container, dotted member path ('' renames the container itself), new name]
-const RENAMES = [
-  [RT, 'EventoEnTiempoReal', 'eventId', 'eventoId'],
-  [RT, 'EventoEnTiempoReal', 'timestamp', 'ocurridoAt'],
-  [RT, 'EventoEnTiempoReal', 'eventType', 'tipoDeEvento'],
-  [RT, 'MessageAddedPayload', 'messageId', 'mensajeId'],
-  [RT, 'MessageAddedPayload', 'content', 'contenido'],
-  [RT, 'MessageAddedPayload', 'direction', 'direccion'],
-  [RT, 'MessageAddedPayload', 'senderName', 'remitenteNombre'],
-  [RT, 'MessageAddedPayload', 'createdAt', 'creadoAt'],
-  [RT, 'MessageAddedPayload', 'media.filename', 'nombreDeArchivo'],
-  [RT, 'MessageAddedPayload', 'media.size', 'tamanio'],
-  [RT, 'MessageAddedPayload', 'media.kind', 'tipo'],
-  [RT, 'MessageAddedPayload', 'media.caption', 'leyenda'],
-  [RT, 'MessageAddedPayload', 'media', 'adjunto'],
-  [RT, 'TicketCreatedPayload', 'contactId', 'contactoId'],
-  [RT, 'TicketCreatedPayload', 'conversationId', 'conversacionId'],
-  [RT, 'TicketCreatedPayload', 'status', 'estado'],
-  [RT, 'TicketCreatedPayload', 'priority', 'prioridad'],
-  [RT, 'TicketCreatedPayload', 'createdAt', 'creadoAt'],
-  [RT, 'TicketStatusChangedPayload', 'previousStatus', 'estadoAnterior'],
-  [RT, 'TicketStatusChangedPayload', 'newStatus', 'estadoNuevo'],
-  [RT, 'TicketStatusChangedPayload', 'changedAt', 'cambiadoAt'],
-  [RT, 'TicketAssignedPayload', 'assigneeId', 'responsableId'],
-  [RT, 'TicketAssignedPayload', 'assigneeName', 'responsableNombre'],
-  [RT, 'TicketAssignedPayload', 'assignedAt', 'asignadoAt'],
-  [RT, 'MessageUpdatedPayload', 'messageId', 'mensajeId'],
-  [RT, 'MessageUpdatedPayload', 'status', 'estadoDeEntrega'],
-  [RT, 'MessageUpdatedPayload', 'failedReason', 'motivoDeFallo'],
-  [RT, 'MessageUpdatedPayload', 'updatedAt', 'actualizadoAt'],
-  [RT, 'TipoDeEventoEnTiempoReal', 'TicketCreated', 'TicketCreado'],
-  [RT, 'TipoDeEventoEnTiempoReal', 'TicketStatusChanged', 'EstadoDeTicketCambiado'],
-  [RT, 'TipoDeEventoEnTiempoReal', 'TicketAssigned', 'TicketAsignado'],
-  [RT, 'TipoDeEventoEnTiempoReal', 'MessageAdded', 'MensajeAgregado'],
-  [RT, 'TipoDeEventoEnTiempoReal', 'MessageUpdated', 'MensajeActualizado'],
-  [RT, 'TipoDeEventoEnTiempoReal', 'TicketRead', 'TicketLeido'],
-  [RT, 'MessageAddedPayload', '', 'MensajeAgregadoPayload'],
-  [RT, 'TicketCreatedPayload', '', 'TicketCreadoPayload'],
-  [RT, 'TicketStatusChangedPayload', '', 'EstadoDeTicketCambiadoPayload'],
-  [RT, 'TicketAssignedPayload', '', 'TicketAsignadoPayload'],
-  [RT, 'MessageUpdatedPayload', '', 'MensajeActualizadoPayload'],
-  [MM, 'MensajeDto', 'message_id', 'mensajeId'],
-  [MM, 'MensajeDto', 'direction', 'direccion'],
-  [MM, 'MensajeDto', 'content', 'contenido'],
-  [MM, 'MensajeDto', 'created_at', 'creadoAt'],
-  [MM, 'MensajeDto', 'deliveryStatus', 'estadoDeEntrega'],
-  [MM, 'MensajeDto', 'media.filename', 'nombreDeArchivo'],
-  [MM, 'MensajeDto', 'media.size', 'tamanio'],
-  [MM, 'MensajeDto', 'media.kind', 'tipo'],
-  [MM, 'MensajeDto', 'media.caption', 'leyenda'],
-  [MM, 'MensajeDto', 'media', 'adjunto'],
-  ['data-access/conversacion/adjunto.model.ts', 'Adjunto', 'filename', 'nombreDeArchivo'],
-  ['data-access/conversacion/adjunto.model.ts', 'Adjunto', 'size', 'tamanio'],
-  ['data-access/conversacion/adjunto.model.ts', 'Adjunto', 'kind', 'tipo'],
-  ['data-access/conversacion/adjunto.model.ts', 'Adjunto', 'caption', 'leyenda'],
-  ['data-access/conversacion/mensaje-api.service.ts', 'GetMensajesResponse', 'meta.has_more', 'hayMas'],
-  ['data-access/conversacion/mensaje-api.service.ts', 'GetMensajesResponse', 'meta.next_cursor', 'siguienteCursor'],
-  ['data-access/conversacion/url-de-adjunto.service.ts', 'UrlDeAdjuntoResponse', 'expiresAt', 'vencimientoAt'],
-];
+const RENAMES = JSON.parse(fs.readFileSync(path.resolve(process.argv[3]), 'utf8'));
 
 const walk = (d, o = []) => { for (const f of fs.readdirSync(d)) { const p = path.join(d, f); fs.statSync(p).isDirectory() ? walk(p, o) : o.push(p); } return o; };
 const tsFiles = walk(web + '/src').filter(f => f.endsWith('.ts'));

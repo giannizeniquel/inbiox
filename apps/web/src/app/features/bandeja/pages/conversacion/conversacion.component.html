@@ -23,7 +23,7 @@
 
     <!-- "Participación" panel — collapsible, lazy-fetches only while open -->
     @if (participacionAbierta()) {
-      <app-participacion-de-ticket [ticketId]="+activeTicket()!.ticket_id" />
+      <app-participacion-de-ticket [ticketId]="+activeTicket()!.ticketId" />
     }
 
     <!-- Result of a workflow action the agent triggered (e.g. resolve) -->

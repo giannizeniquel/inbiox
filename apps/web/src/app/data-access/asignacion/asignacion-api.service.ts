@@ -10,7 +10,7 @@ import { createHttpErrorHandler } from '../../core/http/http-error.util';
  * AsignacionApiService — HTTP client for ticket assignment endpoints.
  *
  * Endpoints:
- * - POST /api/tickets/{id}/assign — assign or reassign a ticket to an agent
+ * - POST /api/tickets/{id}/asignar — assign or reassign a ticket to an agent
  */
 @Injectable({ providedIn: 'root' })
 export class AsignacionApiService {
@@ -20,17 +20,17 @@ export class AsignacionApiService {
   /**
    * Assign or reassign a ticket to an agent.
    *
-   * POST /api/tickets/{id}/assign
+   * POST /api/tickets/{id}/asignar
    */
   asignarTicket(
     ticketId: string,
     agenteId: number,
     asignadoPor: string,
-    notes?: string
+    notas?: string
   ): Observable<Ticket> {
     return this.http.post<Ticket>(
-      `${this.baseUrl}/api/tickets/${ticketId}/assign`,
-      { agentId: agenteId, assignedBy: asignadoPor, notes }
+      `${this.baseUrl}/api/tickets/${ticketId}/asignar`,
+      { agenteId, asignadoPor, notas }
     ).pipe(
       catchError(createHttpErrorHandler('TicketApi'))
     );

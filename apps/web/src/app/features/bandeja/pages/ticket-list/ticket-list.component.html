@@ -33,14 +33,14 @@
       style="padding-bottom: 20px;"
       #vps
     >
-      @for (ticket of coordinator().visibleItems(); track ticket.ticket_id) {
+      @for (ticket of coordinator().visibleItems(); track ticket.ticketId) {
         <app-ticket-card
           [ticket]="ticket"
-          [isActive]="selectedTicketId() === ticket.ticket_id"
+          [isActive]="selectedTicketId() === ticket.ticketId"
           [agentesDisponibles]="agentesDisponibles()"
           [puedeAsignar]="puedeAsignarTicket(ticket)"
-          [errorDeAsignacion]="ticketStore.erroresDeAsignacion().get(+ticket.ticket_id)?.message ?? null"
-          [class.focused]="coordinator().isFocused(ticket.ticket_id)"
+          [errorDeAsignacion]="ticketStore.erroresDeAsignacion().get(+ticket.ticketId)?.message ?? null"
+          [class.focused]="coordinator().isFocused(ticket.ticketId)"
           (select)="selectTicket(ticket)"
           (asignar)="onAsignar($event)"
           (mouseenter)="coordinator().onCardFocus($index)"

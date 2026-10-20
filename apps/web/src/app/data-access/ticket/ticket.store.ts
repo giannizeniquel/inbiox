@@ -9,9 +9,9 @@ import { AuthStore } from '../../core/auth/auth.store';
 import { EspacioDeTrabajoStore } from '../administracion/espacio-de-trabajo.store';
 
 /** Owner information for assignment */
-interface TicketOwner {
+interface ResponsableDeTicket {
   id: number;
-  name: string;
+  nombre: string;
 }
 
 /** Assignment error with auto-dismiss timestamp */
@@ -89,9 +89,9 @@ export class TicketStore {
 
     switch (f) {
       case 'mine':
-        return all.filter(t => t.owner?.id === this.agenteActualId());
+        return all.filter(t => t.responsable?.id === this.agenteActualId());
       case 'waiting':
-        return all.filter(t => t.owner === null); // unassigned tickets
+        return all.filter(t => t.responsable === null); // unassigned tickets
       case 'internal':
         return all; // all tickets in workspace
       default:
@@ -101,14 +101,14 @@ export class TicketStore {
 
   /** Count for each filter tab */
   readonly conteosDeFiltro = computed(() => ({
-    mine: this.tickets().filter(t => t.owner?.id === this.agenteActualId()).length,
-    waiting: this.tickets().filter(t => t.owner === null).length,
+    mine: this.tickets().filter(t => t.responsable?.id === this.agenteActualId()).length,
+    waiting: this.tickets().filter(t => t.responsable === null).length,
     internal: this.tickets().length,
   }));
 
   /** Total unread count across all tickets */
   readonly totalNoLeidos = computed(() =>
-    this.tickets().reduce((sum, t) => sum + (t.metrics?.unread_count ?? 0), 0)
+    this.tickets().reduce((sum, t) => sum + (t.metricas?.cantidadDeNoLeidos ?? 0), 0)
   );
 
   /** Set loading state */
@@ -135,7 +135,7 @@ export class TicketStore {
   /** Add or update a ticket in the list */
   addOrUpdateTicket(ticket: Ticket): void {
     const current = this.tickets();
-    const index = current.findIndex(t => String(t.ticket_id) === String(ticket.ticket_id));
+    const index = current.findIndex(t => String(t.ticketId) === String(ticket.ticketId));
 
     if (index >= 0) {
       const updated = [...current];
@@ -147,7 +147,7 @@ export class TicketStore {
 
     // Sync activeTicket if this is the currently active ticket
     const active = this.activeTicket();
-    if (active && String(active.ticket_id) === String(ticket.ticket_id)) {
+    if (active && String(active.ticketId) === String(ticket.ticketId)) {
       this.activeTicket.set(ticket);
     }
   }
@@ -158,15 +158,15 @@ export class TicketStore {
       this.activeTicket.set(null);
       return;
     }
-    const ticket = this.tickets().find(t => String(t.ticket_id) === String(ticketId)) ?? null;
+    const ticket = this.tickets().find(t => String(t.ticketId) === String(ticketId)) ?? null;
     this.activeTicket.set(ticket);
   }
 
   /** Update unread count for a specific ticket */
   updateConteoDeNoLeidos(ticketId: string, count: number): void {
     this.tickets.update(tickets =>
-      tickets.map(t => String(t.ticket_id) === String(ticketId)
-        ? { ...t, metrics: { ...t.metrics, unread_count: count } }
+      tickets.map(t => String(t.ticketId) === String(ticketId)
+        ? { ...t, metricas: { ...t.metricas, cantidadDeNoLeidos: count } }
         : t
       )
     );
@@ -175,8 +175,8 @@ export class TicketStore {
   /** Mark a ticket as read */
   marcarComoLeido(ticketId: string): void {
     this.tickets.update(tickets =>
-      tickets.map(t => String(t.ticket_id) === String(ticketId)
-        ? { ...t, metrics: { ...t.metrics, unread_count: 0 } }
+      tickets.map(t => String(t.ticketId) === String(ticketId)
+        ? { ...t, metricas: { ...t.metricas, cantidadDeNoLeidos: 0 } }
         : t
       )
     );
@@ -200,21 +200,21 @@ export class TicketStore {
    * @param nombreDeAgente The agent name for display
    * @returns The previous owner (for rollback)
    */
-  asignarOptimista(ticketId: string, agenteId: number, nombreDeAgente: string): TicketOwner | null {
+  asignarOptimista(ticketId: string, agenteId: number, nombreDeAgente: string): ResponsableDeTicket | null {
     // Find and update the ticket
     const current = this.tickets();
-    const index = current.findIndex(t => String(t.ticket_id) === String(ticketId));
+    const index = current.findIndex(t => String(t.ticketId) === String(ticketId));
     if (index < 0) {
       return null;
     }
 
     const ticket = current[index];
-    const responsableAnterior = ticket.owner;
+    const responsableAnterior = ticket.responsable;
 
     // Update ticket owner optimistically
     this.addOrUpdateTicket({
       ...ticket,
-      owner: { id: agenteId, name: nombreDeAgente },
+      responsable: { id: agenteId, nombre: nombreDeAgente },
     });
 
     return responsableAnterior;
@@ -226,14 +226,14 @@ export class TicketStore {
    * @param ticketId The ticket ID to rollback
    * @param responsableAnterior The previous owner to restore
    */
-  revertirAsignacion(ticketId: string, responsableAnterior: TicketOwner | null): void {
+  revertirAsignacion(ticketId: string, responsableAnterior: ResponsableDeTicket | null): void {
     // Restore previous owner
     const current = this.tickets();
-    const index = current.findIndex(t => String(t.ticket_id) === String(ticketId));
+    const index = current.findIndex(t => String(t.ticketId) === String(ticketId));
     if (index >= 0) {
       this.addOrUpdateTicket({
         ...current[index],
-        owner: responsableAnterior,
+        responsable: responsableAnterior,
       });
     }
   }

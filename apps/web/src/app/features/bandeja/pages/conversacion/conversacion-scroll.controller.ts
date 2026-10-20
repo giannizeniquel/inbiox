@@ -185,9 +185,9 @@ export class ConversacionScrollController {
     this.paginacionArmada.set(false);
     const anchor = this.captureAnchor(vp);
 
-    this.mensajeApi.getMensajes(ticket.ticket_id, 20, this.oldestLoadedOffset()).pipe(take(1)).subscribe({
+    this.mensajeApi.getMensajes(ticket.ticketId, 20, this.oldestLoadedOffset()).pipe(take(1)).subscribe({
       next: (resp: GetMensajesResponse) => {
-        const added = mapearMensajesDeApiACanonicos(resp, ticket.ticket_id);
+        const added = mapearMensajesDeApiACanonicos(resp, ticket.ticketId);
         this.conversacionStore.agregarMensajesAlInicio(added);
         this.conversacionStore.setHasMore(resp.meta.hayMas);
         this.oldestLoadedOffset.set(this.oldestLoadedOffset() + resp.data.length);

@@ -62,7 +62,7 @@ export class TicketListComponent implements OnInit {
   protected readonly coordinator = viewChild.required(VirtualListCoordinatorDirective<Ticket>);
 
   /** Resolver that maps a ticket to its unique id string */
-  protected readonly idOfTicket = (ticket: Ticket): string => ticket.ticket_id;
+  protected readonly idOfTicket = (ticket: Ticket): string => ticket.ticketId;
 
   /** Available agents for the current workspace */
   readonly agentesDisponibles = signal<DisponibilidadDeAgenteDTO[]>([]);
@@ -73,7 +73,7 @@ export class TicketListComponent implements OnInit {
   // Signals from store
   readonly tickets = computed(() => this.ticketStore.filteredTickets());
   readonly loading = this.ticketStore.loading;
-  readonly selectedTicketId = computed(() => this.ticketStore.activeTicket()?.ticket_id ?? null);
+  readonly selectedTicketId = computed(() => this.ticketStore.activeTicket()?.ticketId ?? null);
 
   /** Debounce timer for agent refresh */
   private refreshDebounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -176,13 +176,13 @@ export class TicketListComponent implements OnInit {
   }
 
   selectTicket(ticket: Ticket): void {
-    this.ticketStore.setActiveTicket(ticket.ticket_id);
+    this.ticketStore.setActiveTicket(ticket.ticketId);
     this.conversacionStore.reset();
     this.conversacionStore.setLoading(true);
 
-    this.mensajeApi.getMensajes(ticket.ticket_id, 20, 0).pipe(take(1)).subscribe({
+    this.mensajeApi.getMensajes(ticket.ticketId, 20, 0).pipe(take(1)).subscribe({
       next: (resp: GetMensajesResponse) => {
-        this.conversacionStore.cargarMensajes(mapearMensajesDeApiACanonicos(resp, ticket.ticket_id));
+        this.conversacionStore.cargarMensajes(mapearMensajesDeApiACanonicos(resp, ticket.ticketId));
         this.conversacionStore.setHasMore(resp.meta.hayMas);
         this.conversacionStore.setLoading(false);
       },
@@ -230,7 +230,7 @@ export class TicketListComponent implements OnInit {
 
     // Agent: must own the ticket
     const agenteId = usuario.agent_id;
-    if (agenteId && ticket.owner?.id === agenteId) {
+    if (agenteId && ticket.responsable?.id === agenteId) {
       return true;
     }
 

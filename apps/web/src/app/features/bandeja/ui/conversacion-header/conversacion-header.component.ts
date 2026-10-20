@@ -37,16 +37,16 @@ export class ConversacionHeaderComponent {
    * the backend FSM would reject the transition anyway, so don't offer it.
    */
   protected readonly puedeResolver = computed(() => {
-    const estado = this.ticket().status;
+    const estado = this.ticket().estado;
     return estado !== EstadoDeTicket.Resuelto && estado !== EstadoDeTicket.Cerrado;
   });
 
   estadoLabel(): string {
-    return ESTADO_LABELS[this.ticket().status];
+    return ESTADO_LABELS[this.ticket().estado];
   }
 
   initials(): string {
-    const name = this.ticket().contact?.name ?? 'Unknown';
+    const name = this.ticket().contacto?.nombre ?? 'Unknown';
     return name
       .split(' ')
       .slice(0, 2)
@@ -56,11 +56,11 @@ export class ConversacionHeaderComponent {
   }
 
   nombreDeContacto(): string {
-    return this.ticket().contact?.name ?? this.ticket().contact?.phone ?? 'Unknown';
+    return this.ticket().contacto?.nombre ?? this.ticket().contacto?.telefono ?? 'Unknown';
   }
 
   contactoId(): number | null {
-    return this.ticket().contact?.id ?? null;
+    return this.ticket().contacto?.id ?? null;
   }
 
   // Placeholder: real connection status comes from channel service
