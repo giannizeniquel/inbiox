@@ -18,11 +18,11 @@ class MetadatosDePaginacionDTO
             'page' => $this->page,
             'limit' => $this->limit,
             'total' => $this->total,
-            'has_next' => $this->hasNext,
+            'haySiguiente' => $this->hasNext,
         ];
 
         if ($this->nextCursor !== null) {
-            $data['next_cursor'] = $this->nextCursor;
+            $data['siguienteCursor'] = $this->nextCursor;
         }
 
         return $data;

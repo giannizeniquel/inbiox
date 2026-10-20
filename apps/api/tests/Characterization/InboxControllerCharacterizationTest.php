@@ -53,6 +53,7 @@ final class InboxControllerCharacterizationTest extends CharacterizationTestCase
         self::assertNull($body['data'][0]['responsable']);
         self::assertSame(['cantidadDeNoLeidos' => 0], $body['data'][0]['metricas']);
         self::assertSame(['abiertoAt', 'actualizadoAt', 'ultimoMensajeEntranteAt'], \array_keys($body['data'][0]['fechas']));
+        self::assertSame(['page' => 1, 'limit' => 20, 'total' => 1, 'haySiguiente' => false], $body['meta']);
 
         $mios = $this->json($this->request('GET', '/api/tickets?filtro=mios&agenteId=' . $owner->getId(), $token));
         self::assertSame([$assigned->getId()], \array_column($mios['data'], 'ticketId'));

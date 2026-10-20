@@ -155,6 +155,9 @@ class AuthorizationTest extends WebTestCase
 
         $this->client->request('GET', '/api/contacts', [], [], $this->authHeaders($token));
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
+
+        $data = \json_decode($this->client->getResponse()->getContent(), true);
+        self::assertSame(['page', 'limit', 'total', 'haySiguiente'], \array_keys($data['meta']));
     }
 
     public function testAgentCanAccessMercureToken(): void
