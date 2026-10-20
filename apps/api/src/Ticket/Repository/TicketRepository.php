@@ -103,7 +103,7 @@ class TicketRepository extends ServiceEntityRepository
     /**
      * Busca un ticket `closed` de este contacto apto para la reapertura disparada
      * por el sistema: la fila MÁS RECIENTE de `ticket_events` del ticket debe ser del tipo
-     * `window_expired_closed`. Un ticket sin eventos, con otro tipo de
+     * `ventana_vencida_cerrado`. Un ticket sin eventos, con otro tipo de
      * último evento o cerrado por otro motivo no produce coincidencia —
      * sin cambios, así que `ProcesarMensajeEntranteUseCase` recurre a crear un
      * ticket nuevo, exactamente como lo hace hoy (design.md).

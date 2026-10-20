@@ -25,7 +25,7 @@ class Contacto
     private Collection $conversaciones;
 
     #[ORM\Column(name: 'status', type: 'string', length: 20, nullable: true)]
-    private ?string $estado = 'active';
+    private ?string $estado = 'activo';
 
     #[ORM\Column(name: 'channel', type: 'string', length: 20, nullable: true)]
     private ?string $canal = 'whatsapp';

@@ -19,13 +19,13 @@ class DetalleDeContactoDTO
     {
         return [
             'id' => $this->id,
-            'phone' => $this->telefono,
-            'name' => $this->nombre,
-            'status' => $this->estado,
-            'channel' => $this->canal,
-            'owner_id' => $this->responsableId,
+            'telefono' => $this->telefono,
+            'nombre' => $this->nombre,
+            'estado' => $this->estado,
+            'canal' => $this->canal,
+            'responsableId' => $this->responsableId,
             'email' => $this->email,
-            'timestamps' => $this->marcasDeTiempo,
+            'fechas' => $this->marcasDeTiempo,
         ];
     }
 }

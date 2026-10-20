@@ -3,7 +3,9 @@
 namespace App\Contacto\UseCase;
 
 use App\Contacto\Query\DetalleDeContactoDTO;
+use App\Contacto\CanalDeContacto;
 use App\Contacto\Contacto;
+use App\Contacto\EstadoDeContacto;
 use App\Contacto\Repository\ContactoRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -22,12 +24,12 @@ class UpdateContactoUseCase
             throw new \InvalidArgumentException('Contact not found');
         }
 
-        if (isset($data['name'])) {
-            $contacto->setNombre($data['name']);
+        if (isset($data['nombre'])) {
+            $contacto->setNombre($data['nombre']);
         }
 
-        if (isset($data['phone'])) {
-            $telefono = '+' . preg_replace('/[^0-9]/', '', $data['phone']);
+        if (isset($data['telefono'])) {
+            $telefono = '+' . preg_replace('/[^0-9]/', '', $data['telefono']);
             if (strlen($telefono) < 10) {
                 throw new \InvalidArgumentException('Invalid phone number');
             }
@@ -40,25 +42,25 @@ class UpdateContactoUseCase
             $contacto->setTelefono($telefono);
         }
 
-        if (isset($data['status'])) {
-            if (!in_array($data['status'], ['active', 'inactive'])) {
-                throw new \InvalidArgumentException('Invalid status. Must be "active" or "inactive"');
+        if (isset($data['estado'])) {
+            if (!is_string($data['estado']) || EstadoDeContacto::tryFrom($data['estado']) === null) {
+                throw new \InvalidArgumentException('Invalid status. Must be "activo" or "inactivo"');
             }
-            $contacto->setEstado($data['status']);
+            $contacto->setEstado($data['estado']);
         }
 
-        if (isset($data['channel'])) {
-            if (!in_array($data['channel'], ['whatsapp', 'other'])) {
-                throw new \InvalidArgumentException('Invalid channel. Must be "whatsapp" or "other"');
+        if (isset($data['canal'])) {
+            if (!is_string($data['canal']) || CanalDeContacto::tryFrom($data['canal']) === null) {
+                throw new \InvalidArgumentException('Invalid channel. Must be "whatsapp" or "otro"');
             }
-            $contacto->setCanal($data['channel']);
+            $contacto->setCanal($data['canal']);
         }
 
-        if (array_key_exists('owner_id', $data)) {
-            if ($data['owner_id'] === null) {
+        if (array_key_exists('responsableId', $data)) {
+            if ($data['responsableId'] === null) {
                 $contacto->setResponsableId(null);
-            } elseif (is_numeric($data['owner_id'])) {
-                $contacto->setResponsableId((int) $data['owner_id']);
+            } elseif (is_numeric($data['responsableId'])) {
+                $contacto->setResponsableId((int) $data['responsableId']);
             }
         }
 
@@ -78,8 +80,8 @@ class UpdateContactoUseCase
             responsableId: $contacto->getResponsableId(),
             email: $contacto->getEmail(),
             marcasDeTiempo: [
-                'created_at' => $contacto->getCreadoAt()->format('Y-m-d H:i:s'),
-                'updated_at' => $contacto->getActualizadoAt()->format('Y-m-d H:i:s'),
+                'creadoAt' => $contacto->getCreadoAt()->format('Y-m-d H:i:s'),
+                'actualizadoAt' => $contacto->getActualizadoAt()->format('Y-m-d H:i:s'),
             ],
         );
     }

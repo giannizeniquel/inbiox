@@ -41,13 +41,13 @@ class ListContactosQuery
                 responsableId: $row['owner_id'] ? (int) $row['owner_id'] : null,
                 email: $row['email'],
                 marcasDeTiempo: [
-                    'created_at' => $row['created_at'],
-                    'updated_at' => $row['updated_at'],
+                    'creadoAt' => $row['created_at'],
+                    'actualizadoAt' => $row['updated_at'],
                 ],
             );
         }, $results);
 
-        // Resuelve activeTicketId en una segunda pasada para evitar problemas con el orden de los parámetros SQL
+        // Resuelve ticketActivoId en una segunda pasada para evitar problemas con el orden de los parámetros SQL
         if (!empty($items)) {
             $contactoIds = array_map(fn($dto) => $dto->id, $items);
             $this->agregarTicketsActivos($items, $contactoIds, $phoneNumberId);

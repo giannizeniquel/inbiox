@@ -255,7 +255,7 @@ final class ReportingVerifierProbeTest extends CharacterizationTestCase
         }
         foreach ([0, 2] as $i) {
             $this->connection()->executeStatement(
-                "INSERT INTO ticket_events (ticket_id, type, source, created_at) VALUES (?, 'auto_reopened', 'system', '2025-03-02 11:00:00')",
+                "INSERT INTO ticket_events (ticket_id, type, source, created_at) VALUES (?, 'reapertura_automatica', 'system', '2025-03-02 11:00:00')",
                 [$ids[$i]],
             );
             $conversationId = (int) $this->connection()->fetchOne('SELECT conversation_id FROM tickets WHERE id = ?', [$ids[$i]]);
@@ -328,7 +328,7 @@ final class ReportingVerifierProbeTest extends CharacterizationTestCase
         for ($i = 0; $i < 105; ++$i) {
             $at = (new \DateTimeImmutable('2025-03-01 00:00:00'))->modify("+{$i} minutes")->format('Y-m-d H:i:s');
             $this->connection()->executeStatement(
-                "INSERT INTO ticket_events (ticket_id, type, source, created_at) VALUES (?, 'auto_reopened', 'system', ?)",
+                "INSERT INTO ticket_events (ticket_id, type, source, created_at) VALUES (?, 'reapertura_automatica', 'system', ?)",
                 [$ticket->getId(), $at],
             );
             $expected[] = ['ticket_id' => 'r', 'contact_name' => null, 'resolved_at' => '2025-02-01 12:00:00', 'reopened_at' => $at, 'current_status' => 'resuelto'];

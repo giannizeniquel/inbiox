@@ -12,7 +12,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Pins the JSON keys and key order of the contact DTOs. The keys are part of
- * the API contract and stay in English while the property names are Spanish.
+ * the API contract (docs/contrato-api.md, annex A.7).
  */
 final class ContactoDTOJsonKeysCharacterizationTest extends TestCase
 {
@@ -22,22 +22,22 @@ final class ContactoDTOJsonKeysCharacterizationTest extends TestCase
             id: 3,
             telefono: '+5491100000000',
             nombre: 'Ana',
-            estado: 'active',
+            estado: 'activo',
             canal: 'whatsapp',
             responsableId: 5,
             email: 'ana@example.com',
-            marcasDeTiempo: ['created_at' => '2026-10-01 10:00:00', 'updated_at' => '2026-10-02 10:00:00'],
+            marcasDeTiempo: ['creadoAt' => '2026-10-01 10:00:00', 'actualizadoAt' => '2026-10-02 10:00:00'],
         );
 
         self::assertSame([
             'id' => 3,
-            'phone' => '+5491100000000',
-            'name' => 'Ana',
-            'status' => 'active',
-            'channel' => 'whatsapp',
-            'owner_id' => 5,
+            'telefono' => '+5491100000000',
+            'nombre' => 'Ana',
+            'estado' => 'activo',
+            'canal' => 'whatsapp',
+            'responsableId' => 5,
             'email' => 'ana@example.com',
-            'timestamps' => ['created_at' => '2026-10-01 10:00:00', 'updated_at' => '2026-10-02 10:00:00'],
+            'fechas' => ['creadoAt' => '2026-10-01 10:00:00', 'actualizadoAt' => '2026-10-02 10:00:00'],
         ], $dto->toArray());
     }
 
@@ -51,51 +51,51 @@ final class ContactoDTOJsonKeysCharacterizationTest extends TestCase
             canal: null,
             responsableId: null,
             email: null,
-            marcasDeTiempo: ['created_at' => '2026-10-01 10:00:00', 'updated_at' => '2026-10-02 10:00:00'],
+            marcasDeTiempo: ['creadoAt' => '2026-10-01 10:00:00', 'actualizadoAt' => '2026-10-02 10:00:00'],
         );
         $dto->ticketActivoId = 9;
 
         self::assertSame([
             'id' => 3,
-            'phone' => '+5491100000000',
-            'name' => null,
-            'status' => null,
-            'channel' => null,
-            'owner_id' => null,
+            'telefono' => '+5491100000000',
+            'nombre' => null,
+            'estado' => null,
+            'canal' => null,
+            'responsableId' => null,
             'email' => null,
-            'timestamps' => ['created_at' => '2026-10-01 10:00:00', 'updated_at' => '2026-10-02 10:00:00'],
-            'activeTicketId' => 9,
+            'fechas' => ['creadoAt' => '2026-10-01 10:00:00', 'actualizadoAt' => '2026-10-02 10:00:00'],
+            'ticketActivoId' => 9,
         ], $dto->toArray());
     }
 
     public function testTimelineEventKeepsItsJsonKeys(): void
     {
         $dto = new EventoDeLineaDeTiempoDTO(
-            tipo: 'ticket.assigned',
+            tipo: 'ticket.asignado',
             ocurridoAt: '2026-10-01T10:00:00+00:00',
             contenido: null,
             ticketId: 7,
-            estadoDeTicket: 'active',
+            estadoDeTicket: 'activo',
             asignadoA: 'Agent',
             agenteId: 5,
             direccion: null,
         );
 
         self::assertSame([
-            'type' => 'ticket.assigned',
-            'occurredAt' => '2026-10-01T10:00:00+00:00',
-            'content' => null,
+            'tipo' => 'ticket.asignado',
+            'ocurridoAt' => '2026-10-01T10:00:00+00:00',
+            'contenido' => null,
             'ticketId' => 7,
-            'ticketStatus' => 'active',
-            'assignedTo' => 'Agent',
-            'agentId' => 5,
-            'direction' => null,
+            'estadoDeTicket' => 'activo',
+            'asignadoA' => 'Agent',
+            'agenteId' => 5,
+            'direccion' => null,
         ], $dto->toArray());
     }
 
     public function testImportResultKeepsItsJsonKeys(): void
     {
-        $error = ['row' => 2, 'phone' => '123', 'reason' => 'invalid_phone', 'message' => 'Invalid phone number'];
+        $error = ['fila' => 2, 'telefono' => '123', 'motivo' => 'invalid_phone', 'mensaje' => 'Invalid phone number'];
         $dto = new ResultadoDeImportacionDeContactosDTO(
             totalDeFilas: 3,
             importados: 2,
@@ -105,11 +105,11 @@ final class ContactoDTOJsonKeysCharacterizationTest extends TestCase
         );
 
         self::assertSame([
-            'totalRows' => 3,
-            'imported' => 2,
-            'failed' => 1,
-            'errors' => [$error],
-            'errorsTruncated' => false,
+            'totalDeFilas' => 3,
+            'importados' => 2,
+            'fallidos' => 1,
+            'errores' => [$error],
+            'erroresTruncados' => false,
         ], $dto->toArray());
     }
 }

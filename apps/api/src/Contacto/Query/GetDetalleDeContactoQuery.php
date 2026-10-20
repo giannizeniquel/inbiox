@@ -27,8 +27,8 @@ class GetDetalleDeContactoQuery
             responsableId: $row['owner_id'] ? (int) $row['owner_id'] : null,
             email: $row['email'],
             marcasDeTiempo: [
-                'created_at' => $row['created_at'],
-                'updated_at' => $row['updated_at'],
+                'creadoAt' => $row['created_at'],
+                'actualizadoAt' => $row['updated_at'],
             ],
         );
     }

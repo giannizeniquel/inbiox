@@ -98,7 +98,7 @@ class ContactImportEmRecoveryTest extends KernelTestCase
         };
         $this->em->getEventManager()->addEventListener(Events::prePersist, $listener);
 
-        $csv = "phone\n"
+        $csv = "Teléfono\n"
             . "+5491100000001\n"
             . "{$raceTargetPhone}\n"
             . "+5491100000003\n"
@@ -120,12 +120,12 @@ class ContactImportEmRecoveryTest extends KernelTestCase
 
         $rowTwoError = null;
         foreach ($result->errores as $error) {
-            if ($error['row'] === 3) { // 1-based, header included: row 2 data = file row 3
+            if ($error['fila'] === 3) { // 1-based, header included: row 2 data = file row 3
                 $rowTwoError = $error;
             }
         }
         $this->assertNotNull($rowTwoError, 'Expected an error entry for the raced row');
-        $this->assertSame('duplicate_phone', $rowTwoError['reason']);
+        $this->assertSame('duplicate_phone', $rowTwoError['motivo']);
 
         // The connection/EntityManager must still be usable for subsequent operations.
         $freshEm = static::getContainer()->get(EntityManagerInterface::class);

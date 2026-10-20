@@ -4,7 +4,9 @@ namespace App\Contacto\Repository;
 
 use App\Asignacion\TipoDeAsignacion;
 use App\Compartido\Outbox\TipoDeEventoDeOutbox;
+use App\Contacto\CanalDeContacto;
 use App\Contacto\Contacto;
+use App\Contacto\EstadoDeContacto;
 use App\Ticket\TipoDeEventoDeTicket;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ArrayParameterType;
@@ -109,8 +111,8 @@ class ContactoRepository extends ServiceEntityRepository
         FROM (
             SELECT
                 CASE
-                    WHEN oe.event_type IN (:tipos_ticket_creado) THEN 'ticket.created'
-                    WHEN oe.event_type IN (:tipos_ticket_actualizado) THEN 'ticket.status_changed'
+                    WHEN oe.event_type IN (:tipos_ticket_creado) THEN 'ticket.creado'
+                    WHEN oe.event_type IN (:tipos_ticket_actualizado) THEN 'ticket.estado_cambiado'
                 END AS type,
                 oe.created_at AS occurred_at,
                 NULL AS content,
@@ -131,8 +133,8 @@ class ContactoRepository extends ServiceEntityRepository
 
             SELECT
                 CASE
-                    WHEN a.type = :tipo_reasignacion THEN 'ticket.reassigned'
-                    ELSE 'ticket.assigned'
+                    WHEN a.type = :tipo_reasignacion THEN 'ticket.reasignado'
+                    ELSE 'ticket.asignado'
                 END AS type,
                 a.assigned_at AS occurred_at,
                 NULL AS content,
@@ -151,16 +153,7 @@ class ContactoRepository extends ServiceEntityRepository
             UNION ALL
 
             SELECT
-                CASE te.type
-                    WHEN :window_expired_closed THEN 'ticket.window_expired_closed'
-                    WHEN :window_reopened THEN 'ticket.window_reopened'
-                    WHEN :manual_resolved_owner THEN 'ticket.manual_resolved_owner'
-                    WHEN :manual_resolved_override THEN 'ticket.manual_resolved_override'
-                    WHEN :manual_resolved_unowned THEN 'ticket.manual_resolved_unowned'
-                    WHEN :manual_closed_owner THEN 'ticket.manual_closed_owner'
-                    WHEN :manual_closed_override THEN 'ticket.manual_closed_override'
-                    WHEN :manual_closed_unowned THEN 'ticket.manual_closed_unowned'
-                END AS type,
+                CONCAT('ticket.', te.type) AS type,
                 te.created_at AS occurred_at,
                 NULL AS content,
                 t.id AS ticket_id,
@@ -189,25 +182,25 @@ class ContactoRepository extends ServiceEntityRepository
         SQL;
 
         // Lista permitida D6: solo se muestran los tipos de evento de cumplimiento de la ventana de 24 h de WhatsApp
-        // más los seis tipos de auditoría de cierre/resolución manual.
-        $typeParams = [
-            'window_expired_closed' => TipoDeEventoDeTicket::VENTANA_VENCIDA_CERRADO,
-            'window_reopened' => TipoDeEventoDeTicket::VENTANA_REABIERTO,
-            'manual_resolved_owner' => TipoDeEventoDeTicket::MANUAL_RESUELTO_RESPONSABLE,
-            'manual_resolved_override' => TipoDeEventoDeTicket::MANUAL_RESUELTO_FORZADO,
-            'manual_resolved_unowned' => TipoDeEventoDeTicket::MANUAL_RESUELTO_SIN_RESPONSABLE,
-            'manual_closed_owner' => TipoDeEventoDeTicket::MANUAL_CERRADO_RESPONSABLE,
-            'manual_closed_override' => TipoDeEventoDeTicket::MANUAL_CERRADO_FORZADO,
-            'manual_closed_unowned' => TipoDeEventoDeTicket::MANUAL_CERRADO_SIN_RESPONSABLE,
+        // más los seis tipos de auditoría de cierre/resolución manual. En la red viajan como `ticket.<tipo guardado>`.
+        $tiposPermitidos = [
+            TipoDeEventoDeTicket::VENTANA_VENCIDA_CERRADO,
+            TipoDeEventoDeTicket::VENTANA_REABIERTO,
+            TipoDeEventoDeTicket::MANUAL_RESUELTO_RESPONSABLE,
+            TipoDeEventoDeTicket::MANUAL_RESUELTO_FORZADO,
+            TipoDeEventoDeTicket::MANUAL_RESUELTO_SIN_RESPONSABLE,
+            TipoDeEventoDeTicket::MANUAL_CERRADO_RESPONSABLE,
+            TipoDeEventoDeTicket::MANUAL_CERRADO_FORZADO,
+            TipoDeEventoDeTicket::MANUAL_CERRADO_SIN_RESPONSABLE,
         ];
 
         // Los tipos del outbox incluyen el alias legado (nombre de clase) hasta la etapa 3 del contrato.
-        $params = $typeParams + [
+        $params = [
             'tipos_ticket_creado' => TipoDeEventoDeOutbox::TICKET_CREADO->valoresGuardados(),
             'tipos_ticket_actualizado' => TipoDeEventoDeOutbox::TICKET_ACTUALIZADO->valoresGuardados(),
             'tipo_reasignacion' => TipoDeAsignacion::REASIGNACION->value,
             'contact_id' => $contactoId,
-            'allowed_types' => array_values($typeParams),
+            'allowed_types' => $tiposPermitidos,
             'before_date' => $before,
             'phone_number_id' => $phoneNumberId,
             'limit' => $limit,
@@ -240,12 +233,12 @@ class ContactoRepository extends ServiceEntityRepository
                 ->setParameter('search', "%{$search}%");
         }
 
-        if ($estado && in_array($estado, ['active', 'inactive'])) {
+        if ($estado && EstadoDeContacto::tryFrom($estado) !== null) {
             $qb->andWhere('c.status = :status')
                 ->setParameter('status', $estado);
         }
 
-        if ($canal && in_array($canal, ['whatsapp', 'other'])) {
+        if ($canal && CanalDeContacto::tryFrom($canal) !== null) {
             $qb->andWhere('c.channel = :channel')
                 ->setParameter('channel', $canal);
         }

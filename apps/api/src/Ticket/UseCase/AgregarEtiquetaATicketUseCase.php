@@ -7,6 +7,7 @@ use App\Ticket\Repository\EtiquetaRepository;
 use App\Ticket\EtiquetaDeTicket;
 use App\Ticket\EventoDeTicket;
 use App\Ticket\Ticket;
+use App\Ticket\TipoDeEventoDeTicket;
 use App\Ticket\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -61,7 +62,7 @@ class AgregarEtiquetaATicketUseCase
             $this->em->flush();
 
             // Emite el evento
-            $evento = new EventoDeTicket($ticketId, 'tag_added', $origen);
+            $evento = new EventoDeTicket($ticketId, TipoDeEventoDeTicket::ETIQUETA_AGREGADA, $origen);
             $this->em->persist($evento);
             $this->em->flush();
 

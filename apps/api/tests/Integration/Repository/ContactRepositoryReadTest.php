@@ -54,15 +54,15 @@ class ContactRepositoryReadTest extends KernelTestCase
     {
         $search = '+548800000';
 
-        self::assertSame([880002], $this->ids($this->repo->findPaginaDeLista($search, 'inactive', null, null, null, 20, 0)));
+        self::assertSame([880002], $this->ids($this->repo->findPaginaDeLista($search, 'inactivo', null, null, null, 20, 0)));
         self::assertSame([880002, 880001, 880003], $this->ids($this->repo->findPaginaDeLista($search, 'zzz', null, null, null, 20, 0)));
-        self::assertSame([880002], $this->ids($this->repo->findPaginaDeLista($search, null, 'other', null, null, 20, 0)));
+        self::assertSame([880002], $this->ids($this->repo->findPaginaDeLista($search, null, 'otro', null, null, 20, 0)));
         self::assertSame([880002, 880001, 880003], $this->ids($this->repo->findPaginaDeLista($search, null, 'zzz', null, null, 20, 0)));
         self::assertSame([880001], $this->ids($this->repo->findPaginaDeLista($search, null, null, 880001, null, 20, 0)));
         self::assertSame([880002, 880001, 880003], $this->ids($this->repo->findPaginaDeLista($search, null, null, 0, '', 20, 0)));
         self::assertSame([880001], $this->ids($this->repo->findPaginaDeLista($search, null, null, null, 'zoe@repo-read.test', 20, 0)));
-        self::assertSame([880001], $this->ids($this->repo->findPaginaDeLista('Repo', 'active', 'whatsapp', null, null, 20, 0)));
-        self::assertSame(1, $this->repo->countLista('Repo', 'active', 'whatsapp', null, null));
+        self::assertSame([880001], $this->ids($this->repo->findPaginaDeLista('Repo', 'activo', 'whatsapp', null, null, 20, 0)));
+        self::assertSame(1, $this->repo->countLista('Repo', 'activo', 'whatsapp', null, null));
     }
 
     public function testFindDetailRow(): void
@@ -83,14 +83,14 @@ class ContactRepositoryReadTest extends KernelTestCase
         $rows = $this->repo->findFilasDeLineaDeTiempo(880001, null, 50, null);
 
         self::assertSame([
-            ['ticket.manual_resolved_owner', '2026-01-01 15:00:00', 880001, 'activo', 'Sup Agente Uno', 880001],
-            ['ticket.window_expired_closed', '2026-01-01 13:00:00', 880001, 'activo', null, null],
-            ['ticket.reassigned', '2026-01-01 12:30:00', 880001, null, 'Agente Dos', 880002],
-            ['ticket.manual_closed_unowned', '2026-01-01 11:40:00', 880002, 'nuevo', 'Agente repo-read-agent@x.test', null],
-            ['ticket.manual_closed_override', '2026-01-01 11:30:00', 880002, 'nuevo', 'Admin Agente Tres', 880003],
-            ['ticket.status_changed', '2026-01-01 11:20:00', 880001, 'activo', null, null],
-            ['ticket.assigned', '2026-01-01 09:01:00', 880001, null, 'Agente Uno', 880001],
-            ['ticket.created', '2026-01-01 09:00:00', 880001, 'activo', null, null],
+            ['ticket.resuelto_manual_por_responsable', '2026-01-01 15:00:00', 880001, 'activo', 'Sup Agente Uno', 880001],
+            ['ticket.ventana_vencida_cerrado', '2026-01-01 13:00:00', 880001, 'activo', null, null],
+            ['ticket.reasignado', '2026-01-01 12:30:00', 880001, null, 'Agente Dos', 880002],
+            ['ticket.cerrado_manual_sin_responsable', '2026-01-01 11:40:00', 880002, 'nuevo', 'Agente repo-read-agent@x.test', null],
+            ['ticket.cerrado_manual_forzado', '2026-01-01 11:30:00', 880002, 'nuevo', 'Admin Agente Tres', 880003],
+            ['ticket.estado_cambiado', '2026-01-01 11:20:00', 880001, 'activo', null, null],
+            ['ticket.asignado', '2026-01-01 09:01:00', 880001, null, 'Agente Uno', 880001],
+            ['ticket.creado', '2026-01-01 09:00:00', 880001, 'activo', null, null],
         ], array_map(fn (array $r) => [
             $r['type'],
             $r['occurred_at'],
@@ -106,11 +106,11 @@ class ContactRepositoryReadTest extends KernelTestCase
         $types = fn (array $rows) => array_column($rows, 'type');
 
         self::assertSame(
-            ['ticket.manual_resolved_owner', 'ticket.window_expired_closed'],
+            ['ticket.resuelto_manual_por_responsable', 'ticket.ventana_vencida_cerrado'],
             $types($this->repo->findFilasDeLineaDeTiempo(880001, null, 2, null)),
         );
         self::assertSame(
-            ['ticket.manual_closed_unowned', 'ticket.manual_closed_override', 'ticket.status_changed', 'ticket.assigned', 'ticket.created'],
+            ['ticket.cerrado_manual_sin_responsable', 'ticket.cerrado_manual_forzado', 'ticket.estado_cambiado', 'ticket.asignado', 'ticket.creado'],
             $types($this->repo->findFilasDeLineaDeTiempo(880001, '2026-01-01 12:00:00', 50, null)),
         );
         self::assertCount(8, $this->repo->findFilasDeLineaDeTiempo(880001, null, 50, 'repo-read-p1'));

@@ -36,8 +36,8 @@ trait ReadModelFixture
             "INSERT INTO `user` (id, email, password_hash, roles, is_active, created_at) VALUES (880001, 'repo-read-sup@x.test', 'x', '[\"ROLE_SUPERVISOR\"]', 1, '2026-01-01 00:00:00'), (880002, 'repo-read-adm@x.test', 'x', '[\"ROLE_ADMIN\"]', 1, '2026-01-01 00:00:00'), (880003, 'repo-read-agent@x.test', 'x', '[\"ROLE_AGENT\"]', 1, '2026-01-01 00:00:00')",
             "INSERT INTO agents (id, name, max_active_tickets, created_at, updated_at, user_id) VALUES (880001, 'Agente Uno', 5, '2026-01-01 00:00:00', '2026-01-01 00:00:00', 880001), (880002, 'Agente Dos', 3, '2026-01-01 00:00:00', '2026-01-01 00:00:00', NULL), (880003, 'Agente Tres', 10, '2026-01-01 00:00:00', '2026-01-01 00:00:00', 880002)",
             "INSERT INTO contacts (id, phone, name, status, channel, owner_id, email, created_at, updated_at) VALUES
-                (880001, '+5488000001', 'Zoe Repo', 'active', 'whatsapp', 880001, 'zoe@repo-read.test', '2026-01-01 00:00:00', '2026-01-05 00:00:00'),
-                (880002, '+5488000002', 'Yago Repo', 'inactive', 'other', NULL, NULL, '2026-01-01 00:00:00', '2026-01-05 00:00:00'),
+                (880001, '+5488000001', 'Zoe Repo', 'activo', 'whatsapp', 880001, 'zoe@repo-read.test', '2026-01-01 00:00:00', '2026-01-05 00:00:00'),
+                (880002, '+5488000002', 'Yago Repo', 'inactivo', 'otro', NULL, NULL, '2026-01-01 00:00:00', '2026-01-05 00:00:00'),
                 (880003, '+5488000003', NULL, NULL, NULL, NULL, NULL, '2026-01-01 00:00:00', '2026-01-04 00:00:00')",
             "INSERT INTO conversations (id, status, created_at, updated_at, phone_number_id, contact_id) VALUES
                 (880001, 'open', '2026-01-01 00:00:00', '2026-01-01 00:00:00', 'repo-read-p1', 880001),
@@ -66,11 +66,11 @@ trait ReadModelFixture
                 (880004, '2026-01-01 00:00:00', 880003, 880003), (880003, '2026-01-01 00:00:00', 880003, 880001),
                 (880005, '2026-01-01 00:00:00', 880004, 880002)",
             "INSERT INTO ticket_events (id, ticket_id, type, source, created_at) VALUES
-                (880001, 880001, 'window_expired_closed', 'system', '2026-01-01 13:00:00'),
-                (880002, 880001, 'manual_resolved_owner', 'u:880001', '2026-01-01 15:00:00'),
-                (880003, 880001, 'tag_added', 'u:880001', '2026-01-01 15:30:00'),
-                (880004, 880002, 'manual_closed_override', 'u:880002', '2026-01-01 11:30:00'),
-                (880005, 880002, 'manual_closed_unowned', 'u:880003', '2026-01-01 11:40:00')",
+                (880001, 880001, 'ventana_vencida_cerrado', 'system', '2026-01-01 13:00:00'),
+                (880002, 880001, 'resuelto_manual_por_responsable', 'u:880001', '2026-01-01 15:00:00'),
+                (880003, 880001, 'etiqueta_agregada', 'u:880001', '2026-01-01 15:30:00'),
+                (880004, 880002, 'cerrado_manual_forzado', 'u:880002', '2026-01-01 11:30:00'),
+                (880005, 880002, 'cerrado_manual_sin_responsable', 'u:880003', '2026-01-01 11:40:00')",
             "INSERT INTO assignments (id, type, assigned_at, assigned_by, notes, ticket_id, agent_id, previous_agent_id) VALUES
                 (880001, 'ASSIGN', '2026-01-01 09:01:00', 880001, NULL, 880001, 880001, NULL),
                 (880002, 'reasignacion', '2026-01-01 12:30:00', 880001, NULL, 880001, 880002, 880001)",

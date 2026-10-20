@@ -143,12 +143,12 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
         $events = $this->fetchEventsByType();
 
         foreach ([
-            'ticket.manual_resolved_owner',
-            'ticket.manual_resolved_override',
-            'ticket.manual_resolved_unowned',
-            'ticket.manual_closed_owner',
-            'ticket.manual_closed_override',
-            'ticket.manual_closed_unowned',
+            'ticket.resuelto_manual_por_responsable',
+            'ticket.resuelto_manual_forzado',
+            'ticket.resuelto_manual_sin_responsable',
+            'ticket.cerrado_manual_por_responsable',
+            'ticket.cerrado_manual_forzado',
+            'ticket.cerrado_manual_sin_responsable',
         ] as $expectedType) {
             self::assertArrayHasKey($expectedType, $events, "missing timeline type {$expectedType}");
             self::assertSame('Agente Agent Actor', $events[$expectedType]->asignadoA);
@@ -163,7 +163,7 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
 
         $events = $this->fetchEventsByType();
 
-        self::assertStringStartsWith('Admin ', $events['ticket.manual_closed_owner']->asignadoA);
+        self::assertStringStartsWith('Admin ', $events['ticket.cerrado_manual_por_responsable']->asignadoA);
     }
 
     public function testSupervisorOnlyActorIsLabeledSup(): void
@@ -173,7 +173,7 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
 
         $events = $this->fetchEventsByType();
 
-        self::assertStringStartsWith('Sup ', $events['ticket.manual_closed_override']->asignadoA);
+        self::assertStringStartsWith('Sup ', $events['ticket.cerrado_manual_forzado']->asignadoA);
     }
 
     public function testActorWithNoLinkedAgentFallsBackToEmailAndNullAgentId(): void
@@ -183,8 +183,8 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
 
         $events = $this->fetchEventsByType();
 
-        self::assertSame('Admin admin-no-agent@inbiox.local', $events['ticket.manual_closed_unowned']->asignadoA);
-        self::assertNull($events['ticket.manual_closed_unowned']->agenteId);
+        self::assertSame('Admin admin-no-agent@inbiox.local', $events['ticket.cerrado_manual_sin_responsable']->asignadoA);
+        self::assertNull($events['ticket.cerrado_manual_sin_responsable']->agenteId);
     }
 
     public function testDeletedAgentRowStillReturnsTheEventWithNullAgentId(): void
@@ -196,8 +196,8 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
 
         $events = $this->fetchEventsByType();
 
-        self::assertArrayHasKey('ticket.manual_resolved_owner', $events);
-        self::assertNull($events['ticket.manual_resolved_owner']->agenteId);
+        self::assertArrayHasKey('ticket.resuelto_manual_por_responsable', $events);
+        self::assertNull($events['ticket.resuelto_manual_por_responsable']->agenteId);
     }
 
     public function testWindowEventsRemainUnaffectedByTheAddedJoins(): void
@@ -207,26 +207,26 @@ class GetContactTimelineQueryManualClosureEventsTest extends KernelTestCase
 
         $events = $this->fetchEventsByType();
 
-        self::assertArrayHasKey('ticket.window_expired_closed', $events);
-        self::assertNull($events['ticket.window_expired_closed']->asignadoA);
-        self::assertNull($events['ticket.window_expired_closed']->agenteId);
+        self::assertArrayHasKey('ticket.ventana_vencida_cerrado', $events);
+        self::assertNull($events['ticket.ventana_vencida_cerrado']->asignadoA);
+        self::assertNull($events['ticket.ventana_vencida_cerrado']->agenteId);
 
-        self::assertArrayHasKey('ticket.window_reopened', $events);
-        self::assertNull($events['ticket.window_reopened']->asignadoA);
-        self::assertNull($events['ticket.window_reopened']->agenteId);
+        self::assertArrayHasKey('ticket.ventana_reabierta', $events);
+        self::assertNull($events['ticket.ventana_reabierta']->asignadoA);
+        self::assertNull($events['ticket.ventana_reabierta']->agenteId);
     }
 
     public function testLegacyEventTypesRemainExcludedByTheAllowList(): void
     {
         $this->addTicketEvent('auto_closed', 'system');
-        $this->addTicketEvent('tag_added', 'system');
+        $this->addTicketEvent('etiqueta_agregada', 'system');
 
         $events = $this->fetchEventsByType();
 
         self::assertArrayNotHasKey('ticket.auto_closed', $events);
         self::assertArrayNotHasKey('auto_closed', $events);
-        self::assertArrayNotHasKey('ticket.tag_added', $events);
-        self::assertArrayNotHasKey('tag_added', $events);
+        self::assertArrayNotHasKey('ticket.etiqueta_agregada', $events);
+        self::assertArrayNotHasKey('etiqueta_agregada', $events);
     }
 
     public function testPaginationStillWorksWithTheWidenedBranch(): void

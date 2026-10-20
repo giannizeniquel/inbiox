@@ -12,7 +12,7 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 /**
- * Integration tests for POST /api/contacts/import — role gating and
+ * Integration tests for POST /api/contactos/importar — role gating and
  * whole-file rejection reasons (spec: "Role Gating", "CSV Upload Endpoint
  * Contract").
  */
@@ -120,20 +120,20 @@ class ContactImportControllerTest extends WebTestCase
         $this->createUser('supervisor@test.local', ['ROLE_SUPERVISOR']);
         $token = $this->login('supervisor@test.local');
 
-        $file = $this->csvUploadedFile("phone,name\n+5491100001111,Ana\n");
+        $file = $this->csvUploadedFile("Teléfono,Nombre\n+5491100001111,Ana\n");
 
         $this->client->request(
             'POST',
-            '/api/contacts/import',
+            '/api/contactos/importar',
             [],
-            ['file' => $file],
+            ['archivo' => $file],
             $this->authHeaders($token),
         );
 
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
         $data = \json_decode($this->client->getResponse()->getContent(), true);
-        self::assertSame(1, $data['imported']);
-        self::assertSame(0, $data['failed']);
+        self::assertSame(1, $data['importados']);
+        self::assertSame(0, $data['fallidos']);
     }
 
     public function testAgentGets403OnImportButStillCreatesContact(): void
@@ -142,13 +142,13 @@ class ContactImportControllerTest extends WebTestCase
         $this->createUser('agent@test.local', ['ROLE_AGENT'], $agent);
         $token = $this->login('agent@test.local');
 
-        $file = $this->csvUploadedFile("phone,name\n+5491100002222,Beto\n");
+        $file = $this->csvUploadedFile("Teléfono,Nombre\n+5491100002222,Beto\n");
 
         $this->client->request(
             'POST',
-            '/api/contacts/import',
+            '/api/contactos/importar',
             [],
-            ['file' => $file],
+            ['archivo' => $file],
             $this->authHeaders($token),
         );
         self::assertSame(403, $this->client->getResponse()->getStatusCode());
@@ -156,11 +156,11 @@ class ContactImportControllerTest extends WebTestCase
         // The same agent must still be able to create a single contact.
         $this->client->request(
             'POST',
-            '/api/contacts',
+            '/api/contactos',
             [],
             [],
             array_merge($this->authHeaders($token), ['CONTENT_TYPE' => 'application/json']),
-            \json_encode(['phone' => '+5491100003333']),
+            \json_encode(['telefono' => '+5491100003333']),
         );
         self::assertSame(201, $this->client->getResponse()->getStatusCode());
     }
@@ -179,15 +179,15 @@ class ContactImportControllerTest extends WebTestCase
 
         $this->client->request(
             'POST',
-            '/api/contacts/import',
+            '/api/contactos/importar',
             [],
-            ['file' => $file],
+            ['archivo' => $file],
             $this->authHeaders($token),
         );
 
         self::assertSame(400, $this->client->getResponse()->getStatusCode());
         $data = \json_decode($this->client->getResponse()->getContent(), true);
-        self::assertSame('invalid_file_type', $data['error']);
+        self::assertSame(['error' => 'invalid_file_type', 'mensaje' => 'Only CSV files are accepted'], $data);
     }
 
     public function testMissingFileFieldIsRejected(): void
@@ -197,7 +197,7 @@ class ContactImportControllerTest extends WebTestCase
 
         $this->client->request(
             'POST',
-            '/api/contacts/import',
+            '/api/contactos/importar',
             [],
             [],
             $this->authHeaders($token),
@@ -205,6 +205,9 @@ class ContactImportControllerTest extends WebTestCase
 
         self::assertSame(400, $this->client->getResponse()->getStatusCode());
         $data = \json_decode($this->client->getResponse()->getContent(), true);
-        self::assertSame('file_missing', $data['error']);
+        self::assertSame([
+            'error' => 'file_missing',
+            'mensaje' => 'No valid file provided. Use multipart/form-data with a "archivo" field.',
+        ], $data);
     }
 }

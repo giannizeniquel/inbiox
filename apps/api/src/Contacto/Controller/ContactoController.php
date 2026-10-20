@@ -32,15 +32,15 @@ class ContactoController
         private AlcanceDeEspacioDeTrabajo $alcanceDeEspacioDeTrabajo,
     ) {}
 
-    #[Route('/api/contacts', name: 'app_contacts_list', methods: ['GET'])]
+    #[Route('/api/contactos', name: 'app_contacts_list', methods: ['GET'])]
     public function listar(Request $request): JsonResponse
     {
         $page = max(1, (int) $request->query->get('page', 1));
         $limit = min(100, max(1, (int) $request->query->get('limit', 20)));
-        $search = $request->query->get('search');
-        $estado = $request->query->get('status');
-        $canal = $request->query->get('channel');
-        $responsableId = $request->query->get('ownerId');
+        $search = $request->query->get('busqueda');
+        $estado = $request->query->get('estado');
+        $canal = $request->query->get('canal');
+        $responsableId = $request->query->get('responsableId');
         $email = $request->query->get('email');
 
         // Alcance del espacio de trabajo: AGENT ve solo los contactos con conversaciones en el espacio de trabajo activo
@@ -72,7 +72,7 @@ class ContactoController
         ]);
     }
 
-    #[Route('/api/contacts/{id}', name: 'app_contacts_detail', methods: ['GET'])]
+    #[Route('/api/contactos/{id}', name: 'app_contacts_detail', methods: ['GET'])]
     public function get(int $id): JsonResponse
     {
         $dto = $this->getDetalleDeContactoQuery->execute($id);
@@ -84,7 +84,7 @@ class ContactoController
         return new JsonResponse($dto->toArray());
     }
 
-    #[Route('/api/contacts', name: 'app_contacts_create', methods: ['POST'])]
+    #[Route('/api/contactos', name: 'app_contacts_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
         try {
@@ -102,7 +102,7 @@ class ContactoController
         }
     }
 
-    #[Route('/api/contacts/{id}', name: 'app_contacts_update', methods: ['PUT'])]
+    #[Route('/api/contactos/{id}', name: 'app_contacts_update', methods: ['PUT'])]
     public function update(int $id, Request $request): JsonResponse
     {
         try {
@@ -121,23 +121,23 @@ class ContactoController
     }
 
     /**
-     * POST /contacts/import — importación masiva de contactos por CSV.
+     * POST /api/contactos/importar — importación masiva de contactos por CSV.
      *
      * El ROLE_SUPERVISOR a nivel de método prevalece sobre el ROLE_AGENT a nivel de clase: la creación
      * de un solo contacto sigue disponible para los agentes, pero una petición que puede crear hasta 1000
      * contactos compartidos globalmente de una sola vez queda restringida a los supervisores.
      */
     #[IsGranted('ROLE_SUPERVISOR')]
-    #[Route('/api/contacts/import', name: 'app_contacts_import', methods: ['POST'])]
+    #[Route('/api/contactos/importar', name: 'app_contacts_import', methods: ['POST'])]
     public function importar(Request $request): JsonResponse
     {
         /** @var UploadedFile|null $file */
-        $file = $request->files->get('file');
+        $file = $request->files->get('archivo');
 
         if (!$file instanceof UploadedFile || !$file->isValid()) {
             return new JsonResponse([
                 'error' => 'file_missing',
-                'message' => 'No valid file provided. Use multipart/form-data with a "file" field.',
+                'mensaje' => 'No valid file provided. Use multipart/form-data with a "archivo" field.',
             ], 400);
         }
 
@@ -149,11 +149,11 @@ class ContactoController
 
             return new JsonResponse($result->toArray(), 200);
         } catch (ImportacionRechazadaException $e) {
-            return new JsonResponse(['error' => $e->getMotivo(), 'message' => $e->getMessage()], 400);
+            return new JsonResponse(['error' => $e->getMotivo(), 'mensaje' => $e->getMessage()], 400);
         }
     }
 
-    #[Route('/api/contacts/{id}', name: 'app_contacts_delete', methods: ['DELETE'])]
+    #[Route('/api/contactos/{id}', name: 'app_contacts_delete', methods: ['DELETE'])]
     public function delete(int $id): JsonResponse
     {
         try {

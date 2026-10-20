@@ -15,8 +15,8 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
  * `GetLineaDeTiempoDeContactoQuery`'s new `ticket_events` UNION ALL branch
- * (design.md D6 allow-list): only `window_expired_closed` and
- * `window_reopened` appear; other `ticket_events` types (e.g. `tag_added`)
+ * (design.md D6 allow-list): only `ventana_vencida_cerrado` and
+ * `ventana_reabierta` appear; other `ticket_events` types (e.g. `etiqueta_agregada`)
  * must NOT appear — reading every type would be an out-of-scope behavior
  * change.
  */
@@ -84,23 +84,23 @@ class GetContactTimelineQueryWindowEventsTest extends KernelTestCase
 
         $types = array_map(fn ($e) => $e->tipo, $result['events']);
 
-        self::assertContains('ticket.window_expired_closed', $types);
-        self::assertContains('ticket.window_reopened', $types);
+        self::assertContains('ticket.ventana_vencida_cerrado', $types);
+        self::assertContains('ticket.ventana_reabierta', $types);
     }
 
     public function testOtherTicketEventTypesDoNotAppearInTheTimeline(): void
     {
-        $this->addTicketEvent('tag_added');
-        $this->addTicketEvent('auto_reopened');
+        $this->addTicketEvent('etiqueta_agregada');
+        $this->addTicketEvent('reapertura_automatica');
 
         $query = static::getContainer()->get(GetLineaDeTiempoDeContactoQuery::class);
         $result = $query->execute($this->contactId, null, 50);
 
         $types = array_map(fn ($e) => $e->tipo, $result['events']);
 
-        self::assertNotContains('tag_added', $types);
-        self::assertNotContains('ticket.tag_added', $types);
-        self::assertNotContains('auto_reopened', $types);
-        self::assertNotContains('ticket.auto_reopened', $types);
+        self::assertNotContains('etiqueta_agregada', $types);
+        self::assertNotContains('ticket.etiqueta_agregada', $types);
+        self::assertNotContains('reapertura_automatica', $types);
+        self::assertNotContains('ticket.reapertura_automatica', $types);
     }
 }

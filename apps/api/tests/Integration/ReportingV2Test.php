@@ -469,14 +469,14 @@ class ReportingV2Test extends WebTestCase
         }
         $this->em->flush();
 
-        // Create auto_reopened events
+        // Create reapertura_automatica events
         $reopenedCount = 0;
         foreach ($tickets as $ticket) {
             if ($reopenedCount >= 3) {
                 break;
             }
             if ($ticket->getResueltoAt() !== null) {
-                $event = new EventoDeTicket($ticket->getId(), 'auto_reopened', 'system');
+                $event = new EventoDeTicket($ticket->getId(), 'reapertura_automatica', 'system');
                 $this->em->persist($event);
                 $reopenedCount++;
             }

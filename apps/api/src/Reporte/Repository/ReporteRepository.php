@@ -697,7 +697,7 @@ class ReporteRepository extends ServiceEntityRepository
     }
 
     /**
-     * Obtiene los tickets que salieron del estado resuelto (eventos auto_reopened).
+     * Obtiene los tickets que salieron del estado resuelto (eventos reapertura_automatica).
      *
      * SQL nativo porque `resolved_at` y `reopened_at` se devuelven con el formato
      * de MySQL (`Y-m-d H:i:s`); DQL los hidrataría en objetos DateTime.

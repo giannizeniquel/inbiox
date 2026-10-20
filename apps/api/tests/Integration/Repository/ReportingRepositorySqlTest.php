@@ -30,7 +30,7 @@ class ReportingRepositorySqlTest extends KernelTestCase
         $em->persist($contact);
         $em->persist(new Agente('Truncate Me'));
         $em->flush();
-        $em->persist(new EventoDeTicket(990099, 'tag_added', 'system'));
+        $em->persist(new EventoDeTicket(990099, 'etiqueta_agregada', 'system'));
         $em->flush();
         $em->clear();
 

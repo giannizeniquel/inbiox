@@ -7,12 +7,12 @@ namespace App\Contacto\UseCase;
 /**
  * Resultado de éxito parcial de una importación de contactos por CSV.
  *
- * @phpstan-type ImportErrorEntry array{row: int, phone: string, reason: string, message: string}
+ * @phpstan-type ImportErrorEntry array{fila: int, telefono: string, motivo: string, mensaje: string}
  */
 final class ResultadoDeImportacionDeContactosDTO
 {
     /**
-     * @param list<array{row: int, phone: string, reason: string, message: string}> $errores
+     * @param list<array{fila: int, telefono: string, motivo: string, mensaje: string}> $errores
      */
     public function __construct(
         public readonly int $totalDeFilas,
@@ -25,11 +25,11 @@ final class ResultadoDeImportacionDeContactosDTO
     public function toArray(): array
     {
         return [
-            'totalRows' => $this->totalDeFilas,
-            'imported' => $this->importados,
-            'failed' => $this->fallidos,
-            'errors' => $this->errores,
-            'errorsTruncated' => $this->erroresTruncados,
+            'totalDeFilas' => $this->totalDeFilas,
+            'importados' => $this->importados,
+            'fallidos' => $this->fallidos,
+            'errores' => $this->errores,
+            'erroresTruncados' => $this->erroresTruncados,
         ];
     }
 }

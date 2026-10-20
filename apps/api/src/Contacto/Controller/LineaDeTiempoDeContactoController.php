@@ -20,7 +20,7 @@ class LineaDeTiempoDeContactoController
         private AlcanceDeEspacioDeTrabajo $alcanceDeEspacioDeTrabajo,
     ) {}
 
-    #[Route('/api/contacts/{id}/timeline', name: 'app_contacts_timeline', methods: ['GET'])]
+    #[Route('/api/contactos/{id}/linea-de-tiempo', name: 'app_contacts_timeline', methods: ['GET'])]
     public function getLineaDeTiempo(int $id, Request $request): JsonResponse
     {
         $before = $request->query->get('before');
@@ -40,9 +40,9 @@ class LineaDeTiempoDeContactoController
         );
 
         return new JsonResponse([
-            'events' => $eventos,
+            'eventos' => $eventos,
             'cursor' => $result['cursor'],
-            'hasMore' => $result['hasMore'],
+            'hayMas' => $result['hasMore'],
         ]);
     }
 }

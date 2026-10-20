@@ -65,22 +65,22 @@ class ImportContactsFromCsvUseCaseTest extends TestCase
             id: 1,
             telefono: $phone,
             nombre: null,
-            estado: 'active',
+            estado: 'activo',
             canal: 'whatsapp',
             responsableId: null,
             email: null,
-            marcasDeTiempo: ['created_at' => 'now', 'updated_at' => 'now'],
+            marcasDeTiempo: ['creadoAt' => 'now', 'actualizadoAt' => 'now'],
         );
     }
 
     public function testHappyPathImportsAllRows(): void
     {
-        $csv = "phone,name\n+543712345678,Ana\n+5491155551234,Beto\n";
+        $csv = "Teléfono,Nombre\n+543712345678,Ana\n+5491155551234,Beto\n";
         $path = $this->csvFile($csv);
 
         $this->createContactUseCase
             ->method('execute')
-            ->willReturnCallback(fn(array $data) => $this->fakeContact($data['phone']));
+            ->willReturnCallback(fn(array $data) => $this->fakeContact($data['telefono']));
 
         $result = $this->useCase->execute($path, 'roster.csv');
 
@@ -94,12 +94,12 @@ class ImportContactsFromCsvUseCaseTest extends TestCase
 
     public function testBomAndSemicolonDelimiterAreHandled(): void
     {
-        $csv = "\xEF\xBB\xBFphone;name\n+543712345678;Ana\n";
+        $csv = "\xEF\xBB\xBFTeléfono;Nombre\n+543712345678;Ana\n";
         $path = $this->csvFile($csv);
 
         $this->createContactUseCase
             ->method('execute')
-            ->willReturnCallback(fn(array $data) => $this->fakeContact($data['phone']));
+            ->willReturnCallback(fn(array $data) => $this->fakeContact($data['telefono']));
 
         $result = $this->useCase->execute($path, 'roster.csv');
 
@@ -107,9 +107,39 @@ class ImportContactsFromCsvUseCaseTest extends TestCase
         $this->assertSame(1, $result->importados);
     }
 
+    public function testSpanishHeadersAreMatchedCaseAndSpaceInsensitively(): void
+    {
+        // D9: encabezados en español con mb_strtolower y trim; una columna desconocida
+        // (aunque se llame igual que una clave del request) no llega al alta.
+        $csv = " TELÉFONO ;Nombre;EMAIL;Estado;Canal;ID del Responsable;telefono\n"
+            . "+543712345678;Ana;ana@example.com;inactivo;otro;7;+5491155551234\n";
+        $path = $this->csvFile($csv);
+
+        $recibido = [];
+        $this->createContactUseCase
+            ->method('execute')
+            ->willReturnCallback(function (array $data) use (&$recibido) {
+                $recibido[] = $data;
+
+                return $this->fakeContact($data['telefono']);
+            });
+
+        $result = $this->useCase->execute($path, 'roster.csv');
+
+        $this->assertSame(1, $result->importados);
+        $this->assertSame([[
+            'telefono' => '+543712345678',
+            'nombre' => 'Ana',
+            'email' => 'ana@example.com',
+            'estado' => 'inactivo',
+            'canal' => 'otro',
+            'responsableId' => '7',
+        ]], $recibido);
+    }
+
     public function testMissingPhoneHeaderRejectsWholeFile(): void
     {
-        $csv = "name,email\nAna,ana@example.com\n";
+        $csv = "Nombre,Email,phone\nAna,ana@example.com,+543712345678\n";
         $path = $this->csvFile($csv);
 
         $this->createContactUseCase->expects($this->never())->method('execute');
@@ -119,12 +149,13 @@ class ImportContactsFromCsvUseCaseTest extends TestCase
             $this->fail('Expected ImportRejectedException');
         } catch (ImportacionRechazadaException $e) {
             $this->assertSame('missing_phone_column', $e->getMotivo());
+            $this->assertSame('CSV is missing the required "Teléfono" column', $e->getMessage());
         }
     }
 
     public function testEmptyFileIsRejected(): void
     {
-        $csv = "phone,name\n";
+        $csv = "Teléfono,Nombre\n";
         $path = $this->csvFile($csv);
 
         $this->createContactUseCase->expects($this->never())->method('execute');
@@ -139,7 +170,7 @@ class ImportContactsFromCsvUseCaseTest extends TestCase
 
     public function testTooManyRowsRejectsBeforeAnyInsert(): void
     {
-        $rows = "phone\n";
+        $rows = "Teléfono\n";
         for ($i = 0; $i < 1001; $i++) {
             $rows .= sprintf("+5491155%06d\n", $i);
         }
@@ -158,35 +189,35 @@ class ImportContactsFromCsvUseCaseTest extends TestCase
 
     public function testInFileDuplicatePhoneIsSkippedOnSecondOccurrence(): void
     {
-        $csv = "phone\n+543712345678\n+54 371 234 5678\n";
+        $csv = "Teléfono\n+543712345678\n+54 371 234 5678\n";
         $path = $this->csvFile($csv);
 
         $this->createContactUseCase
             ->expects($this->once())
             ->method('execute')
-            ->willReturnCallback(fn(array $data) => $this->fakeContact($data['phone']));
+            ->willReturnCallback(fn(array $data) => $this->fakeContact($data['telefono']));
 
         $result = $this->useCase->execute($path, 'roster.csv');
 
         $this->assertSame(2, $result->totalDeFilas);
         $this->assertSame(1, $result->importados);
         $this->assertSame(1, $result->fallidos);
-        $this->assertSame('duplicate_in_file', $result->errores[0]['reason']);
-        $this->assertSame(3, $result->errores[0]['row']); // 1-based, header included
+        $this->assertSame('duplicate_in_file', $result->errores[0]['motivo']);
+        $this->assertSame(3, $result->errores[0]['fila']); // 1-based, header included
     }
 
     public function testDbDuplicatePhoneIsReportedAndDoesNotStopProcessing(): void
     {
-        $csv = "phone\n+543712345678\n+5491155551234\n";
+        $csv = "Teléfono\n+543712345678\n+5491155551234\n";
         $path = $this->csvFile($csv);
 
         $this->createContactUseCase
             ->method('execute')
             ->willReturnCallback(function (array $data) {
-                if ($data['phone'] === '+543712345678') {
+                if ($data['telefono'] === '+543712345678') {
                     throw new \InvalidArgumentException('Contact with this phone already exists');
                 }
-                return $this->fakeContact($data['phone']);
+                return $this->fakeContact($data['telefono']);
             });
 
         $result = $this->useCase->execute($path, 'roster.csv');
@@ -194,19 +225,19 @@ class ImportContactsFromCsvUseCaseTest extends TestCase
         $this->assertSame(2, $result->totalDeFilas);
         $this->assertSame(1, $result->importados);
         $this->assertSame(1, $result->fallidos);
-        $this->assertSame('duplicate_phone', $result->errores[0]['reason']);
+        $this->assertSame('duplicate_phone', $result->errores[0]['motivo']);
         // Second (valid) row must still import despite the first row's failure.
         $this->assertFalse($result->erroresTruncados);
     }
 
     public function testMissingAndInvalidPhoneRowsAreReported(): void
     {
-        $csv = "phone,name\n,NoPhone\n123,TooShort\n+543712345678,Valid\n";
+        $csv = "Teléfono,Nombre\n,NoPhone\n123,TooShort\n+543712345678,Valid\n";
         $path = $this->csvFile($csv);
 
         $this->createContactUseCase
             ->method('execute')
-            ->willReturnCallback(fn(array $data) => $this->fakeContact($data['phone']));
+            ->willReturnCallback(fn(array $data) => $this->fakeContact($data['telefono']));
 
         $result = $this->useCase->execute($path, 'roster.csv');
 
@@ -214,14 +245,14 @@ class ImportContactsFromCsvUseCaseTest extends TestCase
         $this->assertSame(1, $result->importados);
         $this->assertSame(2, $result->fallidos);
 
-        $reasons = array_column($result->errores, 'reason');
+        $reasons = array_column($result->errores, 'motivo');
         $this->assertContains('phone_missing', $reasons);
         $this->assertContains('invalid_phone', $reasons);
     }
 
     public function testErrorsAreTruncatedPastOneHundred(): void
     {
-        $rows = "phone\n";
+        $rows = "Teléfono\n";
         for ($i = 0; $i < 150; $i++) {
             $rows .= "not-a-phone-$i\n";
         }

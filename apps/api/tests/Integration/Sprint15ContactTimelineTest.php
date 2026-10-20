@@ -20,7 +20,7 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
  * HTTP-level integration tests for the Contacto Timeline endpoint.
  *
  * Covers:
- *   GET /api/contacts/{id}/timeline
+ *   GET /api/contactos/{id}/linea-de-tiempo
  *
  * Asserts merged chronological order, cursor pagination, limit,
  * unauthenticated access, and unknown contact.
@@ -117,8 +117,8 @@ class Sprint15ContactTimelineTest extends WebTestCase
      *
      * Timeline events (ordered by creation):
      * 1. oldest: assignment
-     * 2. ticket.created outbox event
-     * 3. ticket.status_changed outbox event
+     * 2. ticket.creado outbox event
+     * 3. ticket.estado_cambiado outbox event
      * 4. newest: message
      *
      * The outbox rows default to the legacy stored values (event class names
@@ -135,7 +135,7 @@ class Sprint15ContactTimelineTest extends WebTestCase
         $contact = new Contacto();
         $contact->setTelefono('+5491112345678');
         $contact->setNombre('Timeline Test Contact');
-        $contact->setEstado('active');
+        $contact->setEstado('activo');
         $contact->setCanal('whatsapp');
         $this->em->persist($contact);
         $this->em->flush();
@@ -175,7 +175,7 @@ class Sprint15ContactTimelineTest extends WebTestCase
             [$messageCreatedAt->format('Y-m-d H:i:s'), $message->getId()]
         );
 
-        // Outbox event: ticket.created (2nd newest)
+        // Outbox event: ticket.creado (2nd newest)
         $ticketCreatedEvent = new EventoOutbox(
             aggregateType: $aggregateType,
             aggregateId: $ticketId,
@@ -194,7 +194,7 @@ class Sprint15ContactTimelineTest extends WebTestCase
         $this->em->persist($ticketCreatedEvent);
         $this->em->flush();
 
-        // Outbox event: ticket.status_changed (3rd oldest)
+        // Outbox event: ticket.estado_cambiado (3rd oldest)
         $statusChangedEvent = new EventoOutbox(
             aggregateType: $aggregateType,
             aggregateId: $ticketId,
@@ -249,46 +249,46 @@ class Sprint15ContactTimelineTest extends WebTestCase
     {
         $fixtures = $this->createTestFixtures();
 
-        $data = $this->getJson('/api/contacts/' . $fixtures['contactId'] . '/timeline');
+        $data = $this->getJson('/api/contactos/' . $fixtures['contactId'] . '/linea-de-tiempo');
 
         $this->assertResponseStatusCodeSame(200);
-        $this->assertArrayHasKey('events', $data);
+        $this->assertArrayHasKey('eventos', $data);
         $this->assertArrayHasKey('cursor', $data);
-        $this->assertArrayHasKey('hasMore', $data);
-        $this->assertIsArray($data['events']);
+        $this->assertArrayHasKey('hayMas', $data);
+        $this->assertIsArray($data['eventos']);
 
-        // Should have 3 events: ticket.created, ticket.status_changed, ticket.assigned (no individual messages)
-        $this->assertCount(3, $data['events']);
+        // Should have 3 events: ticket.creado, ticket.estado_cambiado, ticket.asignado (no individual messages)
+        $this->assertCount(3, $data['eventos']);
 
-        // Verify DESC order (newest first): ticket.created(-2h), ticket.status_changed(-3h), ticket.assigned(-4h)
-        $types = array_column($data['events'], 'type');
+        // Verify DESC order (newest first): ticket.creado(-2h), ticket.estado_cambiado(-3h), ticket.asignado(-4h)
+        $types = array_column($data['eventos'], 'tipo');
         $this->assertSame([
-            'ticket.created',
-            'ticket.status_changed',
-            'ticket.assigned',
+            'ticket.creado',
+            'ticket.estado_cambiado',
+            'ticket.asignado',
         ], $types);
 
-        // Verify event structure — first event is ticket.created (newest)
-        $first = $data['events'][0];
-        $this->assertArrayHasKey('type', $first);
-        $this->assertArrayHasKey('occurredAt', $first);
-        $this->assertSame('ticket.created', $first['type']);
-        $this->assertNotNull($first['occurredAt']);
+        // Verify event structure — first event is ticket.creado (newest)
+        $first = $data['eventos'][0];
+        $this->assertArrayHasKey('tipo', $first);
+        $this->assertArrayHasKey('ocurridoAt', $first);
+        $this->assertSame('ticket.creado', $first['tipo']);
+        $this->assertNotNull($first['ocurridoAt']);
         $this->assertNotNull($first['ticketId']);
 
-        // Verify ticket.created event structure
-        $ticketCreated = $data['events'][0];
-        $this->assertSame('ticket.created', $ticketCreated['type']);
+        // Verify ticket.creado event structure
+        $ticketCreated = $data['eventos'][0];
+        $this->assertSame('ticket.creado', $ticketCreated['tipo']);
         $this->assertSame($fixtures['ticketId'], $ticketCreated['ticketId']);
-        $this->assertNotNull($ticketCreated['ticketStatus']);
+        $this->assertNotNull($ticketCreated['estadoDeTicket']);
 
-        // Verify ticket.status_changed event
-        $statusChanged = $data['events'][1];
-        $this->assertSame('ticket.status_changed', $statusChanged['type']);
+        // Verify ticket.estado_cambiado event
+        $statusChanged = $data['eventos'][1];
+        $this->assertSame('ticket.estado_cambiado', $statusChanged['tipo']);
 
-        // Verify ticket.assigned event (oldest)
-        $assigned = $data['events'][2];
-        $this->assertSame('ticket.assigned', $assigned['type']);
+        // Verify ticket.asignado event (oldest)
+        $assigned = $data['eventos'][2];
+        $this->assertSame('ticket.asignado', $assigned['tipo']);
         $this->assertSame($fixtures['ticketId'], $assigned['ticketId']);
 
         // Cursor should be set (ISO 8601 of oldest event)
@@ -299,12 +299,12 @@ class Sprint15ContactTimelineTest extends WebTestCase
     {
         $fixtures = $this->createTestFixtures('ticket.creado', 'ticket.actualizado', 'ticket');
 
-        $data = $this->getJson('/api/contacts/' . $fixtures['contactId'] . '/timeline');
+        $data = $this->getJson('/api/contactos/' . $fixtures['contactId'] . '/linea-de-tiempo');
 
         $this->assertResponseStatusCodeSame(200);
-        $this->assertSame(['ticket.created', 'ticket.status_changed', 'ticket.assigned'], array_column($data['events'], 'type'));
-        $this->assertSame([$fixtures['ticketId'], $fixtures['ticketId']], array_column(array_slice($data['events'], 0, 2), 'ticketId'));
-        $this->assertSame(['activo', 'activo'], array_column(array_slice($data['events'], 0, 2), 'ticketStatus'));
+        $this->assertSame(['ticket.creado', 'ticket.estado_cambiado', 'ticket.asignado'], array_column($data['eventos'], 'tipo'));
+        $this->assertSame([$fixtures['ticketId'], $fixtures['ticketId']], array_column(array_slice($data['eventos'], 0, 2), 'ticketId'));
+        $this->assertSame(['activo', 'activo'], array_column(array_slice($data['eventos'], 0, 2), 'estadoDeTicket'));
     }
 
     public function testTimelineCursorPagination(): void
@@ -312,34 +312,34 @@ class Sprint15ContactTimelineTest extends WebTestCase
         $fixtures = $this->createTestFixtures();
 
         // First request: limit=2 → get 2 newest events + hasMore=true
-        $first = $this->getJson('/api/contacts/' . $fixtures['contactId'] . '/timeline?limit=2');
+        $first = $this->getJson('/api/contactos/' . $fixtures['contactId'] . '/linea-de-tiempo?limit=2');
 
         $this->assertResponseStatusCodeSame(200);
-        $this->assertCount(2, $first['events']);
-        $this->assertTrue($first['hasMore']);
+        $this->assertCount(2, $first['eventos']);
+        $this->assertTrue($first['hayMas']);
         $this->assertNotNull($first['cursor']);
 
-        $firstTypes = array_column($first['events'], 'type');
-        $this->assertSame(['ticket.created', 'ticket.status_changed'], $firstTypes);
+        $firstTypes = array_column($first['eventos'], 'tipo');
+        $this->assertSame(['ticket.creado', 'ticket.estado_cambiado'], $firstTypes);
 
         // Second request: use cursor to get older events
         $cursor = $first['cursor'];
-        $second = $this->getJson('/api/contacts/' . $fixtures['contactId'] . '/timeline?before=' . urlencode($cursor) . '&limit=2');
+        $second = $this->getJson('/api/contactos/' . $fixtures['contactId'] . '/linea-de-tiempo?before=' . urlencode($cursor) . '&limit=2');
 
         $this->assertResponseStatusCodeSame(200);
-        // Only 1 remaining event (ticket.assigned, oldest at -4h)
-        $this->assertCount(1, $second['events']);
+        // Only 1 remaining event (ticket.asignado, oldest at -4h)
+        $this->assertCount(1, $second['eventos']);
 
-        $secondTypes = array_column($second['events'], 'type');
-        $this->assertSame(['ticket.assigned'], $secondTypes);
+        $secondTypes = array_column($second['eventos'], 'tipo');
+        $this->assertSame(['ticket.asignado'], $secondTypes);
 
         // Third request: should return no more events (cursor is oldest)
         $cursor = $second['cursor'];
-        $third = $this->getJson('/api/contacts/' . $fixtures['contactId'] . '/timeline?before=' . urlencode($cursor) . '&limit=2');
+        $third = $this->getJson('/api/contactos/' . $fixtures['contactId'] . '/linea-de-tiempo?before=' . urlencode($cursor) . '&limit=2');
 
         $this->assertResponseStatusCodeSame(200);
-        $this->assertCount(0, $third['events']);
-        $this->assertFalse($third['hasMore']);
+        $this->assertCount(0, $third['eventos']);
+        $this->assertFalse($third['hayMas']);
         $this->assertNull($third['cursor']);
     }
 
@@ -347,11 +347,11 @@ class Sprint15ContactTimelineTest extends WebTestCase
     {
         $fixtures = $this->createTestFixtures();
 
-        $data = $this->getJson('/api/contacts/' . $fixtures['contactId'] . '/timeline?limit=2');
+        $data = $this->getJson('/api/contactos/' . $fixtures['contactId'] . '/linea-de-tiempo?limit=2');
 
         $this->assertResponseStatusCodeSame(200);
-        $this->assertCount(2, $data['events']);
-        $this->assertTrue($data['hasMore']);
+        $this->assertCount(2, $data['eventos']);
+        $this->assertTrue($data['hayMas']);
     }
 
     public function testTimelineRequiresAuth(): void
@@ -359,7 +359,7 @@ class Sprint15ContactTimelineTest extends WebTestCase
         $fixtures = $this->createTestFixtures();
 
         // Request without auth token
-        $this->client->request('GET', '/api/contacts/' . $fixtures['contactId'] . '/timeline', [], [], [
+        $this->client->request('GET', '/api/contactos/' . $fixtures['contactId'] . '/linea-de-tiempo', [], [], [
             'HTTP_ACCEPT' => 'application/json',
         ]);
 
@@ -371,13 +371,13 @@ class Sprint15ContactTimelineTest extends WebTestCase
         // Create at least one contact so the route resolves, but request an unknown one
         $this->createTestFixtures();
 
-        $data = $this->getJson('/api/contacts/99999/timeline');
+        $data = $this->getJson('/api/contactos/99999/linea-de-tiempo');
 
         // The endpoint itself won't return 404—it'll return empty events which is acceptable
         // if the contact doesn't exist. Alternatively, the route param validation handles it.
         // We just verify it doesn't crash and returns a valid shape.
         $this->assertResponseStatusCodeSame(200);
-        $this->assertArrayHasKey('events', $data);
-        $this->assertCount(0, $data['events']);
+        $this->assertArrayHasKey('eventos', $data);
+        $this->assertCount(0, $data['eventos']);
     }
 }

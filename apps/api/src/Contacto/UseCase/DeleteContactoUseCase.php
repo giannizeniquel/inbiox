@@ -3,6 +3,7 @@
 namespace App\Contacto\UseCase;
 
 use App\Contacto\Contacto;
+use App\Contacto\EstadoDeContacto;
 use App\Contacto\Repository\ContactoRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -22,7 +23,7 @@ class DeleteContactoUseCase
         }
 
         // Borrado lógico: pasa el estado a inactive
-        $contacto->setEstado('inactive');
+        $contacto->setEstado(EstadoDeContacto::INACTIVO->value);
         $contacto->setActualizadoAt(new \DateTimeImmutable());
 
         $this->entityManager->flush();

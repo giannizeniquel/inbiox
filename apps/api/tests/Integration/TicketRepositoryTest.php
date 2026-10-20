@@ -113,9 +113,9 @@ class TicketRepositoryTest extends KernelTestCase
     public function testDoesNotMatchWhenLatestEventIsADifferentType(): void
     {
         $ticketId = $this->createClosedTicket();
-        $this->addEvent($ticketId, 'tag_added', new \DateTimeImmutable('-2 hours'));
+        $this->addEvent($ticketId, 'etiqueta_agregada', new \DateTimeImmutable('-2 hours'));
         $this->addEvent($ticketId, TipoDeEventoDeTicket::VENTANA_VENCIDA_CERRADO, new \DateTimeImmutable('-3 hours'));
-        // Latest by created_at is 'tag_added' (2h ago is more recent than 3h ago).
+        // Latest by created_at is 'etiqueta_agregada' (2h ago is more recent than 3h ago).
 
         $found = $this->repo->findCerradoPorVentanaVencidaByContacto($this->contact);
 
@@ -140,11 +140,11 @@ class TicketRepositoryTest extends KernelTestCase
         // Insert WINDOW_EXPIRED_CLOSED first (lower id), then a disqualifying
         // event with the SAME created_at but a higher id — id DESC must win.
         $this->addEvent($ticketId, TipoDeEventoDeTicket::VENTANA_VENCIDA_CERRADO, $sameInstant);
-        $this->addEvent($ticketId, 'tag_added', $sameInstant);
+        $this->addEvent($ticketId, 'etiqueta_agregada', $sameInstant);
 
         $found = $this->repo->findCerradoPorVentanaVencidaByContacto($this->contact);
 
-        self::assertNull($found, 'The higher-id (newer insert) tag_added event must win the tie-break, disqualifying the ticket');
+        self::assertNull($found, 'The higher-id (newer insert) etiqueta_agregada event must win the tie-break, disqualifying the ticket');
     }
 
     public function testReturnsTheMostRecentByUpdatedAtWhenMultipleTicketsAreEligible(): void

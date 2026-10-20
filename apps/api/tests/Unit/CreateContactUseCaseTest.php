@@ -82,7 +82,7 @@ class CreateContactUseCaseTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Phone is required');
 
-        $this->useCase->execute(['phone' => '']);
+        $this->useCase->execute(['telefono' => '']);
     }
 
     public function testNormalizesPhoneBeforePersisting(): void
@@ -90,7 +90,7 @@ class CreateContactUseCaseTest extends TestCase
         $this->contactRepository->method('findOneByTelefono')->willReturn(null);
         $this->enableEntityIdAutoGeneration();
 
-        $result = $this->useCase->execute(['phone' => '+54 371 234 5678']);
+        $result = $this->useCase->execute(['telefono' => '+54 371 234 5678']);
 
         $this->assertSame('+543712345678', $result->telefono);
     }
@@ -100,7 +100,7 @@ class CreateContactUseCaseTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Invalid phone number');
 
-        $this->useCase->execute(['phone' => '+123']);
+        $this->useCase->execute(['telefono' => '+123']);
     }
 
     public function testThrowsForDuplicatePhoneOnPreCheck(): void
@@ -111,7 +111,7 @@ class CreateContactUseCaseTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Contact with this phone already exists');
 
-        $this->useCase->execute(['phone' => '+543712345678']);
+        $this->useCase->execute(['telefono' => '+543712345678']);
     }
 
     public function testAppliesOptionalFieldWhitelist(): void
@@ -120,18 +120,19 @@ class CreateContactUseCaseTest extends TestCase
         $this->enableEntityIdAutoGeneration();
 
         $result = $this->useCase->execute([
-            'phone' => '+543712345678',
-            'name' => 'Jane Doe',
-            'status' => 'not-a-real-status',
-            'channel' => 'whatsapp',
-            'owner_id' => '7',
+            'telefono' => '+543712345678',
+            'nombre' => 'Jane Doe',
+            // El valor viejo ya no es válido.
+            'estado' => 'inactive',
+            'canal' => 'otro',
+            'responsableId' => '7',
             'email' => 'jane@example.com',
         ]);
 
         $this->assertSame('Jane Doe', $result->nombre);
-        // Invalid status is ignored -> entity keeps its default 'active'
-        $this->assertSame('active', $result->estado);
-        $this->assertSame('whatsapp', $result->canal);
+        // Invalid status is ignored -> entity keeps its default 'activo'
+        $this->assertSame('activo', $result->estado);
+        $this->assertSame('otro', $result->canal);
         $this->assertSame(7, $result->responsableId);
         $this->assertSame('jane@example.com', $result->email);
     }
@@ -150,7 +151,7 @@ class CreateContactUseCaseTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Contact with this phone already exists');
 
-        $this->useCase->execute(['phone' => '+543712345678']);
+        $this->useCase->execute(['telefono' => '+543712345678']);
     }
 
     public function testReturnsDetailDtoOnSuccess(): void
@@ -158,7 +159,7 @@ class CreateContactUseCaseTest extends TestCase
         $this->contactRepository->method('findOneByTelefono')->willReturn(null);
         $this->enableEntityIdAutoGeneration();
 
-        $result = $this->useCase->execute(['phone' => '+543712345678']);
+        $result = $this->useCase->execute(['telefono' => '+543712345678']);
 
         $this->assertInstanceOf(DetalleDeContactoDTO::class, $result);
         $this->assertSame('+543712345678', $result->telefono);

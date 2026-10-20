@@ -3,7 +3,9 @@
 namespace App\Contacto\UseCase;
 
 use App\Contacto\Query\DetalleDeContactoDTO;
+use App\Contacto\CanalDeContacto;
 use App\Contacto\Contacto;
+use App\Contacto\EstadoDeContacto;
 use App\Contacto\Repository\ContactoRepository;
 use App\Contacto\NormalizadorDeTelefono;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
@@ -18,11 +20,11 @@ class CreateContactoUseCase
 
     public function execute(array $data): DetalleDeContactoDTO
     {
-        if (empty($data['phone'])) {
+        if (empty($data['telefono'])) {
             throw new \InvalidArgumentException('Phone is required');
         }
 
-        $telefono = NormalizadorDeTelefono::normalizar($data['phone']);
+        $telefono = NormalizadorDeTelefono::normalizar($data['telefono']);
 
         $existing = $this->contactoRepository->findOneByTelefono($telefono);
         if ($existing) {
@@ -32,20 +34,20 @@ class CreateContactoUseCase
         $contacto = new Contacto();
         $contacto->setTelefono($telefono);
 
-        if (isset($data['name'])) {
-            $contacto->setNombre($data['name']);
+        if (isset($data['nombre'])) {
+            $contacto->setNombre($data['nombre']);
         }
 
-        if (isset($data['status']) && in_array($data['status'], ['active', 'inactive'])) {
-            $contacto->setEstado($data['status']);
+        if (isset($data['estado']) && is_string($data['estado']) && EstadoDeContacto::tryFrom($data['estado']) !== null) {
+            $contacto->setEstado($data['estado']);
         }
 
-        if (isset($data['channel']) && in_array($data['channel'], ['whatsapp', 'other'])) {
-            $contacto->setCanal($data['channel']);
+        if (isset($data['canal']) && is_string($data['canal']) && CanalDeContacto::tryFrom($data['canal']) !== null) {
+            $contacto->setCanal($data['canal']);
         }
 
-        if (isset($data['owner_id']) && is_numeric($data['owner_id'])) {
-            $contacto->setResponsableId((int) $data['owner_id']);
+        if (isset($data['responsableId']) && is_numeric($data['responsableId'])) {
+            $contacto->setResponsableId((int) $data['responsableId']);
         }
 
         if (isset($data['email'])) {
@@ -74,8 +76,8 @@ class CreateContactoUseCase
             responsableId: $contacto->getResponsableId(),
             email: $contacto->getEmail(),
             marcasDeTiempo: [
-                'created_at' => $contacto->getCreadoAt()->format('Y-m-d H:i:s'),
-                'updated_at' => $contacto->getActualizadoAt()->format('Y-m-d H:i:s'),
+                'creadoAt' => $contacto->getCreadoAt()->format('Y-m-d H:i:s'),
+                'actualizadoAt' => $contacto->getActualizadoAt()->format('Y-m-d H:i:s'),
             ],
         );
     }

@@ -23,7 +23,7 @@ use Symfony\Component\Console\Output\OutputInterface;
  * Carga datos de prueba de reportes en la base de datos inbiox_test.
  *
  * Crea 5 agentes, 10 contactos, más de 50 tickets (distribuidos en 90 días),
- * turnos de agentes y eventos auto_reopened para pruebas de integración.
+ * turnos de agentes y eventos reapertura_automatica para pruebas de integración.
  *
  * SEGURIDAD: solo se ejecuta con APP_ENV=test Y el nombre de la base de datos debe contener 'inbiox_test'.
  *
@@ -179,7 +179,7 @@ final class SeedReportesCommand extends Command
         $this->em->flush();
 
         // ── Eventos auto-reopened (3 tickets) ──
-        $output->writeln('Creating auto_reopened events...');
+        $output->writeln('Creating reapertura_automatica events...');
         $cantidadDeReabiertos = 0;
         foreach ($tickets as $ticket) {
             if ($cantidadDeReabiertos >= 3) {

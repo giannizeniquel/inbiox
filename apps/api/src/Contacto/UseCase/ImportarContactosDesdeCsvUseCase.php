@@ -27,7 +27,19 @@ final class ImportarContactosDesdeCsvUseCase
     public const MAX_ERRORES = 100;
 
     private const MIME_TYPES_PERMITIDOS = ['text/csv', 'text/plain', 'application/vnd.ms-excel'];
-    private const COLUMNAS_OPCIONALES = ['name', 'email', 'status', 'channel', 'owner_id'];
+    /**
+     * Encabezado del CSV (en minúsculas y sin espacios alrededor) => clave del alta de
+     * contacto (D9 de docs/contrato-api.md). `teléfono` es la única obligatoria.
+     */
+    private const COLUMNAS = [
+        'teléfono' => 'telefono',
+        'nombre' => 'nombre',
+        'email' => 'email',
+        'estado' => 'estado',
+        'canal' => 'canal',
+        'id del responsable' => 'responsableId',
+    ];
+    private const COLUMNA_TELEFONO = 'telefono';
 
     public function __construct(
         private readonly CreateContactoUseCase $createContactoUseCase,
@@ -49,13 +61,10 @@ final class ImportarContactosDesdeCsvUseCase
         $reader->setDelimiter($delimiter);
         $reader->setHeaderOffset(0);
 
-        $normalizedHeader = array_map(
-            static fn(string $column): string => strtolower(trim($column)),
-            $reader->getHeader(),
-        );
+        $normalizedHeader = $this->mapearEncabezado($reader->getHeader());
 
-        if (!in_array('phone', $normalizedHeader, true)) {
-            throw new ImportacionRechazadaException('missing_phone_column', 'CSV is missing the required "phone" column');
+        if (!in_array(self::COLUMNA_TELEFONO, $normalizedHeader, true)) {
+            throw new ImportacionRechazadaException('missing_phone_column', 'CSV is missing the required "Teléfono" column');
         }
 
         $rows = $this->leerFilas($reader, $normalizedHeader);
@@ -65,6 +74,23 @@ final class ImportarContactosDesdeCsvUseCase
         }
 
         return $this->procesarFilas($rows);
+    }
+
+    /**
+     * Cada encabezado conocido pasa a su clave del alta; los desconocidos quedan con una clave
+     * por posición que ninguna columna conocida usa, para que no lleguen al alta.
+     *
+     * @param list<string> $encabezado
+     * @return list<string>
+     */
+    private function mapearEncabezado(array $encabezado): array
+    {
+        $claves = [];
+        foreach ($encabezado as $posicion => $columna) {
+            $claves[] = self::COLUMNAS[mb_strtolower(trim($columna))] ?? '#' . $posicion;
+        }
+
+        return $claves;
     }
 
     private function validarRestriccionesDeArchivo(string $path, ?string $originalName): void
@@ -145,7 +171,7 @@ final class ImportarContactosDesdeCsvUseCase
 
         foreach ($rows as $entry) {
             $row = $entry['row'];
-            $telefonoCrudo = trim($entry['data']['phone'] ?? '');
+            $telefonoCrudo = trim($entry['data'][self::COLUMNA_TELEFONO] ?? '');
 
             if ($telefonoCrudo === '') {
                 $errores[] = $this->armarError($row, $telefonoCrudo, 'phone_missing', 'Phone is required');
@@ -201,10 +227,10 @@ final class ImportarContactosDesdeCsvUseCase
      */
     private function armarDatosDeContacto(array $row): array
     {
-        $data = ['phone' => trim($row['phone'] ?? '')];
+        $data = [self::COLUMNA_TELEFONO => trim($row[self::COLUMNA_TELEFONO] ?? '')];
 
-        foreach (self::COLUMNAS_OPCIONALES as $column) {
-            if (isset($row[$column]) && trim($row[$column]) !== '') {
+        foreach (self::COLUMNAS as $column) {
+            if ($column !== self::COLUMNA_TELEFONO && isset($row[$column]) && trim($row[$column]) !== '') {
                 $data[$column] = trim($row[$column]);
             }
         }
@@ -223,10 +249,10 @@ final class ImportarContactosDesdeCsvUseCase
     }
 
     /**
-     * @return array{row: int, phone: string, reason: string, message: string}
+     * @return array{fila: int, telefono: string, motivo: string, mensaje: string}
      */
     private function armarError(int $row, string $telefono, string $motivo, string $message): array
     {
-        return ['row' => $row, 'phone' => $telefono, 'reason' => $motivo, 'message' => $message];
+        return ['fila' => $row, 'telefono' => $telefono, 'motivo' => $motivo, 'mensaje' => $message];
     }
 }

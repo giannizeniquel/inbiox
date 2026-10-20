@@ -351,7 +351,7 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
     {
         $this->seedTickets();
         $resolvedId = (int) $this->connection()->fetchOne("SELECT id FROM tickets WHERE status = 'resuelto'");
-        foreach ([['auto_reopened', '2025-03-02 11:00:00'], ['auto_reopened', '2025-03-05 11:00:00'], ['status_changed', '2025-03-02 12:00:00']] as [$type, $at]) {
+        foreach ([['reapertura_automatica', '2025-03-02 11:00:00'], ['reapertura_automatica', '2025-03-05 11:00:00'], ['status_changed', '2025-03-02 12:00:00']] as [$type, $at]) {
             $this->connection()->executeStatement(
                 "INSERT INTO ticket_events (ticket_id, type, source, created_at) VALUES (?, ?, 'system', ?)",
                 [$resolvedId, $type, $at],

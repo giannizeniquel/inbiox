@@ -387,8 +387,8 @@ final class WebhookInboundVerifierProbeTest extends CharacterizationTestCase
         self::assertSame(1, $this->countRows('conversations'));
         self::assertSame(['wamid.probe-r1', 'wamid.probe-r2'], $this->inboundWamids());
         self::assertSame(
-            ['window_expired_closed', 'window_reopened'],
-            $this->connection()->fetchFirstColumn("SELECT type FROM ticket_events WHERE type LIKE 'window%' ORDER BY id"),
+            ['ventana_vencida_cerrado', 'ventana_reabierta'],
+            $this->connection()->fetchFirstColumn("SELECT type FROM ticket_events WHERE type LIKE 'ventana%' ORDER BY id"),
         );
         self::assertSame([['mensaje.creado', 3]], $this->outbox());
     }

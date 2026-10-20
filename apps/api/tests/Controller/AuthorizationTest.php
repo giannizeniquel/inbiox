@@ -118,7 +118,7 @@ class AuthorizationTest extends WebTestCase
 
     public function testUnauthenticatedRequestToContactsReturns401(): void
     {
-        $this->client->request('GET', '/api/contacts');
+        $this->client->request('GET', '/api/contactos');
         self::assertSame(401, $this->client->getResponse()->getStatusCode());
     }
 
@@ -153,7 +153,7 @@ class AuthorizationTest extends WebTestCase
         $this->createUser('agent2@test.local', ['ROLE_AGENT'], $agent);
         $token = $this->login('agent2@test.local');
 
-        $this->client->request('GET', '/api/contacts', [], [], $this->authHeaders($token));
+        $this->client->request('GET', '/api/contactos', [], [], $this->authHeaders($token));
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
 
         $data = \json_decode($this->client->getResponse()->getContent(), true);

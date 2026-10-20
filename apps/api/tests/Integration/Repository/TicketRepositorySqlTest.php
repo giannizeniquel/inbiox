@@ -215,13 +215,13 @@ class TicketRepositorySqlTest extends KernelTestCase
         $id = $this->createTicket(EstadoDeTicket::CERRADO->value);
         self::assertFalse($this->repo->findUltimoTipoDeEvento($id));
 
-        foreach (['tag_added', TipoDeEventoDeTicket::VENTANA_VENCIDA_CERRADO, 'tag_added'] as $type) {
+        foreach (['etiqueta_agregada', TipoDeEventoDeTicket::VENTANA_VENCIDA_CERRADO, 'etiqueta_agregada'] as $type) {
             $this->em->persist(new EventoDeTicket($id, $type, 'system'));
             $this->em->flush();
         }
         // Same created_at for all three: the highest id wins.
         $this->conn->executeStatement('UPDATE ticket_events SET created_at = ? WHERE ticket_id = ?', ['2026-01-01 00:00:00', $id]);
-        self::assertSame('tag_added', $this->repo->findUltimoTipoDeEvento($id));
+        self::assertSame('etiqueta_agregada', $this->repo->findUltimoTipoDeEvento($id));
 
         // A newer created_at wins over a higher id.
         $firstEventId = $this->conn->fetchOne('SELECT MIN(id) FROM ticket_events WHERE ticket_id = ?', [$id]);
