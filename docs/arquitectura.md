@@ -89,7 +89,9 @@ apps/web/src/app/
    - Si dos pantallas necesitan lo mismo, va a `data-access` cuando habla con la API, o a `shared` cuando es UI genérica.
 2. **El estado de UI propio de una pantalla vive en `features/<pantalla>`** (por ejemplo, el ticket seleccionado o los filtros abiertos). En `data-access` solo va el estado que viene de la API.
 3. **Los DTOs y modelos de la API van únicamente en `data-access/<modulo>`.**
-4. **Antes del contrato nuevo de la API se renombran carpetas, archivos, clases, tipos y selectores con el glosario.** Esos nombres no viajan por la red, así que el contrato no los vuelve a tocar.
+4. **Antes del contrato nuevo de la API se renombran con el glosario carpetas, archivos, clases, tipos, selectores, funciones, métodos, señales y variables.** Esos nombres no viajan por la red, así que el contrato no los vuelve a tocar.
+   - Un identificador que coincide con un campo del JSON (`agentId`, `messageId`, `deliveryStatus`) se separa a mano: si espeja el contrato, espera al contrato. El formato no alcanza para distinguirlo, porque el JSON mezcla camelCase y snake_case.
+   - Un método o una señal usados en un template `.html` se renombran también en el template; el build de producción con `strictTemplates` es el control.
    - Lo que refleja el contrato se renombra junto con él (fase 5 del backend): los campos del JSON y las propiedades que los espejan, los valores de enums que viajan por la red, los tipos de evento de Mercure, los strings de roles, las rutas `/api/...` y las URLs del router (el usuario puede tenerlas en favoritos).
    - Si un selector o un nombre se busca como string (por ejemplo `'app-message-bubble'` en `conversation-scroll.controller.ts`), el string cambia en el mismo commit.
    - Un término que el glosario no define queda como está hasta que el glosario lo decida.
