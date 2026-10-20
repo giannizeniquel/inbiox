@@ -13,7 +13,7 @@ El listado del anexo A tiene un nombre propuesto por clave, pero depende de esta
 | # | Decisión | Hoy | Recomendación |
 |---|---|---|---|
 | D1 | Estilo de las claves JSON | Mezclado: requests en camelCase (`#[MapRequestPayload]` sin `name_converter`), la mayoría de las respuestas en snake_case, Mercure en camelCase salvo los eventos `agent.*` en snake_case. Hay endpoints que mezclan dentro del mismo objeto (`GET /api/tickets`: `agent_id` y `teamId`; contactos: `owner_id` y `activeTicketId`). | **Decidido (L147): camelCase en todo el contrato** (requests, respuestas REST, Mercure). Las columnas de la base siguen en snake_case. |
-| D2 | Términos que el glosario no define (unos 70) | Ver la lista de la sección 2. | Definirlos en `docs/arquitectura.md` antes de armar el mapa. Propongo valores en la sección 2. |
+| D2 | Términos que el glosario no define (unos 70) | Ver la lista de la sección 2. | **Decidido (L148): la tabla de la sección 2 con cuatro ajustes** (`habilitada`, `texto`, `vencimientoAt`, `limit` y `offset` técnicos). |
 | D3 | Valores guardados que el glosario no define | `delivery_status`, estado del outbox, `ticket_events.type`, prioridad, estado de conversación, estado y canal de contacto, estado de resultado de reglas, `aggregate_type`. | Decidir si se traducen. Mi recomendación: traducir los que viajan por la red (prioridad, estado de entrega, estado y canal de contacto, tipos de la línea de tiempo) y dejar los internos (estado del outbox, `aggregate_type`, estado de reglas) para no migrar datos sin necesidad. |
 | D4 | Prefijos booleanos en JSON | `is_active`, `is_available`, `has_pending`, `is_in_shift` (también `in_shift`). | Igual que en el código: `activo`, `disponible`, `enTurno`, `hasPendientes`. |
 | D5 | Segmentos de ruta | `/api/admin/...`, `/api/me/...`, `/api/reports/...`, `/api/provider/...`. | Kebab-case en español (`/api/reportes/mapa-de-calor`). `admin` → `administracion`, `me` → `mi`. A decidir. |
@@ -27,8 +27,8 @@ El listado del anexo A tiene un nombre propuesto por clave, pero depende de esta
 | name / display name | `nombre` / `nombreVisible` | agentes, equipos, espacios de trabajo, contactos |
 | signature | `firma` | perfil |
 | sound / desktop | `sonido` / `escritorio` | notificaciones |
-| enabled | `activa` | respuesta automática |
-| message (texto) | `mensaje` | respuesta automática, errores |
+| enabled | `habilitada` | respuesta automática (`activo` ya es estado del ticket y adjetivo) |
+| message (texto de la respuesta automática) / message (de error) | `texto` / `mensaje` | `Mensaje` es la entidad del chat; solo los errores conservan `mensaje` |
 | timezone | `zonaHoraria` | agentes, disponibilidad |
 | notes | `notas` | asignación |
 | assigned by | `asignadoPor` | asignación |
@@ -40,7 +40,7 @@ El listado del anexo A tiene un nombre propuesto por clave, pero depende de esta
 | threshold | `umbral` | reportes |
 | search / filter / sort | `busqueda` / `filtro` / `orden` | listados |
 | from / to | `desde` / `hasta` | reportes |
-| page / limit / has next | `pagina` / `limite` / `haySiguiente` | paginación |
+| page / limit / has next | `pagina` / `limit` (técnico) / `haySiguiente` | paginación |
 | cursor / has more / next cursor | `cursor` (técnico) / `hayMas` / `siguienteCursor` | mensajes, línea de tiempo |
 | before / offset | `antesDe` / `offset` (técnico) | paginación |
 | direction (paginación: backward/forward) | `sentido` (`atras` / `adelante`) | `GET /api/tickets/{id}/messages`; no confundir con `direccion` del mensaje |
@@ -52,7 +52,7 @@ El listado del anexo A tiene un nombre propuesto por clave, pero depende de esta
 | date / hour | `fecha` / `hora` | reportes |
 | sample / pairs / run start / unanswered | `muestra` / `pares` / `inicioDeRacha` / `sinResponder` | demora de respuesta, participación |
 | partial data / data available from | `datosParciales` / `datosDisponiblesDesde` | reportes |
-| expires at / ttl minutes | `venceAt` / `ttlMinutos` | disponibilidad manual, URL de adjunto |
+| expires at / ttl minutes | `vencimientoAt` / `ttlMinutos` | disponibilidad manual, URL de adjunto. Excepción a la regla del participio: la fecha es futura, y expiry → `vencimiento` ya está en el glosario |
 | action (created / deleted) | `accion` (`creado` / `borrado`) | evento `agent.shift_changed` |
 
 Quedan en inglés por técnicos: `id`, `token`, `payload`, `sequence`, `phoneNumberId`, `mimeType`, `key`, `url`, `email`, `password`, `roles`, `error`, `access_token` / `token_type` / `expires_in` (OAuth2) y los parámetros `hub_*` del webhook de Meta.
@@ -194,7 +194,7 @@ Notación: `req` cuerpo, `q` query, `res` respuesta. Los nombres propuestos asum
 
 ### Compartidos
 
-- Paginación `meta`: `page`, `limit`, `total`, `has_next` → `pagina`, `limite`, `total`, `haySiguiente`.
+- Paginación `meta`: `page`, `limit`, `total`, `has_next` → `pagina`, `limit`, `total`, `haySiguiente`.
 - Fechas: `created_at`, `updated_at` → `creadoAt`, `actualizadoAt`.
 - `error` queda.
 
@@ -221,7 +221,7 @@ Notación: `req` cuerpo, `q` query, `res` respuesta. Los nombres propuestos asum
 ### Agente
 
 - **`GET /api/teams`** → `/api/equipos`: `id`, `workspace_id`, `name`, `is_active`
-- **`GET /api/me/settings`** → `/api/mi/configuracion`: `profile` {`name`, `email`, `signature`} → `perfil` {`nombre`, `email`, `firma`}; `notifications` {`sound`, `desktop`} → `notificaciones` {`sonido`, `escritorio`}; `autoReply` {`enabled`, `message`} → `respuestaAutomatica` {`activa`, `mensaje`}; `workspace` {`id`, `displayName`, `phoneNumberId`}; `businessHours` [{`dayOfWeek`, `start`, `end`}] → `horarioDeAtencion` [{`diaDeLaSemana`, `inicio`, `fin`}]
+- **`GET /api/me/settings`** → `/api/mi/configuracion`: `profile` {`name`, `email`, `signature`} → `perfil` {`nombre`, `email`, `firma`}; `notifications` {`sound`, `desktop`} → `notificaciones` {`sonido`, `escritorio`}; `autoReply` {`enabled`, `message`} → `respuestaAutomatica` {`habilitada`, `texto`}; `workspace` {`id`, `displayName`, `phoneNumberId`}; `businessHours` [{`dayOfWeek`, `start`, `end`}] → `horarioDeAtencion` [{`diaDeLaSemana`, `inicio`, `fin`}]
 - **`PUT /api/me/profile`** → `/api/mi/perfil`: `signature` → `firma`
 - **`PUT /api/me/notifications`** → `/api/mi/notificaciones`: `sound`, `desktop`
 
@@ -244,7 +244,7 @@ Notación: `req` cuerpo, `q` query, `res` respuesta. Los nombres propuestos asum
 
 ### Automatizacion
 
-- **`PUT /api/me/auto-reply`** → `/api/mi/respuesta-automatica`: `enabled`, `message` → `activa`, `mensaje`
+- **`PUT /api/me/auto-reply`** → `/api/mi/respuesta-automatica`: `enabled`, `message` → `habilitada`, `texto`
 
 ### Compartido
 
@@ -256,7 +256,7 @@ Notación: `req` cuerpo, `q` query, `res` respuesta. Los nombres propuestos asum
 ### Contacto
 
 - **`GET /api/contacts`** → `/api/contactos`
-  - q: `page`, `limit`, `search`, `status`, `channel`, `ownerId`, `email` → `pagina`, `limite`, `busqueda`, `estado`, `canal`, `responsableId`
+  - q: `page`, `limit`, `search`, `status`, `channel`, `ownerId`, `email` → `pagina`, `limit`, `busqueda`, `estado`, `canal`, `responsableId`
   - res: `id`, `phone`, `name`, `status`, `channel`, `owner_id`, `email`, `timestamps` {`created_at`, `updated_at`}, `activeTicketId` → `telefono`, `nombre`, `estado`, `canal`, `responsableId`, `fechas`, `ticketActivoId`
 - **`GET|POST|PUT|DELETE /api/contacts/{id}`:** las mismas claves
 - **`POST /api/contacts/import`** → `…/importar`: req multipart `file` → `archivo`; res `totalRows`, `imported`, `failed`, `errors` [{`row`, `phone`, `reason`, `message`}], `errorsTruncated` → `totalDeFilas`, `importados`, `fallidos`, `errores` [{`fila`, `telefono`, `motivo`, `mensaje`}], `erroresTruncados`
@@ -268,7 +268,7 @@ Notación: `req` cuerpo, `q` query, `res` respuesta. Los nombres propuestos asum
 - **`POST /api/provider/template/send`** → `/api/proveedor/plantilla/enviar`: `templateName`, `language`, `parameters` → `nombreDePlantilla`, `idioma`, `parametros`
 - **`POST /api/provider/media/upload`** → `/api/proveedor/adjunto/subir`: multipart `file`, `ticketId`; res `mediaId`, `key`
 - **`GET /api/provider/media/{mediaId}`:** binario; `{mediaId}` es de Meta
-- **`GET /api/messages/{id}/media`** → `/api/mensajes/{id}/adjunto`: `url`, `expiresAt` → `venceAt`
+- **`GET /api/messages/{id}/media`** → `/api/mensajes/{id}/adjunto`: `url`, `expiresAt` → `vencimientoAt`
 - **`/webhook`:** contrato de Meta, no cambia
 
 ### Disponibilidad
@@ -276,7 +276,7 @@ Notación: `req` cuerpo, `q` query, `res` respuesta. Los nombres propuestos asum
 - **`GET /api/workspaces/{id}/available-agents`** → `/api/espacios-de-trabajo/{id}/agentes-disponibles`: `id`, `name`, `is_active_now`, `active_ticket_count`, `max_active_tickets` → `nombre`, `activoAhora`, `cantidadDeTicketsActivos`, `maxTicketsActivos`
 - **`/api/agents/{id}/availability`** → `/api/agentes/{id}/disponibilidad`
   - `POST` req: `isAvailable`, `ttlMinutes` → `disponible`, `ttlMinutos`
-  - res: `agent_id`, `is_available`, `is_in_shift`, `timezone`, `current_load`, `max_capacity`, `override` {`active`, `is_available`, `expires_at`} → `agenteId`, `disponible`, `enTurno`, `zonaHoraria`, `cargaActual`, `capacidadMaxima`, `disponibilidadManual` {`activa`, `disponible`, `venceAt`}
+  - res: `agent_id`, `is_available`, `is_in_shift`, `timezone`, `current_load`, `max_capacity`, `override` {`active`, `is_available`, `expires_at`} → `agenteId`, `disponible`, `enTurno`, `zonaHoraria`, `cargaActual`, `capacidadMaxima`, `disponibilidadManual` {`activa`, `disponible`, `vencimientoAt`}
 - **`POST /api/agents/{id}/shifts`, `DELETE …/{shiftId}`** → `/api/agentes/{id}/turnos[/{turnoId}]`: req `dayOfWeek`, `startTime`, `endTime`; res `shift_id`, `agent_id`, `day_of_week`, `start_time`, `end_time` → `turnoId`, `agenteId`, `diaDeLaSemana`, `horaDeInicio`, `horaDeFin`
 - **`GET|PUT /api/me/shifts`** → `/api/mi/turnos`: `shifts` [{`dayOfWeek`, `start`, `end`}] → `turnos` [{`diaDeLaSemana`, `inicio`, `fin`}]
 
