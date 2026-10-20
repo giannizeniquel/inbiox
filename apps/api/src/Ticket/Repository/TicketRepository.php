@@ -7,6 +7,7 @@ use App\Ticket\Ticket;
 use App\Ticket\EstadoDeTicket;
 use App\Contacto\Contacto;
 use App\Conversacion\Conversacion;
+use App\Conversacion\DireccionDeMensaje;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\LockMode;
@@ -16,6 +17,13 @@ use Doctrine\Persistence\ManagerRegistry;
 
 class TicketRepository extends ServiceEntityRepository
 {
+    /** Estados que cuentan como carga activa de un agente. */
+    private const ESTADOS_ACTIVOS = [
+        EstadoDeTicket::NUEVO->value,
+        EstadoDeTicket::ACTIVO->value,
+        EstadoDeTicket::EN_ESPERA->value,
+    ];
+
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Ticket::class);
@@ -333,12 +341,13 @@ class TicketRepository extends ServiceEntityRepository
                 't.last_inbound_message_at',
                 'c.phone', 'c.name AS contact_name', 'conv.id AS conv_id',
                 'a.name AS agent_name', 'a.max_active_tickets',
-                "(SELECT COUNT(*) FROM tickets t2 WHERE t2.assigned_agent_id = a.id AND t2.status IN ('new', 'active', 'waiting')) AS current_active_tickets",
+                "(SELECT COUNT(*) FROM tickets t2 WHERE t2.assigned_agent_id = a.id AND t2.status IN (:activeStatuses)) AS current_active_tickets",
             )
             ->from('tickets', 't')
             ->innerJoin('t', 'conversations', 'conv', 't.conversation_id = conv.id')
             ->innerJoin('t', 'contacts', 'c', 'conv.contact_id = c.id')
-            ->leftJoin('t', 'agents', 'a', 't.assigned_agent_id = a.id');
+            ->leftJoin('t', 'agents', 'a', 't.assigned_agent_id = a.id')
+            ->setParameter('activeStatuses', self::ESTADOS_ACTIVOS, ArrayParameterType::STRING);
 
         $this->aplicarFiltrosDeLista($qb, $filtros);
 
@@ -378,10 +387,11 @@ class TicketRepository extends ServiceEntityRepository
             ->from('messages', 'm2')
             ->innerJoin('m2', 'tickets', 't2', 't2.conversation_id = m2.conversation_id')
             ->where('m2.conversation_id IN (:conversationIds)')
-            ->andWhere("m2.direction = 'inbound'")
+            ->andWhere('m2.direction = :inbound')
             ->andWhere("m2.created_at > COALESCE(t2.last_read_at, '1970-01-01 00:00:00')")
             ->groupBy('m2.conversation_id')
             ->setParameter('conversationIds', $conversacionIds, ArrayParameterType::INTEGER)
+            ->setParameter('inbound', DireccionDeMensaje::ENTRANTE->value)
             ->fetchAllAssociative();
     }
 
@@ -402,8 +412,8 @@ class TicketRepository extends ServiceEntityRepository
             ->andWhere('t.last_read_at IS NULL OR EXISTS (SELECT 1 FROM messages m WHERE m.conversation_id = conv.id AND m.direction = :inbound AND m.created_at > t.last_read_at)')
             ->setParameter('phone', $phoneNumberId)
             ->setParameter('agentId', $agenteId)
-            ->setParameter('statuses', ['new', 'active', 'waiting'], ArrayParameterType::STRING)
-            ->setParameter('inbound', 'inbound')
+            ->setParameter('statuses', self::ESTADOS_ACTIVOS, ArrayParameterType::STRING)
+            ->setParameter('inbound', DireccionDeMensaje::ENTRANTE->value)
             ->setMaxResults(1)
             ->fetchOne();
     }
@@ -424,7 +434,7 @@ class TicketRepository extends ServiceEntityRepository
                 't.last_inbound_message_at',
                 'c.id AS contact_id', 'c.phone AS contact_phone', 'c.name AS contact_name',
                 'conv.id AS conv_id',
-                "(SELECT COUNT(*) FROM messages m2 WHERE m2.conversation_id = conv.id AND m2.direction = 'inbound' AND m2.created_at > COALESCE(t.last_read_at, '1970-01-01 00:00:00')) AS unread_count",
+                "(SELECT COUNT(*) FROM messages m2 WHERE m2.conversation_id = conv.id AND m2.direction = :inbound AND m2.created_at > COALESCE(t.last_read_at, '1970-01-01 00:00:00')) AS unread_count",
                 '(SELECT m3.content FROM messages m3 WHERE m3.conversation_id = conv.id ORDER BY m3.created_at DESC LIMIT 1) AS last_message',
             )
             ->from('tickets', 't')
@@ -432,6 +442,7 @@ class TicketRepository extends ServiceEntityRepository
             ->innerJoin('conv', 'contacts', 'c', 'conv.contact_id = c.id')
             ->where('t.id = :ticketId')
             ->setParameter('ticketId', $id)
+            ->setParameter('inbound', DireccionDeMensaje::ENTRANTE->value)
             ->fetchAssociative();
     }
 
@@ -505,8 +516,9 @@ class TicketRepository extends ServiceEntityRepository
             ->select('t.contact_id', 'MAX(t.id) AS ticket_id')
             ->from('tickets', 't')
             ->where('t.contact_id IN (:contactIds)')
-            ->andWhere("t.status NOT IN ('closed', 'resolved')")
-            ->setParameter('contactIds', $contactoIds, ArrayParameterType::INTEGER);
+            ->andWhere('t.status NOT IN (:closedStatuses)')
+            ->setParameter('contactIds', $contactoIds, ArrayParameterType::INTEGER)
+            ->setParameter('closedStatuses', [EstadoDeTicket::CERRADO->value, EstadoDeTicket::RESUELTO->value], ArrayParameterType::STRING);
 
         if ($phoneNumberId !== null) {
             $qb->andWhere('t.phone_number_id = :phoneNumberId')

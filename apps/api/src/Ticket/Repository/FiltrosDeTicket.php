@@ -2,6 +2,7 @@
 
 namespace App\Ticket\Repository;
 
+use App\Ticket\EstadoDeTicket;
 use App\Ticket\Etiqueta;
 
 /**
@@ -17,7 +18,6 @@ use App\Ticket\Etiqueta;
  */
 final class FiltrosDeTicket
 {
-    private const KNOWN_STATUSES = ['new', 'active', 'waiting', 'resolved', 'closed'];
     private const MAX_TAGS = 5;
 
     /** 'unassigned', 'assigned' o null si no hay filtro de asignación. */
@@ -58,7 +58,7 @@ final class FiltrosDeTicket
         if ($estado) {
             $estados = array_values(array_filter(
                 array_map('trim', explode(',', $estado)),
-                fn ($s) => in_array($s, self::KNOWN_STATUSES),
+                fn ($s) => EstadoDeTicket::tryFrom($s) !== null,
             ));
         }
         $this->estados = $estados;

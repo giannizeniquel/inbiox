@@ -4,6 +4,7 @@ namespace App\Automatizacion;
 
 use App\Ticket\EventoDeTicket;
 use App\Ticket\EstadoDeTicket;
+use App\Ticket\TipoDeEventoDeTicket;
 use App\Ticket\UseCase\CambiarEstadoDeTicketUseCase;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -41,7 +42,7 @@ class ReglaDeReaperturaAutomatica implements ReglaInterface
         );
 
         // Emite el evento auto_reopened
-        $event = new EventoDeTicket($contexto->getTicketId(), 'auto_reopened', 'system');
+        $event = new EventoDeTicket($contexto->getTicketId(), TipoDeEventoDeTicket::REAPERTURA_AUTOMATICA, 'system');
         $this->em->persist($event);
         $this->em->flush();
     }

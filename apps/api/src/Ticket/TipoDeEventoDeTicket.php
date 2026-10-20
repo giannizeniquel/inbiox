@@ -16,6 +16,7 @@ final class TipoDeEventoDeTicket
 {
     public const VENTANA_VENCIDA_CERRADO = 'window_expired_closed';
     public const VENTANA_REABIERTO = 'window_reopened';
+    public const REAPERTURA_AUTOMATICA = 'auto_reopened';
 
     // Registro de auditoría del cierre/resolución manual (ticket-closure-authorization).
     // Ver ClasificadorDeAuditoriaDeCierre para la tabla de verdad que llega a estos.

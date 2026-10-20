@@ -2,7 +2,11 @@
 
 namespace App\Reporte\Repository;
 
+use App\Conversacion\DireccionDeMensaje;
+use App\Conversacion\TipoDeRemitente;
+use App\Ticket\EstadoDeTicket;
 use App\Ticket\Ticket;
+use App\Ticket\TipoDeEventoDeTicket;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\ParameterType;
@@ -24,6 +28,13 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class ReporteRepository extends ServiceEntityRepository
 {
+    /** Estados que cuentan como carga activa de un agente. */
+    private const ESTADOS_ACTIVOS = [
+        EstadoDeTicket::NUEVO->value,
+        EstadoDeTicket::ACTIVO->value,
+        EstadoDeTicket::EN_ESPERA->value,
+    ];
+
     private bool $isPostgres = false;
     
     public function __construct(
@@ -231,13 +242,11 @@ class ReporteRepository extends ServiceEntityRepository
 
         $results = $qb->getQuery()->getResult();
 
-        $conteos = [
-            'new' => 0,
-            'active' => 0,
-            'waiting' => 0,
-            'resolved' => 0,
-            'closed' => 0,
-        ];
+        // Las claves de la respuesta son los valores del enum, en el orden de sus casos.
+        $conteos = [];
+        foreach (EstadoDeTicket::cases() as $estado) {
+            $conteos[$estado->value] = 0;
+        }
 
         foreach ($results as $row) {
             $estado = $row['status'];
@@ -339,7 +348,11 @@ class ReporteRepository extends ServiceEntityRepository
         $frtTimeDiff = $this->getTimeDiffExpression('t.created_at', 't.first_response_at');
         $rtTimeDiff = $this->getTimeDiffExpression('t.created_at', 't.resolved_at');
 
-        $params = ['from' => $from->format('Y-m-d H:i:s'), 'to' => $to->format('Y-m-d H:i:s')];
+        $params = [
+            'from' => $from->format('Y-m-d H:i:s'),
+            'to' => $to->format('Y-m-d H:i:s'),
+            'activeStatuses' => self::ESTADOS_ACTIVOS,
+        ];
         $subFilterClause = $this->clausulaDeFiltroDeTicket($params, 't2', null, $phoneNumberId, $equipoId);
         $joinFilterClause = $this->clausulaDeFiltroDeTicket($params, 't', null, $phoneNumberId, $equipoId);
 
@@ -353,7 +366,7 @@ class ReporteRepository extends ServiceEntityRepository
             AVG(CASE WHEN t.resolved_at IS NOT NULL THEN {$rtTimeDiff} ELSE NULL END) as avg_rt,
             (SELECT COUNT(*) FROM tickets t2
              WHERE t2.assigned_agent_id = a.id
-             AND t2.status IN ('new', 'active', 'waiting'){$subFilterClause}) as current_active_tickets
+             AND t2.status IN (:activeStatuses){$subFilterClause}) as current_active_tickets
         FROM agents a
         LEFT JOIN tickets t ON t.assigned_agent_id = a.id
             AND t.created_at >= :from AND t.created_at < :to{$joinFilterClause}
@@ -366,7 +379,7 @@ class ReporteRepository extends ServiceEntityRepository
 
         $sql .= " GROUP BY a.id, a.name, a.max_active_tickets ORDER BY a.id ASC";
         
-        $results = $conn->fetchAllAssociative($sql, $params);
+        $results = $conn->fetchAllAssociative($sql, $params, ['activeStatuses' => ArrayParameterType::STRING]);
         
         $metricasDeAgentes = [];
         foreach ($results as $row) {
@@ -409,7 +422,7 @@ class ReporteRepository extends ServiceEntityRepository
     {
         $conn = $this->entityManager->getConnection();
 
-        $params = [];
+        $params = ['activeStatuses' => self::ESTADOS_ACTIVOS];
         $workspaceClause = $this->clausulaDeFiltroDeTicket($params, 't', null, $phoneNumberId, null);
 
         $agentClause = '';
@@ -424,12 +437,12 @@ class ReporteRepository extends ServiceEntityRepository
             a.max_active_tickets as max_capacity,
             (SELECT COUNT(*) FROM tickets t
              WHERE t.assigned_agent_id = a.id
-             AND t.status IN ('new', 'active', 'waiting'){$workspaceClause}) as active_tickets
+             AND t.status IN (:activeStatuses){$workspaceClause}) as active_tickets
         FROM agents a
         WHERE a.active = 1{$agentClause}
         ORDER BY a.id ASC";
 
-        $results = $conn->fetchAllAssociative($sql, $params);
+        $results = $conn->fetchAllAssociative($sql, $params, ['activeStatuses' => ArrayParameterType::STRING]);
 
         $metricasDeAgentes = [];
         foreach ($results as $row) {
@@ -709,12 +722,13 @@ class ReporteRepository extends ServiceEntityRepository
         FROM ticket_events te
         INNER JOIN tickets t ON t.id = te.ticket_id
         LEFT JOIN contacts c ON c.id = t.contact_id
-        WHERE te.type = 'auto_reopened'
+        WHERE te.type = :tipo_reapertura
         AND te.created_at >= :from AND te.created_at < :to";
 
         $params = [
             'from' => $from->format('Y-m-d H:i:s'),
             'to' => $to->format('Y-m-d H:i:s'),
+            'tipo_reapertura' => TipoDeEventoDeTicket::REAPERTURA_AUTOMATICA,
         ];
 
         $sql .= $this->clausulaDeFiltroDeTicket($params, 't', null, $phoneNumberId, null);
@@ -755,14 +769,18 @@ class ReporteRepository extends ServiceEntityRepository
         $conn = $this->entityManager->getConnection();
 
         $sql = "SELECT MIN(c) AS data_available_from FROM (
-                (SELECT created_at AS c FROM messages WHERE sender_type = 'agent'     ORDER BY created_at LIMIT 1)
+                (SELECT created_at AS c FROM messages WHERE sender_type = :senderAgent     ORDER BY created_at LIMIT 1)
               UNION ALL
-                (SELECT created_at AS c FROM messages WHERE sender_type = 'automatic' ORDER BY created_at LIMIT 1)
+                (SELECT created_at AS c FROM messages WHERE sender_type = :senderAutomatic ORDER BY created_at LIMIT 1)
               UNION ALL
-                (SELECT created_at AS c FROM messages WHERE sender_type = 'contact'   ORDER BY created_at LIMIT 1)
+                (SELECT created_at AS c FROM messages WHERE sender_type = :senderContact   ORDER BY created_at LIMIT 1)
             ) probe";
 
-        $result = $conn->fetchAssociative($sql);
+        $result = $conn->fetchAssociative($sql, [
+            'senderAgent' => TipoDeRemitente::AGENTE->value,
+            'senderAutomatic' => TipoDeRemitente::AUTOMATICO->value,
+            'senderContact' => TipoDeRemitente::CONTACTO->value,
+        ]);
         $value = $result['data_available_from'] ?? null;
 
         return $value !== null ? new \DateTimeImmutable($value) : null;
@@ -809,17 +827,21 @@ class ReporteRepository extends ServiceEntityRepository
         $params = [
             'from' => $from->format('Y-m-d H:i:s'),
             'to' => $to->format('Y-m-d H:i:s'),
+            'senderAgent' => TipoDeRemitente::AGENTE->value,
+            'senderAutomatic' => TipoDeRemitente::AUTOMATICO->value,
+            'senderContact' => TipoDeRemitente::CONTACTO->value,
+            'inbound' => DireccionDeMensaje::ENTRANTE->value,
         ];
 
         $workspaceClause = $this->clausulaDeFiltroDeTicket($params, 't', null, $phoneNumberId, null);
 
         $sql = "WITH cutoff AS (
                 SELECT MIN(c) AS data_available_from FROM (
-                    (SELECT created_at AS c FROM messages WHERE sender_type = 'agent'     ORDER BY created_at LIMIT 1)
+                    (SELECT created_at AS c FROM messages WHERE sender_type = :senderAgent     ORDER BY created_at LIMIT 1)
                   UNION ALL
-                    (SELECT created_at AS c FROM messages WHERE sender_type = 'automatic' ORDER BY created_at LIMIT 1)
+                    (SELECT created_at AS c FROM messages WHERE sender_type = :senderAutomatic ORDER BY created_at LIMIT 1)
                   UNION ALL
-                    (SELECT created_at AS c FROM messages WHERE sender_type = 'contact'   ORDER BY created_at LIMIT 1)
+                    (SELECT created_at AS c FROM messages WHERE sender_type = :senderContact   ORDER BY created_at LIMIT 1)
                 ) probe
             ),
             scoped_convs AS (
@@ -847,7 +869,7 @@ class ReporteRepository extends ServiceEntityRepository
             ),
             seq AS (
                 SELECT s.*,
-                       SUM(CASE WHEN s.sender_type = 'agent' THEN 1 ELSE 0 END)
+                       SUM(CASE WHEN s.sender_type = :senderAgent THEN 1 ELSE 0 END)
                          OVER (PARTITION BY s.ticket_id ORDER BY s.created_at, s.id
                                ROWS UNBOUNDED PRECEDING) AS reply_seq
                 FROM msgs s
@@ -859,13 +881,13 @@ class ReporteRepository extends ServiceEntityRepository
                            ROW_NUMBER() OVER (PARTITION BY q.ticket_id, q.reply_seq
                                               ORDER BY q.created_at, q.id) AS rn,
                            COUNT(*) OVER (PARTITION BY q.ticket_id, q.reply_seq) AS burst_size
-                    FROM seq q WHERE q.direction = 'inbound'
+                    FROM seq q WHERE q.direction = :inbound
                 ) ranked
                 WHERE rn = 1
             ),
             agent_replies AS (
                 SELECT ticket_id, reply_seq, created_at AS reply_at, sender_agent_id
-                FROM seq WHERE sender_type = 'agent'
+                FROM seq WHERE sender_type = :senderAgent
             )
             SELECT r.sender_agent_id AS agent_id, a.name AS agent_name,
                    COUNT(r.reply_at) AS sample_count,
@@ -1019,6 +1041,8 @@ class ReporteRepository extends ServiceEntityRepository
             'conversationId' => $episodio['conversation_id'],
             'episodeStart' => $episodio['start'],
             'cutoff' => $corte !== null ? $corte->format('Y-m-d H:i:s') : '1970-01-01 00:00:00',
+            'senderAgent' => TipoDeRemitente::AGENTE->value,
+            'inbound' => DireccionDeMensaje::ENTRANTE->value,
         ];
         $episodeEndClause = '';
         if ($episodio['end'] !== null) {
@@ -1036,7 +1060,7 @@ class ReporteRepository extends ServiceEntityRepository
             ),
             seq AS (
                 SELECT s.*,
-                       SUM(CASE WHEN s.sender_type = 'agent' THEN 1 ELSE 0 END)
+                       SUM(CASE WHEN s.sender_type = :senderAgent THEN 1 ELSE 0 END)
                          OVER (ORDER BY s.created_at, s.id ROWS UNBOUNDED PRECEDING) AS reply_seq
                 FROM msgs s
             ),
@@ -1046,13 +1070,13 @@ class ReporteRepository extends ServiceEntityRepository
                     SELECT q.reply_seq, q.created_at, q.id,
                            ROW_NUMBER() OVER (PARTITION BY q.reply_seq ORDER BY q.created_at, q.id) AS rn,
                            COUNT(*) OVER (PARTITION BY q.reply_seq) AS burst_size
-                    FROM seq q WHERE q.direction = 'inbound'
+                    FROM seq q WHERE q.direction = :inbound
                 ) ranked
                 WHERE rn = 1
             ),
             agent_replies AS (
                 SELECT reply_seq, created_at AS reply_at, sender_agent_id
-                FROM seq WHERE sender_type = 'agent'
+                FROM seq WHERE sender_type = :senderAgent
             )
             SELECT b.inbound_at, b.burst_size, r.reply_at, r.sender_agent_id AS agent_id, a.name AS agent_name,
                    {$timeDiff} AS delay_seconds
@@ -1096,9 +1120,9 @@ class ReporteRepository extends ServiceEntityRepository
             $count = (int) $row['message_count'];
             if ($row['sender_type'] === null) {
                 $cantidadSinAtribuir += $count;
-            } elseif ($row['sender_type'] === 'automatic') {
+            } elseif ($row['sender_type'] === TipoDeRemitente::AUTOMATICO->value) {
                 $cantidadDeMensajesAutomaticos += $count;
-            } elseif ($row['sender_type'] === 'agent' && $row['sender_agent_id'] !== null) {
+            } elseif ($row['sender_type'] === TipoDeRemitente::AGENTE->value && $row['sender_agent_id'] !== null) {
                 $agenteId = (int) $row['sender_agent_id'];
                 $mensajesPorAgente[$agenteId] = ($mensajesPorAgente[$agenteId] ?? 0) + $count;
             }

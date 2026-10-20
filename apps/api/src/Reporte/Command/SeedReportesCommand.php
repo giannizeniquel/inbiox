@@ -7,8 +7,10 @@ namespace App\Reporte\Command;
 use App\Agente\Agente;
 use App\Disponibilidad\Turno;
 use App\Contacto\Contacto;
+use App\Ticket\EstadoDeTicket;
 use App\Ticket\EventoDeTicket;
 use App\Ticket\Ticket;
+use App\Ticket\TipoDeEventoDeTicket;
 use App\Administracion\EspacioDeTrabajo;
 use App\Reporte\Repository\ReporteRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -126,7 +128,7 @@ final class SeedReportesCommand extends Command
 
         // ── 55 tickets en 90 días ──
         $output->writeln('Creating 55 tickets...');
-        $estados = ['new', 'active', 'waiting', 'resolved', 'closed'];
+        $estados = array_map(fn (EstadoDeTicket $estado) => $estado->value, EstadoDeTicket::cases());
         $prioridades = ['low', 'medium', 'high', 'urgent'];
         $baseTime = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->modify('-90 days');
 
@@ -184,7 +186,7 @@ final class SeedReportesCommand extends Command
                 break;
             }
             if ($ticket->getResueltoAt() !== null) {
-                $event = new EventoDeTicket($ticket->getId(), 'auto_reopened', 'system');
+                $event = new EventoDeTicket($ticket->getId(), TipoDeEventoDeTicket::REAPERTURA_AUTOMATICA, 'system');
                 $this->em->persist($event);
                 $cantidadDeReabiertos++;
             }
