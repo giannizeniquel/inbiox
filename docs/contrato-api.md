@@ -150,7 +150,7 @@ El cambio sí tiene que ser **atómico entre datos y código**: `user.roles`, `s
 Verificado contra el front nuevo y el back:
 
 - **`GET /api/mercure/token`:** el front lo pide en el login, en el refresh y en el arranque, lo guarda y nunca lo manda. La suscripción funciona solo porque el hub de dev acepta suscriptores anónimos (`docker-compose.yml:47`). **No se sabe si el hub de producción también.** La app no está desplegada, así que no hay producción que revisar. **No se borra en el contrato:** queda hasta que se defina la autenticación de suscriptores de Mercure (sección 7, punto 11).
-- **`GET /api/tickets/{id}/events`:** no tiene llamador en el front nuevo. Tiene 5 tests de caracterización, y `docs/02` 00 y 06 ya lo marcan como inalcanzable e inseguro. **Decidido (L155):** se borra en la etapa 3, con sus tests. Es además el único otro lector de `event_type`.
+- **`GET /api/tickets/{id}/events`:** no tiene llamador en el front nuevo. Tiene 5 tests de caracterización, y `docs/02` 00 y 06 ya lo marcan como inalcanzable e inseguro. **Decidido (L155):** se borra en la etapa 3, con sus tests. **Borrado en la etapa 3** (`odd/tasks/limpieza-backend.md`, T49). Es además el único otro lector de `event_type`.
 
 ## 4. Migración de datos
 
@@ -189,8 +189,8 @@ Todas las columnas con valores fijos son `VARCHAR` o `JSON` (no hay `ENUM` de My
 1. Un enum `TipoDeEventoDeOutbox` con los nombres internos (`ticket.creado`, `ticket.actualizado`, `ticket.bandeja_actualizada`, `mensaje.creado`, `mensaje.actualizado`, `agente.disponibilidad_cambiada`, `agente.turno_cambiado`, `ticket.leido`). `DomainEvent::$type` toma el valor del enum en lugar de `self::class`, igual que los 4 casos de uso de `Disponibilidad`. Con eso las clases de evento se pueden renombrar libremente.
 2. `TipoDeEventoMapper` queda como la única tabla de nombre interno a tipo de Mercure, con la regla actual: `ticket.actualizado` sale como `ticket.asignado` si el payload trae responsable, o como `ticket.estado_cambiado` si no.
 3. Una migración reversible actualiza `event_type` y `payload.type` en todas las filas, de cualquier estado, con el mapa 1:1 de FQCN a nombre interno. `down()` restaura los FQCN. No se pierde nada.
-4. Durante una versión, el mapper acepta también los FQCN viejos (alias), para las filas que escriba código viejo mientras dura el despliegue (el `publisher` sigue corriendo). Se quita cuando un conteo de FQCN en `outbox_events` dé 0.
-5. Los payloads viejos traen valores viejos (`status: new`, `direction: inbound`…). No se migran: el factory los traduce al leerlos, porque `ResincronizarEventosDeTicketQuery` vuelve a leer filas publicadas. Si en el contrato se borra `GET /api/tickets/{id}/events` (3.6), las filas publicadas no se vuelven a leer y esta traducción cubre solo pendientes y reintentos.
+4. Durante una versión, el mapper acepta también los FQCN viejos (alias), para las filas que escriba código viejo mientras dura el despliegue (el `publisher` sigue corriendo). Se quita cuando un conteo de FQCN en `outbox_events` dé 0. **Quitados en la etapa 3** (T48), sin filas viejas en dev.
+5. Los payloads viejos traen valores viejos (`status: new`, `direction: inbound`…). No se migran: el factory los traduce al leerlos, porque `ResincronizarEventosDeTicketQuery` vuelve a leer filas publicadas. Desde que la etapa 3 borró `GET /api/tickets/{id}/events`, las filas publicadas no se vuelven a leer y esta traducción cubre solo pendientes y reintentos.
 6. `ContactoRepository.php:110-111,124` hoy busca la línea de tiempo con `LIKE '%TicketCreated%'` y `aggregate_type = 'Ticket'`, que matchea `'ticket'` solo por la collation. Pasa a `IN (...)` con los nombres internos y `aggregate_type = 'ticket'`.
 7. `PersistedEventTypeCharacterizationTest` pasa a fijar los nombres nuevos y los alias.
 
@@ -204,7 +204,7 @@ Todas las columnas con valores fijos son `VARCHAR` o `JSON` (no hay `ENUM` de My
 |---|---|---|---|
 | 1. Back solo, sin cambio de contrato | desacople de `event_type` (sección 5), literales del SQL nativo como parámetros (sección 4), purga de dead letters si se aprueba | no | migración `down()` y alias |
 | 2. Contrato | claves JSON, valores de enums y su migración, roles, tipos y tópicos de Mercure, rutas `/api`, URLs del router con redirecciones | **sí, juntos** | `down()` de la migración y volver a las versiones anteriores de back y front |
-| 3. Limpieza | quitar los alias de FQCN, borrar endpoints sin uso si se aprobó | no | |
+| 3. Limpieza | quitar los alias de FQCN, borrar endpoints sin uso si se aprobó (**hecha**: T48, T49) | no | |
 | 4. Retiro de redirecciones | borrar las redirecciones de las URLs viejas del router, después de un tiempo razonable | solo front | volver a agregarlas |
 
 **Contexto (D7):** la app no está desplegada y el front es el único cliente, así que las etapas son orden de trabajo sobre dev. No hace falta una etapa con los dos formatos: duplicar cada clave en 84 rutas costaría más que el cambio, y los roles no la admiten (sección 3.3). La migración de la etapa 2 corre sobre la base de dev con el `publisher` detenido, y antes de seguir se hace un smoke conjunto de back y front.
@@ -329,7 +329,7 @@ Notación: `req` cuerpo JSON, `mp` campo multipart, `q` query, `res` respuesta, 
 | 42 | Compartido | POST | `/debug/outbound/{ticketId}` | = (excepción D5) |
 | 43 | Compartido | POST | `/debug/status/{ticketId}` | = (excepción D5) |
 | 44 | Compartido | POST | `/debug/assign/{ticketId}` | = (excepción D5) |
-| 45 | Compartido | GET | `/api/tickets/{id}/events` | = hasta borrarla en la etapa 3 (L155) |
+| 45 | Compartido | GET | `/api/tickets/{id}/events` | borrada en la etapa 3 (L155, T49) |
 | 46 | Compartido | GET | `/api/mercure/token` | = (excepción D5) |
 | 47 | Compartido | POST | `/admin/outbox/publish` | = (excepción D5) |
 | 48 | Contacto | GET | `/api/contacts` | `/api/contactos` |
@@ -558,7 +558,7 @@ Notación: `req` cuerpo JSON, `mp` campo multipart, `q` query, `res` respuesta, 
 
 ### A.13 Compartido, depuración y operación
 
-- **`GET /api/tickets/{id}/events`** (ruta 45): q `afterSequence`; res `events`, `lastSequence`, `hasMore` (`Compartido/Query/ResincronizarEventosDeTicketQuery.php:36-38`). No se renombra: no tiene llamador y se borra en la etapa 3 (L155).
+- **`GET /api/tickets/{id}/events`** (ruta 45): q `afterSequence`; res `events`, `lastSequence`, `hasMore` (`Compartido/Query/ResincronizarEventosDeTicketQuery.php:36-38`). Borrada en la etapa 3 (T49); no se renombró porque no tenía llamador (L155).
 - **`GET /api/mercure/token`** (ruta 46): `{token}` =; 401 `{error}`. Ver 3.6.
 - **`POST /admin/outbox/publish`** (ruta 47): `{published}` → `{publicados}` (`OutboxController.php:26`).
 - **`/debug/*/{ticketId}`** (rutas 41–44, solo dev y test, sin cuerpo): res `success` → `exito`, `ticket_id` → `ticketId`, `message` → `mensaje`, `new_status` → `estadoNuevo` (solo `status`), `agent_id` → `agenteId` (solo `assign`); 500 `{success: false, error}` → `{exito: false, error}`; 404 `{error}` fuera de dev y test (`DebugController.php:33-167`).

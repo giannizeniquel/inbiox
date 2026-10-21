@@ -61,7 +61,6 @@ Leyenda "Rol": **Público**, **Auth** (cualquier usuario autenticado), **Agente*
 | POST | `/api/tickets/{id}/transition` | `FlujoDeTicketController::transicionar` (`:39-85`) | Agente; voter `CLOSE` solo hacia `resolved`/`closed` | `CambiarEstadoDeTicketUseCase::execute`. Sin UI. |
 | POST | `/api/tickets/{id}/resolve` | `FlujoDeTicketController::resolver` (`:88`) | Agente + voter `CLOSE` | `ResolverTicketUseCase`. Botón "RESOLVER". |
 | POST | `/api/tickets/{id}/close` | `FlujoDeTicketController::cerrar` (`:116`) | Agente + voter `CLOSE` → en la práctica Supervisor | Sin UI. |
-| GET | `/api/tickets/{id}/events` | `EventosDeTicketController::listarDesde` (`:34-81`) | Agente **y** JWT de Mercure en la misma cabecera → **inalcanzable** | Resync. Ver [R5](00-estado-y-pendientes.md#r5-endpoint-de-resync-de-eventos-inseguro-y-además-inalcanzable). |
 
 ### C. Mensajería saliente (proxy a WhatsApp)
 
@@ -213,7 +212,6 @@ Registradas en todos los entornos; responden 404 fuera de `dev`/`test` (`DebugCo
 | Elemento | Por qué | Evidencia |
 |---|---|---|
 | `TagController` (`POST`/`DELETE …/tags`), `AutoCloseController` (`POST …/auto-close`) | Solo tenían `#[Route]`, sin entrada en `routes.yaml`. **Borrado en la fase 1 de la limpieza.** | `odd/tasks/limpieza-backend.md` |
-| `GET /api/tickets/{id}/events` | Registrado, pero el firewall rechaza el token que envía el frontend. | [R5](00-estado-y-pendientes.md#r5-endpoint-de-resync-de-eventos-inseguro-y-además-inalcanzable) |
 | `AgentVoter`, `ReportVoter`, `TicketVoter::VIEW/EDIT`, `ActiveUserListener` | Nadie los usaba o nunca actuaban. **Borrado en la fase 1 de la limpieza.** | `odd/tasks/limpieza-backend.md` |
 
 Endpoints vivos **sin UI**: plantillas, asignar equipo a ticket, historial de asignaciones, `/auto-assign`, `/transition`, `/close`, borrar contacto, override/turnos de un agente, filtros `tag`/`status`/`search`/`sort` del listado.
