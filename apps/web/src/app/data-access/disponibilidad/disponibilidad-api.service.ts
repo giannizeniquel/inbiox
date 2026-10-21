@@ -5,16 +5,15 @@ import { environment } from '../../../environments/environment';
 import { DisponibilidadDeAgenteDTO } from './disponibilidad-de-agente.dto';
 
 export interface DisponibilidadDeAgenteResponse {
-  agentId: number;
-  isAvailable: boolean;
-  isInShift: boolean;
-  timezone: string;
-  currentLoad: number;
-  maxCapacity: number;
-  override: {
-    active: boolean;
-    reason: string | null;
-    expiresAt: string | null;
+  agenteId: number;
+  disponible: boolean;
+  enTurno: boolean;
+  zonaHoraria: string;
+  cargaActual: number;
+  capacidadMaxima: number;
+  disponibilidadManual: {
+    activa: boolean;
+    vencimientoAt: string | null;
   } | null;
 }
 
@@ -32,25 +31,25 @@ export interface TurnoInput {
 }
 
 export interface TurnoDeAgenteResponse {
-  id: number;
-  agentId: number;
-  dayOfWeek: number;
-  startTime: string;
-  endTime: string;
+  turnoId: number;
+  agenteId: number;
+  diaDeLaSemana: number;
+  horaDeInicio: string;
+  horaDeFin: string;
 }
 
 /**
  * DisponibilidadApiService — REST client for agent availability and shift endpoints.
  *
  * Endpoints:
- * - GET    /agents/{id}/availability
- * - POST   /agents/{id}/availability  (set override)
- * - DELETE /agents/{id}/availability  (clear override)
- * - POST   /agents/{id}/shifts        (create shift)
- * - DELETE /agents/{id}/shifts/{shiftId}
+ * - GET    /api/agentes/{id}/disponibilidad
+ * - POST   /api/agentes/{id}/disponibilidad  (set override)
+ * - DELETE /api/agentes/{id}/disponibilidad  (clear override)
+ * - POST   /api/agentes/{id}/turnos          (create shift)
+ * - DELETE /api/agentes/{id}/turnos/{turnoId}
  * - GET    /api/mi/turnos             (current agent's shifts)
  * - PUT    /api/mi/turnos             (replace all of the current agent's shifts)
- * - GET    /api/workspaces/{id}/available-agents
+ * - GET    /api/espacios-de-trabajo/{id}/agentes-disponibles
  */
 @Injectable({ providedIn: 'root' })
 export class DisponibilidadApiService {
@@ -58,16 +57,16 @@ export class DisponibilidadApiService {
   private readonly baseUrl = environment.apiUrl;
 
   /**
-   * GET /agents/{id}/availability — read-only availability status.
+   * GET /api/agentes/{id}/disponibilidad — read-only availability status.
    */
   getDisponibilidad(agenteId: number): Observable<DisponibilidadDeAgenteResponse> {
     return this.http.get<DisponibilidadDeAgenteResponse>(
-      `${this.baseUrl}/agents/${agenteId}/availability`
+      `${this.baseUrl}/api/agentes/${agenteId}/disponibilidad`
     );
   }
 
   /**
-   * POST /agents/{id}/availability — set availability override with optional TTL.
+   * POST /api/agentes/{id}/disponibilidad — set availability override with optional TTL.
    *
    * @param agenteId - Agent ID
    * @param isDisponible - Override value
@@ -78,27 +77,27 @@ export class DisponibilidadApiService {
     isDisponible: boolean,
     ttlMinutes?: number
   ): Observable<void> {
-    const body: Record<string, unknown> = { is_available: isDisponible };
+    const body: Record<string, unknown> = { disponible: isDisponible };
     if (ttlMinutes !== undefined && ttlMinutes !== null) {
-      body['ttl_minutes'] = ttlMinutes;
+      body['ttlMinutos'] = ttlMinutes;
     }
     return this.http.post<void>(
-      `${this.baseUrl}/agents/${agenteId}/availability`,
+      `${this.baseUrl}/api/agentes/${agenteId}/disponibilidad`,
       body
     );
   }
 
   /**
-   * DELETE /agents/{id}/availability — clear availability override.
+   * DELETE /api/agentes/{id}/disponibilidad — clear availability override.
    */
   limpiarDisponibilidad(agenteId: number): Observable<void> {
     return this.http.delete<void>(
-      `${this.baseUrl}/agents/${agenteId}/availability`
+      `${this.baseUrl}/api/agentes/${agenteId}/disponibilidad`
     );
   }
 
   /**
-   * POST /agents/{id}/shifts — create a weekly shift.
+   * POST /api/agentes/{id}/turnos — create a weekly shift.
    */
   createTurno(
     agenteId: number,
@@ -107,21 +106,21 @@ export class DisponibilidadApiService {
     endTime: string
   ): Observable<TurnoDeAgenteResponse> {
     return this.http.post<TurnoDeAgenteResponse>(
-      `${this.baseUrl}/agents/${agenteId}/shifts`,
+      `${this.baseUrl}/api/agentes/${agenteId}/turnos`,
       {
-        day_of_week: dayOfWeek,
-        start_time: startTime,
-        end_time: endTime,
+        diaDeLaSemana: dayOfWeek,
+        horaDeInicio: startTime,
+        horaDeFin: endTime,
       }
     );
   }
 
   /**
-   * DELETE /agents/{id}/shifts/{shiftId} — delete a shift.
+   * DELETE /api/agentes/{id}/turnos/{turnoId} — delete a shift.
    */
   deleteTurno(agenteId: number, turnoId: number): Observable<void> {
     return this.http.delete<void>(
-      `${this.baseUrl}/agents/${agenteId}/shifts/${turnoId}`
+      `${this.baseUrl}/api/agentes/${agenteId}/turnos/${turnoId}`
     );
   }
 
@@ -138,10 +137,10 @@ export class DisponibilidadApiService {
     );
   }
 
-  /** GET /api/workspaces/{id}/available-agents — get agents available for assignment */
+  /** GET /api/espacios-de-trabajo/{id}/agentes-disponibles — get agents available for assignment */
   getAgentesDisponibles(espacioDeTrabajoId: number): Observable<DisponibilidadDeAgenteDTO[]> {
     return this.http.get<DisponibilidadDeAgenteDTO[]>(
-      `${this.baseUrl}/api/workspaces/${espacioDeTrabajoId}/available-agents`
+      `${this.baseUrl}/api/espacios-de-trabajo/${espacioDeTrabajoId}/agentes-disponibles`
     );
   }
 }

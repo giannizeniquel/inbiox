@@ -58,14 +58,14 @@ export class TicketCardComponent implements OnDestroy {
     return this.puedeAsignar() && assignableStatuses.includes(t.estado);
   });
 
-  /** Activo agents (is_active_now = true), rendered first in the dropdown. */
+  /** Activo agents (activoAhora = true), rendered first in the dropdown. */
   readonly agentesActivos = computed(() =>
-    this.agentesDisponibles().filter((a) => a.is_active_now),
+    this.agentesDisponibles().filter((a) => a.activoAhora),
   );
 
-  /** Inactivo agents (is_active_now = false), rendered after the Activo group. */
+  /** Inactivo agents (activoAhora = false), rendered after the Activo group. */
   readonly agentesInactivos = computed(() =>
-    this.agentesDisponibles().filter((a) => !a.is_active_now),
+    this.agentesDisponibles().filter((a) => !a.activoAhora),
   );
 
   estadoLabel(): string {
@@ -141,7 +141,7 @@ export class TicketCardComponent implements OnDestroy {
 
     // Inactivo agents are not selectable — mirrors the backend's hard block
     // (AgentNotActiveException) so the UI never emits a doomed assign call.
-    if (!agente.is_active_now) {
+    if (!agente.activoAhora) {
       return;
     }
 

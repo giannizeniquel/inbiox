@@ -101,9 +101,9 @@
             (click)="seleccionarAgente(agent, $event)"
             (keydown.enter)="seleccionarAgente(agent, $event)"
           >
-            <span class="ticket-card__dropdown-name">{{ agent.name }}</span>
+            <span class="ticket-card__dropdown-name">{{ agent.nombre }}</span>
             <span class="ticket-card__dropdown-capacity">
-              {{ agent.active_ticket_count }}/{{ agent.max_active_tickets }}
+              {{ agent.cantidadDeTicketsActivos }}/{{ agent.maximoDeTicketsActivos }}
             </span>
             <span class="ticket-card__dropdown-badge ticket-card__dropdown-badge--active">Activo</span>
             <span class="ticket-card__dropdown-status status-available"></span>
@@ -123,9 +123,9 @@
             (click)="seleccionarAgente(agent, $event)"
             (keydown.enter)="seleccionarAgente(agent, $event)"
           >
-            <span class="ticket-card__dropdown-name">{{ agent.name }}</span>
+            <span class="ticket-card__dropdown-name">{{ agent.nombre }}</span>
             <span class="ticket-card__dropdown-capacity">
-              {{ agent.active_ticket_count }}/{{ agent.max_active_tickets }}
+              {{ agent.cantidadDeTicketsActivos }}/{{ agent.maximoDeTicketsActivos }}
             </span>
             <span class="ticket-card__dropdown-badge ticket-card__dropdown-badge--inactive">Inactivo</span>
             <span class="ticket-card__dropdown-status status-unavailable"></span>

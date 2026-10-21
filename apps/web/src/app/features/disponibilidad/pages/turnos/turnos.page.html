@@ -19,13 +19,13 @@
               </tr>
             </thead>
             <tbody>
-              @for (shift of store.turnos(); track shift.id) {
+              @for (shift of store.turnos(); track shift.turnoId) {
                 <tr>
-                  <td>{{ getDayName(shift.dayOfWeek) }}</td>
-                  <td>{{ shift.startTime }}</td>
-                  <td>{{ shift.endTime }}</td>
+                  <td>{{ getDayName(shift.diaDeLaSemana) }}</td>
+                  <td>{{ shift.horaDeInicio }}</td>
+                  <td>{{ shift.horaDeFin }}</td>
                   <td>
-                    <button class="btn-danger btn-small" (click)="onDeleteTurno(shift.id)">
+                    <button class="btn-danger btn-small" (click)="onDeleteTurno(shift.turnoId)">
                       Delete
                     </button>
                   </td>

@@ -139,7 +139,7 @@ export class TicketListComponent implements OnInit {
         // Build agent name lookup map
         const nameMap = new Map<number, string>();
         for (const agente of filtered) {
-          nameMap.set(agente.id, agente.name);
+          nameMap.set(agente.id, agente.nombre);
         }
         this.nombreDeAgenteMap.set(nameMap);
       },
@@ -246,7 +246,7 @@ export class TicketListComponent implements OnInit {
 
     // Find agent name for display
     const agente = this.agentesDisponibles().find(a => a.id === agentId);
-    const nombreDeAgente = agente?.name ?? `Agent #${agentId}`;
+    const nombreDeAgente = agente?.nombre ?? `Agent #${agentId}`;
 
     // Get current user for assignedBy
     const usuarioActual = this.authStore.usuarioActual();

@@ -65,7 +65,7 @@ Contenedor: `features/bandeja/pages/ticket-list/ticket-list.component.ts`. Store
 | Filtro por equipo | `FiltroDeEquipoComponent` → `onFiltroDeEquipoChange` | `GET /api/equipos`, luego `GET /api/tickets?equipoId=N` | **Servidor** |
 | Buscar | `TicketSearchComponent` → `onSearch()` hace `console.log` (`:209-213`) | — | **No implementado** |
 | Abrir ticket | `selectTicket()` (`:176-192`) | `GET /api/tickets/{id}/mensajes?limit=20&offset=0` | — |
-| Desplegable de asignación | `TicketCardComponent` (`ticket-card.component.ts:51-59, 138-150`), visible si `puedeAsignarTicket()` y estado `nuevo`/`activo`/`en_espera` | `GET /api/workspaces/{wsId}/available-agents`; se refresca 10 s después de un `ticket.asignado` | — |
+| Desplegable de asignación | `TicketCardComponent` (`ticket-card.component.ts:51-59, 138-150`), visible si `puedeAsignarTicket()` y estado `nuevo`/`activo`/`en_espera` | `GET /api/espacios-de-trabajo/{wsId}/agentes-disponibles`; se refresca 10 s después de un `ticket.asignado` | — |
 | Asignar | `onAsignar()` (`:244-276`): optimista → API → rollback + error 5 s | `POST /api/tickets/{id}/asignar` | — |
 
 - Un usuario sin agente (admin sin vincular) ve la pestaña "Míos" vacía.
@@ -147,7 +147,7 @@ El store (`data-access/agente/configuracion.store.ts`) hace HTTP sin esperar el 
 ## Disponibilidad y turnos (`/agentes/:agenteId/...`)
 
 - No existe un interruptor de disponibilidad en la UI.
-- `data-access/disponibilidad/disponibilidad-api.service.ts:64-125` llama `${apiUrl}/agents/{id}/…` **sin `/api`**: esas URLs no existen y además el interceptor no agrega el token.
+- Hasta la etapa 2 del contrato, `data-access/disponibilidad/disponibilidad-api.service.ts` llamaba `${apiUrl}/agents/{id}/…` **sin `/api`**: esas URLs no existían y el interceptor no agregaba el token. Desde WU6 llama `/api/agentes/{id}/disponibilidad` y `/api/agentes/{id}/turnos[/{turnoId}]` con las claves del contrato.
 - Las páginas ignoran `:agentId` y leen `DisponibilidadStore.agenteActual()`, que nadie asigna (siempre `null`). `DisponibilidadStore.cargarTurnos()` no hace nada.
 - Resultado: ambas páginas no funcionan. Los turnos solo se gestionan desde `/configuracion`.
 
@@ -219,7 +219,7 @@ El código sin uso listado aquí se borró en la fase 1 de la limpieza (ver `odd
 | Mensaje duplicado en pantalla | `conversacion.store.ts:76-82, 176-199` |
 | El **cliente** recibe un mensaje repetido | Causa en el backend: `apps/api/src/Controller/ProviderProxyController.php:97-155` envía a WhatsApp aunque el mensaje sea `duplicate_skipped`, y `envio-de-mensajes.service.ts:72-75` reintenta el POST. Ver [04 § F2](04-flujos.md#f2-respuesta-del-agente). |
 | Mensaje fallido no se reintenta | `conversacion.component.ts:172-177` vs `envio-de-mensajes.service.ts:185-213` |
-| No puedo asignar | `ticket-list.component.ts:221-276`, `ticket-card.component.ts`, roster `available-agents` |
+| No puedo asignar | `ticket-list.component.ts:221-276`, `ticket-card.component.ts`, roster `agentes-disponibles` |
 | "Resolver" da error | `conversacion.component.ts:186-213`, `data-access/ticket/flujo-de-ticket-api.service.ts:32-37` |
 | Mensaje del cliente se ve como "sistema" | `mensaje-bubble.component.ts:44` |
 | No se puede escribir al cliente | `composer.component.ts:70-76` (ventana 24 h) |

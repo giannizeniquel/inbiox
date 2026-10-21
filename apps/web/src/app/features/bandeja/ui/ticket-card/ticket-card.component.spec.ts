@@ -21,10 +21,10 @@ function makeTicket(overrides: Partial<Ticket> = {}): Ticket {
 function armarAgente(overrides: Partial<DisponibilidadDeAgenteDTO> = {}): DisponibilidadDeAgenteDTO {
   return {
     id: 1,
-    name: 'Agent 1',
-    is_active_now: true,
-    active_ticket_count: 0,
-    max_active_tickets: 5,
+    nombre: 'Agent 1',
+    activoAhora: true,
+    cantidadDeTicketsActivos: 0,
+    maximoDeTicketsActivos: 5,
     ...overrides,
   };
 }
@@ -64,8 +64,8 @@ describe('TicketCardComponent', () => {
     it('is visible when the roster has zero Activo agents (all Inactivo)', async () => {
       await createComponent({
         agentesDisponibles: [
-          armarAgente({ id: 1, is_active_now: false }),
-          armarAgente({ id: 2, is_active_now: false }),
+          armarAgente({ id: 1, activoAhora: false }),
+          armarAgente({ id: 2, activoAhora: false }),
         ],
         puedeAsignar: true,
       });
@@ -75,7 +75,7 @@ describe('TicketCardComponent', () => {
 
     it('is hidden when the ticket is not assignable, regardless of roster', async () => {
       await createComponent({
-        agentesDisponibles: [armarAgente({ is_active_now: true })],
+        agentesDisponibles: [armarAgente({ activoAhora: true })],
         puedeAsignar: false,
       });
 
@@ -85,7 +85,7 @@ describe('TicketCardComponent', () => {
     it('is hidden when the ticket status is not assignable (resolved)', async () => {
       await createComponent({
         ticket: makeTicket({ estado: EstadoDeTicket.Resuelto }),
-        agentesDisponibles: [armarAgente({ is_active_now: true })],
+        agentesDisponibles: [armarAgente({ activoAhora: true })],
         puedeAsignar: true,
       });
 
@@ -95,8 +95,8 @@ describe('TicketCardComponent', () => {
 
   describe('activeAgents() / inactiveAgents() grouping', () => {
     it('splits the roster into Activo and Inactivo groups', async () => {
-      const activo = armarAgente({ id: 1, is_active_now: true });
-      const inactivo = armarAgente({ id: 2, is_active_now: false });
+      const activo = armarAgente({ id: 1, activoAhora: true });
+      const inactivo = armarAgente({ id: 2, activoAhora: false });
 
       await createComponent({ agentesDisponibles: [inactivo, activo] });
 
@@ -105,8 +105,8 @@ describe('TicketCardComponent', () => {
     });
 
     it('renders Activo group before Inactivo group in the dropdown DOM', async () => {
-      const activo = armarAgente({ id: 1, name: 'Activo Agent', is_active_now: true });
-      const inactivo = armarAgente({ id: 2, name: 'Inactivo Agent', is_active_now: false });
+      const activo = armarAgente({ id: 1, nombre: 'Activo Agent', activoAhora: true });
+      const inactivo = armarAgente({ id: 2, nombre: 'Inactivo Agent', activoAhora: false });
 
       await createComponent({ agentesDisponibles: [inactivo, activo] });
       component.toggleDropdown(new MouseEvent('click'));
@@ -122,7 +122,7 @@ describe('TicketCardComponent', () => {
 
   describe('selectAgent() — Inactivo rows are not selectable', () => {
     it('emits assign when selecting an Activo agent', async () => {
-      const activo = armarAgente({ id: 1, is_active_now: true });
+      const activo = armarAgente({ id: 1, activoAhora: true });
       await createComponent({ agentesDisponibles: [activo] });
 
       let emitted: { ticketId: string; agentId: number } | undefined;
@@ -134,7 +134,7 @@ describe('TicketCardComponent', () => {
     });
 
     it('does NOT emit assign when selecting an Inactivo agent', async () => {
-      const inactivo = armarAgente({ id: 2, is_active_now: false });
+      const inactivo = armarAgente({ id: 2, activoAhora: false });
       await createComponent({ agentesDisponibles: [inactivo] });
 
       let emitted: { ticketId: string; agentId: number } | undefined;
@@ -146,7 +146,7 @@ describe('TicketCardComponent', () => {
     });
 
     it('marks the Inactivo row as disabled in the DOM', async () => {
-      const inactivo = armarAgente({ id: 2, name: 'Inactivo Agent', is_active_now: false });
+      const inactivo = armarAgente({ id: 2, nombre: 'Inactivo Agent', activoAhora: false });
       await createComponent({ agentesDisponibles: [inactivo] });
       component.toggleDropdown(new MouseEvent('click'));
       fixture.detectChanges();

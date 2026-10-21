@@ -10,17 +10,17 @@
         <div class="current-state">
           <h3>Current State</h3>
           <table>
-            <tr><td>In Shift</td><td>{{ av.isInShift ? 'Yes' : 'No' }}</td></tr>
-            <tr><td>Available</td><td>{{ av.isAvailable ? 'Yes' : 'No' }}</td></tr>
-            <tr><td>Current Load</td><td>{{ av.currentLoad }} / {{ av.maxCapacity }}</td></tr>
-            <tr><td>Timezone</td><td>{{ av.timezone }}</td></tr>
-            @if (av.override) {
+            <tr><td>In Shift</td><td>{{ av.enTurno ? 'Yes' : 'No' }}</td></tr>
+            <tr><td>Available</td><td>{{ av.disponible ? 'Yes' : 'No' }}</td></tr>
+            <tr><td>Current Load</td><td>{{ av.cargaActual }} / {{ av.capacidadMaxima }}</td></tr>
+            <tr><td>Timezone</td><td>{{ av.zonaHoraria }}</td></tr>
+            @if (av.disponibilidadManual) {
               <tr>
                 <td>Override Active</td>
                 <td>
-                  {{ av.override.active ? 'Yes' : 'No' }}
-                  @if (av.override.expiresAt) {
-                    <span>(expires {{ av.override.expiresAt | date:'short' }})</span>
+                  {{ av.disponibilidadManual.activa ? 'Yes' : 'No' }}
+                  @if (av.disponibilidadManual.vencimientoAt) {
+                    <span>(expires {{ av.disponibilidadManual.vencimientoAt | date:'short' }})</span>
                   }
                 </td>
               </tr>
@@ -53,7 +53,7 @@
         <button
           class="btn-danger"
           (click)="onLimpiarDisponibilidadManual()"
-          [disabled]="!store.disponibilidad()?.override?.active"
+          [disabled]="!store.disponibilidad()?.disponibilidadManual?.activa"
         >
           Clear Override
         </button>

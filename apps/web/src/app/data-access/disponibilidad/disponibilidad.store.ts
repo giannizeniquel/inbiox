@@ -112,12 +112,12 @@ export class DisponibilidadStore {
   /**
    * Load shifts for a specific agent.
    *
-   * TODO: Backend needs a GET /agents/{id}/shifts endpoint.
+   * TODO: Backend needs a GET /api/agentes/{id}/turnos endpoint.
    * Currently shifts can be created/deleted but not listed on page load.
    * When the endpoint is available, wire it up here.
    */
   cargarTurnos(_agenteId: number): void {
-    // No-op — backend lacks GET /agents/{id}/shifts endpoint
+    // No-op — backend lacks GET /api/agentes/{id}/turnos endpoint
   }
 
   /**
@@ -150,7 +150,7 @@ export class DisponibilidadStore {
     this.disponibilidadApi.deleteTurno(agente.id, turnoId).pipe(take(1)).subscribe({
       next: () => {
         this.turnos.update((current) =>
-          current.filter((s) => s.id !== turnoId)
+          current.filter((s) => s.turnoId !== turnoId)
         );
         this.loading.set(false);
       },
