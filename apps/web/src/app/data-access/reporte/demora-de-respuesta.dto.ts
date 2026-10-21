@@ -4,53 +4,53 @@
  * Used by the reports screen and by the inbox's ParticipacionDeTicketComponent.
  */
 
-/** Backend response for GET /api/reports/response-delay */
+/** Backend response for GET /api/reportes/demora-de-respuesta */
 export interface ReporteDeDemoraDeRespuesta {
-  data_available_from: string | null;
-  partial_data: boolean;
-  aggregate: DemoraDeRespuestaAggregate;
-  per_agent: DemoraDeRespuestaDeAgenteEntry[];
+  datosDisponiblesDesde: string | null;
+  datosParciales: boolean;
+  global: DemoraDeRespuestaAggregate;
+  porAgente: DemoraDeRespuestaDeAgenteEntry[];
 }
 
 /** Aggregate response-delay figures across all agents in range */
 export interface DemoraDeRespuestaAggregate {
-  avg_delay_seconds: number | null;
-  sample_count: number;
-  unanswered_inbound_count: number;
+  demoraPromedioSegundos: number | null;
+  cantidadDeMuestras: number;
+  cantidadDeEntrantesSinResponder: number;
 }
 
 /** Per-agent response-delay entry */
 export interface DemoraDeRespuestaDeAgenteEntry {
-  agent_id: number;
-  agent_name: string | null;
-  avg_delay_seconds: number | null;
-  sample_count: number;
+  agenteId: number;
+  agenteNombre: string | null;
+  demoraPromedioSegundos: number | null;
+  cantidadDeMuestras: number;
 }
 
-/** Backend response for GET /api/reports/tickets/{id}/participation */
+/** Backend response for GET /api/reportes/tickets/{id}/participacion */
 export interface ParticipacionDeTicket {
-  ticket_id: number;
-  data_available_from: string | null;
-  partial_data: boolean;
-  participants: ParticipanteDeParticipacion[];
-  automatic_message_count: number;
-  unanswered_inbound_count: number;
-  pairs: ParDeParticipacion[];
+  ticketId: number;
+  datosDisponiblesDesde: string | null;
+  datosParciales: boolean;
+  participantes: ParticipanteDeParticipacion[];
+  cantidadDeMensajesAutomaticos: number;
+  cantidadDeEntrantesSinResponder: number;
+  pares: ParDeParticipacion[];
 }
 
 /** A single agent's participation on a ticket */
 export interface ParticipanteDeParticipacion {
-  agent_id: number;
-  agent_name: string | null;
-  message_count: number;
-  sample_count: number;
-  avg_delay_seconds: number | null;
+  agenteId: number;
+  agenteNombre: string | null;
+  cantidadDeMensajes: number;
+  cantidadDeMuestras: number;
+  demoraPromedioSegundos: number | null;
 }
 
 /** A single burst -> reply pair on a ticket (null fields = unanswered run) */
 export interface ParDeParticipacion {
-  run_start_at: string;
-  reply_at: string | null;
-  agent_id: number | null;
-  delay_seconds: number | null;
+  inicioDeRachaAt: string;
+  respuestaAt: string | null;
+  agenteId: number | null;
+  demoraSegundos: number | null;
 }

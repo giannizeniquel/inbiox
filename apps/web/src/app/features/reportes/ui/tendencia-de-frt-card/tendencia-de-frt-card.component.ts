@@ -29,15 +29,15 @@ import { TendenciaDeFrtPoint } from '../../../../data-access/reporte/reporte.mod
             </span>
           </div>
           <div class="frt-bars">
-            @for (point of data; track point.date) {
+            @for (point of data; track point.fecha) {
               <div class="frt-bar-item">
-                <div class="frt-bar-item__label">{{ point.date }}</div>
+                <div class="frt-bar-item__label">{{ point.fecha }}</div>
                 <div class="frt-bar-item__bar-container">
                   <div class="frt-bar-item__bar"
-                       [style.height.%]="(point.avg_frt_seconds / maxFrt) * 100">
+                       [style.height.%]="(point.frtPromedioSegundos / maxFrt) * 100">
                   </div>
                 </div>
-                <div class="frt-bar-item__value">{{ point.avg_frt_seconds | number:'1.0-0' }}s</div>
+                <div class="frt-bar-item__value">{{ point.frtPromedioSegundos | number:'1.0-0' }}s</div>
               </div>
             }
           </div>
@@ -121,12 +121,12 @@ export class TendenciaDeFrtCardComponent {
 
   get avgFrt(): number {
     if (this.data.length === 0) return 0;
-    const total = this.data.reduce((sum, p) => sum + p.avg_frt_seconds, 0);
+    const total = this.data.reduce((sum, p) => sum + p.frtPromedioSegundos, 0);
     return total / this.data.length;
   }
 
   get maxFrt(): number {
     if (this.data.length === 0) return 1;
-    return Math.max(...this.data.map(p => p.avg_frt_seconds), 1);
+    return Math.max(...this.data.map(p => p.frtPromedioSegundos), 1);
   }
 }

@@ -21,20 +21,20 @@ describe('ReporteApiService', () => {
 
   describe('getParticipacionDeTicket', () => {
     const mockParticipacion: ParticipacionDeTicket = {
-      ticket_id: 42,
-      data_available_from: '2026-01-01T00:00:00Z',
-      partial_data: false,
-      participants: [
-        { agent_id: 1, agent_name: 'Ana', message_count: 3, sample_count: 2, avg_delay_seconds: 90 },
+      ticketId: 42,
+      datosDisponiblesDesde: '2026-01-01T00:00:00Z',
+      datosParciales: false,
+      participantes: [
+        { agenteId: 1, agenteNombre: 'Ana', cantidadDeMensajes: 3, cantidadDeMuestras: 2, demoraPromedioSegundos: 90 },
       ],
-      automatic_message_count: 1,
-      unanswered_inbound_count: 0,
-      pairs: [
-        { run_start_at: '2026-01-01T10:00:00Z', reply_at: '2026-01-01T10:01:30Z', agent_id: 1, delay_seconds: 90 },
+      cantidadDeMensajesAutomaticos: 1,
+      cantidadDeEntrantesSinResponder: 0,
+      pares: [
+        { inicioDeRachaAt: '2026-01-01T10:00:00Z', respuestaAt: '2026-01-01T10:01:30Z', agenteId: 1, demoraSegundos: 90 },
       ],
     };
 
-    const urlFor = (id: number) => `${environment.apiUrl}/api/reports/tickets/${id}/participation`;
+    const urlFor = (id: number) => `${environment.apiUrl}/api/reportes/tickets/${id}/participacion`;
 
     it('GETs the participation of the given ticket and returns it', (done) => {
       service.getParticipacionDeTicket(42).subscribe({

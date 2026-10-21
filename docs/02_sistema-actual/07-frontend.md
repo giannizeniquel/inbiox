@@ -81,7 +81,7 @@ Contenedor: `features/bandeja/pages/conversacion/conversacion.component.ts` (scr
 |---|---|---|---|
 | Cabecera (contacto, dueño, estado, `#id`) | `ConversacionHeaderComponent` | — | El link a la ficha usa `ticket.contact.id`, que en el listado es el id de la conversación ([R14](00-estado-y-pendientes.md#r14-bugs-del-frontend-con-impacto-directo)). |
 | Botón "RESOLVER" | `onResolverTicket()` (`:186-213`); deshabilitado en `resuelto`/`cerrado` | `POST /api/tickets/{id}/resolver` | 403 → "Solo puede hacerlo un administrador, un supervisor o el agente asignado". |
-| Botón "Participación" | `ParticipacionDeTicketComponent` → `GetTicketParticipationUseCase` | `GET /api/reports/tickets/{id}/participation` | Sprint 18. |
+| Botón "Participación" | `ParticipacionDeTicketComponent` → `GetTicketParticipationUseCase` | `GET /api/reportes/tickets/{id}/participacion` | Sprint 18. |
 | Marcar como leído al abrir | `marcarLeidoEffect` → `TicketApiService.marcarLeido` (`:137-150`; `data-access/ticket/ticket-api.service.ts:44-47`) | `PUT /api/tickets/{id}/marcar-leido` | El badge se limpia al recibir `ticket.leido`. |
 | Historial hacia arriba | `cargarMensajesAnteriores()` (`conversacion-scroll.controller.ts:180-213`) | `GET /api/tickets/{id}/mensajes?limit=20&offset=N` | La primera página "anterior" repite offset 0 (se deduplica). |
 | Burbujas y adjuntos | `MensajeBubbleComponent` + renderers | `GET /api/mensajes/{id}/adjunto` | Heurística de "sistema" por corchetes. |
@@ -112,12 +112,12 @@ Contenedor: `features/bandeja/pages/conversacion/conversacion.component.ts` (scr
 
 | Tarjeta | Endpoint | ¿Envía filtros de fecha/equipo? |
 |---|---|---|
-| Primera respuesta, resolución, abiertos/cerrados, volumen, ranking de agentes | `frt`, `rt`, `counts`, `volume`, `agents` | Sí (el backend los aplica) |
-| Sin asignar | `unassigned` | Sí (fechas) — **siempre 0** |
-| Demora de respuesta | `response-delay` | Sí (el backend ignora `teamId`) |
-| Tendencia FRT, heatmap, reabiertos | `frt-trend`, `heatmap`, `reopened` | Sí (fechas) |
-| Carga por agente, agentes disponibles, clientes recurrentes | `agent-load`, `available-agents`, `recurring-customers` | **No** |
-| Exportar CSV | `ExportarTicketsCsvUseCase` → `GET /api/reports/export` (blob) | Sí; botón solo admin/supervisor |
+| Primera respuesta, resolución, abiertos/cerrados, volumen, ranking de agentes | `frt`, `rt`, `conteos`, `volumen`, `rendimiento-de-agentes` (bajo `/api/reportes/`) | Sí (el backend los aplica) |
+| Sin asignar | `sin-asignar` | Sí (fechas) — **siempre 0** |
+| Demora de respuesta | `demora-de-respuesta` | Sí (el backend ignora `equipoId`) |
+| Tendencia FRT, heatmap, reabiertos | `tendencia-de-frt`, `mapa-de-calor`, `reabiertos` | Sí (fechas) |
+| Carga por agente, agentes disponibles, clientes recurrentes | `carga-de-agentes`, `agentes-disponibles`, `contactos-recurrentes` | **No** |
+| Exportar CSV | `ExportarTicketsCsvUseCase` → `GET /api/reportes/exportar` (blob) | Sí; botón solo admin/supervisor |
 
 Lógica inventada: nombres `Agent {id}` y `loadPercentage = asignados × 20` (`:158-162`). Fechas locales del navegador enviadas como UTC (`data-access/reporte/reporte-api.service.ts:133-145`): rango desplazado fuera de UTC.
 

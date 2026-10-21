@@ -26,10 +26,10 @@ import { AgenteDisponibleEntry } from '../../../../data-access/reporte/reporte.m
         } @else {
           <div class="kpi-card__number">{{ data.length }}</div>
           <div class="available-list">
-            @for (agent of data; track agent.agent_id) {
+            @for (agent of data; track agent.agenteId) {
               <div class="available-item">
-                <span class="available-item__name">{{ agent.agent_name }}</span>
-                <span class="available-item__tickets">{{ agent.active_tickets }} tickets</span>
+                <span class="available-item__name">{{ agent.agenteNombre }}</span>
+                <span class="available-item__tickets">{{ agent.ticketsActivos }} tickets</span>
               </div>
             }
           </div>

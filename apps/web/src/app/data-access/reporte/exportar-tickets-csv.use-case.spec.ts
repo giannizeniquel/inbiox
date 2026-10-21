@@ -16,7 +16,7 @@ describe('ExportarTicketsCsvUseCase', () => {
   let anchorSpy: jasmine.SpyObj<HTMLAnchorElement>;
 
   const params = { fromDate: '2026-01-01', toDate: '2026-01-31' };
-  const mockBlob = new Blob(['ticket_id,contact_name\n1,John'], { type: 'text/csv' });
+  const mockBlob = new Blob(['Ticket,Contacto\n1,John'], { type: 'text/csv' });
 
   beforeEach(() => {
     apiSpy = jasmine.createSpyObj('ReporteApiService', ['exportarTicketsCsv']);

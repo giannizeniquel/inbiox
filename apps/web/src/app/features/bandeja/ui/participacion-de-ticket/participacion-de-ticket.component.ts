@@ -23,13 +23,13 @@ import { ParticipacionDeTicket } from '../../../../data-access/reporte/demora-de
       } @else if (error()) {
         <p class="ticket-participation__error">{{ error() }}</p>
       } @else if (data(); as participation) {
-        @if (participation.partial_data) {
+        @if (participation.datosParciales) {
           <p class="ticket-participation__partial-notice">
-            Sin datos de atribución (desde {{ participation.data_available_from | date:'dd/MM/yyyy' }})
+            Sin datos de atribución (desde {{ participation.datosDisponiblesDesde | date:'dd/MM/yyyy' }})
           </p>
         }
 
-        @if (participation.participants.length === 0) {
+        @if (participation.participantes.length === 0) {
           <p class="ticket-participation__empty">Sin participantes registrados</p>
         } @else {
           <table class="ticket-participation__table">
@@ -41,13 +41,13 @@ import { ParticipacionDeTicket } from '../../../../data-access/reporte/demora-de
               </tr>
             </thead>
             <tbody>
-              @for (participant of participation.participants; track participant.agent_id) {
+              @for (participant of participation.participantes; track participant.agenteId) {
                 <tr>
-                  <td>{{ participant.agent_name ?? 'Agente #' + participant.agent_id }}</td>
-                  <td>{{ participant.message_count }}</td>
+                  <td>{{ participant.agenteNombre ?? 'Agente #' + participant.agenteId }}</td>
+                  <td>{{ participant.cantidadDeMensajes }}</td>
                   <td>
-                    @if (participant.avg_delay_seconds !== null) {
-                      {{ participant.avg_delay_seconds / 60 | number:'1.0-1' }} min
+                    @if (participant.demoraPromedioSegundos !== null) {
+                      {{ participant.demoraPromedioSegundos / 60 | number:'1.0-1' }} min
                     } @else {
                       —
                     }
@@ -59,8 +59,8 @@ import { ParticipacionDeTicket } from '../../../../data-access/reporte/demora-de
         }
 
         <div class="ticket-participation__meta">
-          <span>Actividad automática: {{ participation.automatic_message_count }}</span>
-          <span>Sin responder: {{ participation.unanswered_inbound_count }}</span>
+          <span>Actividad automática: {{ participation.cantidadDeMensajesAutomaticos }}</span>
+          <span>Sin responder: {{ participation.cantidadDeEntrantesSinResponder }}</span>
         </div>
       }
     </div>

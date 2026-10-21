@@ -159,14 +159,14 @@ export class MapaDeCalorCardComponent {
   private get cellMap(): Map<string, number> {
     const map = new Map<string, number>();
     for (const cell of this.data) {
-      map.set(`${cell.day_of_week}-${cell.hour}`, cell.count);
+      map.set(`${cell.diaDeLaSemana}-${cell.hora}`, cell.cantidad);
     }
     return map;
   }
 
   private get maxCount(): number {
     if (this.data.length === 0) return 1;
-    return Math.max(...this.data.map(c => c.count), 1);
+    return Math.max(...this.data.map(c => c.cantidad), 1);
   }
 
   getCount(day: number, hour: number): number {

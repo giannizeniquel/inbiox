@@ -7,63 +7,63 @@
 
 /** Per-agent active ticket count vs max capacity */
 export interface CargaDeAgenteEntry {
-  agent_id: number;
-  agent_name: string;
-  active_tickets: number;
-  max_capacity: number;
-  load_percent: number;
+  agenteId: number;
+  agenteNombre: string;
+  ticketsActivos: number;
+  capacidadMaxima: number;
+  porcentajeDeCarga: number;
 }
 
 /** Unassigned tickets response */
 export interface SinAsignarResponse {
-  count: number;
+  cantidad: number;
   tickets: TicketSinAsignar[];
 }
 
 /** Single unassigned ticket */
 export interface TicketSinAsignar {
   id: number;
-  contact_name: string | null;
-  created_at: string;
-  priority: string;
+  contactoNombre: string | null;
+  creadoAt: string;
+  prioridad: string;
 }
 
 /** Available agent entry */
 export interface AgenteDisponibleEntry {
-  agent_id: number;
-  agent_name: string;
-  in_shift: boolean;
-  active_tickets: number;
+  agenteId: number;
+  agenteNombre: string;
+  enTurno: boolean;
+  ticketsActivos: number;
 }
 
 /** FRT trend data point (one per day) */
 export interface TendenciaDeFrtPoint {
-  date: string;
-  avg_frt_seconds: number;
-  ticket_count: number;
+  fecha: string;
+  frtPromedioSegundos: number;
+  cantidadDeTickets: number;
 }
 
 /** Heatmap cell (day-of-week × hour) */
 export interface MapaDeCalorCell {
-  day_of_week: number;
-  hour: number;
-  count: number;
+  diaDeLaSemana: number;
+  hora: number;
+  cantidad: number;
 }
 
 /** Recurring customer entry */
 export interface ContactoRecurrenteEntry {
-  contact_id: number;
-  contact_name: string | null;
+  contactoId: number;
+  contactoNombre: string | null;
   email: string | null;
-  ticket_count: number;
-  last_ticket_at: string;
+  cantidadDeTickets: number;
+  ultimoTicketAt: string;
 }
 
 /** Reopened ticket entry */
 export interface ReabiertoEntry {
-  ticket_id: number;
-  contact_name: string | null;
-  resolved_at: string | null;
-  reopened_at: string;
-  current_status: string;
+  ticketId: number;
+  contactoNombre: string | null;
+  resueltoAt: string | null;
+  reabiertoAt: string;
+  estadoActual: string;
 }

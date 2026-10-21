@@ -34,11 +34,11 @@ import { ContactoRecurrenteEntry } from '../../../../data-access/reporte/reporte
               </tr>
             </thead>
             <tbody>
-              @for (entry of displayedData(); track entry.contact_id) {
+              @for (entry of displayedData(); track entry.contactoId) {
                 <tr>
-                  <td>{{ entry.contact_name ?? 'Sin nombre' }}</td>
-                  <td class="recurring-table__count">{{ entry.ticket_count }}</td>
-                  <td class="recurring-table__date">{{ entry.last_ticket_at | date:'dd/MM/yyyy' }}</td>
+                  <td>{{ entry.contactoNombre ?? 'Sin nombre' }}</td>
+                  <td class="recurring-table__count">{{ entry.cantidadDeTickets }}</td>
+                  <td class="recurring-table__date">{{ entry.ultimoTicketAt | date:'dd/MM/yyyy' }}</td>
                 </tr>
               }
             </tbody>

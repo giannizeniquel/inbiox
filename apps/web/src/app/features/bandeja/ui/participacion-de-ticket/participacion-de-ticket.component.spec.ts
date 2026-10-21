@@ -26,16 +26,16 @@ describe('ParticipacionDeTicketComponent', () => {
 
   it('lists participants with message counts and average delay; automatic activity is count-only', () => {
     const participacion: ParticipacionDeTicket = {
-      ticket_id: 42,
-      data_available_from: '2026-01-01T00:00:00Z',
-      partial_data: false,
-      participants: [
-        { agent_id: 1, agent_name: 'Ana', message_count: 3, sample_count: 2, avg_delay_seconds: 90 },
-        { agent_id: 2, agent_name: 'Beto', message_count: 1, sample_count: 1, avg_delay_seconds: 30 },
+      ticketId: 42,
+      datosDisponiblesDesde: '2026-01-01T00:00:00Z',
+      datosParciales: false,
+      participantes: [
+        { agenteId: 1, agenteNombre: 'Ana', cantidadDeMensajes: 3, cantidadDeMuestras: 2, demoraPromedioSegundos: 90 },
+        { agenteId: 2, agenteNombre: 'Beto', cantidadDeMensajes: 1, cantidadDeMuestras: 1, demoraPromedioSegundos: 30 },
       ],
-      automatic_message_count: 2,
-      unanswered_inbound_count: 0,
-      pairs: [],
+      cantidadDeMensajesAutomaticos: 2,
+      cantidadDeEntrantesSinResponder: 0,
+      pares: [],
     };
     apiSpy.getParticipacionDeTicket.and.returnValue(of(participacion));
 
@@ -52,13 +52,13 @@ describe('ParticipacionDeTicketComponent', () => {
 
   it('shows "sin datos de atribución" instead of "0" when partial_data is true', () => {
     const participacion: ParticipacionDeTicket = {
-      ticket_id: 42,
-      data_available_from: '2026-02-01T00:00:00Z',
-      partial_data: true,
-      participants: [],
-      automatic_message_count: 0,
-      unanswered_inbound_count: 0,
-      pairs: [],
+      ticketId: 42,
+      datosDisponiblesDesde: '2026-02-01T00:00:00Z',
+      datosParciales: true,
+      participantes: [],
+      cantidadDeMensajesAutomaticos: 0,
+      cantidadDeEntrantesSinResponder: 0,
+      pares: [],
     };
     apiSpy.getParticipacionDeTicket.and.returnValue(of(participacion));
 
@@ -71,13 +71,13 @@ describe('ParticipacionDeTicketComponent', () => {
 
   it('refetches when ticketId changes', () => {
     apiSpy.getParticipacionDeTicket.and.returnValue(of({
-      ticket_id: 1,
-      data_available_from: null,
-      partial_data: false,
-      participants: [],
-      automatic_message_count: 0,
-      unanswered_inbound_count: 0,
-      pairs: [],
+      ticketId: 1,
+      datosDisponiblesDesde: null,
+      datosParciales: false,
+      participantes: [],
+      cantidadDeMensajesAutomaticos: 0,
+      cantidadDeEntrantesSinResponder: 0,
+      pares: [],
     } as ParticipacionDeTicket));
 
     fixture.componentRef.setInput('ticketId', 1);

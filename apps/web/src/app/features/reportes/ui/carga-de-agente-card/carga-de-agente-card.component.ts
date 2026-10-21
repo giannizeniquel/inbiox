@@ -27,13 +27,13 @@ import { CargaDeAgenteEntry } from '../../../../data-access/reporte/reporte.mode
           <span class="kpi-card__empty">Sin datos</span>
         } @else {
           <div class="agent-load-list">
-            @for (agent of data; track agent.agent_id) {
+            @for (agent of data; track agent.agenteId) {
               <div class="agent-load-item">
-                <span class="agent-load-item__name">{{ agent.agent_name }}</span>
+                <span class="agent-load-item__name">{{ agent.agenteNombre }}</span>
                 <div class="agent-load-item__bar-container">
-                  <div class="agent-load-item__bar" [style.width.%]="agent.load_percent"></div>
+                  <div class="agent-load-item__bar" [style.width.%]="agent.porcentajeDeCarga"></div>
                 </div>
-                <span class="agent-load-item__value">{{ agent.active_tickets }}/{{ agent.max_capacity }}</span>
+                <span class="agent-load-item__value">{{ agent.ticketsActivos }}/{{ agent.capacidadMaxima }}</span>
               </div>
             }
           </div>

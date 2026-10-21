@@ -26,10 +26,10 @@ describe('DemoraDeRespuestaCardComponent', () => {
 
   it('shows the "sin datos de atribución" notice on partial_data, never a zero value', () => {
     const partialData: ReporteDeDemoraDeRespuesta = {
-      data_available_from: '2026-06-01T00:00:00Z',
-      partial_data: true,
-      aggregate: { avg_delay_seconds: 0, sample_count: 0, unanswered_inbound_count: 0 },
-      per_agent: [],
+      datosDisponiblesDesde: '2026-06-01T00:00:00Z',
+      datosParciales: true,
+      global: { demoraPromedioSegundos: 0, cantidadDeMuestras: 0, cantidadDeEntrantesSinResponder: 0 },
+      porAgente: [],
     };
     component.data = partialData;
     component.loading = false;
@@ -42,10 +42,10 @@ describe('DemoraDeRespuestaCardComponent', () => {
 
   it('shows an empty state (not "0") when sample_count is 0 and data is fully attributed', () => {
     const emptyData: ReporteDeDemoraDeRespuesta = {
-      data_available_from: '2026-01-01T00:00:00Z',
-      partial_data: false,
-      aggregate: { avg_delay_seconds: null, sample_count: 0, unanswered_inbound_count: 0 },
-      per_agent: [],
+      datosDisponiblesDesde: '2026-01-01T00:00:00Z',
+      datosParciales: false,
+      global: { demoraPromedioSegundos: null, cantidadDeMuestras: 0, cantidadDeEntrantesSinResponder: 0 },
+      porAgente: [],
     };
     component.data = emptyData;
     component.loading = false;
@@ -58,12 +58,12 @@ describe('DemoraDeRespuestaCardComponent', () => {
 
   it('renders the aggregate average (in minutes) and per-agent table when samples exist', () => {
     const populated: ReporteDeDemoraDeRespuesta = {
-      data_available_from: '2026-01-01T00:00:00Z',
-      partial_data: false,
-      aggregate: { avg_delay_seconds: 300, sample_count: 4, unanswered_inbound_count: 1 },
-      per_agent: [
-        { agent_id: 1, agent_name: 'Ana', avg_delay_seconds: 180, sample_count: 3 },
-        { agent_id: 2, agent_name: null, avg_delay_seconds: null, sample_count: 0 },
+      datosDisponiblesDesde: '2026-01-01T00:00:00Z',
+      datosParciales: false,
+      global: { demoraPromedioSegundos: 300, cantidadDeMuestras: 4, cantidadDeEntrantesSinResponder: 1 },
+      porAgente: [
+        { agenteId: 1, agenteNombre: 'Ana', demoraPromedioSegundos: 180, cantidadDeMuestras: 3 },
+        { agenteId: 2, agenteNombre: null, demoraPromedioSegundos: null, cantidadDeMuestras: 0 },
       ],
     };
     component.data = populated;

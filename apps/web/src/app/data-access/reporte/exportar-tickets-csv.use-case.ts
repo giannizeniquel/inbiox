@@ -8,7 +8,7 @@ import { FiltroDeTiempoParams } from './reporte.params';
  * ExportarTicketsCsvUseCase — downloads the filtered ticket-list CSV export
  * and triggers a client-side file save.
  *
- * `GET /api/reports/export` returns the CSV as a `Blob` (authenticated via
+ * `GET /api/reportes/exportar` returns the CSV as a `Blob` (authenticated via
  * the existing HTTP interceptor, same as every other reports call — no
  * separate auth handling needed here). There is no existing "save blob as
  * file" helper in this codebase, so the anchor-click trigger is built here:

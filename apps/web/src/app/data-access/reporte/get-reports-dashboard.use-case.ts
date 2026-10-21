@@ -93,13 +93,13 @@ export class GetReportsDashboardUseCase {
     // ── Group A: KPIs (frt, rt, counts, volume, agents) ──
     return forkJoin({
       frt: this.api.getFirstResponseTime(input.params).pipe(
-        catchError(() => of({ avg_frt_minutes: 0 })),
+        catchError(() => of({ frtPromedioMinutos: 0 })),
       ),
       rt: this.api.getResolutionTime(input.params).pipe(
-        catchError(() => of({ avg_rt_minutes: 0 })),
+        catchError(() => of({ rtPromedioMinutos: 0 })),
       ),
       counts: this.api.getConteosDeTickets(input.params).pipe(
-        catchError(() => of({ new: 0, active: 0, waiting: 0, resolved: 0, closed: 0 })),
+        catchError(() => of({ nuevo: 0, activo: 0, en_espera: 0, resuelto: 0, cerrado: 0 })),
       ),
       volume: this.api.getTendenciaDeVolumen(input.params).pipe(
         catchError(() => of({ data: [], total: 0, trend: 0 })),
@@ -115,7 +115,7 @@ export class GetReportsDashboardUseCase {
             catchError(() => of([] as CargaDeAgenteEntry[])),
           ),
           unassigned: this.api.getSinAsignar(input.params).pipe(
-            catchError(() => of({ count: 0, tickets: [] })),
+            catchError(() => of({ cantidad: 0, tickets: [] })),
           ),
           frtTrend: this.api.getTendenciaDeFrt(input.params).pipe(
             catchError(() => of([] as TendenciaDeFrtPoint[])),
@@ -143,23 +143,23 @@ export class GetReportsDashboardUseCase {
               ),
             }).pipe(
               map((groupC) => ({
-                frt: { value: groupA.frt.avg_frt_minutes || 0 },
-                rt: { value: groupA.rt.avg_rt_minutes || 0 },
+                frt: { value: groupA.frt.frtPromedioMinutos || 0 },
+                rt: { value: groupA.rt.rtPromedioMinutos || 0 },
                 counts: {
-                  open: (groupA.counts.new || 0) + (groupA.counts.active || 0) + (groupA.counts.waiting || 0),
-                  closed: (groupA.counts.resolved || 0) + (groupA.counts.closed || 0),
+                  open: (groupA.counts.nuevo || 0) + (groupA.counts.activo || 0) + (groupA.counts.en_espera || 0),
+                  closed: (groupA.counts.resuelto || 0) + (groupA.counts.cerrado || 0),
                 },
                 volume: (groupA.volume.data || []).map((item) => ({
-                  date: item.date,
-                  count: item.tickets_created || 0,
+                  date: item.fecha,
+                  count: item.ticketsCreados || 0,
                 })),
                 agents: (groupA.agents.agents || []).map((agente) => ({
-                  agentId: String(agente.agent_id),
-                  agentName: `Agent ${agente.agent_id}`,
-                  assigned: agente.tickets_assigned || 0,
-                  avgResponseMinutes: agente.avg_frt_minutes || 0,
-                  resolved: agente.tickets_resolved || 0,
-                  loadPercentage: Math.min(100, (agente.tickets_assigned || 0) * 20),
+                  agentId: String(agente.agenteId),
+                  agentName: `Agent ${agente.agenteId}`,
+                  assigned: agente.ticketsAsignados || 0,
+                  avgResponseMinutes: agente.frtPromedioMinutos || 0,
+                  resolved: agente.ticketsResueltos || 0,
+                  loadPercentage: Math.min(100, (agente.ticketsAsignados || 0) * 20),
                 })),
                 agentLoad: groupB.agentLoad,
                 unassigned: groupB.unassigned,

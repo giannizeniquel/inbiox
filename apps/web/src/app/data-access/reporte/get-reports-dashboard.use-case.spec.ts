@@ -8,21 +8,21 @@ describe('GetReportsDashboardUseCase', () => {
 
   const input: GetReportsDashboardInput = { params: { fromDate: '2024-01-01', toDate: '2024-01-31' } };
 
-  const mockFrt = { avg_frt_minutes: 5.5 };
-  const mockRt = { avg_rt_minutes: 42.3 };
-  const mockConteos = { new: 10, active: 5, waiting: 3, resolved: 20, closed: 8 };
+  const mockFrt = { frtPromedioMinutos: 5.5 };
+  const mockRt = { rtPromedioMinutos: 42.3 };
+  const mockConteos = { nuevo: 10, activo: 5, en_espera: 3, resuelto: 20, cerrado: 8 };
   const mockVolumen = {
     data: [
-      { date: '2024-01-01', tickets_created: 5 },
-      { date: '2024-01-02', tickets_created: 8 },
+      { fecha: '2024-01-01', ticketsCreados: 5 },
+      { fecha: '2024-01-02', ticketsCreados: 8 },
     ],
     total: 13,
     trend: 10,
   };
   const mockAgentes = {
     agents: [
-      { agent_id: 1, tickets_assigned: 10, avg_frt_minutes: 3.2, tickets_resolved: 8 },
-      { agent_id: 2, tickets_assigned: 5, avg_frt_minutes: 6.1, tickets_resolved: 4 },
+      { agenteId: 1, ticketsAsignados: 10, frtPromedioMinutos: 3.2, ticketsResueltos: 8 },
+      { agenteId: 2, ticketsAsignados: 5, frtPromedioMinutos: 6.1, ticketsResueltos: 4 },
     ],
   };
 
@@ -48,7 +48,7 @@ describe('GetReportsDashboardUseCase', () => {
   /** Wires up every stream past Group A so a full execute() completes. */
   function mockGroupsBAndC(): void {
     apiSpy.getCargaDeAgente.and.returnValue(of([]));
-    apiSpy.getSinAsignar.and.returnValue(of({ count: 0, tickets: [] }));
+    apiSpy.getSinAsignar.and.returnValue(of({ cantidad: 0, tickets: [] }));
     apiSpy.getTendenciaDeFrt.and.returnValue(of([]));
     apiSpy.getAgentesDisponibles.and.returnValue(of([]));
     apiSpy.getMapaDeCalor.and.returnValue(of([]));
@@ -173,10 +173,10 @@ describe('GetReportsDashboardUseCase', () => {
 
   it('should pass through the responseDelay report when the call succeeds', (done) => {
     const mockDemoraDeRespuesta = {
-      data_available_from: '2026-01-01T00:00:00Z',
-      partial_data: false,
-      aggregate: { avg_delay_seconds: 120, sample_count: 5, unanswered_inbound_count: 1 },
-      per_agent: [],
+      datosDisponiblesDesde: '2026-01-01T00:00:00Z',
+      datosParciales: false,
+      global: { demoraPromedioSegundos: 120, cantidadDeMuestras: 5, cantidadDeEntrantesSinResponder: 1 },
+      porAgente: [],
     };
 
     apiSpy.getFirstResponseTime.and.returnValue(of(mockFrt));

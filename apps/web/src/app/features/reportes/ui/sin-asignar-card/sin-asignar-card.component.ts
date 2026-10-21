@@ -19,21 +19,21 @@ import { SinAsignarResponse } from '../../../../data-access/reporte/reporte.mode
         </span>
         <span class="kpi-card__label">Cola sin asignar</span>
         @if (!loading) {
-          <span class="kpi-card__badge">{{ data?.count ?? 0 }}</span>
+          <span class="kpi-card__badge">{{ data?.cantidad ?? 0 }}</span>
         }
       </div>
       <div class="kpi-card__body">
         @if (loading) {
           <div class="kpi-card__skeleton"></div>
-        } @else if (!data || data.count === 0) {
+        } @else if (!data || data.cantidad === 0) {
           <span class="kpi-card__empty">No hay tickets sin asignar</span>
         } @else {
           <div class="unassigned-list">
             @for (ticket of data.tickets; track ticket.id) {
               <div class="unassigned-item">
                 <span class="unassigned-item__id">#{{ ticket.id }}</span>
-                <span class="unassigned-item__name">{{ ticket.contact_name ?? 'Sin nombre' }}</span>
-                <span class="unassigned-item__priority priority--{{ ticket.priority }}">{{ ticket.priority }}</span>
+                <span class="unassigned-item__name">{{ ticket.contactoNombre ?? 'Sin nombre' }}</span>
+                <span class="unassigned-item__priority priority--{{ ticket.prioridad }}">{{ ticket.prioridad }}</span>
               </div>
             }
           </div>

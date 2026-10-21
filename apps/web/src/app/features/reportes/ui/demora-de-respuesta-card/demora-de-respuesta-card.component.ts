@@ -30,25 +30,25 @@ import { ReporteDeDemoraDeRespuesta } from '../../../../data-access/reporte/demo
           <div class="kpi-card__skeleton"></div>
         } @else if (!data) {
           <span class="kpi-card__empty">No se pudo cargar la demora de respuesta</span>
-        } @else if (data.partial_data) {
+        } @else if (data.datosParciales) {
           <span class="kpi-card__empty">
-            Sin datos de atribución (desde {{ data.data_available_from | date:'dd/MM/yyyy' }})
+            Sin datos de atribución (desde {{ data.datosDisponiblesDesde | date:'dd/MM/yyyy' }})
           </span>
-        } @else if (data.aggregate.sample_count === 0) {
+        } @else if (data.global.cantidadDeMuestras === 0) {
           <span class="kpi-card__empty">Sin muestras en este período</span>
         } @else {
           <div class="response-delay__summary">
             <div class="kpi-card__value">
-              <span class="kpi-card__number">{{ (data.aggregate.avg_delay_seconds ?? 0) / 60 | number:'1.0-1' }}</span>
+              <span class="kpi-card__number">{{ (data.global.demoraPromedioSegundos ?? 0) / 60 | number:'1.0-1' }}</span>
               <span class="kpi-card__unit">min</span>
             </div>
             <div class="kpi-card__breakdown">
-              <span>{{ data.aggregate.sample_count }} muestras</span>
-              <span>{{ data.aggregate.unanswered_inbound_count }} sin responder</span>
+              <span>{{ data.global.cantidadDeMuestras }} muestras</span>
+              <span>{{ data.global.cantidadDeEntrantesSinResponder }} sin responder</span>
             </div>
           </div>
 
-          @if (data.per_agent.length > 0) {
+          @if (data.porAgente.length > 0) {
             <table class="response-delay-table">
               <thead>
                 <tr>
@@ -58,17 +58,17 @@ import { ReporteDeDemoraDeRespuesta } from '../../../../data-access/reporte/demo
                 </tr>
               </thead>
               <tbody>
-                @for (agent of data.per_agent; track agent.agent_id) {
+                @for (agent of data.porAgente; track agent.agenteId) {
                   <tr>
-                    <td>{{ agent.agent_name ?? 'Agente #' + agent.agent_id }}</td>
+                    <td>{{ agent.agenteNombre ?? 'Agente #' + agent.agenteId }}</td>
                     <td>
-                      @if (agent.avg_delay_seconds !== null) {
-                        {{ agent.avg_delay_seconds / 60 | number:'1.0-1' }} min
+                      @if (agent.demoraPromedioSegundos !== null) {
+                        {{ agent.demoraPromedioSegundos / 60 | number:'1.0-1' }} min
                       } @else {
                         —
                       }
                     </td>
-                    <td>{{ agent.sample_count }}</td>
+                    <td>{{ agent.cantidadDeMuestras }}</td>
                   </tr>
                 }
               </tbody>

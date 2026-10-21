@@ -35,15 +35,15 @@ import { ReabiertoEntry } from '../../../../data-access/reporte/reporte.models';
               </tr>
             </thead>
             <tbody>
-              @for (entry of data; track entry.ticket_id) {
+              @for (entry of data; track entry.ticketId) {
                 <tr>
-                  <td class="reopened-table__id">#{{ entry.ticket_id }}</td>
-                  <td>{{ entry.contact_name ?? 'Sin nombre' }}</td>
-                  <td class="reopened-table__date">{{ entry.resolved_at | date:'dd/MM HH:mm' }}</td>
-                  <td class="reopened-table__date">{{ entry.reopened_at | date:'dd/MM HH:mm' }}</td>
+                  <td class="reopened-table__id">#{{ entry.ticketId }}</td>
+                  <td>{{ entry.contactoNombre ?? 'Sin nombre' }}</td>
+                  <td class="reopened-table__date">{{ entry.resueltoAt | date:'dd/MM HH:mm' }}</td>
+                  <td class="reopened-table__date">{{ entry.reabiertoAt | date:'dd/MM HH:mm' }}</td>
                   <td>
-                    <span class="reopened-table__status status--{{ entry.current_status }}">
-                      {{ entry.current_status }}
+                    <span class="reopened-table__status status--{{ entry.estadoActual }}">
+                      {{ entry.estadoActual }}
                     </span>
                   </td>
                 </tr>
