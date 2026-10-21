@@ -38,7 +38,7 @@ import { VirtualScrollViewportComponent } from '../components/virtual-scroll-vie
  *   [idOf]="idOfItem"
  *   [infiniteScrollThreshold]="200"
  *   (itemActivated)="onSelect($event)"
- *   (loadMore)="onLoadMore()"
+ *   (cargarMas)="onCargarMas()"
  * >
  *   @for (item of coordinator().visibleItems(); track item.id) {
  *     <app-card
@@ -62,7 +62,7 @@ export class VirtualListCoordinatorDirective<T> {
 
   /**
    * Optional infinite-scroll threshold in pixels.
-   * When set, emits `loadMore` when the scroll container is within this
+   * When set, emits `cargarMas` when the scroll container is within this
    * distance from the bottom. `null` (default) disables infinite scroll.
    */
   readonly infiniteScrollThreshold = input<number | null>(null);
@@ -71,7 +71,7 @@ export class VirtualListCoordinatorDirective<T> {
   readonly itemActivated = output<T>();
 
   /** Emitted when infinite scroll threshold is crossed */
-  readonly loadMore = output<void>();
+  readonly cargarMas = output<void>();
 
   // ─── Injected viewport (same element) ────────────────────────────────────
 
@@ -150,7 +150,7 @@ export class VirtualListCoordinatorDirective<T> {
         const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
         const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
         if (distanceFromBottom < threshold) {
-          this.loadMore.emit();
+          this.cargarMas.emit();
         }
       };
 

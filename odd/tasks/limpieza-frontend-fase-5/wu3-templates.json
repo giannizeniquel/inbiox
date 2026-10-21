@@ -1,0 +1,2 @@
+{"types": ["Ticket", "{ id: number; nombre: string; }", "{ id: number; telefono: string; nombre: string | null; }", "{ cantidadDeNoLeidos: number; }", "{ abiertoAt: string;"],
+ "rename": {"ticket_id": "ticketId", "status": "estado", "priority": "prioridad", "contact": "contacto", "last_message": "ultimoMensaje", "owner": "responsable", "metrics": "metricas", "unread_count": "cantidadDeNoLeidos", "timestamps": "fechas", "opened_at": "abiertoAt", "updated_at": "actualizadoAt", "last_inbound_message_at": "ultimoMensajeEntranteAt", "name": "nombre", "phone": "telefono"}}

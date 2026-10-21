@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ConnectionStore } from '../../core/stores/connection.store';
+import { ConnectionStore } from '../../core/tiempo-real/connection.store';
 
 @Component({
   selector: 'app-connection-banner',
@@ -13,5 +13,5 @@ import { ConnectionStore } from '../../core/stores/connection.store';
 export class ConnectionBannerComponent {
   private connectionStore = inject(ConnectionStore);
 
-  status = this.connectionStore.status;
+  estado = this.connectionStore.estado;
 }

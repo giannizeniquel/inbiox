@@ -58,7 +58,7 @@ flowchart LR
 | **Docker Compose** + nginx | Entorno local. No hay manifiestos de producción en el repo. | **Justificación no documentada.** |
 | Redis, MailHog | Se borraron de `docker-compose.yml` en la fase 1 porque la app no los usaba. Quedan **previstos**: Redis para cache y un mailer para enviar mails; se agregan cuando haya un caso de uso real. | — |
 | PHPUnit 11 / Karma + Jasmine | Tests backend / frontend. | — |
-| Contenedor/presentacional, casos de uso, stores (frontend) | Organización del código Angular. | Comentarios en el código (p. ej. `features/inbox/components/ticket-participation/ticket-participation.component.ts:6-14`). Aplicado de forma parcial. |
+| Contenedor/presentacional, casos de uso, stores (frontend) | Organización del código Angular. | Comentarios en el código (p. ej. `features/bandeja/ui/participacion-de-ticket/participacion-de-ticket.component.ts:6-13`). Aplicado de forma parcial. |
 | "Bounded contexts" y WhatsApp como adaptador de canal | Mantener el motor (asignación, capacidad, disponibilidad) independiente de WhatsApp. | `docs/03_architecture/ADR-004-platform-ready-bounded-contexts.md` (Accepted, 2026-08-11). Parcialmente aplicado (ver [violaciones](#separación-de-responsabilidades-reglas-del-proyecto-y-dónde-se-violan-hoy)). |
 
 ---
@@ -103,16 +103,15 @@ Todo en `apps/web/src/app/`. Detalle por pantalla en [07-frontend.md](07-fronten
 | Carpeta | Contiene | Observación |
 |---|---|---|
 | `app.config.ts`, `app.routes.ts` | Arranque, rutas, interceptor, proveedor WhatsApp. | |
-| `core/api/` | 11 servicios HTTP (`*-api.service.ts`). | Capa de transporte. |
-| `core/application/` | Casos de uso (admin, mensajería, reportes, contactos). | No hay casos de uso para la bandeja, settings ni workspace. |
-| `core/stores/` | Estado compartido con signals (`auth`, `ticket`, `conversation`, `connection`, `ui`, `workspace`, `settings`, `agent`, `theme`). | Varios stores hacen HTTP directamente. |
-| `core/realtime/` | `MercureService` (SSE por `fetch`), `EventBusService`. | |
-| `core/providers/` | `ProviderInterface`, `WhatsAppCloudProvider` (proxy a `/api/provider/*`), `FakeWhatsAppProvider` (sin uso). | La "abstracción de proveedor" de ADR-004 existe **solo** aquí. |
-| `core/dto/`, `core/models/`, `core/utils/`, `core/auth/`, `core/services/` | DTOs compartidos, modelos canónicos, utilidades, guards/interceptor, `agent.service.ts` (roto). | |
-| `features/` | `inbox`, `contacts` (con su propia mini-arquitectura), `reports`, `admin/*`, `agents/*`, `settings`, `login`. | |
+| `core/auth/` | `AuthStore`, `AuthApiService`, guards e interceptor. | |
+| `core/tiempo-real/` | `MercureService` (SSE por `fetch`), `EventBusService`, `ConnectionStore`, `MetricsService`. | |
+| `core/http/`, `core/layout/` | Utilidades HTTP (errores, reintentos) y `ThemeStore`. | |
+| `data-access/<modulo>/` | Un módulo del glosario por carpeta (`ticket`, `conversacion`, `contacto`, `agente`, `disponibilidad`, `reporte`, `administracion`): servicios HTTP (`*-api.service.ts`), stores con signals, DTOs, modelos y casos de uso. | Varios stores hacen HTTP directamente. No hay casos de uso para la bandeja, settings ni workspace. |
+| `data-access/conversacion/` | Además, `ProveedorWhatsAppCloud` (proxy a `/api/provider/*`). | La "abstracción de proveedor" de ADR-004 ya no existe en el frontend: la fase 3 de la limpieza quitó `ProviderInterface`, que tenía una sola implementación. |
+| `data-access/disponibilidad/` | Además, `disponibilidad-api.service.ts` (roto). | |
+| `features/<pantalla>/` | `bandeja`, `contactos`, `reportes`, `configuracion`, `administracion`, `disponibilidad`, `login`, cada una con `pages/` y `ui/`. | `bandeja/ui.store.ts` es estado de pantalla. |
 | `shell/` | Layout: barra superior, menú lateral, selector de workspace, banner de conexión. **El shell pinta directamente la bandeja.** | |
 | `shared/` | Componentes, pipes y validadores reutilizables. | |
-| `domain/`, `dto/` (raíz) | **Código muerto** (nada los importa). | |
 
 ---
 
@@ -164,8 +163,8 @@ sequenceDiagram
 | Publicación | `Compartido/Command/OutboxPublishCommand.php` → `Compartido/Outbox/OutboxPublisherService.php` |
 | Tipo guardado | `outbox_events.event_type` (y `payload.type`, que nadie lee) guarda el nombre interno de `Compartido/Outbox/TipoDeEventoDeOutbox.php` (`ticket.creado`, `ticket.actualizado`, `ticket.bandeja_actualizada`, `mensaje.creado`, `mensaje.actualizado`, `agente.disponibilidad_cambiada`, `agente.turno_cambiado`, `ticket.leido`), no el nombre de la clase. Al leer se aceptan también los valores viejos (nombres de clase y `ticket.read`) como alias, hasta la etapa 3 del contrato (`docs/contrato-api.md`). |
 | Contrato | `Compartido/Realtime/EventoEnTiempoRealFactory.php`, `TipoDeEventoMapper.php` (única tabla de tipo guardado a tipo de Mercure; `ticket.actualizado` sale como `ticket.assigned` si el payload trae responsable y como `ticket.status_changed` si no), `TipoDeEventoEnTiempoReal.php` (`ticket.created`, `ticket.status_changed`, `ticket.assigned`, `message.added`, `message.updated`, `conversation.updated`, `agent.availability_changed`, `agent.shift_changed`) |
-| Token de suscripción | `GET /api/mercure/token` → `MercureJwtService::issueParaUsuario()`; en la práctica el frontend **no lo usa para suscribirse** (el hub es anónimo), solo para el resync. |
-| Frontend | `core/realtime/mercure.service.ts`, `core/realtime/event-bus.service.ts`, `core/stores/ticket.store.ts:112-208`, `core/stores/conversation.store.ts:65-107` |
+| Token de suscripción | `GET /api/mercure/token` → `MercureJwtService::issueParaUsuario()`; el frontend lo pide pero **no lo usa**: el hub es anónimo y el resync se eliminó en la fase 4. |
+| Frontend | `core/tiempo-real/mercure.service.ts`, `core/tiempo-real/event-bus.service.ts`, `data-access/ticket/ticket-realtime.reducer.ts:9-99`, `data-access/conversacion/conversacion.store.ts:65-107` |
 
 ### Problemas conocidos del pipeline
 
@@ -182,7 +181,7 @@ Deducidos de la lectura; confirmar con `SELECT event_type, status, COUNT(*) FROM
 | P-7 | Plantillas y reaperturas por ventana no emiten eventos (la segunda es una limitación aceptada y documentada en `ProcesarMensajeEntranteUseCase.php:342-350`). | — |
 | P-8 | Topics `agent/{id}/availability`, `agent/{id}/shifts`, `agents`: se publican o conceden, pero el frontend no los escucha. | `MercureJwtService.php:28-32` |
 | P-9 | El publicador lee el outbox sin bloqueo de filas: si corren dos a la vez (por ejemplo el servicio docker `publisher` y `POST /admin/outbox/publish`), se duplican eventos (el frontend deduplica por `eventId`). La unidad systemd alternativa se borró en la fase 1; el publicador solo corre en docker. | `OutboxPublisherService.php:65-78` |
-| P-10 | Frontend: la detección de huecos está desactivada, `resyncAllTickets()` nunca se llama, si el stream cierra limpio no reconecta, tras 10 fallos deja de reintentar y el menú lateral sigue diciendo "Conectado". | `mercure.service.ts:110-113, 282-286, 403-424` |
+| P-10 | Frontend: no hay detección de huecos ni resync (el código inalcanzable se eliminó en la fase 4), si el stream cierra limpio no reconecta, tras 10 fallos deja de reintentar y el menú lateral sigue diciendo "Conectado". | `mercure.service.ts:67-69, 146-173` |
 | P-11 | Seguridad: hub anónimo, eventos públicos, topic único ([R4](00-estado-y-pendientes.md#r4-tiempo-real-sin-aislamiento-entre-workspaces)). El secreto JWT efectivo sale de `config/packages/test.yaml`, cargado en todos los entornos; `MERCURE_URL`, `MERCURE_PUBLIC_URL` y `MERCURE_JWT_SECRET` del `.env` no tienen efecto real (la URL del hub está fija en el constructor de `OutboxPublisherService`). | `OutboxPublisherService.php:27`; `MercureJwtService.php:198-201` |
 
 ---
@@ -261,7 +260,7 @@ Archivos: `apps/api/.env` (no versionado), `.env.dev` (**versionado, con credenc
 | "Respetar separación por capas", "generar código limpio y modular", "no crear lógica duplicada". | `docs/03_architecture/0-documento-tecnico.md` §14-15 |
 | El dominio (Ticket, Assignment, Capacity, Availability, FSM) no conoce WhatsApp; el canal se usa a través de un puerto (interfaz). | `ADR-004` §1-3 |
 | Los casos de uso no llaman a Mercure; la lógica del outbox está aislada; el evento se inserta en la misma transacción. | `docs/04_sprints/sprint_9B (Realtime con Mercure).md` |
-| Frontend: "inbox never talks to core/api/ directly"; "core/api/ services should not import from features/". | Comentarios en `ticket-participation.component.ts:6-14` y `core/dto/reports.params.ts:5` |
+| Frontend: dependencias en una sola dirección (`features` → `data-access` → `core`); el estado de pantalla vive en la pantalla. | `docs/arquitectura.md` |
 | Implícita por la estructura de carpetas: Controller → Application (UseCase/Query/Service) → Domain; Repository/Infrastructure implementan interfaces del dominio. | Estructura de `src/` |
 
 ### Dónde se violan hoy — backend
@@ -284,10 +283,10 @@ Archivos: `apps/api/.env` (no versionado), `.env.dev` (**versionado, con credenc
 
 | # | Violación | Evidencia |
 |---|---|---|
-| W1 | El núcleo de la bandeja no usa casos de uso: los contenedores llaman a `core/api` o a `HttpClient` y escriben en los stores. | `ticket-list.component.ts:51-53`, `conversation.component.ts:89,200`, `shell/app-shell.component.ts:60-61` |
-| W2 | Stores que hacen HTTP. | `settings.store.ts`, `workspace.store.ts`, `auth.store.ts`, `agent.store.ts`, `features/contacts/stores/contact-timeline.store.ts` |
-| W3 | `core` importa de `features` (al revés de la regla escrita). | `core/application/reports/get-reports-dashboard.use-case.ts:7-16` importa `features/reports/models` |
-| W4 | Componente presentacional con acceso a API. | `TeamFilterComponent` llama `TeamApiService` |
+| W1 | El núcleo de la bandeja no usa casos de uso: los contenedores llaman a los servicios `*-api` o a `HttpClient` y escriben en los stores. | `ticket-list.component.ts:52-55`, `conversacion.component.ts:61-63`, `shell/app-shell.component.ts:58-59` |
+| W2 | Stores que hacen HTTP. | `configuracion.store.ts`, `espacio-de-trabajo.store.ts`, `auth.store.ts`, `disponibilidad.store.ts`, `data-access/contacto/linea-de-tiempo-de-contacto.store.ts` |
+| W3 | **Resuelto** en la fase 2 de la limpieza frontend: `core` importaba de `features`; hoy `core/` no importa de `data-access/` ni de `features/`. | — |
+| W4 | Componente presentacional con acceso a API. | `FiltroDeEquipoComponent` llama `ListaDeEquiposApiService` |
 | W5 | Reglas de negocio duplicadas en el navegador. | ventana de 24 h, FSM, `new → active` al asignar, permisos de asignación (ver [07](07-frontend.md#lógica-de-negocio-que-vive-en-el-frontend)) |
-| W6 | DTOs en tres lugares y carpetas muertas. | `app/dto/`, `app/domain/` (muertas), `core/dto/` y `features/contacts/models/dto/` (duplicado de contacto) |
-| W7 | Flujo "abrir ticket y cargar mensajes" escrito tres veces. | `ticket-list.component.ts:176-192`, `app-shell.component.ts:96-112`, `inbox-page.component.ts:30-67` (este último nunca se renderiza) |
+| W6 | **Resuelto** en la fase 2 de la limpieza frontend: el DTO de contacto de `features/contacts/models/dto/` solo reexportaba el de `core/dto/` y se borró. | `data-access/<modulo>/` |
+| W7 | Flujo "abrir ticket y cargar mensajes" escrito dos veces. | `ticket-list.component.ts:178-194`, `app-shell.component.ts:90-106` |

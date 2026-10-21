@@ -19,7 +19,7 @@ Una bandeja de atención compartida: los mensajes que llegan por **WhatsApp Clou
 | 5 | [02-arquitectura-y-tecnologias.md](02-arquitectura-y-tecnologias.md) | Stack, capas, rutas, autenticación, tiempo real, docker. | 25 min |
 | 6 | [05-reglas-de-negocio.md](05-reglas-de-negocio.md) | Catálogo de reglas: dónde se aplican y si están confirmadas. | consulta |
 | 7 | [06-api-y-permisos.md](06-api-y-permisos.md) | Las 90 rutas HTTP y qué rol necesita cada una. | consulta |
-| 8 | [07-frontend.md](07-frontend.md) | Pantalla por pantalla: componente → caso de uso → store → endpoint. | consulta |
+| 8 | [07-frontend.md](07-frontend.md) | Pantalla por pantalla: componente → servicio o store → endpoint. | consulta |
 | 9 | [08-riesgos-contradicciones-y-complejidad.md](08-riesgos-contradicciones-y-complejidad.md) | Contradicciones, código de propósito no claro, complejidad. | 20 min |
 | 10 | [09-guia-de-pruebas-manuales.md](09-guia-de-pruebas-manuales.md) | Cómo levantar el entorno y probar cada funcionalidad a mano. | práctica |
 
@@ -30,7 +30,7 @@ Una bandeja de atención compartida: los mensajes que llegan por **WhatsApp Clou
 | Convención | Significado |
 |---|---|
 | `apps/api/src/...` | Rutas del backend. Dentro de las tablas se abrevia a partir de `src/` cuando el contexto es claro. |
-| `apps/web/src/app/...` | Rutas del frontend. Se abrevia a partir de `core/`, `features/`, `shell/`. |
+| `apps/web/src/app/...` | Rutas del frontend. Se abrevia a partir de `core/`, `data-access/`, `features/`, `shell/`. |
 | `archivo.php:120` | Archivo y línea en el commit `239ee15`. Las líneas pueden moverse con cambios futuros; el nombre del método es más estable. |
 | **Confirmada** | Existe evidencia escrita del motivo de negocio (spec en `openspec/specs/`, análisis de brecha o decisión documentada). Se cita la fuente. |
 | **Regla no confirmada** | El código lo hace, pero no se encontró el motivo. **No se inventó una explicación.** |
@@ -67,10 +67,10 @@ Una bandeja de atención compartida: los mensajes que llegan por **WhatsApp Clou
 | **Dead letter** | Evento del outbox que falló 5 veces y ya no se reintenta. | `OutboxPublisherService.php` |
 | **Mercure** | Servidor (hub) de Server-Sent Events (SSE). El navegador queda suscripto y recibe eventos sin recargar. | servicio `mercure` en `docker-compose.yml` |
 | **Topic** | "Canal" de Mercure. Hoy casi todo se publica en un único topic: `tickets`. | `MercureJwtService.php` |
-| **Caso de uso (use case)** | Clase que implementa una operación de negocio completa (backend `<Modulo>/UseCase/`, frontend `core/application/`). | — |
+| **Caso de uso (use case)** | Clase que implementa una operación de negocio completa (backend `<Modulo>/UseCase/`, frontend `data-access/<modulo>/*.use-case.ts`). | — |
 | **Voter** | Clase de Symfony que decide si un usuario puede hacer algo sobre un objeto concreto (p. ej. resolver un ticket). Viven en `<Modulo>/Security/` (`Ticket/Security/TicketVoter`, `Conversacion/Security/MensajeVoter`). | `Ticket/Security/`, `Conversacion/Security/` |
 | **FSM** | *Finite State Machine*: tabla de transiciones de estado permitidas. | `MaquinaDeEstadosDeTicket.php` |
-| **Store** | En Angular, servicio con *signals* que guarda el estado compartido de la pantalla. | `apps/web/src/app/core/stores/` |
+| **Store** | En Angular, servicio con *signals* que guarda el estado compartido de la pantalla. | `apps/web/src/app/data-access/<modulo>/*.store.ts` |
 | **Tier 1 / Tier 2** | Prioridades del backlog definidas en el análisis de brecha. | [`analisis-brecha-requerimientos.md`](../../analisis-brecha-requerimientos.md) |
 
 ## Qué otros documentos del repositorio usar y cuáles ignorar

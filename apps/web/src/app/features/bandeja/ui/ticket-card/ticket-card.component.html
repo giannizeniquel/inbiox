@@ -1,0 +1,137 @@
+<div
+  class="ticket-card"
+  [ngClass]="{
+    'is-unread': (ticket().metricas?.cantidadDeNoLeidos ?? 0) > 0,
+    'is-active': isActive()
+  }"
+  tabIndex="0"
+  role="button"
+  [attr.aria-label]="ariaLabel()"
+  (click)="onSelect()"
+  (keydown.enter)="onSelect()"
+  (keydown.space)="onSelect()"
+>
+  <!-- Avatar -->
+  <div class="ticket-card__avatar">
+    <span>{{ initials() }}</span>
+  </div>
+
+  <!-- Main content -->
+  <div class="ticket-card__body">
+    <div class="ticket-card__row ticket-card__row--top">
+      <span class="ticket-card__name">{{ nombreDeContacto() }}</span>
+      <span class="ticket-card__time">{{ relativeTime() }}</span>
+    </div>
+
+    <div class="ticket-card__row ticket-card__row--bottom">
+      <div class="ticket-card__meta">
+        <!-- Status chip -->
+        <span class="ticket-card__status-chip" [ngClass]="'status-' + ticket().estado">
+          {{ estadoLabel() }}
+        </span>
+
+        <!-- Priority -->
+        @if (ticket().prioridad) {
+          <span class="ticket-card__priority">{{ ticket().prioridad }}</span>
+        }
+      </div>
+
+      <div class="ticket-card__actions">
+        <!-- Unread badge -->
+        @if ((ticket().metricas?.cantidadDeNoLeidos ?? 0) > 0) {
+          <span class="ticket-card__unread">{{ ticket().metricas?.cantidadDeNoLeidos }}</span>
+        }
+
+        <!-- Assign button (dropdown trigger) -->
+        @if (showDropdown()) {
+          <button
+            class="ticket-card__assign-btn"
+            [attr.aria-label]="'Asignar ticket'"
+            [attr.aria-expanded]="dropdownOpen()"
+            (click)="toggleDropdown($event)"
+            (keydown.enter)="toggleDropdown($event)"
+            (keydown.space)="toggleDropdown($event)"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Last message preview -->
+    @if (ticket().ultimoMensaje) {
+      <div class="ticket-card__preview">
+        {{ ticket().ultimoMensaje }}
+      </div>
+    }
+
+    <!-- Assignment error badge -->
+    @if (errorDeAsignacion()) {
+      <div class="ticket-card__error-badge">
+        {{ errorDeAsignacion() }}
+      </div>
+    }
+  </div>
+</div>
+
+<!-- Assignment dropdown (positioned fixed, outside card for virtual scroll compatibility) -->
+@if (dropdownOpen()) {
+  <div
+    class="ticket-card__dropdown"
+    [style.top.px]="dropdownTop()"
+    [style.left.px]="dropdownLeft()"
+    role="listbox"
+    [attr.aria-label]="'Seleccionar agente'"
+  >
+    @if (agentesDisponibles().length === 0) {
+      <div class="ticket-card__dropdown-empty">
+        Sin agentes disponibles
+      </div>
+    } @else {
+      @if (agentesActivos().length > 0) {
+        <div class="ticket-card__dropdown-group-header">Activo</div>
+        @for (agent of agentesActivos(); track agent.id) {
+          <button
+            class="ticket-card__dropdown-item"
+            role="option"
+            [attr.aria-selected]="ticket().responsable?.id === agent.id"
+            (click)="seleccionarAgente(agent, $event)"
+            (keydown.enter)="seleccionarAgente(agent, $event)"
+          >
+            <span class="ticket-card__dropdown-name">{{ agent.nombre }}</span>
+            <span class="ticket-card__dropdown-capacity">
+              {{ agent.cantidadDeTicketsActivos }}/{{ agent.maximoDeTicketsActivos }}
+            </span>
+            <span class="ticket-card__dropdown-badge ticket-card__dropdown-badge--active">Activo</span>
+            <span class="ticket-card__dropdown-status status-available"></span>
+          </button>
+        }
+      }
+
+      @if (agentesInactivos().length > 0) {
+        <div class="ticket-card__dropdown-group-header">Inactivo</div>
+        @for (agent of agentesInactivos(); track agent.id) {
+          <button
+            class="ticket-card__dropdown-item ticket-card__dropdown-item--disabled"
+            role="option"
+            [attr.aria-selected]="ticket().responsable?.id === agent.id"
+            [attr.aria-disabled]="true"
+            [disabled]="true"
+            (click)="seleccionarAgente(agent, $event)"
+            (keydown.enter)="seleccionarAgente(agent, $event)"
+          >
+            <span class="ticket-card__dropdown-name">{{ agent.nombre }}</span>
+            <span class="ticket-card__dropdown-capacity">
+              {{ agent.cantidadDeTicketsActivos }}/{{ agent.maximoDeTicketsActivos }}
+            </span>
+            <span class="ticket-card__dropdown-badge ticket-card__dropdown-badge--inactive">Inactivo</span>
+            <span class="ticket-card__dropdown-status status-unavailable"></span>
+          </button>
+        }
+      }
+    }
+  </div>
+}

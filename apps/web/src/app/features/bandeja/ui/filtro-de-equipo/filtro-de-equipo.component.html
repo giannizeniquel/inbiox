@@ -1,0 +1,11 @@
+<select
+  class="team-filter"
+  aria-label="Filtrar por equipo"
+  [value]="equipoSeleccionadoId() ?? ''"
+  (change)="onChange($event)"
+>
+  <option value="">Todos los equipos</option>
+  @for (team of equipos(); track team.id) {
+    <option [value]="team.id">{{ team.nombre }}</option>
+  }
+</select>

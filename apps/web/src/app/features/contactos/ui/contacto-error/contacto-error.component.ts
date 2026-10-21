@@ -1,0 +1,31 @@
+import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
+
+/**
+ * ContactoErrorComponent — error state display for the contact list.
+ *
+ * Per spec:
+ * - Input: errorMessage string
+ * - Display: error icon SVG + message + "Reintentar" button
+ * - Output: retry event
+ * - Dark mode compatible
+ * - No alert() calls
+ */
+@Component({
+  selector: 'app-contacto-error',
+  standalone: true,
+  imports: [],
+  templateUrl: './contacto-error.component.html',
+  styleUrl: './contacto-error.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class ContactoErrorComponent {
+  /** The error message to display */
+  readonly errorMessage = input<string>('Error al cargar los contactos');
+
+  /** Emit when user clicks retry */
+  readonly reintentar = output<void>();
+
+  onReintentarClick(): void {
+    this.reintentar.emit();
+  }
+}

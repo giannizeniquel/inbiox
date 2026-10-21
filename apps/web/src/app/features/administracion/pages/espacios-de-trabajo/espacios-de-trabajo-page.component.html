@@ -1,0 +1,201 @@
+
+    <div class="admin-page">
+      <div class="admin-page__header">
+        <h1>Workspace Management</h1>
+        <button class="btn btn--primary" (click)="openCreateForm()">
+          + Create Workspace
+        </button>
+      </div>
+
+      <!-- Error banner -->
+      @if (error(); as err) {
+        <div class="alert alert--error" role="alert">
+          {{ err }}
+          <button class="alert__close" (click)="error.set(null)" aria-label="Dismiss error">&times;</button>
+        </div>
+      }
+
+      <!-- Success banner -->
+      @if (success(); as msg) {
+        <div class="alert alert--success" role="status">
+          {{ msg }}
+          <button class="alert__close" (click)="success.set(null)" aria-label="Dismiss message">&times;</button>
+        </div>
+      }
+
+      <!-- Loading state -->
+      @if (loading()) {
+        <div class="loading" role="status" aria-live="polite">Loading workspaces...</div>
+      }
+
+      <!-- Workspaces table -->
+      @if (!loading()) {
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Phone Number ID</th>
+                <th>Display Name</th>
+                <th>Active</th>
+                <th>Agents</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (ws of espaciosDeTrabajo(); track ws.id) {
+                <tr [class.row--inactive]="!ws.activo">
+                  <td>{{ ws.id }}</td>
+                  <td><code>{{ ws.phoneNumberId }}</code></td>
+                  <td>{{ ws.nombreVisible }}</td>
+                  <td>
+                    <span class="status-dot" [class.status-dot--active]="ws.activo"
+                          [class.status-dot--inactive]="!ws.activo">
+                    </span>
+                    {{ ws.activo ? 'Active' : 'Inactive' }}
+                  </td>
+                  <td>{{ ws.cantidadDeAgentes ?? '—' }}</td>
+                   <td class="actions-cell">
+                     <button class="btn btn--sm btn--outline" (click)="openEditForm(ws)" [attr.aria-label]="'Edit ' + ws.nombreVisible">Edit</button>
+                     <button class="btn btn--sm btn--outline" (click)="abrirAgenteModal(ws)" [attr.aria-label]="'Manage agents for ' + ws.nombreVisible">Agents</button>
+                     @if (ws.activo) {
+                       <button class="btn btn--sm btn--danger" (click)="confirmDelete(ws)" [attr.aria-label]="'Deactivate ' + ws.nombreVisible">Deactivate</button>
+                     }
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="6" class="empty-state">No workspaces found.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        @if (totalPages() > 1) {
+          <div class="pagination">
+            <button class="btn btn--sm btn--outline" [disabled]="currentPage() <= 1"
+                    (click)="goToPage(currentPage() - 1)" aria-label="Previous page">Previous</button>
+            <span class="pagination__info">Page {{ currentPage() }} of {{ totalPages() }}</span>
+            <button class="btn btn--sm btn--outline" [disabled]="currentPage() >= totalPages()"
+                    (click)="goToPage(currentPage() + 1)" aria-label="Next page">Next</button>
+          </div>
+        }
+      }
+
+      <!-- Create/Edit Modal -->
+      @if (showForm()) {
+        <div class="modal-overlay" (click)="closeForm()">
+          <div class="modal" role="dialog" aria-modal="true" [attr.aria-labelledby]="espacioDeTrabajoEnEdicion() ? 'modal-title-edit' : 'modal-title-create'" (click)="$event.stopPropagation()">
+            <div class="modal__header">
+              <h2 [id]="espacioDeTrabajoEnEdicion() ? 'modal-title-edit' : 'modal-title-create'">{{ espacioDeTrabajoEnEdicion() ? 'Edit Workspace' : 'Create Workspace' }}</h2>
+              <button class="modal__close" (click)="closeForm()" aria-label="Close dialog">&times;</button>
+            </div>
+            <form [formGroup]="espacioDeTrabajoForm" (ngSubmit)="onSubmit()">
+              <div class="modal__body">
+                <div class="form-group">
+                  <label class="form-label" for="ws-phone-number-id">Phone Number ID</label>
+                  <input id="ws-phone-number-id" type="text" class="form-input"
+                         formControlName="phoneNumberId" placeholder="e.g. 1146240195247464"
+                         [class.form-input--error]="hasFieldError('phoneNumberId')" />
+                  @if (hasFieldError('phoneNumberId')) {
+                    @if (espacioDeTrabajoForm.controls.phoneNumberId.errors?.['required']) {
+                      <p class="form-error">Phone Number ID is required</p>
+                    }
+                    @if (espacioDeTrabajoForm.controls.phoneNumberId.errors?.['minlength']) {
+                      <p class="form-error">Phone Number ID must be at least 2 characters</p>
+                    }
+                  }
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="ws-display-name">Display Name</label>
+                  <input id="ws-display-name" type="text" class="form-input"
+                         formControlName="displayName" placeholder="e.g. Atención al Cliente"
+                         [class.form-input--error]="hasFieldError('displayName')" />
+                  @if (hasFieldError('displayName')) {
+                    @if (espacioDeTrabajoForm.controls.displayName.errors?.['required']) {
+                      <p class="form-error">Display name is required</p>
+                    }
+                    @if (espacioDeTrabajoForm.controls.displayName.errors?.['minlength']) {
+                      <p class="form-error">Display name must be at least 2 characters</p>
+                    }
+                  }
+                </div>
+
+                @if (espacioDeTrabajoEnEdicion()) {
+                  <div class="form-group">
+                    <label class="form-label">
+                      <input type="checkbox" formControlName="isActive" />
+                      Active
+                    </label>
+                  </div>
+                }
+              </div>
+              <div class="modal__footer">
+                <button type="button" class="btn btn--outline" (click)="closeForm()">Cancel</button>
+                <button type="submit" class="btn btn--primary" [disabled]="espacioDeTrabajoForm.invalid || saving()">
+                  {{ saving() ? 'Saving...' : (espacioDeTrabajoEnEdicion() ? 'Save Changes' : 'Create Workspace') }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      }
+
+      <!-- Delete Confirmation Modal -->
+      @if (showDeleteConfirm(); as wsToDelete) {
+        <div class="modal-overlay" (click)="cancelDelete()">
+          <div class="modal modal--sm" role="alertdialog" aria-modal="true" aria-labelledby="modal-title-delete" (click)="$event.stopPropagation()">
+            <div class="modal__header">
+              <h2 id="modal-title-delete">Confirm Deactivation</h2>
+              <button class="modal__close" (click)="cancelDelete()" aria-label="Close dialog">&times;</button>
+            </div>
+            <div class="modal__body">
+              <p>Are you sure you want to deactivate <strong>{{ wsToDelete.nombreVisible }}</strong>?</p>
+              <p class="text-warning">The workspace will stop being available for assignment. Existing data is preserved.</p>
+            </div>
+            <div class="modal__footer">
+              <button class="btn btn--outline" (click)="cancelDelete()">Cancel</button>
+              <button class="btn btn--danger" (click)="executeDelete()" [disabled]="saving()">
+                {{ saving() ? 'Deactivating...' : 'Deactivate' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Agent Assignment Modal -->
+      @if (mostrarAgenteModal() && espacioDeTrabajoEnAsignacion(); as ws) {
+        <div class="modal-overlay" (click)="cerrarAgenteModal()">
+          <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title-agents" (click)="$event.stopPropagation()">
+            <div class="modal__header">
+              <h2 id="modal-title-agents">Assign Agents — {{ ws.nombreVisible }}</h2>
+              <button class="modal__close" (click)="cerrarAgenteModal()" aria-label="Close dialog">&times;</button>
+            </div>
+            <div class="modal__body">
+              @if (agenteOptions().length === 0) {
+                <p>Loading agents...</p>
+              } @else {
+                @for (agent of agenteOptions(); track agent.id) {
+                  <div class="form-group" style="display:flex;align-items:center;gap:8px;padding:4px 0;">
+                    <input type="checkbox" 
+                           [id]="'agent-' + agent.id"
+                           [checked]="agent.assigned"
+                           (change)="agent.assigned = !agent.assigned" />
+                    <label [for]="'agent-' + agent.id">{{ agent.name }}</label>
+                  </div>
+                }
+              }
+            </div>
+            <div class="modal__footer">
+              <button type="button" class="btn btn--outline" (click)="cerrarAgenteModal()">Cancel</button>
+              <button type="button" class="btn btn--primary" (click)="guardarAgentes()" [disabled]="guardandoAgentes()">
+                {{ guardandoAgentes() ? 'Saving...' : 'Save' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>

@@ -1,0 +1,75 @@
+
+    <div class="shifts-page">
+      <h2>Agent Shifts</h2>
+
+      @if (store.loading()) {
+        <div class="loading">Loading...</div>
+      }
+
+      @if (store.turnos().length > 0) {
+        <div class="shift-list">
+          <h3>Current Shifts</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Day</th>
+                <th>Start</th>
+                <th>End</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (shift of store.turnos(); track shift.turnoId) {
+                <tr>
+                  <td>{{ getDayName(shift.diaDeLaSemana) }}</td>
+                  <td>{{ shift.horaDeInicio }}</td>
+                  <td>{{ shift.horaDeFin }}</td>
+                  <td>
+                    <button class="btn-danger btn-small" (click)="onDeleteTurno(shift.turnoId)">
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      @if (store.turnos().length === 0 && !store.loading()) {
+        <div class="empty">
+          No shifts defined. Create one below.
+        </div>
+      }
+
+      <div class="shift-form">
+        <h3>Create Shift</h3>
+        <label>
+          Day of Week:
+          <select #daySelect>
+            <option value="1">Monday</option>
+            <option value="2">Tuesday</option>
+            <option value="3">Wednesday</option>
+            <option value="4">Thursday</option>
+            <option value="5">Friday</option>
+            <option value="6">Saturday</option>
+            <option value="7">Sunday</option>
+          </select>
+        </label>
+
+        <label>
+          Start Time:
+          <input type="time" #startTimeInput />
+        </label>
+
+        <label>
+          End Time:
+          <input type="time" #endTimeInput />
+        </label>
+
+        <button (click)="onCreateTurno(daySelect.value, startTimeInput.value, endTimeInput.value)">
+          Create Shift
+        </button>
+      </div>
+    </div>
+  

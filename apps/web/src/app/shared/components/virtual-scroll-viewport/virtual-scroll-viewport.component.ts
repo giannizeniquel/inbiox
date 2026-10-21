@@ -34,7 +34,7 @@ import {
  * ```html
  * <app-virtual-scroll-viewport #vps [items]="items()" mode="variable" [estimatedItemHeight]="80">
  *   @for (item of vps.visibleItems(); track item.id) {
- *     <app-message-bubble [message]="item" />
+ *     <app-mensaje-bubble [mensaje]="item" />
  *   }
  * </app-virtual-scroll-viewport>
  * ```

@@ -4,7 +4,7 @@ import { provideHttpClientTesting, HttpTestingController } from '@angular/common
 import { Router } from '@angular/router';
 import { provideRouter } from '@angular/router';
 import { Subject, of } from 'rxjs';
-import { AuthStore } from '../stores/auth.store';
+import { AuthStore } from './auth.store';
 import { authInterceptor } from './auth.interceptor';
 
 describe('authInterceptor (functional)', () => {

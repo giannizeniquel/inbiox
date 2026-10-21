@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard, roleGuard } from './core/auth/auth.guard';
 import { AppShellComponent } from './shell/app-shell.component';
-import { LoginPageComponent } from './features/login/login-page.component';
+import { LoginPageComponent } from './features/login/pages/login-page.component';
 
 export const routes: Routes = [
   // ── Public: no shell, no auth ──
@@ -18,71 +18,83 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        redirectTo: 'inbox',
+        redirectTo: 'bandeja',
         pathMatch: 'full',
       },
       {
-        path: 'inbox',
-        loadComponent: () =>
-          import('./features/inbox/pages/inbox-page/inbox-page.component').then(m => m.InboxPageComponent),
+        // The shell renders the inbox (bandeja) layout itself (no router-outlet on this route).
+        path: 'bandeja',
+        children: [],
       },
       {
-        path: 'contacts',
+        path: 'contactos',
         loadComponent: () =>
-          import('./features/contacts/pages/contacts-page/contacts-page.component').then(m => m.ContactsPageComponent),
+          import('./features/contactos/pages/contactos-page/contactos-page.component').then(m => m.ContactosPageComponent),
       },
       {
-        path: 'contacts/:contactId',
+        path: 'contactos/:contactoId',
         loadComponent: () =>
-          import('./features/contacts/pages/contacts-page/contacts-page.component').then(m => m.ContactsPageComponent),
+          import('./features/contactos/pages/contactos-page/contactos-page.component').then(m => m.ContactosPageComponent),
       },
       {
-        path: 'reports',
+        path: 'reportes',
         loadComponent: () =>
-          import('./features/reports/pages/reports-page/reports-page.component').then(m => m.ReportsPageComponent),
+          import('./features/reportes/pages/reportes-page/reportes-page.component').then(m => m.ReportesPageComponent),
       },
       {
-        path: 'agents/:agentId/availability',
+        path: 'agentes/:agenteId/disponibilidad',
         loadComponent: () =>
-          import('./features/agents/availability/availability.page').then(m => m.AvailabilityPageComponent),
+          import('./features/disponibilidad/pages/disponibilidad/disponibilidad.page').then(m => m.DisponibilidadPageComponent),
       },
       {
-        path: 'agents/:agentId/shifts',
+        path: 'agentes/:agenteId/turnos',
         loadComponent: () =>
-          import('./features/agents/shifts/shifts.page').then(m => m.ShiftsPageComponent),
+          import('./features/disponibilidad/pages/turnos/turnos.page').then(m => m.TurnosPageComponent),
       },
       {
-        path: 'admin/users',
-        canActivate: [roleGuard('ROLE_ADMIN')],
+        path: 'administracion/usuarios',
+        canActivate: [roleGuard('ROLE_ADMINISTRADOR')],
         loadComponent: () =>
-          import('./features/admin/users/users-page.component').then(m => m.UsersPageComponent),
+          import('./features/administracion/pages/usuarios/usuarios-page.component').then(m => m.UsuariosPageComponent),
       },
       {
-        path: 'admin/agents',
+        path: 'administracion/agentes',
         canActivate: [roleGuard('ROLE_SUPERVISOR')],
         loadComponent: () =>
-          import('./features/admin/agents/agents-page.component').then(m => m.AgentsPageComponent),
+          import('./features/administracion/pages/agentes/agentes-page.component').then(m => m.AgentesPageComponent),
       },
       {
-        path: 'admin/workspaces',
-        canActivate: [roleGuard('ROLE_ADMIN')],
+        path: 'administracion/espacios-de-trabajo',
+        canActivate: [roleGuard('ROLE_ADMINISTRADOR')],
         loadComponent: () =>
-          import('./features/admin/workspaces/workspaces-page.component').then(m => m.WorkspacesPageComponent),
+          import('./features/administracion/pages/espacios-de-trabajo/espacios-de-trabajo-page.component').then(m => m.EspaciosDeTrabajoPageComponent),
       },
       {
-        path: 'admin/teams',
+        path: 'administracion/equipos',
         canActivate: [roleGuard('ROLE_SUPERVISOR')],
         loadComponent: () =>
-          import('./features/admin/teams/teams-page.component').then(m => m.TeamsPageComponent),
+          import('./features/administracion/pages/equipos/equipos-page.component').then(m => m.EquiposPageComponent),
       },
       {
-        path: 'settings',
+        path: 'configuracion',
         loadComponent: () =>
-          import('./features/settings/pages/settings-page/settings-page.component').then(m => m.SettingsPageComponent),
+          import('./features/configuracion/pages/configuracion-page/configuracion-page.component').then(m => m.ConfiguracionPageComponent),
       },
+      // Stage 4: remove these redirects from the old URLs.
+      { path: 'inbox', redirectTo: 'bandeja', pathMatch: 'full' },
+      { path: 'contacts', redirectTo: 'contactos', pathMatch: 'full' },
+      { path: 'contacts/:contactId', redirectTo: 'contactos/:contactId' },
+      { path: 'reports', redirectTo: 'reportes', pathMatch: 'full' },
+      { path: 'agents/:agentId/availability', redirectTo: 'agentes/:agentId/disponibilidad' },
+      { path: 'agents/:agentId/shifts', redirectTo: 'agentes/:agentId/turnos' },
+      { path: 'admin/users', redirectTo: 'administracion/usuarios', pathMatch: 'full' },
+      { path: 'admin/agents', redirectTo: 'administracion/agentes', pathMatch: 'full' },
+      { path: 'admin/workspaces', redirectTo: 'administracion/espacios-de-trabajo', pathMatch: 'full' },
+      { path: 'admin/teams', redirectTo: 'administracion/equipos', pathMatch: 'full' },
+      { path: 'settings', redirectTo: 'configuracion', pathMatch: 'full' },
       {
         path: '**',
-        redirectTo: 'inbox',
+        redirectTo: 'bandeja',
       },
     ],
   },

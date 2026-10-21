@@ -77,7 +77,7 @@ const TEST_ITEMS: TestItem[] = Array.from({ length: 50 }, (_, i) => ({
       [idOf]="idOf"
       [infiniteScrollThreshold]="infiniteScrollThreshold()"
       (itemActivated)="activated.set($event)"
-      (loadMore)="loadMoreCount.set(loadMoreCount() + 1)"
+      (cargarMas)="conteoDeCargarMas.set(conteoDeCargarMas() + 1)"
     >
       @for (item of items(); track item.id) {
         <div class="item">{{ item.label }}</div>
@@ -92,7 +92,7 @@ class TestHostComponent {
   readonly items = signal<TestItem[]>(TEST_ITEMS);
   readonly infiniteScrollThreshold = signal<number | null>(null);
   readonly activated = signal<TestItem | null>(null);
-  readonly loadMoreCount = signal(0);
+  readonly conteoDeCargarMas = signal(0);
 
   readonly idOf = (item: TestItem): string => item.id;
 }
@@ -318,22 +318,22 @@ describe('VirtualListCoordinatorDirective', () => {
       fixture.detectChanges();
     });
 
-    it('emits loadMore when distance from bottom is below threshold', () => {
+    it('emits cargarMas when distance from bottom is below threshold', () => {
       viewport.scrollTopValue = 4420;
       const container = viewport.scrollContainer!;
       container.dispatchEvent(new Event('scroll'));
       fixture.detectChanges();
-      expect(fixture.componentInstance.loadMoreCount()).toBe(1);
+      expect(fixture.componentInstance.conteoDeCargarMas()).toBe(1);
     });
 
-    it('does not emit loadMore when distance from bottom is above threshold', () => {
+    it('does not emit cargarMas when distance from bottom is above threshold', () => {
       const container = viewport.scrollContainer!;
       container.dispatchEvent(new Event('scroll'));
       fixture.detectChanges();
-      expect(fixture.componentInstance.loadMoreCount()).toBe(0);
+      expect(fixture.componentInstance.conteoDeCargarMas()).toBe(0);
     });
 
-    it('does not emit loadMore when threshold is null', () => {
+    it('does not emit cargarMas when threshold is null', () => {
       fixture.componentInstance.infiniteScrollThreshold.set(null);
       fixture.detectChanges();
 
@@ -341,7 +341,7 @@ describe('VirtualListCoordinatorDirective', () => {
       const container = viewport.scrollContainer!;
       container.dispatchEvent(new Event('scroll'));
       fixture.detectChanges();
-      expect(fixture.componentInstance.loadMoreCount()).toBe(0);
+      expect(fixture.componentInstance.conteoDeCargarMas()).toBe(0);
     });
   });
 

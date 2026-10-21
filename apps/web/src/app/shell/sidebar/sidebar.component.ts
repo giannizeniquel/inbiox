@@ -1,15 +1,15 @@
 import { Component, ChangeDetectionStrategy, input, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { ConnectionStore } from '../../core/stores/connection.store';
-import { AuthStore } from '../../core/stores/auth.store';
-import { TicketStore } from '../../core/stores/ticket.store';
-import { WorkspaceSwitcherComponent } from './workspace-switcher.component';
+import { ConnectionStore } from '../../core/tiempo-real/connection.store';
+import { AuthStore } from '../../core/auth/auth.store';
+import { TicketStore } from '../../data-access/ticket/ticket.store';
+import { EspacioDeTrabajoSwitcherComponent } from './espacio-de-trabajo-switcher.component';
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, WorkspaceSwitcherComponent],
+  imports: [CommonModule, RouterLink, RouterLinkActive, EspacioDeTrabajoSwitcherComponent],
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -22,13 +22,13 @@ export class SidebarComponent {
   protected readonly authStore = inject(AuthStore);
   private readonly ticketStore = inject(TicketStore);
 
-  connectionStatus = this.connectionStore.status;
+  estadoDeConexion = this.connectionStore.estado;
 
   /** Whether there are any unread messages in the inbox */
-  protected readonly hasUnread = computed(() => this.ticketStore.totalUnread() > 0);
+  protected readonly hasNoLeidos = computed(() => this.ticketStore.totalNoLeidos() > 0);
 
   connectionLabel(): string {
-    switch (this.connectionStore.status()) {
+    switch (this.connectionStore.estado()) {
       case 'online': return 'Conectado';
       case 'reconnecting': return 'Reconectando...';
       case 'offline': return 'Sin conexión';

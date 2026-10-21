@@ -1,0 +1,51 @@
+<div
+  class="ticket-list"
+  role="listbox"
+  tabindex="0"
+  aria-label="Lista de tickets"
+>
+  <!-- Filters -->
+  <app-filtros-de-ticket (filtroChange)="onFiltroChange($event)" />
+
+  <!-- Team filter (single-select, composable with the tab filter above) -->
+  <app-filtro-de-equipo (equipoChange)="onFiltroDeEquipoChange($event)" />
+
+  <!-- Search -->
+  <app-ticket-search (search)="onSearch($event)" />
+
+  <!-- Ticket list -->
+  @if (loading()) {
+    <div class="loading">
+      <span>Cargando tickets...</span>
+    </div>
+  } @else if (tickets().length === 0) {
+    <div class="empty-state">
+      <p>No hay tickets</p>
+    </div>
+  } @else {
+    <app-virtual-scroll-viewport
+      appVirtualListCoordinator
+      [items]="tickets()"
+      [idOf]="idOfTicket"
+      [itemHeight]="64"
+      [bufferSize]="5"
+      (itemActivated)="selectTicket($event)"
+      style="padding-bottom: 20px;"
+      #vps
+    >
+      @for (ticket of coordinator().visibleItems(); track ticket.ticketId) {
+        <app-ticket-card
+          [ticket]="ticket"
+          [isActive]="selectedTicketId() === ticket.ticketId"
+          [agentesDisponibles]="agentesDisponibles()"
+          [puedeAsignar]="puedeAsignarTicket(ticket)"
+          [errorDeAsignacion]="ticketStore.erroresDeAsignacion().get(+ticket.ticketId)?.message ?? null"
+          [class.focused]="coordinator().isFocused(ticket.ticketId)"
+          (select)="selectTicket(ticket)"
+          (asignar)="onAsignar($event)"
+          (mouseenter)="coordinator().onCardFocus($index)"
+        />
+      }
+    </app-virtual-scroll-viewport>
+  }
+</div>

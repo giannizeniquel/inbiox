@@ -146,11 +146,11 @@ Detalle en [07](07-frontend.md#lógica-de-negocio-que-vive-en-el-frontend).
 
 | Regla | Dónde (`apps/web/src/app/`) | ¿Coincide con el backend? |
 |---|---|---|
-| Un mensaje entrante entre corchetes `[...]` se muestra como "mensaje de sistema". | `features/inbox/components/message-bubble/message-bubble.component.ts:44` | **Inventada**: el backend ya expone `sender_type` y no produce mensajes entre corchetes. Regla no confirmada. |
-| No puede asignarse a uno mismo desde el desplegable. | `ticket-list.component.ts:130-135` | Solo frontend. Regla no confirmada. |
-| `loadPercentage = asignados × 20` (capacidad asumida de 5). | `core/application/reports/get-reports-dashboard.use-case.ts:162` | **Inventada**: la capacidad real por defecto es 10. |
+| Un mensaje entrante entre corchetes `[...]` se muestra como "mensaje de sistema". | `features/bandeja/ui/mensaje-bubble/mensaje-bubble.component.ts:44` | **Inventada**: el backend ya expone `sender_type` y no produce mensajes entre corchetes. Regla no confirmada. |
+| No puede asignarse a uno mismo desde el desplegable. | `ticket-list.component.ts:132-137` | Solo frontend. Regla no confirmada. |
+| `loadPercentage = asignados × 20` (capacidad asumida de 5). | `data-access/reporte/get-reports-dashboard.use-case.ts:162` | **Inventada**: la capacidad real por defecto es 10. |
 | "Abierto" = `new`+`active`+`waiting`; "cerrado" = `resolved`+`closed`. | `get-reports-dashboard.use-case.ts:148-151` | Coincide con "tickets activos" del backend. |
-| Roles por defecto `['ROLE_AGENT']` si no se elige ninguno. | `core/application/admin/users/create-user.use-case.ts:66` | Solo frontend. |
+| Roles por defecto `['ROLE_AGENT']` si no se elige ninguno. | `data-access/administracion/administracion-api.service.ts:178` | Solo frontend. |
 
 ## Reglas aplicadas en más de un lugar
 
@@ -163,7 +163,7 @@ Detalle en [07](07-frontend.md#lógica-de-negocio-que-vive-en-el-frontend).
 | Cierre automático | `VencimientoDeVentanaService` (vivo). `AutoCloseRule` y `AutoCloseTicketUseCase` se borraron en la fase 1. | Resuelto: queda un solo criterio. |
 | Validación de turnos | `CreateTurnoUseCase`, `ReemplazarTurnosUseCase`, `DatosDeTurnoDTO`, CHECK de la tabla | Mismas reglas, distintos nombres de campo y mensajes. |
 | Ventana de 24 h | `ProcesarMensajeSalienteUseCase.php:214`, `RespuestaAutomaticaService.php:129`, frontend `composer.component.ts:70-76` | Sí (el frontend usa el reloj del navegador; el backend manda). |
-| FSM del ticket | `MaquinaDeEstadosDeTicket.php`; frontend `status-actions.component.ts:21-27` (componente sin uso) y `ticket.store.ts:182-187` (`new → active` al asignar) | La copia del frontend no se usa; la transición implícita sí. |
+| FSM del ticket | `MaquinaDeEstadosDeTicket.php`; frontend `status-actions.component.ts:21-27` (componente sin uso) y `ticket-realtime.reducer.ts:79-83` (`new → active` al asignar) | La copia del frontend no se usa; la transición implícita sí. |
 | Ticket resuelto/cerrado bloquea cambios de dueño | `TicketVoter` (asignación manual, 409 para todos) y `TicketResponsabilidadGuard` (respuesta, permite a privilegiados) | Distintos a propósito; documentado en cada lugar. |
-| Permiso para asignar | `TicketVoter::ASSIGN` y `ticket-list.component.ts:219-236` | Sí. |
+| Permiso para asignar | `TicketVoter::ASSIGN` y `ticket-list.component.ts:221-238` | Sí. |
 | `persistirEventosEnOutbox()` | 5 copias del armado del payload (la escritura ya es única: `OutboxWriter`) | **No** (formato del payload, eventos omitidos, `sequence`). |

@@ -278,7 +278,7 @@ Formato: **Precondiciones · Rol · Pasos · Resultado esperado · Verificar · 
 ### P-13. Auto-asignación y auto-respuesta
 
 - **Precondiciones:** agent1 "Activo" (override o turno), resto inactivos; `max_active_tickets` conocido.
-- **Pasos:** 1) Enviar un mensaje de un cliente nuevo. 2) Repetir con varios clientes hasta superar la capacidad de agent1. 3) Poner a todos inactivos; en `/settings` de agent1 activar la respuesta automática con un texto; enviar un mensaje de un cliente nuevo.
+- **Pasos:** 1) Enviar un mensaje de un cliente nuevo. 2) Repetir con varios clientes hasta superar la capacidad de agent1. 3) Poner a todos inactivos; en `/configuracion` de agent1 activar la respuesta automática con un texto; enviar un mensaje de un cliente nuevo.
 - **Esperado:** 1) El ticket queda asignado a agent1 (`AUTO_ASSIGN`, `assigned_by = system`). 2) Al llegar al tope, los nuevos quedan sin dueño. 3) Se intenta enviar la auto-respuesta (como máximo una cada 2 h por contacto).
 - **Verificar:** `assignments`; en modo A, el mensaje automático en WhatsApp y en `messages` con `sender_type=automatic`.
 - **Problemas conocidos:** la auto-asignación elige agentes de **cualquier** workspace (R7) — si hay un agente activo en otro workspace, puede llevarse el ticket. Los tickets sin dueño **no** se reparten cuando un agente pasa a Activo. En modo B la auto-respuesta no se puede verificar (falla en Meta y no se guarda). La documentación dice 4 h; el código, 2 h.
@@ -355,7 +355,7 @@ Formato: **Precondiciones · Rol · Pasos · Resultado esperado · Verificar · 
 
 ★ **Rama `agent-dropdown-and-timezone-fixes` — nunca probado a mano.**
 
-- **Precondiciones:** agent3 con un turno que cubre "ahora" en su zona horaria actual (cargado desde `/settings` de agent3).
+- **Precondiciones:** agent3 con un turno que cubre "ahora" en su zona horaria actual (cargado desde `/configuracion` de agent3).
 - **Pasos:** 1) Como supervisor, Admin → Agentes → editar agent3 → cambiar la zona horaria a una con varias horas de diferencia. 2) Abrir el desplegable de asignación de un ticket.
 - **Esperado:** 1) Se guarda (solo acepta zonas válidas). 2) agent3 pasa a "Inactivo" si con la nueva zona su turno ya no cubre "ahora".
 - **Verificar:** `agents.timezone`.
@@ -363,7 +363,7 @@ Formato: **Precondiciones · Rol · Pasos · Resultado esperado · Verificar · 
 ### P-22. Configuración personal
 
 - **Rol:** agente.
-- **Pasos:** 1) `/settings` → Perfil: cambiar la firma. 2) Horario laboral: cargar un turno que cubra ahora y otro que cruce la medianoche. 3) Notificaciones: activar sonido. 4) Respuesta automática: activar con texto.
+- **Pasos:** 1) `/configuracion` → Perfil: cambiar la firma. 2) Horario laboral: cargar un turno que cubra ahora y otro que cruce la medianoche. 3) Notificaciones: activar sonido. 4) Respuesta automática: activar con texto.
 - **Esperado:** se guardan; tras 2) el agente aparece "Activo" en el desplegable de asignación.
 - **Verificar:** `agent_shifts`, columnas de `agents`.
 - **Problemas conocidos:** el mensaje de éxito aparece aunque falle (revisar Red). Las notificaciones se guardan pero **no hacen nada**. El enlace "Gestionar horarios" está roto. Las páginas `/agents/:id/availability` y `/shifts` no funcionan.

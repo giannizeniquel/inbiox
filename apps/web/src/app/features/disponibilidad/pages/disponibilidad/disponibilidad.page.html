@@ -1,0 +1,62 @@
+
+    <div class="availability-page">
+      <h2>Agent Availability</h2>
+
+      @if (store.loading()) {
+        <div class="loading">Loading...</div>
+      }
+
+      @if (store.disponibilidad(); as av) {
+        <div class="current-state">
+          <h3>Current State</h3>
+          <table>
+            <tr><td>In Shift</td><td>{{ av.enTurno ? 'Yes' : 'No' }}</td></tr>
+            <tr><td>Available</td><td>{{ av.disponible ? 'Yes' : 'No' }}</td></tr>
+            <tr><td>Current Load</td><td>{{ av.cargaActual }} / {{ av.capacidadMaxima }}</td></tr>
+            <tr><td>Timezone</td><td>{{ av.zonaHoraria }}</td></tr>
+            @if (av.disponibilidadManual) {
+              <tr>
+                <td>Override Active</td>
+                <td>
+                  {{ av.disponibilidadManual.activa ? 'Yes' : 'No' }}
+                  @if (av.disponibilidadManual.vencimientoAt) {
+                    <span>(expires {{ av.disponibilidadManual.vencimientoAt | date:'short' }})</span>
+                  }
+                </td>
+              </tr>
+            }
+          </table>
+        </div>
+      }
+
+      <div class="override-form">
+        <h3>Set Override</h3>
+        <label>
+          Available:
+          <select #availableSelect>
+            <option value="true">Available</option>
+            <option value="false">Unavailable</option>
+          </select>
+        </label>
+
+        <label>
+          TTL (minutes, optional — leave empty for persistent):
+          <input type="number" #ttlInput min="1" placeholder="e.g. 120" />
+        </label>
+
+        <button (click)="onSetDisponibilidadManual(availableSelect.value === 'true', ttlInput.value)">
+          Apply Override
+        </button>
+      </div>
+
+      <div class="actions">
+        <button
+          class="btn-danger"
+          (click)="onLimpiarDisponibilidadManual()"
+          [disabled]="!store.disponibilidad()?.disponibilidadManual?.activa"
+        >
+          Clear Override
+        </button>
+      </div>
+    </div>
+  

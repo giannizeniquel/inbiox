@@ -3,7 +3,7 @@ import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, throwError, Subject, ReplaySubject } from 'rxjs';
 import { catchError, switchMap, take } from 'rxjs/operators';
-import { AuthStore } from '../stores/auth.store';
+import { AuthStore } from './auth.store';
 import { environment } from '../../../environments/environment';
 
 /** URLs that should not have the Authorization header attached */
@@ -111,7 +111,7 @@ export const authInterceptor: HttpInterceptorFn = (
         switchMap((refreshed: boolean) => {
           if (!refreshed) {
             // Refresh failed — log out and redirect
-            authStore.logout();
+            authStore.cerrarSesion();
             router.navigate(['/login']);
             return throwError(() => error);
           }

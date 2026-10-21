@@ -1,0 +1,292 @@
+<div class="admin-page">
+  <header class="admin-page__header">
+    <h1>Configuración</h1>
+  </header>
+
+  <!-- Loading -->
+  @if (store.loading()) {
+    <div class="empty-state">
+      <p>Cargando configuración…</p>
+    </div>
+  }
+
+  <!-- Error -->
+  @if (store.error(); as error) {
+    <div class="alert alert--error">{{ error }}</div>
+  }
+
+  @if (!store.loading()) {
+    <!-- Tab navigation -->
+    <nav class="settings-tabs" role="tablist">
+      @for (tab of tabs; track tab.id) {
+        <button
+          class="settings-tabs__btn"
+          [class.settings-tabs__btn--active]="activeTab() === tab.id"
+          (click)="setActiveTab(tab.id)"
+          [attr.aria-selected]="activeTab() === tab.id"
+          [attr.role]="'tab'"
+        >
+          {{ tab.label }}
+        </button>
+      }
+    </nav>
+
+    <!-- Tab content -->
+    <div class="settings-content">
+      @switch (activeTab()) {
+        @case ('profile') {
+          <!-- ═══ Profile Tab ═══ -->
+          <section class="settings-section" role="tabpanel">
+            <h2>Perfil</h2>
+            @if (store.perfil(); as profile) {
+              <p class="form-help-text">
+                <strong>{{ profile.nombre }}</strong> &mdash; {{ profile.email }}
+              </p>
+            }
+            <form [formGroup]="perfilForm" (ngSubmit)="onPerfilSubmit()">
+              <div class="form-group">
+                <label class="form-label" for="signature">Firma</label>
+                <textarea
+                  id="signature"
+                  class="form-input"
+                  formControlName="signature"
+                  rows="3"
+                  maxlength="4096"
+                  placeholder="Firma que se agrega al final de los mensajes"
+                ></textarea>
+              </div>
+
+              @if (perfilSuccess(); as msg) {
+                <div class="alert alert--success">{{ msg }}</div>
+              }
+
+              <button
+                type="submit"
+                class="btn btn--primary"
+                [disabled]="store.saving() || perfilForm.pristine"
+              >
+                {{ store.saving() ? 'Guardando…' : 'Guardar perfil' }}
+              </button>
+            </form>
+          </section>
+        }
+
+        @case ('notifications') {
+          <!-- ═══ Notifications Tab ═══ -->
+          <section class="settings-section" role="tabpanel">
+            <h2>Notificaciones</h2>
+            <form [formGroup]="notificacionesForm" (ngSubmit)="onNotificacionesSubmit()">
+              <div class="form-group">
+                <label class="form-label--checkbox">
+                  <input type="checkbox" formControlName="sound" />
+                  Sonido de notificación
+                </label>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label--checkbox">
+                  <input
+                    type="checkbox"
+                    formControlName="desktop"
+                    (change)="onDesktopToggle()"
+                  />
+                  Notificaciones de escritorio
+                </label>
+              </div>
+
+              @if (notificacionesSuccess(); as msg) {
+                <div class="alert alert--success">{{ msg }}</div>
+              }
+
+              <button
+                type="submit"
+                class="btn btn--primary"
+                [disabled]="store.saving() || notificacionesForm.pristine"
+              >
+                {{ store.saving() ? 'Guardando…' : 'Guardar notificaciones' }}
+              </button>
+            </form>
+          </section>
+        }
+
+        @case ('business-hours') {
+          <!-- ═══ Business Hours Tab ═══ -->
+          <section class="settings-section" role="tabpanel">
+            <h2>Horario laboral</h2>
+            <p class="form-help-text">Tus horarios de atención. Los mensajes recibidos fuera de estos horarios pueden activar la respuesta automática.</p>
+
+            @if (businessHoursSuccess(); as msg) {
+              <div class="alert alert--success">{{ msg }}</div>
+            }
+
+            <!-- Current shifts -->
+            @if (store.businessHours().length > 0) {
+              <div class="data-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Día</th>
+                      <th>Inicio</th>
+                      <th>Fin</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (shift of store.businessHours(); track $index) {
+                      <tr>
+                        <td>{{ getDayName(shift.diaDeLaSemana) }}</td>
+                        <td>{{ shift.inicio }}</td>
+                        <td>{{ shift.fin }}</td>
+                        <td>
+                          <button
+                            type="button"
+                            class="btn btn--danger btn--sm"
+                            (click)="quitarTurno($index)"
+                            [disabled]="store.saving()"
+                          >
+                            Eliminar
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <p class="empty-state">No hay horarios configurados.</p>
+            }
+
+            <!-- Add shift form (inline) -->
+            <div class="form-inline">
+              <div class="form-group">
+                <label class="form-label" for="shift-day">Día</label>
+                <select
+                  id="shift-day"
+                  class="form-input"
+                  [value]="dayOfWeek()"
+                  (change)="dayOfWeek.set(+$any($event.target).value)"
+                >
+                  <option value="1">Lunes</option>
+                  <option value="2">Martes</option>
+                  <option value="3">Miércoles</option>
+                  <option value="4">Jueves</option>
+                  <option value="5">Viernes</option>
+                  <option value="6">Sábado</option>
+                  <option value="7">Domingo</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="shift-start">Inicio</label>
+                <input
+                  id="shift-start"
+                  class="form-input"
+                  type="time"
+                  [value]="startTime()"
+                  (change)="startTime.set($any($event.target).value)"
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="shift-end">Fin</label>
+                <input
+                  id="shift-end"
+                  class="form-input"
+                  type="time"
+                  [value]="endTime()"
+                  (change)="endTime.set($any($event.target).value)"
+                />
+              </div>
+
+              <button
+                type="button"
+                class="btn btn--primary"
+                (click)="onAgregarTurno()"
+                [disabled]="store.saving()"
+              >
+                Agregar turno
+              </button>
+            </div>
+
+            <p class="form-help-text">
+              <a [routerLink]="'/agentes/' + (store.espacioDeTrabajo()?.id ?? '') + '/turnos'" class="link">Gestionar horarios</a>
+              (solo administradores)
+            </p>
+          </section>
+        }
+
+        @case ('auto-reply') {
+          <!-- ═══ Auto-Reply Tab ═══ -->
+          <section class="settings-section" role="tabpanel">
+            <h2>Respuesta automática</h2>
+            <p class="form-help-text">
+              Se envía automáticamente cuando recibís un mensaje y estás fuera de tu
+              horario laboral (o marcado como no disponible).
+            </p>
+            <form [formGroup]="respuestaAutomaticaForm" (ngSubmit)="onRespuestaAutomaticaSubmit()">
+              <div class="form-group">
+                <label class="form-label--checkbox">
+                  <input type="checkbox" formControlName="enabled" />
+                  Activar respuesta automática
+                </label>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="auto-reply-msg">Mensaje</label>
+                <textarea
+                  id="auto-reply-msg"
+                  class="form-input"
+                  formControlName="message"
+                  rows="4"
+                  maxlength="4096"
+                  [disabled]="!respuestaAutomaticaForm.get('enabled')?.value"
+                  placeholder="Ej: Gracias por contactarnos. Te responderemos a la brevedad."
+                ></textarea>
+              </div>
+
+              @if (respuestaAutomaticaSuccess(); as msg) {
+                <div class="alert alert--success">{{ msg }}</div>
+              }
+
+              <button
+                type="submit"
+                class="btn btn--primary"
+                [disabled]="store.saving() || respuestaAutomaticaForm.pristine"
+              >
+                {{ store.saving() ? 'Guardando…' : 'Guardar respuesta automática' }}
+              </button>
+            </form>
+          </section>
+        }
+
+        @case ('workspace') {
+          <!-- ═══ Workspace Tab (read-only) ═══ -->
+          <section class="settings-section" role="tabpanel">
+            <h2>Workspace activo</h2>
+
+            @if (store.espacioDeTrabajo(); as ws) {
+              <div class="form-group">
+                <label class="form-label">ID</label>
+                <p class="form-help-text">{{ ws.id }}</p>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Nombre</label>
+                <p class="form-help-text">{{ ws.nombreVisible }}</p>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Número de teléfono</label>
+                <p class="form-help-text">{{ ws.phoneNumberId }}</p>
+              </div>
+            } @else {
+              <p class="empty-state">No hay ningún workspace activo.</p>
+            }
+
+            <p class="form-help-text">
+              Usá el selector de workspace en la barra lateral para cambiar de workspace.
+            </p>
+          </section>
+        }
+      }
+    </div>
+  }
+</div>

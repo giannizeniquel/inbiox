@@ -1,0 +1,55 @@
+<div
+  class="message-bubble"
+  [ngClass]="bubbleClasses()"
+  [attr.role]="isRetriable() ? 'button' : null"
+  [attr.tabindex]="isRetriable() ? 0 : null"
+  [attr.title]="isRetriable() ? 'Reintentar envío' : null"
+  [attr.aria-label]="isRetriable() ? 'Mensaje no enviado. Activar para reintentar.' : null"
+  (click)="onFailedClick()"
+  (keydown.enter)="onFailedClick()"
+  (keydown.space)="onFailedClick()"
+>
+  @switch (tipoDeMensaje()) {
+    @case ('system') {
+      <span class="message-bubble__system-text">{{ mensaje().content }}</span>
+    }
+    @default {
+      <!-- Media rendering -->
+      @if (hasAdjunto()) {
+        <div class="message-bubble__media">
+          @switch (mensaje().media!.tipo) {
+            @case ('imagen') {
+              <app-adjunto-imagen [adjunto]="mensaje().media!" [mensajeId]="mensaje().id" />
+            }
+            @case ('video') {
+              <app-adjunto-video [adjunto]="mensaje().media!" [mensajeId]="mensaje().id" />
+            }
+            @case ('audio') {
+              <app-adjunto-audio [adjunto]="mensaje().media!" [mensajeId]="mensaje().id" />
+            }
+            @case ('documento') {
+              <app-adjunto-documento [adjunto]="mensaje().media!" [mensajeId]="mensaje().id" [pending]="mensaje().deliveryStatus === 'enviando'" />
+            }
+          }
+          @if (mensaje().media!.leyenda) {
+            <p class="message-bubble__caption">{{ mensaje().media!.leyenda }}</p>
+          }
+        </div>
+      }
+
+      <!-- Text content — only for pure-text messages (media messages use caption) -->
+      @if (!hasAdjunto() && mensaje().content) {
+        <p class="message-bubble__text">{{ mensaje().content }}</p>
+      }
+
+      <span class="message-bubble__meta">
+        <span class="message-bubble__time">{{ timeDisplay() }}</span>
+        @if (tipoDeMensaje() === 'agent') {
+          <span class="message-bubble__status" [ngClass]="'status-' + mensaje().deliveryStatus">
+            {{ estadoIcon() }}
+          </span>
+        }
+      </span>
+    }
+  }
+</div>

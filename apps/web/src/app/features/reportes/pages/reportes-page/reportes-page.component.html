@@ -1,0 +1,159 @@
+<div class="reports-page">
+  <header class="reports-page__header">
+    <h1 class="reports-page__title">Informes</h1>
+
+    <div class="reports-page__filters">
+      <div class="time-filter-buttons">
+        <button
+          class="time-filter-btn"
+          [class.time-filter-btn--active]="filtroDeTiempo() === 'today'"
+          (click)="setFiltroDeTiempo('today')"
+        >
+          Hoy
+        </button>
+        <button
+          class="time-filter-btn"
+          [class.time-filter-btn--active]="filtroDeTiempo() === '7d'"
+          (click)="setFiltroDeTiempo('7d')"
+        >
+          7 días
+        </button>
+        <button
+          class="time-filter-btn"
+          [class.time-filter-btn--active]="filtroDeTiempo() === '30d'"
+          (click)="setFiltroDeTiempo('30d')"
+        >
+          30 días
+        </button>
+        <button
+          class="time-filter-btn"
+          [class.time-filter-btn--active]="filtroDeTiempo() === 'custom'"
+          (click)="setFiltroDeTiempo('custom')"
+        >
+          Personalizado
+        </button>
+      </div>
+
+      <!-- Team filter (single-select, composable with the time filter above) -->
+      <app-filtro-de-equipo (equipoChange)="onFiltroDeEquipoChange($event)" />
+
+      @if (filtroDeTiempo() === 'custom') {
+        <div class="custom-date-picker">
+          <input
+            type="date"
+            class="date-input"
+            [value]="fromDate()"
+            (change)="fromDate.set($any($event.target).value)"
+          />
+          <span class="date-separator">-</span>
+          <input
+            type="date"
+            class="date-input"
+            [value]="toDate()"
+            (change)="toDate.set($any($event.target).value)"
+          />
+          <button class="apply-btn" (click)="aplicarFiltroPersonalizado()">Aplicar</button>
+        </div>
+      }
+
+      @if (authStore.isAdmin() || authStore.isSupervisor()) {
+        <button
+          class="export-csv-btn"
+          type="button"
+          [disabled]="exporting()"
+          (click)="exportarCsv()"
+        >
+          {{ exporting() ? 'Exportando...' : 'Exportar CSV' }}
+        </button>
+      }
+    </div>
+
+    @if (errorDeExportacion()) {
+      <p class="reports-page__export-error">{{ errorDeExportacion() }}</p>
+    }
+  </header>
+
+  <!-- ═══ Group A: KPIs ═══ -->
+  <section class="kpi-grid">
+    <app-response-time-card
+      [value]="frtValue()"
+      [loading]="frtLoading()"
+    />
+    <app-resolution-time-card
+      [value]="rtValue()"
+      [loading]="rtLoading()"
+    />
+    <app-conteo-de-tickets-card
+      [open]="openCount()"
+      [closed]="closedCount()"
+      [loading]="conteosLoading()"
+    />
+    <app-tendencia-de-volumen-card
+      [data]="volumenData()"
+      [loading]="volumenLoading()"
+    />
+    <app-demora-de-respuesta-card
+      [data]="demoraDeRespuestaData()"
+      [loading]="demoraDeRespuestaLoading()"
+    />
+  </section>
+
+  <!-- ═══ Group B: Operational ═══ -->
+  <section class="section-group">
+    <h2 class="section-group__title">Operación en tiempo real</h2>
+    <div class="section-group__grid">
+      <app-carga-de-agente-card
+        [data]="cargaDeAgenteData()"
+        [loading]="cargaDeAgenteLoading()"
+      />
+      <app-sin-asignar-card
+        [data]="sinAsignarData()"
+        [loading]="sinAsignarLoading()"
+      />
+      <app-agentes-disponibles-card
+        [data]="agentesDisponiblesData()"
+        [loading]="agentesDisponiblesLoading()"
+      />
+    </div>
+  </section>
+
+  <!-- ═══ FRT Trend: full width ═══ -->
+  <section class="section-group">
+    <h2 class="section-group__title">Tendencia de primera respuesta</h2>
+    <app-tendencia-de-frt-card
+      [data]="tendenciaDeFrtData()"
+      [loading]="tendenciaDeFrtLoading()"
+    />
+  </section>
+
+  <!-- ═══ Heatmap: full width ═══ -->
+  <section class="section-group">
+    <h2 class="section-group__title">Detalle y patrones</h2>
+    <app-mapa-de-calor-card
+      [data]="mapaDeCalorData()"
+      [loading]="mapaDeCalorLoading()"
+    />
+  </section>
+
+  <section class="section-group">
+    <div class="section-group__grid">
+      <app-contactos-recurrentes-card
+        [data]="contactosRecurrentesData()"
+        [loading]="contactosRecurrentesLoading()"
+      />
+      <app-reabiertos-card
+        [data]="reabiertosData()"
+        [loading]="reabiertosLoading()"
+      />
+    </div>
+  </section>
+
+  <!-- ═══ Group A: Agents ═══ -->
+  <section class="agents-section">
+    <h2 class="agents-section__title">Rendimiento de agentes</h2>
+    <app-rendimiento-de-agentes
+      [agentes]="agentesData()"
+      [loading]="agentesLoading()"
+    />
+  </section>
+</div>

@@ -26,7 +26,7 @@ Ordenadas por severidad (impacto en el comportamiento del producto).
 | C-13 | Media | **Visibilidad de adjuntos vs bandeja compartida.** Cualquier agente lee el texto de cualquier ticket, pero solo el asignado obtiene la URL del adjunto; a la vez, `GET /api/provider/media/{mediaId}` entrega el binario a cualquiera. | `src/Conversacion/Security/MensajeVoter.php`; `ProxyDeProveedorController.php:280-296` |
 | C-14 | Baja | **Rate-limit de auto-respuesta:** 2 h en el código, 4 h en el docblock y en el análisis de brecha. | `RespuestaAutomaticaService.php:34, 41` |
 | C-15 | Baja | **Equipos inactivos:** la spec exige excluirlos de nuevas asignaciones; el backend lo permite (solo el frontend los oculta). | `Asignacion/UseCase/SetEquipoDeTicketUseCase.php` |
-| C-16 | Baja | **`new → active` tiene tres disparadores:** asignación (backend), primera respuesta (backend) y asignación optimista (frontend). El docblock de la FSM solo menciona la primera respuesta. | `ResponsabilidadDeTicketService.php:69-73`; `MaquinaDeEstadosDeTicket.php:9`; `apps/web/src/app/core/stores/ticket.store.ts:182` |
+| C-16 | Baja | **`new → active` tiene tres disparadores:** asignación (backend), primera respuesta (backend) y asignación optimista (frontend). El docblock de la FSM solo menciona la primera respuesta. | `ResponsabilidadDeTicketService.php:69-73`; `MaquinaDeEstadosDeTicket.php:9`; `apps/web/src/app/data-access/ticket/ticket-realtime.reducer.ts:79-83` |
 | C-17 | Baja | **`is_available` significa cuatro cosas** según el endpoint: columna legacy (admin), cascada con capacidad (`GET /api/agents/{id}/availability`), override (`SetDisponibilidadManualUseCase`), y `false` fijo en `QuitarDisponibilidadManualUseCase:69`. El roster usa otro nombre (`is_active_now`). | archivos citados |
 | C-18 | Baja | **`contact.id` cambia de significado** entre el listado (id de conversación, con respaldo `1` inventado) y el detalle (id del contacto). | `Ticket/Query/ListTicketsQuery.php:163`; `GetDetalleDeTicketQuery.php:56` |
 | C-19 | Baja | **Resuelto en la fase 5-0 de la limpieza.** Antes: `EtiquetaDeTicket` declaraba `inversedBy: 'ticketTags'` en entidades sin esa propiedad, y `tickets.team_id` tenía FK en la base pero no estaba mapeada como relación. Ahora `EtiquetaDeTicket` es unidireccional y `Ticket::$team` es una `ManyToOne` a `Equipo`. | `Ticket/EtiquetaDeTicket.php`; `Ticket/Ticket.php` |
@@ -58,8 +58,8 @@ Ordenadas por severidad (impacto en el comportamiento del producto).
 | Escritura al outbox | Un solo escritor (`OutboxWriter`, fase 3e), pero 5 copias del armado del payload en `persistirEventosEnOutbox()` | Formatos distintos (`event_id` vs `eventId`), distintos eventos omitidos. |
 | Evento de auto-asignación | 1 clase | `Asignacion/TicketRequiereAsignacionAutomaticaEvent`. El duplicado `TicketAutoAssignmentRequestedEvent` se borró en la fase 1; su listener es `AsignacionAutomaticaSolicitadaListener`. |
 | Turnos | 2 APIs | `PUT /api/me/shifts` (reemplaza todo, usada) y `/api/agents/{id}/shifts` (alta/baja individual, UI rota). Validaciones duplicadas con nombres de campo distintos. |
-| DTOs del frontend | 3 lugares | `app/dto/` (muerto), `core/dto/`, `features/contacts/models/dto/`. |
-| "Abrir ticket y cargar mensajes" (frontend) | 3 | `TicketListComponent`, `AppShellComponent`, `InboxPageComponent` (este último nunca se renderiza). |
+| DTOs del frontend | 1 lugar por módulo | `data-access/<modulo>/` (la fase 2 de la limpieza frontend borró la reexportación de `features/contacts/models/dto/`). |
+| "Abrir ticket y cargar mensajes" (frontend) | 2 | `TicketListComponent`, `AppShellComponent`. |
 | Locking de tickets | 2 patrones | `findByIdForUpdate()` (correcto, en la respuesta) y `findById()` + `lock()` (rechazado por el propio repositorio, sigue en asignación manual y mensaje entrante). |
 
 ## Puntos de complejidad
@@ -96,8 +96,8 @@ Formato pedido por el método: qué es · por qué parece existir · ¿respaldad
 | `Ticket.priority` | Siempre `medium`; el evento envía `priority: 1` fijo. **Propósito no confirmado.** | `ProcesarMensajeEntranteUseCase.php:366, 439` |
 | `extra_hosts: localhost:172.19.0.1` del servicio `php` | **Propósito no confirmado.** | `docker-compose.yml` |
 | `DebugController::saliente` | Mal nombrado (genera un mensaje entrante). | `DebugController.php:94` |
-| Frontend: `app/domain/`, `app/dto/`, `InboxPageComponent`, componentes y métodos sin uso | ver [07](07-frontend.md#código-sin-uso-en-el-frontend) | |
-| Frontend: heurística de corchetes y `loadPercentage × 20` | **Propósito no confirmado** (no hay productor de mensajes entre corchetes; no hay respaldo para capacidad 5). | `message-bubble.component.ts:44`; `get-reports-dashboard.use-case.ts:162` |
+| Frontend: código sin uso (borrado en la fase 1 de la limpieza) | ver [07](07-frontend.md#código-sin-uso-en-el-frontend) | |
+| Frontend: heurística de corchetes y `loadPercentage × 20` | **Propósito no confirmado** (no hay productor de mensajes entre corchetes; no hay respaldo para capacidad 5). | `mensaje-bubble.component.ts:44`; `get-reports-dashboard.use-case.ts:162` |
 
 ## Salud estructural de la suite de tests
 

@@ -1,0 +1,67 @@
+<header class="conversation-header">
+  <!-- Left: avatar + name + assigned + connection -->
+  <div class="conversation-header__left">
+    <!-- Avatar 40px -->
+    <div class="conversation-header__avatar">
+      <span>{{ initials() }}</span>
+    </div>
+
+    <!-- Name + meta -->
+    <div class="conversation-header__info">
+      <div class="conversation-header__name-row">
+        @if (contactoId(); as cid) {
+          <a
+            class="conversation-header__name"
+            [routerLink]="['/contactos', cid]"
+            [attr.aria-label]="'Ver ficha de ' + nombreDeContacto()"
+          >{{ nombreDeContacto() }}</a>
+        } @else {
+          <span class="conversation-header__name">{{ nombreDeContacto() }}</span>
+        }
+      </div>
+
+      <div class="conversation-header__meta">
+        @if (ticket().responsable) {
+          <span class="conversation-header__assigned">
+            Asignado: {{ ticket().responsable!.nombre }}
+          </span>
+          <span class="conversation-header__dot">·</span>
+        }
+
+        <span class="conversation-header__fsm" [ngClass]="'status-' + ticket().estado">
+          {{ estadoLabel() }}
+        </span>
+
+        <span class="conversation-header__dot">·</span>
+
+        <span class="conversation-header__ticket-id">
+          #{{ ticket().ticketId }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: participation toggle + resolve button -->
+  <div class="conversation-header__actions">
+    <button
+      class="conversation-header__participation-btn"
+      type="button"
+      [attr.aria-expanded]="participacionAbierta() ? 'true' : 'false'"
+      [attr.aria-label]="'Ver participación de ' + nombreDeContacto()"
+      (click)="onAlternarParticipacion()"
+    >
+      Participación
+    </button>
+
+    <button
+      class="conversation-header__resolve-btn"
+      type="button"
+      [disabled]="resolviendo() || !puedeResolver()"
+      [attr.aria-label]="'Resolver conversación con ' + nombreDeContacto()"
+      [attr.aria-busy]="resolviendo() ? 'true' : null"
+      (click)="onResolver()"
+    >
+      {{ resolviendo() ? 'RESOLVIENDO…' : 'RESOLVER' }}
+    </button>
+  </div>
+</header>

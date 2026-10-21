@@ -1,0 +1,51 @@
+<div class="dialog-overlay" (click)="onCancel()" role="presentation">
+  <div
+    class="dialog-content"
+    (click)="$event.stopPropagation()"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="edit-dialog-title"
+  >
+    <div class="dialog-header">
+      <h2 id="edit-dialog-title" class="dialog-title">Editar Contacto</h2>
+    </div>
+
+    <div class="dialog-body">
+      <app-contacto-form
+        #contactForm
+        [initialValue]="contacto()"
+        (formChange)="onFormChange($event.dirty)"
+        (submitForm)="onFormSubmit($event)"
+      />
+    </div>
+
+    @if (errorMessage) {
+      <div class="dialog-error">
+        {{ errorMessage }}
+      </div>
+    }
+
+    <div class="dialog-actions">
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="onSave()"
+        [disabled]="loading"
+        aria-label="Guardar cambios"
+      >
+        @if (loading) {
+          <span class="spinner" aria-hidden="true"></span>
+        }
+        Guardar
+      </button>
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="onCancel()"
+        [disabled]="loading"
+      >
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>

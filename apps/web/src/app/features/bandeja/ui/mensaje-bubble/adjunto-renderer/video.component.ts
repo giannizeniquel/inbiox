@@ -1,0 +1,77 @@
+import { Component, ChangeDetectionStrategy, input, inject, signal, effect } from '@angular/core';
+import { Adjunto } from '../../../../../data-access/conversacion/adjunto.model';
+import { UrlDeAdjuntoService } from '../../../../../data-access/conversacion/url-de-adjunto.service';
+
+@Component({
+  selector: 'app-adjunto-video',
+  standalone: true,
+  template: `
+    @if (videoUrl()) {
+      <video
+        [src]="videoUrl()!"
+        controls
+        class="media-video"
+        preload="metadata"
+      ></video>
+    } @else if (loading()) {
+      <div class="media-video media-video--placeholder">Cargando video...</div>
+    }
+  `,
+  styles: [`
+    .media-video {
+      width: 300px;
+      aspect-ratio: 16 / 9;
+      border-radius: 8px;
+      display: block;
+      background: #000;
+    }
+    .media-video--placeholder {
+      width: 300px;
+      aspect-ratio: 16 / 9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-surface, #f3f4f6);
+      color: var(--text-muted, #6b7280);
+      font-size: 0.875rem;
+    }
+  `],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class AdjuntoVideoComponent {
+  readonly adjunto = input.required<Adjunto>();
+  readonly mensajeId = input.required<string>();
+
+  private urlDeAdjuntoService = inject(UrlDeAdjuntoService);
+
+  videoUrl = signal<string | null>(null);
+  loading = signal(true);
+
+  constructor() {
+    effect((onCleanup) => {
+      const att = this.adjunto();
+      const mensajeId = this.mensajeId();
+
+      if (att.localUrl) {
+        this.videoUrl.set(att.localUrl);
+        this.loading.set(false);
+        return;
+      }
+
+      this.loading.set(true);
+      this.videoUrl.set(null);
+
+      const sub = this.urlDeAdjuntoService.getUrlDeAdjunto(mensajeId).subscribe({
+        next: (resp) => {
+          this.videoUrl.set(resp.url);
+          this.loading.set(false);
+        },
+        error: () => {
+          this.loading.set(false);
+        },
+      });
+
+      onCleanup(() => sub.unsubscribe());
+    });
+  }
+}

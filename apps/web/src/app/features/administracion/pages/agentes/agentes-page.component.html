@@ -1,0 +1,235 @@
+
+    <div class="admin-page">
+      <div class="admin-page__header">
+        <h1>Agent Management</h1>
+        <button class="btn btn--primary" (click)="openCreateForm()">
+          + Create Agent
+        </button>
+      </div>
+
+      <!-- Error banner -->
+      @if (error(); as err) {
+        <div class="alert alert--error" role="alert">
+          {{ err }}
+          <button class="alert__close" (click)="error.set(null)" aria-label="Dismiss error">&times;</button>
+        </div>
+      }
+
+      <!-- Success banner -->
+      @if (success(); as msg) {
+        <div class="alert alert--success" role="status">
+          {{ msg }}
+          <button class="alert__close" (click)="success.set(null)" aria-label="Dismiss message">&times;</button>
+        </div>
+      }
+
+      <!-- Loading state -->
+      @if (loading()) {
+        <div class="loading" role="status" aria-live="polite">Loading agents...</div>
+      }
+
+      <!-- Agents table -->
+      @if (!loading()) {
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Timezone</th>
+                <th>Active</th>
+                <th>Available</th>
+                <th>Linked User</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (agent of agentes(); track agent.id) {
+                <tr [class.row--inactive]="!agent.activo">
+                  <td>{{ agent.id }}</td>
+                  <td>{{ agent.nombre }}</td>
+                  <td>{{ agent.zonaHoraria }}</td>
+                  <td>
+                    <span class="status-dot" [class.status-dot--active]="agent.activo"
+                          [class.status-dot--inactive]="!agent.activo">
+                    </span>
+                    {{ agent.activo ? 'Active' : 'Inactive' }}
+                  </td>
+                  <td>
+                    <span class="status-dot" [class.status-dot--active]="agent.disponible"
+                          [class.status-dot--inactive]="!agent.disponible">
+                    </span>
+                    {{ agent.disponible ? 'Available' : 'Unavailable' }}
+                  </td>
+                  <td>{{ agent.usuarioEmail ?? '—' }}</td>
+                  <td class="actions-cell">
+                    <button class="btn btn--sm btn--outline" (click)="openEditForm(agent)" [attr.aria-label]="'Edit ' + agent.nombre">Edit</button>
+                    @if (agent.usuarioId) {
+                      <button class="btn btn--sm btn--outline" (click)="confirmarDesvincularAgente(agent)" [attr.aria-label]="'Unlink user from ' + agent.nombre">Unlink</button>
+                    } @else {
+                      <button class="btn btn--sm btn--outline" (click)="abrirVinculoForm(agent)" [attr.aria-label]="'Link user to ' + agent.nombre">Link</button>
+                    }
+                    @if (agent.activo) {
+                      <button class="btn btn--sm btn--danger" (click)="confirmDelete(agent)" [attr.aria-label]="'Deactivate ' + agent.nombre">Deactivate</button>
+                    } @else {
+                      <button class="btn btn--sm btn--outline" (click)="reactivarAgente(agent)" [attr.aria-label]="'Reactivate ' + agent.nombre">Reactivate</button>
+                    }
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="7" class="empty-state">No agents found.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        @if (totalPages() > 1) {
+          <div class="pagination">
+            <button class="btn btn--sm btn--outline" [disabled]="currentPage() <= 1"
+                    (click)="goToPage(currentPage() - 1)" aria-label="Previous page">Previous</button>
+            <span class="pagination__info">Page {{ currentPage() }} of {{ totalPages() }}</span>
+            <button class="btn btn--sm btn--outline" [disabled]="currentPage() >= totalPages()"
+                    (click)="goToPage(currentPage() + 1)" aria-label="Next page">Next</button>
+          </div>
+        }
+      }
+
+      <!-- Create/Edit Modal -->
+      @if (showForm()) {
+        <div class="modal-overlay" (click)="closeForm()">
+          <div class="modal" role="dialog" aria-modal="true" [attr.aria-labelledby]="agenteEnEdicion() ? 'modal-title-edit' : 'modal-title-create'" (click)="$event.stopPropagation()">
+            <div class="modal__header">
+              <h2 [id]="agenteEnEdicion() ? 'modal-title-edit' : 'modal-title-create'">{{ agenteEnEdicion() ? 'Edit Agent' : 'Create Agent' }}</h2>
+              <button class="modal__close" (click)="closeForm()" aria-label="Close dialog">&times;</button>
+            </div>
+            <form [formGroup]="agenteForm" (ngSubmit)="onAgenteSubmit()">
+              <div class="modal__body">
+                <div class="form-group">
+                  <label class="form-label" for="agent-name">Name</label>
+                  <input id="agent-name" type="text" class="form-input"
+                         formControlName="name" placeholder="Agent name"
+                         [class.form-input--error]="hasErrorDeAgente('name')" />
+                  @if (hasErrorDeAgente('name')) {
+                    @if (agenteForm.controls.name.errors?.['required']) {
+                      <p class="form-error">Name is required</p>
+                    }
+                    @if (agenteForm.controls.name.errors?.['minlength']) {
+                      <p class="form-error">Name must be at least 2 characters</p>
+                    }
+                  }
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="agent-timezone">Timezone</label>
+                  <select id="agent-timezone" class="form-input" formControlName="timezone">
+                    @for (tz of timezoneOptions(); track tz) {
+                      <option [value]="tz">{{ tz }}</option>
+                    }
+                  </select>
+                </div>
+
+                @if (agenteEnEdicion()) {
+                  <div class="form-group">
+                    <label class="form-label">
+                      <input type="checkbox" formControlName="active" />
+                      Active
+                    </label>
+                  </div>
+                }
+              </div>
+              <div class="modal__footer">
+                <button type="button" class="btn btn--outline" (click)="closeForm()">Cancel</button>
+                <button type="submit" class="btn btn--primary" [disabled]="agenteForm.invalid || saving()">
+                  {{ saving() ? 'Saving...' : (agenteEnEdicion() ? 'Save Changes' : 'Create Agent') }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      }
+
+      <!-- Link User Modal -->
+      @if (mostrarVinculoForm(); as linkingAgent) {
+        <div class="modal-overlay" (click)="cerrarVinculoForm()">
+          <div class="modal modal--sm" role="dialog" aria-modal="true" aria-labelledby="modal-title-link" (click)="$event.stopPropagation()">
+            <div class="modal__header">
+              <h2 id="modal-title-link">Link User to {{ linkingAgent.nombre }}</h2>
+              <button class="modal__close" (click)="cerrarVinculoForm()" aria-label="Close dialog">&times;</button>
+            </div>
+            <form [formGroup]="vinculoForm" (ngSubmit)="onVinculoSubmit()">
+              <div class="modal__body">
+                <div class="form-group">
+                  <label class="form-label" for="link-user">Select User</label>
+                  <select id="link-user" class="form-input" formControlName="userId"
+                          [class.form-input--error]="hasErrorDeVinculo('userId')">
+                    <option [ngValue]="null">— Select a user —</option>
+                    @for (user of usuariosSinVincular(); track user.id) {
+                      <option [ngValue]="user.id">{{ user.email }}</option>
+                    }
+                  </select>
+                  @if (hasErrorDeVinculo('userId')) {
+                    <p class="form-error">Please select a user</p>
+                  }
+                  @if (usuariosSinVincular().length === 0) {
+                    <p class="text-muted">No available users to link. All users are already linked.</p>
+                  }
+                </div>
+              </div>
+              <div class="modal__footer">
+                <button type="button" class="btn btn--outline" (click)="cerrarVinculoForm()">Cancel</button>
+                <button type="submit" class="btn btn--primary" [disabled]="vinculoForm.invalid || saving()">
+                  {{ saving() ? 'Linking...' : 'Link User' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      }
+
+      <!-- Delete Confirmation Modal -->
+      @if (showDeleteConfirm(); as agentToDelete) {
+        <div class="modal-overlay" (click)="cancelDelete()">
+          <div class="modal modal--sm" role="alertdialog" aria-modal="true" aria-labelledby="modal-title-delete" (click)="$event.stopPropagation()">
+            <div class="modal__header">
+              <h2 id="modal-title-delete">Confirm Deactivation</h2>
+              <button class="modal__close" (click)="cancelDelete()" aria-label="Close dialog">&times;</button>
+            </div>
+            <div class="modal__body">
+              <p>Are you sure you want to deactivate <strong>{{ agentToDelete.nombre }}</strong>?</p>
+              <p class="text-warning">The agent will stop receiving new assignments. Existing data is preserved.</p>
+            </div>
+            <div class="modal__footer">
+              <button class="btn btn--outline" (click)="cancelDelete()">Cancel</button>
+              <button class="btn btn--danger" (click)="executeDelete()" [disabled]="saving()">
+                {{ saving() ? 'Deactivating...' : 'Deactivate' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Unlink Confirmation Modal -->
+      @if (mostrarConfirmacionDeDesvincular(); as agentToUnlink) {
+        <div class="modal-overlay" (click)="cancelarDesvincular()">
+          <div class="modal modal--sm" role="alertdialog" aria-modal="true" aria-labelledby="modal-title-unlink" (click)="$event.stopPropagation()">
+            <div class="modal__header">
+              <h2 id="modal-title-unlink">Confirm Unlink</h2>
+              <button class="modal__close" (click)="cancelarDesvincular()" aria-label="Close dialog">&times;</button>
+            </div>
+            <div class="modal__body">
+              <p>Unlink user <strong>{{ agentToUnlink.usuarioEmail }}</strong> from agent <strong>{{ agentToUnlink.nombre }}</strong>?</p>
+            </div>
+            <div class="modal__footer">
+              <button class="btn btn--outline" (click)="cancelarDesvincular()">Cancel</button>
+              <button class="btn btn--danger" (click)="executeDesvincular()" [disabled]="saving()">
+                {{ saving() ? 'Unlinking...' : 'Unlink' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  
