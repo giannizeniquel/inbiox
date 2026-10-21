@@ -213,7 +213,7 @@ Todas las columnas con valores fijos son `VARCHAR` o `JSON` (no hay `ENUM` de My
 
 Ninguno lo causa este trabajo; los anoto para decidir aparte.
 
-1. **Front:** `data-access/disponibilidad/disponibilidad-api.service.ts` llama a `${baseUrl}/agents/{id}/availability` y `/shifts` **sin `/api`** (5 llamadas). No matchea ninguna ruta del back. Viene del front viejo (`agent.service.ts:48`).
+1. **Front:** `data-access/disponibilidad/disponibilidad-api.service.ts` llama a `${baseUrl}/agents/{id}/availability` y `/shifts` **sin `/api`** (5 llamadas). No matchea ninguna ruta del back. Viene del front viejo (`agent.service.ts:48`). Corregir las URLs no alcanza: las páginas de disponibilidad y de turnos no leen el `:agenteId` de la ruta y dependen de `DisponibilidadStore.agenteActual()`, que solo carga `setAgenteActual()`, y nadie lo llama. Por eso nunca llegan a pedir nada al back: muestran el formulario vacío y los botones no hacen nada. Ya era así en el front `cc8b4e0`. Conectarlas es comportamiento nuevo (fijar y quitar disponibilidad, borrar turnos) y queda para después de la limpieza (L172).
 2. `UpdateUsuarioUseCase.php:49-53` acepta cualquier string como rol; así entró `ROLE_BOGUS` en dev.
 3. Los casos de uso de asignación escriben `InboxUpdatedEvent`, que termina siempre en dead letter (sección 5).
 4. Los payloads de outbox de `AsignarTicket*` usan claves camelCase; el factory busca `event_id` y `occurred_at` en snake_case, cae en el id del outbox y deja `assignedAt` vacío.
