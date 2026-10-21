@@ -147,7 +147,7 @@ El store (`data-access/agente/configuracion.store.ts`) hace HTTP sin esperar el 
 ## Disponibilidad y turnos (`/agentes/:agenteId/...`)
 
 - No existe un interruptor de disponibilidad en la UI.
-- Hasta la etapa 2 del contrato, `data-access/disponibilidad/disponibilidad-api.service.ts` llamaba `${apiUrl}/agents/{id}/…` **sin `/api`**: esas URLs no existían y el interceptor no agregaba el token. Desde WU6 llama `/api/agentes/{id}/disponibilidad` y `/api/agentes/{id}/turnos[/{turnoId}]` con las claves del contrato.
+- Hasta la etapa 2 del contrato, `data-access/disponibilidad/disponibilidad-api.service.ts` llamaba `${apiUrl}/agents/{id}/…` **sin `/api`**: esas URLs no existían y el interceptor no agregaba el token. Desde WU6 llama `/api/agentes/{id}/disponibilidad` y `/api/agentes/{id}/turnos[/{turnoId}]` con las claves del contrato. Aun así las páginas no piden nada: ninguna lee `:agenteId` de la ruta y `DisponibilidadStore.setAgenteActual()` no tiene llamador, así que `agenteActual()` queda en null (igual en `cc8b4e0`; hallazgo para después de la limpieza).
 - Las páginas ignoran `:agentId` y leen `DisponibilidadStore.agenteActual()`, que nadie asigna (siempre `null`). `DisponibilidadStore.cargarTurnos()` no hace nada.
 - Resultado: ambas páginas no funcionan. Los turnos solo se gestionan desde `/configuracion`.
 
