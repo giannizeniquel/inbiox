@@ -489,7 +489,7 @@ Notación: `req` cuerpo JSON, `mp` campo multipart, `q` query, `res` respuesta, 
 - **`mapa-de-calor`** (ruta 78): `[…]` de `day_of_week` → `diaDeLaSemana`, `hour` → `hora`, `count` → `cantidad` (`ReporteRepository.php:635-637`).
 - **`contactos-recurrentes`** (ruta 79): q `threshold` → `umbral` (sin `desde`/`hasta`); `[…]` de `contact_id` → `contactoId`, `contact_name` → `contactoNombre`, `email`, `ticket_count` → `cantidadDeTickets`, `last_ticket_at` → `ultimoTicketAt` (`ReporteRepository.php:688-692`).
 - **`reabiertos`** (ruta 80): `[…]` de `ticket_id` → `ticketId`, `contact_name` → `contactoNombre`, `resolved_at` → `resueltoAt`, `reopened_at` → `reabiertoAt`, `current_status` → `estadoActual` (`ReporteRepository.php:744-748`).
-- **`exportar`** (ruta 81): q `from`, `to`, `agent_id`, `status`, `tag`, `teamId` → `desde`, `hasta`, `agenteId`, `estado`, `etiqueta`, `equipoId` (`ReporteController.php:370-380`); responde un CSV con BOM, o 400 `{error}`. Encabezados en español legible (L155); texto propuesto, a confirmar en la etapa 2 (`Reporte/Query/ExportarTicketsCsvQuery.php:30-45`):
+- **`exportar`** (ruta 81): q `from`, `to`, `agent_id`, `status`, `tag`, `teamId` → `desde`, `hasta`, `agenteId`, `estado`, `etiqueta`, `equipoId` (`ReporteController.php:370-380`); responde un CSV con BOM, o 400 `{error}`. Encabezados en español legible (L155); texto confirmado por el front en la etapa 2 (L175) (`Reporte/Query/ExportarTicketsCsvQuery.php:30-45`):
 
   | Columna vieja | Encabezado nuevo |
   |---|---|
