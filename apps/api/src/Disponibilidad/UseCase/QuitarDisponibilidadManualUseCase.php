@@ -36,7 +36,7 @@ final class QuitarDisponibilidadManualUseCase
      *
      * @param int $agenteId
      *
-     * @return array{agent_id: int, is_available: bool, override_active: bool, current_load: int, max_capacity: int}
+     * @return array{agenteId: int, disponibilidadManualActiva: bool, cargaActual: int, capacidadMaxima: int}
      *
      * @throws \InvalidArgumentException si no se encuentra el agente
      */
@@ -63,7 +63,7 @@ final class QuitarDisponibilidadManualUseCase
             $cargaActual = $this->ticketRepo->countActivosDeAgente($agenteId);
 
             // Después de quitarlo, la disponibilidad depende del horario + la capacidad
-            // is_available se informa después usando el service,
+            // disponible se informa después usando el service,
             // pero en el evento de outbox solo se indica que el override ya no está activo.
             $this->pendingOutboxEvent = [
                 'aggregate_id' => $agenteId,
@@ -78,10 +78,10 @@ final class QuitarDisponibilidadManualUseCase
             ];
 
             return [
-                'agent_id'        => $agenteId,
-                'override_active' => false,
-                'current_load'    => $cargaActual,
-                'max_capacity'    => $agente->getMaxTicketsActivos(),
+                'agenteId'                   => $agenteId,
+                'disponibilidadManualActiva' => false,
+                'cargaActual'                => $cargaActual,
+                'capacidadMaxima'            => $agente->getMaxTicketsActivos(),
             ];
         });
 

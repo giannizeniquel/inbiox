@@ -15,7 +15,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 /**
  * Controlador de la disponibilidad de agentes de un espacio de trabajo.
  *
- * GET /api/workspaces/{id}/available-agents — devuelve los agentes disponibles para asignación
+ * GET /api/espacios-de-trabajo/{id}/agentes-disponibles — devuelve los agentes disponibles para asignación
  */
 #[IsGranted('ROLE_AGENTE')]
 final class AgentesDisponiblesController
@@ -25,7 +25,7 @@ final class AgentesDisponiblesController
         private readonly EspacioDeTrabajoRepository $workspaceRepository,
     ) {}
 
-    #[Route('/api/workspaces/{id}/available-agents', name: 'app_workspace_available_agents', methods: ['GET'])]
+    #[Route('/api/espacios-de-trabajo/{id}/agentes-disponibles', name: 'app_workspace_available_agents', methods: ['GET'])]
     public function listarAgentesDisponibles(int $id): JsonResponse
     {
         $espacioDeTrabajo = $this->workspaceRepository->find($id);

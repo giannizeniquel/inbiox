@@ -1438,6 +1438,6 @@ class AgentAvailabilityServiceTest extends TestCase
         self::assertTrue($result[0]->isActivoAhora);
         self::assertSame(2, $result[0]->cantidadDeTicketsActivos);
         self::assertSame(5, $result[0]->maxTicketsActivos);
-        self::assertArrayHasKey('is_active_now', $result[0]->toArray());
+        self::assertArrayHasKey('activoAhora', $result[0]->toArray());
     }
 }

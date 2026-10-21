@@ -75,7 +75,7 @@ security:
         - { path: ^/api/mercure, roles: IS_AUTHENTICATED_FULLY }
 
         # Workspace agent listing (authenticated agents)
-        - { path: ^/api/workspaces/\d+/available-agents, roles: ROLE_AGENTE }
+        - { path: ^/api/espacios-de-trabajo/\d+/agentes-disponibles, roles: ROLE_AGENTE }
 
         # Everything else requires at least ROLE_AGENTE
         - { path: ^/api, roles: ROLE_AGENTE }

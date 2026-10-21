@@ -15,11 +15,11 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
  * HTTP-level integration tests for Sprint 10 Agent Management endpoints.
  *
  * Covers DisponibilidadDeAgenteController's 5 endpoints:
- *   POST   /agents/{id}/availability
- *   DELETE /agents/{id}/availability
- *   GET    /agents/{id}/availability
- *   POST   /agents/{id}/shifts
- *   DELETE /agents/{id}/shifts/{shiftId}
+ *   POST   /api/agentes/{id}/disponibilidad
+ *   DELETE /api/agentes/{id}/disponibilidad
+ *   GET    /api/agentes/{id}/disponibilidad
+ *   POST   /api/agentes/{id}/turnos
+ *   DELETE /api/agentes/{id}/turnos/{turnoId}
  *
  * Tests run against the real test database via Symfony's test client.
  * All tests authenticate as SUPERVISOR to bypass ownership scoping.
@@ -166,27 +166,28 @@ class Sprint10ControllerTest extends WebTestCase
     }
 
     // ────────────────────────────────────────────────────────
-    //  POST /agents/{id}/availability
+    //  POST /api/agentes/{id}/disponibilidad
     // ────────────────────────────────────────────────────────
 
     public function testSetAvailabilityValid(): void
     {
         $agentId = $this->createAgent();
 
-        $data = $this->postJson("/api/agents/{$agentId}/availability", [
-            'isAvailable' => false,
-            'ttlMinutes' => 120,
+        $data = $this->postJson("/api/agentes/{$agentId}/disponibilidad", [
+            'disponible' => false,
+            'ttlMinutos' => 120,
         ]);
 
         $this->assertResponseStatusCodeSame(200);
-        $this->assertArrayHasKey('is_available', $data);
-        $this->assertFalse($data['is_available']);
+        $this->assertSame(['agenteId', 'disponible', 'disponibilidadManualActiva', 'cargaActual', 'capacidadMaxima'], array_keys($data));
+        $this->assertFalse($data['disponible']);
+        $this->assertTrue($data['disponibilidadManualActiva']);
     }
 
     public function testSetAvailabilityInvalidAgent(): void
     {
-        $this->postJson('/api/agents/99999/availability', [
-            'isAvailable' => false,
+        $this->postJson('/api/agentes/99999/disponibilidad', [
+            'disponible' => false,
         ]);
 
         $this->assertResponseStatusCodeSame(404);
@@ -197,14 +198,15 @@ class Sprint10ControllerTest extends WebTestCase
     {
         $agentId = $this->createAgent();
 
-        $this->postJson("/api/agents/{$agentId}/availability", []);
+        $this->postJson("/api/agentes/{$agentId}/disponibilidad", []);
 
-        // Missing required 'isAvailable' should be caught by MapRequestPayload validation
+        // Sin 'disponible' responde 422 (la validación de Symfony está deshabilitada: lo corta el controlador)
         $this->assertResponseStatusCodeSame(422);
+        $this->assertSame(['error' => 'disponible is required'], json_decode($this->client->getResponse()->getContent() ?: '', true));
     }
 
     // ────────────────────────────────────────────────────────
-    //  DELETE /agents/{id}/availability
+    //  DELETE /api/agentes/{id}/disponibilidad
     // ────────────────────────────────────────────────────────
 
     public function testClearAvailabilityExists(): void
@@ -212,12 +214,12 @@ class Sprint10ControllerTest extends WebTestCase
         $agentId = $this->createAgent();
 
         // First set an override so there's something to clear
-        $this->postJson("/api/agents/{$agentId}/availability", [
-            'isAvailable' => false,
-            'ttlMinutes' => 120,
+        $this->postJson("/api/agentes/{$agentId}/disponibilidad", [
+            'disponible' => false,
+            'ttlMinutos' => 120,
         ]);
 
-        $this->deleteRequest("/api/agents/{$agentId}/availability");
+        $this->deleteRequest("/api/agentes/{$agentId}/disponibilidad");
         $this->assertResponseStatusCodeSame(204);
     }
 
@@ -226,48 +228,49 @@ class Sprint10ControllerTest extends WebTestCase
         $agentId = $this->createAgent();
 
         // First call — no override exists, but should still succeed (idempotent)
-        $this->deleteRequest("/api/agents/{$agentId}/availability");
+        $this->deleteRequest("/api/agentes/{$agentId}/disponibilidad");
         $this->assertResponseStatusCodeSame(204);
 
         // Second call
-        $this->deleteRequest("/api/agents/{$agentId}/availability");
+        $this->deleteRequest("/api/agentes/{$agentId}/disponibilidad");
         $this->assertResponseStatusCodeSame(204);
     }
 
     // ────────────────────────────────────────────────────────
-    //  GET /agents/{id}/availability
+    //  GET /api/agentes/{id}/disponibilidad
     // ────────────────────────────────────────────────────────
 
     public function testGetAvailabilityWithoutOverride(): void
     {
         $agentId = $this->createAgent(timezone: 'America/Argentina/Buenos_Aires');
 
-        $data = $this->getJson("/api/agents/{$agentId}/availability");
+        $data = $this->getJson("/api/agentes/{$agentId}/disponibilidad");
 
         $this->assertResponseStatusCodeSame(200);
 
-        // Shape: top-level snake_case keys
-        $this->assertArrayHasKey('agent_id', $data);
-        $this->assertArrayHasKey('is_available', $data);
-        $this->assertArrayHasKey('is_in_shift', $data);
-        $this->assertArrayHasKey('timezone', $data);
-        $this->assertArrayHasKey('current_load', $data);
-        $this->assertArrayHasKey('max_capacity', $data);
-        $this->assertArrayHasKey('override', $data);
+        // Forma: claves del contrato (anexo A.9)
+        $this->assertSame(['agenteId', 'disponible', 'enTurno', 'zonaHoraria', 'cargaActual', 'capacidadMaxima', 'disponibilidadManual'], array_keys($data));
+        $this->assertArrayHasKey('agenteId', $data);
+        $this->assertArrayHasKey('disponible', $data);
+        $this->assertArrayHasKey('enTurno', $data);
+        $this->assertArrayHasKey('zonaHoraria', $data);
+        $this->assertArrayHasKey('cargaActual', $data);
+        $this->assertArrayHasKey('capacidadMaxima', $data);
+        $this->assertArrayHasKey('disponibilidadManual', $data);
 
         // Verify types
-        $this->assertSame($agentId, $data['agent_id']);
-        $this->assertSame('America/Argentina/Buenos_Aires', $data['timezone']);
-        $this->assertIsInt($data['current_load']);
-        $this->assertIsInt($data['max_capacity']);
-        $this->assertIsBool($data['is_available']);
-        $this->assertIsBool($data['is_in_shift']);
+        $this->assertSame($agentId, $data['agenteId']);
+        $this->assertSame('America/Argentina/Buenos_Aires', $data['zonaHoraria']);
+        $this->assertIsInt($data['cargaActual']);
+        $this->assertIsInt($data['capacidadMaxima']);
+        $this->assertIsBool($data['disponible']);
+        $this->assertIsBool($data['enTurno']);
 
         // Override should be inactive
-        $this->assertIsArray($data['override']);
-        $this->assertFalse($data['override']['active']);
-        $this->assertNull($data['override']['is_available']);
-        $this->assertNull($data['override']['expires_at']);
+        $this->assertSame(['activa', 'disponible', 'vencimientoAt'], array_keys($data['disponibilidadManual']));
+        $this->assertFalse($data['disponibilidadManual']['activa']);
+        $this->assertNull($data['disponibilidadManual']['disponible']);
+        $this->assertNull($data['disponibilidadManual']['vencimientoAt']);
     }
 
     public function testGetAvailabilityWithOverride(): void
@@ -275,58 +278,58 @@ class Sprint10ControllerTest extends WebTestCase
         $agentId = $this->createAgent(timezone: 'UTC');
 
         // Set an override (camelCase keys match DTO properties)
-        $this->postJson("/api/agents/{$agentId}/availability", [
-            'isAvailable' => false,
-            'ttlMinutes' => 120,
+        $this->postJson("/api/agentes/{$agentId}/disponibilidad", [
+            'disponible' => false,
+            'ttlMinutos' => 120,
         ]);
 
-        $data = $this->getJson("/api/agents/{$agentId}/availability");
+        $data = $this->getJson("/api/agentes/{$agentId}/disponibilidad");
 
         $this->assertResponseStatusCodeSame(200);
 
         // Full shape
-        $this->assertArrayHasKey('agent_id', $data);
-        $this->assertArrayHasKey('is_available', $data);
-        $this->assertArrayHasKey('is_in_shift', $data);
-        $this->assertArrayHasKey('timezone', $data);
-        $this->assertArrayHasKey('current_load', $data);
-        $this->assertArrayHasKey('max_capacity', $data);
-        $this->assertArrayHasKey('override', $data);
+        $this->assertArrayHasKey('agenteId', $data);
+        $this->assertArrayHasKey('disponible', $data);
+        $this->assertArrayHasKey('enTurno', $data);
+        $this->assertArrayHasKey('zonaHoraria', $data);
+        $this->assertArrayHasKey('cargaActual', $data);
+        $this->assertArrayHasKey('capacidadMaxima', $data);
+        $this->assertArrayHasKey('disponibilidadManual', $data);
 
         // Override should be active
-        $this->assertIsArray($data['override']);
-        $this->assertTrue($data['override']['active'], 'Override should be active after POST');
-        $this->assertFalse($data['override']['is_available']);
-        $this->assertNotNull($data['override']['expires_at'], 'expires_at should be set when ttl_minutes provided');
+        $this->assertIsArray($data['disponibilidadManual']);
+        $this->assertTrue($data['disponibilidadManual']['activa'], 'Override should be active after POST');
+        $this->assertFalse($data['disponibilidadManual']['disponible']);
+        $this->assertNotNull($data['disponibilidadManual']['vencimientoAt'], 'vencimientoAt should be set when ttlMinutos is provided');
     }
 
     public function testGetAvailabilityAgentNotFound(): void
     {
-        $this->getJson('/api/agents/99999/availability');
+        $this->getJson('/api/agentes/99999/disponibilidad');
 
         $this->assertResponseStatusCodeSame(404);
     }
 
     // ────────────────────────────────────────────────────────
-    //  POST /agents/{id}/shifts
+    //  POST /api/agentes/{id}/turnos
     // ────────────────────────────────────────────────────────
 
     public function testCreateShiftValid(): void
     {
         $agentId = $this->createAgent();
 
-        $data = $this->postJson("/api/agents/{$agentId}/shifts", [
-            'dayOfWeek' => 1,
-            'startTime' => '08:00',
-            'endTime' => '16:00',
+        $data = $this->postJson("/api/agentes/{$agentId}/turnos", [
+            'diaDeLaSemana' => 1,
+            'horaDeInicio' => '08:00',
+            'horaDeFin' => '16:00',
         ]);
 
         $this->assertResponseStatusCodeSame(201);
-        $this->assertArrayHasKey('shift_id', $data);
-        $this->assertArrayHasKey('day_of_week', $data);
-        $this->assertSame(1, $data['day_of_week']);
-        $this->assertSame('08:00', $data['start_time']);
-        $this->assertSame('16:00', $data['end_time']);
+        $this->assertSame(['turnoId', 'agenteId', 'diaDeLaSemana', 'horaDeInicio', 'horaDeFin'], array_keys($data));
+        $this->assertSame($agentId, $data['agenteId']);
+        $this->assertSame(1, $data['diaDeLaSemana']);
+        $this->assertSame('08:00', $data['horaDeInicio']);
+        $this->assertSame('16:00', $data['horaDeFin']);
     }
 
     public function testCreateShiftDuplicateReturns409(): void
@@ -334,18 +337,18 @@ class Sprint10ControllerTest extends WebTestCase
         $agentId = $this->createAgent();
 
         // First shift — should succeed
-        $this->postJson("/api/agents/{$agentId}/shifts", [
-            'dayOfWeek' => 1,
-            'startTime' => '08:00',
-            'endTime' => '16:00',
+        $this->postJson("/api/agentes/{$agentId}/turnos", [
+            'diaDeLaSemana' => 1,
+            'horaDeInicio' => '08:00',
+            'horaDeFin' => '16:00',
         ]);
         $this->assertResponseStatusCodeSame(201);
 
         // Duplicate shift — should return 409, NOT 500
-        $this->postJson("/api/agents/{$agentId}/shifts", [
-            'dayOfWeek' => 1,
-            'startTime' => '08:00',
-            'endTime' => '16:00',
+        $this->postJson("/api/agentes/{$agentId}/turnos", [
+            'diaDeLaSemana' => 1,
+            'horaDeInicio' => '08:00',
+            'horaDeFin' => '16:00',
         ]);
         $this->assertResponseStatusCodeSame(409);
     }
@@ -356,18 +359,18 @@ class Sprint10ControllerTest extends WebTestCase
         $agent2 = $this->createAgent('Agent 2');
 
         // Create shift for agent 1
-        $this->postJson("/api/agents/{$agent1}/shifts", [
-            'dayOfWeek' => 1,
-            'startTime' => '08:00',
-            'endTime' => '16:00',
+        $this->postJson("/api/agentes/{$agent1}/turnos", [
+            'diaDeLaSemana' => 1,
+            'horaDeInicio' => '08:00',
+            'horaDeFin' => '16:00',
         ]);
         $this->assertResponseStatusCodeSame(201);
 
         // Same shift for agent 2 — should succeed (different agent)
-        $this->postJson("/api/agents/{$agent2}/shifts", [
-            'dayOfWeek' => 1,
-            'startTime' => '08:00',
-            'endTime' => '16:00',
+        $this->postJson("/api/agentes/{$agent2}/turnos", [
+            'diaDeLaSemana' => 1,
+            'horaDeInicio' => '08:00',
+            'horaDeFin' => '16:00',
         ]);
         $this->assertResponseStatusCodeSame(201);
     }
@@ -377,41 +380,43 @@ class Sprint10ControllerTest extends WebTestCase
         $agentId = $this->createAgent();
 
         // dayOfWeek = 0 is out of range
-        $this->postJson("/api/agents/{$agentId}/shifts", [
-            'dayOfWeek' => 0,
-            'startTime' => '08:00',
-            'endTime' => '16:00',
+        $this->postJson("/api/agentes/{$agentId}/turnos", [
+            'diaDeLaSemana' => 0,
+            'horaDeInicio' => '08:00',
+            'horaDeFin' => '16:00',
         ]);
 
         $this->assertResponseStatusCodeSame(422);
+        $this->assertSame(['error' => 'diaDeLaSemana must be between 1 and 7'], json_decode($this->client->getResponse()->getContent() ?: '', true));
     }
 
     public function testCreateShiftEndTimeEqualsStartTime(): void
     {
         $agentId = $this->createAgent();
 
-        $this->postJson("/api/agents/{$agentId}/shifts", [
-            'dayOfWeek' => 1,
-            'startTime' => '08:00',
-            'endTime' => '08:00',
+        $this->postJson("/api/agentes/{$agentId}/turnos", [
+            'diaDeLaSemana' => 1,
+            'horaDeInicio' => '08:00',
+            'horaDeFin' => '08:00',
         ]);
 
         $this->assertResponseStatusCodeSame(422);
+        $this->assertSame(['error' => 'horaDeInicio and horaDeFin must differ'], json_decode($this->client->getResponse()->getContent() ?: '', true));
     }
 
     public function testCreateShiftInvalidAgent(): void
     {
-        $this->postJson('/api/agents/99999/shifts', [
-            'dayOfWeek' => 1,
-            'startTime' => '08:00',
-            'endTime' => '16:00',
+        $this->postJson('/api/agentes/99999/turnos', [
+            'diaDeLaSemana' => 1,
+            'horaDeInicio' => '08:00',
+            'horaDeFin' => '16:00',
         ]);
 
         $this->assertResponseStatusCodeSame(404);
     }
 
     // ────────────────────────────────────────────────────────
-    //  DELETE /agents/{id}/shifts/{shiftId}
+    //  DELETE /api/agentes/{id}/turnos/{turnoId}
     // ────────────────────────────────────────────────────────
 
     public function testDeleteShiftExists(): void
@@ -419,15 +424,15 @@ class Sprint10ControllerTest extends WebTestCase
         $agentId = $this->createAgent();
 
         // Create a shift
-        $created = $this->postJson("/api/agents/{$agentId}/shifts", [
-            'dayOfWeek' => 1,
-            'startTime' => '08:00',
-            'endTime' => '16:00',
+        $created = $this->postJson("/api/agentes/{$agentId}/turnos", [
+            'diaDeLaSemana' => 1,
+            'horaDeInicio' => '08:00',
+            'horaDeFin' => '16:00',
         ]);
-        $shiftId = $created['shift_id'];
+        $shiftId = $created['turnoId'];
 
         // Delete it
-        $this->deleteRequest("/api/agents/{$agentId}/shifts/{$shiftId}");
+        $this->deleteRequest("/api/agentes/{$agentId}/turnos/{$shiftId}");
         $this->assertResponseStatusCodeSame(204);
     }
 
@@ -435,7 +440,7 @@ class Sprint10ControllerTest extends WebTestCase
     {
         $agentId = $this->createAgent();
 
-        $this->deleteRequest("/api/agents/{$agentId}/shifts/99999");
+        $this->deleteRequest("/api/agentes/{$agentId}/turnos/99999");
         $this->assertResponseStatusCodeSame(404);
     }
 
@@ -445,15 +450,15 @@ class Sprint10ControllerTest extends WebTestCase
         $agent2 = $this->createAgent('Agent 2');
 
         // Create shift for agent 1
-        $created = $this->postJson("/api/agents/{$agent1}/shifts", [
-            'dayOfWeek' => 1,
-            'startTime' => '08:00',
-            'endTime' => '16:00',
+        $created = $this->postJson("/api/agentes/{$agent1}/turnos", [
+            'diaDeLaSemana' => 1,
+            'horaDeInicio' => '08:00',
+            'horaDeFin' => '16:00',
         ]);
-        $shiftId = $created['shift_id'];
+        $shiftId = $created['turnoId'];
 
         // Try to delete from agent 2
-        $this->deleteRequest("/api/agents/{$agent2}/shifts/{$shiftId}");
+        $this->deleteRequest("/api/agentes/{$agent2}/turnos/{$shiftId}");
         // Shift doesn't belong to agent2 — returns 404
         $this->assertResponseStatusCodeSame(404);
     }

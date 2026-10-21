@@ -47,12 +47,12 @@ class DisponibilidadDeAgenteController
     ) {}
 
     /**
-     * POST /agents/{id}/availability
+     * POST /api/agentes/{id}/disponibilidad
      *
      * Define el override de disponibilidad de un agente con TTL opcional.
      * Devuelve 200 con el estado de disponibilidad actualizado.
      */
-    #[Route('/api/agents/{id}/availability', name: 'app_agent_set_availability', methods: ['POST'])]
+    #[Route('/api/agentes/{id}/disponibilidad', name: 'app_agent_set_availability', methods: ['POST'])]
     public function setDisponibilidadManual(
         int $id,
         #[MapRequestPayload] SetDisponibilidadManualRequest $request,
@@ -67,15 +67,15 @@ class DisponibilidadDeAgenteController
             return new JsonResponse(['error' => 'Agent not found'], 404);
         }
 
-        if ($request->isAvailable === null) {
-            return new JsonResponse(['error' => 'is_available is required'], 422);
+        if ($request->disponible === null) {
+            return new JsonResponse(['error' => 'disponible is required'], 422);
         }
 
         try {
             $result = $this->setDisponibilidadManualUseCase->execute(
                 $id,
-                $request->isAvailable,
-                $request->ttlMinutes,
+                $request->disponible,
+                $request->ttlMinutos,
             );
 
             return new JsonResponse($result);
@@ -87,12 +87,12 @@ class DisponibilidadDeAgenteController
     }
 
     /**
-     * DELETE /agents/{id}/availability
+     * DELETE /api/agentes/{id}/disponibilidad
      *
      * Quita el override de disponibilidad de un agente (lo vuelve a NULL).
      * Devuelve 204 si tiene éxito.
      */
-    #[Route('/api/agents/{id}/availability', name: 'app_agent_clear_availability', methods: ['DELETE'])]
+    #[Route('/api/agentes/{id}/disponibilidad', name: 'app_agent_clear_availability', methods: ['DELETE'])]
     public function quitarDisponibilidadManual(int $id): JsonResponse
     {
         // Verificación de pertenencia: un AGENT solo puede modificar su propia disponibilidad
@@ -117,12 +117,12 @@ class DisponibilidadDeAgenteController
     }
 
     /**
-     * GET /agents/{id}/availability
+     * GET /api/agentes/{id}/disponibilidad
      *
      * Lee el estado completo de disponibilidad de un agente.
      * Reutiliza DisponibilidadDeAgenteService para determinarlo. Solo lectura.
      */
-    #[Route('/api/agents/{id}/availability', name: 'app_agent_get_availability', methods: ['GET'])]
+    #[Route('/api/agentes/{id}/disponibilidad', name: 'app_agent_get_availability', methods: ['GET'])]
     public function getDisponibilidad(int $id): JsonResponse
     {
         // Verificación de pertenencia: un AGENT solo puede ver su propia disponibilidad
@@ -142,7 +142,7 @@ class DisponibilidadDeAgenteController
         $isDisponible = $this->disponibilidadDeAgenteService->isDisponible($agente, $nowUtc);
         $cargaActual = $this->ticketRepo->countActivosDeAgente($id);
 
-        // Calcula is_in_shift verificando solo el horario (sin override ni capacidad)
+        // Calcula enTurno verificando solo el horario (sin override ni capacidad)
         $isEnTurno = $this->isAgenteEnTurno($agente, $localNow);
 
         // Calcula la información del override
@@ -159,27 +159,27 @@ class DisponibilidadDeAgenteController
         }
 
         return new JsonResponse([
-            'agent_id'     => $id,
-            'is_available' => $isDisponible,
-            'is_in_shift'  => $isEnTurno,
-            'timezone'     => $agente->getZonaHoraria(),
-            'current_load' => $cargaActual,
-            'max_capacity' => $agente->getMaxTicketsActivos(),
-            'override'     => [
-                'active'       => $disponibilidadManualActiva,
-                'is_available' => $disponibilidadManual,
-                'expires_at'   => $disponibilidadManualVenceAt,
+            'agenteId'             => $id,
+            'disponible'           => $isDisponible,
+            'enTurno'              => $isEnTurno,
+            'zonaHoraria'          => $agente->getZonaHoraria(),
+            'cargaActual'          => $cargaActual,
+            'capacidadMaxima'      => $agente->getMaxTicketsActivos(),
+            'disponibilidadManual' => [
+                'activa'        => $disponibilidadManualActiva,
+                'disponible'    => $disponibilidadManual,
+                'vencimientoAt' => $disponibilidadManualVenceAt,
             ],
         ]);
     }
 
     /**
-     * POST /agents/{id}/shifts
+     * POST /api/agentes/{id}/turnos
      *
      * Crea un turno semanal para un agente.
      * Devuelve 201 con los datos del turno creado.
      */
-    #[Route('/api/agents/{id}/shifts', name: 'app_agent_create_shift', methods: ['POST'])]
+    #[Route('/api/agentes/{id}/turnos', name: 'app_agent_create_shift', methods: ['POST'])]
     public function createTurno(
         int $id,
         #[MapRequestPayload] CreateTurnoRequest $request,
@@ -194,11 +194,11 @@ class DisponibilidadDeAgenteController
             return new JsonResponse(['error' => 'Agent not found'], 404);
         }
 
-        // La validación del DTO ya garantiza dayOfWeek 1-7 y el formato HH:MM.
-        // Validación adicional: start != end (el DTO no puede validar campos cruzados).
-        if ($request->startTime === $request->endTime) {
+        // La validación del DTO ya garantiza diaDeLaSemana 1-7 y el formato HH:MM.
+        // Validación adicional: inicio != fin (el DTO no puede validar campos cruzados).
+        if ($request->horaDeInicio === $request->horaDeFin) {
             return new JsonResponse(
-                ['error' => 'start_time and end_time must differ'],
+                ['error' => 'horaDeInicio and horaDeFin must differ'],
                 422,
             );
         }
@@ -206,9 +206,9 @@ class DisponibilidadDeAgenteController
         try {
             $result = $this->createTurnoUseCase->execute(
                 $id,
-                $request->dayOfWeek,
-                $request->startTime,
-                $request->endTime,
+                $request->diaDeLaSemana,
+                $request->horaDeInicio,
+                $request->horaDeFin,
             );
 
             return new JsonResponse($result, 201);
@@ -222,13 +222,13 @@ class DisponibilidadDeAgenteController
     }
 
     /**
-     * DELETE /agents/{id}/shifts/{shiftId}
+     * DELETE /api/agentes/{id}/turnos/{turnoId}
      *
      * Elimina un turno de un agente.
      * Devuelve 204 si tiene éxito.
      */
-    #[Route('/api/agents/{id}/shifts/{shiftId}', name: 'app_agent_delete_shift', methods: ['DELETE'])]
-    public function deleteTurno(int $id, int $shiftId): JsonResponse
+    #[Route('/api/agentes/{id}/turnos/{turnoId}', name: 'app_agent_delete_shift', methods: ['DELETE'])]
+    public function deleteTurno(int $id, int $turnoId): JsonResponse
     {
         // Verificación de pertenencia: un AGENT solo puede modificar sus propios turnos
         if (false === $this->isPermitidoParaAgente($id)) {
@@ -240,7 +240,7 @@ class DisponibilidadDeAgenteController
             return new JsonResponse(['error' => 'Agent not found'], 404);
         }
 
-        $turno = $this->turnoRepo->find($shiftId);
+        $turno = $this->turnoRepo->find($turnoId);
         if ($turno === null) {
             return new JsonResponse(['error' => 'Shift not found'], 404);
         }
@@ -251,7 +251,7 @@ class DisponibilidadDeAgenteController
         }
 
         try {
-            $this->deleteTurnoUseCase->execute($id, $shiftId);
+            $this->deleteTurnoUseCase->execute($id, $turnoId);
 
             return new JsonResponse(null, 204);
         } catch (LockWaitTimeoutException) {

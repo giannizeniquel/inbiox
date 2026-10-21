@@ -19,8 +19,8 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
  *   PUT  /api/mi/perfil
  *   PUT  /api/mi/notificaciones
  *   PUT  /api/mi/respuesta-automatica
- *   GET  /api/me/shifts
- *   PUT  /api/me/shifts
+ *   GET  /api/mi/turnos
+ *   PUT  /api/mi/turnos
  */
 class SettingsPageTest extends WebTestCase
 {
@@ -266,7 +266,7 @@ class SettingsPageTest extends WebTestCase
     }
 
     // ────────────────────────────────────────────────────────
-    //  GET /api/me/shifts
+    //  GET /api/mi/turnos
     // ────────────────────────────────────────────────────────
 
     public function testGetShiftsReturnsOrderedList(): void
@@ -275,25 +275,25 @@ class SettingsPageTest extends WebTestCase
         $this->createShift($agent, 2, '10:00', '18:00'); // Tuesday
         $this->createShift($agent, 1, '08:00', '16:00'); // Monday
 
-        $data = $this->getJson('/api/me/shifts');
+        $data = $this->getJson('/api/mi/turnos');
 
         $this->assertResponseStatusCodeSame(200);
         $this->assertCount(2, $data);
 
         // Should be sorted: Monday first, then Tuesday
-        $this->assertSame(1, $data[0]['dayOfWeek']);
-        $this->assertSame(2, $data[1]['dayOfWeek']);
+        $this->assertSame(['diaDeLaSemana' => 1, 'inicio' => '08:00', 'fin' => '16:00'], $data[0]);
+        $this->assertSame(['diaDeLaSemana' => 2, 'inicio' => '10:00', 'fin' => '18:00'], $data[1]);
     }
 
     public function testGetShiftsEmptyWhenNoShifts(): void
     {
-        $data = $this->getJson('/api/me/shifts');
+        $data = $this->getJson('/api/mi/turnos');
         $this->assertResponseStatusCodeSame(200);
         $this->assertEmpty($data);
     }
 
     // ────────────────────────────────────────────────────────
-    //  PUT /api/me/shifts (replace-all)
+    //  PUT /api/mi/turnos (replace-all)
     // ────────────────────────────────────────────────────────
 
     public function testReplaceShiftsReplacesAll(): void
@@ -305,19 +305,19 @@ class SettingsPageTest extends WebTestCase
         $this->createShift($agent, 2, '09:00', '17:00');
 
         // Replace with 1 shift
-        $data = $this->putJson('/api/me/shifts', [
-            'shifts' => [
-                ['dayOfWeek' => 3, 'start' => '10:00', 'end' => '18:00'],
+        $data = $this->putJson('/api/mi/turnos', [
+            'turnos' => [
+                ['diaDeLaSemana' => 3, 'inicio' => '10:00', 'fin' => '18:00'],
             ],
         ]);
 
         $this->assertResponseStatusCodeSame(200);
         $this->assertCount(1, $data);
-        $this->assertSame(3, $data[0]['dayOfWeek']);
+        $this->assertSame([['diaDeLaSemana' => 3, 'inicio' => '10:00', 'fin' => '18:00']], $data);
 
         // Verify only 1 shift remains
-        $shifts = $this->getJson('/api/me/shifts');
-        $this->assertCount(1, $shifts);
+        $shifts = $this->getJson('/api/mi/turnos');
+        $this->assertSame([['diaDeLaSemana' => 3, 'inicio' => '10:00', 'fin' => '18:00']], $shifts);
     }
 
     public function testReplaceShiftsEmptyRemovesAll(): void
@@ -325,12 +325,12 @@ class SettingsPageTest extends WebTestCase
         $agent = $this->loadAgent();
         $this->createShift($agent, 1, '08:00', '16:00');
 
-        $data = $this->putJson('/api/me/shifts', ['shifts' => []]);
+        $data = $this->putJson('/api/mi/turnos', ['turnos' => []]);
 
         $this->assertResponseStatusCodeSame(200);
         $this->assertEmpty($data);
 
-        $shifts = $this->getJson('/api/me/shifts');
+        $shifts = $this->getJson('/api/mi/turnos');
         $this->assertEmpty($shifts);
     }
 

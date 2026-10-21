@@ -252,7 +252,7 @@ class RealtimeEventFactoryTest extends TestCase
         $result = $this->build('agent', 5, TipoDeEventoDeOutbox::TURNO_DE_AGENTE_CAMBIADO->value, [
             'agent_id' => 5,
             'shift_id' => 10,
-            'action' => 'created',
+            'action' => 'creado',
             'day_of_week' => 1,
             'start_time' => '08:00',
             'end_time' => '16:00',
@@ -270,8 +270,14 @@ class RealtimeEventFactoryTest extends TestCase
             'ocurridoAt' => '2026-06-15T08:00:00Z',
         ], $result['payload']);
 
-        $borrado = $this->build('agent', 5, 'App\Disponibilidad\AgentShiftChangedEvent', ['action' => 'deleted']);
+        $borrado = $this->build('agent', 5, TipoDeEventoDeOutbox::TURNO_DE_AGENTE_CAMBIADO->value, ['action' => 'borrado']);
         self::assertSame('borrado', $borrado['payload']['accion']);
+
+        // Filas escritas antes del contrato: la acción guardada en inglés se traduce al leer.
+        $creadoViejo = $this->build('agent', 5, 'App\Disponibilidad\AgentShiftChangedEvent', ['action' => 'created']);
+        self::assertSame('creado', $creadoViejo['payload']['accion']);
+        $borradoViejo = $this->build('agent', 5, 'App\Disponibilidad\AgentShiftChangedEvent', ['action' => 'deleted']);
+        self::assertSame('borrado', $borradoViejo['payload']['accion']);
     }
 
     /**

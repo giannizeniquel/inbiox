@@ -48,7 +48,7 @@ final class DisponibilidadOutboxEventTypeTest extends KernelTestCase
         $container->get(SetDisponibilidadManualUseCase::class)->execute($this->agenteId, false, 60);
         $container->get(QuitarDisponibilidadManualUseCase::class)->execute($this->agenteId);
         $turno = $container->get(CreateTurnoUseCase::class)->execute($this->agenteId, 1, '09:00', '17:00');
-        $container->get(DeleteTurnoUseCase::class)->execute($this->agenteId, $turno['shift_id']);
+        $container->get(DeleteTurnoUseCase::class)->execute($this->agenteId, $turno['turnoId']);
 
         self::assertSame(
             [
@@ -65,5 +65,17 @@ final class DisponibilidadOutboxEventTypeTest extends KernelTestCase
                 ),
             ),
         );
+
+        // La acción del turno se guarda con el valor del contrato (3.1); las claves del payload
+        // guardado no cambian (anexo A.0, regla 10).
+        $payloads = array_map(
+            static fn (string $payload): array => json_decode($payload, true, 512, JSON_THROW_ON_ERROR),
+            $this->conn->fetchFirstColumn(
+                "SELECT payload FROM outbox_events WHERE aggregate_type = 'agent' AND aggregate_id = ? AND event_type = ? ORDER BY id",
+                [$this->agenteId, 'agente.turno_cambiado'],
+            ),
+        );
+        self::assertSame(['creado', 'borrado'], array_column($payloads, 'action'));
+        self::assertSame([$turno['turnoId'], $turno['turnoId']], array_column($payloads, 'shift_id'));
     }
 }

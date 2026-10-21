@@ -16,7 +16,7 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
  * Integration tests for AgentesDisponiblesController.
  *
  * Covers:
- * - GET /api/workspaces/{id}/available-agents
+ * - GET /api/espacios-de-trabajo/{id}/agentes-disponibles
  * - Authentication requirements
  * - EspacioDeTrabajo existence and active status
  * - Agent availability filtering
@@ -142,7 +142,7 @@ class WorkspaceAgentControllerTest extends WebTestCase
     {
         $workspace = $this->createWorkspace();
 
-        $this->client->request('GET', '/api/workspaces/' . $workspace->getId() . '/available-agents');
+        $this->client->request('GET', '/api/espacios-de-trabajo/' . $workspace->getId() . '/agentes-disponibles');
         self::assertSame(401, $this->client->getResponse()->getStatusCode());
     }
 
@@ -152,7 +152,7 @@ class WorkspaceAgentControllerTest extends WebTestCase
         $this->createUser('agent@test.local', ['ROLE_AGENTE'], $agent);
         $token = $this->login('agent@test.local');
 
-        $this->client->request('GET', '/api/workspaces/99999/available-agents', [], [], $this->authHeaders($token));
+        $this->client->request('GET', '/api/espacios-de-trabajo/99999/agentes-disponibles', [], [], $this->authHeaders($token));
         self::assertSame(404, $this->client->getResponse()->getStatusCode());
     }
 
@@ -164,7 +164,7 @@ class WorkspaceAgentControllerTest extends WebTestCase
         $this->createUser('agent@test.local', ['ROLE_AGENTE'], $agent);
         $token = $this->login('agent@test.local');
 
-        $this->client->request('GET', '/api/workspaces/' . $workspace->getId() . '/available-agents', [], [], $this->authHeaders($token));
+        $this->client->request('GET', '/api/espacios-de-trabajo/' . $workspace->getId() . '/agentes-disponibles', [], [], $this->authHeaders($token));
         self::assertSame(400, $this->client->getResponse()->getStatusCode());
     }
 
@@ -176,7 +176,7 @@ class WorkspaceAgentControllerTest extends WebTestCase
         $this->createUser('agent@test.local', ['ROLE_AGENTE'], $agent);
         $token = $this->login('agent@test.local');
 
-        $this->client->request('GET', '/api/workspaces/' . $workspace->getId() . '/available-agents', [], [], $this->authHeaders($token));
+        $this->client->request('GET', '/api/espacios-de-trabajo/' . $workspace->getId() . '/agentes-disponibles', [], [], $this->authHeaders($token));
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
 
         $data = \json_decode($this->client->getResponse()->getContent(), true);
@@ -196,16 +196,14 @@ class WorkspaceAgentControllerTest extends WebTestCase
         $token = $this->login('agent@test.local');
 
         // Request on Monday 12:00 UTC (in shift)
-        $this->client->request('GET', '/api/workspaces/' . $workspace->getId() . '/available-agents', [], [], $this->authHeaders($token));
+        $this->client->request('GET', '/api/espacios-de-trabajo/' . $workspace->getId() . '/agentes-disponibles', [], [], $this->authHeaders($token));
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
 
         $data = \json_decode($this->client->getResponse()->getContent(), true);
         self::assertCount(1, $data);
         self::assertSame($agent->getId(), $data[0]['id']);
-        self::assertSame('Agent A', $data[0]['name']);
-        self::assertArrayHasKey('is_active_now', $data[0]);
-        self::assertArrayHasKey('active_ticket_count', $data[0]);
-        self::assertArrayHasKey('max_active_tickets', $data[0]);
+        self::assertSame(['id', 'nombre', 'activoAhora', 'cantidadDeTicketsActivos', 'maximoDeTicketsActivos'], array_keys($data[0]));
+        self::assertSame('Agent A', $data[0]['nombre']);
     }
 
     /**
@@ -226,14 +224,14 @@ class WorkspaceAgentControllerTest extends WebTestCase
         $this->createUser('agent@test.local', ['ROLE_AGENTE'], $agent);
         $token = $this->login('agent@test.local');
 
-        $this->client->request('GET', '/api/workspaces/' . $workspace->getId() . '/available-agents', [], [], $this->authHeaders($token));
+        $this->client->request('GET', '/api/espacios-de-trabajo/' . $workspace->getId() . '/agentes-disponibles', [], [], $this->authHeaders($token));
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
 
         $data = \json_decode($this->client->getResponse()->getContent(), true);
         // THEN the agent is still present in the roster, just Inactivo
         self::assertCount(1, $data);
         self::assertSame($agent->getId(), $data[0]['id']);
-        self::assertFalse($data[0]['is_active_now']);
+        self::assertFalse($data[0]['activoAhora']);
     }
 
     public function testInactiveAgentNeverAppearsInRoster(): void
@@ -249,7 +247,7 @@ class WorkspaceAgentControllerTest extends WebTestCase
         $this->createUser('agent@test.local', ['ROLE_AGENTE'], $requester);
         $token = $this->login('agent@test.local');
 
-        $this->client->request('GET', '/api/workspaces/' . $workspace->getId() . '/available-agents', [], [], $this->authHeaders($token));
+        $this->client->request('GET', '/api/espacios-de-trabajo/' . $workspace->getId() . '/agentes-disponibles', [], [], $this->authHeaders($token));
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
 
         $data = \json_decode($this->client->getResponse()->getContent(), true);

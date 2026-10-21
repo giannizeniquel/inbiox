@@ -168,7 +168,7 @@ final class DisponibilidadDeAgenteService
     /**
      * Devuelve el listado COMPLETO para asignación manual de un espacio de trabajo: cada
      * agente con `active = true` (un agente con `active = false` NUNCA aparece),
-     * cada uno con un indicador calculado `is_active_now` (Activo/Inactivo).
+     * cada uno con un indicador calculado `activoAhora` (Activo/Inactivo).
      *
      * A diferencia de listarAgentesDisponibles()/listAvailableAgentsInWorkspace() (eliminado),
      * esto NO excluye agentes: siempre devuelve el listado para que la

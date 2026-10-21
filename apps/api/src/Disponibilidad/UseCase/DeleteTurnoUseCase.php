@@ -34,15 +34,15 @@ final class DeleteTurnoUseCase
      * Elimina un turno del agente dado.
      *
      * @param int $agenteId
-     * @param int $shiftId
+     * @param int $turnoId
      *
-     * @return array{agent_id: int, shift_id: int, action: string}
+     * @return array{agenteId: int, turnoId: int, accion: string}
      *
      * @throws \InvalidArgumentException si no se encuentra el agente o el turno, o el turno no pertenece al agente
      */
-    public function execute(int $agenteId, int $shiftId): array
+    public function execute(int $agenteId, int $turnoId): array
     {
-        $result = $this->em->getConnection()->transactional(function () use ($agenteId, $shiftId) {
+        $result = $this->em->getConnection()->transactional(function () use ($agenteId, $turnoId) {
             // 1. Busca y bloquea el agente con FOR UPDATE
             $agente = $this->agentRepo->findById($agenteId);
             if ($agente === null) {
@@ -52,7 +52,7 @@ final class DeleteTurnoUseCase
             $this->em->lock($agente, LockMode::PESSIMISTIC_WRITE);
 
             // 2. Busca el turno y verifica a quién pertenece
-            $turno = $this->turnoRepo->find($shiftId);
+            $turno = $this->turnoRepo->find($turnoId);
             if ($turno === null) {
                 throw new \InvalidArgumentException('Shift not found');
             }
@@ -76,14 +76,15 @@ final class DeleteTurnoUseCase
             // 4. Persiste
             $this->em->flush();
 
-            // 5. Registra el evento de outbox
+            // 5. Registra el evento de outbox (claves guardadas en snake_case, anexo A.0 regla 10;
+            //    la acción con el valor del contrato, sección 3.1)
             $now = new \DateTimeImmutable();
             $this->pendingOutboxEvent = [
                 'aggregate_id' => $agenteId,
                 'payload' => [
                     'agent_id'    => $agenteId,
-                    'shift_id'    => $shiftId,
-                    'action'      => 'deleted',
+                    'shift_id'    => $turnoId,
+                    'action'      => 'borrado',
                     'day_of_week' => $diaDeLaSemana,
                     'start_time'  => $horaDeInicio,
                     'end_time'    => $horaDeFin,
@@ -92,9 +93,9 @@ final class DeleteTurnoUseCase
             ];
 
             return [
-                'agent_id' => $agenteId,
-                'shift_id' => $shiftId,
-                'action'   => 'deleted',
+                'agenteId' => $agenteId,
+                'turnoId'  => $turnoId,
+                'accion'   => 'borrado',
             ];
         });
 

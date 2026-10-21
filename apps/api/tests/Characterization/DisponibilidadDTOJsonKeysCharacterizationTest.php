@@ -25,10 +25,10 @@ final class DisponibilidadDTOJsonKeysCharacterizationTest extends TestCase
 
         self::assertSame([
             'id' => 5,
-            'name' => 'Agent',
-            'is_active_now' => true,
-            'active_ticket_count' => 2,
-            'max_active_tickets' => 4,
+            'nombre' => 'Agent',
+            'activoAhora' => true,
+            'cantidadDeTicketsActivos' => 2,
+            'maximoDeTicketsActivos' => 4,
         ], $dto->toArray());
     }
 }

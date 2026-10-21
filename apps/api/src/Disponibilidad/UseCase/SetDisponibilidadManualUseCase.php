@@ -38,7 +38,7 @@ final class SetDisponibilidadManualUseCase
      * @param bool    $isDisponible
      * @param ?int    $ttlMinutes  null = override persistente (sin vencimiento)
      *
-     * @return array{agent_id: int, is_available: bool, override_active: bool, current_load: int, max_capacity: int}
+     * @return array{agenteId: int, disponible: bool, disponibilidadManualActiva: bool, cargaActual: int, capacidadMaxima: int}
      *
      * @throws \InvalidArgumentException si no se encuentra el agente
      */
@@ -80,11 +80,11 @@ final class SetDisponibilidadManualUseCase
             ];
 
             return [
-                'agent_id'        => $agenteId,
-                'is_available'    => $isDisponible,
-                'override_active' => true,
-                'current_load'    => $cargaActual,
-                'max_capacity'    => $agente->getMaxTicketsActivos(),
+                'agenteId'                   => $agenteId,
+                'disponible'                 => $isDisponible,
+                'disponibilidadManualActiva' => true,
+                'cargaActual'                => $cargaActual,
+                'capacidadMaxima'            => $agente->getMaxTicketsActivos(),
             ];
         });
 

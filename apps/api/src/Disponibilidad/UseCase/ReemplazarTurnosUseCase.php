@@ -28,7 +28,7 @@ final class ReemplazarTurnosUseCase
     /**
      * @param DatosDeTurnoDTO[] $turnos
      *
-     * @return array<int, array{dayOfWeek: int, start: string, end: string}>
+     * @return array<int, array{diaDeLaSemana: int, inicio: string, fin: string}>
      *
      * @throws \InvalidArgumentException si no se encuentra el agente
      */
@@ -46,22 +46,22 @@ final class ReemplazarTurnosUseCase
             // 2. Crea los turnos nuevos
             $creado = [];
             foreach ($turnos as $input) {
-                $this->validarDatosDeTurno($input->dayOfWeek, $input->start, $input->end);
+                $this->validarDatosDeTurno($input->diaDeLaSemana, $input->inicio, $input->fin);
 
-                $inicio = \DateTimeImmutable::createFromFormat('H:i', $input->start);
-                $fin = \DateTimeImmutable::createFromFormat('H:i', $input->end);
+                $inicio = \DateTimeImmutable::createFromFormat('H:i', $input->inicio);
+                $fin = \DateTimeImmutable::createFromFormat('H:i', $input->fin);
 
                 if ($inicio === false || $fin === false) {
                     throw new \InvalidArgumentException('Invalid time format');
                 }
 
-                $turno = new Turno($agente, $input->dayOfWeek, $inicio, $fin);
+                $turno = new Turno($agente, $input->diaDeLaSemana, $inicio, $fin);
                 $this->em->persist($turno);
 
                 $creado[] = [
-                    'dayOfWeek' => $input->dayOfWeek,
-                    'start' => $input->start,
-                    'end' => $input->end,
+                    'diaDeLaSemana' => $input->diaDeLaSemana,
+                    'inicio' => $input->inicio,
+                    'fin' => $input->fin,
                 ];
             }
 
@@ -74,19 +74,19 @@ final class ReemplazarTurnosUseCase
     private function validarDatosDeTurno(int $diaDeLaSemana, string $horaDeInicio, string $horaDeFin): void
     {
         if ($diaDeLaSemana < 1 || $diaDeLaSemana > 7) {
-            throw new \InvalidArgumentException('dayOfWeek must be between 1 and 7');
+            throw new \InvalidArgumentException('diaDeLaSemana must be between 1 and 7');
         }
 
         if (!\preg_match('/^\d{2}:\d{2}$/', $horaDeInicio)) {
-            throw new \InvalidArgumentException('start must be in HH:MM format');
+            throw new \InvalidArgumentException('inicio must be in HH:MM format');
         }
 
         if (!\preg_match('/^\d{2}:\d{2}$/', $horaDeFin)) {
-            throw new \InvalidArgumentException('end must be in HH:MM format');
+            throw new \InvalidArgumentException('fin must be in HH:MM format');
         }
 
         if ($horaDeInicio === $horaDeFin) {
-            throw new \InvalidArgumentException('start and end must differ');
+            throw new \InvalidArgumentException('inicio and fin must differ');
         }
     }
 }

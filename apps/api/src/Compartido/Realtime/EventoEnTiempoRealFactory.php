@@ -52,7 +52,7 @@ final readonly class EventoEnTiempoRealFactory
             'image' => TipoDeAdjunto::IMAGEN->value,
             'document' => TipoDeAdjunto::DOCUMENTO->value,
         ],
-        // Los turnos guardan la acción en inglés; viaja en español.
+        // Filas de turno escritas antes del contrato: guardaban la acción en inglés.
         'accion' => [
             'created' => 'creado',
             'deleted' => 'borrado',

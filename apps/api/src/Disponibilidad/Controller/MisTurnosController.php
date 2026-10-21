@@ -17,8 +17,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 /**
  * Los turnos del agente actual.
  *
- * GET /api/me/shifts — lista los turnos del agente actual
- * PUT /api/me/shifts — reemplaza todos los turnos
+ * GET /api/mi/turnos — lista los turnos del agente actual
+ * PUT /api/mi/turnos — reemplaza todos los turnos
  */
 #[IsGranted('IS_AUTHENTICATED_FULLY')]
 final class MisTurnosController
@@ -29,7 +29,7 @@ final class MisTurnosController
     ) {}
 
     #[IsGranted('ROLE_AGENTE')]
-    #[Route('/api/me/shifts', name: 'app_me_shifts_list', methods: ['GET'])]
+    #[Route('/api/mi/turnos', name: 'app_me_shifts_list', methods: ['GET'])]
     public function getTurnos(): JsonResponse
     {
         $agente = $this->getAgente();
@@ -40,22 +40,22 @@ final class MisTurnosController
         $turnos = [];
         foreach ($agente->getTurnos() as $turno) {
             $turnos[] = [
-                'dayOfWeek' => $turno->getDiaDeLaSemana(),
-                'start' => $turno->getHoraDeInicio()->format('H:i'),
-                'end' => $turno->getHoraDeFin()->format('H:i'),
+                'diaDeLaSemana' => $turno->getDiaDeLaSemana(),
+                'inicio' => $turno->getHoraDeInicio()->format('H:i'),
+                'fin' => $turno->getHoraDeFin()->format('H:i'),
             ];
         }
 
-        // Ordena por dayOfWeek y luego por start
+        // Ordena por día de la semana y luego por hora de inicio
         \usort($turnos, function (array $a, array $b) {
-            return [$a['dayOfWeek'], $a['start']] <=> [$b['dayOfWeek'], $b['start']];
+            return [$a['diaDeLaSemana'], $a['inicio']] <=> [$b['diaDeLaSemana'], $b['inicio']];
         });
 
         return new JsonResponse($turnos);
     }
 
     #[IsGranted('ROLE_AGENTE')]
-    #[Route('/api/me/shifts', name: 'app_me_shifts_replace', methods: ['PUT'])]
+    #[Route('/api/mi/turnos', name: 'app_me_shifts_replace', methods: ['PUT'])]
     public function reemplazarTurnos(#[MapRequestPayload] ReemplazarTurnosRequest $request): JsonResponse
     {
         $agente = $this->getAgente();
@@ -64,7 +64,7 @@ final class MisTurnosController
         }
 
         try {
-            $creado = $this->reemplazarTurnosUseCase->execute((int) $agente->getId(), $request->shifts);
+            $creado = $this->reemplazarTurnosUseCase->execute((int) $agente->getId(), $request->turnos);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
         }

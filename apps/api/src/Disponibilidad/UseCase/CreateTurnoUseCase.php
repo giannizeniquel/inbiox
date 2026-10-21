@@ -17,7 +17,7 @@ use Doctrine\ORM\EntityManagerInterface;
 /**
  * Crea un turno semanal para un agente.
  *
- * Valida day_of_week (1-7), el formato de hora (HH:MM) y que start != end.
+ * Valida el día de la semana (1-7), el formato de hora (HH:MM) y que start != end.
  * Crea una entidad Turno, la persiste y emite un evento de outbox
  * agente.turno_cambiado.
  */
@@ -40,7 +40,7 @@ final class CreateTurnoUseCase
      * @param string $horaDeInicio  "HH:MM" en la zona horaria local del agente
      * @param string $horaDeFin    "HH:MM" en la zona horaria local del agente
      *
-     * @return array{shift_id: int, agent_id: int, day_of_week: int, start_time: string, end_time: string}
+     * @return array{turnoId: int, agenteId: int, diaDeLaSemana: int, horaDeInicio: string, horaDeFin: string}
      *
      * @throws \InvalidArgumentException si no se encuentra el agente o falla la validación
      */
@@ -73,14 +73,15 @@ final class CreateTurnoUseCase
             $this->em->persist($turno);
             $this->em->flush();
 
-            // 4. Registra el evento de outbox
+            // 4. Registra el evento de outbox (claves guardadas en snake_case, anexo A.0 regla 10;
+            //    la acción con el valor del contrato, sección 3.1)
             $now = new \DateTimeImmutable();
             $this->pendingOutboxEvent = [
                 'aggregate_id' => $agenteId,
                 'payload' => [
                     'agent_id'    => $agenteId,
                     'shift_id'    => (int) $turno->getId(),
-                    'action'      => 'created',
+                    'action'      => 'creado',
                     'day_of_week' => $diaDeLaSemana,
                     'start_time'  => $horaDeInicio,
                     'end_time'    => $horaDeFin,
@@ -89,11 +90,11 @@ final class CreateTurnoUseCase
             ];
 
             return [
-                'shift_id'    => (int) $turno->getId(),
-                'agent_id'    => $agenteId,
-                'day_of_week' => $diaDeLaSemana,
-                'start_time'  => $horaDeInicio,
-                'end_time'    => $horaDeFin,
+                'turnoId'       => (int) $turno->getId(),
+                'agenteId'      => $agenteId,
+                'diaDeLaSemana' => $diaDeLaSemana,
+                'horaDeInicio'  => $horaDeInicio,
+                'horaDeFin'     => $horaDeFin,
             ];
         });
 
@@ -110,19 +111,19 @@ final class CreateTurnoUseCase
     private function validarDatosDeTurno(int $diaDeLaSemana, string $horaDeInicio, string $horaDeFin): void
     {
         if ($diaDeLaSemana < 1 || $diaDeLaSemana > 7) {
-            throw new \InvalidArgumentException('day_of_week must be between 1 and 7');
+            throw new \InvalidArgumentException('diaDeLaSemana must be between 1 and 7');
         }
 
         if (!\preg_match('/^\d{2}:\d{2}$/', $horaDeInicio)) {
-            throw new \InvalidArgumentException('start_time must be in HH:MM format');
+            throw new \InvalidArgumentException('horaDeInicio must be in HH:MM format');
         }
 
         if (!\preg_match('/^\d{2}:\d{2}$/', $horaDeFin)) {
-            throw new \InvalidArgumentException('end_time must be in HH:MM format');
+            throw new \InvalidArgumentException('horaDeFin must be in HH:MM format');
         }
 
         if ($horaDeInicio === $horaDeFin) {
-            throw new \InvalidArgumentException('start_time and end_time must differ');
+            throw new \InvalidArgumentException('horaDeInicio and horaDeFin must differ');
         }
 
         // Valida que los valores de hora sean reales
@@ -130,14 +131,14 @@ final class CreateTurnoUseCase
         $h = (int) $parts[0];
         $m = (int) $parts[1];
         if ($h < 0 || $h > 23 || $m < 0 || $m > 59) {
-            throw new \InvalidArgumentException('start_time contains invalid time values');
+            throw new \InvalidArgumentException('horaDeInicio contains invalid time values');
         }
 
         $parts = \explode(':', $horaDeFin);
         $h = (int) $parts[0];
         $m = (int) $parts[1];
         if ($h < 0 || $h > 23 || $m < 0 || $m > 59) {
-            throw new \InvalidArgumentException('end_time contains invalid time values');
+            throw new \InvalidArgumentException('horaDeFin contains invalid time values');
         }
     }
 

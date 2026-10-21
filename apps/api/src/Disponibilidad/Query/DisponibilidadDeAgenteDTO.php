@@ -37,10 +37,10 @@ class DisponibilidadDeAgenteDTO
     {
         return [
             'id' => $this->id,
-            'name' => $this->nombre,
-            'is_active_now' => $this->isActivoAhora,
-            'active_ticket_count' => $this->cantidadDeTicketsActivos,
-            'max_active_tickets' => $this->maxTicketsActivos,
+            'nombre' => $this->nombre,
+            'activoAhora' => $this->isActivoAhora,
+            'cantidadDeTicketsActivos' => $this->cantidadDeTicketsActivos,
+            'maximoDeTicketsActivos' => $this->maxTicketsActivos,
         ];
     }
 }
