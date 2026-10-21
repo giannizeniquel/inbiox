@@ -5,8 +5,8 @@ namespace App\Compartido\Realtime;
 use App\Compartido\Outbox\TipoDeEventoDeOutbox;
 
 /**
- * Única tabla que traduce el tipo guardado en el outbox (`TipoDeEventoDeOutbox`, o su alias
- * legado) al tipo de evento de Mercure (`TipoDeEventoEnTiempoReal`).
+ * Única tabla que traduce el tipo guardado en el outbox (`TipoDeEventoDeOutbox`) al tipo de
+ * evento de Mercure (`TipoDeEventoEnTiempoReal`).
  */
 final readonly class TipoDeEventoMapper
 {
@@ -23,7 +23,7 @@ final readonly class TipoDeEventoMapper
      */
     public function aTipoEnTiempoReal(string $valorGuardado, array $payload): TipoDeEventoEnTiempoReal
     {
-        return match (TipoDeEventoDeOutbox::desdeValorGuardado($valorGuardado)) {
+        return match (TipoDeEventoDeOutbox::tryFrom($valorGuardado)) {
             TipoDeEventoDeOutbox::TICKET_CREADO => TipoDeEventoEnTiempoReal::TICKET_CREADO,
             TipoDeEventoDeOutbox::TICKET_ACTUALIZADO => isset($payload['assignee_id']) || isset($payload['ownerAgentId'])
                 ? TipoDeEventoEnTiempoReal::TICKET_ASIGNADO

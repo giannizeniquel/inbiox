@@ -27,8 +27,8 @@ use Symfony\Component\Uid\Ulid;
  * `created`); the Mercure message carries the contract values.
  *
  * The names are string literals on purpose: they are a persisted format. The
- * legacy values (event class names and 'ticket.read') are still accepted on
- * read, so rows written before the migration produce the same Mercure message.
+ * legacy values (event class names and 'ticket.read') were removed in stage 3
+ * of the API contract and are no longer outbox names.
  */
 final class PersistedEventTypeCharacterizationTest extends TestCase
 {
@@ -138,14 +138,26 @@ final class PersistedEventTypeCharacterizationTest extends TestCase
             'payload' => $expected['payload'],
         ];
 
-        self::assertSame($message, $this->build($internalName, $stored), 'internal name');
-        self::assertSame($message, $this->build($legacyName, $stored), 'legacy name');
+        self::assertSame($message, $this->build($internalName, $stored));
     }
 
     /**
-     * A stored value that is already a Mercure type (other than the legacy
-     * `ticket.read`) is not an outbox name: it fails and dead-letters, so no
-     * writer can start relying on the removed prefix shortcut before stage 3.
+     * A legacy stored value fails and dead-letters like any unknown name.
+     *
+     * @param array<string, mixed> $stored
+     * @param array<string, mixed> $expected
+     */
+    #[DataProvider('storedRows')]
+    public function testLegacyNameIsNotAnOutboxName(string $internalName, string $legacyName, array $stored, array $expected): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        $this->build($legacyName, $stored);
+    }
+
+    /**
+     * A stored value that is already a Mercure type is not an outbox name: it
+     * fails and dead-letters.
      */
     public function testStoredMercureTypeIsNotAnOutboxName(): void
     {
@@ -172,7 +184,6 @@ final class PersistedEventTypeCharacterizationTest extends TestCase
     public static function inboxUpdatedNames(): iterable
     {
         yield 'internal name' => ['ticket.bandeja_actualizada'];
-        yield 'legacy name' => ['App\Ticket\InboxUpdatedEvent'];
     }
 
     /**

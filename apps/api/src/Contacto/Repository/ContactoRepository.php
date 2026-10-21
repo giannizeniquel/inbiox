@@ -111,8 +111,8 @@ class ContactoRepository extends ServiceEntityRepository
         FROM (
             SELECT
                 CASE
-                    WHEN oe.event_type IN (:tipos_ticket_creado) THEN 'ticket.creado'
-                    WHEN oe.event_type IN (:tipos_ticket_actualizado) THEN 'ticket.estado_cambiado'
+                    WHEN oe.event_type = :tipo_ticket_creado THEN 'ticket.creado'
+                    WHEN oe.event_type = :tipo_ticket_actualizado THEN 'ticket.estado_cambiado'
                 END AS type,
                 oe.created_at AS occurred_at,
                 NULL AS content,
@@ -125,7 +125,7 @@ class ContactoRepository extends ServiceEntityRepository
             JOIN tickets t ON oe.aggregate_id = t.id
             WHERE t.contact_id = :contact_id
               AND oe.aggregate_type = 'ticket'
-              AND oe.event_type IN (:tipos_ticket_creado, :tipos_ticket_actualizado)
+              AND oe.event_type IN (:tipo_ticket_creado, :tipo_ticket_actualizado)
               AND (:before_date IS NULL OR oe.created_at < :before_date)
               AND (:phone_number_id IS NULL OR t.phone_number_id = :phone_number_id)
 
@@ -194,10 +194,9 @@ class ContactoRepository extends ServiceEntityRepository
             TipoDeEventoDeTicket::MANUAL_CERRADO_SIN_RESPONSABLE,
         ];
 
-        // Los tipos del outbox incluyen el alias legado (nombre de clase) hasta la etapa 3 del contrato.
         $params = [
-            'tipos_ticket_creado' => TipoDeEventoDeOutbox::TICKET_CREADO->valoresGuardados(),
-            'tipos_ticket_actualizado' => TipoDeEventoDeOutbox::TICKET_ACTUALIZADO->valoresGuardados(),
+            'tipo_ticket_creado' => TipoDeEventoDeOutbox::TICKET_CREADO->value,
+            'tipo_ticket_actualizado' => TipoDeEventoDeOutbox::TICKET_ACTUALIZADO->value,
             'tipo_reasignacion' => TipoDeAsignacion::REASIGNACION->value,
             'contact_id' => $contactoId,
             'allowed_types' => $tiposPermitidos,
@@ -206,8 +205,8 @@ class ContactoRepository extends ServiceEntityRepository
             'limit' => $limit,
         ];
         $types = [
-            'tipos_ticket_creado' => ArrayParameterType::STRING,
-            'tipos_ticket_actualizado' => ArrayParameterType::STRING,
+            'tipo_ticket_creado' => ParameterType::STRING,
+            'tipo_ticket_actualizado' => ParameterType::STRING,
             'contact_id' => ParameterType::INTEGER,
             'allowed_types' => ArrayParameterType::STRING,
             'before_date' => ParameterType::STRING,

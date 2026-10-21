@@ -42,7 +42,7 @@ final class TicketEventsControllerCharacterizationTest extends CharacterizationT
             'aggregate_type' => $aggregateType,
             'aggregate_id' => $aggregateId,
             'topic' => 'tickets',
-            'event_type' => 'ticket.read',
+            'event_type' => 'ticket.leido',
             'payload' => \json_encode(['eventType' => 'ticket.read', 'ticketId' => $aggregateId]),
             'created_at' => '2026-01-01 10:00:00',
             'status' => $status,
