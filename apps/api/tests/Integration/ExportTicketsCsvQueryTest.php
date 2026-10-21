@@ -163,7 +163,7 @@ class ExportTicketsCsvQueryTest extends KernelTestCase
         $query->stream($writer, new \DateTimeImmutable('2020-01-01'), new \DateTimeImmutable('2030-01-01'));
 
         $reader = Reader::createFromString($writer->toString());
-        self::assertSame(ExportarTicketsCsvQuery::COLUMNAS, $reader->fetchOne(0));
+        self::assertSame(ExportarTicketsCsvQuery::ENCABEZADOS, $reader->fetchOne(0));
     }
 
     public function test_row_shape_has_all_fourteen_columns_with_tags_joined(): void
@@ -182,12 +182,12 @@ class ExportTicketsCsvQueryTest extends KernelTestCase
         self::assertCount(1, $records);
         $row = $records[0];
         self::assertCount(14, $row);
-        self::assertSame((string) $ticketId, $row['ticket_id']);
-        self::assertSame('John Client', $row['contact_name']);
-        self::assertSame('Alice', $row['assigned_agent']);
-        self::assertSame('resuelto', $row['status']);
-        self::assertSame('vip;urgente', $row['tags']);
-        self::assertStringEndsWith('Z', $row['created_at']);
+        self::assertSame((string) $ticketId, $row['Ticket']);
+        self::assertSame('John Client', $row['Contacto']);
+        self::assertSame('Alice', $row['Agente asignado']);
+        self::assertSame('resuelto', $row['Estado']);
+        self::assertSame('vip;urgente', $row['Etiquetas']);
+        self::assertStringEndsWith('Z', $row['Fecha de creación']);
     }
 
     public function test_date_range_filters_on_created_at(): void
@@ -219,7 +219,7 @@ class ExportTicketsCsvQueryTest extends KernelTestCase
         $records = $this->runExport(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-31'), status: 'cerrado');
 
         self::assertCount(1, $records);
-        self::assertSame('cerrado', $records[0]['status']);
+        self::assertSame('cerrado', $records[0]['Estado']);
     }
 
     public function test_tag_and_semantics_and_five_tag_cap_reused_from_builder(): void
@@ -230,7 +230,7 @@ class ExportTicketsCsvQueryTest extends KernelTestCase
         $records = $this->runExport(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-31'), tag: 'vip,urgente');
 
         self::assertCount(1, $records);
-        self::assertSame((string) $both, $records[0]['ticket_id']);
+        self::assertSame((string) $both, $records[0]['Ticket']);
     }
 
     public function test_more_than_five_tags_throws(): void
@@ -250,7 +250,7 @@ class ExportTicketsCsvQueryTest extends KernelTestCase
         $records = $this->runExport(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-31'), agentId: (string) $agentA);
 
         self::assertCount(1, $records);
-        self::assertSame((string) $ownTicket, $records[0]['ticket_id']);
+        self::assertSame((string) $ownTicket, $records[0]['Ticket']);
     }
 
     public function test_stream_returns_total_row_count(): void
@@ -280,6 +280,6 @@ class ExportTicketsCsvQueryTest extends KernelTestCase
         );
 
         self::assertCount(1, $records);
-        self::assertSame((string) $inTeam, $records[0]['ticket_id']);
+        self::assertSame((string) $inTeam, $records[0]['Ticket']);
     }
 }

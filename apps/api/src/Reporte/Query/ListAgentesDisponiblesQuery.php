@@ -23,7 +23,7 @@ final class ListAgentesDisponiblesQuery
      * El conteo de tickets activos ejecuta una query por agente.
      *
      * @param string|null $phoneNumberId Espacio de trabajo al que restringir; null lista todos los agentes disponibles
-     * @return array<int, array{agent_id: int|null, agent_name: string, in_shift: true, active_tickets: int}>
+     * @return array<int, array{agenteId: int|null, agenteNombre: string, enTurno: true, ticketsActivos: int}>
      */
     public function execute(?string $phoneNumberId, \DateTimeImmutable $atUtc): array
     {
@@ -46,10 +46,10 @@ final class ListAgentesDisponiblesQuery
             }
 
             $result[] = [
-                'agent_id' => $agente->getId(),
-                'agent_name' => $agente->getNombre(),
-                'in_shift' => true,
-                'active_tickets' => $this->ticketRepository->countActivosDeAgente($agente->getId()),
+                'agenteId' => $agente->getId(),
+                'agenteNombre' => $agente->getNombre(),
+                'enTurno' => true,
+                'ticketsActivos' => $this->ticketRepository->countActivosDeAgente($agente->getId()),
             ];
         }
 

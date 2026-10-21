@@ -61,13 +61,13 @@ class DebugController extends AbstractController
             );
             
             return new JsonResponse([
-                'success' => true,
-                'ticket_id' => $result['ticket_id'],
-                'message' => 'Inbound message processed',
+                'exito' => true,
+                'ticketId' => $result['ticket_id'],
+                'mensaje' => 'Inbound message processed',
             ]);
         } catch (\Exception $e) {
             return new JsonResponse([
-                'success' => false,
+                'exito' => false,
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -98,13 +98,13 @@ class DebugController extends AbstractController
             );
             
             return new JsonResponse([
-                'success' => true,
-                'ticket_id' => $result['ticket_id'],
-                'message' => 'Outbound processed',
+                'exito' => true,
+                'ticketId' => $result['ticket_id'],
+                'mensaje' => 'Outbound processed',
             ]);
         } catch (\Exception $e) {
             return new JsonResponse([
-                'success' => false,
+                'exito' => false,
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -126,13 +126,13 @@ class DebugController extends AbstractController
             $result = $this->cambiarEstadoDeTicketUseCase->execute($ticketId, $estadoDestino, true, false);
             
             return new JsonResponse([
-                'success' => true,
-                'ticket_id' => $ticketId,
-                'new_status' => $result['estadoNuevo'],
+                'exito' => true,
+                'ticketId' => $ticketId,
+                'estadoNuevo' => $result['estadoNuevo'],
             ]);
         } catch (\Exception $e) {
             return new JsonResponse([
-                'success' => false,
+                'exito' => false,
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -157,13 +157,13 @@ class DebugController extends AbstractController
             );
 
             return new JsonResponse([
-                'success' => true,
-                'ticket_id' => $ticketId,
-                'agent_id' => $agenteId,
+                'exito' => true,
+                'ticketId' => $ticketId,
+                'agenteId' => $agenteId,
             ]);
         } catch (\Exception $e) {
             return new JsonResponse([
-                'success' => false,
+                'exito' => false,
                 'error' => $e->getMessage(),
             ], 500);
         }

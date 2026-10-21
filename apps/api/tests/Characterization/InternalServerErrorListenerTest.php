@@ -91,7 +91,7 @@ final class InternalServerErrorListenerTest extends CharacterizationTestCase
         $token = $this->agentToken();
 
         // app_report_export is gated by #[IsGranted('ROLE_SUPERVISOR')]; access_control only asks for ROLE_AGENTE.
-        $response = $this->request('GET', '/api/reports/export', $token);
+        $response = $this->request('GET', '/api/reportes/exportar', $token);
 
         self::assertSame(403, $response->getStatusCode(), (string) $response->getContent());
         self::assertSame([

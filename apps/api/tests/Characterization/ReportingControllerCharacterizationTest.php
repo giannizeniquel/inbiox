@@ -16,7 +16,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
  */
 final class ReportingControllerCharacterizationTest extends CharacterizationTestCase
 {
-    private const WINDOW = 'from=2025-03-01T00:00:00Z&to=2025-03-03T00:00:00Z';
+    private const WINDOW = 'desde=2025-03-01T00:00:00Z&hasta=2025-03-03T00:00:00Z';
 
     private Agente $owner;
 
@@ -58,15 +58,15 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
         $this->seedTickets();
         $token = $this->supervisorToken();
 
-        $response = $this->request('GET', '/api/reports/rt?' . self::WINDOW, $token);
+        $response = $this->request('GET', '/api/reportes/rt?' . self::WINDOW, $token);
 
         $this->assertJsonResponse(200, [
-            'avg_rt_seconds' => 5400,
-            'min_rt_seconds' => 3600,
-            'max_rt_seconds' => 7200,
-            'avg_rt_minutes' => 90,
-            'min_rt_minutes' => 60,
-            'max_rt_minutes' => 120,
+            'rtPromedioSegundos' => 5400,
+            'rtMinimoSegundos' => 3600,
+            'rtMaximoSegundos' => 7200,
+            'rtPromedioMinutos' => 90,
+            'rtMinimoMinutos' => 60,
+            'rtMaximoMinutos' => 120,
         ], $response);
     }
 
@@ -75,13 +75,13 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
         $token = $this->supervisorToken();
 
         $this->assertJsonResponse(200, [
-            'avg_rt_seconds' => null,
-            'min_rt_seconds' => null,
-            'max_rt_seconds' => null,
-            'avg_rt_minutes' => null,
-            'min_rt_minutes' => null,
-            'max_rt_minutes' => null,
-        ], $this->request('GET', '/api/reports/rt?' . self::WINDOW, $token));
+            'rtPromedioSegundos' => null,
+            'rtMinimoSegundos' => null,
+            'rtMaximoSegundos' => null,
+            'rtPromedioMinutos' => null,
+            'rtMinimoMinutos' => null,
+            'rtMaximoMinutos' => null,
+        ], $this->request('GET', '/api/reportes/rt?' . self::WINDOW, $token));
     }
 
     // ── app_report_counts ──
@@ -91,7 +91,7 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
         $this->seedTickets();
         $token = $this->supervisorToken();
 
-        $response = $this->request('GET', '/api/reports/counts?' . self::WINDOW, $token);
+        $response = $this->request('GET', '/api/reportes/conteos?' . self::WINDOW, $token);
 
         $this->assertJsonResponse(200, ['nuevo' => 0, 'activo' => 1, 'en_espera' => 0, 'resuelto' => 1, 'cerrado' => 1], $response);
     }
@@ -107,7 +107,7 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
         $agent->setEspacioDeTrabajoActivo($workspace);
         $token = $this->loginAs('reports-agent@characterization.local', ['ROLE_AGENTE'], $agent);
 
-        $response = $this->request('GET', '/api/reports/counts?' . self::WINDOW, $token);
+        $response = $this->request('GET', '/api/reportes/conteos?' . self::WINDOW, $token);
 
         $this->assertJsonResponse(200, ['nuevo' => 0, 'activo' => 1, 'en_espera' => 0, 'resuelto' => 0, 'cerrado' => 0], $response);
     }
@@ -119,11 +119,11 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
         $this->seedTickets();
         $token = $this->supervisorToken();
 
-        $response = $this->request('GET', '/api/reports/volume?' . self::WINDOW, $token);
+        $response = $this->request('GET', '/api/reportes/volumen?' . self::WINDOW, $token);
 
         $this->assertJsonResponse(200, [
-            ['date' => '2025-03-01', 'tickets_created' => 1, 'tickets_resolved' => 1],
-            ['date' => '2025-03-02', 'tickets_created' => 2, 'tickets_resolved' => 1],
+            ['fecha' => '2025-03-01', 'ticketsCreados' => 1, 'ticketsResueltos' => 1],
+            ['fecha' => '2025-03-02', 'ticketsCreados' => 2, 'ticketsResueltos' => 1],
         ], $response);
     }
 
@@ -134,21 +134,21 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
         $this->seedTickets();
         $token = $this->supervisorToken();
 
-        $response = $this->request('GET', '/api/reports/agents?' . self::WINDOW, $token);
+        $response = $this->request('GET', '/api/reportes/rendimiento-de-agentes?' . self::WINDOW, $token);
 
         $this->assertJsonResponse(200, [[
-            'agent_id' => $this->owner->getId(),
-            'agent_name' => 'Report Owner',
-            'tickets_assigned' => 3,
-            'tickets_resolved' => 2,
-            'current_active_tickets' => 1,
-            'max_active_tickets' => 10,
-            'current_load' => 0.1,
-            'is_in_shift' => false,
-            'avg_frt_seconds' => 1800,
-            'avg_frt_minutes' => 30,
-            'avg_rt_seconds' => 5400,
-            'avg_rt_minutes' => 90,
+            'agenteId' => $this->owner->getId(),
+            'agenteNombre' => 'Report Owner',
+            'ticketsAsignados' => 3,
+            'ticketsResueltos' => 2,
+            'ticketsActivosActuales' => 1,
+            'maximoDeTicketsActivos' => 10,
+            'cargaActual' => 0.1,
+            'enTurno' => false,
+            'frtPromedioSegundos' => 1800,
+            'frtPromedioMinutos' => 30,
+            'rtPromedioSegundos' => 5400,
+            'rtPromedioMinutos' => 90,
         ]], $response);
     }
 
@@ -165,10 +165,10 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
         $this->em->flush();
         $token = $this->supervisorToken();
 
-        $body = $this->json($this->request('GET', '/api/reports/agents?' . self::WINDOW, $token));
+        $body = $this->json($this->request('GET', '/api/reportes/rendimiento-de-agentes?' . self::WINDOW, $token));
 
-        self::assertTrue($body[0]['is_in_shift']);
-        self::assertSame(['current_load', 'is_in_shift', 'avg_frt_seconds'], \array_slice(\array_keys($body[0]), 6, 3));
+        self::assertTrue($body[0]['enTurno']);
+        self::assertSame(['cargaActual', 'enTurno', 'frtPromedioSegundos'], \array_slice(\array_keys($body[0]), 6, 3));
     }
 
     public function testAgentPerformanceFilteredByUnknownAgentIsEmpty(): void
@@ -176,7 +176,7 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
         $this->seedTickets();
         $token = $this->supervisorToken();
 
-        $this->assertJsonResponse(200, [], $this->request('GET', '/api/reports/agents?' . self::WINDOW . '&agent_id=999999999', $token));
+        $this->assertJsonResponse(200, [], $this->request('GET', '/api/reportes/rendimiento-de-agentes?' . self::WINDOW . '&agenteId=999999999', $token));
     }
 
     // ── app_report_frt ──
@@ -187,13 +187,13 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
         $token = $this->supervisorToken();
 
         $this->assertJsonResponse(200, [
-            'avg_frt_seconds' => 1800,
-            'min_frt_seconds' => 1800,
-            'max_frt_seconds' => 1800,
-            'avg_frt_minutes' => 30,
-            'min_frt_minutes' => 30,
-            'max_frt_minutes' => 30,
-        ], $this->request('GET', '/api/reports/frt?' . self::WINDOW, $token));
+            'frtPromedioSegundos' => 1800,
+            'frtMinimoSegundos' => 1800,
+            'frtMaximoSegundos' => 1800,
+            'frtPromedioMinutos' => 30,
+            'frtMinimoMinutos' => 30,
+            'frtMaximoMinutos' => 30,
+        ], $this->request('GET', '/api/reportes/frt?' . self::WINDOW, $token));
     }
 
     // ── app_report_agent_load ──
@@ -204,12 +204,12 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
         $token = $this->supervisorToken();
 
         $this->assertJsonResponse(200, [[
-            'agent_id' => $this->owner->getId(),
-            'agent_name' => 'Report Owner',
-            'active_tickets' => 1,
-            'max_capacity' => 10,
-            'load_percent' => 10,
-        ]], $this->request('GET', '/api/reports/agent-load', $token));
+            'agenteId' => $this->owner->getId(),
+            'agenteNombre' => 'Report Owner',
+            'ticketsActivos' => 1,
+            'capacidadMaxima' => 10,
+            'porcentajeDeCarga' => 10,
+        ]], $this->request('GET', '/api/reportes/carga-de-agentes', $token));
     }
 
     // ── app_report_unassigned ──
@@ -222,22 +222,22 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
         $token = $this->supervisorToken();
 
         $this->assertJsonResponse(200, [
-            'count' => 0,
+            'cantidad' => 0,
             'tickets' => [[
                 'id' => (int) $outside,
-                'contact_name' => null,
-                'created_at' => '2025-04-01 10:00:00',
-                'priority' => 'media',
+                'contactoNombre' => null,
+                'creadoAt' => '2025-04-01 10:00:00',
+                'prioridad' => 'media',
             ]],
-        ], $this->request('GET', '/api/reports/unassigned', $token));
-        $this->assertJsonResponse(200, ['count' => 0, 'tickets' => []], $this->request('GET', '/api/reports/unassigned?' . self::WINDOW, $token));
+        ], $this->request('GET', '/api/reportes/sin-asignar', $token));
+        $this->assertJsonResponse(200, ['cantidad' => 0, 'tickets' => []], $this->request('GET', '/api/reportes/sin-asignar?' . self::WINDOW, $token));
     }
 
     public function testUnassignedRejectsAMalformedDate(): void
     {
         $token = $this->supervisorToken();
 
-        $this->assertJsonResponse(400, ['error' => 'Invalid datetime format: 2025-03-01. Expected: Y-m-d\TH:i:sZ'], $this->request('GET', '/api/reports/unassigned?from=2025-03-01', $token));
+        $this->assertJsonResponse(400, ['error' => 'Invalid datetime format: 2025-03-01. Expected: Y-m-d\TH:i:sZ'], $this->request('GET', '/api/reportes/sin-asignar?desde=2025-03-01', $token));
     }
 
     // ── app_report_available_agents ──
@@ -251,11 +251,11 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
         $token = $this->supervisorToken();
 
         $this->assertJsonResponse(200, [[
-            'agent_id' => $this->owner->getId(),
-            'agent_name' => 'Report Owner',
-            'in_shift' => true,
-            'active_tickets' => 1,
-        ]], $this->request('GET', '/api/reports/available-agents', $token));
+            'agenteId' => $this->owner->getId(),
+            'agenteNombre' => 'Report Owner',
+            'enTurno' => true,
+            'ticketsActivos' => 1,
+        ]], $this->request('GET', '/api/reportes/agentes-disponibles', $token));
     }
 
     public function testAvailableAgentsAreFilteredByTheAgentsActiveWorkspace(): void
@@ -273,11 +273,11 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
         $token = $this->loginAs('reports-avail@characterization.local', ['ROLE_AGENTE'], $viewer);
 
         $this->assertJsonResponse(200, [[
-            'agent_id' => $member->getId(),
-            'agent_name' => 'Workspace Member',
-            'in_shift' => true,
-            'active_tickets' => 0,
-        ]], $this->request('GET', '/api/reports/available-agents', $token));
+            'agenteId' => $member->getId(),
+            'agenteNombre' => 'Workspace Member',
+            'enTurno' => true,
+            'ticketsActivos' => 0,
+        ]], $this->request('GET', '/api/reportes/agentes-disponibles', $token));
     }
 
     // ── app_report_frt_trend ──
@@ -288,8 +288,8 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
         $token = $this->supervisorToken();
 
         $this->assertJsonResponse(200, [
-            ['date' => '2025-03-01', 'avg_frt_seconds' => 1800, 'ticket_count' => 1],
-        ], $this->request('GET', '/api/reports/frt-trend?' . self::WINDOW, $token));
+            ['fecha' => '2025-03-01', 'frtPromedioSegundos' => 1800, 'cantidadDeTickets' => 1],
+        ], $this->request('GET', '/api/reportes/tendencia-de-frt?' . self::WINDOW, $token));
     }
 
     // ── app_report_heatmap ──
@@ -301,10 +301,10 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
 
         // 2025-03-01 is a Saturday (ISO 6), 2025-03-02 a Sunday (ISO 7).
         $this->assertJsonResponse(200, [
-            ['day_of_week' => 6, 'hour' => 10, 'count' => 1],
-            ['day_of_week' => 7, 'hour' => 9, 'count' => 1],
-            ['day_of_week' => 7, 'hour' => 15, 'count' => 1],
-        ], $this->request('GET', '/api/reports/heatmap?' . self::WINDOW, $token));
+            ['diaDeLaSemana' => 6, 'hora' => 10, 'cantidad' => 1],
+            ['diaDeLaSemana' => 7, 'hora' => 9, 'cantidad' => 1],
+            ['diaDeLaSemana' => 7, 'hora' => 15, 'cantidad' => 1],
+        ], $this->request('GET', '/api/reportes/mapa-de-calor?' . self::WINDOW, $token));
     }
 
     // ── app_report_recurring ──
@@ -325,24 +325,24 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
         $token = $this->supervisorToken();
 
         $frequentRow = [
-            'contact_id' => $frequent->getId(),
-            'contact_name' => 'Frequent',
+            'contactoId' => $frequent->getId(),
+            'contactoNombre' => 'Frequent',
             'email' => 'frequent@example.com',
-            'ticket_count' => 3,
-            'last_ticket_at' => $lastAt['Frequent'],
+            'cantidadDeTickets' => 3,
+            'ultimoTicketAt' => $lastAt['Frequent'],
         ];
         $twiceRow = [
-            'contact_id' => $twice->getId(),
-            'contact_name' => 'Twice',
+            'contactoId' => $twice->getId(),
+            'contactoNombre' => 'Twice',
             'email' => null,
-            'ticket_count' => 2,
-            'last_ticket_at' => $lastAt['Twice'],
+            'cantidadDeTickets' => 2,
+            'ultimoTicketAt' => $lastAt['Twice'],
         ];
 
-        $this->assertJsonResponse(200, [$frequentRow], $this->request('GET', '/api/reports/recurring-customers', $token));
-        $this->assertJsonResponse(200, [$frequentRow, $twiceRow], $this->request('GET', '/api/reports/recurring-customers?threshold=2', $token));
-        // threshold=0 is falsy and falls back to 3.
-        $this->assertJsonResponse(200, [$frequentRow], $this->request('GET', '/api/reports/recurring-customers?threshold=0', $token));
+        $this->assertJsonResponse(200, [$frequentRow], $this->request('GET', '/api/reportes/contactos-recurrentes', $token));
+        $this->assertJsonResponse(200, [$frequentRow, $twiceRow], $this->request('GET', '/api/reportes/contactos-recurrentes?umbral=2', $token));
+        // umbral=0 is falsy and falls back to 3.
+        $this->assertJsonResponse(200, [$frequentRow], $this->request('GET', '/api/reportes/contactos-recurrentes?umbral=0', $token));
     }
 
     // ── app_report_reopened ──
@@ -360,12 +360,12 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
         $token = $this->supervisorToken();
 
         $this->assertJsonResponse(200, [[
-            'ticket_id' => $resolvedId,
-            'contact_name' => null,
-            'resolved_at' => '2025-03-01 12:00:00',
-            'reopened_at' => '2025-03-02 11:00:00',
-            'current_status' => 'resuelto',
-        ]], $this->request('GET', '/api/reports/reopened?' . self::WINDOW, $token));
+            'ticketId' => $resolvedId,
+            'contactoNombre' => null,
+            'resueltoAt' => '2025-03-01 12:00:00',
+            'reabiertoAt' => '2025-03-02 11:00:00',
+            'estadoActual' => 'resuelto',
+        ]], $this->request('GET', '/api/reportes/reabiertos?' . self::WINDOW, $token));
     }
 
     // ── app_report_response_delay and app_report_ticket_participation ──
@@ -401,16 +401,16 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
         $token = $this->supervisorToken();
 
         $this->assertJsonResponse(200, [
-            'data_available_from' => '2025-03-01 10:00:00',
-            'partial_data' => true,
-            'aggregate' => ['avg_delay_seconds' => 360, 'sample_count' => 1, 'unanswered_inbound_count' => 1],
-            'per_agent' => [[
-                'agent_id' => $this->owner->getId(),
-                'agent_name' => 'Report Owner',
-                'avg_delay_seconds' => 360,
-                'sample_count' => 1,
+            'datosDisponiblesDesde' => '2025-03-01 10:00:00',
+            'datosParciales' => true,
+            'global' => ['demoraPromedioSegundos' => 360, 'cantidadDeMuestras' => 1, 'cantidadDeEntrantesSinResponder' => 1],
+            'porAgente' => [[
+                'agenteId' => $this->owner->getId(),
+                'agenteNombre' => 'Report Owner',
+                'demoraPromedioSegundos' => 360,
+                'cantidadDeMuestras' => 1,
             ]],
-        ], $this->request('GET', '/api/reports/response-delay?' . self::WINDOW, $token));
+        ], $this->request('GET', '/api/reportes/demora-de-respuesta?' . self::WINDOW, $token));
     }
 
     public function testTicketParticipation(): void
@@ -421,23 +421,23 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
         $ownerId = $this->owner->getId();
 
         $this->assertJsonResponse(200, [
-            'ticket_id' => $ticketId,
-            'data_available_from' => '2025-03-01 10:00:00',
-            'partial_data' => false,
-            'participants' => [[
-                'agent_id' => $ownerId,
-                'agent_name' => 'Report Owner',
-                'message_count' => 1,
-                'sample_count' => 1,
-                'avg_delay_seconds' => 360,
+            'ticketId' => $ticketId,
+            'datosDisponiblesDesde' => '2025-03-01 10:00:00',
+            'datosParciales' => false,
+            'participantes' => [[
+                'agenteId' => $ownerId,
+                'agenteNombre' => 'Report Owner',
+                'cantidadDeMensajes' => 1,
+                'cantidadDeMuestras' => 1,
+                'demoraPromedioSegundos' => 360,
             ]],
-            'automatic_message_count' => 0,
-            'unanswered_inbound_count' => 1,
-            'pairs' => [
-                ['run_start_at' => '2025-03-01 10:00:00', 'reply_at' => '2025-03-01 10:06:00', 'agent_id' => $ownerId, 'delay_seconds' => 360],
-                ['run_start_at' => '2025-03-01 10:10:00', 'reply_at' => null, 'agent_id' => null, 'delay_seconds' => null],
+            'cantidadDeMensajesAutomaticos' => 0,
+            'cantidadDeEntrantesSinResponder' => 1,
+            'pares' => [
+                ['inicioDeRachaAt' => '2025-03-01 10:00:00', 'respuestaAt' => '2025-03-01 10:06:00', 'agenteId' => $ownerId, 'demoraSegundos' => 360],
+                ['inicioDeRachaAt' => '2025-03-01 10:10:00', 'respuestaAt' => null, 'agenteId' => null, 'demoraSegundos' => null],
             ],
-        ], $this->request('GET', '/api/reports/tickets/' . $ticketId . '/participation', $token));
+        ], $this->request('GET', '/api/reportes/tickets/' . $ticketId . '/participacion', $token));
     }
 
     // ── shared parameter errors ──
@@ -447,23 +447,23 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
     {
         $token = $this->supervisorToken();
 
-        $this->assertJsonResponse(400, ['error' => 'Missing required parameter: from or to'], $this->request('GET', $route . '?from=2025-03-01T00:00:00Z', $token));
-        $this->assertJsonResponse(400, ['error' => 'Invalid datetime format: 2025-03-01. Expected: Y-m-d\TH:i:sZ'], $this->request('GET', $route . '?from=2025-03-01&to=2025-03-02T00:00:00Z', $token));
-        $this->assertJsonResponse(400, ['error' => '"from" must be before "to"'], $this->request('GET', $route . '?from=2025-03-02T00:00:00Z&to=2025-03-01T00:00:00Z', $token));
+        $this->assertJsonResponse(400, ['error' => 'Missing required parameter: desde or hasta'], $this->request('GET', $route . '?desde=2025-03-01T00:00:00Z', $token));
+        $this->assertJsonResponse(400, ['error' => 'Invalid datetime format: 2025-03-01. Expected: Y-m-d\TH:i:sZ'], $this->request('GET', $route . '?desde=2025-03-01&hasta=2025-03-02T00:00:00Z', $token));
+        $this->assertJsonResponse(400, ['error' => '"desde" must be before "hasta"'], $this->request('GET', $route . '?desde=2025-03-02T00:00:00Z&hasta=2025-03-01T00:00:00Z', $token));
     }
 
     public static function reportRoutes(): array
     {
         return [
-            'rt' => ['/api/reports/rt'],
-            'counts' => ['/api/reports/counts'],
-            'volume' => ['/api/reports/volume'],
-            'agents' => ['/api/reports/agents'],
-            'frt' => ['/api/reports/frt'],
-            'frt-trend' => ['/api/reports/frt-trend'],
-            'heatmap' => ['/api/reports/heatmap'],
-            'reopened' => ['/api/reports/reopened'],
-            'response-delay' => ['/api/reports/response-delay'],
+            'rt' => ['/api/reportes/rt'],
+            'counts' => ['/api/reportes/conteos'],
+            'volume' => ['/api/reportes/volumen'],
+            'agents' => ['/api/reportes/rendimiento-de-agentes'],
+            'frt' => ['/api/reportes/frt'],
+            'frt-trend' => ['/api/reportes/tendencia-de-frt'],
+            'heatmap' => ['/api/reportes/mapa-de-calor'],
+            'reopened' => ['/api/reportes/reabiertos'],
+            'response-delay' => ['/api/reportes/demora-de-respuesta'],
         ];
     }
 
@@ -474,7 +474,7 @@ final class ReportingControllerCharacterizationTest extends CharacterizationTest
         $service->method('getConteos')->willThrowException(new \RuntimeException('report exploded'));
         static::getContainer()->set(ReporteService::class, $service);
 
-        $response = $this->request('GET', '/api/reports/counts?' . self::WINDOW, $token);
+        $response = $this->request('GET', '/api/reportes/conteos?' . self::WINDOW, $token);
 
         $this->assertInternalServerErrorEnvelope($response);
         self::assertStringNotContainsString('report exploded', (string) $response->getContent());

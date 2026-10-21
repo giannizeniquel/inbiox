@@ -124,7 +124,7 @@ class AuthorizationTest extends WebTestCase
 
     public function testUnauthenticatedRequestToReportsReturns401(): void
     {
-        $this->client->request('GET', '/api/reports/frt?from=2026-01-01T00:00:00Z&to=2026-01-02T00:00:00Z');
+        $this->client->request('GET', '/api/reportes/frt?desde=2026-01-01T00:00:00Z&hasta=2026-01-02T00:00:00Z');
         self::assertSame(401, $this->client->getResponse()->getStatusCode());
     }
 

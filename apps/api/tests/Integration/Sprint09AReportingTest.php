@@ -88,9 +88,9 @@ class Sprint09AReportingTest extends KernelTestCase
         $result = $this->reportingRepo->getMetricasDeFrt($from, $to);
 
         // Assert - average should be 45 minutes (2700 seconds)
-        $this->assertEquals(2700, (int)$result['avg_frt_seconds']);
-        $this->assertEquals(1800, $result['min_frt_seconds']);
-        $this->assertEquals(3600, $result['max_frt_seconds']);
+        $this->assertEquals(2700, (int)$result['frtPromedioSegundos']);
+        $this->assertEquals(1800, $result['frtMinimoSegundos']);
+        $this->assertEquals(3600, $result['frtMaximoSegundos']);
     }
 
     /**
@@ -120,7 +120,7 @@ class Sprint09AReportingTest extends KernelTestCase
         $result = $this->reportingRepo->getMetricasDeFrt($from, $to);
 
         // Assert - only 1 ticket counted, avg is 30 min
-        $this->assertEquals(1800, (int)$result['avg_frt_seconds']);
+        $this->assertEquals(1800, (int)$result['frtPromedioSegundos']);
     }
 
     // ============================================
@@ -154,9 +154,9 @@ class Sprint09AReportingTest extends KernelTestCase
         $result = $this->reportingRepo->getMetricasDeRt($from, $to);
 
         // Assert - average should be 3 hours (10800 seconds)
-        $this->assertEquals(10800, (int)$result['avg_rt_seconds']);
-        $this->assertEquals(7200, $result['min_rt_seconds']);
-        $this->assertEquals(14400, $result['max_rt_seconds']);
+        $this->assertEquals(10800, (int)$result['rtPromedioSegundos']);
+        $this->assertEquals(7200, $result['rtMinimoSegundos']);
+        $this->assertEquals(14400, $result['rtMaximoSegundos']);
     }
 
     /**
@@ -186,7 +186,7 @@ class Sprint09AReportingTest extends KernelTestCase
         $result = $this->reportingRepo->getMetricasDeRt($from, $to);
 
         // Assert - only 1 ticket counted
-        $this->assertEquals(7200, (int)$result['avg_rt_seconds']);
+        $this->assertEquals(7200, (int)$result['rtPromedioSegundos']);
     }
 
     // ============================================
@@ -220,7 +220,7 @@ class Sprint09AReportingTest extends KernelTestCase
         $result = $this->reportingRepo->getMetricasDeFrt($from, $to);
 
         // Assert - only 1 ticket counted
-        $this->assertNotNull($result['avg_frt_seconds']);
+        $this->assertNotNull($result['frtPromedioSegundos']);
     }
 
     /**
@@ -236,7 +236,7 @@ class Sprint09AReportingTest extends KernelTestCase
         $result = $this->reportingRepo->getMetricasDeFrt($from, $to);
 
         // Assert
-        $this->assertNull($result['avg_frt_seconds']);
+        $this->assertNull($result['frtPromedioSegundos']);
     }
 
     // ============================================
@@ -273,7 +273,7 @@ class Sprint09AReportingTest extends KernelTestCase
         $result = $this->reportingRepo->getMetricasDeFrt($from, $to, $agentId);
 
         // Assert - only 1 ticket counted
-        $this->assertEquals(1800, (int)$result['avg_frt_seconds']);
+        $this->assertEquals(1800, (int)$result['frtPromedioSegundos']);
     }
 
     // ============================================
@@ -348,11 +348,11 @@ class Sprint09AReportingTest extends KernelTestCase
         $this->assertIsArray($result);
 
         // Find Jan 15
-        $jan15 = array_filter($result, fn($r) => $r['date'] === '2026-01-15');
+        $jan15 = array_filter($result, fn($r) => $r['fecha'] === '2026-01-15');
         $this->assertNotEmpty($jan15);
 
         // Find Jan 16
-        $jan16 = array_filter($result, fn($r) => $r['date'] === '2026-01-16');
+        $jan16 = array_filter($result, fn($r) => $r['fecha'] === '2026-01-16');
         $this->assertNotEmpty($jan16);
     }
 
@@ -401,11 +401,11 @@ class Sprint09AReportingTest extends KernelTestCase
         $this->assertCount(2, $result); // 2 agents
 
         // Find agent 1
-        $agent1 = array_filter($result, fn($r) => $r['agent_id'] === $agent1Id);
+        $agent1 = array_filter($result, fn($r) => $r['agenteId'] === $agent1Id);
         $agent1 = array_values($agent1)[0] ?? null;
         $this->assertNotNull($agent1);
-        $this->assertEquals(2, $agent1['tickets_assigned']);
-        $this->assertEquals(1, $agent1['tickets_resolved']);
+        $this->assertEquals(2, $agent1['ticketsAsignados']);
+        $this->assertEquals(1, $agent1['ticketsResueltos']);
     }
 
     /**
@@ -439,7 +439,7 @@ class Sprint09AReportingTest extends KernelTestCase
 
         // Assert - only agent 42
         $this->assertCount(1, $result);
-        $this->assertEquals($agent42Id, $result[0]['agent_id']);
+        $this->assertEquals($agent42Id, $result[0]['agenteId']);
     }
 
     /**
@@ -479,14 +479,14 @@ class Sprint09AReportingTest extends KernelTestCase
         $this->assertCount(2, $result, 'Both agents appear (LEFT JOIN keeps all active agents)');
 
         // Agent from WS-A — has stats
-        $agent1Row = array_values(array_filter($result, fn($r) => $r['agent_id'] === $agent1Id))[0];
-        $this->assertEquals(2, $agent1Row['tickets_assigned'], 'Agent WS-A should have 2 tickets');
-        $this->assertEquals(1, $agent1Row['tickets_resolved']);
+        $agent1Row = array_values(array_filter($result, fn($r) => $r['agenteId'] === $agent1Id))[0];
+        $this->assertEquals(2, $agent1Row['ticketsAsignados'], 'Agent WS-A should have 2 tickets');
+        $this->assertEquals(1, $agent1Row['ticketsResueltos']);
 
         // Agent from WS-B — appears but with zeroed stats (filtered by JOIN ON clause)
-        $agent2Row = array_values(array_filter($result, fn($r) => $r['agent_id'] === $agent2Id))[0];
-        $this->assertEquals(0, $agent2Row['tickets_assigned'], 'Agent WS-B should have 0 tickets (workspace filter)');
-        $this->assertEquals(0, $agent2Row['tickets_resolved']);
+        $agent2Row = array_values(array_filter($result, fn($r) => $r['agenteId'] === $agent2Id))[0];
+        $this->assertEquals(0, $agent2Row['ticketsAsignados'], 'Agent WS-B should have 0 tickets (workspace filter)');
+        $this->assertEquals(0, $agent2Row['ticketsResueltos']);
     }
 
     /**
@@ -516,7 +516,7 @@ class Sprint09AReportingTest extends KernelTestCase
         $result = $this->reportingRepo->getRendimientoDeAgentes($from, $to);
 
         // Assert — both agents appear
-        $agentIds = array_column($result, 'agent_id');
+        $agentIds = array_column($result, 'agenteId');
         $this->assertContains($agent1Id, $agentIds);
         $this->assertContains($agent2Id, $agentIds);
     }
@@ -544,7 +544,7 @@ class Sprint09AReportingTest extends KernelTestCase
         $result = $this->reportingRepo->getMetricasDeFrt($from, $to);
 
         // Assert - 30 minutes = 1800 seconds
-        $this->assertEquals(1800, (int)$result['avg_frt_seconds']);
+        $this->assertEquals(1800, (int)$result['frtPromedioSegundos']);
     }
 
     // ============================================
@@ -570,7 +570,7 @@ class Sprint09AReportingTest extends KernelTestCase
         $result = $this->reportingRepo->getMetricasDeFrt($from, $to);
 
         // Assert - 5 days = 432000 seconds
-        $this->assertEquals(432000, (int)$result['avg_frt_seconds']);
+        $this->assertEquals(432000, (int)$result['frtPromedioSegundos']);
     }
 
     /**
@@ -592,7 +592,7 @@ class Sprint09AReportingTest extends KernelTestCase
         $result = $this->reportingRepo->getMetricasDeFrt($from, $to);
 
         // Assert - 0 seconds
-        $this->assertEquals(0, (int)$result['avg_frt_seconds']);
+        $this->assertEquals(0, (int)$result['frtPromedioSegundos']);
     }
 
     /**
@@ -614,7 +614,7 @@ class Sprint09AReportingTest extends KernelTestCase
         $result = $this->reportingService->getFrt($from, $to);
 
         // Assert - service should return same format
-        $this->assertArrayHasKey('avg_frt_seconds', $result);
+        $this->assertArrayHasKey('frtPromedioSegundos', $result);
     }
 
     /**

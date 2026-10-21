@@ -18,8 +18,8 @@ use Symfony\Component\HttpFoundation\Response;
  */
 final class ReportingVerifierProbeTest extends CharacterizationTestCase
 {
-    private const WINDOW = 'from=2025-03-01T00:00:00Z&to=2025-03-03T00:00:00Z';
-    private const ID_KEYS = ['id', 'agent_id', 'ticket_id', 'contact_id'];
+    private const WINDOW = 'desde=2025-03-01T00:00:00Z&hasta=2025-03-03T00:00:00Z';
+    private const ID_KEYS = ['id', 'agenteId', 'ticketId', 'contactoId'];
 
     /** @var array<int, string> */
     private array $tokens = [];
@@ -108,18 +108,18 @@ final class ReportingVerifierProbeTest extends CharacterizationTestCase
     private function agentRow(string $agent, string $name, int $assigned, int $resolved, int $active, float|int $load, mixed $frt, mixed $rt): array
     {
         return [
-            'agent_id' => $agent,
-            'agent_name' => $name,
-            'tickets_assigned' => $assigned,
-            'tickets_resolved' => $resolved,
-            'current_active_tickets' => $active,
-            'max_active_tickets' => 10,
-            'current_load' => $load,
-            'is_in_shift' => false,
-            'avg_frt_seconds' => $frt,
-            'avg_frt_minutes' => $this->minutes($frt),
-            'avg_rt_seconds' => $rt,
-            'avg_rt_minutes' => $this->minutes($rt),
+            'agenteId' => $agent,
+            'agenteNombre' => $name,
+            'ticketsAsignados' => $assigned,
+            'ticketsResueltos' => $resolved,
+            'ticketsActivosActuales' => $active,
+            'maximoDeTicketsActivos' => 10,
+            'cargaActual' => $load,
+            'enTurno' => false,
+            'frtPromedioSegundos' => $frt,
+            'frtPromedioMinutos' => $this->minutes($frt),
+            'rtPromedioSegundos' => $rt,
+            'rtPromedioMinutos' => $this->minutes($rt),
         ];
     }
 
@@ -143,39 +143,39 @@ final class ReportingVerifierProbeTest extends CharacterizationTestCase
         $alphaId = \array_search('alpha', $this->tokens, true);
 
         // agent + team
-        $this->assertBody(200, $this->expectedFrt(), $this->request('GET', '/api/reports/frt?' . self::WINDOW . '&agent_id=' . $alphaId . '&teamId=' . $this->team7, $token));
+        $this->assertBody(200, $this->expectedFrt(), $this->request('GET', '/api/reportes/frt?' . self::WINDOW . '&agenteId=' . $alphaId . '&equipoId=' . $this->team7, $token));
         // team only
         $this->assertBody(200, [
-            'avg_rt_seconds' => 3600, 'min_rt_seconds' => 3000, 'max_rt_seconds' => 4200,
-            'avg_rt_minutes' => 60, 'min_rt_minutes' => 50, 'max_rt_minutes' => 70,
-        ], $this->request('GET', '/api/reports/rt?' . self::WINDOW . '&teamId=' . $this->team7, $token));
-        $this->assertBody(200, ['nuevo' => 1, 'activo' => 0, 'en_espera' => 1, 'resuelto' => 2, 'cerrado' => 0], $this->request('GET', '/api/reports/counts?' . self::WINDOW . '&teamId=' . $this->team7, $token));
+            'rtPromedioSegundos' => 3600, 'rtMinimoSegundos' => 3000, 'rtMaximoSegundos' => 4200,
+            'rtPromedioMinutos' => 60, 'rtMinimoMinutos' => 50, 'rtMaximoMinutos' => 70,
+        ], $this->request('GET', '/api/reportes/rt?' . self::WINDOW . '&equipoId=' . $this->team7, $token));
+        $this->assertBody(200, ['nuevo' => 1, 'activo' => 0, 'en_espera' => 1, 'resuelto' => 2, 'cerrado' => 0], $this->request('GET', '/api/reportes/conteos?' . self::WINDOW . '&equipoId=' . $this->team7, $token));
         $this->assertBody(200, [
-            ['date' => '2025-03-01', 'tickets_created' => 1, 'tickets_resolved' => 1],
-            ['date' => '2025-03-02', 'tickets_created' => 3, 'tickets_resolved' => 1],
-        ], $this->request('GET', '/api/reports/volume?' . self::WINDOW . '&teamId=' . $this->team7, $token));
+            ['fecha' => '2025-03-01', 'ticketsCreados' => 1, 'ticketsResueltos' => 1],
+            ['fecha' => '2025-03-02', 'ticketsCreados' => 3, 'ticketsResueltos' => 1],
+        ], $this->request('GET', '/api/reportes/volumen?' . self::WINDOW . '&equipoId=' . $this->team7, $token));
         $this->assertBody(200, [
             $this->agentRow('alpha', 'Alpha', 2, 1, 1, 0.1, 1500, 3000),
             $this->agentRow('beta', 'Beta', 1, 1, 0, 0, 1800, 4200),
             $this->agentRow('viewer', 'Viewer', 0, 0, 0, 0, null, null),
-        ], $this->request('GET', '/api/reports/agents?' . self::WINDOW . '&teamId=' . $this->team7, $token));
+        ], $this->request('GET', '/api/reportes/rendimiento-de-agentes?' . self::WINDOW . '&equipoId=' . $this->team7, $token));
         $this->assertBody(200, [
             $this->agentRow('alpha', 'Alpha', 3, 1, 2, 0.2, 1400, 3000),
-        ], $this->request('GET', '/api/reports/agents?' . self::WINDOW . '&agent_id=' . $alphaId, $token));
+        ], $this->request('GET', '/api/reportes/rendimiento-de-agentes?' . self::WINDOW . '&agenteId=' . $alphaId, $token));
         // No filter at all.
         $this->assertBody(200, [
             $this->agentRow('alpha', 'Alpha', 3, 1, 2, 0.2, 1400, 3000),
             $this->agentRow('beta', 'Beta', 2, 1, 1, 0.1, 1800, 4200),
             $this->agentRow('viewer', 'Viewer', 0, 0, 0, 0, null, null),
-        ], $this->request('GET', '/api/reports/agents?' . self::WINDOW, $token));
+        ], $this->request('GET', '/api/reportes/rendimiento-de-agentes?' . self::WINDOW, $token));
     }
 
     private function expectedFrt(): array
     {
         // alpha + team 7 in the window: t1 (600 s) and t4 (2400 s).
         return [
-            'avg_frt_seconds' => 1500, 'min_frt_seconds' => 600, 'max_frt_seconds' => 2400,
-            'avg_frt_minutes' => 25, 'min_frt_minutes' => 10, 'max_frt_minutes' => 40,
+            'frtPromedioSegundos' => 1500, 'frtMinimoSegundos' => 600, 'frtMaximoSegundos' => 2400,
+            'frtPromedioMinutos' => 25, 'frtMinimoMinutos' => 10, 'frtMaximoMinutos' => 40,
         ];
     }
 
@@ -185,54 +185,54 @@ final class ReportingVerifierProbeTest extends CharacterizationTestCase
         $alphaId = \array_search('alpha', $this->tokens, true);
 
         $this->assertBody(200, [
-            'avg_frt_seconds' => 1200, 'min_frt_seconds' => 600, 'max_frt_seconds' => 1800,
-            'avg_frt_minutes' => 20, 'min_frt_minutes' => 10, 'max_frt_minutes' => 30,
-        ], $this->request('GET', '/api/reports/frt?' . self::WINDOW, $token));
+            'frtPromedioSegundos' => 1200, 'frtMinimoSegundos' => 600, 'frtMaximoSegundos' => 1800,
+            'frtPromedioMinutos' => 20, 'frtMinimoMinutos' => 10, 'frtMaximoMinutos' => 30,
+        ], $this->request('GET', '/api/reportes/frt?' . self::WINDOW, $token));
         // workspace + agent + team on frt
         $this->assertBody(200, [
-            'avg_frt_seconds' => 600, 'min_frt_seconds' => 600, 'max_frt_seconds' => 600,
-            'avg_frt_minutes' => 10, 'min_frt_minutes' => 10, 'max_frt_minutes' => 10,
-        ], $this->request('GET', '/api/reports/frt?' . self::WINDOW . '&agent_id=' . $alphaId . '&teamId=' . $this->team7, $token));
+            'frtPromedioSegundos' => 600, 'frtMinimoSegundos' => 600, 'frtMaximoSegundos' => 600,
+            'frtPromedioMinutos' => 10, 'frtMinimoMinutos' => 10, 'frtMaximoMinutos' => 10,
+        ], $this->request('GET', '/api/reportes/frt?' . self::WINDOW . '&agenteId=' . $alphaId . '&equipoId=' . $this->team7, $token));
         $this->assertBody(200, [
-            'avg_rt_seconds' => 3600, 'min_rt_seconds' => 3000, 'max_rt_seconds' => 4200,
-            'avg_rt_minutes' => 60, 'min_rt_minutes' => 50, 'max_rt_minutes' => 70,
-        ], $this->request('GET', '/api/reports/rt?' . self::WINDOW, $token));
-        $this->assertBody(200, ['nuevo' => 1, 'activo' => 1, 'en_espera' => 0, 'resuelto' => 2, 'cerrado' => 0], $this->request('GET', '/api/reports/counts?' . self::WINDOW, $token));
+            'rtPromedioSegundos' => 3600, 'rtMinimoSegundos' => 3000, 'rtMaximoSegundos' => 4200,
+            'rtPromedioMinutos' => 60, 'rtMinimoMinutos' => 50, 'rtMaximoMinutos' => 70,
+        ], $this->request('GET', '/api/reportes/rt?' . self::WINDOW, $token));
+        $this->assertBody(200, ['nuevo' => 1, 'activo' => 1, 'en_espera' => 0, 'resuelto' => 2, 'cerrado' => 0], $this->request('GET', '/api/reportes/conteos?' . self::WINDOW, $token));
         $this->assertBody(200, [
-            ['date' => '2025-03-01', 'tickets_created' => 2, 'tickets_resolved' => 1],
-            ['date' => '2025-03-02', 'tickets_created' => 2, 'tickets_resolved' => 1],
-        ], $this->request('GET', '/api/reports/volume?' . self::WINDOW, $token));
+            ['fecha' => '2025-03-01', 'ticketsCreados' => 2, 'ticketsResueltos' => 1],
+            ['fecha' => '2025-03-02', 'ticketsCreados' => 2, 'ticketsResueltos' => 1],
+        ], $this->request('GET', '/api/reportes/volumen?' . self::WINDOW, $token));
         $this->assertBody(200, [
             $this->agentRow('alpha', 'Alpha', 2, 1, 1, 0.1, 900, 3000),
             $this->agentRow('beta', 'Beta', 1, 1, 0, 0, 1800, 4200),
             $this->agentRow('viewer', 'Viewer', 0, 0, 0, 0, null, null),
-        ], $this->request('GET', '/api/reports/agents?' . self::WINDOW, $token));
+        ], $this->request('GET', '/api/reportes/rendimiento-de-agentes?' . self::WINDOW, $token));
         $this->assertBody(200, [
             $this->agentRow('alpha', 'Alpha', 1, 1, 0, 0, 600, 3000),
-        ], $this->request('GET', '/api/reports/agents?' . self::WINDOW . '&agent_id=' . $alphaId . '&teamId=' . $this->team7, $token));
+        ], $this->request('GET', '/api/reportes/rendimiento-de-agentes?' . self::WINDOW . '&agenteId=' . $alphaId . '&equipoId=' . $this->team7, $token));
         $this->assertBody(200, [
-            ['agent_id' => 'alpha', 'agent_name' => 'Alpha', 'active_tickets' => 1, 'max_capacity' => 10, 'load_percent' => 10],
-            ['agent_id' => 'beta', 'agent_name' => 'Beta', 'active_tickets' => 0, 'max_capacity' => 10, 'load_percent' => 0],
-            ['agent_id' => 'viewer', 'agent_name' => 'Viewer', 'active_tickets' => 0, 'max_capacity' => 10, 'load_percent' => 0],
-        ], $this->request('GET', '/api/reports/agent-load', $token));
+            ['agenteId' => 'alpha', 'agenteNombre' => 'Alpha', 'ticketsActivos' => 1, 'capacidadMaxima' => 10, 'porcentajeDeCarga' => 10],
+            ['agenteId' => 'beta', 'agenteNombre' => 'Beta', 'ticketsActivos' => 0, 'capacidadMaxima' => 10, 'porcentajeDeCarga' => 0],
+            ['agenteId' => 'viewer', 'agenteNombre' => 'Viewer', 'ticketsActivos' => 0, 'capacidadMaxima' => 10, 'porcentajeDeCarga' => 0],
+        ], $this->request('GET', '/api/reportes/carga-de-agentes', $token));
         $this->assertBody(200, [
-            ['agent_id' => 'alpha', 'agent_name' => 'Alpha', 'active_tickets' => 1, 'max_capacity' => 10, 'load_percent' => 10],
-        ], $this->request('GET', '/api/reports/agent-load?agent_id=' . $alphaId, $token));
-        $unassignedRow = ['id' => 't6', 'contact_name' => 'C-t6', 'created_at' => '2025-03-02 13:00:00', 'priority' => 'media'];
-        $this->assertBody(200, ['count' => 0, 'tickets' => [$unassignedRow]], $this->request('GET', '/api/reports/unassigned', $token));
-        $this->assertBody(200, ['count' => 0, 'tickets' => [$unassignedRow]], $this->request('GET', '/api/reports/unassigned?' . self::WINDOW, $token));
-        $this->assertBody(200, ['count' => 0, 'tickets' => []], $this->request('GET', '/api/reports/unassigned?from=2025-03-02T14:00:00Z', $token));
+            ['agenteId' => 'alpha', 'agenteNombre' => 'Alpha', 'ticketsActivos' => 1, 'capacidadMaxima' => 10, 'porcentajeDeCarga' => 10],
+        ], $this->request('GET', '/api/reportes/carga-de-agentes?agenteId=' . $alphaId, $token));
+        $unassignedRow = ['id' => 't6', 'contactoNombre' => 'C-t6', 'creadoAt' => '2025-03-02 13:00:00', 'prioridad' => 'media'];
+        $this->assertBody(200, ['cantidad' => 0, 'tickets' => [$unassignedRow]], $this->request('GET', '/api/reportes/sin-asignar', $token));
+        $this->assertBody(200, ['cantidad' => 0, 'tickets' => [$unassignedRow]], $this->request('GET', '/api/reportes/sin-asignar?' . self::WINDOW, $token));
+        $this->assertBody(200, ['cantidad' => 0, 'tickets' => []], $this->request('GET', '/api/reportes/sin-asignar?desde=2025-03-02T14:00:00Z', $token));
         $this->assertBody(200, [
-            ['date' => '2025-03-01', 'avg_frt_seconds' => 900, 'ticket_count' => 2],
-            ['date' => '2025-03-02', 'avg_frt_seconds' => 1800, 'ticket_count' => 1],
-        ], $this->request('GET', '/api/reports/frt-trend?' . self::WINDOW, $token));
+            ['fecha' => '2025-03-01', 'frtPromedioSegundos' => 900, 'cantidadDeTickets' => 2],
+            ['fecha' => '2025-03-02', 'frtPromedioSegundos' => 1800, 'cantidadDeTickets' => 1],
+        ], $this->request('GET', '/api/reportes/tendencia-de-frt?' . self::WINDOW, $token));
         // 2025-03-01 is a Saturday (ISO 6), 2025-03-02 a Sunday (ISO 7).
         $this->assertBody(200, [
-            ['day_of_week' => 6, 'hour' => 10, 'count' => 1],
-            ['day_of_week' => 6, 'hour' => 12, 'count' => 1],
-            ['day_of_week' => 7, 'hour' => 9, 'count' => 1],
-            ['day_of_week' => 7, 'hour' => 13, 'count' => 1],
-        ], $this->request('GET', '/api/reports/heatmap?' . self::WINDOW, $token));
+            ['diaDeLaSemana' => 6, 'hora' => 10, 'cantidad' => 1],
+            ['diaDeLaSemana' => 6, 'hora' => 12, 'cantidad' => 1],
+            ['diaDeLaSemana' => 7, 'hora' => 9, 'cantidad' => 1],
+            ['diaDeLaSemana' => 7, 'hora' => 13, 'cantidad' => 1],
+        ], $this->request('GET', '/api/reportes/mapa-de-calor?' . self::WINDOW, $token));
     }
 
     public function testRecurringCustomersReopenedAndResponseDelayAreScoped(): void
@@ -278,30 +278,30 @@ final class ReportingVerifierProbeTest extends CharacterizationTestCase
         $agentToken = $this->loginAs('probe-agent2@characterization.local', ['ROLE_AGENTE'], $viewer);
         $supToken = $this->loginAs('probe-sup2@characterization.local', ['ROLE_SUPERVISOR']);
 
-        $this->assertBody(200, [], $this->request('GET', '/api/reports/recurring-customers', $agentToken));
+        $this->assertBody(200, [], $this->request('GET', '/api/reportes/contactos-recurrentes', $agentToken));
         $this->assertBody(200, [[
-            'contact_id' => 'repeat', 'contact_name' => 'Repeat', 'email' => null, 'ticket_count' => 1, 'last_ticket_at' => $recent,
-        ]], $this->request('GET', '/api/reports/recurring-customers?threshold=1', $agentToken));
+            'contactoId' => 'repeat', 'contactoNombre' => 'Repeat', 'email' => null, 'cantidadDeTickets' => 1, 'ultimoTicketAt' => $recent,
+        ]], $this->request('GET', '/api/reportes/contactos-recurrentes?umbral=1', $agentToken));
         $this->assertBody(200, [[
-            'contact_id' => 'repeat', 'contact_name' => 'Repeat', 'email' => null, 'ticket_count' => 2, 'last_ticket_at' => $recent,
-        ]], $this->request('GET', '/api/reports/recurring-customers?threshold=2', $supToken));
-        $this->assertBody(200, [], $this->request('GET', '/api/reports/recurring-customers', $supToken));
+            'contactoId' => 'repeat', 'contactoNombre' => 'Repeat', 'email' => null, 'cantidadDeTickets' => 2, 'ultimoTicketAt' => $recent,
+        ]], $this->request('GET', '/api/reportes/contactos-recurrentes?umbral=2', $supToken));
+        $this->assertBody(200, [], $this->request('GET', '/api/reportes/contactos-recurrentes', $supToken));
 
         $reopened = static fn (string $t): array => [
-            'ticket_id' => $t, 'contact_name' => 'Repeat', 'resolved_at' => '2025-03-01 12:00:00', 'reopened_at' => '2025-03-02 11:00:00', 'current_status' => 'resuelto',
+            'ticketId' => $t, 'contactoNombre' => 'Repeat', 'resueltoAt' => '2025-03-01 12:00:00', 'reabiertoAt' => '2025-03-02 11:00:00', 'estadoActual' => 'resuelto',
         ];
-        $this->assertBody(200, [$reopened('r0')], $this->request('GET', '/api/reports/reopened?' . self::WINDOW, $agentToken));
-        $supReopened = $this->tokenize($this->json($this->request('GET', '/api/reports/reopened?' . self::WINDOW, $supToken)));
+        $this->assertBody(200, [$reopened('r0')], $this->request('GET', '/api/reportes/reabiertos?' . self::WINDOW, $agentToken));
+        $supReopened = $this->tokenize($this->json($this->request('GET', '/api/reportes/reabiertos?' . self::WINDOW, $supToken)));
         self::assertCount(2, $supReopened);
 
         $delay = static fn (int $samples): array => [
-            'data_available_from' => '2025-03-01 10:00:00',
-            'partial_data' => true,
-            'aggregate' => ['avg_delay_seconds' => 120, 'sample_count' => $samples, 'unanswered_inbound_count' => 0],
-            'per_agent' => [['agent_id' => 'owner', 'agent_name' => 'Owner', 'avg_delay_seconds' => 120, 'sample_count' => $samples]],
+            'datosDisponiblesDesde' => '2025-03-01 10:00:00',
+            'datosParciales' => true,
+            'global' => ['demoraPromedioSegundos' => 120, 'cantidadDeMuestras' => $samples, 'cantidadDeEntrantesSinResponder' => 0],
+            'porAgente' => [['agenteId' => 'owner', 'agenteNombre' => 'Owner', 'demoraPromedioSegundos' => 120, 'cantidadDeMuestras' => $samples]],
         ];
-        $this->assertBody(200, $delay(1), $this->request('GET', '/api/reports/response-delay?' . self::WINDOW, $agentToken));
-        $this->assertBody(200, $delay(2), $this->request('GET', '/api/reports/response-delay?' . self::WINDOW, $supToken));
+        $this->assertBody(200, $delay(1), $this->request('GET', '/api/reportes/demora-de-respuesta?' . self::WINDOW, $agentToken));
+        $this->assertBody(200, $delay(2), $this->request('GET', '/api/reportes/demora-de-respuesta?' . self::WINDOW, $supToken));
     }
 
     public function testUnassignedIsCappedAtFiftyNewestFirst(): void
@@ -312,11 +312,11 @@ final class ReportingVerifierProbeTest extends CharacterizationTestCase
             $this->token($ticket->getId(), 'u' . $i);
             $createdAt = (new \DateTimeImmutable('2025-03-01 00:00:00'))->modify("+{$i} minutes")->format('Y-m-d H:i:s');
             $this->connection()->executeStatement('UPDATE tickets SET created_at = ? WHERE id = ?', [$createdAt, $ticket->getId()]);
-            $expected[] = ['id' => 'u' . $i, 'contact_name' => null, 'created_at' => $createdAt, 'priority' => 'media'];
+            $expected[] = ['id' => 'u' . $i, 'contactoNombre' => null, 'creadoAt' => $createdAt, 'prioridad' => 'media'];
         }
         $token = $this->loginAs('probe-cap@characterization.local', ['ROLE_SUPERVISOR']);
 
-        $this->assertBody(200, ['count' => 0, 'tickets' => \array_slice(\array_reverse($expected), 0, 50)], $this->request('GET', '/api/reports/unassigned', $token));
+        $this->assertBody(200, ['cantidad' => 0, 'tickets' => \array_slice(\array_reverse($expected), 0, 50)], $this->request('GET', '/api/reportes/sin-asignar', $token));
     }
 
     public function testReopenedIsCappedAtOneHundredNewestFirst(): void
@@ -331,18 +331,18 @@ final class ReportingVerifierProbeTest extends CharacterizationTestCase
                 "INSERT INTO ticket_events (ticket_id, type, source, created_at) VALUES (?, 'reapertura_automatica', 'system', ?)",
                 [$ticket->getId(), $at],
             );
-            $expected[] = ['ticket_id' => 'r', 'contact_name' => null, 'resolved_at' => '2025-02-01 12:00:00', 'reopened_at' => $at, 'current_status' => 'resuelto'];
+            $expected[] = ['ticketId' => 'r', 'contactoNombre' => null, 'resueltoAt' => '2025-02-01 12:00:00', 'reabiertoAt' => $at, 'estadoActual' => 'resuelto'];
         }
         $token = $this->loginAs('probe-reopen@characterization.local', ['ROLE_SUPERVISOR']);
 
-        $this->assertBody(200, \array_slice(\array_reverse($expected), 0, 100), $this->request('GET', '/api/reports/reopened?' . self::WINDOW, $token));
+        $this->assertBody(200, \array_slice(\array_reverse($expected), 0, 100), $this->request('GET', '/api/reportes/reabiertos?' . self::WINDOW, $token));
     }
 
     public function testParticipationNotFound(): void
     {
         $token = $this->loginAs('probe-part@characterization.local', ['ROLE_SUPERVISOR']);
 
-        $this->assertBody(404, ['error' => 'Ticket not found'], $this->request('GET', '/api/reports/tickets/999999999/participation', $token));
+        $this->assertBody(404, ['error' => 'Ticket not found'], $this->request('GET', '/api/reportes/tickets/999999999/participacion', $token));
     }
 
     public function testParticipationWithAnUnpromptedReplyAndANextTicket(): void
@@ -373,23 +373,23 @@ final class ReportingVerifierProbeTest extends CharacterizationTestCase
         }
         $token = $this->loginAs('probe-part2@characterization.local', ['ROLE_SUPERVISOR']);
 
-        $response = $this->request('GET', '/api/reports/tickets/' . $first->getId() . '/participation', $token);
+        $response = $this->request('GET', '/api/reportes/tickets/' . $first->getId() . '/participacion', $token);
         $this->assertBody(200, self::$participationExpected, $response);
     }
 
     /** @var array<string, mixed> */
     private static array $participationExpected = [
-        'ticket_id' => 'first',
-        'data_available_from' => '2025-03-01 10:00:00',
-        'partial_data' => true,
-        'participants' => [
-            ['agent_id' => 'owner', 'agent_name' => 'Owner', 'message_count' => 1, 'sample_count' => 1, 'avg_delay_seconds' => 180],
-            ['agent_id' => 'helper', 'agent_name' => 'Helper', 'message_count' => 1, 'sample_count' => 0, 'avg_delay_seconds' => null],
+        'ticketId' => 'first',
+        'datosDisponiblesDesde' => '2025-03-01 10:00:00',
+        'datosParciales' => true,
+        'participantes' => [
+            ['agenteId' => 'owner', 'agenteNombre' => 'Owner', 'cantidadDeMensajes' => 1, 'cantidadDeMuestras' => 1, 'demoraPromedioSegundos' => 180],
+            ['agenteId' => 'helper', 'agenteNombre' => 'Helper', 'cantidadDeMensajes' => 1, 'cantidadDeMuestras' => 0, 'demoraPromedioSegundos' => null],
         ],
-        'automatic_message_count' => 1,
-        'unanswered_inbound_count' => 0,
-        'pairs' => [
-            ['run_start_at' => '2025-03-01 10:00:00', 'reply_at' => '2025-03-01 10:03:00', 'agent_id' => 'owner', 'delay_seconds' => 180],
+        'cantidadDeMensajesAutomaticos' => 1,
+        'cantidadDeEntrantesSinResponder' => 0,
+        'pares' => [
+            ['inicioDeRachaAt' => '2025-03-01 10:00:00', 'respuestaAt' => '2025-03-01 10:03:00', 'agenteId' => 'owner', 'demoraSegundos' => 180],
         ],
     ];
 }

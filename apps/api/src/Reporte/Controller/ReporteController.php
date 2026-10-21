@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Reporte\Controller;
 
 use App\Reporte\Query\ExportarTicketsCsvQuery;
+use App\Ticket\FiltroDeBandeja;
 use App\Ticket\Query\FiltrosDeTicketBuilder;
 use App\Compartido\Security\AlcanceDeResponsabilidad;
 use App\Compartido\Security\AlcanceDeEspacioDeTrabajo;
@@ -22,7 +23,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 /**
  * Controlador REST para los endpoints de reportes y métricas.
  *
- * Todos los endpoints requieren los parámetros de query `from` y `to` en UTC.
+ * Todos los endpoints requieren los parámetros de query `desde` y `hasta` en UTC.
  *
  * Autorización: cualquier agente autenticado (ROLE_AGENTE o superior) puede acceder
  * a todos los endpoints de aquí. Los reportes y métricas NO se restringen por agente: esta
@@ -53,7 +54,7 @@ class ReporteController
     private function parseDateTime(?string $value): \DateTimeImmutable
     {
         if ($value === null) {
-            throw new \InvalidArgumentException('Missing required parameter: from or to');
+            throw new \InvalidArgumentException('Missing required parameter: desde or hasta');
         }
         $date = \DateTimeImmutable::createFromFormat(self::DATETIME_FORMAT, $value);
         if ($date === false) {
@@ -83,11 +84,11 @@ class ReporteController
     }
 
     /**
-     * Lee el parámetro de query opcional `teamId` (filtro de equipo de selección única).
+     * Lee el parámetro de query opcional `equipoId` (filtro de equipo de selección única).
      */
     private function getEquipoId(Request $request): ?int
     {
-        $equipoId = $request->query->get('teamId');
+        $equipoId = $request->query->get('equipoId');
 
         return null !== $equipoId ? (int) $equipoId : null;
     }
@@ -95,17 +96,17 @@ class ReporteController
     /**
      * Obtiene las métricas de tiempo de primera respuesta.
      *
-     * GET /reports/frt?from=2026-01-01T00:00:00Z&to=2026-01-02T00:00:00Z[&agent_id=1]
+     * GET /api/reportes/frt?desde=2026-01-01T00:00:00Z&hasta=2026-01-02T00:00:00Z[&agenteId=1]
      */
-    #[Route('/api/reports/frt', name: 'app_report_frt', methods: ['GET'])]
+    #[Route('/api/reportes/frt', name: 'app_report_frt', methods: ['GET'])]
     public function frt(Request $request): JsonResponse
     {
         try {
-            $from = $this->parseDateTime($request->query->get('from'));
-            $to = $this->parseDateTime($request->query->get('to'));
-            $agenteId = $request->query->get('agent_id') ? (int) $request->query->get('agent_id') : null;
+            $from = $this->parseDateTime($request->query->get('desde'));
+            $to = $this->parseDateTime($request->query->get('hasta'));
+            $agenteId = $request->query->get('agenteId') ? (int) $request->query->get('agenteId') : null;
 
-            // Alcance por responsabilidad: forzar agent_id para el rol AGENT
+            // Alcance por responsabilidad: forzar agenteId para el rol AGENT
             $agenteIdDeAlcance = $this->getAgenteIdDeAlcance();
             if (null !== $agenteIdDeAlcance) {
                 $agenteId = $agenteIdDeAlcance;
@@ -124,14 +125,14 @@ class ReporteController
     /**
      * Obtiene las métricas de tiempo de resolución.
      *
-     * GET /reports/rt?from=2026-01-01T00:00:00Z&to=2026-01-02T00:00:00Z
+     * GET /api/reportes/rt?desde=2026-01-01T00:00:00Z&hasta=2026-01-02T00:00:00Z
      */
-    #[Route('/api/reports/rt', name: 'app_report_rt', methods: ['GET'])]
+    #[Route('/api/reportes/rt', name: 'app_report_rt', methods: ['GET'])]
     public function rt(Request $request): JsonResponse
     {
         try {
-            $from = $this->parseDateTime($request->query->get('from'));
-            $to = $this->parseDateTime($request->query->get('to'));
+            $from = $this->parseDateTime($request->query->get('desde'));
+            $to = $this->parseDateTime($request->query->get('hasta'));
 
             $agenteIdDeAlcance = $this->getAgenteIdDeAlcance();
             $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
@@ -147,14 +148,14 @@ class ReporteController
     /**
      * Obtiene la cantidad de tickets por estado.
      *
-     * GET /reports/counts?from=2026-01-01T00:00:00Z&to=2026-01-02T00:00:00Z
+     * GET /api/reportes/conteos?desde=2026-01-01T00:00:00Z&hasta=2026-01-02T00:00:00Z
      */
-    #[Route('/api/reports/counts', name: 'app_report_counts', methods: ['GET'])]
+    #[Route('/api/reportes/conteos', name: 'app_report_counts', methods: ['GET'])]
     public function conteos(Request $request): JsonResponse
     {
         try {
-            $from = $this->parseDateTime($request->query->get('from'));
-            $to = $this->parseDateTime($request->query->get('to'));
+            $from = $this->parseDateTime($request->query->get('desde'));
+            $to = $this->parseDateTime($request->query->get('hasta'));
 
             $agenteIdDeAlcance = $this->getAgenteIdDeAlcance();
             $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
@@ -170,14 +171,14 @@ class ReporteController
     /**
      * Obtiene el volumen de tickets a lo largo del tiempo.
      *
-     * GET /reports/volume?from=2026-01-01T00:00:00Z&to=2026-01-02T00:00:00Z
+     * GET /api/reportes/volumen?desde=2026-01-01T00:00:00Z&hasta=2026-01-02T00:00:00Z
      */
-    #[Route('/api/reports/volume', name: 'app_report_volume', methods: ['GET'])]
+    #[Route('/api/reportes/volumen', name: 'app_report_volume', methods: ['GET'])]
     public function volumen(Request $request): JsonResponse
     {
         try {
-            $from = $this->parseDateTime($request->query->get('from'));
-            $to = $this->parseDateTime($request->query->get('to'));
+            $from = $this->parseDateTime($request->query->get('desde'));
+            $to = $this->parseDateTime($request->query->get('hasta'));
 
             $agenteIdDeAlcance = $this->getAgenteIdDeAlcance();
             $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
@@ -193,17 +194,17 @@ class ReporteController
     /**
      * Obtiene las métricas de rendimiento de los agentes.
      *
-     * GET /reports/agents?from=2026-01-01T00:00:00Z&to=2026-01-02T00:00:00Z[&agent_id=1]
+     * GET /api/reportes/rendimiento-de-agentes?desde=2026-01-01T00:00:00Z&hasta=2026-01-02T00:00:00Z[&agenteId=1]
      */
-    #[Route('/api/reports/agents', name: 'app_report_agents', methods: ['GET'])]
+    #[Route('/api/reportes/rendimiento-de-agentes', name: 'app_report_agents', methods: ['GET'])]
     public function agentes(Request $request): JsonResponse
     {
         try {
-            $from = $this->parseDateTime($request->query->get('from'));
-            $to = $this->parseDateTime($request->query->get('to'));
-            $agenteId = $request->query->get('agent_id') ? (int) $request->query->get('agent_id') : null;
+            $from = $this->parseDateTime($request->query->get('desde'));
+            $to = $this->parseDateTime($request->query->get('hasta'));
+            $agenteId = $request->query->get('agenteId') ? (int) $request->query->get('agenteId') : null;
 
-            // Alcance por responsabilidad: forzar agent_id para el rol AGENT
+            // Alcance por responsabilidad: forzar agenteId para el rol AGENT
             $agenteIdDeAlcance = $this->getAgenteIdDeAlcance();
             if (null !== $agenteIdDeAlcance) {
                 $agenteId = $agenteIdDeAlcance;
@@ -221,12 +222,12 @@ class ReporteController
     /**
      * Obtiene, por agente, la cantidad de tickets activos frente a la capacidad máxima.
      *
-     * GET /reports/agent-load[?agent_id=1][&phone_number_id=...]
+     * GET /api/reportes/carga-de-agentes[?agenteId=1]
      */
-    #[Route('/api/reports/agent-load', name: 'app_report_agent_load', methods: ['GET'])]
+    #[Route('/api/reportes/carga-de-agentes', name: 'app_report_agent_load', methods: ['GET'])]
     public function cargaDeAgentes(Request $request): JsonResponse
     {
-        $agenteId = $request->query->get('agent_id') ? (int) $request->query->get('agent_id') : null;
+        $agenteId = $request->query->get('agenteId') ? (int) $request->query->get('agenteId') : null;
 
         $agenteIdDeAlcance = $this->getAgenteIdDeAlcance();
         if (null !== $agenteIdDeAlcance) {
@@ -242,15 +243,15 @@ class ReporteController
     /**
      * Obtiene los tickets sin asignar (sin agente asignado).
      *
-     * GET /reports/unassigned[?from=...][&to=...][&phone_number_id=...]
+     * GET /api/reportes/sin-asignar[?desde=...][&hasta=...]
      */
-    #[Route('/api/reports/unassigned', name: 'app_report_unassigned', methods: ['GET'])]
+    #[Route('/api/reportes/sin-asignar', name: 'app_report_unassigned', methods: ['GET'])]
     public function sinAsignar(Request $request): JsonResponse
     {
         try {
             $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
-            $from = $request->query->get('from') ? $this->parseDateTime($request->query->get('from')) : null;
-            $to = $request->query->get('to') ? $this->parseDateTime($request->query->get('to')) : null;
+            $from = $request->query->get('desde') ? $this->parseDateTime($request->query->get('desde')) : null;
+            $to = $request->query->get('hasta') ? $this->parseDateTime($request->query->get('hasta')) : null;
 
             $result = $this->reporteService->getSinAsignar($phoneNumberId, $from, $to);
 
@@ -263,9 +264,9 @@ class ReporteController
     /**
      * Obtiene los agentes disponibles en este momento (en turno y por debajo de su capacidad).
      *
-     * GET /reports/available-agents[?phone_number_id=...]
+     * GET /api/reportes/agentes-disponibles
      */
-    #[Route('/api/reports/available-agents', name: 'app_report_available_agents', methods: ['GET'])]
+    #[Route('/api/reportes/agentes-disponibles', name: 'app_report_available_agents', methods: ['GET'])]
     public function agentesDisponibles(Request $request): JsonResponse
     {
         $result = $this->listarAgentesDisponibles->execute($this->getPhoneNumberIdDeAlcance(), new \DateTimeImmutable());
@@ -276,14 +277,14 @@ class ReporteController
     /**
      * Obtiene el FRT agregado por día dentro de un rango de fechas.
      *
-     * GET /reports/frt-trend?from=...&to=...[&phone_number_id=...]
+     * GET /api/reportes/tendencia-de-frt?desde=...&hasta=...
      */
-    #[Route('/api/reports/frt-trend', name: 'app_report_frt_trend', methods: ['GET'])]
+    #[Route('/api/reportes/tendencia-de-frt', name: 'app_report_frt_trend', methods: ['GET'])]
     public function tendenciaDeFrt(Request $request): JsonResponse
     {
         try {
-            $from = $this->parseDateTime($request->query->get('from'));
-            $to = $this->parseDateTime($request->query->get('to'));
+            $from = $this->parseDateTime($request->query->get('desde'));
+            $to = $this->parseDateTime($request->query->get('hasta'));
             $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
 
             $tendencia = $this->reporteService->getTendenciaDeFrt($from, $to, $phoneNumberId);
@@ -297,14 +298,14 @@ class ReporteController
     /**
      * Obtiene el volumen de tickets agrupado por día de la semana x hora para el mapa de calor.
      *
-     * GET /reports/heatmap?from=...&to=...[&phone_number_id=...]
+     * GET /api/reportes/mapa-de-calor?desde=...&hasta=...
      */
-    #[Route('/api/reports/heatmap', name: 'app_report_heatmap', methods: ['GET'])]
+    #[Route('/api/reportes/mapa-de-calor', name: 'app_report_heatmap', methods: ['GET'])]
     public function mapaDeCalor(Request $request): JsonResponse
     {
         try {
-            $from = $this->parseDateTime($request->query->get('from'));
-            $to = $this->parseDateTime($request->query->get('to'));
+            $from = $this->parseDateTime($request->query->get('desde'));
+            $to = $this->parseDateTime($request->query->get('hasta'));
             $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
 
             $mapaDeCalor = $this->reporteService->getMapaDeCalor($from, $to, $phoneNumberId);
@@ -318,13 +319,13 @@ class ReporteController
     /**
      * Obtiene los contactos con >= umbral tickets en los últimos N días.
      *
-     * GET /reports/recurring-customers[?phone_number_id=...][&threshold=3]
+     * GET /api/reportes/contactos-recurrentes[?umbral=3]
      */
-    #[Route('/api/reports/recurring-customers', name: 'app_report_recurring', methods: ['GET'])]
+    #[Route('/api/reportes/contactos-recurrentes', name: 'app_report_recurring', methods: ['GET'])]
     public function contactosRecurrentes(Request $request): JsonResponse
     {
         $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
-        $umbral = $request->query->get('threshold') ? (int) $request->query->get('threshold') : 3;
+        $umbral = $request->query->get('umbral') ? (int) $request->query->get('umbral') : 3;
 
         $result = $this->reporteService->getContactosRecurrentes($phoneNumberId, $umbral);
 
@@ -334,14 +335,14 @@ class ReporteController
     /**
      * Obtiene los tickets que salieron del estado resuelto.
      *
-     * GET /reports/reopened?from=...&to=...[&phone_number_id=...]
+     * GET /api/reportes/reabiertos?desde=...&hasta=...
      */
-    #[Route('/api/reports/reopened', name: 'app_report_reopened', methods: ['GET'])]
+    #[Route('/api/reportes/reabiertos', name: 'app_report_reopened', methods: ['GET'])]
     public function reabiertos(Request $request): JsonResponse
     {
         try {
-            $from = $this->parseDateTime($request->query->get('from'));
-            $to = $this->parseDateTime($request->query->get('to'));
+            $from = $this->parseDateTime($request->query->get('desde'));
+            $to = $this->parseDateTime($request->query->get('hasta'));
             $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
 
             $result = $this->reporteService->getReabiertos($from, $to, $phoneNumberId);
@@ -355,7 +356,7 @@ class ReporteController
     /**
      * Exporta la lista filtrada de tickets como una descarga CSV en streaming.
      *
-     * GET /reports/export?from=...&to=...[&agent_id=1][&status=...][&tag=...]
+     * GET /api/reportes/exportar?desde=...&hasta=...[&agenteId=1][&estado=...][&etiqueta=...][&equipoId=...]
      *
      * Restringido a supervisores (exportación masiva de PII): `#[IsGranted('ROLE_SUPERVISOR')]`.
      * `ROLE_ADMINISTRADOR` lo hereda mediante el `role_hierarchy` de `security.yaml`. La semántica
@@ -363,19 +364,19 @@ class ReporteController
      * exactamente con `ListTicketsQuery` mediante el `FiltrosDeTicketBuilder` compartido.
      */
     #[IsGranted('ROLE_SUPERVISOR')]
-    #[Route('/api/reports/export', name: 'app_report_export', methods: ['GET'])]
+    #[Route('/api/reportes/exportar', name: 'app_report_export', methods: ['GET'])]
     public function exportar(Request $request): Response
     {
         try {
-            $from = $this->parseDateTime($request->query->get('from'));
-            $to = $this->parseDateTime($request->query->get('to'));
+            $from = $this->parseDateTime($request->query->get('desde'));
+            $to = $this->parseDateTime($request->query->get('hasta'));
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }
 
-        $agenteId = $request->query->get('agent_id');
-        $estado = $request->query->get('status');
-        $etiqueta = $request->query->get('tag');
+        $agenteId = $request->query->get('agenteId');
+        $estado = $request->query->get('estado');
+        $etiqueta = $request->query->get('etiqueta');
         $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
         $equipoId = $this->getEquipoId($request);
 
@@ -384,7 +385,7 @@ class ReporteController
         // >5 etiquetas) falle con 400 antes de enviar cualquier streaming o cabecera.
         try {
             $this->filtrosDeTicketBuilder->build(
-                filtro: $agenteId ? 'mine' : 'all',
+                filtro: ($agenteId ? FiltroDeBandeja::MIOS : FiltroDeBandeja::TODOS)->value,
                 agenteId: $agenteId,
                 estado: $estado,
                 phoneNumberId: $phoneNumberId,
@@ -424,14 +425,14 @@ class ReporteController
     /**
      * Obtiene las métricas de demora de respuesta agregadas y por agente.
      *
-     * GET /reports/response-delay?from=...&to=...
+     * GET /api/reportes/demora-de-respuesta?desde=...&hasta=...
      */
-    #[Route('/api/reports/response-delay', name: 'app_report_response_delay', methods: ['GET'])]
+    #[Route('/api/reportes/demora-de-respuesta', name: 'app_report_response_delay', methods: ['GET'])]
     public function demoraDeRespuesta(Request $request): JsonResponse
     {
         try {
-            $from = $this->parseDateTime($request->query->get('from'));
-            $to = $this->parseDateTime($request->query->get('to'));
+            $from = $this->parseDateTime($request->query->get('desde'));
+            $to = $this->parseDateTime($request->query->get('hasta'));
             $phoneNumberId = $this->getPhoneNumberIdDeAlcance();
 
             $result = $this->reporteService->getDemoraDeRespuesta($from, $to, $phoneNumberId);
@@ -445,9 +446,9 @@ class ReporteController
     /**
      * Obtiene el detalle de participación por ticket.
      *
-     * GET /reports/tickets/{id}/participation
+     * GET /api/reportes/tickets/{id}/participacion
      */
-    #[Route('/api/reports/tickets/{id}/participation', name: 'app_report_ticket_participation', methods: ['GET'])]
+    #[Route('/api/reportes/tickets/{id}/participacion', name: 'app_report_ticket_participation', methods: ['GET'])]
     public function participacionEnTicket(Request $request, int $id): JsonResponse
     {
         $result = $this->reporteService->getParticipacionEnTicket($id);

@@ -114,7 +114,7 @@ class ReportingRepositoryTeamFilterTest extends KernelTestCase
         $withNullTeam = $this->repo->getMetricasDeFrt(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'), null, null, null);
 
         self::assertSame($unscoped, $withNullTeam);
-        self::assertSame(600.0, $withNullTeam['avg_frt_seconds']);
+        self::assertSame(600.0, $withNullTeam['frtPromedioSegundos']);
     }
 
     public function test_frt_metrics_team_id_narrows_to_matching_team(): void
@@ -125,7 +125,7 @@ class ReportingRepositoryTeamFilterTest extends KernelTestCase
 
         $result = $this->repo->getMetricasDeFrt(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'), null, null, $team->getId());
 
-        self::assertSame(600.0, $result['avg_frt_seconds']);
+        self::assertSame(600.0, $result['frtPromedioSegundos']);
     }
 
     // --- getMetricasDeRt ---
@@ -138,7 +138,7 @@ class ReportingRepositoryTeamFilterTest extends KernelTestCase
         $withNullTeam = $this->repo->getMetricasDeRt(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'), null, null, null);
 
         self::assertSame($unscoped, $withNullTeam);
-        self::assertSame(3600.0, $withNullTeam['avg_rt_seconds']);
+        self::assertSame(3600.0, $withNullTeam['rtPromedioSegundos']);
     }
 
     public function test_rt_metrics_team_id_narrows_to_matching_team(): void
@@ -149,7 +149,7 @@ class ReportingRepositoryTeamFilterTest extends KernelTestCase
 
         $result = $this->repo->getMetricasDeRt(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'), null, null, $team->getId());
 
-        self::assertSame(3600.0, $result['avg_rt_seconds']);
+        self::assertSame(3600.0, $result['rtPromedioSegundos']);
     }
 
     // --- getConteosPorEstado ---
@@ -188,7 +188,7 @@ class ReportingRepositoryTeamFilterTest extends KernelTestCase
         $withNullTeam = $this->repo->getVolumenEnElTiempo(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'), null, null, null);
 
         self::assertSame($unscoped, $withNullTeam);
-        self::assertSame(1, $withNullTeam[0]['tickets_created']);
+        self::assertSame(1, $withNullTeam[0]['ticketsCreados']);
     }
 
     public function test_volume_over_time_team_id_narrows_to_matching_team(): void
@@ -201,7 +201,7 @@ class ReportingRepositoryTeamFilterTest extends KernelTestCase
         $result = $this->repo->getVolumenEnElTiempo(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'), null, null, $team->getId());
 
         self::assertCount(1, $result);
-        self::assertSame(1, $result[0]['tickets_created']);
+        self::assertSame(1, $result[0]['ticketsCreados']);
     }
 
     // --- getRendimientoDeAgentes ---
@@ -237,7 +237,7 @@ class ReportingRepositoryTeamFilterTest extends KernelTestCase
         $result = $this->repo->getRendimientoDeAgentes(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-02'), $agentId, null, $team->getId());
 
         self::assertCount(1, $result);
-        self::assertSame(1, $result[0]['tickets_assigned']);
-        self::assertSame(1, $result[0]['current_active_tickets']);
+        self::assertSame(1, $result[0]['ticketsAsignados']);
+        self::assertSame(1, $result[0]['ticketsActivosActuales']);
     }
 }

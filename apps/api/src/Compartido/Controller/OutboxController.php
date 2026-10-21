@@ -23,7 +23,7 @@ class OutboxController extends AbstractController
         $count = $this->publisher->publishPending();
 
         return new JsonResponse([
-            'published' => $count,
+            'publicados' => $count,
         ]);
     }
 }

@@ -27,22 +27,25 @@ class ExportarTicketsCsvQuery
 {
     public const CHUNK_SIZE = 500;
 
-    /** Orden de columnas: DEBE coincidir con la fila de encabezado y con el contrato de columnas del spec. */
-    public const COLUMNAS = [
-        'ticket_id',
-        'contact_name',
-        'contact_phone',
-        'assigned_agent',
-        'status',
-        'priority',
-        'created_at',
-        'first_response_at',
-        'resolved_at',
-        'closed_at',
-        'first_response_seconds',
-        'resolution_seconds',
-        'tags',
-        'phone_number_id',
+    /**
+     * Fila de encabezados del CSV (contrato A.10): texto visible en español legible, en el
+     * mismo orden que las claves internas de cada fila armada en `stream()`.
+     */
+    public const ENCABEZADOS = [
+        'Ticket',
+        'Contacto',
+        'Teléfono del contacto',
+        'Agente asignado',
+        'Estado',
+        'Prioridad',
+        'Fecha de creación',
+        'Fecha de primera respuesta',
+        'Fecha de resolución',
+        'Fecha de cierre',
+        'Segundos hasta la primera respuesta',
+        'Segundos hasta la resolución',
+        'Etiquetas',
+        'Número de WhatsApp (phone number id)',
     ];
 
     /** Solo las columnas de texto libre reciben escape contra inyección de fórmulas; el teléfono se excluye a propósito. */
@@ -73,7 +76,7 @@ class ExportarTicketsCsvQuery
         ?string $phoneNumberId = null,
         ?int $equipoId = null,
     ): int {
-        $writer->insertOne(self::COLUMNAS);
+        $writer->insertOne(self::ENCABEZADOS);
 
         $escapeFormula = new EscapeFormula();
 

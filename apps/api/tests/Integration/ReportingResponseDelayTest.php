@@ -248,14 +248,14 @@ class ReportingResponseDelayTest extends WebTestCase
         // would wrongly pair with the FIRST agent message in the whole
         // conversation stream (10:05) — that cross-episode pair must never
         // happen.
-        self::assertSame(1, $result['aggregate']['sample_count']);
-        self::assertSame(300.0, $result['aggregate']['avg_delay_seconds']); // 10:10 -> 10:15 = 5 min
-        self::assertSame(1, $result['aggregate']['unanswered_inbound_count']); // Ticket A's dangling inbound
+        self::assertSame(1, $result['global']['cantidadDeMuestras']);
+        self::assertSame(300.0, $result['global']['demoraPromedioSegundos']); // 10:10 -> 10:15 = 5 min
+        self::assertSame(1, $result['global']['cantidadDeEntrantesSinResponder']); // Ticket A's dangling inbound
 
-        self::assertCount(1, $result['per_agent']);
-        self::assertSame($agent->getId(), $result['per_agent'][0]['agent_id']);
-        self::assertSame(1, $result['per_agent'][0]['sample_count']);
-        self::assertSame(300.0, $result['per_agent'][0]['avg_delay_seconds']);
+        self::assertCount(1, $result['porAgente']);
+        self::assertSame($agent->getId(), $result['porAgente'][0]['agenteId']);
+        self::assertSame(1, $result['porAgente'][0]['cantidadDeMuestras']);
+        self::assertSame(300.0, $result['porAgente'][0]['demoraPromedioSegundos']);
     }
 
     // ============================================
@@ -279,9 +279,9 @@ class ReportingResponseDelayTest extends WebTestCase
         $result = $this->reportingRepo->getMetricasDeDemoraDeRespuesta($from, $to);
 
         // Exactly ONE sample, measured from the run's FIRST message (M1, 09:00) to R (09:05).
-        self::assertSame(1, $result['aggregate']['sample_count']);
-        self::assertSame(300.0, $result['aggregate']['avg_delay_seconds']);
-        self::assertSame(0, $result['aggregate']['unanswered_inbound_count']);
+        self::assertSame(1, $result['global']['cantidadDeMuestras']);
+        self::assertSame(300.0, $result['global']['demoraPromedioSegundos']);
+        self::assertSame(0, $result['global']['cantidadDeEntrantesSinResponder']);
     }
 
     public function testAutomaticMidRunDoesNotSplitBurstOrStopClock(): void
@@ -310,9 +310,9 @@ class ReportingResponseDelayTest extends WebTestCase
         // Burst 0 = [I1,I2] -> A1 (09:00 -> 09:02 = 120s)
         // Burst 1 = [I3,I4] -> A2 (09:03 -> 09:06 = 180s); AU1 neither split it nor stopped the clock
         // Burst 2 = [I5] -> unanswered
-        self::assertSame(2, $result['aggregate']['sample_count']);
-        self::assertSame(150.0, $result['aggregate']['avg_delay_seconds']); // (120+180)/2
-        self::assertSame(1, $result['aggregate']['unanswered_inbound_count']);
+        self::assertSame(2, $result['global']['cantidadDeMuestras']);
+        self::assertSame(150.0, $result['global']['demoraPromedioSegundos']); // (120+180)/2
+        self::assertSame(1, $result['global']['cantidadDeEntrantesSinResponder']);
     }
 
     public function testUnansweredTrailingRunExcludedFromAvgAndCountedInUnanswered(): void
@@ -327,10 +327,10 @@ class ReportingResponseDelayTest extends WebTestCase
         $to = new \DateTimeImmutable('2026-06-01 10:00:00');
         $result = $this->reportingRepo->getMetricasDeDemoraDeRespuesta($from, $to);
 
-        self::assertSame(0, $result['aggregate']['sample_count']);
-        self::assertNull($result['aggregate']['avg_delay_seconds']); // never-zero rule
-        self::assertSame(1, $result['aggregate']['unanswered_inbound_count']);
-        self::assertSame([], $result['per_agent']);
+        self::assertSame(0, $result['global']['cantidadDeMuestras']);
+        self::assertNull($result['global']['demoraPromedioSegundos']); // never-zero rule
+        self::assertSame(1, $result['global']['cantidadDeEntrantesSinResponder']);
+        self::assertSame([], $result['porAgente']);
     }
 
     // ============================================
@@ -364,21 +364,21 @@ class ReportingResponseDelayTest extends WebTestCase
 
         // The pre-cutoff legacy pair must be entirely excluded — not counted
         // as unanswered, not counted as a sample.
-        self::assertSame(1, $result['aggregate']['sample_count']);
-        self::assertSame(300.0, $result['aggregate']['avg_delay_seconds']);
-        self::assertSame(0, $result['aggregate']['unanswered_inbound_count']);
+        self::assertSame(1, $result['global']['cantidadDeMuestras']);
+        self::assertSame(300.0, $result['global']['demoraPromedioSegundos']);
+        self::assertSame(0, $result['global']['cantidadDeEntrantesSinResponder']);
 
         // Service-level partial_data: range starts before the cutoff.
         $serviceResult = $this->reportingService->getDemoraDeRespuesta($from, $to);
-        self::assertTrue($serviceResult['partial_data']);
-        self::assertSame('2026-06-01 08:00:00', $serviceResult['data_available_from']);
+        self::assertTrue($serviceResult['datosParciales']);
+        self::assertSame('2026-06-01 08:00:00', $serviceResult['datosDisponiblesDesde']);
 
         // Range fully within attributed data (from === cutoff) -> partial_data false.
         $fullyAttributedResult = $this->reportingService->getDemoraDeRespuesta(
             new \DateTimeImmutable('2026-06-01 08:00:00'),
             $to
         );
-        self::assertFalse($fullyAttributedResult['partial_data']);
+        self::assertFalse($fullyAttributedResult['datosParciales']);
     }
 
     // ============================================
@@ -413,12 +413,12 @@ class ReportingResponseDelayTest extends WebTestCase
         self::assertNotNull($ticket2Participation);
 
         // Ticket1's zero-width episode captures nothing.
-        self::assertSame([], $ticket1Participation['pairs']);
-        self::assertSame([], $ticket1Participation['participants']);
+        self::assertSame([], $ticket1Participation['pares']);
+        self::assertSame([], $ticket1Participation['participantes']);
 
         // Ticket2 (open-ended episode) captures the pair instead.
-        self::assertCount(1, $ticket2Participation['pairs']);
-        self::assertSame(300.0, $ticket2Participation['pairs'][0]['delay_seconds']);
+        self::assertCount(1, $ticket2Participation['pares']);
+        self::assertSame(300.0, $ticket2Participation['pares'][0]['demoraSegundos']);
     }
 
     // ============================================
@@ -446,21 +446,21 @@ class ReportingResponseDelayTest extends WebTestCase
         $result = $this->reportingRepo->getParticipacionEnTicket($ticket->getId());
 
         self::assertNotNull($result);
-        self::assertCount(2, $result['pairs']); // one entry for the 3-message run, not three
-        self::assertCount(2, $result['participants']);
+        self::assertCount(2, $result['pares']); // one entry for the 3-message run, not three
+        self::assertCount(2, $result['participantes']);
 
         $byAgentId = [];
-        foreach ($result['participants'] as $p) {
-            $byAgentId[$p['agent_id']] = $p;
+        foreach ($result['participantes'] as $p) {
+            $byAgentId[$p['agenteId']] = $p;
         }
 
-        self::assertSame(1, $byAgentId[$agentX->getId()]['message_count']);
-        self::assertSame(1, $byAgentId[$agentX->getId()]['sample_count']);
-        self::assertSame(300.0, $byAgentId[$agentX->getId()]['avg_delay_seconds']);
+        self::assertSame(1, $byAgentId[$agentX->getId()]['cantidadDeMensajes']);
+        self::assertSame(1, $byAgentId[$agentX->getId()]['cantidadDeMuestras']);
+        self::assertSame(300.0, $byAgentId[$agentX->getId()]['demoraPromedioSegundos']);
 
-        self::assertSame(1, $byAgentId[$agentY->getId()]['message_count']);
-        self::assertSame(1, $byAgentId[$agentY->getId()]['sample_count']);
-        self::assertSame(120.0, $byAgentId[$agentY->getId()]['avg_delay_seconds']);
+        self::assertSame(1, $byAgentId[$agentY->getId()]['cantidadDeMensajes']);
+        self::assertSame(1, $byAgentId[$agentY->getId()]['cantidadDeMuestras']);
+        self::assertSame(120.0, $byAgentId[$agentY->getId()]['demoraPromedioSegundos']);
     }
 
     public function testGetTicketParticipationUnattributedLegacyMessagesExcludedAndPartialDataTrue(): void
@@ -480,10 +480,10 @@ class ReportingResponseDelayTest extends WebTestCase
         $result = $this->reportingRepo->getParticipacionEnTicket($ticket->getId());
 
         self::assertNotNull($result);
-        self::assertTrue($result['partial_data']);
-        self::assertCount(1, $result['pairs']); // legacy row produces no pair
-        self::assertCount(1, $result['participants']);
-        self::assertSame(1, $result['participants'][0]['sample_count']);
+        self::assertTrue($result['datosParciales']);
+        self::assertCount(1, $result['pares']); // legacy row produces no pair
+        self::assertCount(1, $result['participantes']);
+        self::assertSame(1, $result['participantes'][0]['cantidadDeMuestras']);
     }
 
     public function testGetTicketParticipationReturnsNullForUnknownTicket(): void
@@ -523,29 +523,29 @@ class ReportingResponseDelayTest extends WebTestCase
         self::assertNotNull($result);
 
         // Both automatic messages counted as activity, and ONLY as activity.
-        self::assertSame(2, $result['automatic_message_count']);
+        self::assertSame(2, $result['cantidadDeMensajesAutomaticos']);
 
         // Exactly 2 pairs (one per burst) — automatic messages never create
         // or consume a pair entry of their own.
-        self::assertCount(2, $result['pairs']);
-        foreach ($result['pairs'] as $pair) {
-            self::assertNotNull($pair['agent_id']);
+        self::assertCount(2, $result['pares']);
+        foreach ($result['pares'] as $pair) {
+            self::assertNotNull($pair['agenteId']);
         }
 
         // Delay math is untouched by the automatic messages: burst 0
         // (09:00 -> 09:02 = 120s), burst 1 (09:04 -> 09:07 = 180s).
-        self::assertSame(120.0, $result['pairs'][0]['delay_seconds']);
-        self::assertSame(180.0, $result['pairs'][1]['delay_seconds']);
+        self::assertSame(120.0, $result['pares'][0]['demoraSegundos']);
+        self::assertSame(180.0, $result['pares'][1]['demoraSegundos']);
 
         // Only agentX participates; message_count reflects the 2 agent
         // replies only — the 2 automatic messages must not inflate it.
-        self::assertCount(1, $result['participants']);
-        $participant = $result['participants'][0];
-        self::assertSame($agentX->getId(), $participant['agent_id']);
-        self::assertSame(2, $participant['message_count']);
-        self::assertSame(2, $participant['sample_count']);
-        self::assertSame(150.0, $participant['avg_delay_seconds']); // (120+180)/2
-        self::assertSame(0, $result['unanswered_inbound_count']);
+        self::assertCount(1, $result['participantes']);
+        $participant = $result['participantes'][0];
+        self::assertSame($agentX->getId(), $participant['agenteId']);
+        self::assertSame(2, $participant['cantidadDeMensajes']);
+        self::assertSame(2, $participant['cantidadDeMuestras']);
+        self::assertSame(150.0, $participant['demoraPromedioSegundos']); // (120+180)/2
+        self::assertSame(0, $result['cantidadDeEntrantesSinResponder']);
     }
 
     // ============================================
@@ -565,7 +565,7 @@ class ReportingResponseDelayTest extends WebTestCase
 
         $this->client->request(
             'GET',
-            '/api/reports/response-delay?from=2026-06-01T09:00:00Z&to=2026-06-01T10:00:00Z',
+            '/api/reportes/demora-de-respuesta?desde=2026-06-01T09:00:00Z&hasta=2026-06-01T10:00:00Z',
             [],
             [],
             $this->authHeaders($token)
@@ -575,32 +575,32 @@ class ReportingResponseDelayTest extends WebTestCase
         self::assertSame(200, $response->getStatusCode());
 
         $data = \json_decode($response->getContent(), true);
-        self::assertArrayHasKey('aggregate', $data);
-        self::assertArrayHasKey('per_agent', $data);
-        self::assertArrayHasKey('data_available_from', $data);
-        self::assertFalse($data['partial_data']);
-        self::assertSame(1, $data['aggregate']['sample_count']);
+        self::assertArrayHasKey('global', $data);
+        self::assertArrayHasKey('porAgente', $data);
+        self::assertArrayHasKey('datosDisponiblesDesde', $data);
+        self::assertFalse($data['datosParciales']);
+        self::assertSame(1, $data['global']['cantidadDeMuestras']);
     }
 
     public function testHttpTicketParticipation404ForUnknownTicket(): void
     {
         $token = $this->createAuthenticatedAgentToken();
 
-        $this->client->request('GET', '/api/reports/tickets/999999999/participation', [], [], $this->authHeaders($token));
+        $this->client->request('GET', '/api/reportes/tickets/999999999/participacion', [], [], $this->authHeaders($token));
 
         self::assertSame(404, $this->client->getResponse()->getStatusCode());
     }
 
     public function testHttpResponseDelayUnauthenticatedReturns401(): void
     {
-        $this->client->request('GET', '/api/reports/response-delay?from=2026-06-01T00:00:00Z&to=2026-06-02T00:00:00Z');
+        $this->client->request('GET', '/api/reportes/demora-de-respuesta?desde=2026-06-01T00:00:00Z&hasta=2026-06-02T00:00:00Z');
 
         self::assertSame(401, $this->client->getResponse()->getStatusCode());
     }
 
     public function testHttpTicketParticipationUnauthenticatedReturns401(): void
     {
-        $this->client->request('GET', '/api/reports/tickets/1/participation');
+        $this->client->request('GET', '/api/reportes/tickets/1/participacion');
 
         self::assertSame(401, $this->client->getResponse()->getStatusCode());
     }

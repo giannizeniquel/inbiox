@@ -19,7 +19,7 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
- * HTTP-level integration tests for `GET /api/reports/export`
+ * HTTP-level integration tests for `GET /api/reportes/exportar`
  * (`reports-csv-export` spec/design):
  * - Role gating (403 agent, 200 supervisor/admin)
  * - Streamed CSV headers (Content-Type, Content-Disposition, X-Accel-Buffering)
@@ -157,9 +157,9 @@ class ReportsCsvExportTest extends WebTestCase
      * manual `sendContent()` call here is a silent no-op — the captured
      * bytes must be read back from BrowserKit's internal response instead.
      */
-    private function requestExport(string $token, string $queryString = 'from=2026-01-01T00:00:00Z&to=2026-01-31T00:00:00Z'): string
+    private function requestExport(string $token, string $queryString = 'desde=2026-01-01T00:00:00Z&hasta=2026-01-31T00:00:00Z'): string
     {
-        $this->client->request('GET', '/api/reports/export?' . $queryString, [], [], [
+        $this->client->request('GET', '/api/reportes/exportar?' . $queryString, [], [], [
             'HTTP_ACCEPT' => 'text/csv',
             'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
         ]);
@@ -225,7 +225,7 @@ class ReportsCsvExportTest extends WebTestCase
         self::assertStringStartsWith("\xEF\xBB\xBF", $body);
 
         $reader = Reader::createFromString(substr($body, 3));
-        self::assertSame(ExportarTicketsCsvQuery::COLUMNAS, $reader->fetchOne(0));
+        self::assertSame(ExportarTicketsCsvQuery::ENCABEZADOS, $reader->fetchOne(0));
     }
 
     // ────────────────────────────────────────────────────────
@@ -238,7 +238,7 @@ class ReportsCsvExportTest extends WebTestCase
         $this->createTicket(createdAt: new \DateTimeImmutable('2026-03-05'));
 
         $token = $this->authAs(['ROLE_SUPERVISOR']);
-        $body = $this->requestExport($token, 'from=2026-01-01T00:00:00Z&to=2026-01-31T00:00:00Z');
+        $body = $this->requestExport($token, 'desde=2026-01-01T00:00:00Z&hasta=2026-01-31T00:00:00Z');
 
         $reader = Reader::createFromString(substr($body, 3));
         $reader->setHeaderOffset(0);
@@ -254,7 +254,7 @@ class ReportsCsvExportTest extends WebTestCase
         }
 
         $token = $this->authAs(['ROLE_SUPERVISOR']);
-        $body = $this->requestExport($token, 'from=2026-01-01T00:00:00Z&to=2026-01-31T00:00:00Z');
+        $body = $this->requestExport($token, 'desde=2026-01-01T00:00:00Z&hasta=2026-01-31T00:00:00Z');
 
         $reader = Reader::createFromString(substr($body, 3));
         $reader->setHeaderOffset(0);
@@ -269,14 +269,14 @@ class ReportsCsvExportTest extends WebTestCase
         $this->createTicket(status: 'cerrado', createdAt: new \DateTimeImmutable('2026-01-10'));
 
         $token = $this->authAs(['ROLE_SUPERVISOR']);
-        $body = $this->requestExport($token, 'from=2026-01-01T00:00:00Z&to=2026-01-31T00:00:00Z&status=cerrado');
+        $body = $this->requestExport($token, 'desde=2026-01-01T00:00:00Z&hasta=2026-01-31T00:00:00Z&estado=cerrado');
 
         $reader = Reader::createFromString(substr($body, 3));
         $reader->setHeaderOffset(0);
         $records = [...$reader->getRecords()];
 
         self::assertCount(1, $records);
-        self::assertSame('cerrado', $records[0]['status']);
+        self::assertSame('cerrado', $records[0]['Estado']);
     }
 
     public function test_agent_id_param_narrows_results(): void
@@ -291,14 +291,14 @@ class ReportsCsvExportTest extends WebTestCase
         $this->createTicket(assignedAgentId: $agentB->getId(), createdAt: new \DateTimeImmutable('2026-01-10'));
 
         $token = $this->authAs(['ROLE_SUPERVISOR']);
-        $body = $this->requestExport($token, 'from=2026-01-01T00:00:00Z&to=2026-01-31T00:00:00Z&agent_id=' . $agentA->getId());
+        $body = $this->requestExport($token, 'desde=2026-01-01T00:00:00Z&hasta=2026-01-31T00:00:00Z&agenteId=' . $agentA->getId());
 
         $reader = Reader::createFromString(substr($body, 3));
         $reader->setHeaderOffset(0);
         $records = [...$reader->getRecords()];
 
         self::assertCount(1, $records);
-        self::assertSame((string) $wanted, $records[0]['ticket_id']);
+        self::assertSame((string) $wanted, $records[0]['Ticket']);
     }
 
     public function test_tag_and_semantics_apply(): void
@@ -307,21 +307,21 @@ class ReportsCsvExportTest extends WebTestCase
         $this->createTicket(tagNames: ['vip'], createdAt: new \DateTimeImmutable('2026-01-10'));
 
         $token = $this->authAs(['ROLE_SUPERVISOR']);
-        $body = $this->requestExport($token, 'from=2026-01-01T00:00:00Z&to=2026-01-31T00:00:00Z&tag=vip,urgente');
+        $body = $this->requestExport($token, 'desde=2026-01-01T00:00:00Z&hasta=2026-01-31T00:00:00Z&etiqueta=vip,urgente');
 
         $reader = Reader::createFromString(substr($body, 3));
         $reader->setHeaderOffset(0);
         $records = [...$reader->getRecords()];
 
         self::assertCount(1, $records);
-        self::assertSame((string) $both, $records[0]['ticket_id']);
+        self::assertSame((string) $both, $records[0]['Ticket']);
     }
 
     public function test_more_than_five_tags_rejected_as_validation_error_and_no_export_runs(): void
     {
         $token = $this->authAs(['ROLE_SUPERVISOR']);
 
-        $this->requestExport($token, 'from=2026-01-01T00:00:00Z&to=2026-01-31T00:00:00Z&tag=a,b,c,d,e,f');
+        $this->requestExport($token, 'desde=2026-01-01T00:00:00Z&hasta=2026-01-31T00:00:00Z&etiqueta=a,b,c,d,e,f');
 
         self::assertSame(400, $this->client->getResponse()->getStatusCode());
     }
@@ -338,15 +338,15 @@ class ReportsCsvExportTest extends WebTestCase
         );
 
         $token = $this->authAs(['ROLE_SUPERVISOR']);
-        $body = $this->requestExport($token, 'from=2026-01-01T00:00:00Z&to=2026-01-31T00:00:00Z');
+        $body = $this->requestExport($token, 'desde=2026-01-01T00:00:00Z&hasta=2026-01-31T00:00:00Z');
 
         $reader = Reader::createFromString(substr($body, 3));
         $reader->setHeaderOffset(0);
         $records = [...$reader->getRecords()];
 
         self::assertCount(1, $records);
-        self::assertSame("'=cmd|/c calc", $records[0]['contact_name']);
-        self::assertStringStartsWith('+549', $records[0]['contact_phone']);
+        self::assertSame("'=cmd|/c calc", $records[0]['Contacto']);
+        self::assertStringStartsWith('+549', $records[0]['Teléfono del contacto']);
     }
 
     // ────────────────────────────────────────────────────────
@@ -362,7 +362,7 @@ class ReportsCsvExportTest extends WebTestCase
         }
 
         $token = $this->authAs(['ROLE_SUPERVISOR']);
-        $body = $this->requestExport($token, 'from=2025-12-01T00:00:00Z&to=2026-06-01T00:00:00Z');
+        $body = $this->requestExport($token, 'desde=2025-12-01T00:00:00Z&hasta=2026-06-01T00:00:00Z');
 
         $reader = Reader::createFromString(substr($body, 3));
         $reader->setHeaderOffset(0);
@@ -370,7 +370,7 @@ class ReportsCsvExportTest extends WebTestCase
 
         self::assertCount(1200, $records);
 
-        $exportedIds = array_map(static fn(array $r) => (int) $r['ticket_id'], $records);
+        $exportedIds = array_map(static fn(array $r) => (int) $r['Ticket'], $records);
 
         // Strictly ascending (no gaps skipped, no re-fetch of already-seen rows)
         for ($i = 1; $i < count($exportedIds); $i++) {

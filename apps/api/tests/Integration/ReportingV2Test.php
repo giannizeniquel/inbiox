@@ -67,15 +67,15 @@ class ReportingV2Test extends WebTestCase
         $this->assertNotEmpty($result);
 
         foreach ($result as $entry) {
-            $this->assertArrayHasKey('agent_id', $entry);
-            $this->assertArrayHasKey('agent_name', $entry);
-            $this->assertArrayHasKey('active_tickets', $entry);
-            $this->assertArrayHasKey('max_capacity', $entry);
-            $this->assertArrayHasKey('load_percent', $entry);
-            $this->assertIsInt($entry['agent_id']);
-            $this->assertIsInt($entry['active_tickets']);
-            $this->assertIsInt($entry['max_capacity']);
-            $this->assertIsFloat($entry['load_percent']);
+            $this->assertArrayHasKey('agenteId', $entry);
+            $this->assertArrayHasKey('agenteNombre', $entry);
+            $this->assertArrayHasKey('ticketsActivos', $entry);
+            $this->assertArrayHasKey('capacidadMaxima', $entry);
+            $this->assertArrayHasKey('porcentajeDeCarga', $entry);
+            $this->assertIsInt($entry['agenteId']);
+            $this->assertIsInt($entry['ticketsActivos']);
+            $this->assertIsInt($entry['capacidadMaxima']);
+            $this->assertIsFloat($entry['porcentajeDeCarga']);
         }
     }
 
@@ -98,19 +98,19 @@ class ReportingV2Test extends WebTestCase
     {
         $result = $this->reportingRepo->getSinAsignar();
 
-        $this->assertArrayHasKey('count', $result);
+        $this->assertArrayHasKey('cantidad', $result);
         $this->assertArrayHasKey('tickets', $result);
-        $this->assertIsInt($result['count']);
+        $this->assertIsInt($result['cantidad']);
         $this->assertIsArray($result['tickets']);
 
         // Seed data includes unassigned tickets
-        $this->assertGreaterThan(0, $result['count']);
+        $this->assertGreaterThan(0, $result['cantidad']);
 
         foreach ($result['tickets'] as $ticket) {
             $this->assertArrayHasKey('id', $ticket);
-            $this->assertArrayHasKey('contact_name', $ticket);
-            $this->assertArrayHasKey('created_at', $ticket);
-            $this->assertArrayHasKey('priority', $ticket);
+            $this->assertArrayHasKey('contactoNombre', $ticket);
+            $this->assertArrayHasKey('creadoAt', $ticket);
+            $this->assertArrayHasKey('prioridad', $ticket);
         }
     }
 
@@ -120,7 +120,7 @@ class ReportingV2Test extends WebTestCase
         $to = new \DateTimeImmutable('now');
 
         $result = $this->reportingRepo->getSinAsignar(null, $from, $to);
-        $this->assertArrayHasKey('count', $result);
+        $this->assertArrayHasKey('cantidad', $result);
         $this->assertArrayHasKey('tickets', $result);
     }
 
@@ -135,11 +135,11 @@ class ReportingV2Test extends WebTestCase
         $this->assertNotEmpty($result);
 
         foreach ($result as $point) {
-            $this->assertArrayHasKey('date', $point);
-            $this->assertArrayHasKey('avg_frt_seconds', $point);
-            $this->assertArrayHasKey('ticket_count', $point);
-            $this->assertIsFloat($point['avg_frt_seconds']);
-            $this->assertIsInt($point['ticket_count']);
+            $this->assertArrayHasKey('fecha', $point);
+            $this->assertArrayHasKey('frtPromedioSegundos', $point);
+            $this->assertArrayHasKey('cantidadDeTickets', $point);
+            $this->assertIsFloat($point['frtPromedioSegundos']);
+            $this->assertIsInt($point['cantidadDeTickets']);
         }
     }
 
@@ -154,13 +154,13 @@ class ReportingV2Test extends WebTestCase
         $this->assertNotEmpty($result);
 
         foreach ($result as $cell) {
-            $this->assertArrayHasKey('day_of_week', $cell);
-            $this->assertArrayHasKey('hour', $cell);
-            $this->assertArrayHasKey('count', $cell);
-            $this->assertGreaterThanOrEqual(1, $cell['day_of_week']);
-            $this->assertLessThanOrEqual(7, $cell['day_of_week']);
-            $this->assertGreaterThanOrEqual(0, $cell['hour']);
-            $this->assertLessThanOrEqual(23, $cell['hour']);
+            $this->assertArrayHasKey('diaDeLaSemana', $cell);
+            $this->assertArrayHasKey('hora', $cell);
+            $this->assertArrayHasKey('cantidad', $cell);
+            $this->assertGreaterThanOrEqual(1, $cell['diaDeLaSemana']);
+            $this->assertLessThanOrEqual(7, $cell['diaDeLaSemana']);
+            $this->assertGreaterThanOrEqual(0, $cell['hora']);
+            $this->assertLessThanOrEqual(23, $cell['hora']);
         }
     }
 
@@ -172,12 +172,12 @@ class ReportingV2Test extends WebTestCase
         $this->assertNotEmpty($result);
 
         foreach ($result as $entry) {
-            $this->assertArrayHasKey('contact_id', $entry);
-            $this->assertArrayHasKey('contact_name', $entry);
+            $this->assertArrayHasKey('contactoId', $entry);
+            $this->assertArrayHasKey('contactoNombre', $entry);
             $this->assertArrayHasKey('email', $entry);
-            $this->assertArrayHasKey('ticket_count', $entry);
-            $this->assertArrayHasKey('last_ticket_at', $entry);
-            $this->assertGreaterThanOrEqual(2, $entry['ticket_count']);
+            $this->assertArrayHasKey('cantidadDeTickets', $entry);
+            $this->assertArrayHasKey('ultimoTicketAt', $entry);
+            $this->assertGreaterThanOrEqual(2, $entry['cantidadDeTickets']);
         }
     }
 
@@ -191,11 +191,11 @@ class ReportingV2Test extends WebTestCase
         $this->assertIsArray($result);
 
         foreach ($result as $entry) {
-            $this->assertArrayHasKey('ticket_id', $entry);
-            $this->assertArrayHasKey('contact_name', $entry);
-            $this->assertArrayHasKey('resolved_at', $entry);
-            $this->assertArrayHasKey('reopened_at', $entry);
-            $this->assertArrayHasKey('current_status', $entry);
+            $this->assertArrayHasKey('ticketId', $entry);
+            $this->assertArrayHasKey('contactoNombre', $entry);
+            $this->assertArrayHasKey('resueltoAt', $entry);
+            $this->assertArrayHasKey('reabiertoAt', $entry);
+            $this->assertArrayHasKey('estadoActual', $entry);
         }
     }
 
@@ -213,7 +213,7 @@ class ReportingV2Test extends WebTestCase
     public function testReportingServiceGetUnassigned(): void
     {
         $result = $this->reportingService->getSinAsignar();
-        $this->assertArrayHasKey('count', $result);
+        $this->assertArrayHasKey('cantidad', $result);
         $this->assertArrayHasKey('tickets', $result);
     }
 
@@ -266,7 +266,7 @@ class ReportingV2Test extends WebTestCase
     public function testHttpAgentLoad(): void
     {
         $client = $this->authenticatedClient();
-        $client->request('GET', '/api/reports/agent-load');
+        $client->request('GET', '/api/reportes/carga-de-agentes');
         $this->assertResponseStatusCodeSame(200);
         $data = json_decode($client->getResponse()->getContent(), true);
         $this->assertIsArray($data);
@@ -275,19 +275,19 @@ class ReportingV2Test extends WebTestCase
     public function testHttpUnassigned(): void
     {
         $client = $this->authenticatedClient();
-        $client->request('GET', '/api/reports/unassigned');
+        $client->request('GET', '/api/reportes/sin-asignar');
         $response = $client->getResponse();
 
         $this->assertResponseStatusCodeSame(200);
         $data = json_decode($client->getResponse()->getContent(), true);
-        $this->assertArrayHasKey('count', $data);
+        $this->assertArrayHasKey('cantidad', $data);
         $this->assertArrayHasKey('tickets', $data);
     }
 
     public function testHttpAvailableAgents(): void
     {
         $client = $this->authenticatedClient();
-        $client->request('GET', '/api/reports/available-agents');
+        $client->request('GET', '/api/reportes/agentes-disponibles');
         $response = $client->getResponse();
 
         $this->assertResponseStatusCodeSame(200);
@@ -300,7 +300,7 @@ class ReportingV2Test extends WebTestCase
         $client = $this->authenticatedClient();
         $from = (new \DateTimeImmutable('-30 days'))->format('Y-m-d\TH:i:s\Z');
         $to = (new \DateTimeImmutable('now'))->format('Y-m-d\TH:i:s\Z');
-        $client->request('GET', "/api/reports/frt-trend?from={$from}&to={$to}");
+        $client->request('GET', "/api/reportes/tendencia-de-frt?desde={$from}&hasta={$to}");
         $response = $client->getResponse();
 
         $this->assertResponseStatusCodeSame(200);
@@ -313,7 +313,7 @@ class ReportingV2Test extends WebTestCase
         $client = $this->authenticatedClient();
         $from = (new \DateTimeImmutable('-30 days'))->format('Y-m-d\TH:i:s\Z');
         $to = (new \DateTimeImmutable('now'))->format('Y-m-d\TH:i:s\Z');
-        $client->request('GET', "/api/reports/heatmap?from={$from}&to={$to}");
+        $client->request('GET', "/api/reportes/mapa-de-calor?desde={$from}&hasta={$to}");
         $response = $client->getResponse();
 
         $this->assertResponseStatusCodeSame(200);
@@ -324,7 +324,7 @@ class ReportingV2Test extends WebTestCase
     public function testHttpRecurringCustomers(): void
     {
         $client = $this->authenticatedClient();
-        $client->request('GET', '/api/reports/recurring-customers?threshold=2');
+        $client->request('GET', '/api/reportes/contactos-recurrentes?umbral=2');
         $response = $client->getResponse();
 
         $this->assertResponseStatusCodeSame(200);
@@ -337,7 +337,7 @@ class ReportingV2Test extends WebTestCase
         $client = $this->authenticatedClient();
         $from = (new \DateTimeImmutable('-30 days'))->format('Y-m-d\TH:i:s\Z');
         $to = (new \DateTimeImmutable('now'))->format('Y-m-d\TH:i:s\Z');
-        $client->request('GET', "/api/reports/reopened?from={$from}&to={$to}");
+        $client->request('GET', "/api/reportes/reabiertos?desde={$from}&hasta={$to}");
         $response = $client->getResponse();
 
         $this->assertResponseStatusCodeSame(200);

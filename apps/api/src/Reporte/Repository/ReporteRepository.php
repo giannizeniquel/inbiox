@@ -118,7 +118,7 @@ class ReporteRepository extends ServiceEntityRepository
      * @param int|null $agenteId Filtro opcional por agente asignado
      * @param string|null $phoneNumberId Filtro opcional por phone_number_id del espacio de trabajo
      * @param int|null $equipoId Filtro opcional por equipo (selección única)
-     * @return array{avg_frt_seconds: float|null, min_frt_seconds: int|null, max_frt_seconds: int|null, avg_frt_minutes: float|null, min_frt_minutes: int|null, max_frt_minutes: int|null}
+     * @return array{frtPromedioSegundos: float|null, frtMinimoSegundos: int|null, frtMaximoSegundos: int|null, frtPromedioMinutos: float|null, frtMinimoMinutos: int|null, frtMaximoMinutos: int|null}
      */
     public function getMetricasDeFrt(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agenteId = null, ?string $phoneNumberId = null, ?int $equipoId = null): array
     {
@@ -145,12 +145,12 @@ class ReporteRepository extends ServiceEntityRepository
         $maxFrt = $result['max_frt'] !== null ? (int) $result['max_frt'] : null;
         
         return [
-            'avg_frt_seconds' => $avgFrt,
-            'min_frt_seconds' => $minFrt,
-            'max_frt_seconds' => $maxFrt,
-            'avg_frt_minutes' => $avgFrt !== null ? round($avgFrt / 60, 2) : null,
-            'min_frt_minutes' => $minFrt !== null ? (int) ($minFrt / 60) : null,
-            'max_frt_minutes' => $maxFrt !== null ? (int) ($maxFrt / 60) : null,
+            'frtPromedioSegundos' => $avgFrt,
+            'frtMinimoSegundos' => $minFrt,
+            'frtMaximoSegundos' => $maxFrt,
+            'frtPromedioMinutos' => $avgFrt !== null ? round($avgFrt / 60, 2) : null,
+            'frtMinimoMinutos' => $minFrt !== null ? (int) ($minFrt / 60) : null,
+            'frtMaximoMinutos' => $maxFrt !== null ? (int) ($maxFrt / 60) : null,
         ];
     }
 
@@ -169,7 +169,7 @@ class ReporteRepository extends ServiceEntityRepository
      * @param int|null $agenteId Filtro opcional por agente asignado
      * @param string|null $phoneNumberId Filtro opcional por phone_number_id del espacio de trabajo
      * @param int|null $equipoId Filtro opcional por equipo (selección única)
-     * @return array{avg_rt_seconds: float|null, min_rt_seconds: int|null, max_rt_seconds: int|null, avg_rt_minutes: float|null, min_rt_minutes: int|null, max_rt_minutes: int|null}
+     * @return array{rtPromedioSegundos: float|null, rtMinimoSegundos: int|null, rtMaximoSegundos: int|null, rtPromedioMinutos: float|null, rtMinimoMinutos: int|null, rtMaximoMinutos: int|null}
      */
     public function getMetricasDeRt(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agenteId = null, ?string $phoneNumberId = null, ?int $equipoId = null): array
     {
@@ -196,12 +196,12 @@ class ReporteRepository extends ServiceEntityRepository
         $maxRt = $result['max_rt'] !== null ? (int) $result['max_rt'] : null;
         
         return [
-            'avg_rt_seconds' => $avgRt,
-            'min_rt_seconds' => $minRt,
-            'max_rt_seconds' => $maxRt,
-            'avg_rt_minutes' => $avgRt !== null ? round($avgRt / 60, 2) : null,
-            'min_rt_minutes' => $minRt !== null ? (int) ($minRt / 60) : null,
-            'max_rt_minutes' => $maxRt !== null ? (int) ($maxRt / 60) : null,
+            'rtPromedioSegundos' => $avgRt,
+            'rtMinimoSegundos' => $minRt,
+            'rtMaximoSegundos' => $maxRt,
+            'rtPromedioMinutos' => $avgRt !== null ? round($avgRt / 60, 2) : null,
+            'rtMinimoMinutos' => $minRt !== null ? (int) ($minRt / 60) : null,
+            'rtMaximoMinutos' => $maxRt !== null ? (int) ($maxRt / 60) : null,
         ];
     }
 
@@ -213,7 +213,7 @@ class ReporteRepository extends ServiceEntityRepository
      * @param int|null $agenteId Filtro opcional por agente asignado
      * @param string|null $phoneNumberId Filtro opcional por phone_number_id del espacio de trabajo
      * @param int|null $equipoId Filtro opcional por equipo (selección única)
-     * @return array{new: int, active: int, waiting: int, resolved: int, closed: int}
+     * @return array{nuevo: int, activo: int, en_espera: int, resuelto: int, cerrado: int}
      */
     public function getConteosPorEstado(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agenteId = null, ?string $phoneNumberId = null, ?int $equipoId = null): array
     {
@@ -270,7 +270,7 @@ class ReporteRepository extends ServiceEntityRepository
      * @param int|null $agenteId Filtro opcional por agente asignado
      * @param string|null $phoneNumberId Filtro opcional por phone_number_id del espacio de trabajo
      * @param int|null $equipoId Filtro opcional por equipo (selección única)
-     * @return array<int, array{date: string, tickets_created: int, tickets_resolved: int}>
+     * @return array<int, array{fecha: string, ticketsCreados: int, ticketsResueltos: int}>
      */
     public function getVolumenEnElTiempo(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agenteId = null, ?string $phoneNumberId = null, ?int $equipoId = null): array
     {
@@ -300,9 +300,9 @@ class ReporteRepository extends ServiceEntityRepository
         foreach ($createdResults as $row) {
             $date = $row['date'];
             $mapaDeVolumen[$date] = [
-                'date' => $date,
-                'tickets_created' => (int) $row['tickets_created'],
-                'tickets_resolved' => 0,
+                'fecha' => $date,
+                'ticketsCreados' => (int) $row['tickets_created'],
+                'ticketsResueltos' => 0,
             ];
         }
 
@@ -310,12 +310,12 @@ class ReporteRepository extends ServiceEntityRepository
             $date = $row['date'];
             if (!isset($mapaDeVolumen[$date])) {
                 $mapaDeVolumen[$date] = [
-                    'date' => $date,
-                    'tickets_created' => 0,
-                    'tickets_resolved' => 0,
+                    'fecha' => $date,
+                    'ticketsCreados' => 0,
+                    'ticketsResueltos' => 0,
                 ];
             }
-            $mapaDeVolumen[$date]['tickets_resolved'] = (int) $row['tickets_resolved'];
+            $mapaDeVolumen[$date]['ticketsResueltos'] = (int) $row['tickets_resolved'];
         }
 
         // Ordenar por fecha
@@ -339,7 +339,7 @@ class ReporteRepository extends ServiceEntityRepository
      * @param int|null $agenteId Filtro opcional por un agente específico
      * @param string|null $phoneNumberId Filtro opcional por phone_number_id del espacio de trabajo
      * @param int|null $equipoId Filtro opcional por equipo (selección única)
-     * @return array<int, array{agent_id: int, agent_name: string|null, tickets_assigned: int, tickets_resolved: int, current_active_tickets: int, max_active_tickets: int, current_load: float, avg_frt_seconds: float|null, avg_frt_minutes: float|null, avg_rt_seconds: float|null, avg_rt_minutes: float|null}>
+     * @return array<int, array{agenteId: int, agenteNombre: string|null, ticketsAsignados: int, ticketsResueltos: int, ticketsActivosActuales: int, maximoDeTicketsActivos: int, cargaActual: float, frtPromedioSegundos: float|null, frtPromedioMinutos: float|null, rtPromedioSegundos: float|null, rtPromedioMinutos: float|null}>
      */
     public function getRendimientoDeAgentes(\DateTimeImmutable $from, \DateTimeImmutable $to, ?int $agenteId = null, ?string $phoneNumberId = null, ?int $equipoId = null): array
     {
@@ -390,17 +390,17 @@ class ReporteRepository extends ServiceEntityRepository
             $activosActuales = (int) ($row['current_active_tickets'] ?? 0);
             
             $metricasDeAgentes[] = [
-                'agent_id' => $agenteId,
-                'agent_name' => $row['agent_name'],
-                'tickets_assigned' => (int) $row['tickets_assigned'],
-                'tickets_resolved' => (int) $row['tickets_resolved'],
-                'current_active_tickets' => $activosActuales,
-                'max_active_tickets' => $maxActivos,
-                'current_load' => $maxActivos > 0 ? round($activosActuales / $maxActivos, 2) : 0.0,
-                'avg_frt_seconds' => $avgFrt,
-                'avg_frt_minutes' => $avgFrt !== null ? round($avgFrt / 60, 2) : null,
-                'avg_rt_seconds' => $avgRt,
-                'avg_rt_minutes' => $avgRt !== null ? round($avgRt / 60, 2) : null,
+                'agenteId' => $agenteId,
+                'agenteNombre' => $row['agent_name'],
+                'ticketsAsignados' => (int) $row['tickets_assigned'],
+                'ticketsResueltos' => (int) $row['tickets_resolved'],
+                'ticketsActivosActuales' => $activosActuales,
+                'maximoDeTicketsActivos' => $maxActivos,
+                'cargaActual' => $maxActivos > 0 ? round($activosActuales / $maxActivos, 2) : 0.0,
+                'frtPromedioSegundos' => $avgFrt,
+                'frtPromedioMinutos' => $avgFrt !== null ? round($avgFrt / 60, 2) : null,
+                'rtPromedioSegundos' => $avgRt,
+                'rtPromedioMinutos' => $avgRt !== null ? round($avgRt / 60, 2) : null,
             ];
         }
         
@@ -416,7 +416,7 @@ class ReporteRepository extends ServiceEntityRepository
      *
      * @param int|null $agenteId Filtro opcional por un agente específico
      * @param string|null $phoneNumberId Filtro opcional por phone_number_id del espacio de trabajo
-     * @return array<int, array{agent_id: int, agent_name: string, active_tickets: int, max_capacity: int, load_percent: float}>
+     * @return array<int, array{agenteId: int, agenteNombre: string, ticketsActivos: int, capacidadMaxima: int, porcentajeDeCarga: float}>
      */
     public function getCargaDeAgentes(?int $agenteId = null, ?string $phoneNumberId = null): array
     {
@@ -449,11 +449,11 @@ class ReporteRepository extends ServiceEntityRepository
             $capacidadMaxima = (int) $row['max_capacity'];
             $ticketsActivos = (int) $row['active_tickets'];
             $metricasDeAgentes[] = [
-                'agent_id' => (int) $row['agent_id'],
-                'agent_name' => $row['agent_name'],
-                'active_tickets' => $ticketsActivos,
-                'max_capacity' => $capacidadMaxima,
-                'load_percent' => $capacidadMaxima > 0 ? round($ticketsActivos / $capacidadMaxima * 100, 1) : 0.0,
+                'agenteId' => (int) $row['agent_id'],
+                'agenteNombre' => $row['agent_name'],
+                'ticketsActivos' => $ticketsActivos,
+                'capacidadMaxima' => $capacidadMaxima,
+                'porcentajeDeCarga' => $capacidadMaxima > 0 ? round($ticketsActivos / $capacidadMaxima * 100, 1) : 0.0,
             ];
         }
 
@@ -471,7 +471,7 @@ class ReporteRepository extends ServiceEntityRepository
      * @param \DateTimeImmutable|null $from Inicio opcional del rango de fechas
      * @param \DateTimeImmutable|null $to Fin opcional del rango de fechas
      * @param int $limit Máximo de resultados (por defecto 50)
-     * @return array{count: int, tickets: array<int, array{id: int, contact_name: string|null, created_at: string, priority: string}>}
+     * @return array{cantidad: int, tickets: array<int, array{id: int, contactoNombre: string|null, creadoAt: string, prioridad: string}>}
      */
     public function getSinAsignar(?string $phoneNumberId = null, ?\DateTimeImmutable $from = null, ?\DateTimeImmutable $to = null, int $limit = 50): array
     {
@@ -517,14 +517,14 @@ class ReporteRepository extends ServiceEntityRepository
         foreach ($results as $row) {
             $tickets[] = [
                 'id' => (int) $row['id'],
-                'contact_name' => $row['contact_name'],
-                'created_at' => $row['created_at'],
-                'priority' => $row['priority'],
+                'contactoNombre' => $row['contact_name'],
+                'creadoAt' => $row['created_at'],
+                'prioridad' => $row['priority'],
             ];
         }
 
         return [
-            'count' => $count,
+            'cantidad' => $count,
             'tickets' => $tickets,
         ];
     }
@@ -539,7 +539,7 @@ class ReporteRepository extends ServiceEntityRepository
      * @param \DateTimeImmutable $from Inicio del rango de fechas (UTC)
      * @param \DateTimeImmutable $to Fin del rango de fechas (UTC)
      * @param string|null $phoneNumberId Filtro opcional por phone_number_id del espacio de trabajo
-     * @return array<int, array{date: string, avg_frt_seconds: float, ticket_count: int}>
+     * @return array<int, array{fecha: string, frtPromedioSegundos: float, cantidadDeTickets: int}>
      */
     public function getTendenciaDeFrt(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null): array
     {
@@ -569,9 +569,9 @@ class ReporteRepository extends ServiceEntityRepository
         $tendencia = [];
         foreach ($results as $row) {
             $tendencia[] = [
-                'date' => $row['date'],
-                'avg_frt_seconds' => $row['avg_frt'] !== null ? round((float) $row['avg_frt'], 1) : 0.0,
-                'ticket_count' => (int) $row['ticket_count'],
+                'fecha' => $row['date'],
+                'frtPromedioSegundos' => $row['avg_frt'] !== null ? round((float) $row['avg_frt'], 1) : 0.0,
+                'cantidadDeTickets' => (int) $row['ticket_count'],
             ];
         }
 
@@ -591,7 +591,7 @@ class ReporteRepository extends ServiceEntityRepository
      * @param \DateTimeImmutable $from Inicio del rango de fechas (UTC)
      * @param \DateTimeImmutable $to Fin del rango de fechas (UTC)
      * @param string|null $phoneNumberId Filtro opcional por phone_number_id del espacio de trabajo
-     * @return array<int, array{day_of_week: int, hour: int, count: int}>
+     * @return array<int, array{diaDeLaSemana: int, hora: int, cantidad: int}>
      */
     public function getMapaDeCalor(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null): array
     {
@@ -632,9 +632,9 @@ class ReporteRepository extends ServiceEntityRepository
             $count = (int) $row['count'];
             if ($count > 0) {
                 $mapaDeCalor[] = [
-                    'day_of_week' => (int) $row['day_of_week'],
-                    'hour' => (int) $row['hour'],
-                    'count' => $count,
+                    'diaDeLaSemana' => (int) $row['day_of_week'],
+                    'hora' => (int) $row['hour'],
+                    'cantidad' => $count,
                 ];
             }
         }
@@ -652,7 +652,7 @@ class ReporteRepository extends ServiceEntityRepository
      * @param string|null $phoneNumberId Filtro opcional por phone_number_id del espacio de trabajo
      * @param int $umbral Cantidad mínima de tickets (por defecto 3)
      * @param int $days Ventana retrospectiva en días (por defecto 90)
-     * @return array<int, array{contact_id: int, contact_name: string|null, email: string|null, ticket_count: int, last_ticket_at: string}>
+     * @return array<int, array{contactoId: int, contactoNombre: string|null, email: string|null, cantidadDeTickets: int, ultimoTicketAt: string}>
      */
     public function getContactosRecurrentes(?string $phoneNumberId = null, int $umbral = 3, int $days = 90): array
     {
@@ -685,11 +685,11 @@ class ReporteRepository extends ServiceEntityRepository
         $recurrentes = [];
         foreach ($results as $row) {
             $recurrentes[] = [
-                'contact_id' => (int) $row['contact_id'],
-                'contact_name' => $row['contact_name'],
+                'contactoId' => (int) $row['contact_id'],
+                'contactoNombre' => $row['contact_name'],
                 'email' => $row['email'],
-                'ticket_count' => (int) $row['ticket_count'],
-                'last_ticket_at' => $row['last_ticket_at'],
+                'cantidadDeTickets' => (int) $row['ticket_count'],
+                'ultimoTicketAt' => $row['last_ticket_at'],
             ];
         }
 
@@ -707,7 +707,7 @@ class ReporteRepository extends ServiceEntityRepository
      * @param \DateTimeImmutable $to Fin del rango de fechas (UTC)
      * @param string|null $phoneNumberId Filtro opcional por phone_number_id del espacio de trabajo
      * @param int $limit Máximo de resultados (por defecto 100)
-     * @return array<int, array{ticket_id: int, contact_name: string|null, resolved_at: string|null, reopened_at: string, current_status: string}>
+     * @return array<int, array{ticketId: int, contactoNombre: string|null, resueltoAt: string|null, reabiertoAt: string, estadoActual: string}>
      */
     public function getReabiertos(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null, int $limit = 100): array
     {
@@ -741,11 +741,11 @@ class ReporteRepository extends ServiceEntityRepository
         $reabiertos = [];
         foreach ($results as $row) {
             $reabiertos[] = [
-                'ticket_id' => (int) $row['ticket_id'],
-                'contact_name' => $row['contact_name'],
-                'resolved_at' => $row['resolved_at'],
-                'reopened_at' => $row['reopened_at'],
-                'current_status' => $row['current_status'],
+                'ticketId' => (int) $row['ticket_id'],
+                'contactoNombre' => $row['contact_name'],
+                'resueltoAt' => $row['resolved_at'],
+                'reabiertoAt' => $row['reopened_at'],
+                'estadoActual' => $row['current_status'],
             ];
         }
 
@@ -804,7 +804,7 @@ class ReporteRepository extends ServiceEntityRepository
      * ni DQL ni el QueryBuilder de DBAL pueden expresar. Los parámetros van vinculados.
      * Probado por ReportingResponseDelayTest y ReportingControllerCharacterizationTest.
      *
-     * @return array{aggregate: array{avg_delay_seconds: float|null, sample_count: int, unanswered_inbound_count: int}, per_agent: array<int, array{agent_id: int, agent_name: string|null, avg_delay_seconds: float|null, sample_count: int}>}
+     * @return array{global: array{demoraPromedioSegundos: float|null, cantidadDeMuestras: int, cantidadDeEntrantesSinResponder: int}, porAgente: array<int, array{agenteId: int, agenteNombre: string|null, demoraPromedioSegundos: float|null, cantidadDeMuestras: int}>}
      */
     public function getMetricasDeDemoraDeRespuesta(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $phoneNumberId = null): array
     {
@@ -907,7 +907,7 @@ class ReporteRepository extends ServiceEntityRepository
      * Combina las filas por agente en el agregado y en la lista por agente.
      *
      * @param list<array<string, mixed>> $rows
-     * @return array{aggregate: array{avg_delay_seconds: float|null, sample_count: int, unanswered_inbound_count: int}, per_agent: array<int, array{agent_id: int, agent_name: string|null, avg_delay_seconds: float|null, sample_count: int}>}
+     * @return array{global: array{demoraPromedioSegundos: float|null, cantidadDeMuestras: int, cantidadDeEntrantesSinResponder: int}, porAgente: array<int, array{agenteId: int, agenteNombre: string|null, demoraPromedioSegundos: float|null, cantidadDeMuestras: int}>}
      */
     private function agregarFilasDeDemoraDeRespuesta(array $rows): array
     {
@@ -928,21 +928,21 @@ class ReporteRepository extends ServiceEntityRepository
 
             if ($row['agent_id'] !== null) {
                 $porAgente[] = [
-                    'agent_id' => (int) $row['agent_id'],
-                    'agent_name' => $row['agent_name'],
-                    'avg_delay_seconds' => $sampleCount > 0 ? round($sumaDeDemora / $sampleCount, 2) : null,
-                    'sample_count' => $sampleCount,
+                    'agenteId' => (int) $row['agent_id'],
+                    'agenteNombre' => $row['agent_name'],
+                    'demoraPromedioSegundos' => $sampleCount > 0 ? round($sumaDeDemora / $sampleCount, 2) : null,
+                    'cantidadDeMuestras' => $sampleCount,
                 ];
             }
         }
 
         return [
-            'aggregate' => [
-                'avg_delay_seconds' => $aggregateSampleCount > 0 ? round($sumaDeDemoraAgregada / $aggregateSampleCount, 2) : null,
-                'sample_count' => $aggregateSampleCount,
-                'unanswered_inbound_count' => $cantidadDeEntrantesSinResponder,
+            'global' => [
+                'demoraPromedioSegundos' => $aggregateSampleCount > 0 ? round($sumaDeDemoraAgregada / $aggregateSampleCount, 2) : null,
+                'cantidadDeMuestras' => $aggregateSampleCount,
+                'cantidadDeEntrantesSinResponder' => $cantidadDeEntrantesSinResponder,
             ],
-            'per_agent' => $porAgente,
+            'porAgente' => $porAgente,
         ];
     }
 
@@ -958,7 +958,7 @@ class ReporteRepository extends ServiceEntityRepository
      * directamente por los casos `testGetTicketParticipation*` y de empate degenerado
      * de `tests/Integration/ReportingResponseDelayTest.php`.
      *
-     * @return array{ticket_id: int, data_available_from: \DateTimeImmutable|null, partial_data: bool, participants: array<int, array{agent_id: int, agent_name: string|null, message_count: int, sample_count: int, avg_delay_seconds: float|null}>, automatic_message_count: int, unanswered_inbound_count: int, pairs: array<int, array{run_start_at: string, reply_at: string|null, agent_id: int|null, delay_seconds: float|null}>}|null null cuando el ticket no existe o no tiene conversación
+     * @return array{ticketId: int, datosDisponiblesDesde: \DateTimeImmutable|null, datosParciales: bool, participantes: array<int, array{agenteId: int, agenteNombre: string|null, cantidadDeMensajes: int, cantidadDeMuestras: int, demoraPromedioSegundos: float|null}>, cantidadDeMensajesAutomaticos: int, cantidadDeEntrantesSinResponder: int, pares: array<int, array{inicioDeRachaAt: string, respuestaAt: string|null, agenteId: int|null, demoraSegundos: float|null}>}|null null cuando el ticket no existe o no tiene conversación
      */
     public function getParticipacionEnTicket(int $ticketId): ?array
     {
@@ -974,13 +974,13 @@ class ReporteRepository extends ServiceEntityRepository
         $participantes = $this->armarParticipantes($cantidadesDeMensajes['by_agent'], $estadisticasDeParticipantes);
 
         return [
-            'ticket_id' => $ticketId,
-            'data_available_from' => $corte,
-            'partial_data' => $cantidadesDeMensajes['unattributed'] > 0 || $corte === null,
-            'participants' => $participantes,
-            'automatic_message_count' => $cantidadesDeMensajes['automatic'],
-            'unanswered_inbound_count' => $cantidadDeEntrantesSinResponder,
-            'pairs' => $pairs,
+            'ticketId' => $ticketId,
+            'datosDisponiblesDesde' => $corte,
+            'datosParciales' => $cantidadesDeMensajes['unattributed'] > 0 || $corte === null,
+            'participantes' => $participantes,
+            'cantidadDeMensajesAutomaticos' => $cantidadesDeMensajes['automatic'],
+            'cantidadDeEntrantesSinResponder' => $cantidadDeEntrantesSinResponder,
+            'pares' => $pairs,
         ];
     }
 
@@ -1140,7 +1140,7 @@ class ReporteRepository extends ServiceEntityRepository
      * la cantidad de ráfagas que nadie respondió.
      *
      * @param list<array<string, mixed>> $filasDePares
-     * @return array{0: list<array{run_start_at: string, reply_at: string|null, agent_id: int|null, delay_seconds: float|null}>, 1: array<int, array{agent_name: string|null, sample_count: int, sum_delay: float}>, 2: int}
+     * @return array{0: list<array{inicioDeRachaAt: string, respuestaAt: string|null, agenteId: int|null, demoraSegundos: float|null}>, 1: array<int, array{agent_name: string|null, sample_count: int, sum_delay: float}>, 2: int}
      */
     private function plegarParesDeParticipacion(array $filasDePares): array
     {
@@ -1153,10 +1153,10 @@ class ReporteRepository extends ServiceEntityRepository
             $segundosDeDemora = $row['delay_seconds'] !== null ? (float) $row['delay_seconds'] : null;
 
             $pairs[] = [
-                'run_start_at' => $row['inbound_at'],
-                'reply_at' => $row['reply_at'],
-                'agent_id' => $agenteId,
-                'delay_seconds' => $segundosDeDemora,
+                'inicioDeRachaAt' => $row['inbound_at'],
+                'respuestaAt' => $row['reply_at'],
+                'agenteId' => $agenteId,
+                'demoraSegundos' => $segundosDeDemora,
             ];
 
             if ($agenteId === null) {
@@ -1184,7 +1184,7 @@ class ReporteRepository extends ServiceEntityRepository
      *
      * @param array<int, int> $mensajesPorAgente
      * @param array<int, array{agent_name: string|null, sample_count: int, sum_delay: float}> $estadisticasDeParticipantes
-     * @return list<array{agent_id: int, agent_name: string|null, message_count: int, sample_count: int, avg_delay_seconds: float|null}>
+     * @return list<array{agenteId: int, agenteNombre: string|null, cantidadDeMensajes: int, cantidadDeMuestras: int, demoraPromedioSegundos: float|null}>
      */
     private function armarParticipantes(array $mensajesPorAgente, array $estadisticasDeParticipantes): array
     {
@@ -1212,11 +1212,11 @@ class ReporteRepository extends ServiceEntityRepository
         foreach ($agenteIds as $agenteId) {
             $estadisticas = $estadisticasDeParticipantes[$agenteId] ?? ['agent_name' => null, 'sample_count' => 0, 'sum_delay' => 0.0];
             $participantes[] = [
-                'agent_id' => $agenteId,
-                'agent_name' => $estadisticas['agent_name'] ?? $nombresDeAgentes[$agenteId] ?? null,
-                'message_count' => $mensajesPorAgente[$agenteId] ?? 0,
-                'sample_count' => $estadisticas['sample_count'],
-                'avg_delay_seconds' => $estadisticas['sample_count'] > 0 ? round($estadisticas['sum_delay'] / $estadisticas['sample_count'], 2) : null,
+                'agenteId' => $agenteId,
+                'agenteNombre' => $estadisticas['agent_name'] ?? $nombresDeAgentes[$agenteId] ?? null,
+                'cantidadDeMensajes' => $mensajesPorAgente[$agenteId] ?? 0,
+                'cantidadDeMuestras' => $estadisticas['sample_count'],
+                'demoraPromedioSegundos' => $estadisticas['sample_count'] > 0 ? round($estadisticas['sum_delay'] / $estadisticas['sample_count'], 2) : null,
             ];
         }
 
