@@ -80,18 +80,6 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/configuracion/pages/configuracion-page/configuracion-page.component').then(m => m.ConfiguracionPageComponent),
       },
-      // Stage 4: remove these redirects from the old URLs.
-      { path: 'inbox', redirectTo: 'bandeja', pathMatch: 'full' },
-      { path: 'contacts', redirectTo: 'contactos', pathMatch: 'full' },
-      { path: 'contacts/:contactId', redirectTo: 'contactos/:contactId' },
-      { path: 'reports', redirectTo: 'reportes', pathMatch: 'full' },
-      { path: 'agents/:agentId/availability', redirectTo: 'agentes/:agentId/disponibilidad' },
-      { path: 'agents/:agentId/shifts', redirectTo: 'agentes/:agentId/turnos' },
-      { path: 'admin/users', redirectTo: 'administracion/usuarios', pathMatch: 'full' },
-      { path: 'admin/agents', redirectTo: 'administracion/agentes', pathMatch: 'full' },
-      { path: 'admin/workspaces', redirectTo: 'administracion/espacios-de-trabajo', pathMatch: 'full' },
-      { path: 'admin/teams', redirectTo: 'administracion/equipos', pathMatch: 'full' },
-      { path: 'settings', redirectTo: 'configuracion', pathMatch: 'full' },
       {
         path: '**',
         redirectTo: 'bandeja',

@@ -17,13 +17,6 @@ import { ImportacionDeContactosDialogComponent } from '../../ui/importacion-de-c
 /** Guard flag to prevent URL sync feedback loops */
 let updatingFromUrl = false;
 
-/** Old bookmarks carry the English values under the old query names. Stage 4: drop together with those names. */
-const VALORES_VIEJOS: Record<string, string> = { active: 'activo', inactive: 'inactivo', other: 'otro' };
-
-function deValorViejo(valor: string | undefined): string | undefined {
-  return valor === undefined ? undefined : (VALORES_VIEJOS[valor] ?? valor);
-}
-
 /**
  * ContactosPageComponent — smart container for the contacts feature.
  *
@@ -114,8 +107,8 @@ export class ContactosPageComponent implements OnInit, OnDestroy {
 
     // Sync from URL on first load (initial navigation only)
     const q = this.route.snapshot.queryParams['q'];
-    const estado = this.route.snapshot.queryParams['estado'] ?? deValorViejo(this.route.snapshot.queryParams['status']);
-    const channel = this.route.snapshot.queryParams['canal'] ?? deValorViejo(this.route.snapshot.queryParams['channel']);
+    const estado = this.route.snapshot.queryParams['estado'];
+    const channel = this.route.snapshot.queryParams['canal'];
     if (q !== undefined || estado !== undefined || channel !== undefined) {
       if (q !== undefined) this.screen.setSearchTerm(q);
       const filtros: FiltrosDeContacto = {};
@@ -128,8 +121,8 @@ export class ContactosPageComponent implements OnInit, OnDestroy {
     this.route.queryParams.subscribe(params => {
       updatingFromUrl = true;
       const q = params['q'];
-      const estado = params['estado'] ?? deValorViejo(params['status']);
-      const channel = params['canal'] ?? deValorViejo(params['channel']);
+      const estado = params['estado'];
+      const channel = params['canal'];
       if (q !== undefined) this.screen.setSearchTerm(q);
       const filtros: FiltrosDeContacto = {};
       if (estado !== undefined) filtros.status = estado as 'activo' | 'inactivo' | 'all';

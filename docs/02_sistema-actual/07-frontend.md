@@ -23,7 +23,6 @@
 | `/administracion/equipos` | `EquiposPageComponent` | `roleGuard('ROLE_SUPERVISOR')` | Supervisor, admin | "Equipos" |
 | `/configuracion` | `ConfiguracionPageComponent` | — | Autenticado | "Configuración" |
 | `**` | redirect `/bandeja` | — | — | — |
-| `/inbox`, `/contacts`, `/contacts/:contactId`, `/reports`, `/agents/:agentId/availability`, `/agents/:agentId/shifts`, `/admin/users`, `/admin/agents`, `/admin/workspaces`, `/admin/teams`, `/settings` | redirect a la URL nueva (favoritos viejos; se quitan en la etapa 4 del contrato) | — | — | — |
 
 Roles: `AuthStore.isAdmin()` / `isSupervisor()` (no jerárquicos; no existe `isAgent`) en `core/auth/auth.store.ts:40-52`. `roleGuard` siempre deja pasar al admin (`core/auth/auth.guard.ts:35-38`).
 
