@@ -292,6 +292,15 @@ class AuthorizationTest extends WebTestCase
         self::assertSame(404, $this->client->getResponse()->getStatusCode());
     }
 
+    public function testDeletedTicketEventsResyncReturns404(): void
+    {
+        $this->createUser('admin@test.local', ['ROLE_ADMINISTRADOR']);
+        $token = $this->login('admin@test.local');
+
+        $this->client->request('GET', '/api/tickets/1/events', [], [], $this->authHeaders($token));
+        self::assertSame(404, $this->client->getResponse()->getStatusCode());
+    }
+
     // ────────────────────────────────────────────────────────
     //  Debug endpoints gated by environment (test = allowed)
     // ────────────────────────────────────────────────────────

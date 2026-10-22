@@ -4,10 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Characterization;
 
-use App\Compartido\Realtime\MercureJwtService;
-use Symfony\Component\BrowserKit\Cookie;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Uid\Ulid;
 
 /**
  * Phase 3b: App\Compartido\EventListener\InternalServerErrorListener turns any
@@ -16,8 +13,6 @@ use Symfony\Component\Uid\Ulid;
  */
 final class InternalServerErrorListenerTest extends CharacterizationTestCase
 {
-    private const TICKET_ID = 987654322;
-
     private function agentToken(): string
     {
         return $this->loginAs('listener@characterization.local', ['ROLE_AGENTE'], $this->createAgent('Agent'));
@@ -40,29 +35,18 @@ final class InternalServerErrorListenerTest extends CharacterizationTestCase
 
     public function testUncaughtExceptionInAnActionWithoutCatchAllReturnsTheGenericEnvelope(): void
     {
-        // EventosDeTicketController has no try/catch: an outbox row with an
-        // unmapped event_type makes EventoEnTiempoRealFactory throw an
-        // \InvalidArgumentException. Before phase 3b, Symfony rendered it as a
-        // problem+json 500 that leaked the exception message.
-        $this->connection()->insert('outbox_events', [
-            'id' => (string) new Ulid(),
-            'aggregate_type' => 'ticket',
-            'aggregate_id' => self::TICKET_ID,
-            'topic' => 'tickets',
-            'event_type' => 'NoSuchEvent',
-            'payload' => '{}',
-            'created_at' => '2026-01-01 10:00:00',
-            'status' => 'pending',
-            'sequence' => 1,
-        ]);
-        $token = $this->agentToken();
-        $mercureToken = static::getContainer()->get(MercureJwtService::class)->createSubscriberToken(['tickets'])->toString();
-        $this->client->getCookieJar()->set(new Cookie('mercureAuthorization', $mercureToken));
+        // AsignacionDeTicketController::asignar catches only its domain
+        // exceptions. Framework validation is disabled, so a body without the
+        // required `asignadoPor` reaches the action with an uninitialized typed
+        // property and fails with an \Error. Before phase 3b, Symfony rendered
+        // such a failure as a problem+json 500 that leaked the exception message.
+        $ticket = $this->createTicket('nuevo');
+        $token = $this->loginAs('listener-admin@characterization.local', ['ROLE_ADMINISTRADOR']);
 
-        $response = $this->request('GET', '/api/tickets/' . self::TICKET_ID . '/events', $token);
+        $response = $this->request('POST', '/api/tickets/' . $ticket->getId() . '/asignar', $token, ['agenteId' => 1]);
 
         $this->assertInternalServerErrorEnvelope($response);
-        self::assertStringNotContainsString('NoSuchEvent', (string) $response->getContent());
+        self::assertStringNotContainsString('asignadoPor', (string) $response->getContent());
     }
 
     public function testUnknownApiRouteKeepsTheFrameworkNotFound(): void

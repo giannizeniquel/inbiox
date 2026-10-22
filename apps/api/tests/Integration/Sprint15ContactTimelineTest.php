@@ -121,13 +121,12 @@ class Sprint15ContactTimelineTest extends WebTestCase
      * 3. ticket.estado_cambiado outbox event
      * 4. newest: message
      *
-     * The outbox rows default to the legacy stored values (event class names
-     * and aggregate_type 'Ticket') that rows written before the outbox
-     * migration still carry.
+     * The outbox rows default to the internal stored names, with the legacy
+     * aggregate_type 'Ticket'.
      */
     private function createTestFixtures(
-        string $createdEventType = 'App\Ticket\TicketCreatedEvent',
-        string $updatedEventType = 'App\Ticket\TicketUpdatedEvent',
+        string $createdEventType = 'ticket.creado',
+        string $updatedEventType = 'ticket.actualizado',
         string $aggregateType = 'Ticket',
     ): array
     {
@@ -305,6 +304,20 @@ class Sprint15ContactTimelineTest extends WebTestCase
         $this->assertSame(['ticket.creado', 'ticket.estado_cambiado', 'ticket.asignado'], array_column($data['eventos'], 'tipo'));
         $this->assertSame([$fixtures['ticketId'], $fixtures['ticketId']], array_column(array_slice($data['eventos'], 0, 2), 'ticketId'));
         $this->assertSame(['activo', 'activo'], array_column(array_slice($data['eventos'], 0, 2), 'estadoDeTicket'));
+    }
+
+    public function testTimelineIgnoresTheLegacyOutboxNames(): void
+    {
+        $fixtures = $this->createTestFixtures('App\Ticket\TicketCreatedEvent', 'App\Ticket\TicketUpdatedEvent');
+
+        $data = $this->getJson('/api/contactos/' . $fixtures['contactId'] . '/linea-de-tiempo');
+
+        $this->assertResponseStatusCodeSame(200);
+        // Only the outbox rows drop out; the assignment comes from the assignments table.
+        $this->assertSame(['ticket.asignado'], array_values(array_intersect(
+            array_column($data['eventos'], 'tipo'),
+            ['ticket.creado', 'ticket.estado_cambiado', 'ticket.asignado'],
+        )));
     }
 
     public function testTimelineCursorPagination(): void

@@ -69,7 +69,7 @@ class RealtimeEventFactoryTest extends TestCase
 
     public function testTicketCreadoTranslatesOldStoredStatus(): void
     {
-        $result = $this->build('ticket', 100, 'App\Ticket\TicketCreatedEvent', ['status' => 'new']);
+        $result = $this->build('ticket', 100, 'ticket.creado', ['status' => 'new']);
 
         self::assertSame('nuevo', $result['payload']['estado']);
     }
@@ -119,7 +119,7 @@ class RealtimeEventFactoryTest extends TestCase
 
     public function testMensajeAgregadoTranslatesOldStoredValues(): void
     {
-        $result = $this->build('ticket', 100, 'App\Conversacion\MessageCreatedEvent', [
+        $result = $this->build('ticket', 100, 'mensaje.creado', [
             'message_id' => 56,
             'direction' => 'outbound',
             'media' => ['key' => 'k', 'kind' => 'document', 'filename' => 'f.pdf'],
@@ -154,7 +154,7 @@ class RealtimeEventFactoryTest extends TestCase
     {
         $esperados = ['new' => 'nuevo', 'active' => 'activo', 'waiting' => 'en_espera', 'resolved' => 'resuelto', 'closed' => 'cerrado'];
         foreach ($esperados as $viejo => $nuevo) {
-            $result = $this->build('ticket', 100, 'App\Ticket\TicketUpdatedEvent', ['previous_status' => $viejo, 'status' => $viejo]);
+            $result = $this->build('ticket', 100, 'ticket.actualizado', ['previous_status' => $viejo, 'status' => $viejo]);
             self::assertSame($nuevo, $result['payload']['estadoAnterior'], $viejo);
             self::assertSame($nuevo, $result['payload']['estadoNuevo'], $viejo);
         }
@@ -182,7 +182,7 @@ class RealtimeEventFactoryTest extends TestCase
         ], $result['payload']);
 
         // Sin tipo guardado, el de siempre.
-        $porDefecto = $this->build('ticket', 101, 'App\Ticket\TicketUpdatedEvent', ['ownerAgentId' => 3]);
+        $porDefecto = $this->build('ticket', 101, 'ticket.actualizado', ['ownerAgentId' => 3]);
         self::assertSame('ticket.asignado', $porDefecto['tipoDeEvento']);
         self::assertSame(3, $porDefecto['payload']['responsableId']);
         self::assertSame('manual', $porDefecto['payload']['tipoDeAsignacion']);
@@ -192,7 +192,7 @@ class RealtimeEventFactoryTest extends TestCase
     {
         $esperados = ['AUTO_ASSIGN' => 'automatica', 'MANUAL_ASSIGN' => 'manual', 'REASSIGN' => 'reasignacion', 'UNASSIGN' => 'desasignacion'];
         foreach ($esperados as $viejo => $nuevo) {
-            $result = $this->build('ticket', 100, 'App\Ticket\TicketUpdatedEvent', ['ownerAgentId' => 3, 'assignment_type' => $viejo]);
+            $result = $this->build('ticket', 100, 'ticket.actualizado', ['ownerAgentId' => 3, 'assignment_type' => $viejo]);
             self::assertSame($nuevo, $result['payload']['tipoDeAsignacion'], $viejo);
         }
     }
@@ -220,7 +220,7 @@ class RealtimeEventFactoryTest extends TestCase
     {
         $esperados = ['sent' => 'enviado', 'delivered' => 'entregado', 'read' => 'leido', 'failed' => 'fallido'];
         foreach ($esperados as $viejo => $nuevo) {
-            $result = $this->build('ticket', 100, 'App\Conversacion\MessageUpdatedEvent', ['delivery_status' => $viejo]);
+            $result = $this->build('ticket', 100, 'mensaje.actualizado', ['delivery_status' => $viejo]);
             self::assertSame($nuevo, $result['payload']['estadoDeEntrega'], $viejo);
         }
     }
@@ -274,9 +274,9 @@ class RealtimeEventFactoryTest extends TestCase
         self::assertSame('borrado', $borrado['payload']['accion']);
 
         // Filas escritas antes del contrato: la acción guardada en inglés se traduce al leer.
-        $creadoViejo = $this->build('agent', 5, 'App\Disponibilidad\AgentShiftChangedEvent', ['action' => 'created']);
+        $creadoViejo = $this->build('agent', 5, 'agente.turno_cambiado', ['action' => 'created']);
         self::assertSame('creado', $creadoViejo['payload']['accion']);
-        $borradoViejo = $this->build('agent', 5, 'App\Disponibilidad\AgentShiftChangedEvent', ['action' => 'deleted']);
+        $borradoViejo = $this->build('agent', 5, 'agente.turno_cambiado', ['action' => 'deleted']);
         self::assertSame('borrado', $borradoViejo['payload']['accion']);
     }
 

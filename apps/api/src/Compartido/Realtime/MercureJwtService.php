@@ -11,9 +11,7 @@ use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer\Hmac\Sha256;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Token;
-use Lcobucci\JWT\Validation\Constraint\SignedWith;
 use Lcobucci\JWT\Validation\Constraint\StrictValidAt;
-use Lcobucci\JWT\Validation\RequiredConstraintsViolated;
 use Psr\Clock\ClockInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -127,46 +125,6 @@ final class MercureJwtService
             ->getToken($config->signer(), $config->signingKey());
 
         return $token->toString();
-    }
-
-    public function verifyToken(string $tokenString): ?Token
-    {
-        try {
-            $secret = $this->getSecret();
-            $config = Configuration::forSymmetricSigner(
-                new Sha256(),
-                InMemory::plainText($secret)
-            );
-            $token = $config->parser()->parse($tokenString);
-
-            $constraints = [
-                new SignedWith($config->signer(), $config->signingKey()),
-            ];
-
-            $config->validator()->assert($token, ...$constraints);
-            return $token;
-        } catch (RequiredConstraintsViolated) {
-            return null;
-        } catch (\Exception) {
-            return null;
-        }
-    }
-
-    public function extractAgenteId(Token $token): ?int
-    {
-        $claims = $token->claims();
-        if (!$claims->has('agent_id')) return null;
-        $agenteId = $claims->get('agent_id');
-        return is_int($agenteId) ? $agenteId : null;
-    }
-
-    public function extractTopics(Token $token): ?array
-    {
-        $claims = $token->claims();
-        if (!$claims->has('mercure')) return null;
-        $mercure = $claims->get('mercure');
-        if (!is_array($mercure) || !isset($mercure['subscribe'])) return null;
-        return $mercure['subscribe'];
     }
 
     /**

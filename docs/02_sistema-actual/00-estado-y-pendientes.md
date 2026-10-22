@@ -135,7 +135,7 @@ El hub Mercure acepta suscriptores anónimos (`docker-compose.yml`, `anonymous`)
 
 ### R5. Endpoint de resync de eventos inseguro y, además, inalcanzable
 
-**[SEG]/[PROD] · Confirmado.**
+**[SEG]/[PROD] · Resuelto (etapa 3 del contrato de la API):** la ruta, su controlador y su query se borraron. Lo que sigue describe el estado anterior.
 `GET /api/tickets/{id}/events` (`apps/api/src/Compartido/Controller/EventosDeTicketController.php`) valida solo la firma del JWT de Mercure (no el vencimiento), no verifica workspace y no filtra por `aggregate_type`. En la práctica el frontend envía el token de Mercure en `Authorization` y el firewall de la API lo rechaza con 401 antes de llegar al controlador. Ni la seguridad ni el resync funcionan.
 
 ### R6. Resolver quita el dueño (contradicción autoinfligida)

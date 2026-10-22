@@ -60,7 +60,7 @@ final class OutboxCommandsCharacterizationTest extends KernelTestCase
 
         self::assertSame(Command::SUCCESS, $exit);
         self::assertMatchesRegularExpression('/\| ID\s+\| Event Type\s+\| Ticket ID \| Retry Count \| Created At\s+\|/', $output);
-        self::assertMatchesRegularExpression('/\| ' . $muerto . ' \| App\\\\Ticket\\\\TicketCreatedEvent \| 41\s+\| 5\s+\| \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \|/', $output);
+        self::assertMatchesRegularExpression('/\| ' . $muerto . ' \| ticket\.creado \| 41\s+\| 5\s+\| \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \|/', $output);
         self::assertStringNotContainsString($pendiente, $output);
         self::assertStringEndsWith("\nTotal: 1 dead-letter events\n", $output);
     }
@@ -128,7 +128,7 @@ final class OutboxCommandsCharacterizationTest extends KernelTestCase
             aggregateType: 'ticket',
             aggregateId: $ticketId,
             topic: 'tickets',
-            tipoDeEvento: 'App\Ticket\TicketCreatedEvent',
+            tipoDeEvento: 'ticket.creado',
             payload: ['ticketId' => $ticketId],
         );
         $evento->setEstado($estado);
